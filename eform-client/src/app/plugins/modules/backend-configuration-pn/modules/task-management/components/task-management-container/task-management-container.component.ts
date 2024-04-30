@@ -48,7 +48,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   adHocTaskWorkers: AdHocTaskWorkers;
   selectedPropertyId: number | null = null;
   selectedPriority: number | null = null;
-  selectedStatus: number | null = null;
+  selectedStatuses: number[] = [];
   selectedWorkerId: number | null = null;
   view = [1000, 300];
   diagramForShow: string = '';
@@ -109,7 +109,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
             this.selectedPropertyId = filters.propertyId;
           }
           this.selectedPriority = filters.priority;
-          this.selectedStatus = filters.status;
+          this.selectedStatuses = filters.statuses;
           this.selectedWorkerId = filters.lastAssignedTo;
         });
         this.updateTable();
@@ -245,7 +245,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
 
   getAdHocTaskPriorities() {
     this.getAdHocTaskPrioritiesSub$ = this.statisticsStateService.getAdHocTaskPriorities(
-      this.selectedPropertyId, this.selectedPriority, this.selectedStatus)
+      this.selectedPropertyId, this.selectedPriority, null, null, this.selectedStatuses)
       .pipe(tap(model => {
         if (model && model.success && model.model) {
           this.adHocTaskPrioritiesModel = model.model;

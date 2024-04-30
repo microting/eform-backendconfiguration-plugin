@@ -10,9 +10,12 @@ import {
 import {
   TaskManagementFiltrationModel
 } from '../state/task-management/task-management.reducer';
+import {
+  TaskManagementRequestModel
+} from "src/app/plugins/modules/backend-configuration-pn/models/task-management/task-management-request.model";
 
 export let BackendConfigurationPnTaskManagementMethods = {
-  WorkOrderCases: 'api/backend-configuration-pn/task-management',
+  WorkOrderCases: 'api/backend-configuration-pn/task-management/index',
   EntityItemsList: 'api/backend-configuration-pn/task-management/entity-items',
   WordReport: 'api/backend-configuration-pn/task-management/word',
   ExcelReport: 'api/backend-configuration-pn/task-management/excel',
@@ -24,8 +27,8 @@ export let BackendConfigurationPnTaskManagementMethods = {
   export class BackendConfigurationPnTaskManagementService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getWorkOrderCases(model: TaskManagementFiltrationModel): Observable<OperationDataResult<WorkOrderCaseModel[]>> {
-    return this.apiBaseService.get(BackendConfigurationPnTaskManagementMethods.WorkOrderCases, model);
+  getWorkOrderCases(model: TaskManagementRequestModel): Observable<OperationDataResult<WorkOrderCaseModel[]>> {
+    return this.apiBaseService.post(BackendConfigurationPnTaskManagementMethods.WorkOrderCases, model);
   }
 
   getWorkOrderCase(workOrderCaseId: number): Observable<OperationDataResult<WorkOrderCaseForReadModel>> {

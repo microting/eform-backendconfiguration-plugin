@@ -10,7 +10,7 @@ export interface TaskManagementFiltrationModel {
   areaName?: string;
   createdBy?: string;
   lastAssignedTo?: number;
-  status?: number;
+  statuses: number[];
   dateFrom?: Date | string;
   dateTo?: Date | string;
   priority?: number;
@@ -34,7 +34,6 @@ export const taskManagementInitialState: TaskManagementState = {
   },
   filters: {
     propertyId: null,
-    status: null,
     areaName: null,
     createdBy: null,
     dateFrom: null,
@@ -42,6 +41,7 @@ export const taskManagementInitialState: TaskManagementState = {
     delayed: null,
     lastAssignedTo: null,
     priority: null,
+    statuses: [],
   },
 };
 

@@ -49,7 +49,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     createdBy: FormControl<string | null>,
     priority: FormControl<number | null>,
     propertyId: FormControl<number | null>,
-    status: FormControl<number | null>
+    statuses: FormControl<number[]>
   }>;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -102,11 +102,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             lastAssignedTo: new FormControl({
               value: filters.lastAssignedTo,
               disabled: false,
-              //, disabled: !filters.propertyId || filters.propertyId === -1,
             }),
-            status: new FormControl({
-              value: filters.status,
-              disabled: !filters.propertyId,
+            statuses: new FormControl({
+              value: filters.statuses,
+              disabled: false,
             }),
             date: new FormGroup({
               dateFrom: new FormControl({
@@ -142,7 +141,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             areaName: null,
             createdBy: null,
             lastAssignedTo: null,
-            status: null,
+            statuses: [1,3,4],
             date: {
               dateTo: null,
               dateFrom: null,
@@ -177,8 +176,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.lastAssignedToValueChangesSub$ = this.filtersForm.get('lastAssignedTo').valueChanges.subscribe((value: number) => {
       this.taskManagementStateService.updateLastAssignedTo(value);
     });
-    this.statusValueChangesSub$ = this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.updateStatus(value);
+    this.statusValueChangesSub$ = this.filtersForm.get('statuses').valueChanges.subscribe((value: number[]) => {
+      this.taskManagementStateService.updateStatuses(value);
     });
     this.dateFromValueChangesSub$ = this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
       // @ts-ignore

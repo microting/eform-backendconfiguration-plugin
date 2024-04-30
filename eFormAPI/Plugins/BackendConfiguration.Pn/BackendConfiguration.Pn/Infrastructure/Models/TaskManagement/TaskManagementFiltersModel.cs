@@ -22,22 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Collections.Generic;
+using JetBrains.Annotations;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 
 using System;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-public class TaskManagementFiltersModel : FilterAndSortModel
+public class TaskManagementFiltersModel
 {
-    public int PropertyId { get; set; }
+    public int? PropertyId { get; set; }
 
-    public string AreaName { get; set; }
+    [CanBeNull] public string AreaName { get; set; }
 
-    public string CreatedBy { get; set; }
+    [CanBeNull] public string CreatedBy { get; set; }
 
     public int? LastAssignedTo { get; set; }
 
-    public int? Status { get; set; }
+    public List<int> Statuses { get; set; }
 
     public DateTime? DateFrom { get; set; }
 
@@ -45,17 +47,5 @@ public class TaskManagementFiltersModel : FilterAndSortModel
 
     public int? Priority { get; set; }
 
-    public string GetStringStatus()
-    {
-        return Status switch
-        {
-            -1 => "All",
-            1 => "Ongoing",
-            2 => "Completed",
-            null => "",
-            _ => ""
-        };
-    }
-
-    public bool Delayed { get; set; }
+    public bool? Delayed { get; set; }
 }

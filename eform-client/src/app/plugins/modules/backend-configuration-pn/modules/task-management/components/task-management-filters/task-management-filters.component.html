@@ -58,7 +58,6 @@
       <mat-label>{{'Status' | translate}}</mat-label>
       <mtx-select
         [items]="[
-          {id: -1, name: ('All' | translate)},
           {id: 1, name: ('Ongoing' | translate)},
           {id: 2, name: ('Completed' | translate)},
           {id: 3, name: ('Ordered' | translate)},
@@ -66,7 +65,8 @@
         ]"
         bindLabel="name"
         bindValue="id"
-        formControlName="status"
+        formControlName="statuses"
+        multiple="true"
         id="statusFilter"
       >
       </mtx-select>

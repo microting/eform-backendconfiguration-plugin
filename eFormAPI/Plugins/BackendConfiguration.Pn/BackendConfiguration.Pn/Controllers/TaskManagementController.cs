@@ -54,8 +54,9 @@ public class TaskManagementController : Controller
         _excelService = excelService;
     }
 
-    [HttpGet]
-    public async Task<OperationDataResult<List<WorkorderCaseModel>>> GetReport(TaskManagementFiltersModel filtersModel)
+    [HttpPost]
+    [Route("index")]
+    public async Task<OperationDataResult<List<WorkorderCaseModel>>> GetReport([FromBody] TaskManagementRequestModel filtersModel)
     {
         try
         {
@@ -106,13 +107,13 @@ public class TaskManagementController : Controller
 
     [HttpGet]
     [Route("word")]
-    public async Task GetWordReport(TaskManagementFiltersModel filtersModel)
+    public async Task GetWordReport(TaskManagementRequestModel filtersModel)
     {
         try
         {
             var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
-            var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
+            var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel.Filters, report).ConfigureAwait(false);
             const int bufferSize = 4086;
             var buffer = new byte[bufferSize];
             Response.OnStarting(async () =>
@@ -144,13 +145,13 @@ public class TaskManagementController : Controller
 
     [HttpGet]
     [Route("excel")]
-    public async Task GetExcelReport(TaskManagementFiltersModel filtersModel)
+    public async Task GetExcelReport(TaskManagementRequestModel filtersModel)
     {
         try
         {
             var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
-            var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
+            var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel.Filters, report).ConfigureAwait(false);
             const int bufferSize = 4086;
             var buffer = new byte[bufferSize];
             Response.OnStarting(async () =>

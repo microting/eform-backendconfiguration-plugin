@@ -15,6 +15,7 @@ import {
   taskManagementUpdateFilters,
   taskManagementUpdatePagination
 } from '../../../../state';
+import * as R from 'ramda';
 
 @Injectable({providedIn: 'root'})
 export class TaskManagementStateService {
@@ -33,9 +34,8 @@ export class TaskManagementStateService {
 
   getAllWorkOrderCases(delayed: boolean): Observable<OperationDataResult<WorkOrderCaseModel[]>> {
     return this.service.getWorkOrderCases({
-      ...this.currentFilters,
-      ...this.currentPagination,
-      delayed: delayed,
+      filters: {...this.currentFilters},
+      pagination: {...this.currentPagination},
     });
   }
 
@@ -104,14 +104,15 @@ export class TaskManagementStateService {
       }));
     }
   }
-
-  updateStatus(status?: number) {
-    if(this.currentFilters.status !== status) {
+  updateStatuses(statusIds: number[]) {
+    if (!R.equals(this.currentFilters.statuses, statusIds)) {
       this.store.dispatch(taskManagementUpdateFilters({
         ...this.currentFilters,
-        status: status,
+        statuses: statusIds
       }));
+      return true;
     }
+    return false;
   }
 
   updateDateFrom(dateFrom?: string | Date) {

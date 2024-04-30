@@ -60,7 +60,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     public BackendConfigurationTaskManagementService(
         IBackendConfigurationLocalizationService localizationService,
         IEFormCoreService coreHelper, IUserService userService,
-        // ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
     {
         _localizationService = localizationService;
@@ -70,9 +69,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         _bus = rebusService.GetBus();
     }
 
-    public async Task<List<WorkorderCaseModel>> Index(TaskManagementFiltersModel filtersModel)
+    public async Task<List<WorkorderCaseModel>> Index(TaskManagementRequestModel filtersModel)
     {
-        if (filtersModel.Delayed)
+        if (filtersModel.Filters.Delayed == true)
         {
             Thread.Sleep(3000);
         }
@@ -87,23 +86,16 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Where(x => x.LeadingCase == true)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
-            if (filtersModel.PropertyId != -1)
+            if (filtersModel.Filters.PropertyId != -1)
             {
                 query = query
-                    .Where(x => x.PropertyWorker.PropertyId == filtersModel.PropertyId);
+                    .Where(x => x.PropertyWorker.PropertyId == filtersModel.Filters.PropertyId);
             }
 
-            if (filtersModel.Status != null)
+            if (filtersModel.Filters.Statuses != null && filtersModel.Filters.Statuses.Any())
             {
-                query = filtersModel.Status switch
-                {
-                    -1 => query,
-                    1 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Ongoing),
-                    2 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Completed),
-                    3 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Ordered),
-                    4 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Awaiting),
-                    _ => query
-                };
+                query = query.Where(x => filtersModel.Filters.Statuses.Contains((int)x.CaseStatusesEnum));
+
             }
             else
             {
@@ -112,37 +104,37 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
             }
 
-            if (!string.IsNullOrEmpty(filtersModel.AreaName))
+            if (!string.IsNullOrEmpty(filtersModel.Filters.AreaName))
             {
-                query = query.Where(x => filtersModel.AreaName == x.SelectedAreaName);
+                query = query.Where(x => filtersModel.Filters.AreaName == x.SelectedAreaName);
             }
 
-            if (!string.IsNullOrEmpty(filtersModel.CreatedBy))
+            if (!string.IsNullOrEmpty(filtersModel.Filters.CreatedBy))
             {
-                query = query.Where(x => x.CreatedByName == filtersModel.CreatedBy);
+                query = query.Where(x => x.CreatedByName == filtersModel.Filters.CreatedBy);
             }
 
-            if (filtersModel.Priority != null)
+            if (filtersModel.Filters.Priority != null)
             {
-                query = filtersModel.Priority == 3 ?
+                query = filtersModel.Filters.Priority == 3 ?
                     query.Where(x => x.Priority == null || x.Priority == "3") :
-                    query.Where(x => x.Priority == filtersModel.Priority.ToString());
+                    query.Where(x => x.Priority == filtersModel.Filters.Priority.ToString());
             }
 
-            if (filtersModel.DateFrom.HasValue && filtersModel.DateTo.HasValue)
+            if (filtersModel.Filters.DateFrom.HasValue && filtersModel.Filters.DateTo.HasValue)
             {
                 query = query
-                    .Where(x => x.CaseInitiated >= filtersModel.DateFrom.Value)
-                    .Where(x => x.CaseInitiated <= new DateTime(filtersModel.DateTo.Value.Year,
-                        filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
+                    .Where(x => x.CaseInitiated >= filtersModel.Filters.DateFrom.Value)
+                    .Where(x => x.CaseInitiated <= new DateTime(filtersModel.Filters.DateTo.Value.Year,
+                        filtersModel.Filters.DateTo.Value.Month, filtersModel.Filters.DateTo.Value.Day, 23, 59, 59));
             }
 
-            if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
+            if (filtersModel.Filters.LastAssignedTo.HasValue && filtersModel.Filters.LastAssignedTo.Value != 0)
             {
                 var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var siteName = await sdkDbContext.Sites
-                    .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
+                    .Where(x => x.Id == filtersModel.Filters.LastAssignedTo.Value)
                     .Select(x => x.Name)
                     .FirstOrDefaultAsync();
                 if (!string.IsNullOrEmpty(siteName))
@@ -155,7 +147,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             {
                 "PropertyName"
             };
-            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel, new List<string>(), excludeSort);
+            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel.Pagination, new List<string>(), excludeSort);
 
             var workOrderCaseFromDb = await query
                 .Select(x => new WorkorderCaseModel
@@ -177,10 +169,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 })
                 .ToListAsync().ConfigureAwait(false);
 
-            if (excludeSort.Contains(filtersModel.Sort))
+            if (excludeSort.Contains(filtersModel.Pagination.Sort))
             {
                 workOrderCaseFromDb = QueryHelper
-                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel, new List<string>())
+                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel.Pagination, new List<string>())
                     .ToList();
             }
 

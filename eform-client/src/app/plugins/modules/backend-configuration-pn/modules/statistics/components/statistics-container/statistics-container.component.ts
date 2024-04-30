@@ -192,7 +192,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       areaName: null,
       dateFrom: null,
       dateTo: null,
-      status: null,
+      statuses: [1,3,4],
       createdBy: null,
       lastAssignedTo: null,
       priority: event, // Setting this to null, since the value is not working as expected
@@ -228,7 +228,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       areaName: null,
       dateFrom: null,
       dateTo: null,
-      status: 1,
+      statuses: [1,3,4],
       createdBy: null,
       lastAssignedTo: workerId ? workerId : null,
       priority: null,
