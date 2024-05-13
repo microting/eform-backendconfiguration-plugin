@@ -34,7 +34,7 @@ export let BackendConfigurationPnTaskManagementMethods = {
 
   getWorkOrderCase(workOrderCaseId: number): Observable<OperationDataResult<WorkOrderCaseForReadModel>> {
     return this.apiBaseService.get(
-      `${BackendConfigurationPnTaskManagementMethods.WorkOrderCases}/${workOrderCaseId}`
+      `${BackendConfigurationPnTaskManagementMethods.WorkOrderCases}${workOrderCaseId}`
     );
   }
 
