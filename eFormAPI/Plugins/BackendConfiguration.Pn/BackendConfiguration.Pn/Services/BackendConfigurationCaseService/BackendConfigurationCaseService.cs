@@ -65,8 +65,7 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var foundCase = await sdkDbContext.Cases
-                .Where(x => x.Id == model.Id
-                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.Id == model.Id)
                 .FirstOrDefaultAsync();
 
             if(foundCase != null) {
