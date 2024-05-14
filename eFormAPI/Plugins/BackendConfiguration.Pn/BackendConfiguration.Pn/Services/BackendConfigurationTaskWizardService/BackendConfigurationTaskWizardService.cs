@@ -1192,8 +1192,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             if (areaRulePlanning.ItemPlanningId != 0)
             {
                 var planning = _itemsPlanningPnDbContext.Plannings
-                    .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                    .First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+                    .First(x => x.Id == areaRulePlanning.ItemPlanningId);
+                    //.First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 planning.UpdatedByUserId = _userService.UserId;
                 await planning.Delete(_itemsPlanningPnDbContext);
