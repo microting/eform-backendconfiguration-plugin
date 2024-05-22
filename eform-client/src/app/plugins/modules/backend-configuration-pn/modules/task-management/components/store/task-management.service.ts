@@ -41,15 +41,16 @@ export class TaskManagementStateService {
 
   downloadWordReport() {
     return this.service.downloadWordReport({
-      ...this.currentFilters,
-      ...this.currentPagination,
+      filters: {...this.currentFilters},
+      pagination: {...this.currentPagination},
     });
   }
 
   downloadExcelReport() {
     return this.service
       .downloadExcelReport({
-        ...this.currentFilters,
+        filters: {...this.currentFilters},
+        pagination: {...this.currentPagination},
       });
   }
 

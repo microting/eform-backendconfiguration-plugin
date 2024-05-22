@@ -105,9 +105,9 @@ public class TaskManagementController : Controller
         return await _backendConfigurationTaskManagementService.UpdateTask(updateModel).ConfigureAwait(false);
     }
 
-    [HttpGet]
+    [HttpPost]
     [Route("word")]
-    public async Task GetWordReport(TaskManagementRequestModel filtersModel)
+    public async Task GetWordReport([FromBody]TaskManagementRequestModel filtersModel)
     {
         try
         {
@@ -143,9 +143,9 @@ public class TaskManagementController : Controller
     }
 
 
-    [HttpGet]
+    [HttpPost]
     [Route("excel")]
-    public async Task GetExcelReport(TaskManagementRequestModel filtersModel)
+    public async Task GetExcelReport([FromBody]TaskManagementRequestModel filtersModel)
     {
         try
         {

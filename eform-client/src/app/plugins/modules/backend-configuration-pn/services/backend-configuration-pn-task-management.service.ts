@@ -66,11 +66,11 @@ export let BackendConfigurationPnTaskManagementMethods = {
     );
   }
 
-  downloadWordReport(model: TaskManagementFiltrationModel): Observable<any> {
-    return this.apiBaseService.getBlobData(BackendConfigurationPnTaskManagementMethods.WordReport, model);
+  downloadWordReport(model: TaskManagementRequestModel): Observable<any> {
+    return this.apiBaseService.postBlobData(BackendConfigurationPnTaskManagementMethods.WordReport, model);
   }
 
-  downloadExcelReport(model: TaskManagementFiltrationModel): Observable<any> {
-    return this.apiBaseService.getBlobData(BackendConfigurationPnTaskManagementMethods.ExcelReport, model);
+  downloadExcelReport(model: TaskManagementRequestModel): Observable<any> {
+    return this.apiBaseService.postBlobData(BackendConfigurationPnTaskManagementMethods.ExcelReport, model);
   }
 }
