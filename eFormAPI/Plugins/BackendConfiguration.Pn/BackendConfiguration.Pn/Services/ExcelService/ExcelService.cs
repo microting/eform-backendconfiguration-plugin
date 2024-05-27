@@ -557,46 +557,25 @@ public class ExcelService : IExcelService
 		}
 	}
 
-	public async Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model)
+	public Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model)
 	{
 		try
 		{
-			var enabledColumns = await _backendConfigurationPnDbContext.TaskTrackerColumns
-				.Where(x => x.UserId == _userService.UserId)
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Select(x => new
-				{
-					x.isColumnEnabled,
-					x.ColumnName
-				})
-				.ToListAsync();
-
-			bool GetEnabledColumn(string columnName)
-			{
-				var columnEnabled = enabledColumns
-					.FirstOrDefault(q => string.Equals(q.ColumnName, columnName, StringComparison.CurrentCultureIgnoreCase));
-				return columnEnabled == null || columnEnabled.isColumnEnabled;
-			}
-
 			var columns = new List<string>
 			{
-				GetEnabledColumn("property") ? _localizationService.GetString("Property") : "",
-				GetEnabledColumn("task") ? _localizationService.GetString("Task") : "",
-				GetEnabledColumn("tags") ? _localizationService.GetString("Tags") : "",
-				GetEnabledColumn("workers") ? _localizationService.GetString("Worker") : "",
-				GetEnabledColumn("start") ? _localizationService.GetString("Start") : "",
-				GetEnabledColumn("repeat") ? _localizationService.GetString("Repeat") : "",
-				GetEnabledColumn("deadline") ? _localizationService.GetString("Deadline") : ""
+				_localizationService.GetString("Property"),
+				_localizationService.GetString("Folder"),
+				_localizationService.GetString("Task"),
+				_localizationService.GetString("Tags"),
+				_localizationService.GetString("Worker"),
+				_localizationService.GetString("Start"),
+				_localizationService.GetString("Repeat"),
+				_localizationService.GetString("Deadline")
 			}.Where(q => !string.IsNullOrEmpty(q)).ToList();
-			var newDate = DateTime.Now;
-			var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
-			var endDate = currentDate.AddDays(28);
-			var timeStamp = $"{currentDate:yyyyMMdd}";
 
 			var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{_localizationService.GetString("Task calendar")}.xlsx");
 			IXLWorkbook wb = new XLWorkbook();
 
-			var invalidChars = new[] { ":", "\\", "/", "?", "*", "[", "]" };
 			var sheetName = _localizationService.GetString("Task calendar");
 			var ws = wb.Worksheets.Add(sheetName);
 			// cell(x, y) => cell(1, 2) => cell 1B
@@ -619,48 +598,6 @@ public class ExcelService : IExcelService
 				y++;
 			}
 			y = skipCols;
-			foreach (var week in model[^1].Weeks) // render weeks
-			{
-				if (!GetEnabledColumn("calendar"))
-				{
-					break;
-				}
-				var rangeStart = ws.Cell(x, y);
-				var rangeEnd = ws.Cell(x, y + week.WeekRange - 1);
-				var range = ws.Range(rangeStart, rangeEnd).Merge();
-				range.Value = $"{_localizationService.GetString("Week")} {week.WeekNumber}";
-				range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-				range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-				ws.Columns(y, y + week.WeekRange - 1).Width = 2.29D;
-				x++;
-				for (var i = 0; i < week.DateList.Count; i++) // render days in week
-				{
-					var date = week.DateList[i];
-					var cell = ws.Cell(x, y + i);
-					cell.Value = date.Date.Day;
-					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-					cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-					if (date.Date == currentDate) // make current day bold
-					{
-						cell.Style.Font.Bold = true;
-					}
-
-					// render days of week
-					x++;
-					cell = ws.Cell(x, y + i);
-					cell.Value = _localizationService.GetString($"Short{date.Date.DayOfWeek}");
-					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-					cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-					if (date.Date == currentDate) // make current day bold
-					{
-						cell.Style.Font.Bold = true;
-					}
-
-					x--;
-				}
-				x--;
-				y += week.WeekRange;
-			}
 			var endCell = ws.Cell(startX + 2 + model.Count, y - 1); // after render all head table current value in y - last column
 
 			// render data
@@ -669,60 +606,26 @@ public class ExcelService : IExcelService
 			foreach (var taskTrackerModel in model)
 			{
 				var startCellData = ws.Cell(x, y);
-				if (GetEnabledColumn("property"))
-				{
-					ws.Cell(x, y).Value = taskTrackerModel.Property;
-					y++;
-				}
-				if (GetEnabledColumn("task"))
-				{
-					ws.Cell(x, y).Value = taskTrackerModel.TaskName;
-					y++;
-				}
-				if (GetEnabledColumn("tags"))
-				{
-					ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name));
-					y++;
-				}
-				if (GetEnabledColumn("workers"))
-				{
-					ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.WorkerNames);
-					y++;
-				}
-				if (GetEnabledColumn("start"))
-				{
-					ws.Cell(x, y).Value = taskTrackerModel.StartTask.ToString("dd.MM.yyyy");
-					y++;
-				}
-				if (GetEnabledColumn("repeat"))
-				{
-					ws.Cell(x, y).Value = $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {_localizationService.GetString(taskTrackerModel.RepeatType.ToString())}";
-					y++;
-				}
-				if (GetEnabledColumn("deadline"))
-				{
-					ws.Cell(x, y).Value = taskTrackerModel.DeadlineTask.ToString("dd.MM.yyyy");
-				}
+				ws.Cell(x, y).Value = taskTrackerModel.Property;
+				y++;
+				ws.Cell(x, y).Value = taskTrackerModel.SdkFolderName;
+				y++;
+				ws.Cell(x, y).Value = taskTrackerModel.TaskName;
+				y++;
+				ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name));
+				y++;
+				ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.WorkerNames);
+				y++;
+				ws.Cell(x, y).Value = taskTrackerModel.StartTask.ToString("dd.MM.yyyy");
+				y++;
+				ws.Cell(x, y).Value = $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {_localizationService.GetString(taskTrackerModel.RepeatType.ToString())}";
+				y++;
+				ws.Cell(x, y).Value = taskTrackerModel.DeadlineTask.ToString("dd.MM.yyyy");
 				if (taskTrackerModel.TaskIsExpired) // make red expired task (calendar part not need)
 				{
 					ws.Range(startCellData, ws.Cell(x, y)).Style.Fill.BackgroundColor = XLColor.Red;
 				}
 
-				y = skipCols;
-				foreach (var week in taskTrackerModel.Weeks)
-				{
-					if (taskTrackerModel.TaskIsExpired || !GetEnabledColumn("calendar"))
-					{
-						break;
-					}
-
-					foreach (var date in week.DateList)
-					{
-						var color = date.IsTask ? XLColor.Yellow : XLColor.FromArgb(255, 242, 204);
-						ws.Cell(x, y).Style.Fill.BackgroundColor = color;
-						y++;
-					}
-				}
 				y = startY;
 				x++;
 			}
@@ -733,7 +636,7 @@ public class ExcelService : IExcelService
 			wb.SaveAs(resultDocument);
 
 			Stream result = File.Open(resultDocument, FileMode.Open);
-			return result;
+			return Task.FromResult(result);
 		}
 		catch (Exception ex)
 		{

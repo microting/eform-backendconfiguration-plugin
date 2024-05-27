@@ -3944,7 +3944,7 @@
   {
     "Key": "Repeat",
     "LocalizedValue": {
-      "da": "Gentags",
+      "da": "Gentages",
       "de": "Wiederholen",
       "en-US": "Repeat",
       "uk-UA": "Повторити",
@@ -4714,6 +4714,68 @@
       "bg-BG": "Служителят вече съществува",
       "el-GR": "Ο υπάλληλος υπάρχει ήδη",
       "is-IS": "Starfsmaðurinn er þegar til"
+    }
+  },
+  {
+    "Key": "Tags",
+    "LocalizedValue": {
+      "da": "Etiketter",
+      "de": "Tags",
+      "en-US": "Tags",
+      "uk-UA": "Теги",
+      "pl-PL": "Tagi",
+      "no-NO": "Merker",
+      "sv-SE": "Taggar",
+      "es-ES": "Etiquetas",
+      "fr-FR": "Étiquettes",
+      "it-IT": "Tag",
+      "nl-NL": "Labels",
+      "pt-BR": "Tags",
+      "pt-PT": "Tags",
+      "fi-FI": "Tunnisteet",
+      "et-ET": "Sildid",
+      "lv-LV": "Tagi",
+      "lt-LT": "Žymės",
+      "ro-RO": "Etichete",
+      "hr-HR": "Oznake",
+      "sl-SL": "Oznake",
+      "cs-CZ": "Štítky",
+      "sk-SK": "Štítky",
+      "hu-HU": "Címkék",
+      "bg-BG": "Етикети",
+      "el-GR": "Ετικέτες",
+      "is-IS": "Merki"
+    }
+  },
+  {
+    "Key": "Folder",
+    "LocalizedValue": {
+      "da": "Mappe",
+      "de": "Ordner",
+      "en-US": "Folder",
+      "uk-UA": "Папка",
+      "pl-PL": "Folder",
+      "no-NO": "Mappe",
+      "sv-SE": "Mapp",
+      "es-ES": "Carpeta",
+      "fr-FR": "Dossier",
+      "it-IT": "Cartella",
+      "nl-NL": "Map",
+      "pt-BR": "Pasta",
+      "pt-PT": "Pasta",
+      "fi-FI": "Kansio",
+      "et-ET": "Kaust",
+      "lv-LV": "Mape",
+      "lt-LT": "Aplankas",
+      "ro-RO": "Dosar",
+      "hr-HR": "Mapa",
+      "sl-SL": "Mapa",
+      "cs-CZ": "Složka",
+      "sk-SK": "Priečinok",
+      "hu-HU": "Mappa",
+      "bg-BG": "Папка",
+      "el-GR": "Φάκελος",
+      "is-IS": "Mappa"
     }
   }
 ]
