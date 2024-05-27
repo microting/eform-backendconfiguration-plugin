@@ -73,10 +73,10 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
       type: 'button',
       buttons: [
         {
-          tooltip: this.translateService.stream('Edit task'),
+          tooltip: this.translateService.stream('Edit'),
           type: 'icon',
           color: 'accent',
-          icon: 'visibility',
+          icon: 'edit',
           iif: (rowData: TaskWorkerModel) => !rowData.path.includes('05.'),
           click: (rowData: TaskWorkerModel) => this.onEditTask(rowData),
           //click: (rowData: TaskWorkerModel) => this.openAreaRulePlanModal(rowData),
