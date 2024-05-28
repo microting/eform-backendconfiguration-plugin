@@ -999,7 +999,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         planning.RelatedEFormId = updateModel.EformId;
                         planning.RelatedEFormName = eformName;
                         planning.RepeatEvery = updateModel.RepeatEvery;
-                        planning.SdkFolderId = updateModel.FolderId;
                         planning.SdkFolderName = folderName;
                         planning.SdkFolderId = updateModel.FolderId;
                         planning.UpdatedByUserId = _userService.UserId;
