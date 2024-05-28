@@ -183,7 +183,7 @@ export const da = {
   '1-7 days': '1-7 dage',
   '8-30 days': '8-30 dage',
   'Over 30 days': '31+ dage',
-  'Report tag': 'Rapportoverskrift: Vælg etiket',
+  'Report tag': 'Overskrift i rapport',
   'eForm template': 'eForm',
   'Start from': 'Startdato',
   'Repeat type': 'Gentag (dag/uge/måned)',
