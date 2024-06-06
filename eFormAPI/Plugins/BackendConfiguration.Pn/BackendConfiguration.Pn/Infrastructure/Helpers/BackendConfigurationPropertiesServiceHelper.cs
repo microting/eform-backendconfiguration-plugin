@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -133,7 +134,7 @@ public static class BackendConfigurationPropertiesServiceHelper
     public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus)
+        IBackendConfigurationLocalizationService? localizationService, IBus bus)
     {
         try
         {

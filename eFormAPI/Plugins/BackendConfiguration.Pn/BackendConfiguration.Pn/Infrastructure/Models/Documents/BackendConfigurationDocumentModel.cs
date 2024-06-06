@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -14,7 +15,7 @@ public class BackendConfigurationDocumentModel
     public bool? RetractIfApproved { get; set; }
     public bool? AlwaysVisible { get; set; }
     public int FolderId { get; set; }
-    [CanBeNull] public string PropertyNames { get; set; }
+    public string? PropertyNames { get; set; }
     public List<BackendConfigurationDocumentProperty> DocumentProperties { get; set; }
     public List<BackendConfigurationDocumentUploadedData> DocumentUploadedDatas { get; set; }
         = [];

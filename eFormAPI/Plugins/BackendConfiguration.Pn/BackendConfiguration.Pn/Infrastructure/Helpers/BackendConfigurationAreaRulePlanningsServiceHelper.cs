@@ -29,7 +29,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         try
         {
@@ -1077,7 +1077,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
     private static async Task<OperationDataResult<AreaRuleModel>> CreatePlanning(
             AreaRulePlanningModel areaRulePlanningModel, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext, ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+            IBackendConfigurationLocalizationService? localizationService)
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
@@ -1279,7 +1279,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         AreaRulePlanningModel areaRulePlanningModel, Core core,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         if (areaRule.FolderId == 0)
         {
@@ -1361,7 +1361,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         var translatesForFolder = areaRule.AreaRuleTranslations
             .Select(x => new CommonTranslationsModel
@@ -1737,7 +1737,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core,
             backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId, localizationService).ConfigureAwait(false);
@@ -1783,7 +1783,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningType5(AreaRule areaRule, AreaRulePlanningModel areaRulePlanningModel,
         Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
 
         var folderIds = await backendConfigurationPnDbContext.ProperyAreaFolders
@@ -1855,7 +1855,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         // create folder with name heat pump
         var translatesForFolder = areaRule.AreaRuleTranslations
@@ -2230,7 +2230,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         if (areaRulePlanningModel.Status)
         {

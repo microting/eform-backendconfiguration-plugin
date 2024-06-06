@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 
+#nullable enable
 using JetBrains.Annotations;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
@@ -49,5 +50,5 @@ public interface IBackendConfigurationPropertiesService
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(int propertyId);
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds);
     Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance);
-    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([CanBeNull] List<int> propertyId);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int>? propertyId);
 }

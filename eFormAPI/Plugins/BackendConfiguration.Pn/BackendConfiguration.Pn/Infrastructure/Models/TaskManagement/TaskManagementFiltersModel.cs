@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
@@ -33,9 +34,9 @@ public class TaskManagementFiltersModel
 {
     public int? PropertyId { get; set; }
 
-    [CanBeNull] public string AreaName { get; set; }
+    public string? AreaName { get; set; }
 
-    [CanBeNull] public string CreatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 
     public int? LastAssignedTo { get; set; }
 

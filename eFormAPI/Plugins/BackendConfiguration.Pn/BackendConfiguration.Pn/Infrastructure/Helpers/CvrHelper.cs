@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -73,17 +74,17 @@ public class PoductionUnit
     public string City { get; set; }
     public bool @protected { get; set; }
     public string Phone { get; set; }
-    [CanBeNull] public string Email { get; set; }
-    [CanBeNull] public string Fax { get; set; }
+    public string? Email { get; set; }
+    public string? Fax { get; set; }
     public string Startdate { get; set; }
-    [CanBeNull] public string Enddate { get; set; }
+    public string? Enddate { get; set; }
     public string Employees { get; set; }
-    [CanBeNull] public string Addressco { get; set; }
+    public string? Addressco { get; set; }
     public int Industrycode { get; set; }
     public string Industrydesc { get; set; }
     public int Companycode { get; set; }
-    [CanBeNull] public string Companydesc { get; set; }
-    [CanBeNull] public string Creditstartdate { get; set; }
+    public string? Companydesc { get; set; }
+    public string? Creditstartdate { get; set; }
     public int? Creditstatus { get; set; }
     public bool? Creditbankrupt { get; set; }
 }
@@ -97,25 +98,25 @@ public class Result
     public string City { get; set; }
     // public bool @protected { get; set; }
     public string Phone { get; set; }
-    [CanBeNull] public string Email { get; set; }
-    [CanBeNull] public string  Fax { get; set; }
+    public string? Email { get; set; }
+    public string?  Fax { get; set; }
     public string Startdate { get; set; }
-    [CanBeNull] public string Enddate { get; set; }
+    public string? Enddate { get; set; }
     public int? Employees { get; set; }
     public string Addressco { get; set; }
-    [CanBeNull] public string Industrycode { get; set; }
+    public string? Industrycode { get; set; }
     public string Industrydesc { get; set; }
     public int Companycode { get; set; }
     public string Companydesc { get; set; }
-    [CanBeNull] public string Creditstartdate { get; set; }
+    public string? Creditstartdate { get; set; }
     public int? Creditstatus { get; set; }
     public bool? Creditbankrupt { get; set; }
     public ICollection<Owner> Owners { get; set; }
     public ICollection<PoductionUnit> Productionunits { get; set; }
     public int T { get; set; }
     public int Version { get; set; }
-    [CanBeNull] public string Error { get; set; }
-    [CanBeNull] public string Message { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
 }
 
 public class StringConverter : System.Text.Json.Serialization.JsonConverter<string>
