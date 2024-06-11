@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.RebusService;
@@ -752,7 +753,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
     }
 
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([CanBeNull] List<int> propertyIds)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int>? propertyIds)
     {
         try
         {

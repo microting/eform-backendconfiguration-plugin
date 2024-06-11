@@ -25,7 +25,7 @@ public static class WorkOrderHelper
         Core core,
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService,
+        IBackendConfigurationLocalizationService? localizationService,
         IBus bus,
         bool useGetCurrentUserFullName)
     {
@@ -140,7 +140,7 @@ public static class WorkOrderHelper
     }
 
     public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid,
+        IBackendConfigurationLocalizationService? localizationService, int? areasGroupUid,
         int? deviceUsersGroupId, Core core, IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBus bus, bool useGetCurrentUserFullName)
     {

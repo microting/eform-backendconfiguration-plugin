@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 using System.Globalization;
 using System.Threading;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
@@ -46,7 +47,7 @@ public static class PairItemWithSiteHelper
     public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId,
         int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext,
         bool useStartDateAsStartOfPeriod,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
         foreach (var assignmentSiteId in assignmentSiteIds)

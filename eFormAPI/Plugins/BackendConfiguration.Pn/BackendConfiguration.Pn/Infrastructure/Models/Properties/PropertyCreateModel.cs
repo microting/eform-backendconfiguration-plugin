@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 using JetBrains.Annotations;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Properties;
@@ -42,7 +43,7 @@ public class PropertyCreateModel
 
     public bool WorkorderEnable { get; set; }
 
-    [CanBeNull] public string IndustryCode { get; set; }
+    public string? IndustryCode { get; set; }
 
     public bool IsFarm { get; set; }
 

@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 using JetBrains.Annotations;
 
 namespace BackendConfiguration.Pn.Controllers;
@@ -138,7 +139,7 @@ public class PropertiesController : Controller
 
     [HttpPost]
     [Route("get-linked-sites")]
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([FromBody] [CanBeNull] List<int> propertyIds)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([FromBody] List<int>? propertyIds)
     {
         return await _backendConfigurationPropertiesService.GetLinkedSites(propertyIds);
     }
