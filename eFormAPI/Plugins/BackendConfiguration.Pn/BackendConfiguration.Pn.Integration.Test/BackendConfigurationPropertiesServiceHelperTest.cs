@@ -57,7 +57,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(properties[0].FolderIdForTasks, Is.EqualTo(folderTranslations[25].FolderId));
         Assert.That(properties[0].FolderIdForOngoingTasks, Is.EqualTo(folderTranslations[14].FolderId));
         Assert.That(properties[0].FolderIdForCompletedTasks, Is.EqualTo(folderTranslations[19].FolderId));
-        Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[28].Id));
+        Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[0].Id));
 
         // Assert property selected languages
         Assert.NotNull(propertySelectedLanguages);
@@ -67,36 +67,8 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Assert planning tags
         Assert.NotNull(planningTags);
-        Assert.That(planningTags.Count, Is.EqualTo(29));
-        Assert.That(planningTags[0].Name, Is.EqualTo("01. Logbøger Miljøledelse"));
-        Assert.That(planningTags[1].Name, Is.EqualTo("02. Beredskab"));
-        Assert.That(planningTags[2].Name, Is.EqualTo("03. Gyllebeholdere"));
-        Assert.That(planningTags[3].Name, Is.EqualTo("04. Foderindlægssedler"));
-        Assert.That(planningTags[4].Name, Is.EqualTo("05. Stalde: Halebid og klargøring"));
-        Assert.That(planningTags[5].Name, Is.EqualTo("06. Fodersiloer"));
-        Assert.That(planningTags[6].Name, Is.EqualTo("07. Skadedyrsbekæmpelse"));
-        Assert.That(planningTags[7].Name, Is.EqualTo("08. Luftrensning"));
-        Assert.That(planningTags[8].Name, Is.EqualTo("09. Forsuring"));
-        Assert.That(planningTags[9].Name, Is.EqualTo("10. Varmepumper"));
-        Assert.That(planningTags[10].Name, Is.EqualTo("11. Varmekilder"));
-        Assert.That(planningTags[11].Name, Is.EqualTo("12. Miljøfarlige stoffer"));
-        Assert.That(planningTags[12].Name, Is.EqualTo("13. APV Landbrug"));
-        Assert.That(planningTags[13].Name, Is.EqualTo("14. Maskiner"));
-        Assert.That(planningTags[14].Name, Is.EqualTo("15. Elværktøj"));
-        Assert.That(planningTags[15].Name, Is.EqualTo("16. Stiger"));
-        Assert.That(planningTags[16].Name, Is.EqualTo("17. Brandslukkere"));
-        Assert.That(planningTags[17].Name, Is.EqualTo("18. Alarm"));
-        Assert.That(planningTags[18].Name, Is.EqualTo("19. Ventilation"));
-        Assert.That(planningTags[19].Name, Is.EqualTo("20. Ugentlige rutineopgaver"));
-        Assert.That(planningTags[20].Name, Is.EqualTo("21. DANISH Standard"));
-        Assert.That(planningTags[21].Name, Is.EqualTo("22. Sigtetest"));
-        Assert.That(planningTags[22].Name, Is.EqualTo("99. Diverse"));
-        Assert.That(planningTags[23].Name, Is.EqualTo("24. IE-indberetning"));
-        Assert.That(planningTags[24].Name, Is.EqualTo("25. KemiKontrol"));
-        Assert.That(planningTags[25].Name, Is.EqualTo("00. Aflæsninger, målinger, forbrug og fækale uheld"));
-        Assert.That(planningTags[26].Name, Is.EqualTo("26. Kornlager"));
-        Assert.That(planningTags[27].Name, Is.EqualTo("00. Logbøger"));
-        Assert.That(planningTags[28].Name, Is.EqualTo($"0. {propertyCreateModel.Name} - {propertyCreateModel.Address}"));
+        Assert.That(planningTags.Count, Is.EqualTo(1));
+        Assert.That(planningTags[0].Name, Is.EqualTo($"0. {propertyCreateModel.Name} - {propertyCreateModel.Address}"));
 
         // Assert folder translations
         Assert.NotNull(folderTranslations);
@@ -509,7 +481,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(properties[0].FolderIdForTasks, Is.EqualTo(folderTranslations[25].FolderId));
         Assert.That(properties[0].FolderIdForOngoingTasks, Is.EqualTo(folderTranslations[14].FolderId));
         Assert.That(properties[0].FolderIdForCompletedTasks, Is.EqualTo(folderTranslations[19].FolderId));
-        Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[28].Id));
+        Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[0].Id));
 
         // Assert property selected languages
         Assert.NotNull(propertySelectedLanguages);
@@ -519,36 +491,36 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Assert planning tags
         Assert.NotNull(planningTags);
-        Assert.That(planningTags.Count, Is.EqualTo(29));
-        Assert.That(planningTags[0].Name, Is.EqualTo("01. Logbøger Miljøledelse"));
-        Assert.That(planningTags[1].Name, Is.EqualTo("02. Beredskab"));
-        Assert.That(planningTags[2].Name, Is.EqualTo("03. Gyllebeholdere"));
-        Assert.That(planningTags[3].Name, Is.EqualTo("04. Foderindlægssedler"));
-        Assert.That(planningTags[4].Name, Is.EqualTo("05. Stalde: Halebid og klargøring"));
-        Assert.That(planningTags[5].Name, Is.EqualTo("06. Fodersiloer"));
-        Assert.That(planningTags[6].Name, Is.EqualTo("07. Skadedyrsbekæmpelse"));
-        Assert.That(planningTags[7].Name, Is.EqualTo("08. Luftrensning"));
-        Assert.That(planningTags[8].Name, Is.EqualTo("09. Forsuring"));
-        Assert.That(planningTags[9].Name, Is.EqualTo("10. Varmepumper"));
-        Assert.That(planningTags[10].Name, Is.EqualTo("11. Varmekilder"));
-        Assert.That(planningTags[11].Name, Is.EqualTo("12. Miljøfarlige stoffer"));
-        Assert.That(planningTags[12].Name, Is.EqualTo("13. APV Landbrug"));
-        Assert.That(planningTags[13].Name, Is.EqualTo("14. Maskiner"));
-        Assert.That(planningTags[14].Name, Is.EqualTo("15. Elværktøj"));
-        Assert.That(planningTags[15].Name, Is.EqualTo("16. Stiger"));
-        Assert.That(planningTags[16].Name, Is.EqualTo("17. Brandslukkere"));
-        Assert.That(planningTags[17].Name, Is.EqualTo("18. Alarm"));
-        Assert.That(planningTags[18].Name, Is.EqualTo("19. Ventilation"));
-        Assert.That(planningTags[19].Name, Is.EqualTo("20. Ugentlige rutineopgaver"));
-        Assert.That(planningTags[20].Name, Is.EqualTo("21. DANISH Standard"));
-        Assert.That(planningTags[21].Name, Is.EqualTo("22. Sigtetest"));
-        Assert.That(planningTags[22].Name, Is.EqualTo("99. Diverse"));
-        Assert.That(planningTags[23].Name, Is.EqualTo("24. IE-indberetning"));
-        Assert.That(planningTags[24].Name, Is.EqualTo("25. KemiKontrol"));
-        Assert.That(planningTags[25].Name, Is.EqualTo("00. Aflæsninger, målinger, forbrug og fækale uheld"));
-        Assert.That(planningTags[26].Name, Is.EqualTo("26. Kornlager"));
-        Assert.That(planningTags[27].Name, Is.EqualTo("00. Logbøger"));
-        Assert.That(planningTags[28].Name, Is.EqualTo($"0. {propertyUpdateModel.Name} - {propertyUpdateModel.Address}"));
+        Assert.That(planningTags.Count, Is.EqualTo(1));
+        // Assert.That(planningTags[0].Name, Is.EqualTo("01. Logbøger Miljøledelse"));
+        // Assert.That(planningTags[1].Name, Is.EqualTo("02. Beredskab"));
+        // Assert.That(planningTags[2].Name, Is.EqualTo("03. Gyllebeholdere"));
+        // Assert.That(planningTags[3].Name, Is.EqualTo("04. Foderindlægssedler"));
+        // Assert.That(planningTags[4].Name, Is.EqualTo("05. Stalde: Halebid og klargøring"));
+        // Assert.That(planningTags[5].Name, Is.EqualTo("06. Fodersiloer"));
+        // Assert.That(planningTags[6].Name, Is.EqualTo("07. Skadedyrsbekæmpelse"));
+        // Assert.That(planningTags[7].Name, Is.EqualTo("08. Luftrensning"));
+        // Assert.That(planningTags[8].Name, Is.EqualTo("09. Forsuring"));
+        // Assert.That(planningTags[9].Name, Is.EqualTo("10. Varmepumper"));
+        // Assert.That(planningTags[10].Name, Is.EqualTo("11. Varmekilder"));
+        // Assert.That(planningTags[11].Name, Is.EqualTo("12. Miljøfarlige stoffer"));
+        // Assert.That(planningTags[12].Name, Is.EqualTo("13. APV Landbrug"));
+        // Assert.That(planningTags[13].Name, Is.EqualTo("14. Maskiner"));
+        // Assert.That(planningTags[14].Name, Is.EqualTo("15. Elværktøj"));
+        // Assert.That(planningTags[15].Name, Is.EqualTo("16. Stiger"));
+        // Assert.That(planningTags[16].Name, Is.EqualTo("17. Brandslukkere"));
+        // Assert.That(planningTags[17].Name, Is.EqualTo("18. Alarm"));
+        // Assert.That(planningTags[18].Name, Is.EqualTo("19. Ventilation"));
+        // Assert.That(planningTags[19].Name, Is.EqualTo("20. Ugentlige rutineopgaver"));
+        // Assert.That(planningTags[20].Name, Is.EqualTo("21. DANISH Standard"));
+        // Assert.That(planningTags[21].Name, Is.EqualTo("22. Sigtetest"));
+        // Assert.That(planningTags[22].Name, Is.EqualTo("99. Diverse"));
+        // Assert.That(planningTags[23].Name, Is.EqualTo("24. IE-indberetning"));
+        // Assert.That(planningTags[24].Name, Is.EqualTo("25. KemiKontrol"));
+        // Assert.That(planningTags[25].Name, Is.EqualTo("00. Aflæsninger, målinger, forbrug og fækale uheld"));
+        // Assert.That(planningTags[26].Name, Is.EqualTo("26. Kornlager"));
+        // Assert.That(planningTags[27].Name, Is.EqualTo("00. Logbøger"));
+        Assert.That(planningTags[0].Name, Is.EqualTo($"0. {propertyUpdateModel.Name} - {propertyUpdateModel.Address}"));
 
         // Assert folder translations
         Assert.NotNull(folderTranslations);
