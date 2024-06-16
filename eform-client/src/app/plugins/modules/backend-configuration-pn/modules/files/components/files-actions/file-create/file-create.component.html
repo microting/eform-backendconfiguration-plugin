@@ -78,8 +78,9 @@
         <mat-card-content>
           <pdf-viewer
             [src]="file.src"
-            [render-text]="false"
+            [render-text]="true"
             [original-size]="false"
+            style="width: 500px; height: 750px"
             [show-all]="false"
             [external-link-target]="'none'"
             [page]="1"

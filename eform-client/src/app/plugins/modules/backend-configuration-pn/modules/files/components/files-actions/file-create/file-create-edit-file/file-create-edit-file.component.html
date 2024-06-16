@@ -73,11 +73,12 @@
     <mat-card-content>
       <pdf-viewer
         [src]="file.src"
-        [render-text]="false"
+        [render-text]="true"
         [original-size]="false"
         [show-all]="false"
         [page]="i + 1"
         [zoom]="1"
+        style="width: 500px; height: 750px"
       ></pdf-viewer>
     </mat-card-content>
     <mat-card-footer class="d-flex justify-content-end align-items-end">
