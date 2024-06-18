@@ -1,8 +1,8 @@
--- MariaDB dump 10.19  Distrib 10.6.11-MariaDB, for debian-linux-gnu (x86_64)
+-- MariaDB dump 10.19  Distrib 10.6.16-MariaDB, for debian-linux-gnu (x86_64)
 --
--- Host: localhost    Database: 420_eform-angular-time-planning-plugin
+-- Host: 127.0.0.1    Database: 420_eform-angular-time-planning-plugin
 -- ------------------------------------------------------
--- Server version	10.6.11-MariaDB-0ubuntu0.22.04.1
+-- Server version	10.8.8-MariaDB-1:10.8.8+maria~ubu2204
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -38,15 +38,6 @@ CREATE TABLE `AssignedSiteVersions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `AssignedSiteVersions`
---
-
-LOCK TABLES `AssignedSiteVersions` WRITE;
-/*!40000 ALTER TABLE `AssignedSiteVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AssignedSiteVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `AssignedSites`
 --
 
@@ -68,15 +59,6 @@ CREATE TABLE `AssignedSites` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `AssignedSites`
---
-
-LOCK TABLES `AssignedSites` WRITE;
-/*!40000 ALTER TABLE `AssignedSites` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AssignedSites` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `Messages`
 --
 
@@ -92,16 +74,6 @@ CREATE TABLE `Messages` (
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `Messages`
---
-
-LOCK TABLES `Messages` WRITE;
-/*!40000 ALTER TABLE `Messages` DISABLE KEYS */;
-INSERT INTO `Messages` VALUES (1,'DayOff','Fridag','Freier Tag','Day off'),(2,'Vacation','Ferie','Urlaub','Vacation'),(3,'Sick','Syg','Krank','Sick'),(4,'Course','Kursus','Kurs','Course'),(5,'LeaveOfAbsence','Orlov','Urlaub','Leave of absence'),(7,'Children1stSick','Barn 1. sygedag','1. Krankheitstag der Kinder','Children 1st sick'),(8,'Children2ndSick','Barn 2. sygedag','2. Krankheitstag der Kinder','Children 2nd sick');
-/*!40000 ALTER TABLE `Messages` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `PlanRegistrationVersions`
@@ -140,18 +112,18 @@ CREATE TABLE `PlanRegistrationVersions` (
   `WorkerComment` longtext DEFAULT NULL,
   `SumFlexStart` double NOT NULL DEFAULT 0,
   `DataFromDevice` tinyint(1) NOT NULL DEFAULT 0,
+  `RegistrationDeviceId` int(11) DEFAULT NULL,
+  `Pause1StartedAt` datetime(6) DEFAULT NULL,
+  `Pause1StoppedAt` datetime(6) DEFAULT NULL,
+  `Pause2StartedAt` datetime(6) DEFAULT NULL,
+  `Pause2StoppedAt` datetime(6) DEFAULT NULL,
+  `Start1StartedAt` datetime(6) DEFAULT NULL,
+  `Start2StartedAt` datetime(6) DEFAULT NULL,
+  `Stop1StoppedAt` datetime(6) DEFAULT NULL,
+  `Stop2StoppedAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationVersions`
---
-
-LOCK TABLES `PlanRegistrationVersions` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrationVersions` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `PlanRegistrations`
@@ -189,20 +161,20 @@ CREATE TABLE `PlanRegistrations` (
   `WorkerComment` longtext DEFAULT NULL,
   `SumFlexStart` double NOT NULL DEFAULT 0,
   `DataFromDevice` tinyint(1) NOT NULL DEFAULT 0,
+  `RegistrationDeviceId` int(11) DEFAULT NULL,
+  `Pause1StartedAt` datetime(6) DEFAULT NULL,
+  `Pause1StoppedAt` datetime(6) DEFAULT NULL,
+  `Pause2StartedAt` datetime(6) DEFAULT NULL,
+  `Pause2StoppedAt` datetime(6) DEFAULT NULL,
+  `Start1StartedAt` datetime(6) DEFAULT NULL,
+  `Start2StartedAt` datetime(6) DEFAULT NULL,
+  `Stop1StoppedAt` datetime(6) DEFAULT NULL,
+  `Stop2StoppedAt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_PlanRegistrations_MessageId` (`MessageId`),
   CONSTRAINT `FK_PlanRegistrations_Messages_MessageId` FOREIGN KEY (`MessageId`) REFERENCES `Messages` (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrations`
---
-
-LOCK TABLES `PlanRegistrations` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrations` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `PluginConfigurationValueVersions`
@@ -226,16 +198,6 @@ CREATE TABLE `PluginConfigurationValueVersions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `PluginConfigurationValueVersions`
---
-
-LOCK TABLES `PluginConfigurationValueVersions` WRITE;
-/*!40000 ALTER TABLE `PluginConfigurationValueVersions` DISABLE KEYS */;
-INSERT INTO `PluginConfigurationValueVersions` VALUES (1,'TimePlanningBaseSettings:EformId','0','2023-02-07 11:52:14.157261','2023-02-07 11:52:14.157264','created',0,0,1),(2,'TimePlanningBaseSettings:InfoeFormId','0','2023-02-07 11:52:23.028429','2023-02-07 11:52:23.028431','created',0,0,1),(3,'TimePlanningBaseSettings:FolderId','0','2023-02-07 11:52:34.682869','2023-02-07 11:52:34.682871','created',0,0,1);
-/*!40000 ALTER TABLE `PluginConfigurationValueVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `PluginConfigurationValues`
 --
 
@@ -253,18 +215,8 @@ CREATE TABLE `PluginConfigurationValues` (
   `UpdatedByUserId` int(11) NOT NULL,
   `Version` int(11) NOT NULL,
   PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginConfigurationValues`
---
-
-LOCK TABLES `PluginConfigurationValues` WRITE;
-/*!40000 ALTER TABLE `PluginConfigurationValues` DISABLE KEYS */;
-INSERT INTO `PluginConfigurationValues` VALUES (1,'TimePlanningBaseSettings:FolderId','1','2023-02-07 11:46:51.670696','2023-02-07 11:52:34.683121','created',1,0,2),(2,'TimePlanningBaseSettings:EformId','1','2023-02-07 11:46:51.707932','2023-02-07 11:52:14.853272','created',1,0,2),(3,'TimePlanningBaseSettings:InfoeFormId','4','2023-02-07 11:46:51.712726','2023-02-07 11:52:23.029025','created',1,0,2),(4,'TimePlanningBaseSettings:MaxHistoryDays','30','2023-02-07 11:46:51.717007','2023-02-07 11:46:51.717008','created',1,0,1),(5,'TimePlanningBaseSettings:MaxDaysEditable','45','2023-02-07 11:46:51.720670','2023-02-07 11:46:51.720671','created',1,0,1);
-/*!40000 ALTER TABLE `PluginConfigurationValues` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `PluginGroupPermissionVersions`
@@ -288,16 +240,6 @@ CREATE TABLE `PluginGroupPermissionVersions` (
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginGroupPermissionVersions`
---
-
-LOCK TABLES `PluginGroupPermissionVersions` WRITE;
-/*!40000 ALTER TABLE `PluginGroupPermissionVersions` DISABLE KEYS */;
-INSERT INTO `PluginGroupPermissionVersions` VALUES (1,1,2,1,1,'2023-02-07 11:46:51.911727','2023-02-07 11:46:51.911729','created',0,0,1),(2,1,1,1,2,'2023-02-07 11:46:52.589916','2023-02-07 11:46:52.589918','created',0,0,1),(3,1,3,1,3,'2023-02-07 11:46:52.837743','2023-02-07 11:46:52.837745','created',0,0,1);
-/*!40000 ALTER TABLE `PluginGroupPermissionVersions` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `PluginGroupPermissions`
@@ -324,16 +266,6 @@ CREATE TABLE `PluginGroupPermissions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `PluginGroupPermissions`
---
-
-LOCK TABLES `PluginGroupPermissions` WRITE;
-/*!40000 ALTER TABLE `PluginGroupPermissions` DISABLE KEYS */;
-INSERT INTO `PluginGroupPermissions` VALUES (1,1,2,1,'2023-02-07 11:46:51.911727','2023-02-07 11:46:51.911729','created',0,0,1),(2,1,1,1,'2023-02-07 11:46:52.589916','2023-02-07 11:46:52.589918','created',0,0,1),(3,1,3,1,'2023-02-07 11:46:52.837743','2023-02-07 11:46:52.837745','created',0,0,1);
-/*!40000 ALTER TABLE `PluginGroupPermissions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `PluginPermissions`
 --
 
@@ -355,14 +287,63 @@ CREATE TABLE `PluginPermissions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `PluginPermissions`
+-- Table structure for table `RegistrationDeviceVersions`
 --
 
-LOCK TABLES `PluginPermissions` WRITE;
-/*!40000 ALTER TABLE `PluginPermissions` DISABLE KEYS */;
-INSERT INTO `PluginPermissions` VALUES (1,'Access Time Plannings Plugin','time_planning_plugin_access','2023-02-07 11:46:51.728782',NULL,'created',1,0,1),(2,'Obtain flex','time_planning_flex_get','2023-02-07 11:46:51.748121',NULL,'created',1,0,1),(3,'Obtain working hours','time_planning_working_hours_get','2023-02-07 11:46:51.749560',NULL,'created',1,0,1);
-/*!40000 ALTER TABLE `PluginPermissions` ENABLE KEYS */;
-UNLOCK TABLES;
+DROP TABLE IF EXISTS `RegistrationDeviceVersions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `RegistrationDeviceVersions` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `Token` longtext DEFAULT NULL,
+  `SoftwareVersion` longtext DEFAULT NULL,
+  `Model` longtext DEFAULT NULL,
+  `Manufacturer` longtext DEFAULT NULL,
+  `OsVersion` longtext DEFAULT NULL,
+  `LastIp` longtext DEFAULT NULL,
+  `LastKnownLocation` longtext DEFAULT NULL,
+  `LookedUpIp` longtext DEFAULT NULL,
+  `OtpCode` longtext DEFAULT NULL,
+  `OtpEnabled` tinyint(1) NOT NULL,
+  `RegistrationDeviceId` int(11) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `RegistrationDevices`
+--
+
+DROP TABLE IF EXISTS `RegistrationDevices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `RegistrationDevices` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `Token` longtext DEFAULT NULL,
+  `SoftwareVersion` longtext DEFAULT NULL,
+  `Model` longtext DEFAULT NULL,
+  `Manufacturer` longtext DEFAULT NULL,
+  `OsVersion` longtext DEFAULT NULL,
+  `LastIp` longtext DEFAULT NULL,
+  `LastKnownLocation` longtext DEFAULT NULL,
+  `LookedUpIp` longtext DEFAULT NULL,
+  `OtpCode` longtext DEFAULT NULL,
+  `OtpEnabled` tinyint(1) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `__EFMigrationsHistory`
@@ -377,16 +358,6 @@ CREATE TABLE `__EFMigrationsHistory` (
   PRIMARY KEY (`MigrationId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `__EFMigrationsHistory`
---
-
-LOCK TABLES `__EFMigrationsHistory` WRITE;
-/*!40000 ALTER TABLE `__EFMigrationsHistory` DISABLE KEYS */;
-INSERT INTO `__EFMigrationsHistory` VALUES ('20211202224031_InitialCreate','7.0.2'),('20211203051857_AddingWorkerComment','7.0.2'),('20211209152624_AddingTranslationsToMessages','7.0.2'),('20220511073516_AddingSumFlexStartEnd','7.0.2'),('20220705191333_AddingDataFromDeviceToPlanRegistration','7.0.2');
-/*!40000 ALTER TABLE `__EFMigrationsHistory` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -397,4 +368,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-02-08 16:05:51
+-- Dump completed on 2024-06-13 11:58:03
