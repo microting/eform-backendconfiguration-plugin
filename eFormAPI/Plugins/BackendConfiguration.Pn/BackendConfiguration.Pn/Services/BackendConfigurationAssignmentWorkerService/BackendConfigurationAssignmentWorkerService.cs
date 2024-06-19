@@ -516,4 +516,13 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             _backendConfigurationLocalizationService.GetString(result.Message), result.Model);
     }
 
+    public async Task<OperationResult> UpdateSimplifiedDeviceUser(SimpleDeviceUserModel deviceUserModel)
+    {
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateSimplifiedDeviceUser(deviceUserModel, core,
+            _userService.UserId, _backendConfigurationPnDbContext,
+            _timePlanningDbContext);
+
+        return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
+    }
 }

@@ -100,4 +100,11 @@ public class AssignmentWorkerController : Controller
 
         return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel).ConfigureAwait(false);
     }
+
+    [HttpPut]
+    [Route("update-simplified-device-user")]
+    public async Task<OperationResult> UpdateSimplifiedDeviceUser([FromBody] SimpleDeviceUserModel deviceUserModel, bool isFullyUpdate = false)
+    {
+        return await _backendConfigurationAssignmentWorkerService.UpdateSimplifiedDeviceUser(deviceUserModel).ConfigureAwait(false);
+    }
 }

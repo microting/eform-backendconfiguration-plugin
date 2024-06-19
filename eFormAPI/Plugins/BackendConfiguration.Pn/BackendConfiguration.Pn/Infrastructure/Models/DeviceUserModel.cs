@@ -57,6 +57,10 @@ public class DeviceUserModel
 
     public string Version { get; set; }
 
+    public string PinCode { get; set; }
+
+    public string EmployeeNo { get; set; }
+
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
         return new DeviceUserModel

@@ -47,4 +47,5 @@ public interface IBackendConfigurationAssignmentWorkerService
     Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
         
     Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel);
+    Task<OperationResult> UpdateSimplifiedDeviceUser(SimpleDeviceUserModel deviceUserModel);
 }

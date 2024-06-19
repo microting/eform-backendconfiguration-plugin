@@ -605,4 +605,25 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
             }
         }
+
+        public static async Task<OperationResult> UpdateSimplifiedDeviceUser(SimpleDeviceUserModel deviceUserModel, Core core, int userServiceUserId, BackendConfigurationPnDbContext backendConfigurationPnDbContext, TimePlanningPnDbContext timePlanningDbContext)
+        {
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var siteDto = await core.SiteRead(deviceUserModel.SiteMicrotingUid).ConfigureAwait(false);
+            var worker = await sdkDbContext.Workers.FirstAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+
+            var propertyWorkers = await backendConfigurationPnDbContext.PropertyWorkers
+                .Where(x => x.WorkerId == worker.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+
+            foreach (var propertyWorker in propertyWorkers)
+            {
+                propertyWorker.PinCode = deviceUserModel.PinCode;
+                // TODO add employee number
+                await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+
+            return new OperationResult(true, "DeviceUserUpdatedSuccessfully");
+        }
 }
