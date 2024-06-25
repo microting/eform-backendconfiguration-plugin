@@ -2017,6 +2017,7 @@ CREATE TABLE `PropertyWorkerVersions` (
   `EntityItemId` int(11) DEFAULT NULL,
   `TaskManagementEnabled` tinyint(1) DEFAULT NULL,
   `PinCode` varchar(50) DEFAULT NULL,
+  `EmployeeNo` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2050,6 +2051,7 @@ CREATE TABLE `PropertyWorkers` (
   `EntityItemId` int(11) DEFAULT NULL,
   `TaskManagementEnabled` tinyint(1) DEFAULT NULL,
   `PinCode` varchar(50) DEFAULT NULL,
+  `EmployeeNo` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_PropertyWorkers_PropertyId` (`PropertyId`),
   CONSTRAINT `FK_PropertyWorkers_Properties_PropertyId` FOREIGN KEY (`PropertyId`) REFERENCES `Properties` (`Id`)
