@@ -287,6 +287,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
                             deviceUserModel.UserLastName, worker.Email, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
+                        if (deviceUserModel.PinCode != "****") {
+                            worker.PinCode = deviceUserModel.PinCode;
+                        }
+                        worker.EmployeeNo = deviceUserModel.EmployeeNo;
+                        await worker.Update(sdkDbContext).ConfigureAwait(false);
+
                         if (isUpdated)
                         {
                             if (deviceUserModel.TaskManagementEnabled == true)
@@ -403,12 +409,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 }
                             }
                         }
-
-                        if (deviceUserModel.PinCode != "****") {
-                            worker.PinCode = deviceUserModel.PinCode;
-                        }
-                        worker.EmployeeNo = deviceUserModel.EmployeeNo;
-                        await worker.Update(sdkDbContext).ConfigureAwait(false);
                         // {
                         //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
                         //     site.LanguageId = language.Id;
