@@ -124,7 +124,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.selectedDeviceUserCopy.languageCode !==
       this.selectedDeviceUser.languageCode ||
       this.selectedDeviceUserCopy.timeRegistrationEnabled !==
-      this.selectedDeviceUser.timeRegistrationEnabled
+      this.selectedDeviceUser.timeRegistrationEnabled ||
+      this.selectedDeviceUser.employeeNo !==
+      this.selectedDeviceUserCopy.employeeNo ||
+      this.selectedDeviceUser.pinCode !== '****'
     ) {
       // if fields device user edited
       this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;

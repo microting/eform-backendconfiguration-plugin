@@ -423,6 +423,8 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
                     deviceUserModel.UserFirstName = worker.FirstName;
                     deviceUserModel.UserLastName = worker.LastName;
                     deviceUserModel.WorkerUid = worker.MicrotingUid;
+                    deviceUserModel.EmployeeNo = worker.EmployeeNo;
+                    deviceUserModel.PinCode = "****";
                     deviceUserModel.TimeRegistrationEnabled =
                         timeRegistrationEnabledSites.Any(x => x == deviceUserModel.SiteUid);
                 }

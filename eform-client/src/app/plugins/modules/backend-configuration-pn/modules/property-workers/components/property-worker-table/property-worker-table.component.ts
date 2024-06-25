@@ -79,6 +79,12 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       sortable: true,
     },
     {
+      header: this.translateService.stream('Employee No'),
+      field: 'employeeNo',
+      sortProp: {id: 'EmployeeNo'},
+      sortable: true,
+    },
+    {
       header: this.translateService.stream('Property'),
       field: 'propertyNames',
       formatter: (rowData: DeviceUserModel) => rowData.propertyNames.replace(',', '<br>'),
@@ -125,6 +131,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
+      width: '160px',
+      pinned: 'right',
       disabled: this.deviceUsersDelete || this.deviceUsersUpdate,
     },
   ];
@@ -161,6 +169,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
     selectedSimpleSite.hasWorkOrdersAssigned = simpleSiteDto.hasWorkOrdersAssigned;
     selectedSimpleSite.isBackendUser = simpleSiteDto.isBackendUser;
+    selectedSimpleSite.pinCode = simpleSiteDto.pinCode;
+    selectedSimpleSite.employeeNo = simpleSiteDto.employeeNo;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
