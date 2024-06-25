@@ -24,4 +24,6 @@ export class DeviceUserModel {
   model: string;
   osVersion: string;
   version: string;
+  pinCode: string;
+  employeeNo: string;
 }

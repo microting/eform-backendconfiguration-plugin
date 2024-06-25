@@ -12,6 +12,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -402,6 +403,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 }
                             }
                         }
+
+                        if (deviceUserModel.PinCode != "****") {
+                            worker.PinCode = deviceUserModel.PinCode;
+                        }
+                        worker.EmployeeNo = deviceUserModel.EmployeeNo;
+                        await worker.Update(sdkDbContext).ConfigureAwait(false);
                         // {
                         //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
                         //     site.LanguageId = language.Id;
@@ -443,6 +450,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 null, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
             site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
+
+            Worker worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+
+            worker.EmployeeNo = deviceUserModel.EmployeeNo;
+            worker.PinCode = deviceUserModel.PinCode;
+            await worker.Update(sdkDbContext).ConfigureAwait(false);
 
             if (deviceUserModel.TimeRegistrationEnabled == true)
             {
@@ -620,6 +633,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             foreach (var propertyWorker in propertyWorkers)
             {
                 propertyWorker.PinCode = deviceUserModel.PinCode;
+                propertyWorker.EmployeeNo = deviceUserModel.EmployeeNo;
                 // TODO add employee number
                 await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
