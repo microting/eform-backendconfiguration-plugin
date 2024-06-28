@@ -370,11 +370,82 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
                                 }
                             }
+                            var planRegistrations = await timePlanningDbContext.PlanRegistrations.Where(x => x.SdkSitId == siteDto.SiteId).ToListAsync().ConfigureAwait(false);
+
+                            foreach (var planRegistration in planRegistrations)
+                            {
+                                try
+                                {
+                                    if (planRegistration.StatusCaseId != 0)
+                                    {
+                                        await core.CaseDelete(planRegistration.StatusCaseId).ConfigureAwait(false);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine(e);
+                                    //throw;
+                                }
+                            }
                         }
                         else
                         {
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
+                                var registrationDevices = await timePlanningDbContext.RegistrationDevices
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync().ConfigureAwait(false);
+
+                                if (registrationDevices.Any())
+                                {
+                                    var assignmentForDeletes = await timePlanningDbContext.AssignedSites.Where(x =>
+                                        x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+
+                                    foreach (var assignmentForDelete in assignmentForDeletes)
+                                    {
+                                        //await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
+                                        if (assignmentForDelete.CaseMicrotingUid != null)
+                                        {
+                                            await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                        }
+                                    }
+
+                                    var planRegistrations = await timePlanningDbContext.PlanRegistrations.Where(x => x.SdkSitId == siteDto.SiteId).ToListAsync().ConfigureAwait(false);
+
+                                    foreach (var planRegistration in planRegistrations)
+                                    {
+                                        if (planRegistration.StatusCaseId != 0)
+                                        {
+                                            await core.CaseDelete(planRegistration.StatusCaseId).ConfigureAwait(false);
+                                        }
+                                    }
+
+                                    var assignments1 = await timePlanningDbContext.AssignedSites.Where(x =>
+                                        x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+
+                                    if (assignments1.Any())
+                                    {
+                                        return new OperationDataResult<int>(true, siteDto.SiteId);
+                                    }
+
+                                    var assignmentSite = new AssignedSite
+                                    {
+                                        SiteId = siteDto.SiteId,
+                                        CreatedByUserId = userId,
+                                        UpdatedByUserId = userId
+                                    };
+                                    await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
+                                    return new OperationDataResult<int>(true, siteDto.SiteId);
+                                }
+
+                                var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
+                                    x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+
+                                if (assignments.Any())
+                                {
+                                    return new OperationDataResult<int>(true, siteDto.SiteId);
+                                }
+
                                 try
                                 {
                                     var assignmentSite = new AssignedSite
