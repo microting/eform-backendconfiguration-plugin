@@ -6,6 +6,7 @@ export interface TaskWizardModel {
   property: string,
   folder: string,
   tags: SharedTagModel[],
+  tagReport: SharedTagModel,
   taskName: string,
   eform: string,
   eformId: number,

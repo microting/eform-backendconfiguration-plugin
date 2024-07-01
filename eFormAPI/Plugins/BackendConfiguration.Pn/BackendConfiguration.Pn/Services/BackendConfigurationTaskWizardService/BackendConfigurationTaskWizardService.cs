@@ -192,10 +192,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     TaskName = areaRule.TaskName,
                     Id = areaRule.Id,
                     Property = areaRule.PropertyName,
-                    Tags = areaRule.TagReport != null
-                        ? areaRule.Tags.Any(x => x.Id == areaRule.TagReport.Id)
-                            ? areaRule.Tags.ToList() : areaRule.Tags.Append(areaRule.TagReport).ToList()
-                        : areaRule.Tags.ToList(),
+                    Tags = areaRule.Tags.ToList(),
+                    TagReport = areaRule.TagReport,
                     AssignedTo = siteNamesQuery.Where(x => areaRule.PlanningSites.Contains(x.Id)).Select(x => x.Name)
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
