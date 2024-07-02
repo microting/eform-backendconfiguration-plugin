@@ -743,6 +743,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                     Name = x.Name,
                     Id = x.Id
                 })
+                .OrderBy(x => x.Name)
                 .ToListAsync();
 
             return new OperationDataResult<List<CommonDictionaryModel>>(true, sites);
@@ -780,6 +781,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                     Name = x.Name,
                     Id = x.Id
                 })
+                .OrderBy(x => x.Name)
                 .ToListAsync();
 
             return new OperationDataResult<List<CommonDictionaryModel>>(true, sites);
