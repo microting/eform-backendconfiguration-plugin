@@ -284,4 +284,8 @@ export const fiFI = {
   Location: 'Sijainti',
   'Select date range': 'Valitse ajanjakso',
   'Manage tags': 'Hallitse tunnisteita',
+  Middle: 'Keski',
+  'Are you sure you want to permanently delete this case': 'Haluatko varmasti poistaa tämän tapauksen pysyvästi',
+  Repeated: 'Toistettu',
+  'Upload PDF': 'Lataa PDF',
 };

@@ -284,4 +284,8 @@ export const lvLV = {
   Location: 'Atrašanās vieta',
   'Select date range': 'Atlasiet datumu diapazonu',
   'Manage tags': 'Pārvaldīt tagus',
+  Middle: 'Vidus',
+  'Are you sure you want to permanently delete this case': 'Vai tiešām vēlaties neatgriezeniski dzēst šo lietu?',
+  Repeated: 'Atkārtoti',
+  'Upload PDF': 'Augšupielādēt PDF',
 };

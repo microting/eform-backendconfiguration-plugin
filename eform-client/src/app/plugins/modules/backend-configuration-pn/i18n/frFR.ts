@@ -284,4 +284,8 @@ export const frFR = {
   Location: 'Emplacement',
   'Select date range': 'Sélectionnez une plage de dates',
   'Manage tags': 'Gérer les balises',
+  Middle: 'Milieu',
+  'Are you sure you want to permanently delete this case': 'Êtes-vous sûr de vouloir supprimer définitivement ce cas ?',
+  Repeated: 'Répété',
+  'Upload PDF': 'Télécharger le PDF',
 };

@@ -284,4 +284,8 @@ export const hrHR = {
   Location: 'Mjesto',
   'Select date range': 'Odaberite razdoblje',
   'Manage tags': 'Upravljanje oznakama',
+  Middle: 'sredina',
+  'Are you sure you want to permanently delete this case': 'Jeste li sigurni da želite trajno izbrisati ovaj slučaj?',
+  Repeated: 'Ponavlja se',
+  'Upload PDF': 'Učitaj PDF',
 };

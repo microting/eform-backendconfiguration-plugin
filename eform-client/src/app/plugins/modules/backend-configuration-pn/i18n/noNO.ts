@@ -284,4 +284,8 @@ export const noNO = {
   Location: 'plassering',
   'Select date range': 'Velg datoperiode',
   'Manage tags': 'Administrer tagger',
+  Middle: 'Midten',
+  'Are you sure you want to permanently delete this case': 'Er du sikker på at du vil slette denne saken permanent',
+  Repeated: 'Gjentatt',
+  'Upload PDF': 'Last opp PDF',
 };

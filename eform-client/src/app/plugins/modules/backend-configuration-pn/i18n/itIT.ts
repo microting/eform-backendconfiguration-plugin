@@ -284,4 +284,8 @@ export const itIT = {
   Location: 'Posizione',
   'Select date range': 'Seleziona l&#39;intervallo di date',
   'Manage tags': 'Gestisci i tag',
+  Middle: 'Mezzo',
+  'Are you sure you want to permanently delete this case': 'Sei sicuro di voler eliminare definitivamente questo caso?',
+  Repeated: 'Ripetuto',
+  'Upload PDF': 'Carica PDF',
 };

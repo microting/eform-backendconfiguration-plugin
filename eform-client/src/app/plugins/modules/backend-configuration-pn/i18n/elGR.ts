@@ -284,4 +284,8 @@ export const elGR = {
   Location: 'Τοποθεσία',
   'Select date range': 'Επιλέξτε εύρος ημερομηνιών',
   'Manage tags': 'Διαχείριση ετικετών',
+  Middle: 'Μέση',
+  'Are you sure you want to permanently delete this case': 'Είστε βέβαιοι ότι θέλετε να διαγράψετε οριστικά αυτήν την υπόθεση',
+  Repeated: 'Αλλεπάλληλος',
+  'Upload PDF': 'Ανεβάστε PDF',
 };

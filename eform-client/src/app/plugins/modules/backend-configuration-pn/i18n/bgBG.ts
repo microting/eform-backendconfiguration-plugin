@@ -284,4 +284,8 @@ export const bgBG = {
   Location: 'Местоположение',
   'Select date range': 'Изберете период от време',
   'Manage tags': 'Управление на етикети',
+  Middle: 'Среден',
+  'Are you sure you want to permanently delete this case': 'Сигурни ли сте, че искате да изтриете за постоянно този случай',
+  Repeated: 'Повтаря се',
+  'Upload PDF': 'Качете PDF',
 };

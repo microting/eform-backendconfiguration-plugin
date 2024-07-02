@@ -284,4 +284,8 @@ export const ptPT = {
   Location: 'Localização',
   'Select date range': 'Selecione o período',
   'Manage tags': 'Gerenciar tags',
+  Middle: 'Meio',
+  'Are you sure you want to permanently delete this case': 'Tem certeza de que deseja excluir permanentemente este caso',
+  Repeated: 'Repetido',
+  'Upload PDF': 'Carregar PDF',
 };

@@ -284,4 +284,8 @@ export const ukUA = {
   Location: 'Місцезнаходження',
   'Select date range': 'Виберіть діапазон дат',
   'Manage tags': 'Керуйте тегами',
+  Middle: 'Середній',
+  'Are you sure you want to permanently delete this case': 'Ви впевнені, що хочете назавжди видалити цю справу?',
+  Repeated: 'Повторюється',
+  'Upload PDF': 'Завантажити PDF',
 };

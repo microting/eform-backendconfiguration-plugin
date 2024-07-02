@@ -284,4 +284,8 @@ export const roRO = {
   Location: 'Locație',
   'Select date range': 'Selectați intervalul de date',
   'Manage tags': 'Gestionați etichetele',
+  Middle: 'Mijloc',
+  'Are you sure you want to permanently delete this case': 'Sigur doriți să ștergeți definitiv acest caz',
+  Repeated: 'Repetat',
+  'Upload PDF': 'Încărcați PDF',
 };

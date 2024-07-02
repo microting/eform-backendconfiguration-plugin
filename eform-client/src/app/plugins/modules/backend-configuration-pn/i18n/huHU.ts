@@ -284,4 +284,8 @@ export const huHU = {
   Location: 'Elhelyezkedés',
   'Select date range': 'Válassza ki a dátumtartományt',
   'Manage tags': 'Címkék kezelése',
+  Middle: 'Középső',
+  'Are you sure you want to permanently delete this case': 'Biztosan véglegesen törölni szeretné ezt az esetet?',
+  Repeated: 'Megismételt',
+  'Upload PDF': 'PDF feltöltése',
 };

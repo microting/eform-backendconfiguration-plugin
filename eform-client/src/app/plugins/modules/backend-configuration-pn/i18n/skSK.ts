@@ -284,4 +284,8 @@ export const skSK = {
   Location: 'Poloha',
   'Select date range': 'Vyberte rozsah dátumov',
   'Manage tags': 'Spravovať značky',
+  Middle: 'Stredný',
+  'Are you sure you want to permanently delete this case': 'Naozaj chcete natrvalo odstrániť tento prípad?',
+  Repeated: 'Opakované',
+  'Upload PDF': 'Nahrajte súbor PDF',
 };

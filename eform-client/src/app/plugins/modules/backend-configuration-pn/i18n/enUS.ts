@@ -304,4 +304,5 @@ export const enUS= {
   'Middle': 'Middle',
   'Are you sure you want to permanently delete this case': 'Are you sure you want to permanently delete this case',
   'Repeated': 'Repeated',
+  'Upload PDF': 'Upload PDF'
 };

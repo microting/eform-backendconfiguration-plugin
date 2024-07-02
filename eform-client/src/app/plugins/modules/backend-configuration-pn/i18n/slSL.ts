@@ -284,4 +284,8 @@ export const slSL = {
   Location: 'Lokacija',
   'Select date range': 'Izberite časovno obdobje',
   'Manage tags': 'Upravljanje oznak',
+  Middle: 'Sredina',
+  'Are you sure you want to permanently delete this case': 'Ali ste prepričani, da želite trajno izbrisati ta primer?',
+  Repeated: 'Ponavljajo se',
+  'Upload PDF': 'Naloži PDF',
 };
