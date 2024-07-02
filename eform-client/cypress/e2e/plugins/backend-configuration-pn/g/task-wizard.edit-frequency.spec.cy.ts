@@ -21,7 +21,7 @@ const property2: PropertyCreateUpdate = {
 };
 
 const workerForCreate: PropertyWorker = {
-  name: generateRandmString(5),
+  name: 'a',
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name, property2.name],

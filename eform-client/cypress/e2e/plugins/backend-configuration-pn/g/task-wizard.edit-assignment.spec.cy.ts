@@ -15,13 +15,13 @@ const property: PropertyCreateUpdate = {
 };
 
 const workerForCreate: PropertyWorker = {
-  name: generateRandmString(5),
+  name: 'a',
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
 };
 const workerForCreate2: PropertyWorker = {
-  name: generateRandmString(5),
+  name: 'b',
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
