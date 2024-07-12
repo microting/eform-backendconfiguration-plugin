@@ -27,7 +27,6 @@
     <mat-label>{{'Pin code' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.pinCode"
       type="text"
       name="pinCode"
@@ -40,7 +39,6 @@
     <mat-label>{{'Employee no' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.employeeNo"
       type="text"
       name="employeeNo"

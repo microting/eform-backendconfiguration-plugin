@@ -15,13 +15,13 @@ const property: PropertyCreateUpdate = {
 };
 
 const workerForCreate: PropertyWorker = {
-  name: generateRandmString(5),
+  name: 'a',
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
 };
 const workerForCreate2: PropertyWorker = {
-  name: generateRandmString(5),
+  name: 'b',
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
@@ -70,7 +70,9 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
     backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    cy.wait(500);
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
+    cy.wait(1000);
     backendConfigurationPropertyWorkersPage.create(workerForCreate2);
     backendConfigurationPropertiesPage.goToProperties();
     for (let i = 0; i < 1; i++) {
@@ -135,34 +137,47 @@ describe('Area rules type 1', () => {
     cy.get('#mat-expansion-panel-header-2 > .mat-content').click();
 
     backendConfigurationPropertiesPage.goToPlanningPage();
-    cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
+    cy.get('.planningAssignmentBtn.mat-accent').click();
+    //cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
     //cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row > .mat-column-name');
     let row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
     cy.get('#changeAssignmentsCancel > .mdc-button__label').click();
     cy.get('#backend-configuration-pn-task-wizard').click();
-    cy.get('.editBtn > .mat-mdc-button-touch-target').click();
+    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
+    cy.intercept('POST', '**/api/templates/index').as('getTemplates');
+    cy.get('.editBtn').click();
+    cy.wait('@getFolders', { timeout: 60000 });
+    cy.wait('@getTemplates', { timeout: 60000 });
+    //cy.get('.editBtn > .mat-mdc-button-touch-target').click();
     cy.get('#checkboxUpdateAssignment1-input').check();
     cy.intercept('PUT', '**/api/backend-configuration-pn/task-wizard').as('updateTask');
     cy.get('#updateTaskBtn > .mdc-button__label').click();
     cy.wait('@updateTask', { timeout: 60000 });
     cy.wait(500);
     backendConfigurationPropertiesPage.goToPlanningPage();
-    cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
+    cy.get('.planningAssignmentBtn.mat-accent').click();
+    //cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate2.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
     cy.get('#changeAssignmentsCancel > .mdc-button__label').click();
     cy.get('#backend-configuration-pn-task-wizard').click();
-    cy.get('.editBtn > .mat-mdc-button-touch-target').click();
+    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
+    cy.intercept('POST', '**/api/templates/index').as('getTemplates');
+    cy.get('.editBtn').click();
+    cy.wait('@getFolders', { timeout: 60000 });
+    cy.wait('@getTemplates', { timeout: 60000 });
+    //cy.get('.editBtn > .mat-mdc-button-touch-target').click();
     cy.get('#checkboxUpdateAssignment0-input').uncheck();
     cy.intercept('PUT', '**/api/backend-configuration-pn/task-wizard').as('updateTask');
     cy.get('#updateTaskBtn > .mdc-button__label').click();
     cy.wait('@updateTask', { timeout: 60000 });
     cy.wait(500);
     backendConfigurationPropertiesPage.goToPlanningPage();
-    cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
+    //cy.get('.planningAssignmentBtn.mat-accent > .mat-mdc-button-touch-target').click();
+    cy.get('.planningAssignmentBtn.mat-accent').click();
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate2.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate.name).parent().parent().parent().scrollIntoView();

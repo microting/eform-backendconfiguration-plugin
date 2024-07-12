@@ -284,4 +284,8 @@ export const etET = {
   Location: 'Asukoht',
   'Select date range': 'Valige kuupäevavahemik',
   'Manage tags': 'Hallake silte',
+  Middle: 'Keskmine',
+  'Are you sure you want to permanently delete this case': 'Kas olete kindel, et soovite selle juhtumi jäädavalt kustutada?',
+  Repeated: 'Korduv',
+  'Upload PDF': 'Laadige üles PDF',
 };

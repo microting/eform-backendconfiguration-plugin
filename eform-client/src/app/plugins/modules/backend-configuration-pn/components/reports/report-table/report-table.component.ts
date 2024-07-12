@@ -153,7 +153,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
               }
               // @ts-ignore
               if (record.caseFields[i].key === 'date') {
-                if (record.caseFields[i].value === null) {
+                if (record.caseFields[i].value === null || record.caseFields[i].value === '') {
                   return '';
                 }
                 // return moment(record.caseFields[i].value).format('DD.MM.YYYY');

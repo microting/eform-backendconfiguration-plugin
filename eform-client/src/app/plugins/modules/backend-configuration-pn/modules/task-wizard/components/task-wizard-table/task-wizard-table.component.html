@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{id: idTpl, tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
+  [cellTemplate]="{id: idTpl, tags: tagsTpl, tagReport: reportTagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -22,6 +22,16 @@
       <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
         <mat-icon>discount</mat-icon>
         <span>{{ tag.name }}</span>
+      </mat-chip>
+    </mat-chip-listbox>
+  </div>
+</ng-template>
+<ng-template #reportTagsTpl let-row>
+  <div class="d-flex flex-wrap align-items-center">
+    <mat-chip-listbox>
+      <mat-chip color="primary" (click)="onClickTag(row.tagReport)">
+        <mat-icon>discount</mat-icon>
+        <span>{{ row.tagReport.name }}</span>
       </mat-chip>
     </mat-chip-listbox>
   </div>

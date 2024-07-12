@@ -284,4 +284,8 @@ export const plPL = {
   Location: 'Lokalizacja',
   'Select date range': 'Wybierz zakres dat',
   'Manage tags': 'Zarządzaj tagami',
+  Middle: 'Środek',
+  'Are you sure you want to permanently delete this case': 'Czy na pewno chcesz trwale usunąć tę sprawę?',
+  Repeated: 'Powtarzający się',
+  'Upload PDF': 'Prześlij plik PDF',
 };

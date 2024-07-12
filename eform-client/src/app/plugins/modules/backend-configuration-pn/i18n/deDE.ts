@@ -345,4 +345,8 @@ export const deDE = {
   Location: 'Standort',
   'Select date range': 'Wählen Sie den Datumsbereich aus',
   'Manage tags': 'Tags verwalten',
+  Middle: 'Mitte',
+  'Are you sure you want to permanently delete this case': 'Möchten Sie diesen Fall wirklich dauerhaft löschen?',
+  Repeated: 'Wiederholt',
+  'Upload PDF': 'PDF hochladen',
 };

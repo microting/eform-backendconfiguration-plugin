@@ -284,4 +284,8 @@ export const isIS = {
   Location: 'Staðsetning',
   'Select date range': 'Veldu tímabil',
   'Manage tags': 'Stjórna merkjum',
+  Middle: 'Miðja',
+  'Are you sure you want to permanently delete this case': 'Ertu viss um að þú viljir eyða þessu máli varanlega',
+  Repeated: 'Endurtekið',
+  'Upload PDF': 'Hladdu upp PDF',
 };

@@ -284,4 +284,8 @@ export const esES = {
   Location: 'Ubicación',
   'Select date range': 'Seleccionar rango de fechas',
   'Manage tags': 'Administrar etiquetas',
+  Middle: 'Medio',
+  'Are you sure you want to permanently delete this case': '¿Está seguro de que desea eliminar permanentemente este caso?',
+  Repeated: 'Repetido',
+  'Upload PDF': 'Subir PDF',
 };

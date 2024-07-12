@@ -284,4 +284,8 @@ export const svSE = {
   Location: 'Plats',
   'Select date range': 'Välj datumintervall',
   'Manage tags': 'Hantera taggar',
+  Middle: 'Mitten',
+  'Are you sure you want to permanently delete this case': 'Är du säker på att du vill ta bort det här ärendet permanent',
+  Repeated: 'Upprepad',
+  'Upload PDF': 'Ladda upp PDF',
 };

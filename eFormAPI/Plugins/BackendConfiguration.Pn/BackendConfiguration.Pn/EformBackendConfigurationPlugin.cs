@@ -736,7 +736,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     new()
                     {
                         LocaleName = LocaleNames.Danish,
-                        Name = "Ad-hoc-opgaver",
+                        Name = "Forefaldende opgaver",
                         Language = LanguageNames.Danish
                     },
 

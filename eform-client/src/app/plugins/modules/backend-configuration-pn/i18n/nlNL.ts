@@ -284,4 +284,8 @@ export const nlNL = {
   Location: 'Plaats',
   'Select date range': 'Selecteer een datumbereik',
   'Manage tags': 'Beheer tags',
+  Middle: 'Midden',
+  'Are you sure you want to permanently delete this case': 'Weet u zeker dat u deze case definitief wilt verwijderen?',
+  Repeated: 'Herhaald',
+  'Upload PDF': 'Upload pdf',
 };

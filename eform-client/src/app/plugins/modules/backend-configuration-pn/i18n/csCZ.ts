@@ -284,4 +284,8 @@ export const csCZ = {
   Location: 'Umístění',
   'Select date range': 'Vyberte časové období',
   'Manage tags': 'Správa značek',
+  Middle: 'Střední',
+  'Are you sure you want to permanently delete this case': 'Opravdu chcete tento případ trvale smazat?',
+  Repeated: 'Opakované',
+  'Upload PDF': 'Nahrát PDF',
 };

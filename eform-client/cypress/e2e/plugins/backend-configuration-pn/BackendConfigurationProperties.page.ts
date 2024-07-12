@@ -229,18 +229,22 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
       cy.log(rowNum.toString());
 
       for (let i = rowNum; i > 0; i--) {
+        cy.intercept('POST', '**/api/backend-configuration-pn/properties/index').as('getProperties');
         this.getFirstRowObject().delete();
+        cy.wait('@getProperties');
         cy.wait(500);
       }
     });
   }
   goToPlanningPage() {
+    cy.intercept('POST', '**/api/items-planning-pn/plannings/index').as('getPlannings');
     this.planningsButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.itemPlanningButton().click();
       }
     });
     this.planningsButton().click();
+    cy.wait('@getPlannings');
     this.planningCreateBtn().should('be.visible').should('be.enabled');
   }
   public planningsButton() {

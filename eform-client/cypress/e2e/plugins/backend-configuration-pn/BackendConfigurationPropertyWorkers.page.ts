@@ -149,8 +149,12 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
       this.cancelCreateBtn().should('be.visible').click();
     } else {
       cy.intercept('PUT', '/api/backend-configuration-pn/properties/assignment/create-device-user').as('createDeviceUser');
+      cy.intercept('POST', '/api/backend-configuration-pn/properties/assignment/index-device-user').as('getDeviceUsers');
       this.saveCreateBtn().should('be.visible').click();
       cy.wait('@createDeviceUser', {timeout: 10000}).then((xhr) => {
+        expect(xhr.response.statusCode).to.eq(200);
+      });
+      cy.wait('@getDeviceUsers', {timeout: 10000}).then((xhr) => {
         expect(xhr.response.statusCode).to.eq(200);
       });
     }

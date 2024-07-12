@@ -4378,7 +4378,7 @@
   {
     "Key": "ErrorWhileGetAdHocTaskWorkersStat",
     "LocalizedValue": {
-      "da": "Fejl under hentning af ad-hoc opgavearbejderstat",
+      "da": "Fejl under hentning af forefaldende opgavearbejderstat",
       "de": "Fehler beim Abrufen der Ad-hoc-Aufgabenarbeiterstatistik",
       "en-US": "Error while get ad-hoc task workers stat",
       "uk-UA": "Помилка під час отримання статистики працівників спеціального завдання",
@@ -4502,7 +4502,7 @@
   {
     "Key": "ErrorWhileGetAdHocTaskPrioritiesStat",
     "LocalizedValue": {
-      "da": "Fejl under hentning af ad-hoc opgaveprioriteter",
+      "da": "Fejl under hentning af forefaldende opgaveprioriteter",
       "de": "Fehler beim Abrufen des Status der Ad-hoc-Aufgabenprioritäten",
       "en-US": "Error while get ad-hoc task priorities stat",
       "uk-UA": "Помилка під час отримання статистики пріоритетів спеціальних завдань",

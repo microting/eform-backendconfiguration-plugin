@@ -284,4 +284,8 @@ export const ltLT = {
   Location: 'Vieta',
   'Select date range': 'Pasirinkite dienų seką',
   'Manage tags': 'Tvarkyti žymas',
+  Middle: 'Vidurio',
+  'Are you sure you want to permanently delete this case': 'Ar tikrai norite visam laikui ištrinti šį atvejį?',
+  Repeated: 'Pasikartojo',
+  'Upload PDF': 'Įkelti PDF',
 };
