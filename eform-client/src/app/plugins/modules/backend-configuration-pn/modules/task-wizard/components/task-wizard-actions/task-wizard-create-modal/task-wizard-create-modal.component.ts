@@ -164,6 +164,8 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     if (this.model.eformId === null) {
       let templateRequestModel = new TemplateRequestModel();
       templateRequestModel.nameFilter = 'Kvittering';
+      templateRequestModel.sort = 'Text';
+      templateRequestModel.isSortDsc = false;
       this.eFormService.getAll(templateRequestModel).subscribe((data) => {
         let templatesModel = data.model;
         this.templatesModel = templatesModel;
