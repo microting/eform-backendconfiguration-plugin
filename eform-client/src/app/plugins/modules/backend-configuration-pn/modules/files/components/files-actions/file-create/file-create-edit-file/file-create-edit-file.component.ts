@@ -50,10 +50,10 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   zoomPageModalBackdropClickSub$: Subscription;
 
   get pageInFile(): number[] {
-    if (this.fileAsPdfDocument) {
+    //if (this.fileAsPdfDocument) {
       return R.range(0, this.fileAsPdfDocument.getPages().length);
-    }
-    return [];
+    //}
+    //return [];
   }
 
   constructor(

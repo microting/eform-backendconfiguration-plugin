@@ -80,7 +80,7 @@
             [src]="file.src"
             [render-text]="true"
             [original-size]="false"
-            style="width: 500px; height: 750px"
+            style="width: 100vh; height: 100vh; z-index: 9999;"
             [show-all]="false"
             [external-link-target]="'none'"
             [page]="1"
@@ -88,14 +88,14 @@
           ></pdf-viewer>
         </mat-card-content>
         <mat-card-footer class="d-flex justify-content-end align-items-end">
-          <button
-            mat-icon-button
-            color="accent"
-            (click)="editFile(file)"
-            matTooltip="{{ 'Edit file' | translate }}"
-            id="editFile{{i}}Btn">
-            <mat-icon>edit</mat-icon>
-          </button>
+<!--          <button-->
+<!--            mat-icon-button-->
+<!--            color="accent"-->
+<!--            (click)="editFile(file)"-->
+<!--            matTooltip="{{ 'Edit file' | translate }}"-->
+<!--            id="editFile{{i}}Btn">-->
+<!--            <mat-icon>edit</mat-icon>-->
+<!--          </button>-->
           <button
             mat-icon-button
             color="warn"
