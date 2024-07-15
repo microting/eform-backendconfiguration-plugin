@@ -53,7 +53,10 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   private _availableTags: SharedTagModel[] = [];
 
   get filesSelected(): boolean {
-    return this.files.length > 0;
+    if (this.files.length > 0) {
+      return true;
+    }
+    return false;
   }
 
   constructor(
@@ -116,7 +119,16 @@ export class FileCreateComponent implements OnInit, OnDestroy {
 
   editFile(file: FilesCreateModel) {
     file.file.arrayBuffer().then(arrayBuffer => {
-      this.selectedFile = {...file, file: new File([arrayBuffer], file.file.name), src: new Uint8Array(arrayBuffer)};
+      debugger;
+      this.selectedFile = new FilesCreateModel();
+      this.selectedFile = {
+        file: new File([arrayBuffer], file.file.name),
+        propertyIds: file.propertyIds,
+        src: new Uint8Array(arrayBuffer),
+        tagIds: file.tagIds
+      }
+      //{...file, file: new File([arrayBuffer], file.file.name), src: new Uint8Array(arrayBuffer)};
+      //this.selectedFile = {...file, file: new File([arrayBuffer], file.file.name), src: new Uint8Array(arrayBuffer)};
     })
   }
 

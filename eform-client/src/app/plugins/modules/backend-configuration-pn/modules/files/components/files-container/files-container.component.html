@@ -1,21 +1,23 @@
 <eform-new-subheader>
   <button
-    mat-raised-button
+    matSuffix
+    mat-icon-button
     id="addNewFileBtn"
     matTooltip="{{ 'Upload PDF' | translate }}"
     routerLink="./create"
     color="accent"
   >
-    {{ 'Create file' | translate }}
+    <mat-icon>file_upload</mat-icon>
   </button>
   <button
-    mat-raised-button
+    matSuffix
+    mat-icon-button
     id="manageTagsBtn"
     matTooltip="{{ 'Manage tags' | translate }}"
     (click)="openTagsModal()"
     color="primary"
   >
-    {{ 'Manage tags' | translate }}
+    <mat-icon>discount</mat-icon>
   </button>
 </eform-new-subheader>
 
