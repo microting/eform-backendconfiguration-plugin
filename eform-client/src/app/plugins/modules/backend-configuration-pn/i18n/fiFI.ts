@@ -288,4 +288,6 @@ export const fiFI = {
   'Are you sure you want to permanently delete this case': 'Haluatko varmasti poistaa tämän tapauksen pysyvästi',
   Repeated: 'Toistettu',
   'Upload PDF': 'Lataa PDF',
+  'PIN code': 'Pin-koodi',
+  'Employee no': 'Työntekijä nro',
 };

@@ -288,4 +288,6 @@ export const noNO = {
   'Are you sure you want to permanently delete this case': 'Er du sikker på at du vil slette denne saken permanent',
   Repeated: 'Gjentatt',
   'Upload PDF': 'Last opp PDF',
+  'PIN code': 'PIN-kode',
+  'Employee no': 'Ansatt nummer',
 };

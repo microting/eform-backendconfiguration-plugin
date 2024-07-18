@@ -288,4 +288,6 @@ export const svSE = {
   'Are you sure you want to permanently delete this case': 'Är du säker på att du vill ta bort det här ärendet permanent',
   Repeated: 'Upprepad',
   'Upload PDF': 'Ladda upp PDF',
+  'PIN code': 'Pinkod',
+  'Employee no': 'Anställningsnummer',
 };

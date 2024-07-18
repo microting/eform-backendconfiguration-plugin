@@ -288,4 +288,6 @@ export const ptBR = {
   'Are you sure you want to permanently delete this case': 'Tem certeza de que deseja excluir permanentemente este caso',
   Repeated: 'Repetido',
   'Upload PDF': 'Carregar PDF',
+  'PIN code': 'Código PIN',
+  'Employee no': 'Funcionário não',
 };

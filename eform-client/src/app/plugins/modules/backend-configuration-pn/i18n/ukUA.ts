@@ -288,4 +288,6 @@ export const ukUA = {
   'Are you sure you want to permanently delete this case': 'Ви впевнені, що хочете назавжди видалити цю справу?',
   Repeated: 'Повторюється',
   'Upload PDF': 'Завантажити PDF',
+  'PIN code': 'PIN-код',
+  'Employee no': 'Співробітник №',
 };

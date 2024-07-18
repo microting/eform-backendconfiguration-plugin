@@ -288,4 +288,6 @@ export const isIS = {
   'Are you sure you want to permanently delete this case': 'Ertu viss um að þú viljir eyða þessu máli varanlega',
   Repeated: 'Endurtekið',
   'Upload PDF': 'Hladdu upp PDF',
+  'PIN code': 'PIN númer',
+  'Employee no': 'Starfsmaður nr',
 };

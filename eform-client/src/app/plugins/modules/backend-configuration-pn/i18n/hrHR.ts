@@ -288,4 +288,6 @@ export const hrHR = {
   'Are you sure you want to permanently delete this case': 'Jeste li sigurni da želite trajno izbrisati ovaj slučaj?',
   Repeated: 'Ponavlja se',
   'Upload PDF': 'Učitaj PDF',
+  'PIN code': 'PIN kod',
+  'Employee no': 'Zaposlenik br',
 };

@@ -288,4 +288,6 @@ export const bgBG = {
   'Are you sure you want to permanently delete this case': 'Сигурни ли сте, че искате да изтриете за постоянно този случай',
   Repeated: 'Повтаря се',
   'Upload PDF': 'Качете PDF',
+  'PIN code': 'ПИН код',
+  'Employee no': 'Служител №',
 };
