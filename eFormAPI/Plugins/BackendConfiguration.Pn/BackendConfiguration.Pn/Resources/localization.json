@@ -4777,5 +4777,36 @@
       "el-GR": "Φάκελος",
       "is-IS": "Mappa"
     }
+  },
+  {
+    "Key": "EmployeeNo",
+    "LocalizedValue": {
+      "da": "Medarbejder nummer",
+      "de": "Mitarbeiternummer",
+      "en-US": "Employee number",
+      "uk-UA": "Номер працівника",
+      "pl-PL": "Numer prac",
+      "no-NO": "Medarbeidernummer",
+      "sv-SE": "Anställnings",
+      "es-ES": "Número de empleado",
+      "fr-FR": "Numéro d'employé",
+      "it-IT": "Numero di dipendente",
+      "nl-NL": "",
+      "pt-BR": "Número do empregado",
+      "pt-PT": "Número do empregado",
+      "fi-FI": "Työntekijän numero",
+      "et-ET": "Töötaja number",
+      "lv-LV": "Darbinieka numurs",
+      "lt-LT": "",
+      "ro-RO": "Număr de angajat",
+      "hr-HR": "Broj zaposlenika",
+      "sl-SL": "Številka zaposlenega",
+      "cs-CZ": "Číslo zaměstnance",
+      "sk-SK": "Číslo zamestnanca",
+      "hu-HU": "Munkavállaló száma",
+      "bg-BG": "Номер на служителя",
+      "el-GR": "Αριθμός εργαζομένου",
+      "is-IS": "Starfsmaður númer"
+    }
   }
 ]

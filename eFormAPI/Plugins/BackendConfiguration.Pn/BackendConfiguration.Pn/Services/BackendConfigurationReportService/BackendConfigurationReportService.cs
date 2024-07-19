@@ -740,6 +740,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         }
 
                         var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+                        var workerId = sdkDbContext.SiteWorkers.First(x => x.Id == dbCase.SiteId).WorkerId;
+                        var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.Id == workerId);
 
                         if (dbCase == null)
                         {
@@ -762,7 +764,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 DoneBy = planningCase.DoneByUserName,
                                 ItemName = planningNameTranslation.Name,
                                 ItemDescription = planningCase.Planning.Description,
-                                PropertyName = propertyName
+                                PropertyName = propertyName,
+                                EmployeeNo = worker.EmployeeNo
                             };
 
 
