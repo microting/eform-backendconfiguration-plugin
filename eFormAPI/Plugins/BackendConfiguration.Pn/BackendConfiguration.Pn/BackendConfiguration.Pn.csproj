@@ -217,7 +217,7 @@
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="8.0.8" />
       <PackageReference Include="Ical.Net" Version="4.2.0" />
-      <PackageReference Include="Microting.eForm" Version="8.0.42" />
+      <PackageReference Include="Microting.eForm" Version="8.0.43" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="8.0.40" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="8.0.40" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
