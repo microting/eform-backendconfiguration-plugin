@@ -288,4 +288,6 @@ export const elGR = {
   'Are you sure you want to permanently delete this case': 'Είστε βέβαιοι ότι θέλετε να διαγράψετε οριστικά αυτήν την υπόθεση',
   Repeated: 'Αλλεπάλληλος',
   'Upload PDF': 'Ανεβάστε PDF',
+  'PIN code': 'Κωδικό PIN',
+  'Employee no': 'Υπάλληλος αρ',
 };

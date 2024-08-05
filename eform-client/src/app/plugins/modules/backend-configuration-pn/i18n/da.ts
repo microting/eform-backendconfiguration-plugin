@@ -290,4 +290,6 @@ export const da = {
   'Are you sure you want to permanently delete this case': 'Er du sikker på, at du vil slette denne sag permanent',
   Repeated: 'Gentag',
   'Upload PDF': 'Upload PDF',
+  'PIN code': 'PIN kode',
+  'Employee no': 'Medarbejder nummer',
 };

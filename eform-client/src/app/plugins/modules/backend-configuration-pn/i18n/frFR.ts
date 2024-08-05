@@ -288,4 +288,6 @@ export const frFR = {
   'Are you sure you want to permanently delete this case': 'Êtes-vous sûr de vouloir supprimer définitivement ce cas ?',
   Repeated: 'Répété',
   'Upload PDF': 'Télécharger le PDF',
+  'PIN code': 'Code PIN',
+  'Employee no': 'Numéro d&#39;employé',
 };

@@ -288,4 +288,6 @@ export const skSK = {
   'Are you sure you want to permanently delete this case': 'Naozaj chcete natrvalo odstrániť tento prípad?',
   Repeated: 'Opakované',
   'Upload PDF': 'Nahrajte súbor PDF',
+  'PIN code': 'PIN kód',
+  'Employee no': 'Zamestnanec č',
 };

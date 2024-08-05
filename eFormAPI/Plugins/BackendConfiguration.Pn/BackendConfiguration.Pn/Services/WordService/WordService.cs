@@ -841,6 +841,7 @@ public class WordService : IWordService
                     itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
                     itemsHtml.Append($@"<td>{_localizationService.GetString("SubmittedDate")}</td>");
                     itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
+                    itemsHtml.Append($@"<td>{_localizationService.GetString("EmployeeNo")}</td>");
                     itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
 
                     foreach (var itemHeader in groupeForm.ItemHeaders)
@@ -858,6 +859,7 @@ public class WordService : IWordService
 
                         itemsHtml.Append($@"<td>{dataModel.MicrotingSdkCaseDoneAt:dd.MM.yyyy}</td>");
                         itemsHtml.Append($@"<td>{dataModel.DoneBy}</td>");
+                        itemsHtml.Append($@"<td>{dataModel.EmployeeNo}</td>");
                         itemsHtml.Append($@"<td>{dataModel.ItemName}</td>");
 
                         foreach (var dataModelCaseField in dataModel.CaseFields)

@@ -288,4 +288,6 @@ export const esES = {
   'Are you sure you want to permanently delete this case': '¿Está seguro de que desea eliminar permanentemente este caso?',
   Repeated: 'Repetido',
   'Upload PDF': 'Subir PDF',
+  'PIN code': 'Código PIN',
+  'Employee no': 'Numero de empleado',
 };

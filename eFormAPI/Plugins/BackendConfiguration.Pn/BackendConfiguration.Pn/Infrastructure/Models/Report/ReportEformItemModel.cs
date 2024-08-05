@@ -38,6 +38,7 @@ public class ReportEformItemModel
     public string ItemName { get; set; }
     public string ItemDescription { get; set; }
     public string DoneBy { get; set; } // worker name
+    public string EmployeeNo { get; set; }
     public int PostsCount { get; set; }
     public int ImagesCount { get; set; }
     public string PropertyName { get; set; }

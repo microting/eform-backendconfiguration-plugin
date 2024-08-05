@@ -25,6 +25,7 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Services.RebusService;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
@@ -362,8 +363,26 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             // var deviceUsers = new List<DeviceUser>();
 
-            var sitesQuery = sdkDbContext.Sites
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+            // var sitesQuery = sdkDbContext.Sites
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+            var sitesQuery = from site in sdkDbContext.Sites
+                join siteWorker in sdkDbContext.SiteWorkers on site.Id equals siteWorker.SiteId
+                join worker in sdkDbContext.Workers on siteWorker.WorkerId equals worker.Id
+                select new
+                {
+                    Name = site.Name,
+                    EmployeeNo = worker.EmployeeNo,
+                    LanguageId = site.LanguageId,
+                    Id = site.Id,
+                    MicrotingUid = site.MicrotingUid,
+                    IsLocked = site.IsLocked,
+                    WorkerUid = worker.MicrotingUid,
+                    UserFirstName = worker.FirstName,
+                    UserLastName = worker.LastName,
+                    WorkflowState = site.WorkflowState
+
+                };
+            sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             try
             {
@@ -377,6 +396,10 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel
                 {
+                    UserFirstName = x.UserFirstName,
+                    UserLastName = x.UserLastName,
+                    EmployeeNo = x.EmployeeNo,
+                    WorkerUid = x.WorkerUid,
                     //UserFirstName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.FirstName,
                     //UserLastName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.LastName,
                     LanguageId = x.LanguageId,
@@ -416,22 +439,22 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
                     deviceUserModel.UnitId = unit.MicrotingUid;
                 }
 
-                var siteWorker = await sdkDbContext.SiteWorkers.FirstOrDefaultAsync(x => x.SiteId == deviceUserModel.SiteId);
-                if (siteWorker != null)
-                {
-                    var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == siteWorker.WorkerId);
-                    deviceUserModel.UserFirstName = worker.FirstName;
-                    deviceUserModel.UserLastName = worker.LastName;
-                    deviceUserModel.WorkerUid = worker.MicrotingUid;
-                    deviceUserModel.EmployeeNo = worker.EmployeeNo;
-                    deviceUserModel.PinCode = "****";
-                    deviceUserModel.TimeRegistrationEnabled =
-                        timeRegistrationEnabledSites.Any(x => x == deviceUserModel.SiteUid);
-                }
-                else
-                {
-                    Console.WriteLine(deviceUserModel.SiteId);
-                }
+                // var siteWorker = await sdkDbContext.SiteWorkers.FirstOrDefaultAsync(x => x.SiteId == deviceUserModel.SiteId);
+                // if (siteWorker != null)
+                // {
+                //     var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == siteWorker.WorkerId);
+                //     deviceUserModel.UserFirstName = worker.FirstName;
+                //     deviceUserModel.UserLastName = worker.LastName;
+                //     deviceUserModel.WorkerUid = worker.MicrotingUid;
+                //     deviceUserModel.EmployeeNo = worker.EmployeeNo;
+                deviceUserModel.PinCode = "****";
+                deviceUserModel.TimeRegistrationEnabled =
+                    timeRegistrationEnabledSites.Any(x => x == deviceUserModel.SiteUid);
+                // }
+                // else
+                // {
+                //     Console.WriteLine(deviceUserModel.SiteId);
+                // }
 
                 deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
                     x.WorkflowState != Constants.WorkflowStates.Removed

@@ -449,6 +449,9 @@ public class ExcelService : IExcelService
 							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
 							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 							y++;
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("EmployeeNo");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							y++;
 							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("ItemName");
 							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 							foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
@@ -471,6 +474,8 @@ public class ExcelService : IExcelService
 							worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
 							y++;
 							worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.EmployeeNo;
 							y++;
 							worksheet.Cell(x + 1, y + 1).Value = dataModel.ItemName;
 							y++;

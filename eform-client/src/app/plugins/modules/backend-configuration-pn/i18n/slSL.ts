@@ -288,4 +288,6 @@ export const slSL = {
   'Are you sure you want to permanently delete this case': 'Ali ste prepričani, da želite trajno izbrisati ta primer?',
   Repeated: 'Ponavljajo se',
   'Upload PDF': 'Naloži PDF',
+  'PIN code': 'PIN koda',
+  'Employee no': 'Uslužbenec št',
 };

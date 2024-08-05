@@ -288,4 +288,6 @@ export const nlNL = {
   'Are you sure you want to permanently delete this case': 'Weet u zeker dat u deze case definitief wilt verwijderen?',
   Repeated: 'Herhaald',
   'Upload PDF': 'Upload pdf',
+  'PIN code': 'Pincode',
+  'Employee no': 'Werknemer nummer',
 };

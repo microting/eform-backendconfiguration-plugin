@@ -288,4 +288,6 @@ export const huHU = {
   'Are you sure you want to permanently delete this case': 'Biztosan véglegesen törölni szeretné ezt az esetet?',
   Repeated: 'Megismételt',
   'Upload PDF': 'PDF feltöltése',
+  'PIN code': 'PIN-kód',
+  'Employee no': 'számú alkalmazott',
 };

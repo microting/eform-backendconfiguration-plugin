@@ -288,4 +288,6 @@ export const ltLT = {
   'Are you sure you want to permanently delete this case': 'Ar tikrai norite visam laikui ištrinti šį atvejį?',
   Repeated: 'Pasikartojo',
   'Upload PDF': 'Įkelti PDF',
+  'PIN code': 'PIN kodas',
+  'Employee no': 'Darbuotojas Nr',
 };

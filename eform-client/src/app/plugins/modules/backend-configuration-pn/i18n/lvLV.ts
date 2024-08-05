@@ -288,4 +288,6 @@ export const lvLV = {
   'Are you sure you want to permanently delete this case': 'Vai tiešām vēlaties neatgriezeniski dzēst šo lietu?',
   Repeated: 'Atkārtoti',
   'Upload PDF': 'Augšupielādēt PDF',
+  'PIN code': 'PIN kods',
+  'Employee no': 'Darbinieks Nr',
 };

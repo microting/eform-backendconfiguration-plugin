@@ -288,4 +288,6 @@ export const roRO = {
   'Are you sure you want to permanently delete this case': 'Sigur doriți să ștergeți definitiv acest caz',
   Repeated: 'Repetat',
   'Upload PDF': 'Încărcați PDF',
+  'PIN code': 'Cod PIN',
+  'Employee no': 'Angajat nr',
 };

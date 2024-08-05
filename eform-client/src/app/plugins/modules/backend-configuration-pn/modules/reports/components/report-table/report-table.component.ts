@@ -72,6 +72,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
         }
       ]
     },
+    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
   adminTableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
@@ -109,6 +110,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
         }
       ]
     },
+    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
   mergedTableHeaders: MtxGridColumn[] = [];
 

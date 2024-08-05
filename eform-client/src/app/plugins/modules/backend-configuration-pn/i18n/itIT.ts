@@ -288,4 +288,6 @@ export const itIT = {
   'Are you sure you want to permanently delete this case': 'Sei sicuro di voler eliminare definitivamente questo caso?',
   Repeated: 'Ripetuto',
   'Upload PDF': 'Carica PDF',
+  'PIN code': 'Codice PIN',
+  'Employee no': 'Dipendente n',
 };

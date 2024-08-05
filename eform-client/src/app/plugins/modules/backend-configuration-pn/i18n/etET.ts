@@ -288,4 +288,6 @@ export const etET = {
   'Are you sure you want to permanently delete this case': 'Kas olete kindel, et soovite selle juhtumi jäädavalt kustutada?',
   Repeated: 'Korduv',
   'Upload PDF': 'Laadige üles PDF',
+  'PIN code': 'PIN-koodi',
+  'Employee no': 'Töötaja nr',
 };

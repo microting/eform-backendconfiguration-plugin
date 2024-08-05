@@ -288,4 +288,6 @@ export const csCZ = {
   'Are you sure you want to permanently delete this case': 'Opravdu chcete tento případ trvale smazat?',
   Repeated: 'Opakované',
   'Upload PDF': 'Nahrát PDF',
+  'PIN code': 'PIN kód',
+  'Employee no': 'Zaměstnanec č',
 };
