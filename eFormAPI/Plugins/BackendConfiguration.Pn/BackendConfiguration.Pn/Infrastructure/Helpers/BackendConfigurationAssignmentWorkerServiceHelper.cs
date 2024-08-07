@@ -268,6 +268,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             int userId,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext, TimePlanningPnDbContext timePlanningDbContext)
         {
+            deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
+            deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
             try
             {
                 if (deviceUserModel.SiteMicrotingUid == 0)
@@ -506,6 +508,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext)
         {
+            deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
+            deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
             // var result = await _deviceUsersService.Create(deviceUserModel);
             var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
