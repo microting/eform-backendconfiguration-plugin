@@ -7,11 +7,11 @@ with open(file_path, "r") as file:
     content = file.read()
 
 replacements = [
-    (r"INSERT ROUTES HERE", "  },\nINSERT ROUTES HERE"),
-    (r"INSERT ROUTES HERE", "      .then(m => m.BackendConfigurationPnModule)\nINSERT ROUTES HERE"),
-    (r"INSERT ROUTES HERE", "    loadChildren: () => import('./modules/backend-configuration-pn/backend-configuration-pn.module')\nINSERT ROUTES HERE"),
-    (r"INSERT ROUTES HERE", "    path: 'backend-configuration-pn',\nINSERT ROUTES HERE"),
-    (r"INSERT ROUTES HERE", "  {\nINSERT ROUTES HERE"),
+    (r"// INSERT ROUTES HERE", "  {\n// INSERT ROUTES HERE"),
+    (r"// INSERT ROUTES HERE", "    path: 'backend-configuration-pn',\n// INSERT ROUTES HERE"),
+    (r"// INSERT ROUTES HERE", "    loadChildren: () => import('./modules/backend-configuration-pn/backend-configuration-pn.module')\n// INSERT ROUTES HERE"),
+    (r"// INSERT ROUTES HERE", "      .then(m => m.BackendConfigurationPnModule)\n// INSERT ROUTES HERE"),
+    (r"// INSERT ROUTES HERE", "  },\n// INSERT ROUTES HERE"),
 ]
 
 for pattern, replacement in replacements:
