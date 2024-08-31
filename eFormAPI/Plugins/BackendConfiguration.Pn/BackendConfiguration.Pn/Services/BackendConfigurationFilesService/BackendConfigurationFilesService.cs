@@ -67,7 +67,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		_coreHelper = coreHelper;
 	}
 
-	public async Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index(BackendConfigurationFileRequestModel request)
+	public async Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index(
+		BackendConfigurationFileRequestModel request)
 	{
 		try
 		{
@@ -78,10 +79,12 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				.Include(x => x.PropertyFiles)
 				.AsQueryable();
 			// filtration
-			if(!string.IsNullOrEmpty(request.NameFilter))
+			if (!string.IsNullOrEmpty(request.NameFilter))
 			{
-				query = query.Where(x => x.FileName.Contains(request.NameFilter) || x.UploadedData.Extension.Contains(request.NameFilter));
+				query = query.Where(x =>
+					x.FileName.Contains(request.NameFilter) || x.UploadedData.Extension.Contains(request.NameFilter));
 			}
+
 			if (request.DateFrom.HasValue && request.DateTo.HasValue)
 			{
 				// if dates is equal need set date to end this date(23h59m59s)
@@ -93,13 +96,15 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 						.AddSeconds(59)
 						.AddMilliseconds(999)
 						.AddMicroseconds(999);
-					request.DateTo = new DateTime(request.DateTo.Value.Year, request.DateTo.Value.Month, request.DateTo.Value.Day, 23, 59, 59);
+					request.DateTo = new DateTime(request.DateTo.Value.Year, request.DateTo.Value.Month,
+						request.DateTo.Value.Day, 23, 59, 59);
 				}
 
 				query = query
 					.Where(x => request.DateFrom <= x.CreatedAt)
 					.Where(x => request.DateTo >= x.CreatedAt);
 			}
+
 			if (request.PropertyIds.Count > 0)
 			{
 				query = query.Where(x => x.PropertyFiles
@@ -108,15 +113,18 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					.Select(y => y.PropertyId)
 					.Any(y => request.PropertyIds.Contains(y)));
 			}
+
 			if (request.TagIds.Count > 0)
 			{
 				foreach (var tagId in request.TagIds)
 				{
 					query = query.Where(x =>
-							x.FileTags.Any(y => y.FileTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+							x.FileTags.Any(y =>
+								y.FileTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
 						.AsNoTracking();
 				}
 			}
+
 			// sort
 			query = QueryHelper.AddSortToQuery(query, request.Sort, request.IsSortDsc);
 
@@ -156,7 +164,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e.Message);
-			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(false, _localizationService.GetString("ErrorWhileObtainingFiles"));
+			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(false,
+				_localizationService.GetString("ErrorWhileObtainingFiles"));
 		}
 	}
 
@@ -180,9 +189,12 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			await file.Update(_dbContext);
 
 			var propertiesForDeleteFromFile =
-				file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed).Where(x => !model.PropertyIds.Contains(x.PropertyId)).ToList();
+				file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(x => !model.PropertyIds.Contains(x.PropertyId)).ToList();
 			var propertiesForAddToFile =
-				model.PropertyIds.Where(x => !file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed).Select(y => y.PropertyId).Contains(x)).ToList();
+				model.PropertyIds.Where(x =>
+					!file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(y => y.PropertyId).Contains(x)).ToList();
 
 			foreach (var propertyFile in propertiesForDeleteFromFile)
 			{
@@ -261,23 +273,27 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var core = await _coreHelper.GetCore();
 			foreach (var fileCreate in model.Where(x => x.File != null))
 			{
+				// Extract the file extension
+				var fileExtension = Path.GetExtension(fileCreate.File.FileName).TrimStart('.').ToLower();
+				var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileCreate.File.FileName);
+
 				// create file in db
 				var fileForDb = new File
 				{
 					CreatedByUserId = _userService.UserId,
-					FileName = fileCreate.File.FileName.Replace(".pdf", ""), // save only filename, without extension
+					FileName = fileNameWithoutExtension, // save only filename, without extension
 					UpdatedByUserId = _userService.UserId
 				};
 				await fileForDb.Create(_dbContext);
 
 				// add file to property
 				foreach (var propertyFile in fileCreate.PropertyIds.Select(x => new PropertyFile
-				{
-					FileId = fileForDb.Id,
-					PropertyId = x,
-					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId
-				}))
+				         {
+					         FileId = fileForDb.Id,
+					         PropertyId = x,
+					         CreatedByUserId = _userService.UserId,
+					         UpdatedByUserId = _userService.UserId
+				         }))
 				{
 					await propertyFile.Create(_dbContext);
 				}
@@ -295,15 +311,17 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				}
 
 				// upload file and save in db file info
-				var folder = Path.Combine(Path.GetTempPath(), "backend-configuration-pdf");
+				var folder = Path.Combine(Path.GetTempPath(), "backend-configuration-files");
 				Directory.CreateDirectory(folder);
 				var fileName = $"{DateTime.Now.Ticks}_{DateTime.Now.Microsecond}";
-				var filePath = Path.Combine(folder, $"{fileName}.pdf");
+				var filePath = Path.Combine(folder, $"{fileName}.{fileExtension}");
+
 				// if you replace using to await using - stream not start copy until it goes beyond the current block
 				await using (var stream = new FileStream(filePath, FileMode.Create))
 				{
 					await fileCreate.File.CopyToAsync(stream);
 				}
+
 				string checkSum;
 				using (var md5 = MD5.Create())
 				{
@@ -313,10 +331,12 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 						checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
 					}
 				}
-				await core.PutFileToStorageSystem(filePath, $"{checkSum}.pdf");
+
+				await core.PutFileToStorageSystem(filePath, $"{checkSum}.{fileExtension}");
+
 				var uploadedData = new UploadedData
 				{
-					Extension = "pdf",
+					Extension = fileExtension,
 					FileName = fileName,
 					Checksum = checkSum,
 					CreatedByUserId = _userService.UserId,
@@ -326,6 +346,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				};
 				await uploadedData.Create(_dbContext);
 			}
+
 			return new OperationResult(true);
 		}
 		catch (Exception e)
@@ -335,6 +356,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreateFiles"));
 		}
 	}
+
 
 	public async Task<OperationResult> Delete(int id)
 	{
@@ -418,7 +440,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 
 			if (file == null)
 			{
-				return new OperationDataResult<BackendConfigurationFileModel>(false, _localizationService.GetString("FileNotFound"));
+				return new OperationDataResult<BackendConfigurationFileModel>(false,
+					_localizationService.GetString("FileNotFound"));
 			}
 
 			return new OperationDataResult<BackendConfigurationFileModel>(true, file);
@@ -427,7 +450,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e.Message);
-			return new OperationDataResult<BackendConfigurationFileModel>(false, _localizationService.GetString("ErrorWhileGetFile"));
+			return new OperationDataResult<BackendConfigurationFileModel>(false,
+				_localizationService.GetString("ErrorWhileGetFile"));
 		}
 	}
 

@@ -76,7 +76,7 @@ export class FilesTableComponent implements OnInit {
         {
           type: 'icon',
           icon: 'visibility',
-          tooltip: this.translateService.stream('View PDF'),
+          tooltip: this.translateService.stream('View File'),
           click: (filesModel: FilesModel) => this.onOpenView(filesModel),
           class: 'viewPdfBtn',
         },
