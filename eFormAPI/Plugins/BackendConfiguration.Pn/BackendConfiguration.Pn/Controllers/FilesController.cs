@@ -136,9 +136,9 @@ public class FilesController : Controller
 				foreach (var fileId in model.FileIds)
 				{
 					var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
-					var ss = await core.GetFileFromS3Storage($"{uploadedData.Checksum}.pdf");
+					var ss = await core.GetFileFromS3Storage($"{uploadedData.Checksum}.{uploadedData.Extension}");
 					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
-					var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.pdf",
+					var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.{uploadedData.Extension}",
 						CompressionLevel.Fastest);
 					await using var zipStream = zipArchiveEntry.Open();
 					await ss.ResponseStream.CopyToAsync(zipStream);
