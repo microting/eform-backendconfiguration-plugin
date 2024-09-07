@@ -1,652 +1,534 @@
-﻿/*
-The MIT License (MIT)
-
-Copyright (c) 2007 - 2022 Microting A/S
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
-
-namespace BackendConfiguration.Pn.Services.ExcelService;
-
-using Infrastructure.Models.Report;
-using Infrastructure.Models.TaskTracker;
-using BackendConfigurationLocalizationService;
-using ClosedXML.Excel;
-using Infrastructure.Models.TaskManagement;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microting.eForm.Infrastructure.Constants;
+using BackendConfiguration.Pn.Infrastructure.Models.Report;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
-public class ExcelService : IExcelService
+namespace BackendConfiguration.Pn.Services.ExcelService;
+
+public class ExcelService(
+    ILogger<ExcelService> logger,
+    IBackendConfigurationLocalizationService localizationService,
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    IUserService userService,
+    IEFormCoreService coreHelper)
+    : IExcelService
 {
-	private readonly ILogger<ExcelService> _logger;
-	private readonly IBackendConfigurationLocalizationService _localizationService;
-	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-	private readonly IUserService _userService;
-    private readonly IEFormCoreService _coreHelper;
+    private readonly IUserService _userService = userService;
 
-    public ExcelService(ILogger<ExcelService> logger,
-		IBackendConfigurationLocalizationService localizationService,
-		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-		IUserService userService, IEFormCoreService coreHelper)
-	{
-		_logger = logger;
-		_localizationService = localizationService;
-		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-		_userService = userService;
-        _coreHelper = coreHelper;
-    }
-
-	public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
-	{
-		try
-		{
+    public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel,
+        List<WorkorderCaseModel> workOrderCaseModels)
+    {
+        try
+        {
             var filtersLastAssignedTo = "";
             if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
             {
-                var core = await _coreHelper.GetCore();
+                var core = await coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 filtersLastAssignedTo = await sdkDbContext.Sites
                     .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
                     .Select(x => x.Name)
                     .FirstOrDefaultAsync();
             }
-            var propertyName = await _backendConfigurationPnDbContext.Properties
-				.Where(x => x.Id == filtersModel.PropertyId)
-				.Select(x => x.Name)
-				.FirstOrDefaultAsync().ConfigureAwait(false);
-			Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
 
-			var resultDocument = Path.Combine(Path.GetTempPath(), "results",
-				$"{propertyName}_{filtersModel.AreaName}.xlsx");
+            var propertyName = await backendConfigurationPnDbContext.Properties
+                .Where(x => x.Id == filtersModel.PropertyId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
-			IXLWorkbook wb = new XLWorkbook();
-			var sheetName = $"{propertyName}_{filtersModel.AreaName}"
-				.Replace(":", "")
-				.Replace("\\", "")
-				.Replace("/", "")
-				.Replace("?", "")
-				.Replace("*", "")
-				.Replace("[", "")
-				.Replace("]", "");
-			if (sheetName.Length > 31)
-			{
-				sheetName = sheetName.Substring(0, 31);
-			}
-			var worksheet = wb.Worksheets.Add(sheetName);
+            var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+                $"{propertyName}_{filtersModel.AreaName}.xlsx");
 
-			// table with selected filters
-			//* header table
-			const int startColumnForHeaderTable = 1;
-			var currentRow = 1;
-			var currentColumn = startColumnForHeaderTable;
-			// worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
-			// // worksheet.Range(currentRow, currentColumn, currentRow, currentColumn).Cells().Style.Alignment
-			// //     .Horizontal = XLAlignmentHorizontalValues.Center;
-			// SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 6));
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
-			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
-			// worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date");
-			//
-			// currentColumn = startColumnForHeaderTable;
-			// //* table data
-			// worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties
-			// 	.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false);
-			// worksheet.Cell(currentRow, currentColumn++).Value =
-			// 	string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
-			// worksheet.Cell(currentRow, currentColumn++).Value =
-			// 	string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
-			// worksheet.Cell(currentRow, currentColumn++).Value = filtersLastAssignedTo;
-			// worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
-			// 	? ""
-			// 	: _localizationService.GetString(filtersModel.GetStringStatus());
-			// var dateValue = !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("dd.MM.yyyy");
-			// dateValue += !filtersModel.DateTo.HasValue ? "" : "-";
-			// dateValue += !filtersModel.DateTo.HasValue
-			// 	? ""
-			// 	: filtersModel.DateTo.Value.ToString("dd.MM.yyyy");
-			// worksheet.Cell(currentRow, currentColumn).Value = dateValue;
+            using (var spreadsheetDocument =
+                   SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = spreadsheetDocument.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
 
-			// worksheet.Cell(currentRow, currentColumn).Value
-			// worksheet.Cell(currentRow++, currentColumn).Value
+                var sheets = workbookPart.Workbook.AppendChild(new Sheets());
 
-			const int startColumnForDataTable = 1;
-			//currentRow++;
-			//currentRow++;
-			currentColumn = startColumnForDataTable;
-			SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow,
-				startColumnForDataTable + 11));
-			worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 11).Cells().Style
-				.Font.Bold = true;
-			worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 11).Cells().Style
-				.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                var sheetName = CreateSafeSheetName($"{propertyName}_{filtersModel.AreaName}");
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new Worksheet(new SheetData());
 
-			// table report
-			//* header table
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Id");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Created");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Location");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Area");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy1");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy2");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Description");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdateDate");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdatedBy");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
-			worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Status");
+                var sheet = new Sheet
+                {
+                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = 1,
+                    Name = sheetName
+                };
+                sheets.Append(sheet);
 
+                var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
-			//* table data
-			foreach (var workOrderCaseModel in workOrderCaseModels)
-			{
-				currentColumn = startColumnForDataTable;
+                // Create header row
+                CreateHeaderRow(sheetData, localizationService);
 
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
-				worksheet.Cell(currentRow, currentColumn++).SetValue(workOrderCaseModel.CaseInitiated);
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByText;
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description != null
-					? workOrderCaseModel.Description.Replace("<br>", "").Replace("<br />", "\n")
-					: "";
-				worksheet.Cell(currentRow, currentColumn++).SetValue(workOrderCaseModel.LastUpdateDate.HasValue
-					? workOrderCaseModel.LastUpdateDate.Value
-					: "");
-				worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdatedBy;
-				var priorityText = workOrderCaseModel.Priority switch
-				{
-					1 => _localizationService.GetString("Urgent"),
-					2 => _localizationService.GetString("High"),
-					3 => _localizationService.GetString("Medium"),
-					4 => _localizationService.GetString("Low"),
-					_ => ""
-				};
-				worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString(priorityText);
-				worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString(workOrderCaseModel.Status);
-			}
-			worksheet.RangeUsed().SetAutoFilter();
+                // Add data rows
+                PopulateDataRows(sheetData, workOrderCaseModels);
 
-			// worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents(); // This does not work inside Docker container
+                workbookPart.Workbook.Save();
+            }
 
-			wb.SaveAs(resultDocument);
+            Stream result = File.Open(resultDocument, FileMode.Open);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            throw;
+        }
+    }
 
-			Stream result = File.Open(resultDocument, FileMode.Open);
-			return result;
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine(ex.Message);
-			throw;
-		}
-	}
+    public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel)
+    {
+        try
+        {
+            // Create directory for results if it doesn't exist
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+            var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+            var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
 
-	private static void SetBorders(IXLRangeBase range, XLBorderStyleValues valueStyle = XLBorderStyleValues.Thin)
-	{
-		range.Cells().Style.Border.SetBottomBorder(valueStyle);
-		range.Cells().Style.Border.SetLeftBorder(valueStyle);
-		range.Cells().Style.Border.SetRightBorder(valueStyle);
-		range.Cells().Style.Border.SetTopBorder(valueStyle);
-	}
+            using (var spreadsheetDocument =
+                   SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = spreadsheetDocument.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
 
-#pragma warning disable CS1998
-	public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel)
-#pragma warning restore CS1998
-	{
-		try
-		{
-			Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+                var sheets = workbookPart.Workbook.AppendChild(new Sheets());
 
-			var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+                foreach (var eformModel in reportModel)
+                {
+                    if (eformModel.FromDate != null)
+                    {
+                        var sheetName = $"{eformModel.CheckListId} - {eformModel.CheckListName}";
+                        sheetName = CreateSafeSheetName(sheetName);
 
-			var resultDocument = Path.Combine(Path.GetTempPath(), "results",
-				$"{timeStamp}_.xlsx");
+                        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                        worksheetPart.Worksheet = new Worksheet(new SheetData());
+                        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
-			IXLWorkbook wb = new XLWorkbook();
+                        var sheet = new Sheet
+                        {
+                            Id = workbookPart.GetIdOfPart(worksheetPart),
+                            SheetId = (uint)(sheets.Count() + 1), // Increment sheet ID
+                            Name = sheetName
+                        };
+                        sheets.Append(sheet);
 
-			foreach (var eformModel in reportModel)
-			{
-				if (eformModel.FromDate != null)
-				{
-					var x = 0;
-					var y = 0;
-					var sheetName = $"{eformModel.CheckListId} - {eformModel.CheckListName}";
+                        // Create header row
+                        var headerRow = new Row();
+                        headerRow.Append(
+                            ConstructCell(localizationService.GetString("Id"), CellValues.String),
+                            ConstructCell(localizationService.GetString("Property"), CellValues.String),
+                            ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String),
+                            ConstructCell(localizationService.GetString("DoneBy"), CellValues.String),
+                            ConstructCell(localizationService.GetString("ItemName"), CellValues.String)
+                        );
 
-					sheetName = sheetName
-						.Replace(":", "")
-						.Replace("\\", "")
-						.Replace("/", "")
-						.Replace("?", "")
-						.Replace("*", "")
-						.Replace("[", "")
-						.Replace("]", "");
+                        foreach (var itemHeader in eformModel.ItemHeaders)
+                        {
+                            headerRow.Append(ConstructCell(itemHeader.Value, CellValues.String));
+                        }
 
-					if (sheetName.Length > 30)
-					{
-						sheetName = sheetName.Substring(0, 30);
-					}
-					var worksheet = wb.Worksheets.Add(sheetName);
+                        sheetData.AppendChild(headerRow);
 
+                        // Populate data rows
+                        foreach (var dataModel in eformModel.Items)
+                        {
+                            var dataRow = new Row();
+                            dataRow.Append(
+                                ConstructCell(dataModel.MicrotingSdkCaseId.ToString(), CellValues.String),
+                                ConstructCell(dataModel.PropertyName, CellValues.String),
+                                ConstructCell(dataModel.MicrotingSdkCaseDoneAt?.ToString("dd.MM.yyyy HH:mm:ss"),
+                                    CellValues.String),
+                                ConstructCell(dataModel.DoneBy, CellValues.String),
+                                ConstructCell(dataModel.ItemName, CellValues.String)
+                            );
 
-					if (eformModel.Items.Any())
-					{
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Id");
-						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
-						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
-						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
-						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("ItemName");
-						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						foreach (var itemHeader in eformModel.ItemHeaders)
-						{
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = itemHeader.Value;
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-						}
-					}
+                            foreach (var dataModelCaseField in dataModel.CaseFields)
+                            {
+                                var value = dataModelCaseField.Value switch
+                                {
+                                    "checked" => "1",
+                                    "unchecked" => "0",
+                                    _ => dataModelCaseField.Value
+                                };
 
-					x = 1;
-					foreach (var dataModel in eformModel.Items)
-					{
-						y = 0;
-						worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseId;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = dataModel.PropertyName;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseDoneAt;
-						worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
-						y++;
-						worksheet.Cell(x + 1, y + 1).Value = dataModel.ItemName;
-						y++;
-						foreach (var dataModelCaseField in dataModel.CaseFields)
-						{
-							if (dataModelCaseField.Value == "checked")
-							{
-								worksheet.Cell(x + 1, y + 1).Value = 1;
-							}
-							else
-							{
-								var value = dataModelCaseField.Value == "unchecked" ? "0" : dataModelCaseField.Value == "checked" ? "1" : dataModelCaseField.Value;
+                                switch (dataModelCaseField.Key)
+                                {
+                                    case "date":
+                                        if (DateTime.TryParse(value, out var dateValue))
+                                        {
+                                            dataRow.Append(ConstructCell(dateValue.ToString("dd.MM.yyyy"),
+                                                CellValues.String));
+                                        }
+                                        else
+                                        {
+                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                        }
 
-								switch (dataModelCaseField.Key)
-								{
-									case "date":
-										try
-										{
-											var date = DateTime.Parse(value);
-											worksheet.Cell(x + 1, y + 1).SetValue(date);
-											worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
-										}
-										catch (Exception e)
-										{
-											Console.WriteLine(e);
-											worksheet.Cell(x + 1, y + 1).SetValue(value);
-										}
-										break;
-									case "number":
-										try
-										{
-											if (!string.IsNullOrEmpty(value))
-											{
-												var number = Double.Parse(value, CultureInfo.InvariantCulture);
-												worksheet.Cell(x + 1, y + 1).SetValue(number);
-											}
-										}
-										catch (Exception e)
-										{
-											Console.WriteLine(e);
-											worksheet.Cell(x + 1, y + 1).SetValue(value);
-										}
-										break;
-									default:
-									{
-										if (Double.TryParse(value, out var number))
-										{
-											worksheet.Cell(x + 1, y + 1).SetValue(number);
-										}
-										else
-										{
-											worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
-										}
-										break;
-									}
-								}
-							}
+                                        break;
+                                    case "number":
+                                        if (double.TryParse(value, out var numberValue))
+                                        {
+                                            dataRow.Append(ConstructCell(
+                                                numberValue.ToString(CultureInfo.InvariantCulture),
+                                                CellValues.Number));
+                                        }
+                                        else
+                                        {
+                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                        }
 
-							y++;
-						}
+                                        break;
+                                    default:
+                                        dataRow.Append(ConstructCell(value, CellValues.String));
+                                        break;
+                                }
+                            }
 
-						x++;
-					}
-					worksheet.RangeUsed().SetAutoFilter();
-				}
-			}
+                            sheetData.AppendChild(dataRow);
+                        }
+                    }
+                }
 
-			wb.SaveAs(resultDocument);
+                workbookPart.Workbook.Save();
+            }
 
-			Stream result = File.Open(resultDocument, FileMode.Open);
-			return new OperationDataResult<Stream>(true, result);
-		}
-		catch (Exception e)
-		{
-			Trace.TraceError(e.Message);
-			_logger.LogError(e.Message);
-			return new OperationDataResult<Stream>(
-				false,
-				_localizationService.GetString("ErrorWhileCreatingWordFile"));
-		}
-	}
-#pragma warning disable CS1998
-	public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
-#pragma warning restore CS1998
-	{
-		try
-		{
-			Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+            Stream result = File.Open(resultDocument, FileMode.Open);
+            return new OperationDataResult<Stream>(true, result);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e.Message);
+            return new OperationDataResult<Stream>(false,
+                localizationService.GetString("ErrorWhileCreatingWordFile"));
+        }
+    }
 
-			var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+    public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+    {
+        try
+        {
+            // Create a directory for results if it doesn't exist
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+            var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+            var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
 
-			var resultDocument = Path.Combine(Path.GetTempPath(), "results",
-				$"{timeStamp}_.xlsx");
+            using (var spreadsheetDocument =
+                   SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = spreadsheetDocument.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
 
-			IXLWorkbook wb = new XLWorkbook();
-			var worksheetNames = new List<string>();
-			var douplicateNumber = 0;
+                var sheets = workbookPart.Workbook.AppendChild(new Sheets());
+                var worksheetNames = new List<string>();
+                var duplicateNumber = 0;
 
-			foreach (var eformModel in reportModel)
-			{
-				foreach (var reportEformGroupModel in eformModel.GroupEform)
-				{
-					if (eformModel.FromDate != null)
-					{
-						var x = 0;
-						var y = 0;
-						var sheetName = eformModel.GroupEform.Count > 1
-							? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
-							: $"{eformModel.GroupTagName}";
+                foreach (var eformModel in reportModel)
+                {
+                    foreach (var reportEformGroupModel in eformModel.GroupEform)
+                    {
+                        if (eformModel.FromDate != null)
+                        {
+                            var sheetName = eformModel.GroupEform.Count > 1
+                                ? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
+                                : $"{eformModel.GroupTagName}";
 
-						sheetName = sheetName
-							.Replace(":", "")
-							.Replace("\\", "")
-							.Replace("/", "")
-							.Replace("?", "")
-							.Replace("*", "")
-							.Replace("[", "")
-							.Replace("]", "");
+                            sheetName = CreateSafeSheetName(sheetName);
 
-						if (sheetName.Length > 30)
-						{
-							sheetName = sheetName.Substring(0, 30);
-						}
+                            // Check for duplicate sheet names
+                            if (worksheetNames.Contains(sheetName))
+                            {
+                                duplicateNumber++;
+                                sheetName = $"({duplicateNumber}){sheetName}";
+                                sheetName = sheetName.Substring(0, Math.Min(31, sheetName.Length));
+                            }
+                            else
+                            {
+                                worksheetNames.Add(sheetName);
+                            }
 
-						if (worksheetNames.Contains(sheetName))
-						{
-							worksheetNames.Add(sheetName);
-							douplicateNumber++;
-							sheetName = $"({douplicateNumber}){sheetName}";
-							sheetName = sheetName.Substring(0, 30);
-						} else
-						{
-							worksheetNames.Add(sheetName);
-						}
+                            var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                            worksheetPart.Worksheet = new Worksheet(new SheetData());
+                            var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
-						var worksheet = wb.Worksheets.Add(sheetName);
+                            var sheet = new Sheet
+                            {
+                                Id = workbookPart.GetIdOfPart(worksheetPart),
+                                SheetId = (uint)(sheets.Count() + 1),
+                                Name = sheetName
+                            };
+                            sheets.Append(sheet);
+
+                            // Create header row
+                            var headerRow = new Row();
+                            headerRow.Append(
+                                ConstructCell(localizationService.GetString("Id"), CellValues.String),
+                                ConstructCell(localizationService.GetString("Property"), CellValues.String),
+                                ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String),
+                                ConstructCell(localizationService.GetString("DoneBy"), CellValues.String),
+                                ConstructCell(localizationService.GetString("EmployeeNo"), CellValues.String),
+                                ConstructCell(localizationService.GetString("ItemName"), CellValues.String)
+                            );
+
+                            foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
+                            {
+                                headerRow.Append(ConstructCell(itemHeader.Value, CellValues.String));
+                            }
+
+                            sheetData.AppendChild(headerRow);
+
+                            // Populate data rows
+                            foreach (var dataModel in reportEformGroupModel.Items)
+                            {
+                                var dataRow = new Row();
+                                dataRow.Append(
+                                    ConstructCell(dataModel.MicrotingSdkCaseId.ToString(), CellValues.String),
+                                    ConstructCell(dataModel.PropertyName, CellValues.String),
+                                    ConstructCell(dataModel.MicrotingSdkCaseDoneAt?.ToString("dd.MM.yyyy HH:mm:ss"),
+                                        CellValues.String),
+                                    ConstructCell(dataModel.DoneBy, CellValues.String),
+                                    ConstructCell(dataModel.EmployeeNo, CellValues.String),
+                                    ConstructCell(dataModel.ItemName, CellValues.String)
+                                );
+
+                                foreach (var dataModelCaseField in dataModel.CaseFields)
+                                {
+                                    var value = dataModelCaseField.Value switch
+                                    {
+                                        "checked" => "1",
+                                        "unchecked" => "0",
+                                        _ => dataModelCaseField.Value
+                                    };
+
+                                    switch (dataModelCaseField.Key)
+                                    {
+                                        case "date":
+                                            if (DateTime.TryParse(value, out var dateValue))
+                                            {
+                                                dataRow.Append(ConstructCell(dateValue.ToString("dd.MM.yyyy"),
+                                                    CellValues.String));
+                                            }
+                                            else
+                                            {
+                                                dataRow.Append(ConstructCell(value, CellValues.String));
+                                            }
+
+                                            break;
+                                        case "number":
+                                            if (double.TryParse(value, out var numberValue))
+                                            {
+                                                dataRow.Append(ConstructCell(
+                                                    numberValue.ToString(CultureInfo.InvariantCulture),
+                                                    CellValues.Number));
+                                            }
+                                            else
+                                            {
+                                                dataRow.Append(ConstructCell(value, CellValues.String));
+                                            }
+
+                                            break;
+                                        default:
+                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                            break;
+                                    }
+                                }
+
+                                sheetData.AppendChild(dataRow);
+                            }
+                        }
+                    }
+                }
+
+                workbookPart.Workbook.Save();
+            }
+
+            Stream result = File.Open(resultDocument, FileMode.Open);
+            return new OperationDataResult<Stream>(true, result);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e.Message);
+            return new OperationDataResult<Stream>(false,
+                localizationService.GetString("ErrorWhileCreatingExcelFile"));
+        }
+    }
 
 
-						if (reportEformGroupModel.Items.Any())
-						{
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Id");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("EmployeeNo");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("ItemName");
-							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
-							{
-								y++;
-								worksheet.Cell(x + 1, y + 1).Value = itemHeader.Value;
-								worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
-							}
-						}
+    private static string CreateSafeSheetName(string sheetName)
+    {
+        sheetName = sheetName
+            .Replace(":", "")
+            .Replace("\\", "")
+            .Replace("/", "")
+            .Replace("?", "")
+            .Replace("*", "")
+            .Replace("[", "")
+            .Replace("]", "");
 
-						x = 1;
-						foreach (var dataModel in reportEformGroupModel.Items)
-						{
-							y = 0;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseId;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.PropertyName;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseDoneAt;
-							worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.EmployeeNo;
-							y++;
-							worksheet.Cell(x + 1, y + 1).Value = dataModel.ItemName;
-							y++;
-							foreach (var dataModelCaseField in dataModel.CaseFields)
-							{
-								if (dataModelCaseField.Value == "checked")
-								{
-									worksheet.Cell(x + 1, y + 1).Value = 1;
-								}
-								else
-								{
-									var value = dataModelCaseField.Value == "unchecked" ? "0" :
-										dataModelCaseField.Value == "checked" ? "1" : dataModelCaseField.Value;
+        return sheetName.Length > 31 ? sheetName.Substring(0, 31) : sheetName;
+    }
 
-									switch (dataModelCaseField.Key)
-									{
-										case "date":
-											try
-											{
-												var date = DateTime.Parse(value);
-												worksheet.Cell(x + 1, y + 1).SetValue(date);
-												worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
-											}
-											catch (Exception e)
-											{
-												Console.WriteLine(e);
-												worksheet.Cell(x + 1, y + 1).SetValue(value);
-											}
+    private void CreateHeaderRow(SheetData sheetData, IBackendConfigurationLocalizationService localizationService)
+    {
+        var headerRow = new Row();
+        headerRow.Append(
+            ConstructCell(localizationService.GetString("Id"), CellValues.String),
+            ConstructCell(localizationService.GetString("Created"), CellValues.String),
+            ConstructCell(localizationService.GetString("Location"), CellValues.String),
+            ConstructCell(localizationService.GetString("Area"), CellValues.String),
+            ConstructCell(localizationService.GetString("CreatedBy1"), CellValues.String),
+            ConstructCell(localizationService.GetString("CreatedBy2"), CellValues.String),
+            ConstructCell(localizationService.GetString("LastAssignedTo"), CellValues.String),
+            ConstructCell(localizationService.GetString("Description"), CellValues.String),
+            ConstructCell(localizationService.GetString("LastUpdateDate"), CellValues.String),
+            ConstructCell(localizationService.GetString("LastUpdatedBy"), CellValues.String),
+            ConstructCell(localizationService.GetString("Priority"), CellValues.String),
+            ConstructCell(localizationService.GetString("Status"), CellValues.String)
+        );
+        sheetData.AppendChild(headerRow);
+    }
 
-											break;
-										case "number":
-											try
-											{
-												if (!string.IsNullOrEmpty(value))
-												{
-													var number = Double.Parse(value, CultureInfo.InvariantCulture);
-													worksheet.Cell(x + 1, y + 1).SetValue(number);
-												}
-											}
-											catch (Exception e)
-											{
-												Console.WriteLine(e);
-												worksheet.Cell(x + 1, y + 1).SetValue(value);
-											}
-											break;
-										default:
-										{
-											if (Double.TryParse(value, out var number))
-											{
-												worksheet.Cell(x + 1, y + 1).SetValue(number);
-											}
-											else
-											{
-												worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
-											}
-											break;
-										}
-									}
-								}
+    private void PopulateDataRows(SheetData sheetData, List<WorkorderCaseModel> workOrderCaseModels)
+    {
+        foreach (var workOrderCaseModel in workOrderCaseModels)
+        {
+            var row = new Row();
+            row.Append(
+                ConstructCell(workOrderCaseModel.Id.ToString(), CellValues.Number),
+                ConstructCell(workOrderCaseModel.CaseInitiated.ToString(), CellValues.String),
+                ConstructCell(workOrderCaseModel.PropertyName, CellValues.String),
+                ConstructCell(workOrderCaseModel.AreaName, CellValues.String),
+                ConstructCell(workOrderCaseModel.CreatedByName, CellValues.String),
+                ConstructCell(workOrderCaseModel.CreatedByText, CellValues.String),
+                ConstructCell(workOrderCaseModel.LastAssignedTo, CellValues.String),
+                ConstructCell(workOrderCaseModel.Description ?? "", CellValues.String),
+                ConstructCell(workOrderCaseModel.LastUpdateDate?.ToString() ?? "", CellValues.String),
+                ConstructCell(workOrderCaseModel.LastUpdatedBy, CellValues.String),
+                ConstructCell(GetPriorityText(workOrderCaseModel.Priority), CellValues.String),
+                ConstructCell(workOrderCaseModel.Status, CellValues.String)
+            );
+            sheetData.AppendChild(row);
+        }
+    }
 
-								y++;
-							}
+    private string GetPriorityText(int? priority)
+    {
+        return priority switch
+        {
+            1 => localizationService.GetString("Urgent"),
+            2 => localizationService.GetString("High"),
+            3 => localizationService.GetString("Medium"),
+            4 => localizationService.GetString("Low"),
+            _ => ""
+        };
+    }
 
-							x++;
-						}
-						worksheet.RangeUsed().SetAutoFilter();
-					}
+    private Cell ConstructCell(string value, CellValues dataType)
+    {
+        return new Cell
+        {
+            CellValue = new CellValue(value),
+            DataType = new EnumValue<CellValues>(dataType)
+        };
+    }
 
-				}
-			}
+    public Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model)
+    {
+        try
+        {
+            var columns = new List<string>
+            {
+                localizationService.GetString("Property"),
+                localizationService.GetString("Folder"),
+                localizationService.GetString("Task"),
+                localizationService.GetString("Tags"),
+                localizationService.GetString("Worker"),
+                localizationService.GetString("Start"),
+                localizationService.GetString("Repeat"),
+                localizationService.GetString("Deadline")
+            };
 
-			wb.SaveAs(resultDocument);
+            var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+                $"{localizationService.GetString("Task calendar")}.xlsx");
 
-			Stream result = File.Open(resultDocument, FileMode.Open);
-			return new OperationDataResult<Stream>(true, result);
-		}
-		catch (Exception e)
-		{
-			Trace.TraceError(e.Message);
-			_logger.LogError(e.Message);
-			return new OperationDataResult<Stream>(
-				false,
-				_localizationService.GetString("ErrorWhileCreatingWordFile"));
-		}
-	}
+            using (var spreadsheetDocument =
+                   SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+            {
+                var workbookPart = spreadsheetDocument.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
 
-	public Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model)
-	{
-		try
-		{
-			var columns = new List<string>
-			{
-				_localizationService.GetString("Property"),
-				_localizationService.GetString("Folder"),
-				_localizationService.GetString("Task"),
-				_localizationService.GetString("Tags"),
-				_localizationService.GetString("Worker"),
-				_localizationService.GetString("Start"),
-				_localizationService.GetString("Repeat"),
-				_localizationService.GetString("Deadline")
-			}.Where(q => !string.IsNullOrEmpty(q)).ToList();
+                var sheets = workbookPart.Workbook.AppendChild(new Sheets());
 
-			var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{_localizationService.GetString("Task calendar")}.xlsx");
-			IXLWorkbook wb = new XLWorkbook();
+                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new Worksheet(new SheetData());
 
-			var sheetName = _localizationService.GetString("Task calendar");
-			var ws = wb.Worksheets.Add(sheetName);
-			// cell(x, y) => cell(1, 2) => cell 1B
-			const int startY = 2;
-			const int startX = 2;
-			var x = startX;
-			var y = startY;
-			var startCell = ws.Cell(x, y);
-			var skipCols = columns.Count + startY;
+                var sheet = new Sheet
+                {
+                    Id = workbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = 1,
+                    Name = localizationService.GetString("Task calendar")
+                };
+                sheets.Append(sheet);
 
-			/* table headers */
-			foreach (var column in columns)
-			{
-				var range = ws.Range(ws.Cell(x, y), ws.Cell(x + 2, y));
-				range.Merge();
-				range.Value = column;
-				range.Style.Font.Bold = true;
-				range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-				range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-				y++;
-			}
-			y = skipCols;
-			var endCell = ws.Cell(startX + 2 + model.Count, y - 1); // after render all head table current value in y - last column
+                var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
-			// render data
-			x = startX + 3; // startX + weeks columns + day columns + day of week columns
-			y = startY;
-			foreach (var taskTrackerModel in model)
-			{
-				var startCellData = ws.Cell(x, y);
-				ws.Cell(x, y).Value = taskTrackerModel.Property;
-				y++;
-				ws.Cell(x, y).Value = taskTrackerModel.SdkFolderName;
-				y++;
-				ws.Cell(x, y).Value = taskTrackerModel.TaskName;
-				y++;
-				ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name));
-				y++;
-				ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.WorkerNames);
-				y++;
-				ws.Cell(x, y).Value = taskTrackerModel.StartTask.ToString("dd.MM.yyyy");
-				y++;
-				ws.Cell(x, y).Value = $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {_localizationService.GetString(taskTrackerModel.RepeatType.ToString())}";
-				y++;
-				ws.Cell(x, y).Value = taskTrackerModel.DeadlineTask.ToString("dd.MM.yyyy");
-				if (taskTrackerModel.TaskIsExpired) // make red expired task (calendar part not need)
-				{
-					ws.Range(startCellData, ws.Cell(x, y)).Style.Fill.BackgroundColor = XLColor.Red;
-				}
+                // Create header row
+                var headerRow = new Row();
+                foreach (var column in columns)
+                {
+                    headerRow.Append(ConstructCell(column, CellValues.String));
+                }
 
-				y = startY;
-				x++;
-			}
+                sheetData.AppendChild(headerRow);
 
+                // Populate rows
+                foreach (var taskTrackerModel in model)
+                {
+                    var row = new Row();
+                    row.Append(
+                        ConstructCell(taskTrackerModel.Property, CellValues.String),
+                        ConstructCell(taskTrackerModel.SdkFolderName, CellValues.String),
+                        ConstructCell(taskTrackerModel.TaskName, CellValues.String),
+                        ConstructCell(string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name)),
+                            CellValues.String),
+                        ConstructCell(string.Join(", ", taskTrackerModel.WorkerNames), CellValues.String),
+                        ConstructCell(taskTrackerModel.StartTask.ToString("dd.MM.yyyy"), CellValues.String),
+                        ConstructCell(
+                            $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {localizationService.GetString(taskTrackerModel.RepeatType.ToString())}",
+                            CellValues.String),
+                        ConstructCell(taskTrackerModel.DeadlineTask.ToString("dd.MM.yyyy"), CellValues.String)
+                    );
 
-			SetBorders(ws.Range(startCell, endCell));
+                    sheetData.AppendChild(row);
+                }
 
-			wb.SaveAs(resultDocument);
+                workbookPart.Workbook.Save();
+            }
 
-			Stream result = File.Open(resultDocument, FileMode.Open);
-			return Task.FromResult(result);
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine(ex.Message);
-			throw;
-		}
-	}
+            Stream result = File.Open(resultDocument, FileMode.Open);
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            throw;
+        }
+    }
 }
