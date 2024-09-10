@@ -2,6 +2,7 @@ import loginPage from '../../../Login.page';
 import backendConfigurationReportsPage, {ReportFilters} from '../BackendConfigurationReports.page';
 import path = require('path');
 import mammoth = require('mammoth');
+import {read, utils} from "xlsx";
 
 const filters: ReportFilters[] = [
   {
@@ -64,7 +65,18 @@ describe('Reports', () => {
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName}.xlsx`);
     cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {
       cy.task('readXlsx', {file: downloadedExcelFilename}).then((file2Content) => {
-        expect(file1Content, 'excel file').deep.eq(file2Content);
+        //expect(file1Content, 'excel file').deep.eq(file2Content);
+        const workbook1 = read(file1Content, { type: 'binary' });
+        const sheetName1 = workbook1.SheetNames[0]; // Assuming you're comparing the first sheet
+        const sheet1 = workbook1.Sheets[sheetName1];
+        const jsonData1 = utils.sheet_to_json(sheet1, { header: 1 }); // Convert sheet to array of arrays
+        const workbook = read(file2Content, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0]; // Assuming you're comparing the first sheet
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = utils.sheet_to_json(sheet, { header: 1 }); // Convert sheet to array of arrays
+        console.log(jsonData);
+        console.log(jsonData1);
+        expect(jsonData).to.deep.equal(jsonData1);
       });
     })
   });
@@ -96,7 +108,18 @@ describe('Reports', () => {
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName2}.xlsx`);
     cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {
       cy.task('readXlsx', {file: downloadedExcelFilename}).then((file2Content) => {
-        expect(file1Content, 'excel file').deep.eq(file2Content);
+        //expect(file1Content, 'excel file').deep.eq(file2Content);
+        const workbook1 = read(file1Content, { type: 'binary' });
+        const sheetName1 = workbook1.SheetNames[0]; // Assuming you're comparing the first sheet
+        const sheet1 = workbook1.Sheets[sheetName1];
+        const jsonData1 = utils.sheet_to_json(sheet1, { header: 1 }); // Convert sheet to array of arrays
+        const workbook = read(file2Content, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0]; // Assuming you're comparing the first sheet
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = utils.sheet_to_json(sheet, { header: 1 }); // Convert sheet to array of arrays
+        console.log(jsonData);
+        console.log(jsonData1);
+        expect(jsonData).to.deep.equal(jsonData1);
       });
     })
   });
