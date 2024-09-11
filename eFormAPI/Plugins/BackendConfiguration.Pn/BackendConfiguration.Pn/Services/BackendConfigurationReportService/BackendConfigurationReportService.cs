@@ -81,7 +81,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
     }
 
-    public async Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx)
+    public async Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model,
+        bool isDocx)
     {
         try
         {
@@ -118,10 +119,12 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 foreach (var tagId in model.TagIds)
                 {
                     planningCasesQuery = planningCasesQuery.Where(x =>
-                            x.Planning.PlanningsTags.Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+                            x.Planning.PlanningsTags.Any(y =>
+                                y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
                         .AsNoTracking();
                 }
             }
+
             var groupedCaseCheckListIds = planningCasesQuery.GroupBy(x => x.MicrotingSdkeFormId)
                 .Select(x => x.Key)
                 .ToList();
@@ -190,7 +193,9 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     // first pass
                     if (result.Count <= 0)
                     {
-                        reportModel.TextHeaders.Header1 = !string.IsNullOrEmpty(checkList.ReportH1) ? checkList.ReportH1 : checkListTranslation;
+                        reportModel.TextHeaders.Header1 = !string.IsNullOrEmpty(checkList.ReportH1)
+                            ? checkList.ReportH1
+                            : checkListTranslation;
                         // reportModel.TableName = null;
                         // reportModel.TemplateName = null;
                         reportModel.TextHeaders.Header2 = checkList.ReportH2;
@@ -247,6 +252,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                     x.FieldId == fieldDto.Id && x.LanguageId == language.Id);
                             reportModel.DescriptionBlocks.Add(fieldTranslation.Description);
                         }
+
                         if (!excludedFieldTypes.Contains(fieldDto.FieldType))
                         {
                             var fieldTranslation =
@@ -263,6 +269,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                     text = $"{clTranslation.Text} - {text}";
                                 }
                             }
+
                             var kvp = new KeyValuePair<int, string>(fieldDto.Id, text);
 
                             reportModel.ItemHeaders.Add(kvp);
@@ -283,7 +290,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                     foreach (var imageField in imagesForEform)
                     {
-                        var planningCase = groupedCase.cases.First(x => x.MicrotingSdkCaseId == imageField.CaseId && x.PlanningId != 0);
+                        var planningCase = groupedCase.cases.First(x =>
+                            x.MicrotingSdkCaseId == imageField.CaseId && x.PlanningId != 0);
                         var planningNameTranslation =
                             await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                 x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
@@ -331,7 +339,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         }
                         else
                         {
-                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext.AreaRulesPlanningVersions
+                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext
+                                .AreaRulesPlanningVersions
                                 .Where(x => x.ItemPlanningId == planningCase.PlanningId)
                                 .OrderByDescending(x => x.Version)
                                 .FirstOrDefaultAsync();
@@ -343,17 +352,16 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             }
                         }
 
-                        var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+                        var dbCase =
+                            await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
 
                         if (dbCase == null)
                         {
                             Console.BackgroundColor = ConsoleColor.Red;
                             Console.ForegroundColor = ConsoleColor.White;
                             Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
-
                             continue;
                         }
-
 
                         if (planningNameTranslation != null)
                         {
@@ -362,7 +370,9 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 Id = planningCase.Id,
                                 ItemId = planningCase.PlanningId,
                                 MicrotingSdkCaseId = planningCase.MicrotingSdkCaseId,
-                                MicrotingSdkCaseDoneAt = TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt, timeZoneInfo),
+                                MicrotingSdkCaseDoneAt =
+                                    TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt,
+                                        timeZoneInfo),
                                 ServerTime = TimeZoneInfo.ConvertTimeFromUtc((DateTime)dbCase.CreatedAt, timeZoneInfo),
                                 eFormId = planningCase.MicrotingSdkeFormId,
                                 DoneBy = planningCase.DoneByUserName,
@@ -372,7 +382,9 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             };
 
 
-                            var caseFields = sdkDbContext.FieldValues.Where(x => x.CaseId == planningCase.MicrotingSdkCaseId && x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+                            var caseFields = sdkDbContext.FieldValues.Where(x =>
+                                x.CaseId == planningCase.MicrotingSdkCaseId &&
+                                x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
                             // var caseFields = await core.Advanced_FieldValueReadList(
                             //     new List<int>()
                             //     {
@@ -387,28 +399,35 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                     switch (fieldDto.FieldType)
                                     {
                                         case Constants.FieldTypes.MultiSelect:
-                                            var keyLst = string.IsNullOrEmpty(caseField.Value) ? [] : caseField.Value.Split('|').ToList();
+                                            var keyLst = string.IsNullOrEmpty(caseField.Value)
+                                                ? []
+                                                : caseField.Value.Split('|').ToList();
                                             var valueReadable = "";
                                             foreach (var key in keyLst)
                                             {
                                                 if (!string.IsNullOrEmpty(key))
                                                 {
-                                                    var fieldOption = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
-                                                        x.FieldId == caseField.FieldId && x.Key == key);
+                                                    var fieldOption =
+                                                        await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                            x.FieldId == caseField.FieldId && x.Key == key);
                                                     if (fieldOption != null)
                                                     {
                                                         var fieldOptionTranslation =
                                                             await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
-                                                                x.FieldOptionId == fieldOption.Id && x.LanguageId == language.Id);
+                                                                x.FieldOptionId == fieldOption.Id &&
+                                                                x.LanguageId == language.Id);
                                                         if (valueReadable != "")
                                                         {
                                                             valueReadable += '|';
                                                         }
+
                                                         valueReadable += fieldOptionTranslation.Text;
                                                     }
                                                 }
                                             }
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("string", valueReadable));
+
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("string", valueReadable));
                                             break;
                                         case Constants.FieldTypes.SingleSelect:
                                             var fo = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
@@ -418,12 +437,14 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                                 var fieldOptionTranslation =
                                                     await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
                                                         x.FieldOptionId == fo.Id && x.LanguageId == language.Id);
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", fieldOptionTranslation.Text));
+                                                item.CaseFields.Add(new KeyValuePair<string, string>("string",
+                                                    fieldOptionTranslation.Text));
                                             }
                                             else
                                             {
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
                                             }
+
                                             break;
                                         case Constants.FieldTypes.EntitySearch or
                                             Constants.FieldTypes.EntitySelect:
@@ -431,13 +452,16 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             {
                                                 var id = int.Parse(caseField.Value);
                                                 var match =
-                                                    await sdkDbContext.EntityItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", match.Name));
+                                                    await sdkDbContext.EntityItems.AsNoTracking()
+                                                        .FirstOrDefaultAsync(x => x.Id == id);
+                                                item.CaseFields.Add(
+                                                    new KeyValuePair<string, string>("string", match.Name));
                                             }
                                             else
                                             {
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
                                             }
+
                                             break;
                                         case Constants.FieldTypes.Picture
                                             or Constants.FieldTypes.SaveButton
@@ -453,7 +477,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                                 : new KeyValuePair<string, string>("number", ""));
                                             break;
                                         case Constants.FieldTypes.Date:
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("date", caseField.Value));
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("date", caseField.Value));
                                             break;
                                         case Constants.FieldTypes.CheckBox:
                                             if (caseField.Value is "true" or "false")
@@ -463,11 +488,14 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             }
                                             else
                                             {
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                                item.CaseFields.Add(
+                                                    new KeyValuePair<string, string>("string", caseField.Value));
                                             }
+
                                             break;
                                         default:
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("string", caseField.Value));
                                             break;
                                     }
                                 }
@@ -485,14 +513,10 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 .Select(x => x.Id)
                                 .CountAsync();
 
-                            // item.PostsCount = casePostListResult.Model.Entities
-                            //     .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
-                            //     .Select(x => x.PostId)
-                            //     .Count();
-
                             reportModel.Items.Add(item);
                         }
                     }
+
                     result.Add(reportModel);
                 }
 
@@ -510,7 +534,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 return new OperationDataResult<List<OldReportEformModel>>(true, result);
             }
 
-            return new OperationDataResult<List<OldReportEformModel>>(false, _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
+            return new OperationDataResult<List<OldReportEformModel>>(false,
+                _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
 
         }
         catch (Exception e)
@@ -523,7 +548,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
     }
 
-    public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model, bool isDocx)
+    public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model,
+        bool isDocx)
     {
         try
         {
@@ -561,7 +587,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 {
                     planningCasesQuery = planningCasesQuery
                         .Where(x => x.Planning.PlanningsTags
-                                        .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .Any(y => y.PlanningTagId == tagId &&
+                                                  y.WorkflowState != Constants.WorkflowStates.Removed)
                                     || x.Planning.ReportGroupPlanningTagId == tagId)
                         .AsNoTracking();
                 }
@@ -569,7 +596,6 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
             var planningTagsForGroup = await _itemsPlanningPnDbContext.PlanningTags
                 .ToListAsync();
-
 
             var result = new List<ReportEformModel>();
             // Exclude field types: None, Picture, Audio, Movie, Signature, Show PDF, FieldGroup, SaveButton
@@ -586,6 +612,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             };
             var localeString = await _userService.GetCurrentUserLocale();
             var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
+
             var groupedPlanningCases = planningCasesQuery
                 .ToList()
                 .Select(x => new
@@ -607,9 +634,6 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                     eFormId, cases
                                 })
                     });
-//                var newGroupedPlanningCases = groupedPlanningCases);
-
-
             foreach (var groupedPlanningCase in groupedPlanningCases.Where(x => x.planningTag != null))
             {
 
@@ -658,6 +682,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 .Select(x => x.Text)
                                 .FirstOrDefaultAsync() ?? "";
                         }
+
                         if (hasChildCheckLists)
                         {
                             var clTranslation =
@@ -668,6 +693,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 text = $"{clTranslation.Text} - {text}";
                             }
                         }
+
                         var kvp = new KeyValuePair<int, string>(fieldDto.Id, text);
 
                         group.ItemHeaders.Add(kvp);
@@ -690,7 +716,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         var planningNameTranslation =
                             await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                 x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
-                        foreach (var imageField in allImagesFromCases.Where(x => x.CaseId == planningCase.MicrotingSdkCaseId))
+                        foreach (var imageField in allImagesFromCases.Where(x =>
+                                     x.CaseId == planningCase.MicrotingSdkCaseId))
                         {
                             var reportImages = new ReportImages
                             {
@@ -701,6 +728,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             {
                                 reportImages.Label = $"{imageField.CaseId}; {planningNameTranslation.Name}";
                             }
+
                             if (!string.IsNullOrEmpty(imageField.Latitude))
                             {
                                 reportImages.GeoLink =
@@ -711,6 +739,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             {
                                 reportImages.ImageName = imageField.UploadedData.FileName;
                             }
+
                             group.ImageNames.Add(reportImages);
                         }
 
@@ -727,7 +756,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         }
                         else
                         {
-                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext.AreaRulesPlanningVersions
+                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext
+                                .AreaRulesPlanningVersions
                                 .Where(x => x.ItemPlanningId == planningCase.PlanningId)
                                 .OrderByDescending(x => x.Version)
                                 .FirstOrDefaultAsync();
@@ -739,7 +769,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             }
                         }
 
-                        var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+                        var dbCase =
+                            await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
                         var workerId = sdkDbContext.SiteWorkers.First(x => x.Id == dbCase.SiteId).WorkerId;
                         var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.Id == workerId);
 
@@ -751,6 +782,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                             continue;
                         }
+
                         if (planningNameTranslation != null)
                         {
                             var item = new ReportEformItemModel
@@ -758,7 +790,9 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                 Id = planningCase.Id,
                                 ItemId = planningCase.PlanningId,
                                 MicrotingSdkCaseId = planningCase.MicrotingSdkCaseId,
-                                MicrotingSdkCaseDoneAt = TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt, timeZoneInfo),
+                                MicrotingSdkCaseDoneAt =
+                                    TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt,
+                                        timeZoneInfo),
                                 ServerTime = TimeZoneInfo.ConvertTimeFromUtc((DateTime)dbCase.CreatedAt, timeZoneInfo),
                                 eFormId = planningCase.MicrotingSdkeFormId,
                                 DoneBy = planningCase.DoneByUserName,
@@ -770,7 +804,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
 
                             var caseFields = await sdkDbContext.FieldValues
-                                .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId && x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId &&
+                                            x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToListAsync();
 
                             foreach (var fieldDto in fields)
@@ -781,28 +816,35 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                     switch (fieldDto.FieldType)
                                     {
                                         case Constants.FieldTypes.MultiSelect:
-                                            var keyLst = string.IsNullOrEmpty(caseField.Value) ? [] : caseField.Value.Split('|').ToList();
+                                            var keyLst = string.IsNullOrEmpty(caseField.Value)
+                                                ? []
+                                                : caseField.Value.Split('|').ToList();
                                             var valueReadable = "";
                                             foreach (var key in keyLst)
                                             {
                                                 if (!string.IsNullOrEmpty(key))
                                                 {
-                                                    var fieldOption = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
-                                                        x.FieldId == caseField.FieldId && x.Key == key);
+                                                    var fieldOption =
+                                                        await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                            x.FieldId == caseField.FieldId && x.Key == key);
                                                     if (fieldOption != null)
                                                     {
                                                         var fieldOptionTranslation =
                                                             await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
-                                                                x.FieldOptionId == fieldOption.Id && x.LanguageId == language.Id);
+                                                                x.FieldOptionId == fieldOption.Id &&
+                                                                x.LanguageId == language.Id);
                                                         if (valueReadable != "")
                                                         {
                                                             valueReadable += '|';
                                                         }
+
                                                         valueReadable += fieldOptionTranslation.Text;
                                                     }
                                                 }
                                             }
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("string", valueReadable));
+
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("string", valueReadable));
                                             break;
                                         case Constants.FieldTypes.SingleSelect:
                                             var fo = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
@@ -812,12 +854,14 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                                 var fieldOptionTranslation =
                                                     await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
                                                         x.FieldOptionId == fo.Id && x.LanguageId == language.Id);
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", fieldOptionTranslation.Text));
+                                                item.CaseFields.Add(new KeyValuePair<string, string>("string",
+                                                    fieldOptionTranslation.Text));
                                             }
                                             else
                                             {
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
                                             }
+
                                             break;
                                         case Constants.FieldTypes.EntitySearch or
                                             Constants.FieldTypes.EntitySelect:
@@ -825,13 +869,16 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             {
                                                 var id = int.Parse(caseField.Value);
                                                 var match =
-                                                    await sdkDbContext.EntityItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", match.Name));
+                                                    await sdkDbContext.EntityItems.AsNoTracking()
+                                                        .FirstOrDefaultAsync(x => x.Id == id);
+                                                item.CaseFields.Add(
+                                                    new KeyValuePair<string, string>("string", match.Name));
                                             }
                                             else
                                             {
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
                                             }
+
                                             break;
                                         case Constants.FieldTypes.Picture
                                             or Constants.FieldTypes.SaveButton
@@ -847,7 +894,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                                 : new KeyValuePair<string, string>("number", ""));
                                             break;
                                         case Constants.FieldTypes.Date:
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("date", caseField.Value));
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("date", caseField.Value));
                                             break;
                                         case Constants.FieldTypes.CheckBox:
                                             if (caseField.Value is "true" or "false")
@@ -857,11 +905,14 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             }
                                             else
                                             {
-                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                                item.CaseFields.Add(
+                                                    new KeyValuePair<string, string>("string", caseField.Value));
                                             }
+
                                             break;
                                         default:
-                                            item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                            item.CaseFields.Add(
+                                                new KeyValuePair<string, string>("string", caseField.Value));
                                             break;
                                     }
                                 }
@@ -879,8 +930,10 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             group.Items.Add(item);
                         }
                     }
+
                     reportModel.GroupEform.Add(group);
                 }
+
                 reportModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => model.TagIds.Any(y => y == x.Id))
@@ -894,7 +947,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 return new OperationDataResult<List<ReportEformModel>>(true, result);
             }
 
-            return new OperationDataResult<List<ReportEformModel>>(false, _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
+            return new OperationDataResult<List<ReportEformModel>>(false,
+                _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
 
         }
         catch (Exception e)
