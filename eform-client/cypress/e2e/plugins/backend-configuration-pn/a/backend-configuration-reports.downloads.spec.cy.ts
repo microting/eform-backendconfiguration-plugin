@@ -63,8 +63,8 @@ describe('Reports', () => {
     cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedExcelFilename = path.join(downloadsFolder, `${fileName}.xlsx`);
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName}.xlsx`);
-    cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {
-      cy.task('readXlsx', {file: downloadedExcelFilename}).then((file2Content) => {
+    cy.readFile(fixturesExcelFilename, 'binary').then((file1Content) => {
+      cy.readFile(downloadedExcelFilename, 'binary').then((file2Content) => {
         //expect(file1Content, 'excel file').deep.eq(file2Content);
         const workbook1 = read(file1Content, { type: 'binary' });
         const sheetName1 = workbook1.SheetNames[0]; // Assuming you're comparing the first sheet
@@ -106,8 +106,8 @@ describe('Reports', () => {
     cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedExcelFilename = path.join(downloadsFolder, `${fileName2}.xlsx`);
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName2}.xlsx`);
-    cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {
-      cy.task('readXlsx', {file: downloadedExcelFilename}).then((file2Content) => {
+    cy.readFile(fixturesExcelFilename, 'binary').then((file1Content) => {
+      cy.readFile(downloadedExcelFilename, 'binary').then((file2Content) => {
         //expect(file1Content, 'excel file').deep.eq(file2Content);
         const workbook1 = read(file1Content, { type: 'binary' });
         const sheetName1 = workbook1.SheetNames[0]; // Assuming you're comparing the first sheet

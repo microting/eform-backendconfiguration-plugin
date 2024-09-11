@@ -109,6 +109,11 @@ public class ExcelService(
                 var workbookPart = spreadsheetDocument.AddWorkbookPart();
                 workbookPart.Workbook = new Workbook();
 
+                // Create Stylesheet for bold headers and date format
+                var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+                stylesPart.Stylesheet = CreateStylesheet();
+                stylesPart.Stylesheet.Save();
+
                 var sheets = workbookPart.Workbook.AppendChild(new Sheets());
 
                 foreach (var eformModel in reportModel)
@@ -133,16 +138,16 @@ public class ExcelService(
                         // Create header row
                         var headerRow = new Row();
                         headerRow.Append(
-                            ConstructCell(localizationService.GetString("Id"), CellValues.String),
-                            ConstructCell(localizationService.GetString("Property"), CellValues.String),
-                            ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String),
-                            ConstructCell(localizationService.GetString("DoneBy"), CellValues.String),
-                            ConstructCell(localizationService.GetString("ItemName"), CellValues.String)
+                            ConstructCell(localizationService.GetString("Id"), CellValues.String, 1),
+                            ConstructCell(localizationService.GetString("Property"), CellValues.String, 1),
+                            ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String, 1),
+                            ConstructCell(localizationService.GetString("DoneBy"), CellValues.String, 1),
+                            ConstructCell(localizationService.GetString("ItemName"), CellValues.String, 1)
                         );
 
                         foreach (var itemHeader in eformModel.ItemHeaders)
                         {
-                            headerRow.Append(ConstructCell(itemHeader.Value, CellValues.String));
+                            headerRow.Append(ConstructCell(itemHeader.Value, CellValues.String, 1));
                         }
 
                         sheetData.AppendChild(headerRow);
@@ -204,6 +209,9 @@ public class ExcelService(
 
                             sheetData.AppendChild(dataRow);
                         }
+
+                        // Apply autofilter and table formatting
+                        ApplyTableFormatting(sheet, worksheetPart, sheetData);
                     }
                 }
 
