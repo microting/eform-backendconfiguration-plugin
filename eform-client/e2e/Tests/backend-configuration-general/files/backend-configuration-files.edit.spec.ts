@@ -72,6 +72,8 @@ describe('Backend Configuration Files Edit', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     expect(rowNum + 1).eq(await backendConfigurationFilesPage.rowNum());
     let file = await backendConfigurationFilesPage.getLastFileRowObject();
     await file.editFile(changedFTestFile);
@@ -106,6 +108,8 @@ describe('Backend Configuration Files Edit', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     // expect(rowNum + 1).eq(await backendConfigurationFilesPage.rowNum());
     let file = await backendConfigurationFilesPage.getLastFileRowObject();
     await file.editFile(changedFTestFile);

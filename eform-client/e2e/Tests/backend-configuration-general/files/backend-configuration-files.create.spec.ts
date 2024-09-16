@@ -62,6 +62,8 @@ describe('Backend Configuration Files Create', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     expect(rowNum + 1).eq(await backendConfigurationFilesPage.rowNum());
     const file = await backendConfigurationFilesPage.getLastFileRowObject();
     expect(file.fileName, 'filename not equal').eq(testFile.files[0]);
@@ -81,6 +83,8 @@ describe('Backend Configuration Files Create', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     expect(rowNum + 1).eq(await backendConfigurationFilesPage.rowNum());
     const file = await backendConfigurationFilesPage.getLastFileRowObject();
     expect(file.fileName, 'filename not equal').eq(testFile.files[0]);
@@ -100,6 +104,8 @@ describe('Backend Configuration Files Create', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     expect(rowNum + 2).eq(await backendConfigurationFilesPage.rowNum());
     const files = await backendConfigurationFilesPage.getFilesRowObjectByIndexes([1, 2]);
     for (let i = 0; i < files.length; i++) {
@@ -121,6 +127,8 @@ describe('Backend Configuration Files Create', function () {
     const rowNum = await backendConfigurationFilesPage.rowNum();
     expect(rowNum, 'have some files').eq(0);
     await backendConfigurationFilesPage.createFile(testFile);
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 40000, reverse: true });
     expect(rowNum + 2).eq(await backendConfigurationFilesPage.rowNum());
     const files = await backendConfigurationFilesPage.getFilesRowObjectByIndexes([1, 2]);
     for (let i = 0; i < files.length; i++) {
