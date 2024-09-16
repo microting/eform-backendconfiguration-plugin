@@ -942,6 +942,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 result.Add(reportModel);
             }
 
+            result = result.OrderBy(x => x.GroupTagName).ToList();
+
             if (result.Any())
             {
                 return new OperationDataResult<List<ReportEformModel>>(true, result);
