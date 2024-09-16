@@ -295,7 +295,7 @@ export class FileRowObject {
           .filter(x => x) // delete empty strings
           .map(x => x.replaceAll('\n', '')); // delete enters
       }
-      const tags = (await (await this.row.$('.mat-column-tags')).getText()).split('discount');
+      const tags = (await (await this.row.$('.mat-column-tags')).getText()).split(' ');
       if (tags.length > 0) {
         tags[tags.length - 1] = tags[tags.length - 1].replace('edit', ''); // delete button
         this.tags = tags

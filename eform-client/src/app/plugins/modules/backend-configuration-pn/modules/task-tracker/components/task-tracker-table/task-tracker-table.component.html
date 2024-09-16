@@ -17,7 +17,6 @@
   <div class="d-flex flex-wrap align-items-center">
     <mat-chip-list>
       <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
-        <mat-icon>discount</mat-icon>
         <span>{{ tag.name }}</span>
       </mat-chip>
     </mat-chip-list>
