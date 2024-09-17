@@ -970,9 +970,9 @@ public class WordService : IWordService
                 int newHeight = (int)Math.Round((currentRation * newWidth));
 
                 Console.WriteLine("Resizing file from stream " + imageName);
-                image.Resize(newWidth, newHeight);
+                image.Resize((uint)newWidth, (uint)newHeight);
                 Console.WriteLine("Cropping file from stream " + imageName);
-                image.Crop(newWidth, newHeight);
+                image.Crop((uint)newWidth, (uint)newHeight);
 
                 Console.WriteLine("converting to base64 " + imageName);
                 var base64String = image.ToBase64();

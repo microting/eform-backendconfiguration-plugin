@@ -489,8 +489,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         int newWidth = 300;
                         int newHeight = (int)Math.Round((currentRation * newWidth));
 
-                        image.Resize(newWidth, newHeight);
-                        image.Crop(newWidth, newHeight);
+                        image.Resize((uint)newWidth, (uint)newHeight);
+                        image.Crop((uint)newWidth, (uint)newHeight);
                         MemoryStream memoryStream = new MemoryStream();
                         await image.WriteAsync(memoryStream).ConfigureAwait(false);
                         await core.PutFileToS3Storage(memoryStream, smallFilename).ConfigureAwait(false);
@@ -506,8 +506,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         int newWidth = 700;
                         int newHeight = (int)Math.Round(currentRation * newWidth);
 
-                        image.Resize(newWidth, newHeight);
-                        image.Crop(newWidth, newHeight);
+                        image.Resize((uint)newWidth, (uint)newHeight);
+                        image.Crop((uint)newWidth, (uint)newHeight);
                         MemoryStream memoryStream = new MemoryStream();
                         await image.WriteAsync(memoryStream).ConfigureAwait(false);
                         await core.PutFileToS3Storage(memoryStream, bigFilename).ConfigureAwait(false);
