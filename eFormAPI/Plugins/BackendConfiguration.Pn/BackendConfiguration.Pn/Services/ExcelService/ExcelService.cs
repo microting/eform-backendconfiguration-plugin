@@ -211,7 +211,7 @@ public class ExcelService(
                         }
 
                         // Apply autofilter and table formatting
-                        ApplyTableFormatting(sheet, worksheetPart, sheetData);
+                        // ApplyTableFormatting(sheet, worksheetPart, sheetData);
                     }
                 }
 
@@ -367,7 +367,7 @@ public class ExcelService(
                         }
 
                         // Apply autofilter and table formatting
-                        ApplyTableFormatting(sheet, worksheetPart, sheetData);
+                        // ApplyTableFormatting(sheet, worksheetPart, sheetData);
                     }
                 }
             }
@@ -391,30 +391,47 @@ public class ExcelService(
     private Stylesheet CreateStylesheet()
     {
         return new Stylesheet(
-            new Fonts(
-                new Font( // Default font
-                    new FontSize() { Val = 11 },
-                    new FontName() { Val = "Calibri" }),
-                new Font( // Bold font
-                    new Bold(),
-                    new FontSize() { Val = 11 },
-                    new FontName() { Val = "Calibri" })
-            ),
-            new Fills(
-                new Fill(new PatternFill() { PatternType = PatternValues.None }), // Default fill
-                new Fill(new PatternFill() { PatternType = PatternValues.Gray125 }) // Gray fill
-            ),
-            new Borders(new Border()), // Default border
-            new CellFormats(
-                new CellFormat(), // Default format
-                new CellFormat { FontId = 1, ApplyFont = true } // Bold format
-            ),
             new NumberingFormats( // Custom number format for date
-                new NumberingFormat()
+                new NumberingFormat
                 {
-                    NumberFormatId = 164, // Number format IDs between 164 and 255 are custom
+                    NumberFormatId = 164, // Custom NumberFormatId for date format
                     FormatCode = "dd/MM/yyyy"
                 }
+            ),
+            new Fonts(
+                new Font( // Default font
+                    new FontSize { Val = 11 },
+                    new Color { Rgb = new HexBinaryValue { Value = "FF000000" } }, // Black color
+                    new FontName { Val = "Calibri" }
+                ),
+                new Font( // Bold font
+                    new Bold(),
+                    new FontSize { Val = 11 },
+                    new Color { Rgb = new HexBinaryValue { Value = "FF000000" } }, // Black color
+                    new FontName { Val = "Calibri" }
+                )
+            ),
+            new Fills(
+                new Fill(new PatternFill { PatternType = PatternValues.None }), // Default fill
+                new Fill(new PatternFill { PatternType = PatternValues.Gray125 }) // Gray fill
+            ),
+            new Borders(
+                new Border( // Default border
+                    new LeftBorder(),
+                    new RightBorder(),
+                    new TopBorder(),
+                    new BottomBorder(),
+                    new DiagonalBorder()
+                )
+            ),
+            new CellStyleFormats(
+                new CellFormat() // Default cell style format
+            ),
+            new CellFormats(
+                new CellFormat(), // Default cell format
+                new CellFormat { FontId = 1, ApplyFont = true }, // Bold font cell format
+                new CellFormat { NumberFormatId = 164, ApplyNumberFormat = true }, // Date format
+                new CellFormat { NumberFormatId = 22, ApplyNumberFormat = true } // Date-time format (dd.MM.yyyy HH:mm:ss)
             )
         );
     }
