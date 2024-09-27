@@ -92,17 +92,17 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     .Where(x => x.PropertyWorker.PropertyId == filtersModel.Filters.PropertyId);
             }
 
-            if (filtersModel.Filters.Statuses != null && filtersModel.Filters.Statuses.Any())
+            if (filtersModel.Filters.Statuses.Any())
             {
                 query = query.Where(x => filtersModel.Filters.Statuses.Contains((int)x.CaseStatusesEnum));
 
             }
-            else
-            {
-                query = query
-                    .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                    .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
-            }
+            // else
+            // {
+            //     query = query
+            //         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+            // }
 
             if (!string.IsNullOrEmpty(filtersModel.Filters.AreaName))
             {
