@@ -6,16 +6,20 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Report;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using DocumentFormat.OpenXml.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.ExcelService;
 
@@ -235,22 +239,13 @@ public class ExcelService(
     {
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
         var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
-        var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
+        var filePath = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
 
-        using (var spreadsheetDocument = SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+        using (var document = SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
         {
-            var workbookPart = spreadsheetDocument.AddWorkbookPart();
-            workbookPart.Workbook = new Workbook();
+            var worksheetNames = new List<KeyValuePair<string, string>>();
 
-            // Create Stylesheet for bold headers and date format
-            var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
-            stylesPart.Stylesheet = CreateStylesheet();
-            stylesPart.Stylesheet.Save();
-
-            var sheets = workbookPart.Workbook.AppendChild(new Sheets());
-            var worksheetNames = new List<string>();
-            var duplicateNumber = 0;
-
+            var i = 0;
             foreach (var eformModel in reportModel)
             {
                 foreach (var reportEformGroupModel in eformModel.GroupEform)
@@ -264,48 +259,109 @@ public class ExcelService(
                         sheetName = CreateSafeSheetName(sheetName);
 
                         // Check for duplicate sheet names
-                        if (worksheetNames.Contains(sheetName))
+                        if (worksheetNames.Contains(new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}")))
                         {
-                            duplicateNumber++;
-                            sheetName = $"({duplicateNumber}){sheetName}";
+                            var duplicateNumber = 1;
+                            while (worksheetNames.Contains(new KeyValuePair<string, string>($"{sheetName} ({duplicateNumber})", $"rId{i + 1}")))
+                            {
+                                duplicateNumber++;
+                            }
+
+                            sheetName = $"{sheetName} ({duplicateNumber})";
                             sheetName = sheetName.Substring(0, Math.Min(31, sheetName.Length));
                         }
-                        else
+
+                        worksheetNames.Add(
+                            new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}"));
+                    }
+                    i++;
+                }
+            }
+
+            WorkbookPart workbookPart1 = document.AddWorkbookPart();
+            OpenXMLHelper.GenerateWorkbookPart1Content(workbookPart1, worksheetNames);
+
+            WorkbookStylesPart workbookStylesPart1 =
+                workbookPart1.AddNewPart<WorkbookStylesPart>($"rId{worksheetNames.Count + 2}");
+            OpenXMLHelper.GenerateWorkbookStylesPart1Content(workbookStylesPart1);
+
+            ThemePart themePart1 = workbookPart1.AddNewPart<ThemePart>($"rId{worksheetNames.Count + 1}");
+            OpenXMLHelper.GenerateThemePart1Content(themePart1);
+
+            var baseHeadersForRow = new List<string>
+            {
+                "Id",
+                "Property",
+                "SubmittedDate",
+                "DoneBy",
+                "EmployeeNo",
+                "ItemName"
+            };
+
+            var j = 0;
+            foreach (var eformModel in reportModel)
+            {
+                foreach (var reportEformGroupModel in eformModel.GroupEform)
+                {
+                    if (eformModel.FromDate != null)
+                    {
+                        List<string> headerStrings = new List<string>();
+                        foreach (var header in baseHeadersForRow)
                         {
-                            worksheetNames.Add(sheetName);
+                            headerStrings.Add(localizationService.GetString(header));
                         }
-
-                        var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                        worksheetPart.Worksheet = new Worksheet(new SheetData());
-                        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
-
-                        var sheet = new Sheet
-                        {
-                            Id = workbookPart.GetIdOfPart(worksheetPart),
-                            SheetId = (uint)(sheets.Count() + 1),
-                            Name = sheetName
-                        };
-                        sheets.Append(sheet);
-
-                        // Create header row with bold formatting
-                        var headerRow = new Row();
-                        var headers = new List<Cell>
-                        {
-                            ConstructCell(localizationService.GetString("Id"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("Property"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("DoneBy"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("EmployeeNo"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("ItemName"), CellValues.String, 1)
-                        };
 
                         foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
                         {
-                            headers.Add(ConstructCell(itemHeader.Value, CellValues.String, 1));
+                            headerStrings.Add(itemHeader.Value);
                         }
 
-                        headerRow.Append(headers);
-                        sheetData.AppendChild(headerRow);
+                        WorksheetPart worksheetPart1 = workbookPart1.AddNewPart<WorksheetPart>($"rId{j + 1}");
+
+                        Worksheet worksheet1 = new Worksheet()
+                            { MCAttributes = new MarkupCompatibilityAttributes() { Ignorable = "x14ac xr xr2 xr3" } };
+                        worksheet1.AddNamespaceDeclaration("r",
+                            "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
+                        worksheet1.AddNamespaceDeclaration("mc",
+                            "http://schemas.openxmlformats.org/markup-compatibility/2006");
+                        worksheet1.AddNamespaceDeclaration("x14ac",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
+                        worksheet1.AddNamespaceDeclaration("xr",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision");
+                        worksheet1.AddNamespaceDeclaration("xr2",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2");
+                        worksheet1.AddNamespaceDeclaration("xr3",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3");
+                        worksheet1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                            "{00000000-0001-0000-0000-000000000000}"));
+
+                        SheetFormatProperties sheetFormatProperties1 = new SheetFormatProperties()
+                            { DefaultRowHeight = 15D, DyDescent = 0.25D };
+
+                        SheetData sheetData1 = new SheetData();
+
+                        Row row1 = new Row()
+                        {
+                            RowIndex = (UInt32Value)1U, Spans = new ListValue<StringValue>() { InnerText = "1:19" },
+                            DyDescent = 0.25D
+                        };
+
+                        foreach (var header in headerStrings)
+                        {
+                            var cell = new Cell()
+                            {
+                                CellValue = new CellValue(header),
+                                DataType = CellValues.String,
+                                StyleIndex = (UInt32Value)1U
+                            };
+                            row1.Append(cell);
+                        }
+
+                        sheetData1.Append(row1);
+
+                        int rowIndex = 1;
+
 
                         // Populate data rows
                         foreach (var dataModel in reportEformGroupModel.Items)
@@ -363,19 +419,169 @@ public class ExcelService(
                                 }
                             }
 
-                            sheetData.AppendChild(dataRow);
+                            sheetData1.Append(dataRow);
+                            rowIndex++;
                         }
 
-                        // Apply autofilter and table formatting
-                        // ApplyTableFormatting(sheet, worksheetPart, sheetData);
+
+
+                        var columnLetter = GetColumnLetter(headerStrings.Count);
+                        AutoFilter autoFilter1 = new AutoFilter() { Reference = $"A1:{columnLetter}{rowIndex}" };
+                        autoFilter1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                            "{00000000-0001-0000-0000-000000000000}"));
+                        PageMargins pageMargins1 = new PageMargins()
+                            { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
+
+                        worksheet1.Append(sheetFormatProperties1);
+                        worksheet1.Append(sheetData1);
+                        worksheet1.Append(autoFilter1);
+                        worksheet1.Append(pageMargins1);
+
+                        worksheetPart1.Worksheet = worksheet1;
+                        j++;
                     }
                 }
             }
 
-            workbookPart.Workbook.Save();
+            // var workbookPart = spreadsheetDocument.AddWorkbookPart();
+            // workbookPart.Workbook = new Workbook();
+            //
+            // // Create Stylesheet for bold headers and date format
+            // var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+            // stylesPart.Stylesheet = CreateStylesheet();
+            // stylesPart.Stylesheet.Save();
+            //
+            // var sheets = workbookPart.Workbook.AppendChild(new Sheets());
+            // var worksheetNames = new List<string>();
+            // var duplicateNumber = 0;
+            //
+            // foreach (var eformModel in reportModel)
+            // {
+            //     foreach (var reportEformGroupModel in eformModel.GroupEform)
+            //     {
+            //         if (eformModel.FromDate != null)
+            //         {
+            //             var sheetName = eformModel.GroupEform.Count > 1
+            //                 ? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
+            //                 : $"{eformModel.GroupTagName}";
+            //
+            //             sheetName = CreateSafeSheetName(sheetName);
+            //
+            //             // Check for duplicate sheet names
+            //             if (worksheetNames.Contains(sheetName))
+            //             {
+            //                 duplicateNumber++;
+            //                 sheetName = $"({duplicateNumber}){sheetName}";
+            //                 sheetName = sheetName.Substring(0, Math.Min(31, sheetName.Length));
+            //             }
+            //             else
+            //             {
+            //                 worksheetNames.Add(sheetName);
+            //             }
+            //
+            //             var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+            //             worksheetPart.Worksheet = new Worksheet(new SheetData());
+            //             var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+            //
+            //             var sheet = new Sheet
+            //             {
+            //                 Id = workbookPart.GetIdOfPart(worksheetPart),
+            //                 SheetId = (uint)(sheets.Count() + 1),
+            //                 Name = sheetName
+            //             };
+            //             sheets.Append(sheet);
+            //
+            //             // Create header row with bold formatting
+            //             var headerRow = new Row();
+            //             var headers = new List<Cell>
+            //             {
+            //                 ConstructCell(localizationService.GetString("Id"), CellValues.String, 1),
+            //                 ConstructCell(localizationService.GetString("Property"), CellValues.String, 1),
+            //                 ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String, 1),
+            //                 ConstructCell(localizationService.GetString("DoneBy"), CellValues.String, 1),
+            //                 ConstructCell(localizationService.GetString("EmployeeNo"), CellValues.String, 1),
+            //                 ConstructCell(localizationService.GetString("ItemName"), CellValues.String, 1)
+            //             };
+            //
+            //             foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
+            //             {
+            //                 headers.Add(ConstructCell(itemHeader.Value, CellValues.String, 1));
+            //             }
+            //
+            //             headerRow.Append(headers);
+            //             sheetData.AppendChild(headerRow);
+            //
+            //             // Populate data rows
+            //             foreach (var dataModel in reportEformGroupModel.Items)
+            //             {
+            //                 var dataRow = new Row();
+            //                 dataRow.Append(
+            //                     ConstructCell(dataModel.MicrotingSdkCaseId.ToString(), CellValues.String),
+            //                     ConstructCell(dataModel.PropertyName, CellValues.String),
+            //                     ConstructCell(dataModel.MicrotingSdkCaseDoneAt?.ToString("dd.MM.yyyy HH:mm:ss"),
+            //                         CellValues.String),
+            //                     ConstructCell(dataModel.DoneBy, CellValues.String),
+            //                     ConstructCell(dataModel.EmployeeNo, CellValues.String),
+            //                     ConstructCell(dataModel.ItemName, CellValues.String)
+            //                 );
+            //
+            //                 foreach (var dataModelCaseField in dataModel.CaseFields)
+            //                 {
+            //                     var value = dataModelCaseField.Value switch
+            //                     {
+            //                         "checked" => "1",
+            //                         "unchecked" => "0",
+            //                         _ => dataModelCaseField.Value
+            //                     };
+            //
+            //                     switch (dataModelCaseField.Key)
+            //                     {
+            //                         case "date":
+            //                             if (DateTime.TryParse(value, out var dateValue))
+            //                             {
+            //                                 dataRow.Append(ConstructCell(dateValue.ToString("dd.MM.yyyy"),
+            //                                     CellValues.String));
+            //                             }
+            //                             else
+            //                             {
+            //                                 dataRow.Append(ConstructCell(value, CellValues.String));
+            //                             }
+            //
+            //                             break;
+            //                         case "number":
+            //                             if (double.TryParse(value, out var numberValue))
+            //                             {
+            //                                 dataRow.Append(ConstructCell(
+            //                                     numberValue.ToString(CultureInfo.InvariantCulture),
+            //                                     CellValues.Number));
+            //                             }
+            //                             else
+            //                             {
+            //                                 dataRow.Append(ConstructCell(value, CellValues.String));
+            //                             }
+            //
+            //                             break;
+            //                         default:
+            //                             dataRow.Append(ConstructCell(value, CellValues.String));
+            //                             break;
+            //                     }
+            //                 }
+            //
+            //                 sheetData.AppendChild(dataRow);
+            //             }
+            //
+            //             // Apply autofilter and table formatting
+            //             // ApplyTableFormatting(sheet, worksheetPart, sheetData);
+            //         }
+            //     }
+            // }
+            //
+            // workbookPart.Workbook.Save();
         }
+        ValidateExcel(filePath);
 
-        Stream result = File.Open(resultDocument, FileMode.Open);
+        Stream result = File.Open(filePath, FileMode.Open);
         return new OperationDataResult<Stream>(true, result);
     }
     catch (Exception e)
@@ -386,7 +592,36 @@ public class ExcelService(
     }
 }
 
+    private void ValidateExcel(string fileName)
+    {
+        try
+        {
+            var validator = new OpenXmlValidator();
+            int count = 0;
+            StringBuilder sb = new StringBuilder();
+            var doc = SpreadsheetDocument.Open(fileName, true);
+            foreach (ValidationErrorInfo error in validator.Validate(doc))
+            {
 
+                count++;
+                sb.Append(("Error Count : " + count) + "\r\n");
+                sb.Append(("Description : " + error.Description) + "\r\n");
+                sb.Append(("Path: " + error.Path.XPath) + "\r\n");
+                sb.Append(("Part: " + error.Part.Uri) + "\r\n");
+                sb.Append("\r\n-------------------------------------------------\r\n");
+            }
+
+            doc.Dispose();
+            if (count <= 0) return;
+            sb.Append(("Total Errors in file: " + count));
+            throw new Exception(sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            SentrySdk.CaptureException(ex);
+            logger.LogError(ex.Message);
+        }
+    }
 
     private Stylesheet CreateStylesheet()
     {
