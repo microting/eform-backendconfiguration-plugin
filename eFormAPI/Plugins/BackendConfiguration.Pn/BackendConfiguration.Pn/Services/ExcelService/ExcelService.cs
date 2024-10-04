@@ -142,16 +142,16 @@ public class ExcelService(
                         // Create header row
                         var headerRow = new Row();
                         headerRow.Append(
-                            ConstructCell(localizationService.GetString("Id"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("Property"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("SubmittedDate"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("DoneBy"), CellValues.String, 1),
-                            ConstructCell(localizationService.GetString("ItemName"), CellValues.String, 1)
+                            CreateCell(localizationService.GetString("Id")),
+                            CreateCell(localizationService.GetString("Property")),
+                            CreateCell(localizationService.GetString("SubmittedDate")),
+                            CreateCell(localizationService.GetString("DoneBy")),
+                            CreateCell(localizationService.GetString("ItemName"))
                         );
 
                         foreach (var itemHeader in eformModel.ItemHeaders)
                         {
-                            headerRow.Append(ConstructCell(itemHeader.Value, CellValues.String, 1));
+                            headerRow.Append(CreateCell(itemHeader.Value));
                         }
 
                         sheetData.AppendChild(headerRow);
@@ -161,12 +161,11 @@ public class ExcelService(
                         {
                             var dataRow = new Row();
                             dataRow.Append(
-                                ConstructCell(dataModel.MicrotingSdkCaseId.ToString(), CellValues.String),
-                                ConstructCell(dataModel.PropertyName, CellValues.String),
-                                ConstructCell(dataModel.MicrotingSdkCaseDoneAt?.ToString("dd.MM.yyyy HH:mm:ss"),
-                                    CellValues.String),
-                                ConstructCell(dataModel.DoneBy, CellValues.String),
-                                ConstructCell(dataModel.ItemName, CellValues.String)
+                                CreateNumericCell(dataModel.MicrotingSdkCaseId),
+                                CreateCell(dataModel.PropertyName),
+                                CreateDateCell(dataModel.MicrotingSdkCaseDoneAt!.Value),
+                                CreateCell(dataModel.DoneBy),
+                                CreateCell(dataModel.ItemName)
                             );
 
                             foreach (var dataModelCaseField in dataModel.CaseFields)
@@ -183,30 +182,28 @@ public class ExcelService(
                                     case "date":
                                         if (DateTime.TryParse(value, out var dateValue))
                                         {
-                                            dataRow.Append(ConstructCell(dateValue.ToString("dd.MM.yyyy"),
-                                                CellValues.String));
+                                            dataRow.Append(CreateDateCell(dateValue));
                                         }
                                         else
                                         {
-                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                            dataRow.Append(CreateCell(value));
                                         }
 
                                         break;
                                     case "number":
                                         if (double.TryParse(value, out var numberValue))
                                         {
-                                            dataRow.Append(ConstructCell(
-                                                numberValue.ToString(CultureInfo.InvariantCulture),
-                                                CellValues.Number));
+                                            dataRow.Append(CreateNumericCell(
+                                                numberValue));
                                         }
                                         else
                                         {
-                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                            dataRow.Append(CreateCell(value));
                                         }
 
                                         break;
                                     default:
-                                        dataRow.Append(ConstructCell(value, CellValues.String));
+                                        dataRow.Append(CreateCell(value));
                                         break;
                                 }
                             }
@@ -368,13 +365,12 @@ public class ExcelService(
                         {
                             var dataRow = new Row();
                             dataRow.Append(
-                                ConstructCell(dataModel.MicrotingSdkCaseId.ToString(), CellValues.String),
-                                ConstructCell(dataModel.PropertyName, CellValues.String),
-                                ConstructCell(dataModel.MicrotingSdkCaseDoneAt?.ToString("dd.MM.yyyy HH:mm:ss"),
-                                    CellValues.String),
-                                ConstructCell(dataModel.DoneBy, CellValues.String),
-                                ConstructCell(dataModel.EmployeeNo, CellValues.String),
-                                ConstructCell(dataModel.ItemName, CellValues.String)
+                                CreateNumericCell(dataModel.MicrotingSdkCaseId),
+                                CreateCell(dataModel.PropertyName),
+                                CreateDateCell(dataModel.MicrotingSdkCaseDoneAt!.Value),
+                                CreateCell(dataModel.DoneBy),
+                                CreateCell(dataModel.EmployeeNo),
+                                CreateCell(dataModel.ItemName)
                             );
 
                             foreach (var dataModelCaseField in dataModel.CaseFields)
@@ -391,30 +387,27 @@ public class ExcelService(
                                     case "date":
                                         if (DateTime.TryParse(value, out var dateValue))
                                         {
-                                            dataRow.Append(ConstructCell(dateValue.ToString("dd.MM.yyyy"),
-                                                CellValues.String));
+                                            dataRow.Append(CreateDateCell(dateValue));
                                         }
                                         else
                                         {
-                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                            dataRow.Append(CreateCell(value));
                                         }
 
                                         break;
                                     case "number":
                                         if (double.TryParse(value, out var numberValue))
                                         {
-                                            dataRow.Append(ConstructCell(
-                                                numberValue.ToString(CultureInfo.InvariantCulture),
-                                                CellValues.Number));
+                                            dataRow.Append(CreateNumericCell(numberValue));
                                         }
                                         else
                                         {
-                                            dataRow.Append(ConstructCell(value, CellValues.String));
+                                            dataRow.Append(CreateCell(value));
                                         }
 
                                         break;
                                     default:
-                                        dataRow.Append(ConstructCell(value, CellValues.String));
+                                        dataRow.Append(CreateCell(value));
                                         break;
                                 }
                             }
@@ -735,18 +728,18 @@ public class ExcelService(
     {
         var headerRow = new Row();
         headerRow.Append(
-            ConstructCell(localizationService.GetString("Id"), CellValues.String),
-            ConstructCell(localizationService.GetString("Created"), CellValues.String),
-            ConstructCell(localizationService.GetString("Location"), CellValues.String),
-            ConstructCell(localizationService.GetString("Area"), CellValues.String),
-            ConstructCell(localizationService.GetString("CreatedBy1"), CellValues.String),
-            ConstructCell(localizationService.GetString("CreatedBy2"), CellValues.String),
-            ConstructCell(localizationService.GetString("LastAssignedTo"), CellValues.String),
-            ConstructCell(localizationService.GetString("Description"), CellValues.String),
-            ConstructCell(localizationService.GetString("LastUpdateDate"), CellValues.String),
-            ConstructCell(localizationService.GetString("LastUpdatedBy"), CellValues.String),
-            ConstructCell(localizationService.GetString("Priority"), CellValues.String),
-            ConstructCell(localizationService.GetString("Status"), CellValues.String)
+            CreateCell(localizationService.GetString("Id")),
+            CreateCell(localizationService.GetString("Created")),
+            CreateCell(localizationService.GetString("Location")),
+            CreateCell(localizationService.GetString("Area")),
+            CreateCell(localizationService.GetString("CreatedBy1")),
+            CreateCell(localizationService.GetString("CreatedBy2")),
+            CreateCell(localizationService.GetString("LastAssignedTo")),
+            CreateCell(localizationService.GetString("Description")),
+            CreateCell(localizationService.GetString("LastUpdateDate")),
+            CreateCell(localizationService.GetString("LastUpdatedBy")),
+            CreateCell(localizationService.GetString("Priority")),
+            CreateCell(localizationService.GetString("Status"))
         );
         sheetData.AppendChild(headerRow);
     }
@@ -757,18 +750,18 @@ public class ExcelService(
         {
             var row = new Row();
             row.Append(
-                ConstructCell(workOrderCaseModel.Id.ToString(), CellValues.Number),
-                ConstructCell(workOrderCaseModel.CaseInitiated.ToString(), CellValues.String),
-                ConstructCell(workOrderCaseModel.PropertyName, CellValues.String),
-                ConstructCell(workOrderCaseModel.AreaName, CellValues.String),
-                ConstructCell(workOrderCaseModel.CreatedByName, CellValues.String),
-                ConstructCell(workOrderCaseModel.CreatedByText, CellValues.String),
-                ConstructCell(workOrderCaseModel.LastAssignedTo, CellValues.String),
-                ConstructCell(workOrderCaseModel.Description ?? "", CellValues.String),
-                ConstructCell(workOrderCaseModel.LastUpdateDate?.ToString() ?? "", CellValues.String),
-                ConstructCell(workOrderCaseModel.LastUpdatedBy, CellValues.String),
-                ConstructCell(GetPriorityText(workOrderCaseModel.Priority), CellValues.String),
-                ConstructCell(workOrderCaseModel.Status, CellValues.String)
+                CreateNumericCell(workOrderCaseModel.Id),
+                CreateCell(workOrderCaseModel.CaseInitiated.ToString()),
+                CreateCell(workOrderCaseModel.PropertyName),
+                CreateCell(workOrderCaseModel.AreaName),
+                CreateCell(workOrderCaseModel.CreatedByName),
+                CreateCell(workOrderCaseModel.CreatedByText),
+                CreateCell(workOrderCaseModel.LastAssignedTo),
+                CreateCell(workOrderCaseModel.Description ?? ""),
+                CreateDateCell(workOrderCaseModel.LastUpdateDate!.Value),
+                CreateCell(workOrderCaseModel.LastUpdatedBy),
+                CreateCell(GetPriorityText(workOrderCaseModel.Priority)),
+                CreateCell(workOrderCaseModel.Status)
             );
             sheetData.AppendChild(row);
         }
@@ -786,22 +779,32 @@ public class ExcelService(
         };
     }
 
-    private Cell ConstructCell(string value, CellValues dataType)
+    private Cell CreateCell(string value)
     {
-        return new Cell
+        return new Cell()
         {
             CellValue = new CellValue(value),
-            DataType = new EnumValue<CellValues>(dataType)
+            DataType = CellValues.String // Explicitly setting the data type to string
         };
     }
 
-    private Cell ConstructCell(string value, CellValues dataType, uint styleIndex)
+    private Cell CreateNumericCell(double value)
     {
-        return new Cell
+        return new Cell()
         {
-            CellValue = new CellValue(value),
-            DataType = new EnumValue<CellValues>(dataType),
-            StyleIndex = styleIndex // Applies the formatting (e.g., bold)
+            CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture)),
+            DataType = CellValues.Number
+        };
+    }
+
+    private Cell CreateDateCell(DateTime dateValue)
+    {
+        return new Cell()
+        {
+            CellValue = new CellValue(dateValue.ToOADate()
+                .ToString(CultureInfo.InvariantCulture)), // Excel stores dates as OLE Automation date values
+            DataType = CellValues.Number, // Excel treats dates as numbers
+            StyleIndex = 2 // Assuming StyleIndex 2 corresponds to the date format in the stylesheet
         };
     }
 
@@ -849,7 +852,7 @@ public class ExcelService(
                 var headerRow = new Row();
                 foreach (var column in columns)
                 {
-                    headerRow.Append(ConstructCell(column, CellValues.String));
+                    headerRow.Append(CreateCell(column));
                 }
 
                 sheetData.AppendChild(headerRow);
@@ -859,17 +862,15 @@ public class ExcelService(
                 {
                     var row = new Row();
                     row.Append(
-                        ConstructCell(taskTrackerModel.Property, CellValues.String),
-                        ConstructCell(taskTrackerModel.SdkFolderName, CellValues.String),
-                        ConstructCell(taskTrackerModel.TaskName, CellValues.String),
-                        ConstructCell(string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name)),
-                            CellValues.String),
-                        ConstructCell(string.Join(", ", taskTrackerModel.WorkerNames), CellValues.String),
-                        ConstructCell(taskTrackerModel.StartTask.ToString("dd.MM.yyyy"), CellValues.String),
-                        ConstructCell(
-                            $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {localizationService.GetString(taskTrackerModel.RepeatType.ToString())}",
-                            CellValues.String),
-                        ConstructCell(taskTrackerModel.DeadlineTask.ToString("dd.MM.yyyy"), CellValues.String)
+                        CreateCell(taskTrackerModel.Property),
+                        CreateCell(taskTrackerModel.SdkFolderName),
+                        CreateCell(taskTrackerModel.TaskName),
+                        CreateCell(string.Join(", ", taskTrackerModel.Tags.Select(q => q.Name))),
+                        CreateCell(string.Join(", ", taskTrackerModel.WorkerNames)),
+                        CreateDateCell(taskTrackerModel.StartTask),
+                        CreateCell(
+                            $"{(taskTrackerModel.RepeatEvery == 0 ? "" : taskTrackerModel.RepeatEvery)} {localizationService.GetString(taskTrackerModel.RepeatType.ToString())}"),
+                        CreateDateCell(taskTrackerModel.DeadlineTask)
                     );
 
                     sheetData.AppendChild(row);
