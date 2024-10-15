@@ -132,6 +132,10 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                                    areaName +
                                    $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
                                    priorityText +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
+                                   (!string.IsNullOrEmpty(workOrderCase.CreatedByText)
+                                       ? $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
+                                       : "") +
                                    assignedTo +
                                    $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
             var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage);
