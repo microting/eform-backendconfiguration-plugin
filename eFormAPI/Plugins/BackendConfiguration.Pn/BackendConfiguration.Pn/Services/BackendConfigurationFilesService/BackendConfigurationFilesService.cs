@@ -266,6 +266,41 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 	}
 
+	public async Task<OperationResult> UpdateProperties(BackendConfigurationFileUpdateProperties model)
+	{
+		var fileProperties = await _dbContext.PropertyFiles
+			.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+			.Where(x => x.FileId == model.Id)
+			.ToListAsync();
+
+		var propertiesForDelete = fileProperties
+			.Where(x => !model.Properties.Contains(x.PropertyId)).ToList();
+
+		var propertiesForCreate = model.Properties
+			.Where(x => !fileProperties.Select(y => y.PropertyId).Contains(x))
+			.Select(propertyForCreateId => new PropertyFile
+			{
+				FileId = model.Id,
+				PropertyId = propertyForCreateId,
+				CreatedByUserId = _userService.UserId,
+				UpdatedByUserId = _userService.UserId
+			})
+			.ToList();
+
+		foreach (var newProperty in propertiesForCreate)
+		{
+			await newProperty.Create(_dbContext);
+		}
+
+		foreach (var property in propertiesForDelete)
+		{
+			property.UpdatedByUserId = _userService.UserId;
+			await property.Delete(_dbContext);
+		}
+
+		return new OperationResult(true);
+	}
+
 	public async Task<OperationResult> Create(List<BackendConfigurationFileCreate> model)
 	{
 		try
@@ -356,7 +391,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreateFiles"));
 		}
 	}
-
 
 	public async Task<OperationResult> Delete(int id)
 	{

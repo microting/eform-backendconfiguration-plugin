@@ -76,6 +76,12 @@ public class FilesController : Controller
 		return await _backendConfigurationFilesService.UpdateTags(model);
 	}
 
+	[HttpPut("properties")]
+	public async Task<OperationResult> UpdateProperties([FromBody] BackendConfigurationFileUpdateProperties model)
+	{
+		return await _backendConfigurationFilesService.UpdateProperties(model);
+	}
+
 	[HttpPost]
 	[Route("create")]
 	public async Task<OperationResult> Create([FromForm] BackendConfigurationFileCreateList model)

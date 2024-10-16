@@ -16,6 +16,8 @@ public interface IBackendConfigurationFilesService
 
 	Task<OperationResult> UpdateTags(BackendConfigurationFileUpdateFileTags model);
 
+	Task<OperationResult> UpdateProperties(BackendConfigurationFileUpdateProperties model);
+
 	Task<OperationResult> Create(List<BackendConfigurationFileCreate> model);
 
 	Task<OperationResult> Delete(int id);
