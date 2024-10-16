@@ -219,7 +219,7 @@
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.0" />
       <PackageReference Include="Ical.Net" Version="4.2.0" />
       <PackageReference Include="Microting.eForm" Version="8.0.60" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="8.0.59" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="8.0.60" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="8.0.60" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="8.0.29" />
