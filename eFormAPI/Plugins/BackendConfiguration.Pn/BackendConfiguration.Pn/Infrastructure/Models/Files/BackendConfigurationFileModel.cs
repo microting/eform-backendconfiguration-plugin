@@ -32,16 +32,13 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 public class BackendConfigurationFileModel
 {
 	public int Id { get; set; }
-
 	public DateTime CreateDate { get; set; }
-
 	public string FileName { get; set; }
-
 	public string FileExtension { get; set; }
 
+	public string FileHash { get; set; }
 	public List<int> Properties { get; set; }
 		= [];
-
 	public List<CommonTagModel> Tags { get; set; }
 		= [];
 }
