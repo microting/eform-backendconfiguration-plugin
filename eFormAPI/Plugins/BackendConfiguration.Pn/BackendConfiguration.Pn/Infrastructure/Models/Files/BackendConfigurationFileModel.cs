@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
 using System.Collections.Generic;
@@ -31,7 +33,11 @@ public class BackendConfigurationFileModel
 {
 	public int Id { get; set; }
 
+	public DateTime CreateDate { get; set; }
+
 	public string FileName { get; set; }
+
+	public string FileExtension { get; set; }
 
 	public List<int> Properties { get; set; }
 		= [];

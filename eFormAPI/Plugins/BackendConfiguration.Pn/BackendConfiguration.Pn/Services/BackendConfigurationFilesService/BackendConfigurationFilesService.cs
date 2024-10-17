@@ -456,7 +456,9 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				.Select(x => new BackendConfigurationFileModel
 				{
 					Id = x.Id,
+					CreateDate = x.CreatedAt,
 					FileName = x.FileName,
+					FileExtension = x.UploadedData.Extension,
 					Properties = x.PropertyFiles
 						.Where(y => y.FileId == x.Id)
 						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
