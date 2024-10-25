@@ -39,4 +39,12 @@ public class BackendConfigurationFileRequestModel : FilterAndSortModel
 	public DateTime? DateFrom { get; set; }
 
 	public DateTime? DateTo { get; set; }
+
+	public string? SoftwareVersion { get; set; }
+
+	public string? Model { get; set; }
+
+	public string? Manufacturer { get; set; }
+
+	public string? OsVersion { get; set; }
 }

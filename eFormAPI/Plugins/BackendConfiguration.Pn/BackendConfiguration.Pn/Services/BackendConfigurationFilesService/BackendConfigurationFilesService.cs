@@ -24,6 +24,7 @@ SOFTWARE.
 
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Microting.EformAngularFrontendBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
@@ -51,6 +52,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	private readonly ILogger<BackendConfigurationTagsService> _logger;
 	private readonly IBackendConfigurationLocalizationService _localizationService;
 	private readonly BackendConfigurationPnDbContext _dbContext;
+	private readonly BaseDbContext _baseDbContext;
 	private readonly IUserService _userService;
 	private readonly IEFormCoreService _coreHelper;
 
@@ -58,13 +60,14 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		ILogger<BackendConfigurationTagsService> logger,
 		IBackendConfigurationLocalizationService localizationService,
 		BackendConfigurationPnDbContext dbContext,
-		IUserService userService, IEFormCoreService coreHelper)
+		IUserService userService, IEFormCoreService coreHelper, BaseDbContext baseDbContext)
 	{
 		_logger = logger;
 		_localizationService = localizationService;
 		_dbContext = dbContext;
 		_userService = userService;
 		_coreHelper = coreHelper;
+		_baseDbContext = baseDbContext;
 	}
 
 	public async Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index(
@@ -158,6 +161,18 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				Entities = files,
 				Total = total
 			};
+
+			if (request.Model != null)
+			{
+				var currentUserAsync = await _userService.GetCurrentUserAsync();
+				var currentUser = _baseDbContext.Users
+					.Single(x => x.Id == currentUserAsync.Id);
+				currentUser.ArchiveModel = request.Model;
+				currentUser.ArchiveManufacturer = request.Manufacturer;
+				currentUser.ArchiveSoftwareVersion = request.SoftwareVersion;
+				currentUser.ArchiveOsVersion = request.OsVersion;
+				await _baseDbContext.SaveChangesAsync();
+			}
 
 			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(true, pagedFilesModel);
 		}
