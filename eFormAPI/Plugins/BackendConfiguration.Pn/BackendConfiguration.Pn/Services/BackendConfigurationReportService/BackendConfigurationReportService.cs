@@ -44,6 +44,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService;
 
@@ -448,7 +449,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             break;
                                         case Constants.FieldTypes.EntitySearch or
                                             Constants.FieldTypes.EntitySelect:
-                                            if (caseField.Value != null && caseField.Value != "null")
+                                            if (!string.IsNullOrEmpty(caseField.Value) && caseField.Value != "null")
                                             {
                                                 var id = int.Parse(caseField.Value);
                                                 var match =
@@ -540,6 +541,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             _logger.LogError(e.StackTrace);
