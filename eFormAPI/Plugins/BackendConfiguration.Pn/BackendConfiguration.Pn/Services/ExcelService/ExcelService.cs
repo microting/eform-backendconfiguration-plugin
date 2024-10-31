@@ -191,7 +191,7 @@ public class ExcelService(
 
                                         break;
                                     case "number":
-                                        if (double.TryParse(value, out var numberValue))
+                                        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var numberValue))
                                         {
                                             dataRow.Append(CreateNumericCell(
                                                 numberValue));
@@ -396,7 +396,7 @@ public class ExcelService(
 
                                         break;
                                     case "number":
-                                        if (double.TryParse(value, out var numberValue))
+                                        if (double.TryParse(value.Replace(",", "."), out var numberValue))
                                         {
                                             dataRow.Append(CreateNumericCell(numberValue));
                                         }
