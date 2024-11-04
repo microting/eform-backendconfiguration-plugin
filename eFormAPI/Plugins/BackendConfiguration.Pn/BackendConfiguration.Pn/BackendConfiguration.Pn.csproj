@@ -218,13 +218,13 @@
       <PackageReference Include="ChemicalsBase" Version="8.0.10" />
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.1" />
       <PackageReference Include="Ical.Net" Version="4.3.1" />
-      <PackageReference Include="Microting.eForm" Version="8.0.65" />
+      <PackageReference Include="Microting.eForm" Version="8.0.66" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="8.0.67" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="8.0.66" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="8.0.67" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="8.0.29" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.59" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.59" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.60" />
       <PackageReference Include="Microting.TimePlanningBase" Version="8.0.64" />
       <PackageReference Include="QuestPDF" Version="2024.10.1" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0.2" />
