@@ -28,6 +28,7 @@ using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
 using ImageMagick;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
 
@@ -180,6 +181,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             throw;
@@ -252,6 +254,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationDataResult<WorkOrderCaseReadModel>(false,
@@ -286,6 +289,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationDataResult<List<string>>(false,
@@ -394,6 +398,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationResult(false,
@@ -636,6 +641,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationResult(false,
