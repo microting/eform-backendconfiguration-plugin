@@ -17,3 +17,13 @@ mat-card-content.d-flex.flex-column {
     }
   }
 }
+
+.row-container {
+  width: 100%;
+}
+
+.half-width {
+  flex: 1 1 45%;
+  box-sizing: border-box;
+  padding: 10px;
+}
