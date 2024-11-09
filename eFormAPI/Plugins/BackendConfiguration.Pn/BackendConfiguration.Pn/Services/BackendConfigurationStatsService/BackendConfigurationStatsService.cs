@@ -17,31 +17,15 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormApi.BasePn.Abstractions;
 
-public class BackendConfigurationStatsService: IBackendConfigurationStatsService
+public class BackendConfigurationStatsService(
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    ILogger<BackendConfigurationStatsService> logger,
+    IBackendConfigurationLocalizationService localizationService,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+    CaseTemplatePnDbContext caseTemplatePnDbContext,
+    IEFormCoreService coreHelper)
+    : IBackendConfigurationStatsService
 {
-    private readonly IBackendConfigurationLocalizationService _localizationService;
-    private readonly ILogger<BackendConfigurationStatsService> _logger;
-    private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-    private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
-    private readonly IEFormCoreService _coreHelper;
-
-    public BackendConfigurationStatsService(
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ILogger<BackendConfigurationStatsService> logger,
-        IBackendConfigurationLocalizationService localizationService,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        CaseTemplatePnDbContext caseTemplatePnDbContext,
-        IEFormCoreService coreHelper)
-    {
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        _logger = logger;
-        _localizationService = localizationService;
-        _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-        _caseTemplatePnDbContext = caseTemplatePnDbContext;
-        _coreHelper = coreHelper;
-    }
-
     /// <inheritdoc />
     public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(int? propertyId)
     {
@@ -49,7 +33,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         {
             var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             var currentEndDateTime = currentDateTime.AddDays(1);
-            var query = _backendConfigurationPnDbContext.Compliances
+            var query = backendConfigurationPnDbContext.Compliances
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PlanningId != 0)
                 .Where(x => x.StartDate <= currentDateTime)
@@ -103,10 +87,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<PlannedTaskDays>(false,
-                _localizationService.GetString("ErrorWhileGetPlannedTaskDaysStat"));
+                localizationService.GetString("ErrorWhileGetPlannedTaskDaysStat"));
         }
     }
 
@@ -117,7 +101,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         {
             var result = new AdHocTaskPriorities();
 
-            var query = _backendConfigurationPnDbContext.WorkorderCases
+            var query = backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -181,10 +165,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<AdHocTaskPriorities>(false,
-                _localizationService.GetString("ErrorWhileGetAdHocTaskPrioritiesStat"));
+                localizationService.GetString("ErrorWhileGetAdHocTaskPrioritiesStat"));
         }
     }
 
@@ -196,7 +180,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             var result = new DocumentUpdatedDays();
 
-            var query = _caseTemplatePnDbContext.Documents
+            var query = caseTemplatePnDbContext.Documents
                 .Include(x => x.DocumentProperties)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
@@ -226,10 +210,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<DocumentUpdatedDays>(false,
-                _localizationService.GetString("ErrorWhileGetDocumentUpdatedDaysStat"));
+                localizationService.GetString("ErrorWhileGetDocumentUpdatedDaysStat"));
         }
     }
 
@@ -238,15 +222,12 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var result = new PlannedTaskWorkers();
-            var query = _backendConfigurationPnDbContext.PlanningSites
+            var query = backendConfigurationPnDbContext.PlanningSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.AreaRulePlanning)
-                // .ThenInclude(x => x.AreaRule)
-                // .ThenInclude(x => x.Area)
-                // .ThenInclude(x => x.AreaProperties)
                 .Where(x => x.AreaRulePlanning.RepeatEvery > 0)
                 .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
                 .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0)
@@ -256,10 +237,6 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             {
                 query = query
                     .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value
-                                // ||
-                                // x.AreaRulePlanning.AreaRule.PropertyId == propertyId.Value ||
-                                // x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
-                                    // .Contains(propertyId.Value)
                                 );
             }
 
@@ -303,10 +280,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<PlannedTaskWorkers>(false,
-                _localizationService.GetString("ErrorWhileGetPlannedTaskWorkersStat"));
+                localizationService.GetString("ErrorWhileGetPlannedTaskWorkersStat"));
         }
     }
 
@@ -315,21 +292,15 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var result = new AdHocTaskWorkers();
-            var query = _backendConfigurationPnDbContext.WorkorderCases
+            var query = backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.LeadingCase == true)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
-            // var query = _backendConfigurationPnDbContext.PropertyWorkers
-            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //     .Include(x => x.WorkorderCases)
-            //     .Include(x => x.Property)
-            //     .Where(x => x.Property.WorkorderEnable);
-            //
             if (propertyId.HasValue && propertyId != -1)
             {
                 query = query
@@ -339,36 +310,17 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var groupedData = await query.GroupBy(x => x.LastAssignedToName)
                 .Select(x => new
                 {
-                    // SiteId = x.Where(y => y.LastAssignedToName == x.Key)
-                    //     .Select(y => y.PropertyWorker.WorkerId)
-                    //     .FirstOrDefault(),
                     SiteName = x.Key,
                     Count = x.Count(y => y.LastAssignedToName == x.Key)
                 }).ToListAsync();
 
-            //
-            // var groupedData = await query
-            //     .GroupBy(x => x.WorkerId)
-            //     .Select(x => new
-            //     {
-            //         SiteId = x.Key,
-            //         Count = x
-            //             .SelectMany(y => y.WorkorderCases)
-            //             .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
-            //                         z.WorkflowState != Constants.WorkflowStates.Removed &&
-            //                         z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
-            //     })
-            //     .ToListAsync();
-            //
             var names = query
                 .Select(x => x.LastAssignedToName)
                 .ToList();
-            // //
             var siteNames = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => names.Contains(x.Name))
                 .ToDictionaryAsync(x => x.Name, x => x.Id);
-            //
             result.TaskWorkers = groupedData
                 .Select(x => new AdHocTaskWorker()
                 {
@@ -393,10 +345,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<AdHocTaskWorkers>(false,
-                _localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
+                localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
         }
     }
 }

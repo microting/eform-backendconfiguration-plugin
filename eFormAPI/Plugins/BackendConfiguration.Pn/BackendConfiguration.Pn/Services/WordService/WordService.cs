@@ -54,43 +54,28 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-public class WordService : IWordService
+public class WordService(
+    ILogger<WordService> logger,
+    IBackendConfigurationLocalizationService localizationService,
+    IEFormCoreService coreHelper,
+    BackendConfigurationPnDbContext dbContext,
+    IUserService userService,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+    : IWordService
 {
-    private readonly ILogger<WordService> _logger;
-    private readonly IBackendConfigurationLocalizationService  _localizationService;
-    private readonly IEFormCoreService _coreHelper;
-    private readonly BackendConfigurationPnDbContext _dbContext;
-    private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-    private readonly IUserService _userService;
     private bool _s3Enabled;
-    private bool _swiftEnabled;
-
-    public WordService(
-        ILogger<WordService> logger,
-        IBackendConfigurationLocalizationService localizationService,
-        IEFormCoreService coreHelper,
-        BackendConfigurationPnDbContext dbContext,
-        IUserService userService, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
-    {
-        _logger = logger;
-        _localizationService = localizationService;
-        _coreHelper = coreHelper;
-        _dbContext = dbContext;
-        _userService = userService;
-        _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-    }
 
     public async Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year)
     {
         try
         {
-            var property = await _dbContext.Properties
+            var property = await dbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync(x => x.Id == propertyId).ConfigureAwait(false);
-            var area = await _dbContext.Areas
+            var area = await dbContext.Areas
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync(x => x.Id == areaId).ConfigureAwait(false);
-            var isPropertyAndAreaLinked = await _dbContext.AreaProperties
+            var isPropertyAndAreaLinked = await dbContext.AreaProperties
                 .Where(x => x.AreaId == areaId)
                 .Where(x => x.PropertyId == propertyId)
                 .AnyAsync().ConfigureAwait(false);
@@ -98,19 +83,19 @@ public class WordService : IWordService
             {
                 return new OperationDataResult<Stream>(
                     false,
-                    _localizationService.GetString("PropertyNotFound"));
+                    localizationService.GetString("PropertyNotFound"));
             }
             if (area == null)
             {
                 return new OperationDataResult<Stream>(
                     false,
-                    _localizationService.GetString("AreaNotFound"));
+                    localizationService.GetString("AreaNotFound"));
             }
             if (!isPropertyAndAreaLinked)
             {
                 return new OperationDataResult<Stream>(
                     false,
-                    _localizationService.GetString("PropertyAndAreaNotLinked"));
+                    localizationService.GetString("PropertyAndAreaNotLinked"));
             }
 
             return area.Type switch
@@ -118,18 +103,18 @@ public class WordService : IWordService
                 AreaTypesEnum.Type7 => await GenerateReportType7(property, area, year).ConfigureAwait(false),
                 AreaTypesEnum.Type8 => await GenerateReportType8(property, area, year).ConfigureAwait(false),
                 _ => new OperationDataResult<Stream>(false,
-                    _localizationService.GetString($"ReportFor{area.Type}NotSupported"))
+                    localizationService.GetString($"ReportFor{area.Type}NotSupported"))
 
             };
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
-                _localizationService.GetString("ErrorWhileGenerateWordFile"));
+                localizationService.GetString("ErrorWhileGenerateWordFile"));
         }
     }
 
@@ -138,7 +123,7 @@ public class WordService : IWordService
         var filtersLastAssignedTo = "";
         if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             filtersLastAssignedTo = await sdkDbContext.Sites
                 .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
@@ -166,41 +151,22 @@ public class WordService : IWordService
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<div style='font-family:Calibri;'>");
-        // itemsHtml.Append(@"<table width=""100%"" border=""1"">");
-        // itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("PropertyArea")}</td>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy")}</td>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
-        // itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
-        // itemsHtml.Append(@"</tr>");
-        // itemsHtml.Append(@"<tr style='font-size:6pt;'>");
-        // itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
-        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
-        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
-        // itemsHtml.Append($@"<td>{filtersLastAssignedTo}</td>");
-        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");
-        // itemsHtml.Append($@"<td>{(!filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d"))}");
-        // itemsHtml.Append($@"{(!filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d"))}</td>");
-        // itemsHtml.Append(@"</tr>");
-        // itemsHtml.Append(@"</table>");
         itemsHtml.Append(@"<p></p>"); // enter
 
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         // Table header
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Created")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Location")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Area")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy1")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy2")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Description")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("LastUpdateDate")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("LastUpdatedBy")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Id")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Created")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Location")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Area")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CreatedBy1")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CreatedBy2")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("LastAssignedTo")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Description")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("LastUpdateDate")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("LastUpdatedBy")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Status")}</td>");
         itemsHtml.Append(@"</tr>");
 
         foreach (var workOrderCaseModel in workOrderCaseModels)
@@ -216,7 +182,7 @@ public class WordService : IWordService
             itemsHtml.Append($@"<td>{workOrderCaseModel.Description}</td>");
             itemsHtml.Append($@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy") : "")}</td>");
             itemsHtml.Append($@"<td>{workOrderCaseModel.LastUpdatedBy}</td>");
-            itemsHtml.Append($@"<td>{_localizationService.GetString(workOrderCaseModel.Status)}</td>");
+            itemsHtml.Append($@"<td>{localizationService.GetString(workOrderCaseModel.Status)}</td>");
             itemsHtml.Append(@"</tr>");
         }
         itemsHtml.Append(@"</table>");
@@ -233,9 +199,9 @@ public class WordService : IWordService
 
     private async Task<OperationDataResult<Stream>> GenerateReportType7(Property property, Area area, int year)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+        var curentLanguage = await userService.GetCurrentUserLanguage().ConfigureAwait(false);
         if (curentLanguage.Name != "English" && curentLanguage.Name != "Danish") // reports only eng and da langs
         {
             curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
@@ -266,14 +232,12 @@ public class WordService : IWordService
                 .LastOrDefaultAsync().ConfigureAwait(false);
         }
 
-        var areaRuleTranslations = await _dbContext.AreaRuleTranslations
+        var areaRuleTranslations = await dbContext.AreaRuleTranslations
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //.Where(x => areaRulesForType7.SelectMany(y => y.AreaRuleNames).Any(y => y == x.Name))
             .Include(x => x.AreaRule)
             .ThenInclude(x => x.AreaRulesPlannings)
             .Where(x => x.AreaRule.PropertyId == property.Id)
             .Where(x => x.AreaRule.AreaId == area.Id)
-            //.Select(x => x.AreaRule)
             .ToListAsync().ConfigureAwait(false);
 
         // Read html and template
@@ -297,14 +261,14 @@ public class WordService : IWordService
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<body style='font-family:Calibri;'>");
-        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {_localizationService.GetString("Controlplan IE-reporting")}</p>");
+        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Year")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CVR-no")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CHR-no")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Name")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Address")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Year")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CVR-no")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CHR-no")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Name")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Address")}</td>");
         itemsHtml.Append(@"</tr>");
         itemsHtml.Append(@"<tr style='font-size:11pt;'>");
         itemsHtml.Append($@"<td>{year}</td>");
@@ -320,8 +284,8 @@ public class WordService : IWordService
         // Table header
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
         itemsHtml.Append(@"<td></td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("StartDate")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Frequency")}</td>");
         itemsHtml.Append(@"</tr>");
 
         foreach (var areaRuleForType7 in areaRulesForType7)
@@ -352,9 +316,8 @@ public class WordService : IWordService
                     var repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
                     var firstChar = repeatType.First().ToString();
                     repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                    itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {_localizationService.GetString(repeatType)}</td>");
+                    itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {localizationService.GetString(repeatType)}</td>");
                 }
-                //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
             }
             itemsHtml.Append(@"</tr>");
         }
@@ -372,20 +335,20 @@ public class WordService : IWordService
 
     private async Task<OperationDataResult<Stream>> GenerateReportType8(Property property, Area area, int year)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        var currentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+        var currentLanguage = await userService.GetCurrentUserLanguage().ConfigureAwait(false);
         if (currentLanguage.Name != "English" && currentLanguage.Name != "Danish") // reports only eng and da langs
         {
             currentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
         }
 
         var areaProperty =
-            await _dbContext.AreaProperties.FirstOrDefaultAsync(x =>
+            await dbContext.AreaProperties.FirstOrDefaultAsync(x =>
                     x.PropertyId == property.Id && x.AreaId == area.Id)
                 .ConfigureAwait(false);
 
-        var propertyAreaFolders = await _dbContext.ProperyAreaFolders
+        var propertyAreaFolders = await dbContext.ProperyAreaFolders
             .Where(x => x.ProperyAreaAsignmentId == areaProperty.Id)
             .Select(x => x.FolderId)
             .ToListAsync()
@@ -424,7 +387,7 @@ public class WordService : IWordService
                 .LastOrDefaultAsync().ConfigureAwait(false);
         }
 
-        var areaRuleTranslations = await _dbContext.AreaRuleTranslations
+        var areaRuleTranslations = await dbContext.AreaRuleTranslations
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             //.Where(x => areaRulesForType7.SelectMany(y => y.AreaRuleNames).Any(y => y == x.Name))
             .Include(x => x.AreaRule)
@@ -455,14 +418,14 @@ public class WordService : IWordService
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<body style='font-family:Calibri;'>");
-        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {_localizationService.GetString("Controlplan IE-reporting")}</p>");
+        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Year")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CVR-no")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CHR-no")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Name")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Address")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Year")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CVR-no")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("CHR-no")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Name")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Address")}</td>");
         itemsHtml.Append(@"</tr>");
         itemsHtml.Append(@"<tr style='font-size:11pt;'>");
         itemsHtml.Append($@"<td>{year}</td>");
@@ -477,9 +440,9 @@ public class WordService : IWordService
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         // Table header
         itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("IE-Control Areas")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("IE-Control Areas")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("StartDate")}</td>");
+        itemsHtml.Append($@"<td>{localizationService.GetString("Frequency")}</td>");
         itemsHtml.Append(@"</tr>");
 
         folderTranslations.RemoveAt(0);
@@ -527,14 +490,14 @@ public class WordService : IWordService
                             {
                                 case 0:
                                 case 1:
-                                    repeatEvery = _localizationService.GetString("every");
+                                    repeatEvery = localizationService.GetString("every");
                                     break;
                                 default:
-                                    repeatEvery = _localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
+                                    repeatEvery = localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
                                     break;
                             }
                             repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                            repeatType = _localizationService.GetString(repeatType);
+                            repeatType = localizationService.GetString(repeatType);
                         }
 
                         itemsHtml.Append($@"<td>{repeatEvery} - {repeatType}</td>");
@@ -560,11 +523,10 @@ public class WordService : IWordService
         try
         {
             // get core
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             // var headerImageName = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportImageName").Value;
 
             _s3Enabled = core.GetSdkSetting(Settings.s3Enabled).Result.ToLower() == "true";
-            _swiftEnabled = core.GetSdkSetting(Settings.swiftEnabled).Result.ToLower() == "true";
             // Read html and template
             var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
             var assembly = Assembly.GetExecutingAssembly();
@@ -588,8 +550,8 @@ public class WordService : IWordService
             var word = new WordProcessor(docxFileStream);
 
             var itemsHtml = new StringBuilder();
-            var header = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
-            var subHeader = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
+            var header = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
+            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
             itemsHtml.Append("<body>");
             itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>");
             for (var i = 0; i < 8; i++)
@@ -598,7 +560,7 @@ public class WordService : IWordService
             }
             itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{header}</p>");
             itemsHtml.Append($@"<p style='font-size:20px;text-align:center;'>{subHeader}</p>");
-            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{_localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
+            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
 
             itemsHtml.Append(@"</p>");
 
@@ -657,11 +619,11 @@ public class WordService : IWordService
 
                     // Table header
                     itemsHtml.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size: 7pt;'>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("SubmittedDate")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("Id")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("Property")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("SubmittedDate")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("DoneBy")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("ItemName")}</td>");
 
                     foreach (var itemHeader in reportEformModel.ItemHeaders)
                     {
@@ -727,7 +689,7 @@ public class WordService : IWordService
                     try
                     {
                         itemsHtml.Append(
-                            $@"<p style='font-size: 7pt; page-break-before:always'>{_localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
+                            $@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
                         itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 650, core,
                             basePicturePath);
@@ -735,14 +697,14 @@ public class WordService : IWordService
                         if (!string.IsNullOrEmpty(imagesName.Value[1]))
                         {
                             itemsHtml.Append(
-                                $@"<p style='font-size: 7pt;'>{_localizationService.GetString("Position")}:<a href=""{imagesName.Value[1]}"">{imagesName.Value[1]}</a></p>"); // TODO change to Position : URL
+                                $@"<p style='font-size: 7pt;'>{localizationService.GetString("Position")}:<a href=""{imagesName.Value[1]}"">{imagesName.Value[1]}</a></p>"); // TODO change to Position : URL
                         }
                     }
                     catch (Exception e)
                     {
                         SentrySdk.CaptureException(e);
                         Trace.TraceError(e.Message);
-                        _logger.LogError(e.Message);
+                        logger.LogError(e.Message);
                     }
                 }
             }
@@ -761,11 +723,11 @@ public class WordService : IWordService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
-                _localizationService.GetString("ErrorWhileCreatingWordFile"));
+                localizationService.GetString("ErrorWhileCreatingWordFile"));
         }
     }
 
@@ -774,11 +736,10 @@ public class WordService : IWordService
         try
         {
             // get core
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             // var headerImageName = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportImageName").Value;
 
             _s3Enabled = core.GetSdkSetting(Settings.s3Enabled).Result.ToLower() == "true";
-            _swiftEnabled = core.GetSdkSetting(Settings.swiftEnabled).Result.ToLower() == "true";
             // Read html and template
             var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
             var assembly = Assembly.GetExecutingAssembly();
@@ -802,8 +763,8 @@ public class WordService : IWordService
             var word = new WordProcessor(docxFileStream);
 
             var itemsHtml = new StringBuilder();
-            var header = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
-            var subHeader = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
+            var header = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
+            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
             itemsHtml.Append("<body>");
             itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>");
             for (var i = 0; i < 8; i++)
@@ -812,7 +773,7 @@ public class WordService : IWordService
             }
             itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{header}</p>");
             itemsHtml.Append($@"<p style='font-size:20px;text-align:center;'>{subHeader}</p>");
-            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{_localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
+            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
 
             itemsHtml.Append(@"</p>");
 
@@ -842,12 +803,12 @@ public class WordService : IWordService
 
                     // Table header
                     itemsHtml.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size: 7pt;'>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("SubmittedDate")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("EmployeeNo")}</td>");
-                    itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("Id")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("Property")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("SubmittedDate")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("DoneBy")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("EmployeeNo")}</td>");
+                    itemsHtml.Append($@"<td>{localizationService.GetString("ItemName")}</td>");
 
                     foreach (var itemHeader in groupeForm.ItemHeaders)
                     {
@@ -910,13 +871,13 @@ public class WordService : IWordService
 
                     foreach (var imagesName in groupeForm.ImageNames)
                     {
-                        itemsHtml.Append($@"<p style='font-size: 7pt; page-break-before:always'>{_localizationService.GetString("Id")}: {imagesName.CaseId}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
+                        itemsHtml.Append($@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.CaseId}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
                         itemsHtml = await InsertImage(imagesName.ImageName, itemsHtml, 600, 650, core, basePicturePath);
 
                         if (!string.IsNullOrEmpty(imagesName.ImageName))
                         {
-                            itemsHtml.Append($@"<p style='font-size: 7pt;'>{_localizationService.GetString("Position")}:<a href=""{imagesName.GeoLink}"">{imagesName.GeoLink}</a></p>"); // TODO change to Position : URL
+                            itemsHtml.Append($@"<p style='font-size: 7pt;'>{localizationService.GetString("Position")}:<a href=""{imagesName.GeoLink}"">{imagesName.GeoLink}</a></p>"); // TODO change to Position : URL
                         }
                     }
                 }
@@ -936,11 +897,11 @@ public class WordService : IWordService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
-                _localizationService.GetString("ErrorWhileCreatingWordFile"));
+                localizationService.GetString("ErrorWhileCreatingWordFile"));
         }
     }
 
@@ -959,9 +920,6 @@ public class WordService : IWordService
             else if (!System.IO.File.Exists(filePath))
             {
                 return itemsHtml;
-                // return new OperationDataResult<Stream>(
-                //     false,
-                //     _localizationService.GetString($"{imagesName} not found"));
             }
             else
             {
@@ -994,10 +952,8 @@ public class WordService : IWordService
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Trace.TraceError(e.Message);
-            Trace.TraceError(e.StackTrace);
-            _logger.LogError(e.StackTrace);
-            _logger.LogError(e.Message);
+            logger.LogError(e.StackTrace);
+            logger.LogError(e.Message);
             return itemsHtml;
         }
     }

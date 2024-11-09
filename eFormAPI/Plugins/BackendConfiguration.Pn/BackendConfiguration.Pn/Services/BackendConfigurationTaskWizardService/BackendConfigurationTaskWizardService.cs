@@ -217,8 +217,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
             _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<TaskWizardModel>>(false,
                 _localizationService.GetString("ErrorWhileObtainingTasks"));
         }
@@ -245,8 +245,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
-            Log.LogException(ex.Message);
-            Log.LogException(ex.StackTrace);
+            _logger.LogError(ex.Message);
+            _logger.LogTrace(ex.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false,
                 $"{_localizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
         }
@@ -324,8 +324,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
             _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
             return new OperationDataResult<TaskWizardTaskModel>(false,
                 _localizationService.GetString("ErrorWhileObtainingTask"));
         }
@@ -438,16 +438,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.Id == createModel.PropertyId)
                 .Select(x => x.ItemPlanningTagId)
                 .FirstAsync();
-
-            // PlanningsTags propertyPlanningsTags = new PlanningsTags
-            // {
-            //     PlanningId = planning.Id,
-            //     PlanningTagId = propertyItemPlanningTagId,
-            //     CreatedByUserId = _userService.UserId,
-            //     UpdatedByUserId = _userService.UserId
-            // };
-            // await propertyPlanningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-
 
             var tagIds = createModel.TagIds.Distinct().ToList(); // ToList() need for not update createModel.TagIds
             tagIds.Add(propertyItemPlanningTagId);
@@ -572,9 +562,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
-            Console.WriteLine(e.StackTrace);
             _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileCreatingTask"));
         }
@@ -586,7 +575,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         var sdkDbContext = core.DbContextHelper.GetDbContext();
 
         // update all area rule plannings and plannings in parallel
-
 
         foreach (var id in ids)
         {
@@ -665,8 +653,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
-
-            //var result = await UpdateTask(updateModel);
         }
 
         return new OperationResult(true, _localizationService.GetString("TasksDeactivatedSuccessful"));
@@ -892,15 +878,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             areaRulePlanning.AreaRule.FolderId, core, _itemsPlanningPnDbContext,
                             areaRulePlanning.UseStartDateAsStartOfPeriod, _localizationService)
                         .ConfigureAwait(false);
-                    // areaRulePlanning.ItemPlanningId = planning.Id;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
                         .ConfigureAwait(false);
-                    // await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, false);
                     break;
                 }
                 // delete item planning but not delete task
                 case true when !areaRulePlanning.Status:
-                    //if (areaRulePlanning.ItemPlanningId != 0)
                     {
 
                     await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId).ConfigureAwait(false);
@@ -919,13 +902,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                 .ConfigureAwait(false);
                         }
                     }
-                    //
-                    // await BackendConfigurationAreaRulePlanningsServiceHelper.DeleteItemPlanning(
-                    //         areaRulePlanning.ItemPlanningId, core, _userService.UserId,
-                    //         _backendConfigurationPnDbContext, _itemsPlanningPnDbContext)
-                    //     .ConfigureAwait(false);
-                    //
-                    //     areaRulePlanning.ItemPlanningId = 0;
+
                     var planningCases = await _itemsPlanningPnDbContext.PlanningCases
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.PlanningId == planning.Id)
@@ -971,26 +948,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
 
-                    //
-                    //     var planningSites = await _backendConfigurationPnDbContext.PlanningSites
-                    //         .Where(x => x.AreaRulePlanningsId == areaRulePlanning.Id)
-                    //         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    //         .ToListAsync().ConfigureAwait(false);
-                    //
-                    //     foreach (var planningSite in planningSites) // delete all planning sites
-                    //     {
-                    //         planningSite.Status = 0;
-                    //         await planningSite.Update(_backendConfigurationPnDbContext)
-                    //             .ConfigureAwait(false);
-                    //         // await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                    //     }
                     }
 
                     break;
                 // update item planning
                 case true when areaRulePlanning.Status:
                     // TODO, this is not possible to do, since the web interface does not allow to update active plannings
-                    //if (areaRulePlanning.ItemPlanningId != 0) // Since ItemPlanningId is not 0, we already have a planning and therefore just update it
                     {
                         planning.Enabled = areaRulePlanning.Status;
                         planning.PushMessageOnDeployment = areaRulePlanning.SendNotifications;
@@ -1165,8 +1128,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
             _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileUpdatingTask"));
         }
@@ -1197,7 +1160,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 var planning = _itemsPlanningPnDbContext.Plannings
                     .First(x => x.Id == areaRulePlanning.ItemPlanningId);
-                    //.First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 planning.UpdatedByUserId = _userService.UserId;
                 await planning.Delete(_itemsPlanningPnDbContext);
@@ -1272,8 +1234,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            Console.WriteLine(e);
             _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileDeletingTask"));
         }
@@ -1335,7 +1297,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
         var itemPlanningTagIdsForPairWithPlanning = new List<int>
             { areaRule.Area.ItemPlanningTagId, propertyItemPlanningTagId };
-            //{ propertyItemPlanningTagId };
 
         if (taskWizardCreateModel.ItemPlanningTagId.HasValue)
         {

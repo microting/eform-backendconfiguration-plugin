@@ -107,6 +107,7 @@ public class ExcelService(
         {
             SentrySdk.CaptureException(ex);
             logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
             throw;
         }
     }
@@ -223,9 +224,6 @@ public class ExcelService(
 
                             sheetData.AppendChild(dataRow);
                         }
-
-                        // Apply autofilter and table formatting
-                        // ApplyTableFormatting(sheet, worksheetPart, sheetData);
                     }
                 }
 
@@ -239,6 +237,7 @@ public class ExcelService(
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<Stream>(false,
                 localizationService.GetString("ErrorWhileCreatingWordFile"));
         }
@@ -460,6 +459,7 @@ public class ExcelService(
     {
         SentrySdk.CaptureException(e);
         logger.LogError(e.Message);
+        logger.LogTrace(e.StackTrace);
         return new OperationDataResult<Stream>(false,
             localizationService.GetString("ErrorWhileCreatingExcelFile"));
     }
@@ -493,6 +493,7 @@ public class ExcelService(
         {
             SentrySdk.CaptureException(ex);
             logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
         }
     }
 
@@ -766,6 +767,7 @@ public class ExcelService(
         {
             SentrySdk.CaptureException(ex);
             logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
             throw;
         }
     }
