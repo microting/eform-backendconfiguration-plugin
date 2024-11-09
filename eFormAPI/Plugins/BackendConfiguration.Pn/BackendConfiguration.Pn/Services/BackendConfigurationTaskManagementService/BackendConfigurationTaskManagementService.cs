@@ -67,6 +67,7 @@ public class BackendConfigurationTaskManagementService(
         {
             Thread.Sleep(3000);
         }
+
         try
         {
             var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
@@ -102,9 +103,9 @@ public class BackendConfigurationTaskManagementService(
 
             if (filtersModel.Filters.Priority != null)
             {
-                query = filtersModel.Filters.Priority == 3 ?
-                    query.Where(x => x.Priority == null || x.Priority == "3") :
-                    query.Where(x => x.Priority == filtersModel.Filters.Priority.ToString());
+                query = filtersModel.Filters.Priority == 3
+                    ? query.Where(x => x.Priority == null || x.Priority == "3")
+                    : query.Where(x => x.Priority == filtersModel.Filters.Priority.ToString());
             }
 
             if (filtersModel.Filters.DateFrom.HasValue && filtersModel.Filters.DateTo.HasValue)
@@ -133,7 +134,8 @@ public class BackendConfigurationTaskManagementService(
             {
                 "PropertyName"
             };
-            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel.Pagination, new List<string>(), excludeSort);
+            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel.Pagination, new List<string>(),
+                excludeSort);
 
             var workOrderCaseFromDb = await query
                 .Select(x => new WorkorderCaseModel
@@ -146,18 +148,22 @@ public class BackendConfigurationTaskManagementService(
                     Status = x.CaseStatusesEnum.ToString(),
                     Description = x.Description.Replace("\n", "<br />"),
                     PropertyName = x.PropertyWorker.Property.Name,
-                    LastUpdateDate = x.UpdatedAt != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)x.UpdatedAt, timeZoneInfo) : null,
+                    LastUpdateDate = x.UpdatedAt != null
+                        ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)x.UpdatedAt, timeZoneInfo)
+                        : null,
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
-                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
+                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 :
+                        int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
                 })
                 .ToListAsync().ConfigureAwait(false);
 
             if (excludeSort.Contains(filtersModel.Pagination.Sort))
             {
                 workOrderCaseFromDb = QueryHelper
-                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel.Pagination, new List<string>())
+                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel.Pagination,
+                        new List<string>())
                     .ToList();
             }
 
@@ -202,7 +208,9 @@ public class BackendConfigurationTaskManagementService(
 
             var uploadIds = await backendConfigurationPnDbContext.WorkorderCaseImages
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(task.ParentWorkorderCaseId != null ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId : x => x.WorkorderCaseId == task.Id)
+                .Where(task.ParentWorkorderCaseId != null
+                    ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId
+                    : x => x.WorkorderCaseId == task.Id)
                 .Select(x => x.UploadedDataId)
                 .ToListAsync().ConfigureAwait(false);
 
@@ -300,7 +308,10 @@ public class BackendConfigurationTaskManagementService(
 
             if (workOrderCase.CaseId != 0)
             {
-                try { await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false); }
+                try
+                {
+                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
+                }
                 catch (Exception e)
                 {
                     SentrySdk.CaptureException(e);
@@ -517,6 +528,7 @@ public class BackendConfigurationTaskManagementService(
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
                     await workOrderCaseImage.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
+
                 hasImages = true;
             }
 
@@ -551,18 +563,23 @@ public class BackendConfigurationTaskManagementService(
             switch (createModel.Priority)
             {
                 case 1:
-                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>";
                     break;
                 case 2:
-                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>";
                     break;
                 case 3:
-                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>";
                     break;
                 case 4:
-                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>";
                     break;
             }
+
             var description = $"<strong>{localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
             description += $"<strong>{localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                            (!string.IsNullOrEmpty(newWorkOrderCase.SelectedAreaName)
@@ -611,8 +628,8 @@ public class BackendConfigurationTaskManagementService(
                     site,
                     property.Name,
                     (int)property.FolderIdForOngoingTasks!,
-                    (int) property.FolderIdForTasks!,
-                    (int) property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
+                    (int)property.FolderIdForTasks!,
+                    (int)property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
             }
 
             return new OperationResult(true, localizationService.GetString("TaskCreatedSuccessful"));

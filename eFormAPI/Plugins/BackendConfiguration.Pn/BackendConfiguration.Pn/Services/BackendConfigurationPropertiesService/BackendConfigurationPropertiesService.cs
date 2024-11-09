@@ -744,7 +744,7 @@ public class BackendConfigurationPropertiesService(
             var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            var query =  backendConfigurationPnDbContext.PropertyWorkers
+            var query = backendConfigurationPnDbContext.PropertyWorkers
                 //.Where(x => propertyIds.Contains(x.PropertyId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
@@ -805,6 +805,7 @@ public class BackendConfigurationPropertiesService(
 
         return propertyFolderModel;
     }
+
     private static List<CommonDictionaryModel> MapFolder(PropertyFolderModel folder, string rootFolderName = "")
     {
         var result = new List<CommonDictionaryModel>();

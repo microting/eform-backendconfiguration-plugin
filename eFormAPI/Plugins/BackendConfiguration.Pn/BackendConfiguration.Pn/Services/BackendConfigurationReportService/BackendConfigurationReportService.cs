@@ -1126,7 +1126,8 @@ public class BackendConfigurationReportService(
             SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
-            return new OperationResult(false, $"{backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
+            return new OperationResult(false,
+                $"{backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
         }
 
         try
@@ -1145,14 +1146,17 @@ public class BackendConfigurationReportService(
 
                 if (foundCase.DoneAt != null)
                 {
-                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
+                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day,
+                        foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
                     foundCase.DoneAtUserModifiable = newDoneAt;
                 }
 
                 foundCase.Status = 100;
                 await foundCase.Update(sdkDbContext);
-                var planningCase = await itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
-                var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
+                var planningCase =
+                    await itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
+                var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
+                    x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
 
                 if (planningCaseSite == null)
                 {
@@ -1188,7 +1192,9 @@ public class BackendConfigurationReportService(
             SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
-            return new OperationResult(false, backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
+            return new OperationResult(false,
+                backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated") +
+                $" Exception: {ex.Message}");
         }
     }
 
@@ -1225,7 +1231,8 @@ public class BackendConfigurationReportService(
     private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, Language language)
     {
         var core = await coreHelper.GetCore();
-        var planning = await itemsPlanningPnDbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+        var planning = await itemsPlanningPnDbContext.Plannings
+            .SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
         var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
         var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 

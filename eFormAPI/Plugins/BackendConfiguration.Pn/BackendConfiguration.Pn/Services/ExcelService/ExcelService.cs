@@ -205,7 +205,8 @@ public class ExcelService(
 
                                         break;
                                     case "number":
-                                        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var numberValue))
+                                        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture,
+                                                out var numberValue))
                                         {
                                             dataRow.Append(CreateNumericCell(
                                                 numberValue));
@@ -244,226 +245,235 @@ public class ExcelService(
     }
 
     public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
-{
-    try
     {
-        Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
-        var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
-        var filePath = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
-
-        using (var document = SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
+        try
         {
-            var worksheetNames = new List<KeyValuePair<string, string>>();
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+            var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+            var filePath = Path.Combine(Path.GetTempPath(), "results", $"{timeStamp}_.xlsx");
 
-            var i = 0;
-            foreach (var eformModel in reportModel)
+            using (var document = SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
             {
-                foreach (var reportEformGroupModel in eformModel.GroupEform)
+                var worksheetNames = new List<KeyValuePair<string, string>>();
+
+                var i = 0;
+                foreach (var eformModel in reportModel)
                 {
-                    if (eformModel.FromDate != null)
+                    foreach (var reportEformGroupModel in eformModel.GroupEform)
                     {
-                        var sheetName = eformModel.GroupEform.Count > 1
-                            ? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
-                            : $"{eformModel.GroupTagName}";
-
-                        sheetName = CreateSafeSheetName(sheetName);
-
-                        // Check for duplicate sheet names
-                        if (worksheetNames.Contains(new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}")))
+                        if (eformModel.FromDate != null)
                         {
-                            var duplicateNumber = 1;
-                            while (worksheetNames.Contains(new KeyValuePair<string, string>($"{sheetName} ({duplicateNumber})", $"rId{i + 1}")))
+                            var sheetName = eformModel.GroupEform.Count > 1
+                                ? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
+                                : $"{eformModel.GroupTagName}";
+
+                            sheetName = CreateSafeSheetName(sheetName);
+
+                            // Check for duplicate sheet names
+                            if (worksheetNames.Contains(
+                                    new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}")))
                             {
-                                duplicateNumber++;
-                            }
-
-                            sheetName = $"{sheetName} ({duplicateNumber})";
-                            sheetName = sheetName.Substring(0, Math.Min(31, sheetName.Length));
-                        }
-
-                        worksheetNames.Add(
-                            new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}"));
-                    }
-                    i++;
-                }
-            }
-
-            WorkbookPart workbookPart1 = document.AddWorkbookPart();
-            OpenXMLHelper.GenerateWorkbookPart1Content(workbookPart1, worksheetNames);
-
-            WorkbookStylesPart workbookStylesPart1 =
-                workbookPart1.AddNewPart<WorkbookStylesPart>($"rId{worksheetNames.Count + 2}");
-            OpenXMLHelper.GenerateWorkbookStylesPart1Content(workbookStylesPart1);
-
-            ThemePart themePart1 = workbookPart1.AddNewPart<ThemePart>($"rId{worksheetNames.Count + 1}");
-            OpenXMLHelper.GenerateThemePart1Content(themePart1);
-
-            var baseHeadersForRow = new List<string>
-            {
-                "Id",
-                "Property",
-                "SubmittedDate",
-                "DoneBy",
-                "EmployeeNo",
-                "ItemName"
-            };
-
-            var j = 0;
-            foreach (var eformModel in reportModel)
-            {
-                foreach (var reportEformGroupModel in eformModel.GroupEform)
-                {
-                    if (eformModel.FromDate != null)
-                    {
-                        List<string> headerStrings = new List<string>();
-                        foreach (var header in baseHeadersForRow)
-                        {
-                            headerStrings.Add(localizationService.GetString(header));
-                        }
-
-                        foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
-                        {
-                            headerStrings.Add(itemHeader.Value);
-                        }
-
-                        WorksheetPart worksheetPart1 = workbookPart1.AddNewPart<WorksheetPart>($"rId{j + 1}");
-
-                        Worksheet worksheet1 = new Worksheet()
-                            { MCAttributes = new MarkupCompatibilityAttributes() { Ignorable = "x14ac xr xr2 xr3" } };
-                        worksheet1.AddNamespaceDeclaration("r",
-                            "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
-                        worksheet1.AddNamespaceDeclaration("mc",
-                            "http://schemas.openxmlformats.org/markup-compatibility/2006");
-                        worksheet1.AddNamespaceDeclaration("x14ac",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
-                        worksheet1.AddNamespaceDeclaration("xr",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision");
-                        worksheet1.AddNamespaceDeclaration("xr2",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2");
-                        worksheet1.AddNamespaceDeclaration("xr3",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3");
-                        worksheet1.SetAttribute(new OpenXmlAttribute("xr", "uid",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
-                            "{00000000-0001-0000-0000-000000000000}"));
-
-                        SheetFormatProperties sheetFormatProperties1 = new SheetFormatProperties()
-                            { DefaultRowHeight = 15D, DyDescent = 0.25D };
-
-                        SheetData sheetData1 = new SheetData();
-
-                        Row row1 = new Row()
-                        {
-                            RowIndex = (UInt32Value)1U, Spans = new ListValue<StringValue>() { InnerText = "1:19" },
-                            DyDescent = 0.25D
-                        };
-
-                        foreach (var header in headerStrings)
-                        {
-                            var cell = new Cell()
-                            {
-                                CellValue = new CellValue(header),
-                                DataType = CellValues.String,
-                                StyleIndex = (UInt32Value)1U
-                            };
-                            row1.Append(cell);
-                        }
-
-                        sheetData1.Append(row1);
-
-                        int rowIndex = 1;
-
-
-                        // Populate data rows
-                        foreach (var dataModel in reportEformGroupModel.Items)
-                        {
-                            var dataRow = new Row();
-                            dataRow.Append(
-                                CreateNumericCell(dataModel.MicrotingSdkCaseId),
-                                CreateCell(dataModel.PropertyName),
-                                CreateDateCell(dataModel.MicrotingSdkCaseDoneAt!.Value),
-                                CreateCell(dataModel.DoneBy),
-                                CreateCell(dataModel.EmployeeNo),
-                                CreateCell(dataModel.ItemName)
-                            );
-
-                            foreach (var dataModelCaseField in dataModel.CaseFields)
-                            {
-                                var value = dataModelCaseField.Value switch
+                                var duplicateNumber = 1;
+                                while (worksheetNames.Contains(
+                                           new KeyValuePair<string, string>($"{sheetName} ({duplicateNumber})",
+                                               $"rId{i + 1}")))
                                 {
-                                    "checked" => "1",
-                                    "unchecked" => "0",
-                                    _ => dataModelCaseField.Value
-                                };
-
-                                switch (dataModelCaseField.Key)
-                                {
-                                    case "date":
-                                        if (DateTime.TryParse(value, out var dateValue))
-                                        {
-                                            dataRow.Append(CreateDateCell(dateValue));
-                                        }
-                                        else
-                                        {
-                                            dataRow.Append(CreateCell(value));
-                                        }
-
-                                        break;
-                                    case "number":
-                                        if (double.TryParse(value.Replace(",", "."), out var numberValue))
-                                        {
-                                            dataRow.Append(CreateNumericCell(numberValue));
-                                        }
-                                        else
-                                        {
-                                            dataRow.Append(CreateCell(value));
-                                        }
-
-                                        break;
-                                    default:
-                                        dataRow.Append(CreateCell(value));
-                                        break;
+                                    duplicateNumber++;
                                 }
+
+                                sheetName = $"{sheetName} ({duplicateNumber})";
+                                sheetName = sheetName.Substring(0, Math.Min(31, sheetName.Length));
                             }
 
-                            sheetData1.Append(dataRow);
-                            rowIndex++;
+                            worksheetNames.Add(
+                                new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}"));
                         }
 
+                        i++;
+                    }
+                }
+
+                WorkbookPart workbookPart1 = document.AddWorkbookPart();
+                OpenXMLHelper.GenerateWorkbookPart1Content(workbookPart1, worksheetNames);
+
+                WorkbookStylesPart workbookStylesPart1 =
+                    workbookPart1.AddNewPart<WorkbookStylesPart>($"rId{worksheetNames.Count + 2}");
+                OpenXMLHelper.GenerateWorkbookStylesPart1Content(workbookStylesPart1);
+
+                ThemePart themePart1 = workbookPart1.AddNewPart<ThemePart>($"rId{worksheetNames.Count + 1}");
+                OpenXMLHelper.GenerateThemePart1Content(themePart1);
+
+                var baseHeadersForRow = new List<string>
+                {
+                    "Id",
+                    "Property",
+                    "SubmittedDate",
+                    "DoneBy",
+                    "EmployeeNo",
+                    "ItemName"
+                };
+
+                var j = 0;
+                foreach (var eformModel in reportModel)
+                {
+                    foreach (var reportEformGroupModel in eformModel.GroupEform)
+                    {
+                        if (eformModel.FromDate != null)
+                        {
+                            List<string> headerStrings = new List<string>();
+                            foreach (var header in baseHeadersForRow)
+                            {
+                                headerStrings.Add(localizationService.GetString(header));
+                            }
+
+                            foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
+                            {
+                                headerStrings.Add(itemHeader.Value);
+                            }
+
+                            WorksheetPart worksheetPart1 = workbookPart1.AddNewPart<WorksheetPart>($"rId{j + 1}");
+
+                            Worksheet worksheet1 = new Worksheet()
+                            {
+                                MCAttributes = new MarkupCompatibilityAttributes() { Ignorable = "x14ac xr xr2 xr3" }
+                            };
+                            worksheet1.AddNamespaceDeclaration("r",
+                                "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
+                            worksheet1.AddNamespaceDeclaration("mc",
+                                "http://schemas.openxmlformats.org/markup-compatibility/2006");
+                            worksheet1.AddNamespaceDeclaration("x14ac",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
+                            worksheet1.AddNamespaceDeclaration("xr",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2014/revision");
+                            worksheet1.AddNamespaceDeclaration("xr2",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2");
+                            worksheet1.AddNamespaceDeclaration("xr3",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3");
+                            worksheet1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                                "{00000000-0001-0000-0000-000000000000}"));
+
+                            SheetFormatProperties sheetFormatProperties1 = new SheetFormatProperties()
+                                { DefaultRowHeight = 15D, DyDescent = 0.25D };
+
+                            SheetData sheetData1 = new SheetData();
+
+                            Row row1 = new Row()
+                            {
+                                RowIndex = (UInt32Value)1U, Spans = new ListValue<StringValue>() { InnerText = "1:19" },
+                                DyDescent = 0.25D
+                            };
+
+                            foreach (var header in headerStrings)
+                            {
+                                var cell = new Cell()
+                                {
+                                    CellValue = new CellValue(header),
+                                    DataType = CellValues.String,
+                                    StyleIndex = (UInt32Value)1U
+                                };
+                                row1.Append(cell);
+                            }
+
+                            sheetData1.Append(row1);
+
+                            int rowIndex = 1;
 
 
-                        var columnLetter = GetColumnLetter(headerStrings.Count);
-                        AutoFilter autoFilter1 = new AutoFilter() { Reference = $"A1:{columnLetter}{rowIndex}" };
-                        autoFilter1.SetAttribute(new OpenXmlAttribute("xr", "uid",
-                            "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
-                            "{00000000-0001-0000-0000-000000000000}"));
-                        PageMargins pageMargins1 = new PageMargins()
-                            { Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D };
+                            // Populate data rows
+                            foreach (var dataModel in reportEformGroupModel.Items)
+                            {
+                                var dataRow = new Row();
+                                dataRow.Append(
+                                    CreateNumericCell(dataModel.MicrotingSdkCaseId),
+                                    CreateCell(dataModel.PropertyName),
+                                    CreateDateCell(dataModel.MicrotingSdkCaseDoneAt!.Value),
+                                    CreateCell(dataModel.DoneBy),
+                                    CreateCell(dataModel.EmployeeNo),
+                                    CreateCell(dataModel.ItemName)
+                                );
 
-                        worksheet1.Append(sheetFormatProperties1);
-                        worksheet1.Append(sheetData1);
-                        worksheet1.Append(autoFilter1);
-                        worksheet1.Append(pageMargins1);
+                                foreach (var dataModelCaseField in dataModel.CaseFields)
+                                {
+                                    var value = dataModelCaseField.Value switch
+                                    {
+                                        "checked" => "1",
+                                        "unchecked" => "0",
+                                        _ => dataModelCaseField.Value
+                                    };
 
-                        worksheetPart1.Worksheet = worksheet1;
-                        j++;
+                                    switch (dataModelCaseField.Key)
+                                    {
+                                        case "date":
+                                            if (DateTime.TryParse(value, out var dateValue))
+                                            {
+                                                dataRow.Append(CreateDateCell(dateValue));
+                                            }
+                                            else
+                                            {
+                                                dataRow.Append(CreateCell(value));
+                                            }
+
+                                            break;
+                                        case "number":
+                                            if (double.TryParse(value.Replace(",", "."), out var numberValue))
+                                            {
+                                                dataRow.Append(CreateNumericCell(numberValue));
+                                            }
+                                            else
+                                            {
+                                                dataRow.Append(CreateCell(value));
+                                            }
+
+                                            break;
+                                        default:
+                                            dataRow.Append(CreateCell(value));
+                                            break;
+                                    }
+                                }
+
+                                sheetData1.Append(dataRow);
+                                rowIndex++;
+                            }
+
+
+
+                            var columnLetter = GetColumnLetter(headerStrings.Count);
+                            AutoFilter autoFilter1 = new AutoFilter() { Reference = $"A1:{columnLetter}{rowIndex}" };
+                            autoFilter1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                                "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                                "{00000000-0001-0000-0000-000000000000}"));
+                            PageMargins pageMargins1 = new PageMargins()
+                            {
+                                Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D
+                            };
+
+                            worksheet1.Append(sheetFormatProperties1);
+                            worksheet1.Append(sheetData1);
+                            worksheet1.Append(autoFilter1);
+                            worksheet1.Append(pageMargins1);
+
+                            worksheetPart1.Worksheet = worksheet1;
+                            j++;
+                        }
                     }
                 }
             }
-        }
-        ValidateExcel(filePath);
 
-        Stream result = File.Open(filePath, FileMode.Open);
-        return new OperationDataResult<Stream>(true, result);
+            ValidateExcel(filePath);
+
+            Stream result = File.Open(filePath, FileMode.Open);
+            return new OperationDataResult<Stream>(true, result);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
+            return new OperationDataResult<Stream>(false,
+                localizationService.GetString("ErrorWhileCreatingExcelFile"));
+        }
     }
-    catch (Exception e)
-    {
-        SentrySdk.CaptureException(e);
-        logger.LogError(e.Message);
-        logger.LogTrace(e.StackTrace);
-        return new OperationDataResult<Stream>(false,
-            localizationService.GetString("ErrorWhileCreatingExcelFile"));
-    }
-}
 
     private void ValidateExcel(string fileName)
     {
@@ -540,7 +550,8 @@ public class ExcelService(
                 new CellFormat(), // Default cell format
                 new CellFormat { FontId = 1, ApplyFont = true }, // Bold font cell format
                 new CellFormat { NumberFormatId = 164, ApplyNumberFormat = true }, // Date format
-                new CellFormat { NumberFormatId = 22, ApplyNumberFormat = true } // Date-time format (dd.MM.yyyy HH:mm:ss)
+                new CellFormat
+                    { NumberFormatId = 22, ApplyNumberFormat = true } // Date-time format (dd.MM.yyyy HH:mm:ss)
             )
         );
     }
@@ -574,7 +585,11 @@ public class ExcelService(
         }
 
         table.Append(tableColumns);
-        table.Append(new TableStyleInfo() { Name = "TableStyleMedium2", ShowFirstColumn = false, ShowLastColumn = false, ShowRowStripes = true, ShowColumnStripes = false });
+        table.Append(new TableStyleInfo()
+        {
+            Name = "TableStyleMedium2", ShowFirstColumn = false, ShowLastColumn = false, ShowRowStripes = true,
+            ShowColumnStripes = false
+        });
         tablePart.Table = table;
         table.Save();
     }
@@ -588,6 +603,7 @@ public class ExcelService(
             columnLetter = Convert.ToChar(65 + modulo) + columnLetter;
             columnIndex = (columnIndex - modulo) / 26;
         }
+
         return columnLetter;
     }
 

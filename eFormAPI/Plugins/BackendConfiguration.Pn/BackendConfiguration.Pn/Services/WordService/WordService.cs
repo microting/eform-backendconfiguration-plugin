@@ -85,12 +85,14 @@ public class WordService(
                     false,
                     localizationService.GetString("PropertyNotFound"));
             }
+
             if (area == null)
             {
                 return new OperationDataResult<Stream>(
                     false,
                     localizationService.GetString("AreaNotFound"));
             }
+
             if (!isPropertyAndAreaLinked)
             {
                 return new OperationDataResult<Stream>(
@@ -118,7 +120,8 @@ public class WordService(
         }
     }
 
-    public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
+    public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel,
+        List<WorkorderCaseModel> workOrderCaseModels)
     {
         var filtersLastAssignedTo = "";
         if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
@@ -130,12 +133,15 @@ public class WordService(
                 .Select(x => x.Name)
                 .FirstOrDefaultAsync();
         }
+
         // Read html and template
         var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
         var assembly = Assembly.GetExecutingAssembly();
         var resourceStream = assembly.GetManifestResourceStream(resourceString);
         string html;
-        using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+        using (var reader =
+               new StreamReader(resourceStream ??
+                                throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
         {
             html = await reader.ReadToEndAsync().ConfigureAwait(false);
         }
@@ -146,6 +152,7 @@ public class WordService(
         {
             throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
         }
+
         var docxFileStream = new MemoryStream();
         await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
 
@@ -180,11 +187,13 @@ public class WordService(
             itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByText}</td>");
             itemsHtml.Append($@"<td>{workOrderCaseModel.LastAssignedTo}</td>");
             itemsHtml.Append($@"<td>{workOrderCaseModel.Description}</td>");
-            itemsHtml.Append($@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy") : "")}</td>");
+            itemsHtml.Append(
+                $@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy") : "")}</td>");
             itemsHtml.Append($@"<td>{workOrderCaseModel.LastUpdatedBy}</td>");
             itemsHtml.Append($@"<td>{localizationService.GetString(workOrderCaseModel.Status)}</td>");
             itemsHtml.Append(@"</tr>");
         }
+
         itemsHtml.Append(@"</table>");
         itemsHtml.Append("</div>");
 
@@ -206,6 +215,7 @@ public class WordService(
         {
             curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
         }
+
         var areaRulesForType7 = BackendConfigurationSeedAreas.AreaRulesForType7
             .GroupBy(x => x.FolderName)
             .Select(x => new AreaRulesForType7
@@ -245,7 +255,9 @@ public class WordService(
         var assembly = Assembly.GetExecutingAssembly();
         var resourceStream = assembly.GetManifestResourceStream(resourceString);
         string html;
-        using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+        using (var reader =
+               new StreamReader(resourceStream ??
+                                throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
         {
             html = await reader.ReadToEndAsync().ConfigureAwait(false);
         }
@@ -256,12 +268,14 @@ public class WordService(
         {
             throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
         }
+
         var docxFileStream = new MemoryStream();
         await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<body style='font-family:Calibri;'>");
-        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
+        itemsHtml.Append(
+            $@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
         itemsHtml.Append($@"<td>{localizationService.GetString("Year")}</td>");
@@ -316,11 +330,14 @@ public class WordService(
                     var repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
                     var firstChar = repeatType.First().ToString();
                     repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                    itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {localizationService.GetString(repeatType)}</td>");
+                    itemsHtml.Append(
+                        $@"<td>{areaRulePlanning.RepeatEvery} - {localizationService.GetString(repeatType)}</td>");
                 }
             }
+
             itemsHtml.Append(@"</tr>");
         }
+
         itemsHtml.Append(@"</table>");
         itemsHtml.Append("</body>");
 
@@ -402,7 +419,9 @@ public class WordService(
         var assembly = Assembly.GetExecutingAssembly();
         var resourceStream = assembly.GetManifestResourceStream(resourceString);
         string html;
-        using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+        using (var reader =
+               new StreamReader(resourceStream ??
+                                throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
         {
             html = await reader.ReadToEndAsync().ConfigureAwait(false);
         }
@@ -413,12 +432,14 @@ public class WordService(
         {
             throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
         }
+
         var docxFileStream = new MemoryStream();
         await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<body style='font-family:Calibri;'>");
-        itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
+        itemsHtml.Append(
+            $@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {localizationService.GetString("Controlplan IE-reporting")}</p>");
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
         itemsHtml.Append($@"<td>{localizationService.GetString("Year")}</td>");
@@ -493,9 +514,11 @@ public class WordService(
                                     repeatEvery = localizationService.GetString("every");
                                     break;
                                 default:
-                                    repeatEvery = localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
+                                    repeatEvery = localizationService.GetString("every") + " " +
+                                                  areaRulePlanning.RepeatEvery;
                                     break;
                             }
+
                             repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
                             repeatType = localizationService.GetString(repeatType);
                         }
@@ -503,9 +526,11 @@ public class WordService(
                         itemsHtml.Append($@"<td>{repeatEvery} - {repeatType}</td>");
                     }
                 }
+
                 itemsHtml.Append(@"</tr>");
             }
         }
+
         itemsHtml.Append(@"</table>");
         itemsHtml.Append("</body>");
 
@@ -532,7 +557,9 @@ public class WordService(
             var assembly = Assembly.GetExecutingAssembly();
             var resourceStream = assembly.GetManifestResourceStream(resourceString);
             string html;
-            using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+            using (var reader = new StreamReader(resourceStream ??
+                                                 throw new InvalidOperationException(
+                                                     $"{nameof(resourceStream)} is null")))
             {
                 html = await reader.ReadToEndAsync();
             }
@@ -543,6 +570,7 @@ public class WordService(
             {
                 throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
             }
+
             var docxFileStream = new MemoryStream();
             await docxFileResourceStream.CopyToAsync(docxFileStream);
             string basePicturePath = await core.GetSdkSetting(Settings.fileLocationPicture);
@@ -550,17 +578,21 @@ public class WordService(
             var word = new WordProcessor(docxFileStream);
 
             var itemsHtml = new StringBuilder();
-            var header = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
-            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
+            var header = itemsPlanningPnDbContext.PluginConfigurationValues
+                .Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
+            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues
+                .Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
             itemsHtml.Append("<body>");
             itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>");
             for (var i = 0; i < 8; i++)
             {
                 itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
             }
+
             itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{header}</p>");
             itemsHtml.Append($@"<p style='font-size:20px;text-align:center;'>{subHeader}</p>");
-            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
+            itemsHtml.Append(
+                $@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
 
             itemsHtml.Append(@"</p>");
 
@@ -569,11 +601,13 @@ public class WordService(
             {
                 itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
             }
+
             // add tag names in end document
             foreach (var nameTage in reportModel.Last().NameTagsInEndPage)
             {
                 itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{nameTage}</p>");
             }
+
             itemsHtml.Append(@"<div style='page-break-before:always;'>");
             for (var i = 0; i < reportModel.Count; i++)
             {
@@ -582,7 +616,8 @@ public class WordService(
                 {
                     if (!string.IsNullOrEmpty(reportEformModel.TextHeaders.Header1))
                     {
-                        itemsHtml.Append($@"<h1>{Regex.Replace(reportEformModel.TextHeaders.Header1, @"\. ", ".")}</h1>");
+                        itemsHtml.Append(
+                            $@"<h1>{Regex.Replace(reportEformModel.TextHeaders.Header1, @"\. ", ".")}</h1>");
                         // We do this, even thought some would look at it and find it looking stupid. But if we don't do it,
                         // Word WILL mess up the header titles, because it thinks it needs to fix the number order.
                     }
@@ -653,7 +688,8 @@ public class WordService(
                                 if (dataModelCaseField.Value == "unchecked")
                                 {
                                     itemsHtml.Append($@"<td></td>");
-                                } else
+                                }
+                                else
                                 {
                                     if (dataModelCaseField.Key == "date")
                                     {
@@ -675,6 +711,7 @@ public class WordService(
                                 }
                             }
                         }
+
                         itemsHtml.Append(@"</tr>");
                     }
 
@@ -745,7 +782,9 @@ public class WordService(
             var assembly = Assembly.GetExecutingAssembly();
             var resourceStream = assembly.GetManifestResourceStream(resourceString);
             string html;
-            using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+            using (var reader = new StreamReader(resourceStream ??
+                                                 throw new InvalidOperationException(
+                                                     $"{nameof(resourceStream)} is null")))
             {
                 html = await reader.ReadToEndAsync();
             }
@@ -756,6 +795,7 @@ public class WordService(
             {
                 throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
             }
+
             var docxFileStream = new MemoryStream();
             await docxFileResourceStream.CopyToAsync(docxFileStream);
             string basePicturePath = await core.GetSdkSetting(Settings.fileLocationPicture);
@@ -763,17 +803,21 @@ public class WordService(
             var word = new WordProcessor(docxFileStream);
 
             var itemsHtml = new StringBuilder();
-            var header = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
-            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
+            var header = itemsPlanningPnDbContext.PluginConfigurationValues
+                .Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
+            var subHeader = itemsPlanningPnDbContext.PluginConfigurationValues
+                .Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
             itemsHtml.Append("<body>");
             itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>");
             for (var i = 0; i < 8; i++)
             {
                 itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
             }
+
             itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{header}</p>");
             itemsHtml.Append($@"<p style='font-size:20px;text-align:center;'>{subHeader}</p>");
-            itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
+            itemsHtml.Append(
+                $@"<p style='font-size:15px;text-align:center;'>{localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
 
             itemsHtml.Append(@"</p>");
 
@@ -782,11 +826,13 @@ public class WordService(
             {
                 itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
             }
+
             // add tag names in end document
             foreach (var nameTage in reportModel.Last().NameTagsInEndPage)
             {
                 itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{nameTage}</p>");
             }
+
             itemsHtml.Append(@"<div style='page-break-before:always;'>");
             foreach (var reportEformModel in reportModel)
             {
@@ -839,7 +885,8 @@ public class WordService(
                                 if (dataModelCaseField.Value == "unchecked")
                                 {
                                     itemsHtml.Append($@"<td></td>");
-                                } else
+                                }
+                                else
                                 {
                                     if (dataModelCaseField.Key == "date")
                                     {
@@ -861,6 +908,7 @@ public class WordService(
                                 }
                             }
                         }
+
                         itemsHtml.Append(@"</tr>");
                     }
 
@@ -871,13 +919,15 @@ public class WordService(
 
                     foreach (var imagesName in groupeForm.ImageNames)
                     {
-                        itemsHtml.Append($@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.CaseId}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
+                        itemsHtml.Append(
+                            $@"<p style='font-size: 7pt; page-break-before:always'>{localizationService.GetString("Id")}: {imagesName.CaseId}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
                         itemsHtml = await InsertImage(imagesName.ImageName, itemsHtml, 600, 650, core, basePicturePath);
 
                         if (!string.IsNullOrEmpty(imagesName.ImageName))
                         {
-                            itemsHtml.Append($@"<p style='font-size: 7pt;'>{localizationService.GetString("Position")}:<a href=""{imagesName.GeoLink}"">{imagesName.GeoLink}</a></p>"); // TODO change to Position : URL
+                            itemsHtml.Append(
+                                $@"<p style='font-size: 7pt;'>{localizationService.GetString("Position")}:<a href=""{imagesName.GeoLink}"">{imagesName.GeoLink}</a></p>"); // TODO change to Position : URL
                         }
                     }
                 }
@@ -905,7 +955,8 @@ public class WordService(
         }
     }
 
-    private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
+    private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize,
+        int imageWidth, Core core, string basePicturePath)
     {
         try
         {
