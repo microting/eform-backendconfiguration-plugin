@@ -319,6 +319,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 try { await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false); }
                 catch (Exception e)
                 {
+                    SentrySdk.CaptureException(e);
                     Log.LogException(e.Message);
                     Log.LogException(e.StackTrace);
                 }
@@ -362,6 +363,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         }
                         catch (Exception e)
                         {
+                            SentrySdk.CaptureException(e);
                             Log.LogException(e.Message);
                             Log.LogException(e.StackTrace);
                         }
@@ -384,6 +386,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                             }
                             catch (Exception e)
                             {
+                                SentrySdk.CaptureException(e);
                                 Log.LogException(e.Message);
                                 Log.LogException(e.StackTrace);
                             }

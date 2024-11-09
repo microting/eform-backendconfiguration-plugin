@@ -30,6 +30,7 @@ using JetBrains.Annotations;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 
@@ -132,6 +133,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationDataResult<Paged<PropertiesModel>>(false,
@@ -188,6 +190,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationDataResult<PropertiesModel>(false,
@@ -502,6 +505,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationResult(false,
@@ -525,6 +529,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false,
@@ -551,6 +556,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<ChrResult>(false, e.Message);
         }
     }
@@ -586,6 +592,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -621,6 +628,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -662,6 +670,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
     }
@@ -702,6 +711,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
     }
@@ -750,6 +760,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -788,6 +799,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }

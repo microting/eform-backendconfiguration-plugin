@@ -1,4 +1,6 @@
-﻿namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
+﻿using Sentry;
+
+namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
 
 using BackendConfigurationLocalizationService;
 using Microsoft.Extensions.Logging;
@@ -100,6 +102,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<PlannedTaskDays>(false,
@@ -177,6 +180,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<AdHocTaskPriorities>(false,
@@ -221,6 +225,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<DocumentUpdatedDays>(false,
@@ -297,6 +302,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<PlannedTaskWorkers>(false,
@@ -386,6 +392,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<AdHocTaskWorkers>(false,

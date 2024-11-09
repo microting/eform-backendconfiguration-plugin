@@ -1,3 +1,5 @@
+using Sentry;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 using BackendConfigurationLocalizationService;
@@ -214,6 +216,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<List<TaskWizardModel>>(false,
@@ -241,6 +244,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false,
@@ -319,6 +323,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationDataResult<TaskWizardTaskModel>(false,
@@ -566,6 +571,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             Console.WriteLine(e.StackTrace);
             _logger.LogError(e.Message);
@@ -1158,6 +1164,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationResult(false,
@@ -1264,6 +1271,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Console.WriteLine(e);
             _logger.LogError(e.Message);
             return new OperationResult(false,

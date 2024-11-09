@@ -957,6 +957,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             _logger.LogError(e.StackTrace);
@@ -1042,6 +1043,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             }
             catch (Exception e)
             {
+                SentrySdk.CaptureException(e);
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
                 _logger.LogError(e.StackTrace);
@@ -1123,6 +1125,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             _logger.LogError(e.StackTrace);
@@ -1148,6 +1151,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationResult(false, $"{_backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
@@ -1209,6 +1213,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationResult(false, _backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");

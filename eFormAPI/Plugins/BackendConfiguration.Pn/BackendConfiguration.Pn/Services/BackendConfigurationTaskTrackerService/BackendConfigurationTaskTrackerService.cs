@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerService;
 
@@ -93,6 +94,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<List<TaskTrackerColumn>>(false,
@@ -141,6 +143,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationResult(false,
@@ -170,6 +173,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<Stream>(false, $"{_localizationService.GetString("ErrorWhileGeneratingReport")}: {e.Message}");

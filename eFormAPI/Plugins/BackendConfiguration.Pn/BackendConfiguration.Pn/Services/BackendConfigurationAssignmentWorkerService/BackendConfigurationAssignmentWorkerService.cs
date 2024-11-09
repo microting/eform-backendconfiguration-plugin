@@ -31,6 +31,7 @@ using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService;
 
@@ -183,6 +184,7 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationDataResult<List<PropertyAssignWorkersModel>>(false,
@@ -244,6 +246,7 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
             return new OperationDataResult<List<PropertyAssignWorkersModel>>(false,
@@ -348,6 +351,7 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationResult(false,
@@ -390,6 +394,7 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             }
             catch (Exception e)
             {
+                SentrySdk.CaptureException(e);
                 Console.WriteLine(e);
             }
 
@@ -516,6 +521,7 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             return new OperationDataResult<List<DeviceUserModel>>(false, _backendConfigurationLocalizationService.GetStringWithFormat("ErrorWhileGetDeviceUsers") + " " + ex.Message);
         }
     }

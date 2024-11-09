@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Sentry;
+
 namespace BackendConfiguration.Pn.Services.WordService;
 
 using Infrastructure.Models.Report;
@@ -122,6 +124,7 @@ public class WordService : IWordService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             return new OperationDataResult<Stream>(
@@ -737,6 +740,7 @@ public class WordService : IWordService
                     }
                     catch (Exception e)
                     {
+                        SentrySdk.CaptureException(e);
                         Trace.TraceError(e.Message);
                         _logger.LogError(e.Message);
                     }
@@ -756,6 +760,7 @@ public class WordService : IWordService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             return new OperationDataResult<Stream>(
@@ -930,6 +935,7 @@ public class WordService : IWordService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             _logger.LogError(e.Message);
             return new OperationDataResult<Stream>(
@@ -987,6 +993,7 @@ public class WordService : IWordService
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Trace.TraceError(e.Message);
             Trace.TraceError(e.StackTrace);
             _logger.LogError(e.StackTrace);
