@@ -16,7 +16,6 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using DocumentFormat.OpenXml.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Sentry;
@@ -26,30 +25,16 @@ namespace BackendConfiguration.Pn.Services.ExcelService;
 public class ExcelService(
     ILogger<ExcelService> logger,
     IBackendConfigurationLocalizationService localizationService,
-    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-    IUserService userService,
-    IEFormCoreService coreHelper)
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext)
     : IExcelService
 {
-    private readonly IUserService _userService = userService;
 
     public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel,
         List<WorkorderCaseModel> workOrderCaseModels)
     {
         try
         {
-            var filtersLastAssignedTo = "";
-
             var worksheetNames = new List<KeyValuePair<string, string>>();
-            if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
-            {
-                var core = await coreHelper.GetCore();
-                var sdkDbContext = core.DbContextHelper.GetDbContext();
-                filtersLastAssignedTo = await sdkDbContext.Sites
-                    .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
-                    .Select(x => x.Name)
-                    .FirstOrDefaultAsync();
-            }
 
             var propertyName = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.Id == filtersModel.PropertyId)
@@ -116,22 +101,6 @@ public class ExcelService(
 
                 SheetData sheetData1 = new SheetData();
 
-                // var sheets = workbookPart.Workbook.AppendChild(new Sheets());
-                //
-                //
-                // var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                // worksheetPart.Worksheet = new Worksheet(new SheetData());
-                //
-                // var sheet = new Sheet
-                // {
-                //     Id = workbookPart.GetIdOfPart(worksheetPart),
-                //     SheetId = 1,
-                //     Name = sheetName
-                // };
-                // sheets.Append(sheet);
-                //
-                // var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
-
                 // Create header row
                 CreateHeaderRow(sheetData1, localizationService);
 
@@ -155,11 +124,7 @@ public class ExcelService(
 
                 worksheetPart1.Worksheet = worksheet1;
 
-                //workbookPart.Workbook.Save();
             }
-
-            // Stream result = File.Open(filePath, FileMode.Open);
-            // return result;
             ValidateExcel(filePath);
 
             Stream result = File.Open(filePath, FileMode.Open);
@@ -230,7 +195,7 @@ public class ExcelService(
                             headerRow.Append(CreateCell(itemHeader.Value));
                         }
 
-                        sheetData.AppendChild(headerRow);
+                        sheetData!.AppendChild(headerRow);
 
                         // Populate data rows
                         foreach (var dataModel in eformModel.Items)
@@ -333,11 +298,11 @@ public class ExcelService(
 
                             // Check for duplicate sheet names
                             if (worksheetNames.Contains(
-                                    new KeyValuePair<string, string>($"{sheetName}", $"rId{i + 1}")))
+                                    new($"{sheetName}", $"rId{i + 1}")))
                             {
                                 var duplicateNumber = 1;
                                 while (worksheetNames.Contains(
-                                           new KeyValuePair<string, string>($"{sheetName} ({duplicateNumber})",
+                                           new($"{sheetName} ({duplicateNumber})",
                                                $"rId{i + 1}")))
                                 {
                                     duplicateNumber++;
@@ -439,7 +404,7 @@ public class ExcelService(
 
                             sheetData1.Append(row1);
 
-                            int rowIndex = 1;
+                            var rowIndex = 1;
 
 
                             // Populate data rows
@@ -616,44 +581,6 @@ public class ExcelService(
         );
     }
 
-    private void ApplyTableFormatting(Sheet sheet, WorksheetPart worksheetPart, SheetData sheetData)
-    {
-        // Define the range for the table
-        var columns = sheetData.Elements<Row>().First().Elements<Cell>().Count();
-        var rows = sheetData.Elements<Row>().Count();
-        string range = $"A1:{GetColumnLetter(columns)}{rows}";
-
-        // Apply auto filter
-        AutoFilter autoFilter = new AutoFilter() { Reference = range };
-        worksheetPart.Worksheet.InsertAfter(autoFilter, sheetData);
-
-        // Define table
-        TableDefinitionPart tablePart = worksheetPart.AddNewPart<TableDefinitionPart>();
-        Table table = new Table()
-        {
-            Id = (uint)new Random().Next(1, 10000),
-            Name = "Table1",
-            DisplayName = "Table1",
-            Reference = range,
-            AutoFilter = new AutoFilter() { Reference = range }
-        };
-
-        TableColumns tableColumns = new TableColumns() { Count = (uint)columns };
-        for (uint i = 1; i <= columns; i++)
-        {
-            tableColumns.Append(new TableColumn() { Id = i, Name = $"Column{i}" });
-        }
-
-        table.Append(tableColumns);
-        table.Append(new TableStyleInfo()
-        {
-            Name = "TableStyleMedium2", ShowFirstColumn = false, ShowLastColumn = false, ShowRowStripes = true,
-            ShowColumnStripes = false
-        });
-        tablePart.Table = table;
-        table.Save();
-    }
-
     private string GetColumnLetter(int columnIndex)
     {
         string columnLetter = "";
@@ -812,7 +739,7 @@ public class ExcelService(
                     headerRow.Append(CreateCell(column));
                 }
 
-                sheetData.AppendChild(headerRow);
+                sheetData!.AppendChild(headerRow);
 
                 // Populate rows
                 foreach (var taskTrackerModel in model)
