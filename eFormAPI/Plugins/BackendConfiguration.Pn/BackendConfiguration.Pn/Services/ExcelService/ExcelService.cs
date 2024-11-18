@@ -39,6 +39,8 @@ public class ExcelService(
         try
         {
             var filtersLastAssignedTo = "";
+
+            var worksheetNames = new List<KeyValuePair<string, string>>();
             if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
             {
                 var core = await coreHelper.GetCore();
@@ -63,44 +65,104 @@ public class ExcelService(
             {
                 filtersModel.AreaName = localizationService.GetString("All");
             }
+            var sheetName = CreateSafeSheetName($"{propertyName}_{filtersModel.AreaName}");
+
+            worksheetNames.Add(
+                new KeyValuePair<string, string>($"{sheetName}", $"rId1"));
 
             Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
 
-            var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+            var filePath = Path.Combine(Path.GetTempPath(), "results",
                 $"{propertyName}_{filtersModel.AreaName}.xlsx");
 
-            using (var spreadsheetDocument =
-                   SpreadsheetDocument.Create(resultDocument, SpreadsheetDocumentType.Workbook))
+            using (var document =
+                   SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
             {
-                var workbookPart = spreadsheetDocument.AddWorkbookPart();
-                workbookPart.Workbook = new Workbook();
+                WorkbookPart workbookPart1 = document.AddWorkbookPart();
 
-                var sheets = workbookPart.Workbook.AppendChild(new Sheets());
+                OpenXMLHelper.GenerateWorkbookPart1Content(workbookPart1, worksheetNames);
 
-                var sheetName = CreateSafeSheetName($"{propertyName}_{filtersModel.AreaName}");
-                var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                worksheetPart.Worksheet = new Worksheet(new SheetData());
+                WorkbookStylesPart workbookStylesPart1 =
+                    workbookPart1.AddNewPart<WorkbookStylesPart>($"rId{worksheetNames.Count + 2}");
+                OpenXMLHelper.GenerateWorkbookStylesPart1Content(workbookStylesPart1);
 
-                var sheet = new Sheet
+                ThemePart themePart1 = workbookPart1.AddNewPart<ThemePart>($"rId{worksheetNames.Count + 1}");
+                OpenXMLHelper.GenerateThemePart1Content(themePart1);
+
+                WorksheetPart worksheetPart1 = workbookPart1.AddNewPart<WorksheetPart>($"rId1");
+
+                Worksheet worksheet1 = new Worksheet()
                 {
-                    Id = workbookPart.GetIdOfPart(worksheetPart),
-                    SheetId = 1,
-                    Name = sheetName
+                    MCAttributes = new MarkupCompatibilityAttributes() { Ignorable = "x14ac xr xr2 xr3" }
                 };
-                sheets.Append(sheet);
+                worksheet1.AddNamespaceDeclaration("r",
+                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
+                worksheet1.AddNamespaceDeclaration("mc",
+                    "http://schemas.openxmlformats.org/markup-compatibility/2006");
+                worksheet1.AddNamespaceDeclaration("x14ac",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
+                worksheet1.AddNamespaceDeclaration("xr",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2014/revision");
+                worksheet1.AddNamespaceDeclaration("xr2",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2");
+                worksheet1.AddNamespaceDeclaration("xr3",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3");
+                worksheet1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                    "{00000000-0001-0000-0000-000000000000}"));
 
-                var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+                SheetFormatProperties sheetFormatProperties1 = new SheetFormatProperties()
+                    { DefaultRowHeight = 15D, DyDescent = 0.25D };
+
+                SheetData sheetData1 = new SheetData();
+
+                // var sheets = workbookPart.Workbook.AppendChild(new Sheets());
+                //
+                //
+                // var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                // worksheetPart.Worksheet = new Worksheet(new SheetData());
+                //
+                // var sheet = new Sheet
+                // {
+                //     Id = workbookPart.GetIdOfPart(worksheetPart),
+                //     SheetId = 1,
+                //     Name = sheetName
+                // };
+                // sheets.Append(sheet);
+                //
+                // var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
 
                 // Create header row
-                CreateHeaderRow(sheetData, localizationService);
+                CreateHeaderRow(sheetData1, localizationService);
 
                 // Add data rows
-                PopulateDataRows(sheetData, workOrderCaseModels);
+                PopulateDataRows(sheetData1, workOrderCaseModels);
 
-                workbookPart.Workbook.Save();
+                var columnLetter = GetColumnLetter(12);
+                AutoFilter autoFilter1 = new AutoFilter() { Reference = $"A1:{columnLetter}{workOrderCaseModels.Count + 1}" };
+                autoFilter1.SetAttribute(new OpenXmlAttribute("xr", "uid",
+                    "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+                    "{00000000-0001-0000-0000-000000000000}"));
+                PageMargins pageMargins1 = new PageMargins()
+                {
+                    Left = 0.7D, Right = 0.7D, Top = 0.75D, Bottom = 0.75D, Header = 0.3D, Footer = 0.3D
+                };
+
+                worksheet1.Append(sheetFormatProperties1);
+                worksheet1.Append(sheetData1);
+                worksheet1.Append(autoFilter1);
+                worksheet1.Append(pageMargins1);
+
+                worksheetPart1.Worksheet = worksheet1;
+
+                //workbookPart.Workbook.Save();
             }
 
-            Stream result = File.Open(resultDocument, FileMode.Open);
+            // Stream result = File.Open(filePath, FileMode.Open);
+            // return result;
+            ValidateExcel(filePath);
+
+            Stream result = File.Open(filePath, FileMode.Open);
             return result;
         }
         catch (Exception ex)
@@ -436,8 +498,6 @@ public class ExcelService(
                                 rowIndex++;
                             }
 
-
-
                             var columnLetter = GetColumnLetter(headerStrings.Count);
                             AutoFilter autoFilter1 = new AutoFilter() { Reference = $"A1:{columnLetter}{rowIndex}" };
                             autoFilter1.SetAttribute(new OpenXmlAttribute("xr", "uid",
@@ -648,7 +708,7 @@ public class ExcelService(
             var row = new Row();
             row.Append(
                 CreateNumericCell(workOrderCaseModel.Id),
-                CreateCell(workOrderCaseModel.CaseInitiated.ToString()),
+                CreateDateCell(workOrderCaseModel.CaseInitiated),
                 CreateCell(workOrderCaseModel.PropertyName),
                 CreateCell(workOrderCaseModel.AreaName),
                 CreateCell(workOrderCaseModel.CreatedByName),
