@@ -53,7 +53,7 @@
       [bindValue]="'languageCode'"
       [clearable]="false"
       [(ngModel)]="selectedDeviceUser.languageCode"
-      [disabled]="selectedDeviceUser.isLocked"
+      [disabled]="timeRegistrationEnabled || taskManagementEnabled || getAssignmentCount() > 0"
       [items]="activeLanguages">
       <ng-template ng-label-tmp let-item="item">
         {{item.name | translate}}

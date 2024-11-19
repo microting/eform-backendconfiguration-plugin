@@ -29,6 +29,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
   selectedDeviceUserCopy: DeviceUserModel = new DeviceUserModel();
   assignments: PropertyAssignmentWorkerModel[] = [];
+  assignmentsCopy: PropertyAssignmentWorkerModel[] = [];
+  taskManagementEnabled: boolean = false;
+  timeRegistrationEnabled: boolean = false;
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
@@ -70,6 +73,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.availableProperties = [...model.availableProperties];
     this.selectedDeviceUser = {...model.deviceUser ?? new DeviceUserModel()};
     this.selectedDeviceUserCopy = {...model.deviceUser};
+    this.assignmentsCopy = [...model.assignments];
+    this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
+    this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled
   }
 
   get languages() {
@@ -197,6 +203,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         isLocked: false,
       }
     );
+  }
+
+  getAssignmentCount(): number {
+    return this.assignmentsCopy.filter((x) => x.isChecked).length;
   }
 
   ngOnDestroy(): void {
