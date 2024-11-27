@@ -262,7 +262,7 @@ public static class WorkOrderHelper
         }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
     }
 
-    public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
+    public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int? userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
     {
         foreach (var propertyWorker in propertyWorkers)
         {
@@ -285,7 +285,10 @@ public static class WorkOrderHelper
                         // throw;
                     }
                     // await core.CaseDelete(workorderCase.CaseId);
-                    workOrderCase.UpdatedByUserId = userId;
+                    if (userId != null)
+                    {
+                        workOrderCase.UpdatedByUserId = (int)userId;
+                    }
                     await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
@@ -313,7 +316,10 @@ public static class WorkOrderHelper
                         {
                             Console.WriteLine(e);
                         }
-                        workOrderCase.UpdatedByUserId = userId;
+                        if (userId != null)
+                        {
+                            workOrderCase.UpdatedByUserId = (int)userId;
+                        }
                         await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 //}

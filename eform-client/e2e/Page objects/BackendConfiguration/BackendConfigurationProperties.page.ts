@@ -266,7 +266,7 @@ export class BackendConfigurationPropertiesPage extends Page {
     } else {
       await (await this.propertyCreateSaveBtn()).click();
     }
-    await browser.pause(500);
+    await browser.pause(1500);
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
   }
 

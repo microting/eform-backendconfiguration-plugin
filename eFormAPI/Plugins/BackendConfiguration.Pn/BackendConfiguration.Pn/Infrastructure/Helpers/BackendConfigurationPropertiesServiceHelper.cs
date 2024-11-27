@@ -18,6 +18,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -27,7 +28,7 @@ public static class BackendConfigurationPropertiesServiceHelper
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext, int maxChrNumbers, int maxCvrNumbers)
     {
-                    var currentListOfCvrNumbers = await backendConfigurationPnDbContext.Properties
+            var currentListOfCvrNumbers = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync().ConfigureAwait(false);
             var currentListOfChrNumbers = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync().ConfigureAwait(false);
@@ -118,11 +119,59 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                 await newProperty.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
+                var translations = new List<KeyValuePair<string, string>> {
+                    new("da", "00. Overskredne opgaver"),
+                    new("en-US", "00. Exceeded tasks"),
+                    new("de-DE", "00. Überschrittene Aufgaben"),
+                    new("uk-UA", "00. Перевищені завдання"),
+                    new("pl-PL", "00. Przekroczone zadania"),
+                    new("no-NO", "00. Overskredne oppgaver"),
+                    new("sv-SE", "00. Överskridna uppgifter"),
+                    new("es-ES", "00. Tareas excedidas"),
+                    new("fr-FR", "00. Tâches dépassées"),
+                    new("it-IT", "00. Compiti superati"),
+                    new("nl-NL", "00. Overschreden taken"),
+                    new("pt-BR", "00. Tarefas excedidas"),
+                    new("pt-PT", "00. Tarefas excedidas"),
+                    new("fi-FI", "00. Ylitetyt tehtävät"),
+                    new("tr-TR", "00. Aşılan görevler"),
+                    new("et-ET", "00. Ületatud ülesanded"),
+                    new("lv-LV", "00. Pārsniegtie uzdevumi"),
+                    new("lt-LT", "00. Viršyti uždaviniai"),
+                    new("ro-RO", "00. Sarcini depășite"),
+                    new("bg-BG", "00. Превишени задачи"),
+                    new("sk-SK", "00. Prekročené úlohy"),
+                    new("sl-SL", "00. Presežene naloge"),
+                    new("is-IS", "00. Yfirskredin verkefni"),
+                    new("cs-CZ", "00. Překročené úkoly"),
+                    new("hr-HR", "00. Prekoračeni zad")
+                };
+
+                var sdkLanguages = await sdkDbContext.Languages.ToListAsync();
+                // create a List of CommonTranslationsModel for each language
+                var commonTranslations = new List<CommonTranslationsModel>();
+                foreach (var translation in translations)
+                {
+                    var language = sdkLanguages.FirstOrDefault(x => x.LanguageCode == translation.Key);
+                    if (language != null)
+                    {
+                        commonTranslations.Add(new CommonTranslationsModel
+                        {
+                            Name = translation.Value,
+                            LanguageId = language.Id
+                        });
+                    }
+                }
+
+                // create a new folder for exceeded tasks
+                await core.FolderCreate(commonTranslations, property.FolderId).ConfigureAwait(false);
+
                 return new OperationResult(true,
                     "SuccessfullyCreatingProperties");
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                SentrySdk.CaptureException(e);
                 //Log.LogException(e.Message);
                 //Log.LogException(e.StackTrace);
                 return new OperationResult(false,
@@ -346,19 +395,19 @@ public static class BackendConfigurationPropertiesServiceHelper
                     case false:
                     {
 
-                        var propertyWorkerIds = property.PropertyWorkers
+                        var propertyWorkers = property.PropertyWorkers
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .ToList();
 
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, true, core, userService.UserId, backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkers, true, core, userService.UserId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userService.UserId, backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkers, false, core, userService.UserId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
-                        await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userService.UserId, backendConfigurationPnDbContext)
-                            .ConfigureAwait(false);
+                        // await WorkOrderHelper
+                        //     .RetractEform(propertyWorkerIds, false, core, userService.UserId, backendConfigurationPnDbContext)
+                        //     .ConfigureAwait(false);
                         break;
                     }
                 }
