@@ -245,7 +245,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(31));
+        Assert.That(folderTranslations.Count, Is.EqualTo(56));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyCreateModel.Name));
@@ -294,11 +294,55 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
         Assert.That(folderTranslations[26].LanguageId, Is.EqualTo(2));
         Assert.That(folderTranslations[27].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
-        Assert.That(folderTranslations[28].Name, Is.EqualTo("00. Logbøger"));
-        Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("01. Log books")); // TODO: This should be "00. Log books"
-        Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("01. Logbücher")); // TODO: This should be "00. Logbücher"
-        Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
+        Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що прострочені"));
+        Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(4));
+        Assert.That(folderTranslations[32].Name, Is.EqualTo("00. Zaległe zadania"));
+        Assert.That(folderTranslations[32].LanguageId, Is.EqualTo(5));
+        Assert.That(folderTranslations[33].Name, Is.EqualTo("00. Forfalte oppgaver"));
+        Assert.That(folderTranslations[33].LanguageId, Is.EqualTo(6));
+        Assert.That(folderTranslations[34].Name, Is.EqualTo("00. Försenade uppgifter"));
+        Assert.That(folderTranslations[34].LanguageId, Is.EqualTo(7));
+        Assert.That(folderTranslations[35].Name, Is.EqualTo("00. Tareas vencidas"));
+        Assert.That(folderTranslations[35].LanguageId, Is.EqualTo(8));
+        Assert.That(folderTranslations[36].Name, Is.EqualTo("00. Tâches dépassées"));
+        Assert.That(folderTranslations[36].LanguageId, Is.EqualTo(9));
+        Assert.That(folderTranslations[37].Name, Is.EqualTo("00. Compiti superati"));
+        Assert.That(folderTranslations[37].LanguageId, Is.EqualTo(10));
+        Assert.That(folderTranslations[38].Name, Is.EqualTo("00. Overschreden taken"));
+        Assert.That(folderTranslations[38].LanguageId, Is.EqualTo(11));
+        Assert.That(folderTranslations[39].Name, Is.EqualTo("00. Tarefas excedidas"));
+        Assert.That(folderTranslations[39].LanguageId, Is.EqualTo(12));
+        Assert.That(folderTranslations[40].Name, Is.EqualTo("00. Tarefas excedidas"));
+        Assert.That(folderTranslations[40].LanguageId, Is.EqualTo(13));
+        Assert.That(folderTranslations[41].Name, Is.EqualTo("00. Ylitetyt tehtävät"));
+        Assert.That(folderTranslations[41].LanguageId, Is.EqualTo(14));
+        Assert.That(folderTranslations[42].Name, Is.EqualTo("00. Aşılan görevler"));
+        Assert.That(folderTranslations[42].LanguageId, Is.EqualTo(15));
+        Assert.That(folderTranslations[43].Name, Is.EqualTo("00. Ületatud ülesanded"));
+        Assert.That(folderTranslations[43].LanguageId, Is.EqualTo(16));
+        Assert.That(folderTranslations[44].Name, Is.EqualTo("00. Pārsniegtie uzdevumi"));
+        Assert.That(folderTranslations[44].LanguageId, Is.EqualTo(17));
+        Assert.That(folderTranslations[45].Name, Is.EqualTo("00. Viršyti uždaviniai"));
+        Assert.That(folderTranslations[45].LanguageId, Is.EqualTo(18));
+        Assert.That(folderTranslations[46].Name, Is.EqualTo("00. Sarcini depășite"));
+        Assert.That(folderTranslations[46].LanguageId, Is.EqualTo(19));
+        Assert.That(folderTranslations[47].Name, Is.EqualTo("00. Превишени задачи"));
+        Assert.That(folderTranslations[47].LanguageId, Is.EqualTo(20));
+        Assert.That(folderTranslations[48].Name, Is.EqualTo("00. Prekročené úlohy"));
+        Assert.That(folderTranslations[48].LanguageId, Is.EqualTo(21));
+        Assert.That(folderTranslations[49].Name, Is.EqualTo("00. Presežene naloge"));
+        Assert.That(folderTranslations[49].LanguageId, Is.EqualTo(22));
+        Assert.That(folderTranslations[50].Name, Is.EqualTo("00. Yfirskredin verkefni"));
+        Assert.That(folderTranslations[50].LanguageId, Is.EqualTo(23));
+        Assert.That(folderTranslations[51].Name, Is.EqualTo("00. Překročené úkoly"));
+        Assert.That(folderTranslations[51].LanguageId, Is.EqualTo(24));
+        Assert.That(folderTranslations[52].Name, Is.EqualTo("00. Prekoračeni zad"));
+        Assert.That(folderTranslations[52].LanguageId, Is.EqualTo(25));
+        Assert.That(folderTranslations[53].Name, Is.EqualTo("00. Logbøger"));
+        Assert.That(folderTranslations[53].LanguageId, Is.EqualTo(1));
+        Assert.That(folderTranslations[54].Name, Is.EqualTo("01. Log books")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[54].LanguageId, Is.EqualTo(2));
+        Assert.That(folderTranslations[55].Name, Is.EqualTo("01. Logbücher")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[55].LanguageId, Is.EqualTo(3));
     }
 }
