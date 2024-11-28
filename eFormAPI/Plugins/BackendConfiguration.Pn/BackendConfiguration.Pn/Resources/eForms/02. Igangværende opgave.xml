@@ -64,7 +64,7 @@
                     <Label>Prioritet</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>4</DisplayOrder>
-                    <Mandatory>false</Mandatory>
+                    <Mandatory>true</Mandatory>
                     <KeyValuePairList>
                         <KeyValuePair>
                             <Key>1</Key>
@@ -100,7 +100,7 @@
                     <DisplayOrder>5</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
-                    <Mandatory>false</Mandatory>
+                    <Mandatory>true</Mandatory>
                     <Color>e8eaf6</Color>
                 </DataItem>
                 <DataItem type="SingleSelect">
@@ -108,7 +108,7 @@
                     <Label>Status|Status|Status</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>6</DisplayOrder>
-                    <Mandatory>false</Mandatory>
+                    <Mandatory>true</Mandatory>
                     <KeyValuePairList>
                         <KeyValuePair>
                             <Key>1</Key>

@@ -339,12 +339,23 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             }
         }
 
-        var fieldToFix = await sdkDbContext.Fields.FirstOrDefaultAsync(x => x.OriginalId == "375733");
-        if (fieldToFix != null)
+        var priorityFieldsToFix = await sdkDbContext.Fields.Where(x => x.OriginalId == "376935").ToListAsync();
+        foreach (var priorityFieldToFix in priorityFieldsToFix)
+        {
+            if (priorityFieldToFix.Mandatory == 0)
+            {
+                priorityFieldToFix.Mandatory = 1;
+                await priorityFieldToFix.Update(sdkDbContext);
+                SentrySdk.CaptureMessage("Field 376935 was fixed!");
+            }
+        }
+
+        var fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375727");
+        if (fieldToFix is { Mandatory: 0 })
         {
             fieldToFix.Mandatory = 1;
             await fieldToFix.Update(sdkDbContext);
-            SentrySdk.CaptureMessage("Field 375733 was fixed!");
+            SentrySdk.CaptureMessage("Field 375727 was fixed!");
             var localizationService = serviceProvider.GetRequiredService<IBackendConfigurationLocalizationService>();
 
             // find all propertyworkers where TaskManagementEnabled is true and retract the eform and deploy it again. Do the same for all tasks assigned to the propertyworker
@@ -361,6 +372,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 .FirstAsync().ConfigureAwait(false);
             foreach (var property in propertiesWithWorkOrderEnabled)
             {
+                Console.WriteLine($"Handling property {property.Name}");
                 var propertyWorkers = property.PropertyWorkers
                     .Where(x => x.TaskManagementEnabled == true)
                     .Where(x => x.WorkflowState !=
@@ -373,6 +385,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 foreach (var propertyWorker in propertyWorkers)
                 {
                     var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
+                    Console.WriteLine($"Handling property {property.Name} and propertyWorker {propertyWorker.WorkerId} with the site.name {site.Name}");
                     var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
                     var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
 
@@ -435,15 +448,22 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
-
         }
 
-        fieldToFix = await sdkDbContext.Fields.FirstOrDefaultAsync(x => x.OriginalId == "375727");
-        if (fieldToFix != null)
+        fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375733");
+        if (fieldToFix is { Mandatory: 0 })
         {
             fieldToFix.Mandatory = 1;
             await fieldToFix.Update(sdkDbContext);
-            SentrySdk.CaptureMessage("Field 375727 was fixed!");
+            SentrySdk.CaptureMessage("Field 375733 was fixed!");
+        }
+
+        fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375734");
+        if (fieldToFix is { Mandatory: 0 })
+        {
+            fieldToFix.Mandatory = 1;
+            await fieldToFix.Update(sdkDbContext);
+            SentrySdk.CaptureMessage("Field 375734 was fixed!");
         }
 
         var translations = new List<KeyValuePair<string, string>> {
@@ -485,7 +505,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 commonTranslations.Add(new CommonTranslationsModel
                 {
                     Name = translation.Value,
-                    LanguageId = language.Id
+                    LanguageId = language.Id,
+                    Description = "",
                 });
             }
         }
@@ -496,23 +517,31 @@ public class EformBackendConfigurationPlugin : IEformPlugin
 
         foreach (var property in currentProperties)
         {
-            // loop over each property and find the property.FolderId and see if it has any subfolders with the name "Exceeded tasks" if not create it calling core.FolderCreate with the parentId set to the property.FolderId
-            var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x => x.Id == property.FolderId);
-            if (folder != null)
+            try
             {
-                // join the table Folder with the FolderTranslations to find the "Exceeded tasks" folder with the parentId set to the property.FolderId
-                var folderAndFolderTranslation = await sdkDbContext.Folders
-                    .Join(sdkDbContext.FolderTranslations,
-                        lookupFolder => lookupFolder.Id,
-                        folderTranslation => folderTranslation.FolderId,
-                        (lookupFolder, folderTranslation) => new {lookupFolder, folderTranslation})
-                    .Where(x => x.lookupFolder.ParentId == folder.Id && x.folderTranslation.Name == "Exceeded tasks")
-                    .FirstOrDefaultAsync();
-                if (folderAndFolderTranslation == null) // if the folder does not exist create it
+                // loop over each property and find the property.FolderId and see if it has any subfolders with the name "Exceeded tasks" if not create it calling core.FolderCreate with the parentId set to the property.FolderId
+                var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x => x.Id == property.FolderId);
+                if (folder != null)
                 {
-                    await core.FolderCreate(commonTranslations, folder.Id).ConfigureAwait(false);
+                    // join the table Folder with the FolderTranslations to find the "Exceeded tasks" folder with the parentId set to the property.FolderId
+                    var folderAndFolderTranslation = await sdkDbContext.Folders
+                        .Join(sdkDbContext.FolderTranslations,
+                            lookupFolder => lookupFolder.Id,
+                            folderTranslation => folderTranslation.FolderId,
+                            (lookupFolder, folderTranslation) => new {lookupFolder, folderTranslation})
+                        .Where(x => x.lookupFolder.ParentId == folder.Id && x.folderTranslation.Name == "00. Overdue tasks")
+                        .FirstOrDefaultAsync();
+                    if (folderAndFolderTranslation == null) // if the folder does not exist create it
+                    {
+                        await core.FolderCreate(commonTranslations, folder.Id).ConfigureAwait(false);
+                    }
                 }
+            } catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                SentrySdk.CaptureException(ex);
             }
+
         }
 
         foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
