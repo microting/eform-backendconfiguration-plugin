@@ -75,7 +75,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     {
       header: this.translateService.stream('ID'),
       field: 'siteId',
-      sortProp: {id: 'Id'},
+      sortProp: {id: 'SiteId'},
       sortable: true,
     },
     {
@@ -91,7 +91,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     },
     {
       header: this.translateService.stream('Name'),
-      sortProp: {id: 'Name'},
+      sortProp: {id: 'SiteName'},
       field: 'siteName',
       sortable: true,
       formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
@@ -100,14 +100,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       header: this.translateService.stream('Task management'),
       sortProp: {id: 'TaskManagementEnabled'},
       field: 'taskManagementEnabled',
-      sortable: false,
+      sortable: true,
       //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {
       header: this.translateService.stream('Timeregistration'),
       sortProp: {id: 'TimeRegistrationEnabled'},
       field: 'timeRegistrationEnabled',
-      sortable: false,
+      sortable: true,
       //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {
@@ -123,10 +123,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     {
       header: this.translateService.stream('Model & OS version'),
       field: 'manufacturer',
+      sortable: true,
+      sortProp: {id: 'Manufacturer'},
     },
     {
       header: this.translateService.stream('Software version'),
       field: 'version',
+      sortable: true,
+      sortProp: {id: 'Version'},
     },
     {
       header: this.translateService.stream('Actions'),

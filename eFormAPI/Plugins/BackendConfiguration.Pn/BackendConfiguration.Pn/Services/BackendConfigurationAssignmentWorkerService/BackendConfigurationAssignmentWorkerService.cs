@@ -361,17 +361,6 @@ public class BackendConfigurationAssignmentWorkerService(
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-            try
-            {
-                sitesQuery = QueryHelper.AddFilterAndSortToQuery(sitesQuery, requestModel, new List<string> { "Name" });
-            }
-            catch (Exception e)
-            {
-                SentrySdk.CaptureException(e);
-                logger.LogError(e.Message);
-                logger.LogTrace(e.StackTrace);
-            }
-
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel
                 {
@@ -462,6 +451,23 @@ public class BackendConfigurationAssignmentWorkerService(
                         .Where(x => x.PropertyIds.Any(y => requestModel.PropertyIds.Contains(y))).ToList();
                 }
             }
+
+            // Convert deviceUsers to IQueryable
+            var deviceUsersQuery = deviceUsers.AsQueryable();
+
+            try
+            {
+                deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName" });
+            }
+            catch (Exception e)
+            {
+                SentrySdk.CaptureException(e);
+                logger.LogError(e.Message);
+                logger.LogTrace(e.StackTrace);
+            }
+
+            deviceUsers = deviceUsersQuery.ToList();
+
 
             return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);
         }
