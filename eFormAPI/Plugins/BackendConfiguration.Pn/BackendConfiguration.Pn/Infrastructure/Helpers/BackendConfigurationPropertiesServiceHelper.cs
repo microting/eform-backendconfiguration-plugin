@@ -158,7 +158,8 @@ public static class BackendConfigurationPropertiesServiceHelper
                         commonTranslations.Add(new CommonTranslationsModel
                         {
                             Name = translation.Value,
-                            LanguageId = language.Id
+                            LanguageId = language.Id,
+                            Description = ""
                         });
                     }
                 }
