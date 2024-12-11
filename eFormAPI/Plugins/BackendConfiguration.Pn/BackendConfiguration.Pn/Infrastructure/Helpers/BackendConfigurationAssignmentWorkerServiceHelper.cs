@@ -22,6 +22,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
+using Microsoft.Extensions.Logging;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -266,7 +267,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId,
-            BackendConfigurationPnDbContext backendConfigurationPnDbContext, TimePlanningPnDbContext timePlanningDbContext)
+            BackendConfigurationPnDbContext backendConfigurationPnDbContext, TimePlanningPnDbContext timePlanningDbContext, ILogger logger)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -437,6 +438,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         UpdatedByUserId = userId
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -445,6 +447,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                                 if (assignments.Any())
                                 {
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
