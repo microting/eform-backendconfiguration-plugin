@@ -5,6 +5,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
@@ -125,6 +126,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -175,7 +177,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -214,6 +216,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -265,7 +268,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -305,6 +308,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -356,7 +360,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
