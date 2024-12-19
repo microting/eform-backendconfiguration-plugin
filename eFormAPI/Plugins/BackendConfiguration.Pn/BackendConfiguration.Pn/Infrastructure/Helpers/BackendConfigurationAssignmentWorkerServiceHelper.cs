@@ -648,7 +648,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
 
                 var dbPlanningSite = await backendConfigurationPnDbContext.PlanningSites
-                    .SingleAsync(x => x.Id == planningSite.Id).ConfigureAwait(false);
+                    .FirstAsync(x => x.Id == planningSite.Id).ConfigureAwait(false);
 
                 await dbPlanningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
@@ -661,7 +661,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 if (itemPlanningCaseSites.Count == 0)
                 {
                     var itemPlanning = await itemsPlanningPnDbContext.Plannings
-                        .SingleAsync(x => x.Id == planningSite.ItemPlanningId).ConfigureAwait(false);
+                        .FirstAsync(x => x.Id == planningSite.ItemPlanningId).ConfigureAwait(false);
 
                     await itemPlanning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                     var compliance = await backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.PlanningId == itemPlanning.Id).ConfigureAwait(false);
@@ -689,8 +689,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                     var areaRulePlanning = await backendConfigurationPnDbContext.AreaRulePlannings
                         .Where(x => x.Id == planningSite.ArpId)
-                        .SingleAsync().ConfigureAwait(false);
-                    areaRulePlanning.ItemPlanningId = 0;
+                        .FirstAsync().ConfigureAwait(false);
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }

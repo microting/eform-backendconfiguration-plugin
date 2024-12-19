@@ -742,12 +742,19 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.SendNotifications = true;
             await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 
+            if (areaRulePlanning.ItemPlanningId == 0)
+            {
+                return new OperationResult(false,
+                    _localizationService.GetString("TaskNotFound"));
+            }
+
             var planning = await _itemsPlanningPnDbContext.Plannings
                 .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
                 .Include(x => x.NameTranslations)
                 .Include(x => x.PlanningsTags)
                 .Include(x => x.PlanningSites)
                 .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
             foreach (var site in sitesToAdd
                          .Select(x =>
                              new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
