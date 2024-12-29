@@ -51,7 +51,7 @@ jobs:
       run: |-
         docker tag microtingas/work-items-planning-container:latest microtingas/work-items-planning-container:latest
     - run: docker save microtingas/work-items-planning-container:latest -o work-items-planning-container.tar
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar        
@@ -66,7 +66,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         path: eform-backendconfiguration-plugin
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: work-items-planning-container
     - run: docker load -i work-items-planning-container.tar
@@ -190,14 +190,14 @@ jobs:
         cat docker_run_log
     - name: Archive screenshot artifacts
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: error Screenshots
         path: |
           eform-angular-frontend/eform-client/errorShots/chrome*.png
     - name: Archive videos
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: error Screenshots
         path: |
