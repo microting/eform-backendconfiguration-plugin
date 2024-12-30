@@ -619,6 +619,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<ItemsPlanningPnDbContext>(o =>
@@ -627,6 +628,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<TimePlanningPnDbContext>(o =>
@@ -635,6 +637,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<ChemicalsDbContext>(o =>
@@ -643,6 +646,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<CaseTemplatePnDbContext>(o =>
@@ -651,6 +655,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<BaseDbContext>(
@@ -659,6 +664,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         var chemicalsContextFactory = new ChemicalsContextFactory();
