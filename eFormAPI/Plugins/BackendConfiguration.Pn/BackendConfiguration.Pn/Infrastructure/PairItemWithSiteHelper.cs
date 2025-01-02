@@ -277,6 +277,7 @@ public static class PairItemWithSiteHelper
                         mainElement.EndDate = DateTime.UtcNow.AddYears(10);
                     } else
                     {
+                        mainElement.BadgeCountEnabled = true;
 
                         if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
                         {

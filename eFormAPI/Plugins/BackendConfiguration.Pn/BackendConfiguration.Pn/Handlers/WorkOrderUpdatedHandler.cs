@@ -157,6 +157,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                 folderId = property.FolderIdForOngoingTasks;
                 mainElement.PushMessageTitle = pushMessageTitle;
                 mainElement.PushMessageBody = pushMessageBody;
+                mainElement.BadgeCountEnabled = true;
             }
             else
             {
