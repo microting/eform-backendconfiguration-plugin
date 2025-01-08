@@ -708,6 +708,7 @@ public class ExcelService(
                 localizationService.GetString("Deadline")
             };
 
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
             var resultDocument = Path.Combine(Path.GetTempPath(), "results",
                 $"{localizationService.GetString("Task calendar")}.xlsx");
 
