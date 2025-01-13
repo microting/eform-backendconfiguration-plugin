@@ -23,11 +23,11 @@
           (clickOnDiagram)="clickOnPlannedTaskDays()"
           class="half-width"
         />
-        <app-ad-hoc-task-workers
-          [adHocTaskWorkers]="adHocTaskWorkers"
+        <app-ad-hoc-task-priorities
+          [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
           [selectedPropertyName]="propertyName"
-          [view]="viewBottomLine"
-          (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
+          [view]="viewTopLine"
+          (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
           class="half-width"
         />
       </div>
@@ -41,11 +41,11 @@
           (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
           class="half-width"
         />
-        <app-ad-hoc-task-priorities
-          [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+        <app-ad-hoc-task-workers
+          [adHocTaskWorkers]="adHocTaskWorkers"
           [selectedPropertyName]="propertyName"
-          [view]="viewTopLine"
-          (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
+          [view]="viewBottomLine"
+          (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
           class="half-width"
         />
       </div>
