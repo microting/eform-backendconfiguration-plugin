@@ -364,6 +364,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Text)
                 .FirstOrDefault();
+
+            var ct = await sdkDbContext.CheckLists.FirstAsync(x => x.Id == createModel.EformId);
+            ct.IsDoneAtEditable = true;
+            await ct.Update(sdkDbContext).ConfigureAwait(false);
+
             var folderName = sdkDbContext.FolderTranslations
                 .Where(x => x.FolderId == createModel.FolderId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
