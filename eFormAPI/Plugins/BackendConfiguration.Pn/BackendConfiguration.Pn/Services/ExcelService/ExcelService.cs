@@ -443,7 +443,8 @@ public class ExcelService(
 
                                             break;
                                         case "number":
-                                            if (double.TryParse(value.Replace(",", "."), out var numberValue))
+                                            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var numberValue) ||
+                                                double.TryParse(value, NumberStyles.Any, new CultureInfo("da-DK"), out numberValue))
                                             {
                                                 dataRow.Append(CreateNumericCell(numberValue));
                                             }
