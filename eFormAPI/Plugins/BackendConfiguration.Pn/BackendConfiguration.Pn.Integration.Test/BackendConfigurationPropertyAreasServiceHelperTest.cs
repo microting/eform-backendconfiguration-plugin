@@ -59,11 +59,11 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
         var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(0));
         // Assert.That(areaRules[0].PropertyId, Is.EqualTo(property.Id));
         // Assert.That(areaRules[1].PropertyId, Is.EqualTo(property.Id));
@@ -108,7 +108,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
         // Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(0));
         // Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         // Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -238,7 +238,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
         // Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(property.Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));

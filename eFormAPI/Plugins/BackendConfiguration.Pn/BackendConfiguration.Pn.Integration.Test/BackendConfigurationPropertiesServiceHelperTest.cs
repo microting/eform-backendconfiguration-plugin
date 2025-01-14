@@ -40,7 +40,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var planningTags = await ItemsPlanningPnDbContext!.PlanningTags.ToListAsync();
 
         // Assert properties
-        Assert.NotNull(properties);
+        Assert.That(properties, Is.Not.Null);
         Assert.That(properties.Count, Is.EqualTo(1));
         Assert.That(properties[0].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(properties[0].Address, Is.EqualTo(propertyCreateModel.Address));
@@ -60,18 +60,18 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[0].Id));
 
         // Assert property selected languages
-        Assert.NotNull(propertySelectedLanguages);
+        Assert.That(propertySelectedLanguages, Is.Not.Null);
         Assert.That(propertySelectedLanguages.Count, Is.EqualTo(1));
         Assert.That(propertySelectedLanguages[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(propertySelectedLanguages[0].LanguageId, Is.EqualTo(1));
 
         // Assert planning tags
-        Assert.NotNull(planningTags);
+        Assert.That(planningTags, Is.Not.Null);
         Assert.That(planningTags.Count, Is.EqualTo(1));
         Assert.That(planningTags[0].Name, Is.EqualTo($"0. {propertyCreateModel.Name} - {propertyCreateModel.Address}"));
 
         // Assert folder translations
-        Assert.NotNull(folderTranslations);
+        Assert.That(folderTranslations, Is.Not.Null);
         Assert.That(folderTranslations.Count, Is.EqualTo(53));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
@@ -171,7 +171,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
 
         // Assert
-        Assert.NotNull(properties);
+        Assert.That(properties, Is.Not.Null);
         Assert.That(properties.Count, Is.EqualTo(2));
     }
 
@@ -215,10 +215,9 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.False(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(!result.Success);
+        Assert.That(result.Message, Is.Not.Null);
         Assert.That(result.Message, Is.EqualTo("PropertyAlreadyExists"));
     }
 
@@ -262,10 +261,9 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.True(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Success);
+        Assert.That(result.Message, Is.Not.Null);
     }
 
     // Should test Create method for a property with a CHR that already exists and succeed
@@ -308,10 +306,9 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.True(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Success);
+        Assert.That(result.Message, Is.Not.Null);
     }
 
     // Should test Create method for a property where CVR limit is reached and give an error message
@@ -354,10 +351,9 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 1);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.False(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(!result.Success);
+        Assert.That(result.Message, Is.Not.Null);
         Assert.That(result.Message, Is.EqualTo("MaxCvrNumbersReached"));
     }
 
@@ -401,10 +397,9 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 2);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.False(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(!result.Success);
+        Assert.That(result.Message, Is.Not.Null);
         Assert.That(result.Message, Is.EqualTo("MaxChrNumbersReached"));
     }
 
@@ -457,14 +452,13 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var planningTags = await ItemsPlanningPnDbContext!.PlanningTags.ToListAsync();
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.Success);
-        Assert.True(result.Success);
-        Assert.NotNull(result.Message);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Success);
+        Assert.That(result.Message, Is.Not.Null);
 
 
         // Assert properties
-        Assert.NotNull(properties);
+        Assert.That(properties, Is.Not.Null);
         Assert.That(properties.Count, Is.EqualTo(1));
         Assert.That(properties[0].Name, Is.EqualTo(propertyUpdateModel.Name));
         Assert.That(properties[0].Address, Is.EqualTo(propertyUpdateModel.Address));
@@ -484,13 +478,13 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(properties[0].ItemPlanningTagId, Is.EqualTo(planningTags[0].Id));
 
         // Assert property selected languages
-        Assert.NotNull(propertySelectedLanguages);
+        Assert.That(propertySelectedLanguages, Is.Not.Null);
         Assert.That(propertySelectedLanguages.Count, Is.EqualTo(1));
         Assert.That(propertySelectedLanguages[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(propertySelectedLanguages[0].LanguageId, Is.EqualTo(1));
 
         // Assert planning tags
-        Assert.NotNull(planningTags);
+        Assert.That(planningTags, Is.Not.Null);
         Assert.That(planningTags.Count, Is.EqualTo(1));
         // Assert.That(planningTags[0].Name, Is.EqualTo("01. Logbøger Miljøledelse"));
         // Assert.That(planningTags[1].Name, Is.EqualTo("02. Beredskab"));
@@ -523,7 +517,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(planningTags[0].Name, Is.EqualTo($"0. {propertyUpdateModel.Name} - {propertyUpdateModel.Address}"));
 
         // Assert folder translations
-        Assert.NotNull(folderTranslations);
+        Assert.That(folderTranslations, Is.Not.Null);
         Assert.That(folderTranslations.Count, Is.EqualTo(53));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyUpdateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));

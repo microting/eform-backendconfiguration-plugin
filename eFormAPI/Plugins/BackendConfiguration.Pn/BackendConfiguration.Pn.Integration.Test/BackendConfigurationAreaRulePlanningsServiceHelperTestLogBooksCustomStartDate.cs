@@ -195,18 +195,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -219,7 +219,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -599,18 +599,18 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -623,7 +623,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -1016,18 +1016,18 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -1040,7 +1040,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -1423,18 +1423,18 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -1447,7 +1447,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -1879,18 +1879,18 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -1903,7 +1903,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -2358,18 +2358,18 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -2382,7 +2382,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));

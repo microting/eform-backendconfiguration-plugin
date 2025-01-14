@@ -154,7 +154,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
-		Assert.NotNull(result);
+		Assert.That(result, Is.Not.Null);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
@@ -283,7 +283,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
-		Assert.NotNull(result);
+		Assert.That(result, Is.Not.Null);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
@@ -412,7 +412,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
-		Assert.NotNull(result);
+		Assert.That(result, Is.Not.Null);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
@@ -541,7 +541,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
-		Assert.NotNull(result);
+		Assert.That(result, Is.Not.Null);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
 		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));

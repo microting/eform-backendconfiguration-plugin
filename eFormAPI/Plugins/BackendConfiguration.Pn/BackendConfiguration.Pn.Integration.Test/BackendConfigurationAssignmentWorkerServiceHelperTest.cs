@@ -45,7 +45,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -96,7 +96,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -186,7 +186,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -277,7 +277,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -370,7 +370,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -466,7 +466,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -580,7 +580,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -701,7 +701,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var sdkCases = await MicrotingDbContext!.Cases.AsNoTracking().ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -863,7 +863,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
         var entityItems = await MicrotingDbContext!.EntityItems.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));

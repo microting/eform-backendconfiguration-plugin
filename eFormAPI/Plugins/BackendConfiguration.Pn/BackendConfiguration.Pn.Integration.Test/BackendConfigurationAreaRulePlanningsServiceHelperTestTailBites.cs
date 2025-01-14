@@ -143,18 +143,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo($"05. Halebid og risikovurdering - {properties[0].Name}"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Registrer halebid"));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -164,7 +164,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -520,18 +520,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo($"05. Halebid og risikovurdering - {properties[0].Name}"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Registrer halebid"));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -541,7 +541,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -920,18 +920,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
         // Assert result
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.EqualTo(true));
 
         // Assert areaRules
-        Assert.NotNull(areaRules);
+        Assert.That(areaRules, Is.Not.Null);
         Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo($"05. Halebid og risikovurdering - {properties[0].Name}"));
 
         // Assert areaRuleTranslations
-        Assert.NotNull(areaRuleTranslations);
+        Assert.That(areaRuleTranslations, Is.Not.Null);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Registrer halebid"));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -941,7 +941,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
 
         // Assert areaProperties
-        Assert.NotNull(areaProperties);
+        Assert.That(areaProperties, Is.Not.Null);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));

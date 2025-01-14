@@ -146,11 +146,11 @@
 //         var cases = await MicrotingDbContext!.Cases.ToListAsync();
 //
 //         // Assert result
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(3));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
@@ -163,7 +163,7 @@
 //         Assert.That(areaRules[2].EformName, Is.EqualTo("09. Forsuring driftsstop"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(9));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("09. Forsuring pH værdi"));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -185,7 +185,7 @@
 //         Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
