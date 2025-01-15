@@ -139,7 +139,7 @@ public class ExcelService(
         }
     }
 
-    public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel)
+    public Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel)
     {
         try
         {
@@ -259,19 +259,19 @@ public class ExcelService(
             }
 
             Stream result = File.Open(resultDocument, FileMode.Open);
-            return new OperationDataResult<Stream>(true, result);
+            return Task.FromResult(new OperationDataResult<Stream>(true, result));
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.Message);
             logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<Stream>(false,
-                localizationService.GetString("ErrorWhileCreatingWordFile"));
+            return Task.FromResult(new OperationDataResult<Stream>(false,
+                localizationService.GetString("ErrorWhileCreatingWordFile")));
         }
     }
 
-    public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+    public Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
     {
         try
         {
@@ -489,15 +489,15 @@ public class ExcelService(
             ValidateExcel(filePath);
 
             Stream result = File.Open(filePath, FileMode.Open);
-            return new OperationDataResult<Stream>(true, result);
+            return Task.FromResult(new OperationDataResult<Stream>(true, result));
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.Message);
             logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<Stream>(false,
-                localizationService.GetString("ErrorWhileCreatingExcelFile"));
+            return Task.FromResult(new OperationDataResult<Stream>(false,
+                localizationService.GetString("ErrorWhileCreatingExcelFile")));
         }
     }
 

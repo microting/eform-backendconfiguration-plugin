@@ -52,13 +52,13 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
       header: this.translateService.stream('Document description'),
       formatter: (document: DocumentModel) => this.getDocumentTranslationDescription(document)
     },
-    {
-      field: 'endDate',
-      header: this.translateService.stream('End date'),
-      type: 'date',
-      typeParameter: {format: 'dd.MM.y'},
-      sortable: true, sortProp: {id: 'EndAt'}
-    },
+    // {
+    //   field: 'endDate',
+    //   header: this.translateService.stream('End date'),
+    //   type: 'date',
+    //   typeParameter: {format: 'dd.MM.y'},
+    //   sortable: true, sortProp: {id: 'EndAt'}
+    // },
     // {
     //   field: 'downloadButton',
     //   header: this.translateService.stream('Files'),
