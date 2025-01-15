@@ -60,7 +60,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     {field: 'name', header: this.translateService.stream('Task solver'),},
     {field: 'select', header: this.translateService.stream('Select'),},
   ];
-  private copyModel: TaskWizardCreateModel;
+  protected copyModel: TaskWizardCreateModel;
   public model: TaskWizardCreateModel = {
     eformId: null,
     folderId: null,
