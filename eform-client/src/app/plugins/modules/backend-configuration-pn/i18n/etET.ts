@@ -290,4 +290,5 @@ export const etET = {
   'Upload PDF': 'Laadige üles PDF',
   'PIN code': 'PIN-koodi',
   'Employee no': 'Töötaja nr',
+  'Deactivate task': 'Deaktiveerige ülesanne',
 };

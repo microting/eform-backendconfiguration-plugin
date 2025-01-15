@@ -306,5 +306,6 @@ export const enUS= {
   'Repeated': 'Repeated',
   'Upload PDF': 'Upload PDF',
   'PIN code': 'PIN code',
-  'Employee no': 'Employee no'
+  'Employee no': 'Employee no',
+  'Deactivate task': 'Deactivate task',
 };

@@ -292,4 +292,5 @@ export const da = {
   'Upload PDF': 'Upload PDF',
   'PIN code': 'PIN kode',
   'Employee no': 'Medarbejder nummer',
+  'Deactivate task': 'Deaktiver opgave',
 };

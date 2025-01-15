@@ -351,4 +351,5 @@ export const deDE = {
   'Upload PDF': 'PDF hochladen',
   'PIN code': 'Geheimzahl',
   'Employee no': 'Mitarbeiter-Nr.',
+  'Deactivate task': 'Aufgabe deaktivieren',
 };

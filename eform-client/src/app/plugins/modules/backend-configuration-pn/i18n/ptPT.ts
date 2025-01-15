@@ -290,4 +290,5 @@ export const ptPT = {
   'Upload PDF': 'Carregar PDF',
   'PIN code': 'Código PIN',
   'Employee no': 'Funcionário não',
+  'Deactivate task': 'Desativar tarefa',
 };

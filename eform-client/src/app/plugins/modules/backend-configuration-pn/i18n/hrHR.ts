@@ -290,4 +290,5 @@ export const hrHR = {
   'Upload PDF': 'Učitaj PDF',
   'PIN code': 'PIN kod',
   'Employee no': 'Zaposlenik br',
+  'Deactivate task': 'Deaktiviraj zadatak',
 };

@@ -290,4 +290,5 @@ export const frFR = {
   'Upload PDF': 'Télécharger le PDF',
   'PIN code': 'Code PIN',
   'Employee no': 'Numéro d&#39;employé',
+  'Deactivate task': 'Désactiver la tâche',
 };

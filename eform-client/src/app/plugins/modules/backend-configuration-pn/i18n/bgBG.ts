@@ -290,4 +290,5 @@ export const bgBG = {
   'Upload PDF': 'Качете PDF',
   'PIN code': 'ПИН код',
   'Employee no': 'Служител №',
+  'Deactivate task': 'Деактивирайте задачата',
 };

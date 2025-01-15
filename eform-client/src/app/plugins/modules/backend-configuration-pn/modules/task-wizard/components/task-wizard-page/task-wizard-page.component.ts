@@ -228,7 +228,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
+          let minWidth = data.model.status === 2 ? 1024 : 200;
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: minWidth});
           this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,

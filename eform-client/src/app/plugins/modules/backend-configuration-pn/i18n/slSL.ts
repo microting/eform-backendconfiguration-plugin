@@ -290,4 +290,5 @@ export const slSL = {
   'Upload PDF': 'Naloži PDF',
   'PIN code': 'PIN koda',
   'Employee no': 'Uslužbenec št',
+  'Deactivate task': 'Deaktiviraj nalogo',
 };

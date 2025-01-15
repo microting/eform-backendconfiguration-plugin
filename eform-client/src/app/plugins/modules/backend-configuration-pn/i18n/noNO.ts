@@ -290,4 +290,5 @@ export const noNO = {
   'Upload PDF': 'Last opp PDF',
   'PIN code': 'PIN-kode',
   'Employee no': 'Ansatt nummer',
+  'Deactivate task': 'Deaktiver oppgave',
 };

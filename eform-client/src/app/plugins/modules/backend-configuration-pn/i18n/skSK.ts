@@ -290,4 +290,5 @@ export const skSK = {
   'Upload PDF': 'Nahrajte súbor PDF',
   'PIN code': 'PIN kód',
   'Employee no': 'Zamestnanec č',
+  'Deactivate task': 'Deaktivovať úlohu',
 };

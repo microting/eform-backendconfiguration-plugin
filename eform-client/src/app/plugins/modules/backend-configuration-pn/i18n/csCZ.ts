@@ -290,4 +290,5 @@ export const csCZ = {
   'Upload PDF': 'Nahrát PDF',
   'PIN code': 'PIN kód',
   'Employee no': 'Zaměstnanec č',
+  'Deactivate task': 'Deaktivovat úkol',
 };

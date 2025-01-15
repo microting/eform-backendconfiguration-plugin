@@ -290,4 +290,5 @@ export const svSE = {
   'Upload PDF': 'Ladda upp PDF',
   'PIN code': 'Pinkod',
   'Employee no': 'Anställningsnummer',
+  'Deactivate task': 'Inaktivera uppgiften',
 };

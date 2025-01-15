@@ -290,4 +290,5 @@ export const ltLT = {
   'Upload PDF': 'Įkelti PDF',
   'PIN code': 'PIN kodas',
   'Employee no': 'Darbuotojas Nr',
+  'Deactivate task': 'Išjungti užduotį',
 };

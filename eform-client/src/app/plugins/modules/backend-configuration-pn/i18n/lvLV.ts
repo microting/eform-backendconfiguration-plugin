@@ -290,4 +290,5 @@ export const lvLV = {
   'Upload PDF': 'Augšupielādēt PDF',
   'PIN code': 'PIN kods',
   'Employee no': 'Darbinieks Nr',
+  'Deactivate task': 'Deaktivizēt uzdevumu',
 };

@@ -290,4 +290,5 @@ export const isIS = {
   'Upload PDF': 'Hladdu upp PDF',
   'PIN code': 'PIN númer',
   'Employee no': 'Starfsmaður nr',
+  'Deactivate task': 'Slökktu á verkefni',
 };

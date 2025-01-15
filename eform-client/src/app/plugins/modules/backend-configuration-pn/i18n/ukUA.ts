@@ -290,4 +290,5 @@ export const ukUA = {
   'Upload PDF': 'Завантажити PDF',
   'PIN code': 'PIN-код',
   'Employee no': 'Співробітник №',
+  'Deactivate task': 'Деактивувати завдання',
 };

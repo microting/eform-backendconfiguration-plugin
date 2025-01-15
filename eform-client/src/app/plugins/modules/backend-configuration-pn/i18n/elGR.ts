@@ -290,4 +290,5 @@ export const elGR = {
   'Upload PDF': 'Ανεβάστε PDF',
   'PIN code': 'Κωδικό PIN',
   'Employee no': 'Υπάλληλος αρ',
+  'Deactivate task': 'Απενεργοποίηση εργασίας',
 };

@@ -1,4 +1,4 @@
-<h3 mat-dialog-title>{{'Edit task' | translate}}</h3>
+<h3 mat-dialog-title>{{copyModel.status === TaskWizardStatusesEnum.NotActive ? 'Edit task' : 'Deactivate task' | translate}}</h3>
 <div mat-dialog-content>
   <mat-slide-toggle class="p-2"
                     color="accent"

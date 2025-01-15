@@ -290,4 +290,5 @@ export const huHU = {
   'Upload PDF': 'PDF feltöltése',
   'PIN code': 'PIN-kód',
   'Employee no': 'számú alkalmazott',
+  'Deactivate task': 'Inaktiválja a feladatot',
 };

@@ -290,4 +290,5 @@ export const roRO = {
   'Upload PDF': 'Încărcați PDF',
   'PIN code': 'Cod PIN',
   'Employee no': 'Angajat nr',
+  'Deactivate task': 'Dezactivați sarcina',
 };

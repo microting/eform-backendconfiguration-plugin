@@ -290,4 +290,5 @@ export const nlNL = {
   'Upload PDF': 'Upload pdf',
   'PIN code': 'Pincode',
   'Employee no': 'Werknemer nummer',
+  'Deactivate task': 'Taak deactiveren',
 };

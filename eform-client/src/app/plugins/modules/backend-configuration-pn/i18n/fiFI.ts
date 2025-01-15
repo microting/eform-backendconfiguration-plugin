@@ -290,4 +290,5 @@ export const fiFI = {
   'Upload PDF': 'Lataa PDF',
   'PIN code': 'Pin-koodi',
   'Employee no': 'Työntekijä nro',
+  'Deactivate task': 'Poista tehtävä käytöstä',
 };

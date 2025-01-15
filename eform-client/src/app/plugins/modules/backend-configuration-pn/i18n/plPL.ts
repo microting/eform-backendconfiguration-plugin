@@ -290,4 +290,5 @@ export const plPL = {
   'Upload PDF': 'Prześlij plik PDF',
   'PIN code': 'Kod PIN',
   'Employee no': 'Pracownik numer',
+  'Deactivate task': 'Dezaktywuj zadanie',
 };
