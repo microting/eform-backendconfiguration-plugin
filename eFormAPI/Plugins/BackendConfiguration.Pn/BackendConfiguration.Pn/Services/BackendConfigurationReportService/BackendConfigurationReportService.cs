@@ -24,7 +24,6 @@ SOFTWARE.
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,57 +43,40 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService;
 
-public class BackendConfigurationReportService : IBackendConfigurationReportService
+public class BackendConfigurationReportService(
+    IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+    ILogger<BackendConfigurationReportService> logger,
+    IEFormCoreService coreHelper,
+    IWordService wordService,
+    IExcelService excelService,
+    ICasePostBaseService casePostBaseService,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+    IUserService userService,
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext)
+    : IBackendConfigurationReportService
 {
-    private readonly ILogger<BackendConfigurationReportService> _logger;
-    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    private readonly IWordService _wordService;
-    private readonly IExcelService _excelService;
-    private readonly IEFormCoreService _coreHelper;
-    private readonly ICasePostBaseService _casePostBaseService;
-    private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-    private readonly IUserService _userService;
-    private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+    private readonly ICasePostBaseService _casePostBaseService = casePostBaseService;
 
     // ReSharper disable once SuggestBaseTypeForParameter
-    public BackendConfigurationReportService(
-        IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-        ILogger<BackendConfigurationReportService> logger,
-        IEFormCoreService coreHelper,
-        IWordService wordService,
-        IExcelService excelService,
-        ICasePostBaseService casePostBaseService,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
-    {
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-        _logger = logger;
-        _coreHelper = coreHelper;
-        _wordService = wordService;
-        _excelService = excelService;
-        _casePostBaseService = casePostBaseService;
-        _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-        _userService = userService;
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-    }
 
     public async Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model,
         bool isDocx)
     {
         try
         {
-            var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();
-            var core = await _coreHelper.GetCore();
+            var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
+            var core = await coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
             var fromDate = new DateTime(model.DateFrom!.Value.Year, model.DateFrom.Value.Month,
                 model.DateFrom.Value.Day, 0, 0, 0);
             var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
                 model.DateTo.Value.Day, 23, 59, 59);
 
-            var planningCasesQuery = _itemsPlanningPnDbContext.PlanningCases
+            var planningCasesQuery = itemsPlanningPnDbContext.PlanningCases
                 .Include(x => x.Planning)
                 .ThenInclude(x => x.PlanningsTags)
                 .Where(x => x.Status == 100)
@@ -166,7 +148,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 Constants.FieldTypes.FieldGroup,
                 Constants.FieldTypes.SaveButton
             };
-            var localeString = await _userService.GetCurrentUserLocale();
+            var localeString = await userService.GetCurrentUserLocale();
             var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
             //foreach (var groupedCase in groupedCases)
             foreach (var checkList in checkLists)
@@ -293,7 +275,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         var planningCase = groupedCase.cases.First(x =>
                             x.MicrotingSdkCaseId == imageField.CaseId && x.PlanningId != 0);
                         var planningNameTranslation =
-                            await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
+                            await itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                 x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
 
                         if (planningNameTranslation != null)
@@ -324,22 +306,22 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     foreach (var planningCase in groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                     {
                         var planningNameTranslation =
-                            await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
+                            await itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                 x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
                         var propertyName = "";
 
                         var areaRulePlanning =
-                            await _backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
+                            await backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
                                 x.ItemPlanningId == planningCase.PlanningId);
 
                         if (areaRulePlanning != null)
                         {
-                            propertyName = _backendConfigurationPnDbContext.Properties
+                            propertyName = backendConfigurationPnDbContext.Properties
                                 .First(x => x.Id == areaRulePlanning.PropertyId).Name;
                         }
                         else
                         {
-                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext
+                            var areaRulePlanningVersion = await backendConfigurationPnDbContext
                                 .AreaRulesPlanningVersions
                                 .Where(x => x.ItemPlanningId == planningCase.PlanningId)
                                 .OrderByDescending(x => x.Version)
@@ -347,7 +329,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                             if (areaRulePlanningVersion != null)
                             {
-                                propertyName = _backendConfigurationPnDbContext.Properties
+                                propertyName = backendConfigurationPnDbContext.Properties
                                     .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
                             }
                         }
@@ -357,9 +339,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                         if (dbCase == null)
                         {
-                            Console.BackgroundColor = ConsoleColor.Red;
-                            Console.ForegroundColor = ConsoleColor.White;
-                            Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
+                            logger.LogError($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
                             continue;
                         }
 
@@ -448,7 +428,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             break;
                                         case Constants.FieldTypes.EntitySearch or
                                             Constants.FieldTypes.EntitySelect:
-                                            if (caseField.Value != null && caseField.Value != "null")
+                                            if (!string.IsNullOrEmpty(caseField.Value) && caseField.Value != "null")
                                             {
                                                 var id = int.Parse(caseField.Value);
                                                 var match =
@@ -523,7 +503,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             }
 
             var reportEformModel = new OldReportEformModel();
-            reportEformModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
+            reportEformModel.NameTagsInEndPage.AddRange(itemsPlanningPnDbContext.PlanningTags
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => model.TagIds.Any(y => y == x.Id))
                 .Select(x => x.Name));
@@ -535,16 +515,16 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             }
 
             return new OperationDataResult<List<OldReportEformModel>>(false,
-                _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
+                backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
 
         }
         catch (Exception e)
         {
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
-            _logger.LogError(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogError(e.StackTrace);
             return new OperationDataResult<List<OldReportEformModel>>(false,
-                _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
+                backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
         }
     }
 
@@ -553,15 +533,15 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
     {
         try
         {
-            var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();
-            var core = await _coreHelper.GetCore();
+            var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
+            var core = await coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
             var fromDate = new DateTime(model.DateFrom!.Value.Year, model.DateFrom.Value.Month,
                 model.DateFrom.Value.Day, 0, 0, 0);
             var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
                 model.DateTo.Value.Day, 23, 59, 59);
 
-            var planningCasesQuery = _itemsPlanningPnDbContext.PlanningCases
+            var planningCasesQuery = itemsPlanningPnDbContext.PlanningCases
                 .Include(x => x.Planning)
                 .ThenInclude(x => x.PlanningsTags)
                 .Where(x => x.Status == 100)
@@ -594,7 +574,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 }
             }
 
-            var planningTagsForGroup = await _itemsPlanningPnDbContext.PlanningTags
+            var planningTagsForGroup = await itemsPlanningPnDbContext.PlanningTags
                 .ToListAsync();
 
             var result = new List<ReportEformModel>();
@@ -610,7 +590,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 Constants.FieldTypes.FieldGroup,
                 Constants.FieldTypes.SaveButton
             };
-            var localeString = await _userService.GetCurrentUserLocale();
+            var localeString = await userService.GetCurrentUserLocale();
             var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
 
             var groupedPlanningCases = planningCasesQuery
@@ -714,7 +694,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     foreach (var planningCase in eformIdAndCases.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                     {
                         var planningNameTranslation =
-                            await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
+                            await itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                 x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
                         foreach (var imageField in allImagesFromCases.Where(x =>
                                      x.CaseId == planningCase.MicrotingSdkCaseId))
@@ -746,17 +726,17 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         var propertyName = "";
 
                         var areaRulePlanning =
-                            await _backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
+                            await backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
                                 x.ItemPlanningId == planningCase.PlanningId);
 
                         if (areaRulePlanning != null)
                         {
-                            propertyName = _backendConfigurationPnDbContext.Properties
+                            propertyName = backendConfigurationPnDbContext.Properties
                                 .First(x => x.Id == areaRulePlanning.PropertyId).Name;
                         }
                         else
                         {
-                            var areaRulePlanningVersion = await _backendConfigurationPnDbContext
+                            var areaRulePlanningVersion = await backendConfigurationPnDbContext
                                 .AreaRulesPlanningVersions
                                 .Where(x => x.ItemPlanningId == planningCase.PlanningId)
                                 .OrderByDescending(x => x.Version)
@@ -764,7 +744,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                             if (areaRulePlanningVersion != null)
                             {
-                                propertyName = _backendConfigurationPnDbContext.Properties
+                                propertyName = backendConfigurationPnDbContext.Properties
                                     .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
                             }
                         }
@@ -776,10 +756,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                         if (dbCase == null)
                         {
-                            Console.BackgroundColor = ConsoleColor.Red;
-                            Console.ForegroundColor = ConsoleColor.White;
-                            Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
-
+                            logger.LogError($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
                             continue;
                         }
 
@@ -934,7 +911,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     reportModel.GroupEform.Add(group);
                 }
 
-                reportModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
+                reportModel.NameTagsInEndPage.AddRange(itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => model.TagIds.Any(y => y == x.Id))
                     .Select(x => x.Name));
@@ -950,16 +927,16 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             }
 
             return new OperationDataResult<List<ReportEformModel>>(false,
-                _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
+                backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
 
         }
         catch (Exception e)
         {
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
-            _logger.LogError(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogError(e.StackTrace);
             return new OperationDataResult<List<ReportEformModel>>(false,
-                _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
+                backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
         }
     }
 
@@ -980,7 +957,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 {
                     case "docx":
                     {
-                        var wordDataResult = await _wordService
+                        var wordDataResult = await wordService
                             .GenerateWordDashboard(reportDataResult.Model);
                         if (!wordDataResult.Success)
                         {
@@ -991,7 +968,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     }
                     case "xlsx":
                     {
-                        var wordDataResult = await _excelService
+                        var wordDataResult = await excelService
                             .GenerateExcelDashboard(reportDataResult.Model);
                         if (!wordDataResult.Success)
                         {
@@ -1003,7 +980,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     case "pdf":
                     {
                         // get word report and save him
-                        var wordDataResult = await _wordService
+                        var wordDataResult = await wordService
                             .GenerateWordDashboard(reportDataResult.Model);
                         if (!wordDataResult.Success)
                         {
@@ -1014,7 +991,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         Directory.CreateDirectory(directoryPath);
                         var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
                         var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
-                        Console.WriteLine($"Saving document to {resultDocumentDocx}");
+                        logger.LogInformation($"Saving document to {resultDocumentDocx}");
 
                         await using (var fileStream = File.Create(resultDocumentDocx))
                         {
@@ -1022,8 +999,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                             await wordDataResult.Model.CopyToAsync(fileStream);
                         }
 
-                        Console.WriteLine($"docx saved to {resultDocumentDocx}");
-                        Console.WriteLine($"Converting to pdf {resultDocumentPdf}");
+                        logger.LogInformation($"docx saved to {resultDocumentDocx}");
+                        logger.LogInformation($"Converting to pdf {resultDocumentPdf}");
                         // convert file to pdf
                         ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
 
@@ -1040,12 +1017,12 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             }
             catch (Exception e)
             {
-                Trace.TraceError(e.Message);
-                _logger.LogError(e.Message);
-                _logger.LogError(e.StackTrace);
+                SentrySdk.CaptureException(e);
+                logger.LogError(e.Message);
+                logger.LogError(e.StackTrace);
                 return new OperationDataResult<Stream>(
                     false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
+                    backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
             }
         }
 
@@ -1061,7 +1038,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
             {
                 case "docx":
                 {
-                    var wordDataResult = await _wordService
+                    var wordDataResult = await wordService
                         .GenerateWordDashboard(reportDataResult.Model);
                     if (!wordDataResult.Success)
                     {
@@ -1072,7 +1049,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 }
                 case "xlsx":
                 {
-                    var wordDataResult = await _excelService
+                    var wordDataResult = await excelService
                         .GenerateExcelDashboard(reportDataResult.Model);
                     if (!wordDataResult.Success)
                     {
@@ -1084,7 +1061,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                 case "pdf":
                 {
                     // get word report and save him
-                    var wordDataResult = await _wordService
+                    var wordDataResult = await wordService
                         .GenerateWordDashboard(reportDataResult.Model);
                     if (!wordDataResult.Success)
                     {
@@ -1095,7 +1072,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                     Directory.CreateDirectory(directoryPath);
                     var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
                     var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
-                    Console.WriteLine($"Saving document to {resultDocumentDocx}");
+                    logger.LogInformation($"Saving document to {resultDocumentDocx}");
 
                     await using (var fileStream = File.Create(resultDocumentDocx))
                     {
@@ -1103,8 +1080,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         await wordDataResult.Model.CopyToAsync(fileStream);
                     }
 
-                    Console.WriteLine($"docx saved to {resultDocumentDocx}");
-                    Console.WriteLine($"Converting to pdf {resultDocumentPdf}");
+                    logger.LogInformation($"docx saved to {resultDocumentDocx}");
+                    logger.LogInformation($"Converting to pdf {resultDocumentPdf}");
                     // convert file to pdf
                     ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
 
@@ -1121,12 +1098,12 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception e)
         {
-            Trace.TraceError(e.Message);
-            _logger.LogError(e.Message);
-            _logger.LogError(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogError(e.StackTrace);
             return new OperationDataResult<Stream>(
                 false,
-                _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
+                backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
         }
     }
 
@@ -1134,8 +1111,8 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
     {
         var checkListValueList = new List<string>();
         var fieldValueList = new List<string>();
-        var core = await _coreHelper.GetCore();
-        var language = await _userService.GetCurrentUserLanguage();
+        var core = await coreHelper.GetCore();
+        var language = await userService.GetCurrentUserLanguage();
         try
         {
             model.ElementList.ForEach(element =>
@@ -1146,9 +1123,11 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
-            return new OperationResult(false, $"{_backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
+            return new OperationResult(false,
+                $"{backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
         }
 
         try
@@ -1167,14 +1146,17 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
                 if (foundCase.DoneAt != null)
                 {
-                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
+                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day,
+                        foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
                     foundCase.DoneAtUserModifiable = newDoneAt;
                 }
 
                 foundCase.Status = 100;
                 await foundCase.Update(sdkDbContext);
-                var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
-                var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
+                var planningCase =
+                    await itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
+                var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
+                    x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
 
                 if (planningCaseSite == null)
                 {
@@ -1187,41 +1169,44 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                         Status = 100,
                         MicrotingSdkSiteId = (int)foundCase.SiteId!
                     };
-                    await planningCaseSite.Create(_itemsPlanningPnDbContext);
+                    await planningCaseSite.Create(itemsPlanningPnDbContext);
                 }
 
                 planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                 planningCaseSite = await SetFieldValue(planningCaseSite, language);
-                await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                await planningCaseSite.Update(itemsPlanningPnDbContext);
 
                 planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                 planningCase = await SetFieldValue(planningCase, language);
-                await planningCase.Update(_itemsPlanningPnDbContext);
+                await planningCase.Update(itemsPlanningPnDbContext);
             }
             else
             {
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("CaseNotFound"));
+                return new OperationResult(false, backendConfigurationLocalizationService.GetString("CaseNotFound"));
             }
 
-            return new OperationResult(true, _backendConfigurationLocalizationService.GetString("CaseHasBeenUpdated"));
+            return new OperationResult(true, backendConfigurationLocalizationService.GetString("CaseHasBeenUpdated"));
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             Log.LogException(ex.Message);
             Log.LogException(ex.StackTrace);
-            return new OperationResult(false, _backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
+            return new OperationResult(false,
+                backendConfigurationLocalizationService.GetString("CaseCouldNotBeUpdated") +
+                $" Exception: {ex.Message}");
         }
     }
 
     private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, Language language)
     {
-        var planning = _itemsPlanningPnDbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
+        var planning = itemsPlanningPnDbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
         var caseIds = new List<int>
         {
             planningCaseSite.MicrotingSdkCaseId
         };
 
-        var core = await _coreHelper.GetCore();
+        var core = await coreHelper.GetCore();
         var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language);
 
         if (planning == null) return planningCaseSite;
@@ -1245,8 +1230,9 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
 
     private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, Language language)
     {
-        var core = await _coreHelper.GetCore();
-        var planning = await _itemsPlanningPnDbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+        var core = await coreHelper.GetCore();
+        var planning = await itemsPlanningPnDbContext.Plannings
+            .SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
         var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
         var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 

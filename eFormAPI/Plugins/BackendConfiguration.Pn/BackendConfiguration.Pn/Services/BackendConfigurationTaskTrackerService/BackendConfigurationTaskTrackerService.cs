@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerService;
 
@@ -42,46 +43,31 @@ using Infrastructure.Helpers;
 using System.IO;
 using ExcelService;
 
-public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskTrackerService
+public class BackendConfigurationTaskTrackerService(
+	IBackendConfigurationLocalizationService localizationService,
+	IUserService userService,
+	BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+	IEFormCoreService coreHelper,
+	ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+	IExcelService excelService)
+	: IBackendConfigurationTaskTrackerService
 {
-	private readonly IBackendConfigurationLocalizationService _localizationService;
-	private readonly IUserService _userService;
-	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-	private readonly IEFormCoreService _coreHelper;
-	private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-	private readonly IExcelService _excelService;
-
-	public BackendConfigurationTaskTrackerService(
-		IBackendConfigurationLocalizationService localizationService,
-		IUserService userService,
-		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-		IEFormCoreService coreHelper,
-		ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-		IExcelService excelService)
-	{
-		_localizationService = localizationService;
-		_userService = userService;
-		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-		_coreHelper = coreHelper;
-		_itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-		_excelService = excelService;
-	}
-
-
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
-		var userLanguageId = (await _userService.GetCurrentUserLanguage()).Id;
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), userLanguageId, _itemsPlanningPnDbContext);
-		return new OperationDataResult<List<TaskTrackerModel>>(result.Success, _localizationService.GetString(result.Message), result.Model ??
-			[]);
+		var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, backendConfigurationPnDbContext,
+			await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext);
+		return new OperationDataResult<List<TaskTrackerModel>>(result.Success,
+			localizationService.GetString(result.Message), result.Model ??
+			                                               []);
 	}
-	
+
 	public async Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns()
 	{
-		var userId = _userService.UserId;
+		var userId = userService.UserId;
 		try
 		{
-			var columns = await _backendConfigurationPnDbContext.TaskTrackerColumns
+			var columns = await backendConfigurationPnDbContext.TaskTrackerColumns
 				.Where(p => p.UserId == userId)
 				.Select(p => new TaskTrackerColumn
 				{
@@ -93,10 +79,11 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<List<TaskTrackerColumn>>(false,
-				$"{_localizationService.GetString("ErrorWhileGetColumns")}: {e.Message}");
+				$"{localizationService.GetString("ErrorWhileGetColumns")}: {e.Message}");
 		}
 	}
 
@@ -104,11 +91,11 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 	{
 		try
 		{
-			var userId = _userService.UserId;
+			var userId = userService.UserId;
 
 			foreach (var updatedColumn in updatedColumns)
 			{
-				var columnFromDb = await _backendConfigurationPnDbContext.TaskTrackerColumns
+				var columnFromDb = await backendConfigurationPnDbContext.TaskTrackerColumns
 					.Where(p => p.UserId == userId)
 					.Where(p => p.ColumnName == updatedColumn.ColumnName)
 					.FirstOrDefaultAsync();
@@ -123,7 +110,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 						CreatedByUserId = userId,
 						UpdatedByUserId = userId
 					};
-					await columnFromDb.Create(_backendConfigurationPnDbContext);
+					await columnFromDb.Create(backendConfigurationPnDbContext);
 
 					continue;
 				}
@@ -132,19 +119,20 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 				{
 					columnFromDb.isColumnEnabled = updatedColumn.IsColumnEnabled;
 					columnFromDb.UpdatedByUserId = userId;
-					await columnFromDb.Update(_backendConfigurationPnDbContext);
+					await columnFromDb.Update(backendConfigurationPnDbContext);
 				}
 			}
-			
+
 			return new OperationDataResult<List<TaskTrackerColumns>>(true,
-				$"{_localizationService.GetString("ColumnsUpdatedSuccessful")}");
+				$"{localizationService.GetString("ColumnsUpdatedSuccessful")}");
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationResult(false,
-				$"{_localizationService.GetString("ErrorWhileUpdateColumns")}: {e.Message}");
+				$"{localizationService.GetString("ErrorWhileUpdateColumns")}: {e.Message}");
 		}
 	}
 
@@ -152,27 +140,31 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 	{
 		try
 		{
-			var userLanguageId = (await _userService.GetCurrentUserLanguage()).Id;
-			var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), userLanguageId, _itemsPlanningPnDbContext);
+			var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+			var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel,
+				backendConfigurationPnDbContext, await coreHelper.GetCore(), userLanguageId, itemsPlanningPnDbContext);
 			if (!result.Success)
 			{
-				return new OperationDataResult<Stream>(false, _localizationService.GetString(result.Message));
+				return new OperationDataResult<Stream>(false, localizationService.GetString(result.Message));
 			}
 
-			var report = await _excelService.GenerateTaskTracker(result.Model);
+			var report = await excelService.GenerateTaskTracker(result.Model);
 
 			if (report == null)
 			{
-				return new OperationDataResult<Stream>(false, _localizationService.GetString("ErrorWhileGeneratingReport"));
+				return new OperationDataResult<Stream>(false,
+					localizationService.GetString("ErrorWhileGeneratingReport"));
 			}
 
 			return new OperationDataResult<Stream>(true, report);
 		}
 		catch (Exception e)
 		{
+			SentrySdk.CaptureException(e);
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
-			return new OperationDataResult<Stream>(false, $"{_localizationService.GetString("ErrorWhileGeneratingReport")}: {e.Message}");
+			return new OperationDataResult<Stream>(false,
+				$"{localizationService.GetString("ErrorWhileGeneratingReport")}: {e.Message}");
 		}
 	}
 }

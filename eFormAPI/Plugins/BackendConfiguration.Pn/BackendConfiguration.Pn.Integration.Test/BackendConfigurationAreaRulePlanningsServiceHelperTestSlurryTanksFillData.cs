@@ -243,25 +243,25 @@
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
 //         // Assert result
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -689,25 +689,25 @@
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
 //         // Assert result
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -1190,25 +1190,25 @@
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
 //         // Assert result
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -1622,25 +1622,25 @@
 //         /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -2122,25 +2122,25 @@
 //         /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -2726,25 +2726,25 @@
 //         /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
@@ -3331,18 +3331,18 @@
 //         /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
 //         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 //
-//         Assert.NotNull(result);
+//         Assert.That(result, Is.Not.Null);
 //         Assert.That(result.Success, Is.EqualTo(true));
 //
 //         // Assert areaRules
-//         Assert.NotNull(areaRules);
+//         Assert.That(areaRules, Is.Not.Null);
 //         Assert.That(areaRules.Count, Is.EqualTo(1));
 //         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
 //         Assert.That(areaRules[0].EformName, Is.EqualTo("03. Kontrol konstruktion"));
 //
 //         // Assert areaRuleTranslations
-//         Assert.NotNull(areaRuleTranslations);
+//         Assert.That(areaRuleTranslations, Is.Not.Null);
 //         Assert.That(areaRuleTranslations.Count, Is.EqualTo(1));
 //         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
 //         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
@@ -3350,7 +3350,7 @@
 //
 //
 //         // Assert areaProperties
-//         Assert.NotNull(areaProperties);
+//         Assert.That(areaProperties, Is.Not.Null);
 //         Assert.That(areaProperties.Count, Is.EqualTo(1));
 //         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
 //         Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));

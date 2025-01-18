@@ -14,44 +14,41 @@
         [clearable]="true"
       />
     </mat-form-field>
-    <div class="d-flex flex-row flex-wrap mb-2 top-stats">
-      <app-planned-task-days
-        [plannedTaskDaysModel]="plannedTaskDays"
-        [selectedPropertyName]="propertyName"
-        [view]="viewTopLine"
-        (clickOnDiagram)="clickOnPlannedTaskDays()"
-        class="ml-2"
-      />
-      <app-ad-hoc-task-priorities
-        [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
-        [selectedPropertyName]="propertyName"
-        [view]="viewTopLine"
-        (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
-        class="ml-2"
-      />
-      <app-document-updated-days
-        [documentUpdatedDaysModel]="documentUpdatedDaysModel"
-        [selectedPropertyName]="propertyName"
-        [view]="viewTopLine"
-        (clickOnDiagram)="clickOnDocumentUpdatedDays($event)"
-        class="ml-2"
-      />
+    <div class="d-flex flex-row flex-wrap top-stats">
+      <div class="d-flex flex-row flex-wrap row-container">
+        <app-planned-task-days
+          [plannedTaskDaysModel]="plannedTaskDays"
+          [selectedPropertyName]="propertyName"
+          [view]="viewTopLine"
+          (clickOnDiagram)="clickOnPlannedTaskDays()"
+          class="half-width"
+        />
+        <app-ad-hoc-task-priorities
+          [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+          [selectedPropertyName]="propertyName"
+          [view]="viewTopLine"
+          (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
+          class="half-width"
+        />
+      </div>
     </div>
     <div class="d-flex flex-row flex-wrap bottom-stats">
-      <app-planned-task-workers
-        [plannedTaskWorkers]="plannedTaskWorkers"
-        [selectedPropertyName]="propertyName"
-        [view]="viewBottomLine"
-        (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
-        class="ml-2"
-      />
-      <app-ad-hoc-task-workers
-        [adHocTaskWorkers]="adHocTaskWorkers"
-        [selectedPropertyName]="propertyName"
-        [view]="viewBottomLine"
-        (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
-        class="ml-2"
-      />
+      <div class="d-flex flex-row flex-wrap row-container">
+        <app-planned-task-workers
+          [plannedTaskWorkers]="plannedTaskWorkers"
+          [selectedPropertyName]="propertyName"
+          [view]="viewBottomLine"
+          (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
+          class="half-width"
+        />
+        <app-ad-hoc-task-workers
+          [adHocTaskWorkers]="adHocTaskWorkers"
+          [selectedPropertyName]="propertyName"
+          [view]="viewBottomLine"
+          (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
+          class="half-width"
+        />
+      </div>
     </div>
   </mat-card-content>
 </mat-card>

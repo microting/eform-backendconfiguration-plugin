@@ -26,10 +26,11 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.RebusService;
-using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 
@@ -50,39 +51,24 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
-public class BackendConfigurationPropertiesService : IBackendConfigurationPropertiesService
+public class BackendConfigurationPropertiesService(
+    IEFormCoreService coreHelper,
+    IUserService userService,
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+    IPluginDbOptions<BackendConfigurationBaseSettings> options,
+    IRebusService rebusService,
+    ILogger<BackendConfigurationPropertiesService> logger)
+    : IBackendConfigurationPropertiesService
 {
-    private readonly IEFormCoreService _coreHelper;
-    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    private readonly IUserService _userService;
-    private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-    private readonly IPluginDbOptions<BackendConfigurationBaseSettings> _options;
-    private readonly IBus _bus;
-
-    public BackendConfigurationPropertiesService(
-        IEFormCoreService coreHelper,
-        IUserService userService,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        IPluginDbOptions<BackendConfigurationBaseSettings> options,
-        IRebusService rebusService)
-    {
-        _coreHelper = coreHelper;
-        _userService = userService;
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-        _options = options;
-        _bus = rebusService.GetBus();
-    }
+    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request)
     {
         try
         {
-            var query = _backendConfigurationPnDbContext.Properties
+            var query = backendConfigurationPnDbContext.Properties
                 .Include(x => x.SelectedLanguages)
                 .Include(x => x.PropertyWorkers)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -97,11 +83,6 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
 
             if (total > 0)
             {
-                // pagination
-                //propertiesQuery = propertiesQuery
-                //    .Skip(request.Offset)
-                //    .Take(request.PageSize);
-
                 // add select to query and get from db
                 properties = await query
                     .Select(x => new PropertiesModel
@@ -132,31 +113,32 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception ex)
         {
-            Log.LogException(ex.Message);
-            Log.LogException(ex.StackTrace);
+            SentrySdk.CaptureException(ex);
+            logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
             return new OperationDataResult<Paged<PropertiesModel>>(false,
-                $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
+                $"{backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
         }
     }
 
     public async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel)
     {
-        var maxCvrNumbers = _options.Value.MaxCvrNumbers;
-        var maxChrNumbers = _options.Value.MaxChrNumbers;
+        var maxCvrNumbers = options.Value.MaxCvrNumbers;
+        var maxChrNumbers = options.Value.MaxChrNumbers;
 
         var result = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel,
-            await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext,
-            _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
+            await coreHelper.GetCore(), userService.UserId, backendConfigurationPnDbContext,
+            itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
 
         return new OperationResult(result.Success,
-            _backendConfigurationLocalizationService.GetString(result.Message));
+            backendConfigurationLocalizationService.GetString(result.Message));
     }
 
     public async Task<OperationDataResult<PropertiesModel>> Read(int id)
     {
         try
         {
-            var property = await _backendConfigurationPnDbContext.Properties
+            var property = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == id)
                 .Include(x => x.SelectedLanguages)
@@ -181,28 +163,29 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
             if (property == null)
             {
                 return new OperationDataResult<PropertiesModel>(false,
-                    _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
+                    backendConfigurationLocalizationService.GetString("PropertyNotFound"));
             }
 
             return new OperationDataResult<PropertiesModel>(true, property);
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<PropertiesModel>(false,
-                $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadProperty")}: {e.Message}");
+                $"{backendConfigurationLocalizationService.GetString("ErrorWhileReadProperty")}: {e.Message}");
         }
     }
 
     public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
     {
         var result = await BackendConfigurationPropertiesServiceHelper.Update(updateModel,
-            await _coreHelper.GetCore(), _userService, _backendConfigurationPnDbContext,
-            _itemsPlanningPnDbContext, _backendConfigurationLocalizationService, _bus).ConfigureAwait(false);
+            await coreHelper.GetCore(), userService, backendConfigurationPnDbContext,
+            itemsPlanningPnDbContext, backendConfigurationLocalizationService, _bus).ConfigureAwait(false);
 
         return new OperationResult(result.Success,
-            _backendConfigurationLocalizationService.GetString(result.Message));
+            backendConfigurationLocalizationService.GetString(result.Message));
     }
 
     public async Task<OperationResult> Delete(int id)
@@ -210,7 +193,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         try
         {
             // find property and all links
-            var property = await _backendConfigurationPnDbContext.Properties
+            var property = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.Id == id)
                 .Include(x => x.SelectedLanguages)
                 .Include(x => x.SelectedLanguages)
@@ -223,56 +206,38 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
             if (property == null)
             {
                 return new OperationResult(false,
-                    _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
+                    backendConfigurationLocalizationService.GetString("PropertyNotFound"));
             }
 
             // delete item planning tag
-            var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+            var planningTag = await itemsPlanningPnDbContext.PlanningTags
                 .Where(x => x.Id == property.ItemPlanningTagId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
             if (planningTag != null)
             {
-                planningTag.UpdatedByUserId = _userService.UserId;
-                await planningTag.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                planningTag.UpdatedByUserId = userService.UserId;
+                await planningTag.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             // retract eforms
             if (property.WorkorderEnable)
             {
-                /*var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "01. New task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
-                var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "02. Ongoing task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
-                var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "03. Completed task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();*/
-
-                await WorkOrderHelper.RetractEform(property.PropertyWorkers, true, core, _userService.UserId,
-                    _backendConfigurationPnDbContext).ConfigureAwait(false);
-                await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId,
-                    _backendConfigurationPnDbContext).ConfigureAwait(false);
-                await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId,
-                    _backendConfigurationPnDbContext).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(property.PropertyWorkers, true, core, userService.UserId,
+                    backendConfigurationPnDbContext).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, userService.UserId,
+                    backendConfigurationPnDbContext).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, userService.UserId,
+                    backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             // delete property workers
             foreach (var propertyWorker in property.PropertyWorkers)
             {
-                propertyWorker.UpdatedByUserId = _userService.UserId;
-                await propertyWorker.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                propertyWorker.UpdatedByUserId = userService.UserId;
+                await propertyWorker.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             // delete area properties
@@ -297,7 +262,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                 }
 
                 // get areaRules and select all linked entity for delete
-                var areaRules = await _backendConfigurationPnDbContext.AreaRules
+                var areaRules = await backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.PropertyId == areaProperty.PropertyId)
                     .Where(x => x.AreaId == areaProperty.AreaId)
                     .Include(x => x.Area)
@@ -337,8 +302,8 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                     foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x =>
                                  x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
-                        areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                        await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext)
+                        areaRuleAreaRuleTranslation.UpdatedByUserId = userService.UserId;
+                        await areaRuleAreaRuleTranslation.Delete(backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                     }
 
@@ -349,13 +314,13 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                         foreach (var planningSite in areaRulePlanning.PlanningSites
                                      .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
-                            planningSite.UpdatedByUserId = _userService.UserId;
-                            await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            planningSite.UpdatedByUserId = userService.UserId;
+                            await planningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         if (areaRulePlanning.ItemPlanningId != 0)
                         {
-                            var planning = await _itemsPlanningPnDbContext.Plannings
+                            var planning = await itemsPlanningPnDbContext.Plannings
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
                                 .Include(x => x.NameTranslations)
@@ -365,21 +330,21 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                                 foreach (var translation in planning.NameTranslations
                                              .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
-                                    translation.UpdatedByUserId = _userService.UserId;
-                                    await translation.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    translation.UpdatedByUserId = userService.UserId;
+                                    await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                                 }
 
-                                planning.UpdatedByUserId = _userService.UserId;
-                                await planning.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                planning.UpdatedByUserId = userService.UserId;
+                                await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
                                     .Where(x => x.PlanningId == planning.Id)
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .ToListAsync().ConfigureAwait(false);
                                 foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
                                 {
-                                    planningCaseSite.UpdatedByUserId = _userService.UserId;
-                                    await planningCaseSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    planningCaseSite.UpdatedByUserId = userService.UserId;
+                                    await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                                     if (planningCaseSite.MicrotingSdkCaseId != 0)
                                     {
                                         var result =
@@ -403,13 +368,13 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                             }
                         }
 
-                        areaRulePlanning.UpdatedByUserId = _userService.UserId;
-                        await areaRulePlanning.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        areaRulePlanning.UpdatedByUserId = userService.UserId;
+                        await areaRulePlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     // delete area rule
-                    areaRule.UpdatedByUserId = _userService.UserId;
-                    await areaRule.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    areaRule.UpdatedByUserId = userService.UserId;
+                    await areaRule.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete entity select group. only for type 3(tail bite and stables)
@@ -425,15 +390,15 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                         .ConfigureAwait(false);
                 }
 
-                areaProperty.UpdatedByUserId = _userService.UserId;
-                await areaProperty.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                areaProperty.UpdatedByUserId = userService.UserId;
+                await areaProperty.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             // delete selected languages
             foreach (var selectedLanguage in property.SelectedLanguages)
             {
-                selectedLanguage.UpdatedByUserId = _userService.UserId;
-                await selectedLanguage.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                selectedLanguage.UpdatedByUserId = userService.UserId;
+                await selectedLanguage.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             // delete property folder
@@ -457,7 +422,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
             }
 
             // delete linked files
-            var propertyFiles = await _backendConfigurationPnDbContext.PropertyFiles
+            var propertyFiles = await backendConfigurationPnDbContext.PropertyFiles
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == property.Id)
                 .Include(x => x.File)
@@ -468,20 +433,20 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
                 // delete tags linked to file
                 foreach (var fileFileTag in propertyFile.File.FileTags)
                 {
-                    fileFileTag.UpdatedByUserId = _userService.UserId;
-                    await fileFileTag.Delete(_backendConfigurationPnDbContext);
+                    fileFileTag.UpdatedByUserId = userService.UserId;
+                    await fileFileTag.Delete(backendConfigurationPnDbContext);
                 }
 
-                propertyFile.File.UpdatedByUserId = _userService.UserId;
-                await propertyFile.File.Delete(_backendConfigurationPnDbContext);
+                propertyFile.File.UpdatedByUserId = userService.UserId;
+                await propertyFile.File.Delete(backendConfigurationPnDbContext);
 
-                propertyFile.UpdatedByUserId = _userService.UserId;
-                await propertyFile.Delete(_backendConfigurationPnDbContext);
+                propertyFile.UpdatedByUserId = userService.UserId;
+                await propertyFile.Delete(backendConfigurationPnDbContext);
             }
 
             // delete property
-            property.UpdatedByUserId = _userService.UserId;
-            await property.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            property.UpdatedByUserId = userService.UserId;
+            await property.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             if (property.EntitySelectListAreas != null)
             {
@@ -498,14 +463,15 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
             }
 
             return new OperationResult(true,
-                _backendConfigurationLocalizationService.GetString("SuccessfullyDeleteProperties"));
+                backendConfigurationLocalizationService.GetString("SuccessfullyDeleteProperties"));
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
-                $"{_backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties")}: {e.Message}");
+                $"{backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties")}: {e.Message}");
         }
     }
 
@@ -513,7 +479,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var properties = await _backendConfigurationPnDbContext.Properties
+            var properties = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new CommonDictionaryModel
                 {
@@ -525,10 +491,11 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception ex)
         {
-            Log.LogException(ex.Message);
-            Log.LogException(ex.StackTrace);
+            SentrySdk.CaptureException(ex);
+            logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false,
-                $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
+                $"{backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
         }
     }
 
@@ -551,6 +518,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             return new OperationDataResult<ChrResult>(false, e.Message);
         }
     }
@@ -559,11 +527,11 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var userLanguage = await _userService.GetCurrentUserLanguage();
+            var userLanguage = await userService.GetCurrentUserLanguage();
 
-            var folderIds = await _backendConfigurationPnDbContext.ProperyAreaFolders
+            var folderIds = await backendConfigurationPnDbContext.ProperyAreaFolders
                 .Where(x => x.AreaProperty.PropertyId == propertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.FolderId)
@@ -586,6 +554,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -594,11 +565,11 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var userLanguage = await _userService.GetCurrentUserLanguage();
+            var userLanguage = await userService.GetCurrentUserLanguage();
 
-            var folderIds = await _backendConfigurationPnDbContext.ProperyAreaFolders
+            var folderIds = await backendConfigurationPnDbContext.ProperyAreaFolders
                 .Where(x => propertyIds.Contains(x.AreaProperty.PropertyId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.FolderId)
@@ -621,6 +592,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -629,18 +603,18 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var userLanguage = await _userService.GetCurrentUserLanguage();
+            var userLanguage = await userService.GetCurrentUserLanguage();
 
-            var folderIds = await _backendConfigurationPnDbContext.Properties
+            var folderIds = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.Id == propertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.FolderId.HasValue)
                 .Select(x => x.FolderId.Value)
                 .ToListAsync();
 
-            folderIds.AddRange(await _backendConfigurationPnDbContext.ProperyAreaFolders
+            folderIds.AddRange(await backendConfigurationPnDbContext.ProperyAreaFolders
                 .Where(x => x.AreaProperty.PropertyId == propertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.FolderId)
@@ -662,6 +636,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
     }
@@ -670,18 +647,18 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var userLanguage = await _userService.GetCurrentUserLanguage();
+            var userLanguage = await userService.GetCurrentUserLanguage();
 
-            var folderIds = await _backendConfigurationPnDbContext.Properties
+            var folderIds = await backendConfigurationPnDbContext.Properties
                 .Where(x => propertyIds.Contains(x.Id))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.FolderId.HasValue)
                 .Select(x => x.FolderId.Value)
                 .ToListAsync();
 
-            folderIds.AddRange(await _backendConfigurationPnDbContext.ProperyAreaFolders
+            folderIds.AddRange(await backendConfigurationPnDbContext.ProperyAreaFolders
                 .Where(x => propertyIds.Contains(x.AreaProperty.PropertyId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.FolderId)
@@ -702,6 +679,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
         }
     }
@@ -710,15 +690,15 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var currentUser = await _userService.GetCurrentUserAsync();
+            var currentUser = await userService.GetCurrentUserAsync();
 
             var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x =>
                 x.Name == currentUser.FirstName + " " + currentUser.LastName
                 && x.WorkflowState != Constants.WorkflowStates.Removed);
 
-            var query = _backendConfigurationPnDbContext.PropertyWorkers
+            var query = backendConfigurationPnDbContext.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (propertyId != null)
@@ -750,6 +730,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -758,10 +741,10 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            var query =  _backendConfigurationPnDbContext.PropertyWorkers
+            var query = backendConfigurationPnDbContext.PropertyWorkers
                 //.Where(x => propertyIds.Contains(x.PropertyId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
@@ -788,6 +771,9 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
         }
     }
@@ -819,6 +805,7 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
 
         return propertyFolderModel;
     }
+
     private static List<CommonDictionaryModel> MapFolder(PropertyFolderModel folder, string rootFolderName = "")
     {
         var result = new List<CommonDictionaryModel>();

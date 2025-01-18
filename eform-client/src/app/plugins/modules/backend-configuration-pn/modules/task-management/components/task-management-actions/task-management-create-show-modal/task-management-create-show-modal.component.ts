@@ -93,7 +93,7 @@ export class TaskManagementCreateShowModalComponent
           propertyId: workOrderCase.propertyId,
           areaName: workOrderCase.areaName,
           // assignedTo: workOrderCase.assignedSiteId,
-          descriptionTask: workOrderCase.description,
+          descriptionTask: workOrderCase.description.replace(/<br\s*\/?>/gi, '\n'),
           priority: workOrderCase.priority,
           caseStatusEnum: workOrderCase.caseStatusEnum,
         },

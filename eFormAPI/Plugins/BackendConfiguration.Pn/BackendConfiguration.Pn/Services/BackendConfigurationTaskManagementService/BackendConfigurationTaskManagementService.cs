@@ -27,7 +27,9 @@ using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
 using ImageMagick;
+using Microsoft.Extensions.Logging;
 using Rebus.Bus;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
 
@@ -48,26 +50,16 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
-public class BackendConfigurationTaskManagementService : IBackendConfigurationTaskManagementService
+public class BackendConfigurationTaskManagementService(
+    IBackendConfigurationLocalizationService localizationService,
+    IEFormCoreService coreHelper,
+    IUserService userService,
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    IRebusService rebusService,
+    ILogger<BackendConfigurationTaskManagementService> logger)
+    : IBackendConfigurationTaskManagementService
 {
-    private readonly IEFormCoreService _coreHelper;
-    private readonly IBackendConfigurationLocalizationService _localizationService;
-    private readonly IUserService _userService;
-
-    private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    private readonly IBus _bus;
-
-    public BackendConfigurationTaskManagementService(
-        IBackendConfigurationLocalizationService localizationService,
-        IEFormCoreService coreHelper, IUserService userService,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
-    {
-        _localizationService = localizationService;
-        _coreHelper = coreHelper;
-        _userService = userService;
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        _bus = rebusService.GetBus();
-    }
+    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<List<WorkorderCaseModel>> Index(TaskManagementRequestModel filtersModel)
     {
@@ -75,10 +67,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         {
             Thread.Sleep(3000);
         }
+
         try
         {
-            var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();
-            var query = _backendConfigurationPnDbContext.WorkorderCases
+            var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
+            var query = backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -97,12 +90,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 query = query.Where(x => filtersModel.Filters.Statuses.Contains((int)x.CaseStatusesEnum));
 
             }
-            // else
-            // {
-            //     query = query
-            //         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-            //         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
-            // }
 
             if (!string.IsNullOrEmpty(filtersModel.Filters.AreaName))
             {
@@ -116,9 +103,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             if (filtersModel.Filters.Priority != null)
             {
-                query = filtersModel.Filters.Priority == 3 ?
-                    query.Where(x => x.Priority == null || x.Priority == "3") :
-                    query.Where(x => x.Priority == filtersModel.Filters.Priority.ToString());
+                query = filtersModel.Filters.Priority == 3
+                    ? query.Where(x => x.Priority == null || x.Priority == "3")
+                    : query.Where(x => x.Priority == filtersModel.Filters.Priority.ToString());
             }
 
             if (filtersModel.Filters.DateFrom.HasValue && filtersModel.Filters.DateTo.HasValue)
@@ -131,7 +118,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             if (filtersModel.Filters.LastAssignedTo.HasValue && filtersModel.Filters.LastAssignedTo.Value != 0)
             {
-                var core = await _coreHelper.GetCore().ConfigureAwait(false);
+                var core = await coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var siteName = await sdkDbContext.Sites
                     .Where(x => x.Id == filtersModel.Filters.LastAssignedTo.Value)
@@ -147,7 +134,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             {
                 "PropertyName"
             };
-            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel.Pagination, new List<string>(), excludeSort);
+            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel.Pagination, new List<string>(),
+                excludeSort);
 
             var workOrderCaseFromDb = await query
                 .Select(x => new WorkorderCaseModel
@@ -160,19 +148,22 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     Status = x.CaseStatusesEnum.ToString(),
                     Description = x.Description.Replace("\n", "<br />"),
                     PropertyName = x.PropertyWorker.Property.Name,
-                    LastUpdateDate = x.UpdatedAt != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)x.UpdatedAt, timeZoneInfo) : null,
-                    //x.CaseId,
+                    LastUpdateDate = x.UpdatedAt != null
+                        ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)x.UpdatedAt, timeZoneInfo)
+                        : null,
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
-                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
+                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 :
+                        int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
                 })
                 .ToListAsync().ConfigureAwait(false);
 
             if (excludeSort.Contains(filtersModel.Pagination.Sort))
             {
                 workOrderCaseFromDb = QueryHelper
-                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel.Pagination, new List<string>())
+                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel.Pagination,
+                        new List<string>())
                     .ToList();
             }
 
@@ -180,8 +171,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             throw;
         }
     }
@@ -190,9 +182,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var task = await _backendConfigurationPnDbContext.WorkorderCases
+            var task = await backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == workOrderCaseId)
                 .Include(x => x.PropertyWorker)
@@ -211,12 +203,14 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             if (task == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
-                    _localizationService.GetString("TaskNotFound"));
+                    localizationService.GetString("TaskNotFound"));
             }
 
-            var uploadIds = await _backendConfigurationPnDbContext.WorkorderCaseImages
+            var uploadIds = await backendConfigurationPnDbContext.WorkorderCaseImages
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(task.ParentWorkorderCaseId != null ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId : x => x.WorkorderCaseId == task.Id)
+                .Where(task.ParentWorkorderCaseId != null
+                    ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId
+                    : x => x.WorkorderCaseId == task.Id)
                 .Select(x => x.UploadedDataId)
                 .ToListAsync().ConfigureAwait(false);
 
@@ -252,10 +246,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<WorkOrderCaseReadModel>(false,
-                $"{_localizationService.GetString("ErrorWhileReadTask")}: {e.Message}");
+                $"{localizationService.GetString("ErrorWhileReadTask")}: {e.Message}");
         }
     }
 
@@ -263,9 +258,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var entityListId = await _backendConfigurationPnDbContext.Properties
+            var entityListId = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == propertyId)
                 .Select(x => x.EntitySelectListAreas)
@@ -273,7 +268,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             if (entityListId == null)
             {
                 return new OperationDataResult<List<string>>(false,
-                    _localizationService.GetString("PropertyNotFoundOrEntityListNotCreated"));
+                    localizationService.GetString("PropertyNotFoundOrEntityListNotCreated"));
             }
 
             var items = await sdkDbContext.EntityItems
@@ -286,19 +281,20 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationDataResult<List<string>>(false,
-                $"{_localizationService.GetString("ErrorWhileReadEntityList")}: {e.Message}");
+                $"{localizationService.GetString("ErrorWhileReadEntityList")}: {e.Message}");
         }
     }
 
     public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
         try
         {
-            var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
+            var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == workOrderCaseId)
                 .Include(x => x.PropertyWorker)
@@ -307,48 +303,51 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             if (workOrderCase == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
-                    _localizationService.GetString("TaskNotFound"));
+                    localizationService.GetString("TaskNotFound"));
             }
 
             if (workOrderCase.CaseId != 0)
             {
-                try { await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false); }
+                try
+                {
+                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
+                }
                 catch (Exception e)
                 {
-                    Log.LogException(e.Message);
-                    Log.LogException(e.StackTrace);
+                    SentrySdk.CaptureException(e);
+                    logger.LogError(e.Message);
+                    logger.LogTrace(e.StackTrace);
                 }
-                // await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
             }
 
-            await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-            var allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
+            var allChildTasks = await backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
                 .ToListAsync().ConfigureAwait(false);
 
             foreach (var childTask in allChildTasks)
             {
-                childTask.UpdatedByUserId = _userService.UserId;
+                childTask.UpdatedByUserId = userService.UserId;
 
                 if (childTask.CaseId != 0)
                 {
                     await core.CaseDelete(childTask.CaseId).ConfigureAwait(false);
                 }
 
-                await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await childTask.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             if (workOrderCase.ParentWorkorderCaseId != null)
             {
-                var parentTask = await _backendConfigurationPnDbContext.WorkorderCases
+                var parentTask = await backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.Id == workOrderCase.ParentWorkorderCaseId)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (parentTask != null)
                 {
-                    parentTask.UpdatedByUserId = _userService.UserId;
-                    await parentTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    parentTask.UpdatedByUserId = userService.UserId;
+                    await parentTask.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     if (parentTask.CaseId != 0)
                     {
@@ -358,19 +357,19 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         }
                         catch (Exception e)
                         {
-                            Log.LogException(e.Message);
-                            Log.LogException(e.StackTrace);
+                            SentrySdk.CaptureException(e);
+                            logger.LogError(e.Message);
+                            logger.LogTrace(e.StackTrace);
                         }
                     }
-                    // await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
 
-                    allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
+                    allChildTasks = await backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.ParentWorkorderCaseId == parentTask.Id)
                         .ToListAsync().ConfigureAwait(false);
 
                     foreach (var childTask in allChildTasks)
                     {
-                        childTask.UpdatedByUserId = _userService.UserId;
+                        childTask.UpdatedByUserId = userService.UserId;
 
                         if (childTask.CaseId != 0)
                         {
@@ -380,24 +379,26 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                             }
                             catch (Exception e)
                             {
-                                Log.LogException(e.Message);
-                                Log.LogException(e.StackTrace);
+                                SentrySdk.CaptureException(e);
+                                logger.LogError(e.Message);
+                                logger.LogTrace(e.StackTrace);
                             }
                         }
 
-                        await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await childTask.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
             }
 
-            return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+            return new OperationResult(true, localizationService.GetString("TaskDeletedSuccessful"));
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
-                $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
+                $"{localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
         }
     }
 
@@ -405,9 +406,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var property = await _backendConfigurationPnDbContext.Properties
+            var property = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == createModel.PropertyId)
                 .Include(x => x.PropertyWorkers)
@@ -415,7 +416,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             if (property == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
-                    _localizationService.GetString("PropertyNotFound"));
+                    localizationService.GetString("PropertyNotFound"));
             }
 
             var propertyWorkers = property.PropertyWorkers
@@ -436,7 +437,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
-                CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
+                CreatedByName = await userService.GetCurrentUserFullName().ConfigureAwait(false),
                 CreatedByText = "",
                 CaseStatusesEnum = createModel.CaseStatusEnum,
                 Description = createModel.Description,
@@ -446,7 +447,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 AssignedToSdkSiteId = site.Id,
                 Priority = createModel.Priority.ToString()
             };
-            await newWorkOrderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var picturesOfTasks = new List<string>();
             var hasImages = false;
@@ -525,8 +526,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         UploadedDataId = uploadData.Id
                     };
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
-                    await workOrderCaseImage.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await workOrderCaseImage.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
+
                 hasImages = true;
             }
 
@@ -540,61 +542,59 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Select(x => int.Parse(x.MicrotingUid))
                 .FirstAsync().ConfigureAwait(false);
 
-            // var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
-            //                   $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
-            //                   $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
-            //                   $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
-            //                   $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
-            //                   $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-            //                   $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
             var priorityText = "";
             var textStatus = "";
             switch (newWorkOrderCase.CaseStatusesEnum)
             {
                 case CaseStatusesEnum.Ongoing:
-                    textStatus = _localizationService.GetString("Ongoing");
+                    textStatus = localizationService.GetString("Ongoing");
                     break;
                 case CaseStatusesEnum.Completed:
-                    textStatus = _localizationService.GetString("Completed");
+                    textStatus = localizationService.GetString("Completed");
                     break;
                 case CaseStatusesEnum.Ordered:
-                    textStatus = _localizationService.GetString("Ordered");
+                    textStatus = localizationService.GetString("Ordered");
                     break;
                 case CaseStatusesEnum.Awaiting:
-                    textStatus = _localizationService.GetString("Awaiting");
+                    textStatus = localizationService.GetString("Awaiting");
                     break;
             }
 
             switch (createModel.Priority)
             {
                 case 1:
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Urgent")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>";
                     break;
                 case 2:
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("High")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>";
                     break;
                 case 3:
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Medium")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>";
                     break;
                 case 4:
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Low")}<br>";
+                    priorityText =
+                        $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>";
                     break;
             }
-            var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
-            description += $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+
+            var description = $"<strong>{localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
+            description += $"<strong>{localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                            (!string.IsNullOrEmpty(newWorkOrderCase.SelectedAreaName)
-                               ? $"<strong>{_localizationService.GetString("Area")}:</strong> {newWorkOrderCase.SelectedAreaName}<br>"
+                               ? $"<strong>{localizationService.GetString("Area")}:</strong> {newWorkOrderCase.SelectedAreaName}<br>"
                                : "") +
-                           $"<strong>{_localizationService.GetString("Description")}:</strong> {newWorkOrderCase.Description}<br>" +
+                           $"<strong>{localizationService.GetString("Description")}:</strong> {newWorkOrderCase.Description}<br>" +
                            priorityText +
-                           $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByName}<br>" +
+                           $"<strong>{localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByName}<br>" +
                            (!string.IsNullOrEmpty(newWorkOrderCase.CreatedByText)
-                               ? $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByText}<br>"
+                               ? $"<strong>{localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByText}<br>"
                                : "") +
-                           $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {newWorkOrderCase.CaseInitiated: dd.MM.yyyy}<br><br>" +
-                           $"<strong>{_localizationService.GetString("LastUpdatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
-                           $"<strong>{_localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-                           $"<strong>{_localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+                           $"<strong>{localizationService.GetString("CreatedDate")}:</strong> {newWorkOrderCase.CaseInitiated: dd.MM.yyyy}<br><br>" +
+                           $"<strong>{localizationService.GetString("LastUpdatedBy")}:</strong> {await userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
+                           $"<strong>{localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
+                           $"<strong>{localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
 
             var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName)
                 ? $"{property.Name}; {createModel.AreaName}"
@@ -623,30 +623,31 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     pushMessageBody,
                     pushMessageTitle,
                     createModel.AreaName,
-                    _userService.UserId,
+                    userService.UserId,
                     picturesOfTasks,
                     site,
                     property.Name,
                     (int)property.FolderIdForOngoingTasks!,
-                    (int) property.FolderIdForTasks!,
-                    (int) property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
+                    (int)property.FolderIdForTasks!,
+                    (int)property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
             }
 
-            return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
+            return new OperationResult(true, localizationService.GetString("TaskCreatedSuccessful"));
         }
         catch (Exception e)
         {
-            Log.LogException(e.Message);
-            Log.LogException(e.StackTrace);
+            SentrySdk.CaptureException(e);
+            logger.LogError(e.Message);
+            logger.LogTrace(e.StackTrace);
             return new OperationResult(false,
-                $"{_localizationService.GetString("ErrorWhileCreateTask")}: {e.Message}");
+                $"{localizationService.GetString("ErrorWhileCreateTask")}: {e.Message}");
         }
     }
 
     public async Task<OperationResult> UpdateTask(WorkOrderCaseUpdateModel updateModel)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
-        return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, _localizationService, core,
-            _userService, _backendConfigurationPnDbContext, _bus, true);
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, localizationService, core,
+            userService, backendConfigurationPnDbContext, _bus, true);
     }
 }

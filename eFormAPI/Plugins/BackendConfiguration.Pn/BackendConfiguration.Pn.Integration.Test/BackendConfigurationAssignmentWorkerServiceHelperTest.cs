@@ -5,6 +5,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
@@ -44,7 +45,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -95,7 +96,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -125,6 +126,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -175,7 +177,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -184,7 +186,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -214,6 +216,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -265,7 +268,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -274,7 +277,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -305,6 +308,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
     {
         // Arrange
         var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
 
         var propertyCreateModel = new PropertyCreateModel
         {
@@ -356,7 +360,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, logger);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -366,7 +370,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result);
+        Assert.That(result, Is.Not.Null);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
         Assert.That(units.Count, Is.EqualTo(3));
@@ -462,7 +466,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -576,7 +580,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -697,7 +701,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var sdkCases = await MicrotingDbContext!.Cases.AsNoTracking().ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));
@@ -859,7 +863,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
         var entityItems = await MicrotingDbContext!.EntityItems.AsNoTracking().ToListAsync();
 
-        Assert.NotNull(result2);
+        Assert.That(result2, Is.Not.Null);
         Assert.That(result2.Success, Is.True);
         Assert.That(sites.Count, Is.EqualTo(3));
         Assert.That(workers.Count, Is.EqualTo(3));

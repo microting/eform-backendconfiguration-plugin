@@ -18,6 +18,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Sentry;
+
 namespace BackendConfiguration.Pn.Controllers;
 
 using System;
@@ -133,6 +135,7 @@ public class TaskManagementController : Controller
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Response.ContentLength = e.Message.Length;
             Response.ContentType = "text/plain";
             Response.StatusCode = 400;
@@ -171,6 +174,7 @@ public class TaskManagementController : Controller
         }
         catch (Exception e)
         {
+            SentrySdk.CaptureException(e);
             Response.ContentLength = e.Message.Length;
             Response.ContentType = "text/plain";
             Response.StatusCode = 400;

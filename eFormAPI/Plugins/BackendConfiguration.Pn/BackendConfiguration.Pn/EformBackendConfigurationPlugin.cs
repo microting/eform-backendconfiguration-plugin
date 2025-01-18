@@ -23,10 +23,17 @@ SOFTWARE.
 */
 
 
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
+using Microting.eForm.Infrastructure.Models;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using QuestPDF.Infrastructure;
 using Sentry;
 
@@ -192,9 +199,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         }
 
 
-        var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
-        var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
-        var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();
+        var backendConfigurationPnDbContext = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
+        // var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
+        // var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();
         // seed eforms
         var assembly = Assembly.GetExecutingAssembly();
         foreach (var (eformName, eform) in eforms)
@@ -332,64 +339,216 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             }
         }
 
-        var powerToolCheckList = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "Elvætktøj");
-        if (powerToolCheckList != null)
+        var priorityFieldsToFix = await sdkDbContext.Fields.Where(x => x.OriginalId == "376935").ToListAsync();
+        foreach (var priorityFieldToFix in priorityFieldsToFix)
         {
-            powerToolCheckList.Text = "Elværktøj";
-            await powerToolCheckList.Update(sdkDbContext);
-        }
-
-        var cls = await sdkDbContext.CheckLists.Where(x =>
-            x.OriginalId == "142719" && x.WorkflowState != Microting.eForm.Infrastructure.Constants
-                .Constants.WorkflowStates.Removed).ToListAsync();
-        foreach (var checkList in cls)
-        {
-            await checkList.Delete(sdkDbContext);
-            var clts = await sdkDbContext.CheckListTranslations.Where(x =>
-                x.CheckListId == checkList.Id).ToListAsync();
-
-            foreach (var clt in clts)
+            if (priorityFieldToFix.Mandatory == 0)
             {
-                await clt.Delete(sdkDbContext);
+                priorityFieldToFix.Mandatory = 1;
+                await priorityFieldToFix.Update(sdkDbContext);
+                SentrySdk.CaptureMessage("Field 376935 was fixed!");
             }
         }
 
-        var fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "VÃ¦rktÃ¸jshus og hÃ¥ndtag OK").ToListAsync();
-        foreach (var fieldLabel in fieldLabels)
+        var fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375727");
+        if (fieldToFix is { Mandatory: 0 })
         {
-            fieldLabel.Text = "Værktøjshus og håndtag OK";
-            await fieldLabel.Update(sdkDbContext);
-        }
+            fieldToFix.Mandatory = 1;
+            await fieldToFix.Update(sdkDbContext);
+            SentrySdk.CaptureMessage("Field 375727 was fixed!");
+            var localizationService = serviceProvider.GetRequiredService<IBackendConfigurationLocalizationService>();
 
-        fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "KÃ¦der OK").ToListAsync();
-        foreach (var fieldLabel in fieldLabels)
-        {
-            fieldLabel.Text = "Kæder OK";
-            await fieldLabel.Update(sdkDbContext);
-        }
-
-        // Seed areas
-        foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
-                     .Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id))
-                     .Where(x => x.IsDisabled == false))
-        {
-            await newArea.Create(context).ConfigureAwait(false);
-        }
-
-        var tailBitPlanningTag = await itemsPlanningContext.PlanningTags.Where(x => x.Name == "Halebid").FirstOrDefaultAsync();
-
-        if (tailBitPlanningTag != null)
-        {
-            var plannings = await itemsPlanningContext.Plannings
-                .Where(x => x.RelatedEFormName.Contains("Halebid"))
-                .Where(x => x.ReportGroupPlanningTagId == null)
+            // find all propertyworkers where TaskManagementEnabled is true and retract the eform and deploy it again. Do the same for all tasks assigned to the propertyworker
+            var propertiesWithWorkOrderEnabled = await backendConfigurationPnDbContext.Properties
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.WorkorderEnable == true)
+                .Include(property => property.PropertyWorkers)
                 .ToListAsync();
 
-            foreach (var planning in plannings)
+            var eformId = await sdkDbContext.CheckLists
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.OriginalId == "142663new2")
+                .Select(x => x.Id)
+                .FirstAsync().ConfigureAwait(false);
+            foreach (var property in propertiesWithWorkOrderEnabled)
             {
-                planning.ReportGroupPlanningTagId = tailBitPlanningTag.Id;
-                await planning.Update(itemsPlanningContext);
+                Console.WriteLine($"Handling property {property.Name}");
+                var propertyWorkers = property.PropertyWorkers
+                    .Where(x => x.TaskManagementEnabled == true)
+                    .Where(x => x.WorkflowState !=
+                                Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                    .ToList();
+                await WorkOrderHelper
+                    .RetractEform(propertyWorkers, true, core,null, backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                foreach (var propertyWorker in propertyWorkers)
+                {
+                    var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
+                    Console.WriteLine($"Handling property {property.Name} and propertyWorker {propertyWorker.WorkerId} with the site.name {site.Name}");
+                    var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+                    var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
+
+                    var deviceUsersGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListDeviceUsers)
+                        .ConfigureAwait(false);
+
+                    var areasGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListAreas)
+                        .ConfigureAwait(false);
+
+                    //if (localizationService != null)
+                    //{
+                    // get the localization service
+                    Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
+                    string description = "<strong>"+localizationService.GetString("Location") + "</strong>: " + property.Name;
+                    string newTask = localizationService.GetString("NewTask");
+                    //}
+
+                    mainElement.Repeated = 0;
+                    mainElement.ElementList[0].QuickSyncEnabled = true;
+                    mainElement.ElementList[0].Description.InderValue = description;
+                    mainElement.ElementList[0].Label = newTask;
+                    mainElement.Label = newTask;
+                    mainElement.EnableQuickSync = true;
+                    if (property.FolderIdForNewTasks != null)
+                    {
+                        mainElement.CheckListFolderName = await sdkDbContext.Folders
+                            .Where(x => x.Id == property.FolderIdForNewTasks)
+                            .Select(x => x.MicrotingUid.ToString())
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                    }
+
+                    if (!string.IsNullOrEmpty(description))
+                    {
+                        ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+                        ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
+                    }
+
+                    //if (areasGroupUid != null && deviceUsersGroupId != null)
+                    //{
+                        ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[2]).Source = int.Parse(areasGroup.MicrotingUid);
+                        ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Source =
+                            int.Parse(deviceUsersGroup.MicrotingUid);
+                    //}
+                    // else if (areasGroupUid == null && deviceUsersGroupId != null)
+                    // {
+                    //     ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+                    //         (int)deviceUsersGroupId;
+                    // }
+
+                    mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                    mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                    var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
+                    await new WorkorderCase
+                    {
+                        CaseId = (int)caseId,
+                        PropertyWorkerId = propertyWorker.Id,
+                        CaseStatusesEnum = CaseStatusesEnum.NewTask,
+                        CreatedByUserId = 1,
+                        UpdatedByUserId = 1,
+                    }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
             }
+        }
+
+        fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375733");
+        if (fieldToFix is { Mandatory: 0 })
+        {
+            fieldToFix.Mandatory = 1;
+            await fieldToFix.Update(sdkDbContext);
+            SentrySdk.CaptureMessage("Field 375733 was fixed!");
+        }
+
+        fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375734");
+        if (fieldToFix is { Mandatory: 0 })
+        {
+            fieldToFix.Mandatory = 1;
+            await fieldToFix.Update(sdkDbContext);
+            SentrySdk.CaptureMessage("Field 375734 was fixed!");
+        }
+
+        var translations = new List<KeyValuePair<string, string>> {
+            new("da", "00. Overskredne opgaver"),
+            new("en-US", "00. Overdue tasks"),
+            new("de-DE", "00. Überschrittene Aufgaben"),
+            new("uk-UA", "00. Завдання, що прострочені"),
+            new("pl-PL", "00. Zaległe zadania"),
+            new("no-NO", "00. Forfalte oppgaver"),
+            new("sv-SE", "00. Försenade uppgifter"),
+            new("es-ES", "00. Tareas vencidas"),
+            new("fr-FR", "00. Tâches dépassées"),
+            new("it-IT", "00. Compiti superati"),
+            new("nl-NL", "00. Overschreden taken"),
+            new("pt-BR", "00. Tarefas excedidas"),
+            new("pt-PT", "00. Tarefas excedidas"),
+            new("fi-FI", "00. Ylitetyt tehtävät"),
+            new("tr-TR", "00. Aşılan görevler"),
+            new("et-ET", "00. Ületatud ülesanded"),
+            new("lv-LV", "00. Pārsniegtie uzdevumi"),
+            new("lt-LT", "00. Viršyti uždaviniai"),
+            new("ro-RO", "00. Sarcini depășite"),
+            new("bg-BG", "00. Превишени задачи"),
+            new("sk-SK", "00. Prekročené úlohy"),
+            new("sl-SL", "00. Presežene naloge"),
+            new("is-IS", "00. Yfirskredin verkefni"),
+            new("cs-CZ", "00. Překročené úkoly"),
+            new("hr-HR", "00. Prekoračeni zad")
+        };
+
+        var sdkLanguages = await sdkDbContext.Languages.ToListAsync();
+        // create a List of CommonTranslationsModel for each language
+        var commonTranslations = new List<CommonTranslationsModel>();
+        foreach (var translation in translations)
+        {
+            var language = sdkLanguages.FirstOrDefault(x => x.LanguageCode == translation.Key);
+            if (language != null)
+            {
+                commonTranslations.Add(new CommonTranslationsModel
+                {
+                    Name = translation.Value,
+                    LanguageId = language.Id,
+                    Description = "",
+                });
+            }
+        }
+
+        var currentProperties = await backendConfigurationPnDbContext.Properties
+            .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            .ToListAsync().ConfigureAwait(false);
+
+        foreach (var property in currentProperties)
+        {
+            try
+            {
+                // loop over each property and find the property.FolderId and see if it has any subfolders with the name "Exceeded tasks" if not create it calling core.FolderCreate with the parentId set to the property.FolderId
+                var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x => x.Id == property.FolderId);
+                if (folder != null)
+                {
+                    // join the table Folder with the FolderTranslations to find the "Exceeded tasks" folder with the parentId set to the property.FolderId
+                    var folderAndFolderTranslation = await sdkDbContext.Folders
+                        .Join(sdkDbContext.FolderTranslations,
+                            lookupFolder => lookupFolder.Id,
+                            folderTranslation => folderTranslation.FolderId,
+                            (lookupFolder, folderTranslation) => new {lookupFolder, folderTranslation})
+                        .Where(x => x.lookupFolder.ParentId == folder.Id && x.folderTranslation.Name == "00. Overdue tasks")
+                        .FirstOrDefaultAsync();
+                    if (folderAndFolderTranslation == null) // if the folder does not exist create it
+                    {
+                        await core.FolderCreate(commonTranslations, folder.Id).ConfigureAwait(false);
+                    }
+                }
+            } catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                SentrySdk.CaptureException(ex);
+            }
+
+        }
+
+        foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
+                     .Where(newArea => !backendConfigurationPnDbContext.Areas.Any(x => x.Id == newArea.Id))
+                     .Where(x => x.IsDisabled == false))
+        {
+            await newArea.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
     }
 
@@ -414,9 +573,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             // This option is recommended for client applications only. It ensures all threads use the same global scope.
             // If you're writing a background service of any kind, you should remove this.
             options.IsGlobalModeEnabled = true;
-
-            // This option will enable Sentry's tracing features. You still need to start transactions and spans.
-            options.EnableTracing = true;
         });
 
         string pattern = @"Database=(\d+)_eform-backend-configuration-plugin;";
@@ -463,6 +619,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<ItemsPlanningPnDbContext>(o =>
@@ -471,6 +628,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<TimePlanningPnDbContext>(o =>
@@ -479,6 +637,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<ChemicalsDbContext>(o =>
@@ -487,6 +646,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<CaseTemplatePnDbContext>(o =>
@@ -495,6 +655,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         services.AddDbContext<BaseDbContext>(
@@ -503,6 +664,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
+                builder.TranslateParameterizedCollectionsToConstants();
             }));
 
         var chemicalsContextFactory = new ChemicalsContextFactory();

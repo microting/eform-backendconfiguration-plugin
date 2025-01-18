@@ -19,7 +19,7 @@ import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
-import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAdmin, selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -116,7 +116,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
   constructor(

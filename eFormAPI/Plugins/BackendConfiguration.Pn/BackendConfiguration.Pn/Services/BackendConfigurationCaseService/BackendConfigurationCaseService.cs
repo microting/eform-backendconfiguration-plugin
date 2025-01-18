@@ -13,36 +13,25 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCaseService;
 
-public class BackendConfigurationCaseService : IBackendConfigurationCaseService
+public class BackendConfigurationCaseService(
+    ItemsPlanningPnDbContext dbContext,
+    ILogger<BackendConfigurationCaseService> logger,
+    IEFormCoreService coreHelper,
+    IBackendConfigurationLocalizationService localizationService,
+    IUserService userService)
+    : IBackendConfigurationCaseService
 {
-    private readonly ILogger<BackendConfigurationCaseService> _logger;
-    private readonly IBackendConfigurationLocalizationService _localizationService;
-    // private readonly IWordService _wordService;
-    // private readonly IPlanningExcelService _excelService;
-    private readonly IEFormCoreService _coreHelper;
-    // private readonly ICasePostBaseService _casePostBaseService;
-    private readonly ItemsPlanningPnDbContext _dbContext;
-    private readonly IUserService _userService;
-
-    public BackendConfigurationCaseService(ItemsPlanningPnDbContext dbContext, ILogger<BackendConfigurationCaseService> logger, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService localizationService, IUserService userService)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-        _coreHelper = coreHelper;
-        _localizationService = localizationService;
-        _userService = userService;
-    }
-
     public async Task<OperationResult> Update(ReplyRequest model)
     {
         var checkListValueList = new List<string>();
         var fieldValueList = new List<string>();
-        var core = await _coreHelper.GetCore();
-        var language = await _userService.GetCurrentUserLanguage();
-        var currentUser = await _userService.GetCurrentUserAsync();
+        var core = await coreHelper.GetCore();
+        var language = await userService.GetCurrentUserLanguage();
+        var currentUser = await userService.GetCurrentUserAsync();
         try
         {
             model.ElementList.ForEach(element =>
@@ -53,9 +42,10 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
         }
         catch (Exception ex)
         {
-            Log.LogException(ex.Message);
-            Log.LogException(ex.StackTrace);
-            return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
+            SentrySdk.CaptureException(ex);
+            logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
+            return new OperationResult(false, $"{localizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
         }
 
         try
@@ -76,17 +66,14 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
                     foundCase.DoneAtUserModifiable = newDoneAt;
                 }
 
-                // foundCase.SiteId = sdkDbContext.Sites
-                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                //     .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
                 foundCase.Status = 100;
                 if (model.SiteId != 0)
                 {
                     foundCase.SiteId = model.SiteId;
                 }
                 await foundCase.Update(sdkDbContext);
-                var planningCase = await _dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
-                var planningCaseSite = await _dbContext.PlanningCaseSites.FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id && x.Status == 100);
+                var planningCase = await dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
+                var planningCaseSite = await dbContext.PlanningCaseSites.FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id && x.Status == 100);
 
                 if (planningCaseSite == null)
                 {
@@ -99,41 +86,42 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
                         Status = 100,
                         MicrotingSdkSiteId = (int)foundCase.SiteId
                     };
-                    await planningCaseSite.Create(_dbContext);
+                    await planningCaseSite.Create(dbContext);
                 }
 
                 planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                 planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
-                await planningCaseSite.Update(_dbContext);
+                await planningCaseSite.Update(dbContext);
 
                 planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                 planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
-                await planningCase.Update(_dbContext);
+                await planningCase.Update(dbContext);
             }
             else
             {
-                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+                return new OperationResult(false, localizationService.GetString("CaseNotFound"));
             }
 
-            return new OperationResult(true, _localizationService.GetString("CaseHasBeenUpdated"));
+            return new OperationResult(true, localizationService.GetString("CaseHasBeenUpdated"));
         }
         catch (Exception ex)
         {
-            Log.LogException(ex.Message);
-            Log.LogException(ex.StackTrace);
-            return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
+            SentrySdk.CaptureException(ex);
+            logger.LogError(ex.Message);
+            logger.LogTrace(ex.StackTrace);
+            return new OperationResult(false, localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
         }
     }
 
     private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)
         {
-            var planning = _dbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
+            var planning = dbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
             var caseIds = new List<int>
             {
                 planningCaseSite.MicrotingSdkCaseId
             };
 
-            var core = await _coreHelper.GetCore();
+            var core = await coreHelper.GetCore();
             var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language);
 
             if (planning == null) return planningCaseSite;
@@ -157,8 +145,8 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
 
         private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, int caseId, Language language)
         {
-            var core = await _coreHelper.GetCore();
-            var planning = await _dbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+            var core = await coreHelper.GetCore();
+            var planning = await dbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
             var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
             var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 

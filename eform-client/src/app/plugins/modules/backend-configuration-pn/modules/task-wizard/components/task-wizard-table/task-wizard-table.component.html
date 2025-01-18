@@ -26,13 +26,15 @@
   </div>
 </ng-template>
 <ng-template #reportTagsTpl let-row>
-  <div class="d-flex flex-wrap align-items-center">
-    <mat-chip-listbox>
-      <mat-chip color="primary" (click)="onClickTag(row.tagReport)">
-        <span>{{ row.tagReport.name }}</span>
-      </mat-chip>
-    </mat-chip-listbox>
-  </div>
+  <ng-container *ngIf="row.tagReport !== null">
+    <div class="d-flex flex-wrap align-items-center">
+      <mat-chip-listbox>
+        <mat-chip color="primary" (click)="onClickTag(row.tagReport)">
+          <span>{{ row.tagReport.name }}</span>
+        </mat-chip>
+      </mat-chip-listbox>
+    </div>
+  </ng-container>
 </ng-template>
 
 <ng-template #startDateTpl let-row>

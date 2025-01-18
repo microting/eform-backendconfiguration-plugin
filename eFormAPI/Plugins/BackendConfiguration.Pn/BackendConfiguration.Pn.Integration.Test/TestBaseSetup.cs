@@ -35,7 +35,11 @@ public class TestBaseSetup
         optionsBuilder.UseMySql(
             connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin").Replace("bla", "root"),
             new MariaDbServerVersion(
-                new Version(10, 8)));
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
 
         var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
@@ -62,7 +66,11 @@ public class TestBaseSetup
         optionsBuilder.UseMySql(
             connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
             new MariaDbServerVersion(
-                new Version(10, 8)));
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
 
         var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
@@ -81,7 +89,11 @@ public class TestBaseSetup
         optionsBuilder.UseMySql(
             connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
             new MariaDbServerVersion(
-                new Version(10, 8)));
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
 
         var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
@@ -100,7 +112,11 @@ public class TestBaseSetup
         optionsBuilder.UseMySql(
             connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin").Replace("bla", "root"),
             new MariaDbServerVersion(
-                new Version(10, 8)));
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
 
         var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
@@ -116,9 +132,13 @@ public class TestBaseSetup
     {
         var dbContextOptionsBuilder = new DbContextOptionsBuilder();
 
-        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root"),
-            new MariaDbServerVersion(
-                new Version(10, 8)));
+        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root")
+            , new MariaDbServerVersion(
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
         var microtingDbContext = new MicrotingDbContext(dbContextOptionsBuilder.Options);
         var file = Path.Combine("SQL", "420_SDK.sql");
         var rawSql = File.ReadAllText(file);
