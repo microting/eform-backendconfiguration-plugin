@@ -8,219 +8,217 @@
                     (ngModelChange)="changeStatus($event)">
     {{ 'Status' | translate }}
   </mat-slide-toggle>
-  <ng-container *ngIf="copyModel.status === TaskWizardStatusesEnum.NotActive">
-    <div class="d-flex flex-row">
-      <mat-form-field class="p-3">
-        <mat-label>{{ 'Location' | translate }}</mat-label>
-        <mtx-select
-          [items]="properties"
-          [bindValue]="'id'"
-          [bindLabel]="'name'"
-          id="updateProperty"
-          [value]="model.propertyId"
-          (change)="changePropertyId($event)"
-          [clearable]="false"
-          [disabled]="true"
-          [readonly]="true"
-        />
-      </mat-form-field>
+  <div class="d-flex flex-row">
+    <mat-form-field class="p-3">
+      <mat-label>{{ 'Location' | translate }}</mat-label>
+      <mtx-select
+        [items]="properties"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+        id="updateProperty"
+        [value]="model.propertyId"
+        (change)="changePropertyId($event)"
+        [clearable]="false"
+        [disabled]="true"
+        [readonly]="true"
+      />
+    </mat-form-field>
 
-      <mat-form-field class="p-3">
-        <mat-label>{{ 'Report tag' | translate }}</mat-label>
-        <mtx-select
-          [items]="tags"
-          [bindValue]="'id'"
-          [bindLabel]="'name'"
-          id="updateTableTags"
-          [value]="model.itemPlanningTagId"
-          (change)="changePlanningTagId($event)"
-          [clearable]="true"
-          [multiple]="false"
-        />
-      </mat-form-field>
-      <div class="pt-6">
-        <button
-          matSuffix
-          mat-icon-button
-          color="primary"
-          id="planningManageTagsBtn1"
-          (click)="openTagsModal()"
-          matTooltip="{{ 'Manage tags' | translate }}"
-        >
-          <mat-icon>discount</mat-icon>
-        </button>
+    <mat-form-field class="p-3">
+      <mat-label>{{ 'Report tag' | translate }}</mat-label>
+      <mtx-select
+        [items]="tags"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+        id="updateTableTags"
+        [value]="model.itemPlanningTagId"
+        (change)="changePlanningTagId($event)"
+        [clearable]="true"
+        [multiple]="false"
+      />
+    </mat-form-field>
+    <div class="pt-6">
+      <button
+        matSuffix
+        mat-icon-button
+        color="primary"
+        id="planningManageTagsBtn1"
+        (click)="openTagsModal()"
+        matTooltip="{{ 'Manage tags' | translate }}"
+      >
+        <mat-icon>discount</mat-icon>
+      </button>
+    </div>
+  </div>
+  <div class="d-flex flex-row">
+    <div style="width: 450px" class="p-2">
+      <button
+        mat-icon-button
+        color="accent"
+        id="updateFolder"
+        (click)="openFoldersModal()"
+        style="margin-left: -10px"
+        [disabled]="!model.propertyId || model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+        [matTooltip]="(!model.propertyId ? 'Need to select property': 'Select folder') | translate"
+      >
+        <mat-icon>folder</mat-icon>
+      </button>
+      <span>{{selectedFolderName || ('Folder not selected' | translate)}}</span>
+    </div>
+  </div>
+
+  <div class="d-flex flex-row">
+    <mat-form-field class="p-3">
+      <mat-label>{{'Start from' | translate}}</mat-label>
+      <input
+        matInput
+        [matDatepicker]="picker"
+        [value]="model.startDate"
+        (dateChange)="updateStartDate($event)"
+        (dateInput)="updateStartDate($event)"
+        (click)="picker.open()"
+        id="updateStartFrom"
+        [disabled]="model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+      >
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field class="p-3">
+      <mat-label>{{ 'Tags' | translate }}</mat-label>
+      <mtx-select
+        [items]="tags"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+        id="updateTags"
+        [value]="model.tagIds"
+        (change)="changeTagIds($event)"
+        [clearable]="true"
+        [multiple]="true"
+      />
+    </mat-form-field>
+    <div class="pt-6">
+      <button
+        matSuffix
+        mat-icon-button
+        color="primary"
+        id="planningManageTagsBtn2"
+        (click)="openTagsModal()"
+        matTooltip="{{ 'Manage tags' | translate }}"
+      >
+        <mat-icon>discount</mat-icon>
+      </button>
+    </div>
+  </div>
+  <div class="d-flex flex-row">
+    <mat-form-field class="p-2">
+      <mat-label>{{ 'Repeat type' | translate }}</mat-label>
+      <mtx-select
+        [items]="repeatTypeArr"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+        id="updateRepeatType"
+        [value]="model.repeatType"
+        (change)="changeRepeatType($event)"
+        [clearable]="false"
+        [multiple]="false"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+      />
+    </mat-form-field>
+    <mat-form-field class="p-2" *ngIf="model.repeatType !== 0">
+      <mat-label>{{ 'Repeat every' | translate }}</mat-label>
+      <mtx-select
+        [items]="repeatTypeMass()"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+        id="updateRepeatEvery"
+        [value]="model.repeatEvery"
+        (change)="changeRepeatEvery($event)"
+        [clearable]="false"
+        [multiple]="false"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+      />
+    </mat-form-field>
+  </div>
+  <!--  <mat-form-field (click)="model.status === TaskWizardStatusesEnum.NotActive ? openFoldersModal() : null">
+      <mat-label>{{ 'Folder' | translate }}</mat-label>
+      <input
+        matInput
+        id="updateFolder"
+        [ngModel]="selectedFolderName"
+        [disabled]="true"
+      >
+    </mat-form-field>-->
+
+  <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
+    <ng-container *ngIf="i % 2 === 0">
+      <div class="d-flex flex-row">
+        <mat-form-field class="p-2">
+          <mat-label>{{'Task description' | translate}} ({{getLanguageName(languageModel.languageId)}})</mat-label>
+          <input
+            type="text"
+            id="updateName{{i}}"
+            matInput
+            [ngModel]="languageModel.name"
+            (ngModelChange)="updateName($event, i)"
+            [disabled]="model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+          >
+        </mat-form-field>
+        <mat-form-field *ngIf="model.translates[i + 1]" class="p-2">
+          <mat-label>{{'Task description' | translate}} ({{getLanguageName(model.translates[i + 1].languageId)}})</mat-label>
+          <input
+            type="text"
+            id="updateName{{i + 1}}"
+            matInput
+            [ngModel]="model.translates[i + 1].name"
+            (ngModelChange)="updateName($event, i + 1)"
+            [disabled]="model.status === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+          >
+        </mat-form-field>
       </div>
-    </div>
-    <div class="d-flex flex-row">
-      <div style="width: 450px" class="p-2">
-        <button
-          mat-icon-button
-          color="accent"
-          id="updateFolder"
-          (click)="openFoldersModal()"
-          style="margin-left: -10px"
-          [disabled]="!model.propertyId || model.status === TaskWizardStatusesEnum.Active"
-          [matTooltip]="(!model.propertyId ? 'Need to select property': 'Select folder') | translate"
-        >
-          <mat-icon>folder</mat-icon>
-        </button>
-        <span>{{selectedFolderName || ('Folder not selected' | translate)}}</span>
-      </div>
-    </div>
+      <!--    <mat-card-->
+      <!--      [class.mt-2]="!isFirst"-->
+      <!--      [class.mb-2]="isLast">-->
+      <!--      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>-->
+      <!--      <mat-card-content>-->
+      <!--        <mat-form-field>-->
+      <!--          <mat-label>{{'Task description' | translate}}</mat-label>-->
+      <!--          <input-->
+      <!--            type="text"-->
+      <!--            id="updateName{{i}}"-->
+      <!--            matInput-->
+      <!--            [ngModel]="languageModel.name"-->
+      <!--            (ngModelChange)="updateName($event, i)"-->
+      <!--            [disabled]="model.status === TaskWizardStatusesEnum.Active"-->
+      <!--          >-->
+      <!--        </mat-form-field>-->
+      <!--      </mat-card-content>-->
+      <!--    </mat-card>-->
 
-    <div class="d-flex flex-row">
-      <mat-form-field class="p-3">
-        <mat-label>{{'Start from' | translate}}</mat-label>
-        <input
-          matInput
-          [matDatepicker]="picker"
-          [value]="model.startDate"
-          (dateChange)="updateStartDate($event)"
-          (dateInput)="updateStartDate($event)"
-          (click)="picker.open()"
-          id="updateStartFrom"
-          [disabled]="model.status === TaskWizardStatusesEnum.Active"
-        >
-        <mat-datepicker #picker></mat-datepicker>
-      </mat-form-field>
-      <mat-form-field class="p-3">
-        <mat-label>{{ 'Tags' | translate }}</mat-label>
-        <mtx-select
-          [items]="tags"
-          [bindValue]="'id'"
-          [bindLabel]="'name'"
-          id="updateTags"
-          [value]="model.tagIds"
-          (change)="changeTagIds($event)"
-          [clearable]="true"
-          [multiple]="true"
-        />
-      </mat-form-field>
-      <div class="pt-6">
-        <button
-          matSuffix
-          mat-icon-button
-          color="primary"
-          id="planningManageTagsBtn2"
-          (click)="openTagsModal()"
-          matTooltip="{{ 'Manage tags' | translate }}"
-        >
-          <mat-icon>discount</mat-icon>
-        </button>
-      </div>
-    </div>
-    <div class="d-flex flex-row">
-      <mat-form-field class="p-2">
-        <mat-label>{{ 'Repeat type' | translate }}</mat-label>
-        <mtx-select
-          [items]="repeatTypeArr"
-          [bindValue]="'id'"
-          [bindLabel]="'name'"
-          id="updateRepeatType"
-          [value]="model.repeatType"
-          (change)="changeRepeatType($event)"
-          [clearable]="false"
-          [multiple]="false"
-          [readonly]="model.status === TaskWizardStatusesEnum.Active"
-        />
-      </mat-form-field>
-      <mat-form-field class="p-2" *ngIf="model.repeatType !== 0">
-        <mat-label>{{ 'Repeat every' | translate }}</mat-label>
-        <mtx-select
-          [items]="repeatTypeMass()"
-          [bindValue]="'id'"
-          [bindLabel]="'name'"
-          id="updateRepeatEvery"
-          [value]="model.repeatEvery"
-          (change)="changeRepeatEvery($event)"
-          [clearable]="false"
-          [multiple]="false"
-          [readonly]="model.status === TaskWizardStatusesEnum.Active"
-        />
-      </mat-form-field>
-    </div>
-    <!--  <mat-form-field (click)="model.status === TaskWizardStatusesEnum.NotActive ? openFoldersModal() : null">
-        <mat-label>{{ 'Folder' | translate }}</mat-label>
-        <input
-          matInput
-          id="updateFolder"
-          [ngModel]="selectedFolderName"
-          [disabled]="true"
-        >
-      </mat-form-field>-->
-
-    <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
-      <ng-container *ngIf="i % 2 === 0">
-        <div class="d-flex flex-row">
-          <mat-form-field class="p-2">
-            <mat-label>{{'Task description' | translate}} ({{getLanguageName(languageModel.languageId)}})</mat-label>
-            <input
-              type="text"
-              id="updateName{{i}}"
-              matInput
-              [ngModel]="languageModel.name"
-              (ngModelChange)="updateName($event, i)"
-              [disabled]="model.status === TaskWizardStatusesEnum.Active"
-            >
-          </mat-form-field>
-          <mat-form-field *ngIf="model.translates[i + 1]" class="p-2">
-            <mat-label>{{'Task description' | translate}} ({{getLanguageName(model.translates[i + 1].languageId)}})</mat-label>
-            <input
-              type="text"
-              id="updateName{{i + 1}}"
-              matInput
-              [ngModel]="model.translates[i + 1].name"
-              (ngModelChange)="updateName($event, i + 1)"
-              [disabled]="model.status === TaskWizardStatusesEnum.Active"
-            >
-          </mat-form-field>
-        </div>
-        <!--    <mat-card-->
-        <!--      [class.mt-2]="!isFirst"-->
-        <!--      [class.mb-2]="isLast">-->
-        <!--      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>-->
-        <!--      <mat-card-content>-->
-        <!--        <mat-form-field>-->
-        <!--          <mat-label>{{'Task description' | translate}}</mat-label>-->
-        <!--          <input-->
-        <!--            type="text"-->
-        <!--            id="updateName{{i}}"-->
-        <!--            matInput-->
-        <!--            [ngModel]="languageModel.name"-->
-        <!--            (ngModelChange)="updateName($event, i)"-->
-        <!--            [disabled]="model.status === TaskWizardStatusesEnum.Active"-->
-        <!--          >-->
-        <!--        </mat-form-field>-->
-        <!--      </mat-card-content>-->
-        <!--    </mat-card>-->
-
-        <!--<app-eform-translation
-              [class.mt-2]="!isFirst"
-              [class.mb-2]="isLast"
-              [model]="languageModel"
-              (modelChange)="updateLanguageModel($event, i)"
-              [title]="getLanguageName(languageModel.languageId)"/>-->
-      </ng-container>
+      <!--<app-eform-translation
+            [class.mt-2]="!isFirst"
+            [class.mb-2]="isLast"
+            [model]="languageModel"
+            (modelChange)="updateLanguageModel($event, i)"
+            [title]="getLanguageName(languageModel.languageId)"/>-->
     </ng-container>
-    <div class="d-flex flex-row">
-      <mat-form-field class="p-2">
-        <mat-label>{{'eForm template' | translate}}</mat-label>
-        <mtx-select
-          [items]="templatesModel.templates"
-          [bindLabel]="'label'"
-          [bindValue]="'id'"
-          [typeahead]="typeahead"
-          [value]="model.eformId"
-          (change)="updateEformId($event)"
-          id="updateTemplateSelector"
-          [clearable]="false"
-          [multiple]="false"
-          [readonly]="model.status === TaskWizardStatusesEnum.Active"
-          [disabled]="model.status === TaskWizardStatusesEnum.Active"
-        ></mtx-select>
-      </mat-form-field>
-    </div>
   </ng-container>
+  <div class="d-flex flex-row">
+    <mat-form-field class="p-2">
+      <mat-label>{{'eForm template' | translate}}</mat-label>
+      <mtx-select
+        [items]="templatesModel.templates"
+        [bindLabel]="'label'"
+        [bindValue]="'id'"
+        [typeahead]="typeahead"
+        [value]="model.eformId"
+        (change)="updateEformId($event)"
+        id="updateTemplateSelector"
+        [clearable]="false"
+        [multiple]="false"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active"
+        [disabled]="model.status === TaskWizardStatusesEnum.Active"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
 
   <div class="d-flex flex-row">
     <mtx-grid
