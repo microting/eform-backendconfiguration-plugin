@@ -123,7 +123,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
   createDocument() {
     this.newDocumentModel.folderId = this.selectedFolder;
-    this.newDocumentModel.endDate = format(this.newDocumentModel.endDate as Date, PARSING_DATE_FORMAT);
+    //this.newDocumentModel.endDate = format(this.newDocumentModel.endDate as Date, PARSING_DATE_FORMAT);
     this.backendConfigurationPnDocumentsService.createDocument(this.newDocumentModel)
       .subscribe((data) => {
         if (data && data.success) {

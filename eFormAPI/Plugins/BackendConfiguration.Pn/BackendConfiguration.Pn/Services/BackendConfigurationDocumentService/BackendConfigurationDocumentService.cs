@@ -568,8 +568,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
         if (model.EndDate.Year == 1)
         {
-            return new OperationResult(false,
-                _backendConfigurationLocalizationService.GetString("EndDateCannotBeEmpty"));
+            model.EndDate = DateTime.UtcNow.AddYears(10);
+            // return new OperationResult(false,
+            //     _backendConfigurationLocalizationService.GetString("EndDateCannotBeEmpty"));
         }
 
         var core = await _coreHelper.GetCore();
