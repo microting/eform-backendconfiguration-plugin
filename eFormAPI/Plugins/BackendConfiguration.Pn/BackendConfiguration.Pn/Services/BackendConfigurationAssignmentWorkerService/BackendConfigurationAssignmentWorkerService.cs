@@ -379,7 +379,7 @@ public class BackendConfigurationAssignmentWorkerService(
                 .ToListAsync().ConfigureAwait(false);
 
             var timeRegistrationEnabledSites =await
-                timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.SiteId).ToListAsync().ConfigureAwait(false);
+                timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
             foreach (var deviceUserModel in deviceUsers)
             {
@@ -399,7 +399,33 @@ public class BackendConfigurationAssignmentWorkerService(
 
                 deviceUserModel.PinCode = "****";
                 deviceUserModel.TimeRegistrationEnabled =
-                    timeRegistrationEnabledSites.Any(x => x == deviceUserModel.SiteUid);
+                    timeRegistrationEnabledSites.Any(x => x.SiteId == deviceUserModel.SiteUid);
+                if (deviceUserModel.TimeRegistrationEnabled != false)
+                {
+                    var assignedSite = timeRegistrationEnabledSites
+                        .First(x => x.SiteId == deviceUserModel.SiteUid);
+                    deviceUserModel.StartMonday = assignedSite.StartMonday;
+                    deviceUserModel.EndMonday = assignedSite.EndMonday;
+                    deviceUserModel.BreakMonday = assignedSite.BreakMonday;
+                    deviceUserModel.StartTuesday = assignedSite.StartTuesday;
+                    deviceUserModel.EndTuesday = assignedSite.EndTuesday;
+                    deviceUserModel.BreakTuesday = assignedSite.BreakTuesday;
+                    deviceUserModel.StartWednesday = assignedSite.StartWednesday;
+                    deviceUserModel.EndWednesday = assignedSite.EndWednesday;
+                    deviceUserModel.BreakWednesday = assignedSite.BreakWednesday;
+                    deviceUserModel.StartThursday = assignedSite.StartThursday;
+                    deviceUserModel.EndThursday = assignedSite.EndThursday;
+                    deviceUserModel.BreakThursday = assignedSite.BreakThursday;
+                    deviceUserModel.StartFriday = assignedSite.StartFriday;
+                    deviceUserModel.EndFriday = assignedSite.EndFriday;
+                    deviceUserModel.BreakFriday = assignedSite.BreakFriday;
+                    deviceUserModel.StartSaturday = assignedSite.StartSaturday;
+                    deviceUserModel.EndSaturday = assignedSite.EndSaturday;
+                    deviceUserModel.BreakSaturday = assignedSite.BreakSaturday;
+                    deviceUserModel.StartSunday = assignedSite.StartSunday;
+                    deviceUserModel.EndSunday = assignedSite.EndSunday;
+                    deviceUserModel.BreakSunday = assignedSite.BreakSunday;
+                }
 
                 deviceUserModel.TaskManagementEnabled = backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
                     x.WorkflowState != Constants.WorkflowStates.Removed

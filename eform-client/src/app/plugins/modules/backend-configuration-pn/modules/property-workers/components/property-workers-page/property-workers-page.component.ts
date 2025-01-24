@@ -92,6 +92,27 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
     selectedSimpleSite.hasWorkOrdersAssigned = simpleSiteDto.hasWorkOrdersAssigned;
     selectedSimpleSite.isBackendUser = simpleSiteDto.isBackendUser;
+    selectedSimpleSite.startMonday = simpleSiteDto.startMonday;
+    selectedSimpleSite.endMonday = simpleSiteDto.endMonday;
+    selectedSimpleSite.breakMonday = simpleSiteDto.breakMonday;
+    selectedSimpleSite.startTuesday = simpleSiteDto.startTuesday;
+    selectedSimpleSite.endTuesday = simpleSiteDto.endTuesday;
+    selectedSimpleSite.breakTuesday = simpleSiteDto.breakTuesday;
+    selectedSimpleSite.startWednesday = simpleSiteDto.startWednesday;
+    selectedSimpleSite.endWednesday = simpleSiteDto.endWednesday;
+    selectedSimpleSite.breakWednesday = simpleSiteDto.breakWednesday;
+    selectedSimpleSite.startThursday = simpleSiteDto.startThursday;
+    selectedSimpleSite.endThursday = simpleSiteDto.endThursday;
+    selectedSimpleSite.breakThursday = simpleSiteDto.breakThursday;
+    selectedSimpleSite.startFriday = simpleSiteDto.startFriday;
+    selectedSimpleSite.endFriday = simpleSiteDto.endFriday;
+    selectedSimpleSite.breakFriday = simpleSiteDto.breakFriday;
+    selectedSimpleSite.startSaturday = simpleSiteDto.startSaturday;
+    selectedSimpleSite.endSaturday = simpleSiteDto.endSaturday;
+    selectedSimpleSite.breakSaturday = simpleSiteDto.breakSaturday;
+    selectedSimpleSite.startSunday = simpleSiteDto.startSunday;
+    selectedSimpleSite.endSunday = simpleSiteDto.endSunday;
+    selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

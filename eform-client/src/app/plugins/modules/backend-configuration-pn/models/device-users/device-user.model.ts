@@ -26,4 +26,25 @@ export class DeviceUserModel {
   version: string;
   pinCode: string;
   employeeNo: string;
+  startMonday: number;
+  endMonday: number;
+  breakMonday: number;
+  startTuesday: number;
+  endTuesday: number;
+  breakTuesday: number;
+  startWednesday: number;
+  endWednesday: number;
+  breakWednesday: number;
+  startThursday: number;
+  endThursday: number;
+  breakThursday: number;
+  startFriday: number;
+  endFriday: number;
+  breakFriday: number;
+  startSaturday: number;
+  endSaturday: number;
+  breakSaturday: number;
+  startSunday: number;
+  endSunday: number;
+  breakSunday: number;
 }
