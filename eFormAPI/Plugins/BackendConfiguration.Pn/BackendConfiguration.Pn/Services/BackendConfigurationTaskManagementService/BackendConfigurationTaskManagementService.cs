@@ -450,6 +450,7 @@ public class BackendConfigurationTaskManagementService(
             await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var picturesOfTasks = new List<string>();
+            var picturesOfTasksList = new List<KeyValuePair<string, string>>();
             var hasImages = false;
             if (createModel.Files.Any())
             {
@@ -526,6 +527,7 @@ public class BackendConfigurationTaskManagementService(
                         UploadedDataId = uploadData.Id
                     };
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
+                    picturesOfTasksList.Add(new KeyValuePair<string, string>($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}", uploadData.Checksum));
                     await workOrderCaseImage.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
@@ -629,7 +631,7 @@ public class BackendConfigurationTaskManagementService(
                     property.Name,
                     (int)property.FolderIdForOngoingTasks!,
                     (int)property.FolderIdForTasks!,
-                    (int)property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
+                    (int)property.FolderIdForCompletedTasks!, hasImages, picturesOfTasksList)).ConfigureAwait(false);
             }
 
             return new OperationResult(true, localizationService.GetString("TaskCreatedSuccessful"));

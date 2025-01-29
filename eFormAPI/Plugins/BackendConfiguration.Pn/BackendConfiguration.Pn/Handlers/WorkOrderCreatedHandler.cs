@@ -62,7 +62,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.FolderIdForOngoingTasks,
             message.FolderIdForTasks,
             message.FolderIdForCompletedTasks,
-            message.HasImages).ConfigureAwait(false);
+            message.HasImages,
+            message.PicturesOfTasksList).ConfigureAwait(false);
     }
 
     private async Task DeployEform(
@@ -84,7 +85,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         int folderIdForOngoingTasks,
         int folderIdForTasks,
         int folderIdForCompletedTasks,
-        bool hasImages
+        bool hasImages,
+        List<KeyValuePair<string, string>> picturesOfTasks
         )
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
@@ -97,6 +99,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         foreach (var propertyWorker in propertyWorkers)
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
+            var unit = await sdkDbContext.Units.FirstAsync(x => x.SiteId == site.Id);
             var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
             var priorityText = "";
@@ -218,6 +221,26 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             if (hasImages == false)
             {
                 ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            }
+            if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
+            {
+                if (hasImages)
+                {
+                    ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+                    // add a new show picture element for each picture in the picturesOfTasks list
+                    int j = 0;
+                    foreach (var picture in picturesOfTasks)
+                    {
+                        var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
+                        var storageResult = _sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+
+                        await _sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                        showPicture.Value = picture.Value;
+                        ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
+                    }
+
+                    j++;
+                }
             }
             var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
             var newWorkOrderCase = new WorkorderCase

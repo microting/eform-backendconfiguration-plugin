@@ -58,6 +58,7 @@ public static class BackendConfigurationTaskManagementHelper
         }
 
         var picturesOfTasks = new List<string>();
+        var picturesOfTasksList = new List<KeyValuePair<string, string>>();
         var hasImages = false;
         var parentCaseImages = await backendConfigurationPnDbContext.WorkorderCaseImages.Where(x => x.WorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
 
@@ -65,6 +66,7 @@ public static class BackendConfigurationTaskManagementHelper
         {
             var uploadedData = await sdkDbContext.UploadedDatas.FirstAsync(x => x.Id == workorderCaseImage.UploadedDataId);
             picturesOfTasks.Add($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}");
+            picturesOfTasksList.Add(new KeyValuePair<string, string>($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}", uploadedData.Checksum));
             var workOrderCaseImage = new WorkorderCaseImage
             {
                 WorkorderCaseId = workOrderCase.Id,
@@ -162,7 +164,7 @@ public static class BackendConfigurationTaskManagementHelper
 
         await bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
             updateModel.CaseStatusEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid),
-            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages)).ConfigureAwait(false);
+            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList)).ConfigureAwait(false);
 
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }

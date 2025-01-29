@@ -25,8 +25,9 @@ public class WorkOrderCreated
     public int FolderIdForTasks { get; set; }
     public int FolderIdForCompletedTasks { get; set; }
     public bool HasImages { get; set; }
+    public List<KeyValuePair<string, string>> PicturesOfTasksList;
 
-    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, Site assignedToSite, string propertyName, int idForOngoingTasks, int idForTasks, int idForCompletedTasks, bool hasImages)
+    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, Site assignedToSite, string propertyName, int idForOngoingTasks, int idForTasks, int idForCompletedTasks, bool hasImages, List<KeyValuePair<string, string>> picturesOfTasksList)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -47,5 +48,6 @@ public class WorkOrderCreated
         FolderIdForTasks = idForTasks;
         FolderIdForCompletedTasks = idForCompletedTasks;
         HasImages = hasImages;
+        PicturesOfTasksList = picturesOfTasksList;
     }
 }

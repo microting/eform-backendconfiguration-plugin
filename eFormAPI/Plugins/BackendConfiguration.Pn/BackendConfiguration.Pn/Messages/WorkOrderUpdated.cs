@@ -20,8 +20,9 @@ public class WorkOrderUpdated
     public string PushMessageTitle;
     public string UpdatedByName;
     public bool HasImages { get; set; }
+    public List<KeyValuePair<string, string>> PicturesOfTask { get; set; }
 
-    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, Site assignedToSite, string pushMessageBody, string pushMessageTitle, string updatedByName, bool hasImages)
+    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, Site assignedToSite, string pushMessageBody, string pushMessageTitle, string updatedByName, bool hasImages, List<KeyValuePair<string, string>> picturesOfTask)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -37,5 +38,6 @@ public class WorkOrderUpdated
         PushMessageTitle = pushMessageTitle;
         UpdatedByName = updatedByName;
         HasImages = hasImages;
+        PicturesOfTask = picturesOfTask;
     }
 }
