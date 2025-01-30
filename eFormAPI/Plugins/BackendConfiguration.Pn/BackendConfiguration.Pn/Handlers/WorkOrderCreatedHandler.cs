@@ -237,9 +237,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                         await _sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
                         showPicture.Value = picture.Value;
                         ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
+                        j++;
                     }
-
-                    j++;
                 }
             }
             var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
