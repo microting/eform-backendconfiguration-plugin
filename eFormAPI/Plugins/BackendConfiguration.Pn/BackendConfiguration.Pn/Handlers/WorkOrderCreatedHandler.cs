@@ -222,6 +222,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             {
                 ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
             }
+            unit.eFormVersion ??= "1.0.0";
             if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
             {
                 if (hasImages)
