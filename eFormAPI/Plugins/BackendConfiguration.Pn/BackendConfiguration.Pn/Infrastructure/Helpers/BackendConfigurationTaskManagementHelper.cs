@@ -169,55 +169,64 @@ public static class BackendConfigurationTaskManagementHelper
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }
 
-        private static async Task<string> GeneratePdf(List<string> picturesOfTasks, int sitId, Core core)
+    private static async Task<string> GeneratePdf(List<string> picturesOfTasks, int sitId, Core core)
     {
-        // var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
-        picturesOfTasks.Reverse();
-        var downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
-        Directory.CreateDirectory(downloadPath);
-        var timeStamp = DateTime.UtcNow.ToString("yyyyMMdd") + "_" + DateTime.UtcNow.ToString("hhmmss");
-        var tempPdfFileName = $"{timeStamp}{sitId}_temp.pdf";
-        var tempPdfFilePath = Path.Combine(downloadPath, tempPdfFileName);
-        var document = Document.Create(container =>
+        try
         {
-            container.Page(page =>
+
+            // var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            picturesOfTasks.Reverse();
+            var downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
+            Directory.CreateDirectory(downloadPath);
+            var timeStamp = DateTime.UtcNow.ToString("yyyyMMdd") + "_" + DateTime.UtcNow.ToString("hhmmss");
+            var tempPdfFileName = $"{timeStamp}{sitId}_temp.pdf";
+            var tempPdfFilePath = Path.Combine(downloadPath, tempPdfFileName);
+            var document = Document.Create(container =>
             {
-                page.Content()
-                    .Padding(2, Unit.Centimetre)
-                    .Column(x =>
-                    {
-                        x.Spacing(20);
-                        // loop over all images and add them to the document
-                        foreach (var imageName in picturesOfTasks)
+                container.Page(page =>
+                {
+                    page.Content()
+                        .Padding(0, Unit.Centimetre)
+                        .Column(x =>
                         {
-                            var storageResult = core.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
-                            x.Item().Image(storageResult.ResponseStream)
-                                .FitWidth();
-                        }
-                    });
-            });
-        }).GeneratePdf();
+                            x.Spacing(20);
+                            // loop over all images and add them to the document
+                            foreach (var imageName in picturesOfTasks)
+                            {
+                                var storageResult = core.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
+                                x.Item().Image(storageResult.ResponseStream)
+                                    .FitArea();
+                            }
+                        });
+                });
+            }).GeneratePdf();
 
-        await using var fileStream = new FileStream(tempPdfFilePath, FileMode.Create, FileAccess.Write);
-        // save the byte[] to a file.
-        await fileStream.WriteAsync(document, 0, document.Length);
-        await fileStream.FlushAsync();
+            await using var fileStream = new FileStream(tempPdfFilePath, FileMode.Create, FileAccess.Write);
+            // save the byte[] to a file.
+            await fileStream.WriteAsync(document, 0, document.Length);
+            await fileStream.FlushAsync();
 
-        // Upload PDF
-        // string pdfFileName = null;
-        string hash = await core.PdfUpload(tempPdfFilePath);
-        if (hash != null)
-        {
-            //rename local file
-            FileInfo fileInfo = new FileInfo(tempPdfFilePath);
-            fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
-            fileInfo.Delete();
-            await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
+            // Upload PDF
+            // string pdfFileName = null;
+            string hash = await core.PdfUpload(tempPdfFilePath);
+            if (hash != null)
+            {
+                //rename local file
+                FileInfo fileInfo = new FileInfo(tempPdfFilePath);
+                fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
+                fileInfo.Delete();
+                await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
 
-            // TODO Remove from file storage?
+                // TODO Remove from file storage?
+            }
+
+            return hash;
         }
-
-        return hash;
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     private static async Task RetractEform(WorkorderCase workOrderCase, Core core, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
