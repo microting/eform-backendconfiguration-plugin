@@ -224,7 +224,7 @@
       <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.11" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="9.0.1" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.75" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.76" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.76" />
       <PackageReference Include="Microting.TimePlanningBase" Version="9.0.3" />
       <PackageReference Include="QuestPDF" Version="2025.1.1" />
