@@ -338,6 +338,11 @@ public class BackendConfigurationAssignmentWorkerService(
 
     public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(PropertyWorkersFiltrationModel requestModel)
     {
+        if (requestModel.Sort == "MicrotingUid")
+        {
+            requestModel.Sort = "SiteMicrotingUid";
+        }
+
         try
         {
             var core = await coreHelper.GetCore().ConfigureAwait(false);
