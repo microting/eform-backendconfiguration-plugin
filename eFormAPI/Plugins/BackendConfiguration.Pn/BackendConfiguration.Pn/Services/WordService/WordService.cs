@@ -838,9 +838,7 @@ public class WordService(
             {
                 if (!string.IsNullOrEmpty(reportEformModel.GroupTagName))
                 {
-                    itemsHtml.Append($@"<h1>{Regex.Replace(reportEformModel.GroupTagName, @"\. ", ".")}</h1>");
-                    // We do this, even thought some would look at it and find it looking stupid. But if we don't do it,
-                    // Word WILL mess up the header titles, because it thinks it needs to fix the number order.
+                    itemsHtml.Append($@"<p style='font-size:20px;text-align:left;font-weight:700;'>{reportEformModel.GroupTagName}</p>");
                 }
 
                 foreach (var groupeForm in reportEformModel.GroupEform)
