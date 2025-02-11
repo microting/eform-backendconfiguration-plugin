@@ -14,9 +14,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-worker-filters',
-  templateUrl: './property-worker-filters.component.html',
-  styleUrls: ['./property-worker-filters.component.scss'],
+    selector: 'app-property-worker-filters',
+    templateUrl: './property-worker-filters.component.html',
+    styleUrls: ['./property-worker-filters.component.scss'],
+    standalone: false
 })
 export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();

@@ -19,9 +19,10 @@ import {AppSettingsStateService} from 'src/app/modules/application-settings/comp
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-worker-create-edit-modal',
-  templateUrl: './property-worker-create-edit-modal.component.html',
-  styleUrls: ['./property-worker-create-edit-modal.component.scss'],
+    selector: 'app-property-worker-create-edit-modal',
+    templateUrl: './property-worker-create-edit-modal.component.html',
+    styleUrls: ['./property-worker-create-edit-modal.component.scss'],
+    standalone: false
 })
 export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy {
   availableProperties: CommonDictionaryModel[] = [];

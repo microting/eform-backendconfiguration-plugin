@@ -22,9 +22,10 @@ import * as R from 'ramda';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-installation-case-page',
-  templateUrl: './compliance-case-page.component.html',
-  styleUrls: ['./compliance-case-page.component.scss'],
+    selector: 'app-installation-case-page',
+    templateUrl: './compliance-case-page.component.html',
+    styleUrls: ['./compliance-case-page.component.scss'],
+    standalone: false
 })
 export class ComplianceCasePageComponent implements OnInit {
   @ViewChildren(CaseEditElementComponent)

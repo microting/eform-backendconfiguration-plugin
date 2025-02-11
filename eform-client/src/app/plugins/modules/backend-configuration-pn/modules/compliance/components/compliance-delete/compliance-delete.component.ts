@@ -5,9 +5,10 @@ import {ComplianceModel} from 'src/app/plugins/modules/backend-configuration-pn/
 import {BackendConfigurationPnCompliancesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 
 @Component({
-  selector: 'app-compliance-delete',
-  templateUrl: './compliance-delete.component.html',
-  styleUrls: ['./compliance-delete.component.scss'],
+    selector: 'app-compliance-delete',
+    templateUrl: './compliance-delete.component.html',
+    styleUrls: ['./compliance-delete.component.scss'],
+    standalone: false
 })
 export class ComplianceDeleteComponent implements OnInit {
   constructor(

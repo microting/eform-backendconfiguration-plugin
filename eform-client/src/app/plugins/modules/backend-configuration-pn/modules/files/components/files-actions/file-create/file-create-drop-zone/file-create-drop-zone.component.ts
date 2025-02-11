@@ -1,9 +1,10 @@
 import {Component, EventEmitter, Input, Output,} from '@angular/core';
 
 @Component({
-  selector: 'app-file-create-drop-zone',
-  templateUrl: './file-create-drop-zone.component.html',
-  styleUrls: ['./file-create-drop-zone.component.scss']
+    selector: 'app-file-create-drop-zone',
+    templateUrl: './file-create-drop-zone.component.html',
+    styleUrls: ['./file-create-drop-zone.component.scss'],
+    standalone: false
 })
 export class FileCreateDropZoneComponent {
   @Input() mimePdfType = 'application/pdf';

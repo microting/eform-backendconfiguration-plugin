@@ -17,9 +17,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-edit-modal',
-  templateUrl: './property-edit-modal.component.html',
-  styleUrls: ['./property-edit-modal.component.scss'],
+    selector: 'app-property-edit-modal',
+    templateUrl: './property-edit-modal.component.html',
+    styleUrls: ['./property-edit-modal.component.scss'],
+    standalone: false
 })
 export class PropertyEditModalComponent implements OnInit, OnDestroy {
   propertyUpdate: EventEmitter<PropertyUpdateModel> = new EventEmitter<PropertyUpdateModel>();

@@ -21,9 +21,10 @@ import {Lightbox} from 'ng-gallery/lightbox';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-tracker-create-show-modal',
-  templateUrl: './task-tracker-create-show-modal.component.html',
-  styleUrls: ['./task-tracker-create-show-modal.component.scss'],
+    selector: 'app-task-tracker-create-show-modal',
+    templateUrl: './task-tracker-create-show-modal.component.html',
+    styleUrls: ['./task-tracker-create-show-modal.component.scss'],
+    standalone: false
 })
 export class TaskTrackerCreateShowModalComponent
   implements OnInit, OnDestroy {

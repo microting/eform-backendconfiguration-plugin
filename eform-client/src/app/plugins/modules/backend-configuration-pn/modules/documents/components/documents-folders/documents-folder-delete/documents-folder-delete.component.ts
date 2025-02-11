@@ -8,9 +8,10 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-folder-delete',
-  templateUrl: './documents-folder-delete.component.html',
-  styleUrls: ['./documents-folder-delete.component.scss']
+    selector: 'app-folder-delete',
+    templateUrl: './documents-folder-delete.component.html',
+    styleUrls: ['./documents-folder-delete.component.scss'],
+    standalone: false
 })
 export class DocumentsFolderDeleteComponent implements OnInit {
   folderDelete: EventEmitter<void> = new EventEmitter<void>();

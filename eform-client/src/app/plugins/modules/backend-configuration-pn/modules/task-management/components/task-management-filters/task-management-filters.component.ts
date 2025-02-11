@@ -30,9 +30,10 @@ import {TaskManagementStateService} from '../store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-management-filters',
-  templateUrl: './task-management-filters.component.html',
-  styleUrls: ['./task-management-filters.component.scss'],
+    selector: 'app-task-management-filters',
+    templateUrl: './task-management-filters.component.html',
+    styleUrls: ['./task-management-filters.component.scss'],
+    standalone: false
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   @Output()

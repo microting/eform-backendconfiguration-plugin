@@ -3,9 +3,10 @@ import {AreaRuleSimpleModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-area-rule-delete-modal',
-  templateUrl: './area-rule-delete-modal.component.html',
-  styleUrls: ['./area-rule-delete-modal.component.scss']
+    selector: 'app-area-rule-delete-modal',
+    templateUrl: './area-rule-delete-modal.component.html',
+    styleUrls: ['./area-rule-delete-modal.component.scss'],
+    standalone: false
 })
 export class AreaRuleDeleteModalComponent implements OnInit {
   deleteAreaRule: EventEmitter<number> = new EventEmitter<number>();

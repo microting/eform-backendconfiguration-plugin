@@ -20,9 +20,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-documents-folder-edit',
-  templateUrl: './documents-folder-edit.component.html',
-  styleUrls: ['./documents-folder-edit.component.scss'],
+    selector: 'app-documents-folder-edit',
+    templateUrl: './documents-folder-edit.component.html',
+    styleUrls: ['./documents-folder-edit.component.scss'],
+    standalone: false
 })
 export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
   name = '';

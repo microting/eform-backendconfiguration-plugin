@@ -13,9 +13,10 @@ import * as R from 'ramda';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-file-create-edit-file',
-  templateUrl: './file-create-edit-file.component.html',
-  styleUrls: ['./file-create-edit-file.component.scss']
+    selector: 'app-file-create-edit-file',
+    templateUrl: './file-create-edit-file.component.html',
+    styleUrls: ['./file-create-edit-file.component.scss'],
+    standalone: false
 })
 export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
   @Output() saveFile: EventEmitter<FilesCreateModel> = new EventEmitter<FilesCreateModel>();

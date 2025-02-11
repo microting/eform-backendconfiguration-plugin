@@ -32,9 +32,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-wizard-create-modal',
-  templateUrl: './task-wizard-create-modal.component.html',
-  styleUrls: ['./task-wizard-create-modal.component.scss'],
+    selector: 'app-task-wizard-create-modal',
+    templateUrl: './task-wizard-create-modal.component.html',
+    styleUrls: ['./task-wizard-create-modal.component.scss'],
+    standalone: false
 })
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   planningTagsModal: PlanningTagsComponent

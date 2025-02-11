@@ -10,9 +10,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-ad-hoc-task-priorities',
-  templateUrl: './ad-hoc-task-priorities.component.html',
-  styleUrls: ['./ad-hoc-task-priorities.component.scss'],
+    selector: 'app-ad-hoc-task-priorities',
+    templateUrl: './ad-hoc-task-priorities.component.html',
+    styleUrls: ['./ad-hoc-task-priorities.component.scss'],
+    standalone: false
 })
 export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;

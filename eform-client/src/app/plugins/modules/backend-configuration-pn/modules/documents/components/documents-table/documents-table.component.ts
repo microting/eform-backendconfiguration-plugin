@@ -24,9 +24,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-documents-table',
-  templateUrl: './documents-table.component.html',
-  styleUrls: ['./documents-table.component.scss'],
+    selector: 'app-documents-table',
+    templateUrl: './documents-table.component.html',
+    styleUrls: ['./documents-table.component.scss'],
+    standalone: false
 })
 export class DocumentsTableComponent implements OnInit, OnDestroy {
   tableHeaders: MtxGridColumn[] = [

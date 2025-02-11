@@ -4,9 +4,10 @@ import {DeviceUserModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-property-worker-otp-modal',
-  templateUrl: './property-worker-otp-modal.component.html',
-  styleUrls: ['./property-worker-otp-modal.component.scss']
+    selector: 'app-property-worker-otp-modal',
+    templateUrl: './property-worker-otp-modal.component.html',
+    styleUrls: ['./property-worker-otp-modal.component.scss'],
+    standalone: false
 })
 export class PropertyWorkerOtpModalComponent implements OnInit {
   constructor(

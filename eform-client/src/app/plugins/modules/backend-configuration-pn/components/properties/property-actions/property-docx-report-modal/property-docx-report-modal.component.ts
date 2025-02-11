@@ -16,9 +16,10 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-docx-report-modal',
-  templateUrl: './property-docx-report-modal.component.html',
-  styleUrls: ['./property-docx-report-modal.component.scss'],
+    selector: 'app-property-docx-report-modal',
+    templateUrl: './property-docx-report-modal.component.html',
+    styleUrls: ['./property-docx-report-modal.component.scss'],
+    standalone: false
 })
 export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
   selectedArea: PropertyAreaModel;

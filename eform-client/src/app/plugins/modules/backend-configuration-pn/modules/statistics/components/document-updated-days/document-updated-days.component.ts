@@ -11,9 +11,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-document-updated-days',
-  templateUrl: './document-updated-days.component.html',
-  styleUrls: ['./document-updated-days.component.scss'],
+    selector: 'app-document-updated-days',
+    templateUrl: './document-updated-days.component.html',
+    styleUrls: ['./document-updated-days.component.scss'],
+    standalone: false
 })
 export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   @Input() documentUpdatedDaysModel: DocumentUpdatedDaysModel;

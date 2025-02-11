@@ -9,9 +9,10 @@ import {selectIsDarkMode} from 'src/app/state';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-planned-task-workers',
-  templateUrl: './planned-task-workers.component.html',
-  styleUrls: ['./planned-task-workers.component.scss'],
+    selector: 'app-planned-task-workers',
+    templateUrl: './planned-task-workers.component.html',
+    styleUrls: ['./planned-task-workers.component.scss'],
+    standalone: false
 })
 export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() plannedTaskWorkers: PlannedTaskWorkers;

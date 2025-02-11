@@ -22,9 +22,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-tracker-filters',
-  templateUrl: './task-tracker-filters.component.html',
-  styleUrls: ['./task-tracker-filters.component.scss'],
+    selector: 'app-task-tracker-filters',
+    templateUrl: './task-tracker-filters.component.html',
+    styleUrls: ['./task-tracker-filters.component.scss'],
+    standalone: false
 })
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();

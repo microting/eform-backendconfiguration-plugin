@@ -15,9 +15,10 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-documents-folder-create',
-  templateUrl: './documents-folder-create.component.html',
-  styleUrls: ['./documents-folder-create.component.scss']
+    selector: 'app-documents-folder-create',
+    templateUrl: './documents-folder-create.component.html',
+    styleUrls: ['./documents-folder-create.component.scss'],
+    standalone: false
 })
 export class DocumentsFolderCreateComponent implements OnInit {
   folderCreate: EventEmitter<void> = new EventEmitter<void>();

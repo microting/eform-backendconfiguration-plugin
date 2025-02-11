@@ -20,9 +20,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-documents-filters',
-  templateUrl: './documents-filters.component.html',
-  styleUrls: ['./documents-filters.component.scss'],
+    selector: 'app-documents-filters',
+    templateUrl: './documents-filters.component.html',
+    styleUrls: ['./documents-filters.component.scss'],
+    standalone: false
 })
 export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();

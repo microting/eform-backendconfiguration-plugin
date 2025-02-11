@@ -25,9 +25,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-statistics-container',
-  templateUrl: './statistics-container.component.html',
-  styleUrls: ['./statistics-container.component.scss'],
+    selector: 'app-statistics-container',
+    templateUrl: './statistics-container.component.html',
+    styleUrls: ['./statistics-container.component.scss'],
+    standalone: false
 })
 export class StatisticsContainerComponent implements OnInit, OnDestroy {
   plannedTaskDays: PlannedTaskDaysModel;

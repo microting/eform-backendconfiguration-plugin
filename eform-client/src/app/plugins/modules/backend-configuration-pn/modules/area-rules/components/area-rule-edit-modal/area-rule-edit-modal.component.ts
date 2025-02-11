@@ -22,9 +22,10 @@ import {MtxGridCellTemplate, MtxGridColumn} from '@ng-matero/extensions/grid';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-area-rule-edit-modal',
-  templateUrl: './area-rule-edit-modal.component.html',
-  styleUrls: ['./area-rule-edit-modal.component.scss'],
+    selector: 'app-area-rule-edit-modal',
+    templateUrl: './area-rule-edit-modal.component.html',
+    styleUrls: ['./area-rule-edit-modal.component.scss'],
+    standalone: false
 })
 export class AreaRuleEditModalComponent implements OnInit {
   @ViewChild('checkboxTpl', { static: true }) checkboxTpl!: TemplateRef<any>;

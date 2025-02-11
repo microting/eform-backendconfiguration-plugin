@@ -21,10 +21,11 @@ import {
 } from '../../../../state/properties/properties.selector';
 
 @Component({
-  selector: 'app-properties-table',
-  templateUrl: './properties-table.component.html',
-  styleUrls: ['./properties-table.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-properties-table',
+    templateUrl: './properties-table.component.html',
+    styleUrls: ['./properties-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class PropertiesTableComponent implements OnInit {
   @Input() nameSearchSubject = new Subject();

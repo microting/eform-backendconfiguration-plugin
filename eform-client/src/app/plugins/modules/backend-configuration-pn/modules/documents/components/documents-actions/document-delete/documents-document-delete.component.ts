@@ -9,9 +9,10 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 
 @Component({
-  selector: 'app-documents-document-delete',
-  templateUrl: './documents-document-delete.component.html',
-  styleUrls: ['./documents-document-delete.component.scss']
+    selector: 'app-documents-document-delete',
+    templateUrl: './documents-document-delete.component.html',
+    styleUrls: ['./documents-document-delete.component.scss'],
+    standalone: false
 })
 export class DocumentsDocumentDeleteComponent implements OnInit {
   documentDeleted: EventEmitter<void> = new EventEmitter<void>();

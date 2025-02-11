@@ -2,9 +2,10 @@ import {Component, EventEmitter, Inject, OnInit,} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-task-wizard-multiple-deactivate',
-  templateUrl: './task-wizard-multiple-deactivate.component.html',
-  styleUrls: ['./task-wizard-multiple-deactivate.component.scss'],
+    selector: 'app-task-wizard-multiple-deactivate',
+    templateUrl: './task-wizard-multiple-deactivate.component.html',
+    styleUrls: ['./task-wizard-multiple-deactivate.component.scss'],
+    standalone: false
 })
 export class TaskWizardMultipleDeactivateComponent implements OnInit {
   deactivateMultipleTasks: EventEmitter<void> = new EventEmitter<void>();

@@ -9,9 +9,10 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-file-name-edit',
-  templateUrl: './file-name-edit.component.html',
-  styleUrls: ['./file-name-edit.component.scss']
+    selector: 'app-file-name-edit',
+    templateUrl: './file-name-edit.component.html',
+    styleUrls: ['./file-name-edit.component.scss'],
+    standalone: false
 })
 export class FileNameEditComponent implements OnInit, OnDestroy {
   fileNameUpdated: EventEmitter<void> = new EventEmitter<void>();

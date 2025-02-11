@@ -14,9 +14,10 @@ import {ActivatedRoute, Router} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-files-file-create',
-  templateUrl: './file-create.component.html',
-  styleUrls: ['./file-create.component.scss']
+    selector: 'app-files-file-create',
+    templateUrl: './file-create.component.html',
+    styleUrls: ['./file-create.component.scss'],
+    standalone: false
 })
 export class FileCreateComponent implements OnInit, OnDestroy {
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;

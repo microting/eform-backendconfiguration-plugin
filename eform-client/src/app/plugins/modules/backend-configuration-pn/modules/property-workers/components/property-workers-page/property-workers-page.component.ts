@@ -29,8 +29,9 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-workers-page',
-  templateUrl: './property-workers-page.component.html',
+    selector: 'app-property-workers-page',
+    templateUrl: './property-workers-page.component.html',
+    standalone: false
 })
 export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   sitesDto: Array<DeviceUserModel>;

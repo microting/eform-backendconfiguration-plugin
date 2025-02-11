@@ -22,9 +22,10 @@ import {
 } from '../../../../state/task-management/task-management.selector';
 
 @Component({
-  selector: 'app-task-management-table',
-  templateUrl: './task-management-table.component.html',
-  styleUrls: ['./task-management-table.component.scss'],
+    selector: 'app-task-management-table',
+    templateUrl: './task-management-table.component.html',
+    styleUrls: ['./task-management-table.component.scss'],
+    standalone: false
 })
 export class TaskManagementTableComponent implements OnInit {
   tableHeaders: MtxGridColumn[] = [

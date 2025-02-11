@@ -14,9 +14,10 @@ import {Subscription} from 'rxjs';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-create-modal',
-  templateUrl: './property-create-modal.component.html',
-  styleUrls: ['./property-create-modal.component.scss'],
+    selector: 'app-property-create-modal',
+    templateUrl: './property-create-modal.component.html',
+    styleUrls: ['./property-create-modal.component.scss'],
+    standalone: false
 })
 export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();

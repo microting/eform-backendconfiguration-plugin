@@ -9,9 +9,10 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {DeviceUserModel} from '../../../../models';
 
 @Component({
-  selector: 'app-property-worker-delete-modal',
-  templateUrl: './property-worker-delete-modal.component.html',
-  styleUrls: ['./property-worker-delete-modal.component.scss'],
+    selector: 'app-property-worker-delete-modal',
+    templateUrl: './property-worker-delete-modal.component.html',
+    styleUrls: ['./property-worker-delete-modal.component.scss'],
+    standalone: false
 })
 export class PropertyWorkerDeleteModalComponent implements OnInit {
   constructor(

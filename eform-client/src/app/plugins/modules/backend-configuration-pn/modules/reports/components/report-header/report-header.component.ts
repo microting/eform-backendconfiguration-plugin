@@ -19,9 +19,10 @@ import {format, parse} from 'date-fns';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-backend-pn-report-header',
-  templateUrl: './report-header.component.html',
-  styleUrls: ['./report-header.component.scss'],
+    selector: 'app-backend-pn-report-header',
+    templateUrl: './report-header.component.html',
+    styleUrls: ['./report-header.component.scss'],
+    standalone: false
 })
 // REPORTS V2
 export class ReportHeaderComponent implements OnInit, OnDestroy {

@@ -22,9 +22,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-files-filters',
-  templateUrl: './files-filters.component.html',
-  styleUrls: ['./files-filters.component.scss'],
+    selector: 'app-files-filters',
+    templateUrl: './files-filters.component.html',
+    styleUrls: ['./files-filters.component.scss'],
+    standalone: false
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();

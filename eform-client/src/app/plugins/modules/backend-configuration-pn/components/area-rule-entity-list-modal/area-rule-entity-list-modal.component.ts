@@ -10,9 +10,10 @@ import {Subscription} from 'rxjs';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-area-rule-entity-list-modal',
-  templateUrl: './area-rule-entity-list-modal.component.html',
-  styleUrls: ['./area-rule-entity-list-modal.component.scss'],
+    selector: 'app-area-rule-entity-list-modal',
+    templateUrl: './area-rule-entity-list-modal.component.html',
+    styleUrls: ['./area-rule-entity-list-modal.component.scss'],
+    standalone: false
 })
 export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
   entityListChanged: EventEmitter<Array<EntityItemModel>> = new EventEmitter<Array<EntityItemModel>>();

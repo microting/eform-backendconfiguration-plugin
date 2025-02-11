@@ -10,9 +10,10 @@ import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-planned-task-days',
-  templateUrl: './planned-task-days.component.html',
-  styleUrls: ['./planned-task-days.component.scss'],
+    selector: 'app-planned-task-days',
+    templateUrl: './planned-task-days.component.html',
+    styleUrls: ['./planned-task-days.component.scss'],
+    standalone: false
 })
 export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   @Input() plannedTaskDaysModel: PlannedTaskDaysModel;

@@ -35,9 +35,10 @@ import {
 } from '../../../../state/documents/documents.selector';
 
 @Component({
-  selector: 'app-documents-container',
-  templateUrl: './documents-container.component.html',
-  styleUrls: ['./documents-container.component.scss'],
+    selector: 'app-documents-container',
+    templateUrl: './documents-container.component.html',
+    styleUrls: ['./documents-container.component.scss'],
+    standalone: false
 })
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
   folders: DocumentSimpleFolderModel[];

@@ -37,8 +37,9 @@ import {AppSettingsStateService} from 'src/app/modules/application-settings/comp
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-worker-assignments-page',
-  templateUrl: './task-worker-assignments-page.component.html',
+    selector: 'app-property-worker-assignments-page',
+    templateUrl: './task-worker-assignments-page.component.html',
+    standalone: false
 })
 export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;

@@ -18,10 +18,11 @@ import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-compliances-table',
-  templateUrl: './compliances-table.component.html',
-  styleUrls: ['./compliances-table.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-compliances-table',
+    templateUrl: './compliances-table.component.html',
+    styleUrls: ['./compliances-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class CompliancesTableComponent implements OnInit {
   mergedTableHeaders: MtxGridColumn[] = [];

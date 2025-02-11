@@ -18,9 +18,10 @@ import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-property-edit-areas-modal',
-  templateUrl: './property-areas-edit-modal.component.html',
-  styleUrls: ['./property-areas-edit-modal.component.scss'],
+    selector: 'app-property-edit-areas-modal',
+    templateUrl: './property-areas-edit-modal.component.html',
+    styleUrls: ['./property-areas-edit-modal.component.scss'],
+    standalone: false
 })
 export class PropertyAreasEditModalComponent implements OnInit {
   updatePropertyAreas: EventEmitter<PropertyAreasUpdateModel> = new EventEmitter<PropertyAreasUpdateModel>();

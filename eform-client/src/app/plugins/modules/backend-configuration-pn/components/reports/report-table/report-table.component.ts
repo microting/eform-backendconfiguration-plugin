@@ -24,10 +24,11 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-report-table',
-  templateUrl: './report-table.component.html',
-  styleUrls: ['./report-table.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-report-table',
+    templateUrl: './report-table.component.html',
+    styleUrls: ['./report-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() items: ReportEformItemModel[] = [];

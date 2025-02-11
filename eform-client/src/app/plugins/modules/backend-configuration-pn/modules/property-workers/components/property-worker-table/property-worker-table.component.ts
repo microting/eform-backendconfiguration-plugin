@@ -27,9 +27,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-worker-table',
-  templateUrl: './property-worker-table.component.html',
-  styleUrls: ['./property-worker-table.component.scss'],
+    selector: 'app-property-worker-table',
+    templateUrl: './property-worker-table.component.html',
+    styleUrls: ['./property-worker-table.component.scss'],
+    standalone: false
 })
 export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   //@Input() propertyWorkers: any[] = [];

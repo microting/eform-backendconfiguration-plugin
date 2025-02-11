@@ -23,9 +23,10 @@ import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-documents-folders',
-  templateUrl: './documents-folders.component.html',
-  styleUrls: ['./documents-folders.component.scss']
+    selector: 'app-documents-folders',
+    templateUrl: './documents-folders.component.html',
+    styleUrls: ['./documents-folders.component.scss'],
+    standalone: false
 })
 export class DocumentsFoldersComponent implements OnInit, OnDestroy {
   folders: Paged<DocumentFolderModel> = new Paged<DocumentFolderModel>();

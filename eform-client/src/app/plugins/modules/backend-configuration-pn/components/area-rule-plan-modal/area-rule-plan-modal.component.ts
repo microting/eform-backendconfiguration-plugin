@@ -26,9 +26,10 @@ import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {generateWeeksList} from '../../helpers';
 
 @Component({
-  selector: 'app-area-rule-plan-modal',
-  templateUrl: './area-rule-plan-modal.component.html',
-  styleUrls: ['./area-rule-plan-modal.component.scss'],
+    selector: 'app-area-rule-plan-modal',
+    templateUrl: './area-rule-plan-modal.component.html',
+    styleUrls: ['./area-rule-plan-modal.component.scss'],
+    standalone: false
 })
 export class AreaRulePlanModalComponent implements OnInit {
   updateAreaRulePlan: EventEmitter<AreaRulePlanningModel> = new EventEmitter<AreaRulePlanningModel>();

@@ -20,9 +20,10 @@ import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 
 @Component({
-  selector: 'app-documents-document-edit',
-  templateUrl: './documents-document-edit.component.html',
-  styleUrls: ['./documents-document-edit.component.scss']
+    selector: 'app-documents-document-edit',
+    templateUrl: './documents-document-edit.component.html',
+    styleUrls: ['./documents-document-edit.component.scss'],
+    standalone: false
 })
 export class DocumentsDocumentEditComponent implements OnInit {
   documentModel: DocumentModel = new DocumentModel();

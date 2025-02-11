@@ -7,9 +7,10 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-management-delete-modal',
-  templateUrl: './task-management-delete-modal.component.html',
-  styleUrls: ['./task-management-delete-modal.component.scss'],
+    selector: 'app-task-management-delete-modal',
+    templateUrl: './task-management-delete-modal.component.html',
+    styleUrls: ['./task-management-delete-modal.component.scss'],
+    standalone: false
 })
 export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
   @Output() workOrderCaseDelete: EventEmitter<number> = new EventEmitter<number>();

@@ -20,9 +20,10 @@ import {
 } from "src/app/plugins/modules/backend-configuration-pn/state/files/files.selector";
 
 @Component({
-  selector: 'app-files-table',
-  templateUrl: './files-table.component.html',
-  styleUrls: ['./files-table.component.scss'],
+    selector: 'app-files-table',
+    templateUrl: './files-table.component.html',
+    styleUrls: ['./files-table.component.scss'],
+    standalone: false
 })
 export class FilesTableComponent implements OnInit {
   _files: Paged<FilesModel> = new Paged<FilesModel>();

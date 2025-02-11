@@ -37,9 +37,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-management-container',
-  templateUrl: './task-management-container.component.html',
-  styleUrls: ['./task-management-container.component.scss'],
+    selector: 'app-task-management-container',
+    templateUrl: './task-management-container.component.html',
+    styleUrls: ['./task-management-container.component.scss'],
+    standalone: false
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   workOrderCases: WorkOrderCaseModel[] = [];

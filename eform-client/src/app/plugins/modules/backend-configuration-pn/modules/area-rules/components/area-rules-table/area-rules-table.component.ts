@@ -32,10 +32,11 @@ import {
 } from "src/app/plugins/modules/backend-configuration-pn/state/area-rules/area-rules.selector";
 
 @Component({
-  selector: 'app-area-rules-table',
-  templateUrl: './area-rules-table.component.html',
-  styleUrls: ['./area-rules-table.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-area-rules-table',
+    templateUrl: './area-rules-table.component.html',
+    styleUrls: ['./area-rules-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class AreaRulesTableComponent implements OnChanges, OnInit {
   @Input() areaRules: AreaRuleSimpleModel[] = [];

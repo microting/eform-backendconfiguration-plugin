@@ -27,9 +27,10 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-properties-container',
-  templateUrl: './properties-container.component.html',
-  styleUrls: ['./properties-container.component.scss'],
+    selector: 'app-properties-container',
+    templateUrl: './properties-container.component.html',
+    styleUrls: ['./properties-container.component.scss'],
+    standalone: false
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
   isFarms: boolean = false;

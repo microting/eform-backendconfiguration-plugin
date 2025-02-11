@@ -26,9 +26,10 @@ import {TranslateService} from "@ngx-translate/core";
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-backend-configuration-pn-report',
-  templateUrl: './report-container.component.html',
-  styleUrls: ['./report-container.component.scss'],
+    selector: 'app-backend-configuration-pn-report',
+    templateUrl: './report-container.component.html',
+    styleUrls: ['./report-container.component.scss'],
+    standalone: false
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
   reportsModel: ReportEformPnModel[] = [];

@@ -2,9 +2,10 @@ import {Component, Inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-file-create-zoom-page',
-  templateUrl: './file-create-zoom-page.component.html',
-  styleUrls: ['./file-create-zoom-page.component.scss']
+    selector: 'app-file-create-zoom-page',
+    templateUrl: './file-create-zoom-page.component.html',
+    styleUrls: ['./file-create-zoom-page.component.scss'],
+    standalone: false
 })
 export class FileCreateZoomPageComponent {
   page: number = 0;

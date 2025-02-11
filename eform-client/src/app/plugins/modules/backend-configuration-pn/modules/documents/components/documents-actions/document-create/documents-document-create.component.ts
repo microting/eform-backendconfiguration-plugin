@@ -21,9 +21,10 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-documents-document-create',
-  templateUrl: './documents-document-create.component.html',
-  styleUrls: ['./documents-document-create.component.scss']
+    selector: 'app-documents-document-create',
+    templateUrl: './documents-document-create.component.html',
+    styleUrls: ['./documents-document-create.component.scss'],
+    standalone: false
 })
 export class DocumentsDocumentCreateComponent implements OnInit {
   newDocumentModel: DocumentModel = new DocumentModel();

@@ -8,9 +8,10 @@ import { PropertyModel } from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-property-delete-modal',
-  templateUrl: './property-delete-modal.component.html',
-  styleUrls: ['./property-delete-modal.component.scss'],
+    selector: 'app-property-delete-modal',
+    templateUrl: './property-delete-modal.component.html',
+    styleUrls: ['./property-delete-modal.component.scss'],
+    standalone: false
 })
 export class PropertyDeleteModalComponent implements OnInit {
   propertyDelete: EventEmitter<number> = new EventEmitter<number>();

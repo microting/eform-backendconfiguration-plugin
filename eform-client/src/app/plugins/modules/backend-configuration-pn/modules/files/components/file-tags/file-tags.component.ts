@@ -25,9 +25,10 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-file-tags',
-  templateUrl: './file-tags.component.html',
-  styleUrls: ['./file-tags.component.html'],
+    selector: 'app-file-tags',
+    templateUrl: './file-tags.component.html',
+    styleUrls: ['./file-tags.component.html'],
+    standalone: false
 })
 export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
   @Input() availableTags: SharedTagModel[] = [];

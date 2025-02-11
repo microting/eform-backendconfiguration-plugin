@@ -20,9 +20,10 @@ import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-files-container',
-  templateUrl: './files-container.component.html',
-  styleUrls: ['./files-container.component.scss'],
+    selector: 'app-files-container',
+    templateUrl: './files-container.component.html',
+    styleUrls: ['./files-container.component.scss'],
+    standalone: false
 })
 export class FilesContainerComponent implements OnInit, OnDestroy {
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;

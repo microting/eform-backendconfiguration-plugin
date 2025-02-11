@@ -12,9 +12,10 @@ import { CompliancesStateService } from '../store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-compliances-container',
-  templateUrl: './compliances-container.component.html',
-  styleUrls: ['./compliances-container.component.scss'],
+    selector: 'app-compliances-container',
+    templateUrl: './compliances-container.component.html',
+    styleUrls: ['./compliances-container.component.scss'],
+    standalone: false
 })
 export class CompliancesContainerComponent implements OnInit, OnDestroy {
   breadcrumbs = [

@@ -6,9 +6,10 @@ import {Store} from '@ngrx/store';
 import {take} from 'rxjs';
 
 @Component({
-  selector: 'app-backend-configuration-pn-layout',
-  template: `
+    selector: 'app-backend-configuration-pn-layout',
+    template: `
     <router-outlet></router-outlet>`,
+    standalone: false
 })
 export class BackendConfigurationPnLayoutComponent implements AfterContentInit, OnInit {
   private pluginName = 'backend-configuration';

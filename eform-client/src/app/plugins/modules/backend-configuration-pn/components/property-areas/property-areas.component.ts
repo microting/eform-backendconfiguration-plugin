@@ -20,9 +20,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-property-areas',
-  templateUrl: './property-areas.component.html',
-  styleUrls: ['./property-areas.component.scss'],
+    selector: 'app-property-areas',
+    templateUrl: './property-areas.component.html',
+    styleUrls: ['./property-areas.component.scss'],
+    standalone: false
 })
 export class PropertyAreasComponent implements OnInit, OnDestroy {
   selectedProperty: PropertyModel = new PropertyModel();

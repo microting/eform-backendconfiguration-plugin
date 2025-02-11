@@ -9,9 +9,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-ad-hoc-task-workers',
-  templateUrl: './ad-hoc-task-workers.component.html',
-  styleUrls: ['./ad-hoc-task-workers.component.scss'],
+    selector: 'app-ad-hoc-task-workers',
+    templateUrl: './ad-hoc-task-workers.component.html',
+    styleUrls: ['./ad-hoc-task-workers.component.scss'],
+    standalone: false
 })
 export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskWorkers: AdHocTaskWorkers;

@@ -54,9 +54,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-tracker-container',
-  templateUrl: './task-tracker-container.component.html',
-  styleUrls: ['./task-tracker-container.component.scss'],
+    selector: 'app-task-tracker-container',
+    templateUrl: './task-tracker-container.component.html',
+    styleUrls: ['./task-tracker-container.component.scss'],
+    standalone: false
 })
 export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;

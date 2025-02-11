@@ -31,9 +31,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-wizard-update-modal',
-  templateUrl: './task-wizard-update-modal.component.html',
-  styleUrls: ['./task-wizard-update-modal.component.scss'],
+    selector: 'app-task-wizard-update-modal',
+    templateUrl: './task-wizard-update-modal.component.html',
+    styleUrls: ['./task-wizard-update-modal.component.scss'],
+    standalone: false
 })
 export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   planningTagsModal: PlanningTagsComponent;

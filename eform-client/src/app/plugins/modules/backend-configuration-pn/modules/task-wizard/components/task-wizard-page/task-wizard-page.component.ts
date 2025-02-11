@@ -32,9 +32,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-wizard-page',
-  templateUrl: './task-wizard-page.component.html',
-  styleUrls: ['./task-wizard-page.component.scss'],
+    selector: 'app-task-wizard-page',
+    templateUrl: './task-wizard-page.component.html',
+    styleUrls: ['./task-wizard-page.component.scss'],
+    standalone: false
 })
 export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;

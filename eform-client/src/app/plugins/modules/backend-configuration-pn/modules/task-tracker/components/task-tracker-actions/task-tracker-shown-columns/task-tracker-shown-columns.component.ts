@@ -8,9 +8,10 @@ import {FormControl, FormGroup} from '@angular/forms';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-tracker-shown-columns-container',
-  templateUrl: './task-tracker-shown-columns.component.html',
-  styleUrls: ['./task-tracker-shown-columns.component.scss'],
+    selector: 'app-task-tracker-shown-columns-container',
+    templateUrl: './task-tracker-shown-columns.component.html',
+    styleUrls: ['./task-tracker-shown-columns.component.scss'],
+    standalone: false
 })
 export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
   public columnsChanged = new EventEmitter<Columns>();

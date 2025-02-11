@@ -21,9 +21,10 @@ import {
 import {Store} from '@ngrx/store';
 
 @Component({
-  selector: 'app-backend-configuration-case-page',
-  templateUrl: './backend-configuration-case-page.component.html',
-  styleUrls: ['./backend-configuration-case-page.component.scss'],
+    selector: 'app-backend-configuration-case-page',
+    templateUrl: './backend-configuration-case-page.component.html',
+    styleUrls: ['./backend-configuration-case-page.component.scss'],
+    standalone: false
 })
 export class BackendConfigurationCasePageComponent implements OnInit {
   @ViewChildren(CaseEditElementComponent)

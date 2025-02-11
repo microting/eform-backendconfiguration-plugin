@@ -6,9 +6,10 @@ import * as R from 'ramda';
 import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @Component({
-  selector: 'app-task-tracker-select-worker-modal',
-  templateUrl: './task-tracker-select-worker-modal.component.html',
-  styleUrls: ['./task-tracker-select-worker-modal.component.scss'],
+    selector: 'app-task-tracker-select-worker-modal',
+    templateUrl: './task-tracker-select-worker-modal.component.html',
+    styleUrls: ['./task-tracker-select-worker-modal.component.scss'],
+    standalone: false
 })
 export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy {
   sites: CommonDictionaryModel[] = [];

@@ -23,9 +23,10 @@ import {PlanningModel} from "src/app/plugins/modules/items-planning-pn/models";
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-wizard-table',
-  templateUrl: './task-wizard-table.component.html',
-  styleUrls: ['./task-wizard-table.component.scss'],
+    selector: 'app-task-wizard-table',
+    templateUrl: './task-wizard-table.component.html',
+    styleUrls: ['./task-wizard-table.component.scss'],
+    standalone: false
 })
 export class TaskWizardTableComponent implements OnInit, OnDestroy {
   @Input() tasks: TaskWizardModel[] = [];

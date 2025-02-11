@@ -6,9 +6,10 @@ import {SharedTagModel} from 'src/app/common/models';
 import * as R from 'ramda';
 
 @Component({
-  selector: 'app-file-tags-edit',
-  templateUrl: './file-tags-edit.component.html',
-  styleUrls: ['./file-tags-edit.component.scss']
+    selector: 'app-file-tags-edit',
+    templateUrl: './file-tags-edit.component.html',
+    styleUrls: ['./file-tags-edit.component.scss'],
+    standalone: false
 })
 export class FileTagsEditComponent implements OnInit {
   fileTagsUpdated: EventEmitter<void> = new EventEmitter<void>();

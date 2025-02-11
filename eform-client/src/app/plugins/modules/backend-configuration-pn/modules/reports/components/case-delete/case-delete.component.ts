@@ -8,9 +8,10 @@ import {ReportEformItemModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-case-delete',
-  templateUrl: './case-delete.component.html',
-  styleUrls: ['./case-delete.component.scss'],
+    selector: 'app-case-delete',
+    templateUrl: './case-delete.component.html',
+    styleUrls: ['./case-delete.component.scss'],
+    standalone: false
 })
 export class CaseDeleteComponent implements OnInit {
   constructor(

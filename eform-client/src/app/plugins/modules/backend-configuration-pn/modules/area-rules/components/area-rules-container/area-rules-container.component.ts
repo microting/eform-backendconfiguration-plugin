@@ -34,9 +34,10 @@ import { Sort } from '@angular/material/sort';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-area-rules-container',
-  templateUrl: './area-rules-container.component.html',
-  styleUrls: ['./area-rules-container.component.scss'],
+    selector: 'app-area-rules-container',
+    templateUrl: './area-rules-container.component.html',
+    styleUrls: ['./area-rules-container.component.scss'],
+    standalone: false
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   areaRules: AreaRuleSimpleModel[] = [];

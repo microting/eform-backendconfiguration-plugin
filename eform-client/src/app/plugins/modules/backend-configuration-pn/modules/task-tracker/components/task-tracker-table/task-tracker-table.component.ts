@@ -32,9 +32,10 @@ import {Overlay} from '@angular/cdk/overlay';
 import {ThemePalette} from "@angular/material/core";
 
 @Component({
-  selector: 'app-task-tracker-table',
-  templateUrl: './task-tracker-table.component.html',
-  styleUrls: ['./task-tracker-table.component.scss'],
+    selector: 'app-task-tracker-table',
+    templateUrl: './task-tracker-table.component.html',
+    styleUrls: ['./task-tracker-table.component.scss'],
+    standalone: false
 })
 export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Input() columnsFromDb: Columns;

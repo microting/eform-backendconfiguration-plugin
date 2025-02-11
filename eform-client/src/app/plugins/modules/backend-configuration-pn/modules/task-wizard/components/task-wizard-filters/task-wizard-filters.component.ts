@@ -22,9 +22,10 @@ import {ActivatedRoute} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-task-wizard-filters',
-  templateUrl: './task-wizard-filters.component.html',
-  styleUrls: ['./task-wizard-filters.component.scss'],
+    selector: 'app-task-wizard-filters',
+    templateUrl: './task-wizard-filters.component.html',
+    styleUrls: ['./task-wizard-filters.component.scss'],
+    standalone: false
 })
 export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
