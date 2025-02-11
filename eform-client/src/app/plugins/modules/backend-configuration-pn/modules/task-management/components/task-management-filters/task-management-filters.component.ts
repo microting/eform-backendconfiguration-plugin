@@ -109,11 +109,11 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             }),
             date: new FormGroup({
               dateFrom: new FormControl({
-                value: parse(filters.dateFrom as string, PARSING_DATE_FORMAT, new Date),
+                value: new Date(),
                 disabled: !filters.propertyId,
               }),
               dateTo: new FormControl({
-                value: parse(filters.dateTo as string, PARSING_DATE_FORMAT, new Date),
+                value: new Date(),
                 disabled: !filters.propertyId,
               }),
             }),
@@ -162,7 +162,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           // } else {
           //   this.filtersForm.get('lastAssignedTo').disable();
           // }
-          this.filtersForm.get('status').enable();
+          this.filtersForm.get('statuses').enable();
           this.filtersForm.get('date').enable();
         }
       });
