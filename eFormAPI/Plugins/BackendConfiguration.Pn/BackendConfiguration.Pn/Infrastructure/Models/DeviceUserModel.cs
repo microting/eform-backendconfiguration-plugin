@@ -42,47 +42,47 @@ public class DeviceUserModel
     public bool? TimeRegistrationEnabled { get; set; }
 
     // minutes from midnight for the start of the shift (0-1440) monday
-    public int StartMonday { get; set; }
+    public int? StartMonday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) monday
-    public int EndMonday { get; set; }
+    public int? EndMonday { get; set; }
     // minutes of break for the shift (0-1440) monday
-    public int BreakMonday { get; set; }
+    public int? BreakMonday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) tuesday
-    public int StartTuesday { get; set; }
+    public int? StartTuesday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) tuesday
-    public int EndTuesday { get; set; }
+    public int? EndTuesday { get; set; }
     // minutes of break for the shift (0-1440) tuesday
-    public int BreakTuesday { get; set; }
+    public int? BreakTuesday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) wednesday
-    public int StartWednesday { get; set; }
+    public int? StartWednesday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) wednesday
-    public int EndWednesday { get; set; }
+    public int? EndWednesday { get; set; }
     // minutes of break for the shift (0-1440) wednesday
-    public int BreakWednesday { get; set; }
+    public int? BreakWednesday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) thursday
-    public int StartThursday { get; set; }
+    public int? StartThursday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) thursday
-    public int EndThursday { get; set; }
+    public int? EndThursday { get; set; }
     // minutes of break for the shift (0-1440) thursday
-    public int BreakThursday { get; set; }
+    public int? BreakThursday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) friday
-    public int StartFriday { get; set; }
+    public int? StartFriday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) friday
-    public int EndFriday { get; set; }
+    public int? EndFriday { get; set; }
     // minutes of break for the shift (0-1440) friday
-    public int BreakFriday { get; set; }
+    public int? BreakFriday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) saturday
-    public int StartSaturday { get; set; }
+    public int? StartSaturday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) saturday
-    public int EndSaturday { get; set; }
+    public int? EndSaturday { get; set; }
     // minutes of break for the shift (0-1440) saturday
-    public int BreakSaturday { get; set; }
+    public int? BreakSaturday { get; set; }
     // minutes from midnight for the start of the shift (0-1440) sunday
-    public int StartSunday { get; set; }
+    public int? StartSunday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) sunday
-    public int EndSunday { get; set; }
+    public int? EndSunday { get; set; }
     // minutes of break for the shift (0-1440) sunday
-    public int BreakSunday { get; set; }
+    public int? BreakSunday { get; set; }
     public bool? TaskManagementEnabled { get; set; }
     public int? CustomerNo { get; set; }
     public int? OtpCode { get; set; }
