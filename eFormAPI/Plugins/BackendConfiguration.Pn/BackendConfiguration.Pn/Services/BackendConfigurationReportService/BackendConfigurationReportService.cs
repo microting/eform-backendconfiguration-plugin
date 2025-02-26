@@ -292,10 +292,8 @@ public class BackendConfigurationReportService(
                             var list = new List<string>();
                             if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
                             {
-                                list.Add(isDocx
-                                    //? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
-                                    ? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
-                                    : imageField.UploadedData.FileName);
+                                list.Add(
+                                    $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}");
                                 list.Add(geoTag);
                                 reportModel.ImageNames.Add(
                                     new KeyValuePair<List<string>, List<string>>(keyList, list));
@@ -717,7 +715,7 @@ public class BackendConfigurationReportService(
 
                             if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
                             {
-                                reportImages.ImageName = imageField.UploadedData.FileName;
+                                reportImages.ImageName = $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}";
                             }
 
                             group.ImageNames.Add(reportImages);
