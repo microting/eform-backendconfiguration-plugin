@@ -35,7 +35,7 @@ RUN mkdir -p ./Plugins/BackendConfiguration.Pn
 COPY --from=build-env /app/ItemsPlanning.Pn/out ./Plugins/ItemsPlanning.Pn
 COPY --from=build-env /app/BackendConfiguration.Pn/out ./Plugins/BackendConfiguration.Pn
 COPY --from=build-env /app/TimePlanning.Pn/out ./Plugins/TimePlanning.Pn
-COPY --from=node-env /app/dist wwwroot
+COPY --from=node-env /app/dist/browser wwwroot
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV Logging__Console__FormatterName=
