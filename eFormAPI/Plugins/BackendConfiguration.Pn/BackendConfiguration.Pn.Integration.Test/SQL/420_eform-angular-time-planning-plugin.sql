@@ -165,6 +165,8 @@ CREATE TABLE `AssignedSiteVersions` (
   `StartWednesday4ThShift` int(11) DEFAULT NULL,
   `StartWednesday5ThShift` int(11) DEFAULT NULL,
   `UseOneMinuteIntervals` tinyint(1) NOT NULL DEFAULT 0,
+  `UseGoogleSheetAsDefault` tinyint(1) NOT NULL DEFAULT 0,
+  `UseOnlyPlanHours` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -318,6 +320,8 @@ CREATE TABLE `AssignedSites` (
   `StartWednesday4ThShift` int(11) DEFAULT NULL,
   `StartWednesday5ThShift` int(11) DEFAULT NULL,
   `UseOneMinuteIntervals` tinyint(1) NOT NULL DEFAULT 0,
+  `UseGoogleSheetAsDefault` tinyint(1) NOT NULL DEFAULT 0,
+  `UseOnlyPlanHours` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
