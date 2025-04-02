@@ -175,6 +175,7 @@ CREATE TABLE `AssignedSiteVersions` (
   `TuesdayPlanHours` int(11) NOT NULL DEFAULT 0,
   `WednesdayPlanHours` int(11) NOT NULL DEFAULT 0,
   `UsePunchClock` tinyint(1) NOT NULL DEFAULT 0,
+  `UseDetailedPauseEditing` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -338,6 +339,7 @@ CREATE TABLE `AssignedSites` (
   `TuesdayPlanHours` int(11) NOT NULL DEFAULT 0,
   `WednesdayPlanHours` int(11) NOT NULL DEFAULT 0,
   `UsePunchClock` tinyint(1) NOT NULL DEFAULT 0,
+  `UseDetailedPauseEditing` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -491,6 +493,7 @@ CREATE TABLE `PlanRegistrationVersions` (
   `Stop4StoppedAt` datetime(6) DEFAULT NULL,
   `Stop5Id` int(11) NOT NULL DEFAULT 0,
   `Stop5StoppedAt` datetime(6) DEFAULT NULL,
+  `PlanChangedByAdmin` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -626,6 +629,7 @@ CREATE TABLE `PlanRegistrations` (
   `Stop4StoppedAt` datetime(6) DEFAULT NULL,
   `Stop5Id` int(11) NOT NULL DEFAULT 0,
   `Stop5StoppedAt` datetime(6) DEFAULT NULL,
+  `PlanChangedByAdmin` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`),
   KEY `IX_PlanRegistrations_MessageId` (`MessageId`),
   CONSTRAINT `FK_PlanRegistrations_Messages_MessageId` FOREIGN KEY (`MessageId`) REFERENCES `Messages` (`Id`)
