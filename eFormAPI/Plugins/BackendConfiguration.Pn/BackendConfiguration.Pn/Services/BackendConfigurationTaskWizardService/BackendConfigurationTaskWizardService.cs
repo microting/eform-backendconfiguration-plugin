@@ -415,6 +415,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var planning = new Planning
             {
                 CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
                 IsEditable = false,
                 Enabled = createModel.Status == TaskWizardStatuses.Active,
                 IsLocked = true,
@@ -502,6 +503,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var areRule = new AreaRule
             {
                 CreatedInGuide = true,
+                CreatedAt = planning.CreatedAt,
+                UpdatedAt = planning.UpdatedAt,
                 AreaId = areaId,
                 AreaRuleTranslations = createModel.Translates
                     .Select(t => new AreaRuleTranslation
@@ -526,6 +529,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 [
                     new()
                     {
+                        CreatedAt = planning.CreatedAt,
+                        UpdatedAt = planning.UpdatedAt,
                         AreaId = areaId,
                         FolderId = (int)createModel.FolderId,
                         ItemPlanningId = planning.Id,

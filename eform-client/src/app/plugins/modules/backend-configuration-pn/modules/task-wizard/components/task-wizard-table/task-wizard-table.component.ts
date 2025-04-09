@@ -150,6 +150,10 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
     return format(row.startDate, 'P', {locale: this.authStateService.dateFnsLocale});
   }
 
+  getFormattedDate(date: Date) {
+    return format(date, 'P', {locale: this.authStateService.dateFnsLocale});
+  }
+
   onClickTag(tag: CommonDictionaryModel) {
     this.taskWizardStateService.addTagToFilters(tag);
     // this.updateTable.emit();
