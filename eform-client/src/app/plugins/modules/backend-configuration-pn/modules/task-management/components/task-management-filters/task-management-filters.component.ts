@@ -59,6 +59,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   propertyUpdateSub$: Subscription;
   getEntitySelectableGroupSub$: Subscription;
   updateEntitySelectableGroupSub$: Subscription;
+  propertyIsSelected: boolean = false;
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
@@ -110,11 +111,11 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             }),
             date: new FormGroup({
               dateFrom: new FormControl({
-                value: new Date(),
+                value: null,
                 disabled: !filters.propertyId,
               }),
               dateTo: new FormControl({
-                value: new Date(),
+                value: null,
                 disabled: !filters.propertyId,
               }),
             }),
@@ -135,6 +136,9 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         if (this.taskManagementStateService.getCurrentPropertyId() !== value) {
           if (value !== -1) {
             this.getPropertyAreas(value);
+            this.propertyIsSelected = true;
+          } else {
+            this.propertyIsSelected = false;
           }
           this.getSites(value);
           this.taskManagementStateService.updatePropertyId(value);
@@ -142,7 +146,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             areaName: null,
             createdBy: null,
             lastAssignedTo: null,
-            statuses: [1,3,4],
+            statuses: [],
             date: {
               dateTo: null,
               dateFrom: null,
