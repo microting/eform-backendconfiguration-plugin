@@ -56,7 +56,7 @@
 
 <ng-template #idTpl let-row>
   <ng-container *ngIf="selectAuthIsAdmin$ | async;">
-    <span title="{{row.createdAt}}">{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
+    <span title="{{getFormattedDate(row.createdAt)}} / {{getFormattedDate(row.updatedAt)}}">{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
   </ng-container>
   <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
     <span>{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
