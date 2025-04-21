@@ -461,20 +461,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
 
-                                    var newTaskId = await timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId").ConfigureAwait(false);
-                                    var folderId = await timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId").ConfigureAwait(false);;
-                                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value)).ConfigureAwait(false);
-                                    var mainElement = await core.ReadeForm(int.Parse(newTaskId.Value), language).ConfigureAwait(false);
-                                    mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
-                                    mainElement.EndDate = DateTime.UtcNow.AddYears(10);
-                                    mainElement.DisplayOrder = int.MinValue;
-                                    mainElement.Repeated = 0;
-                                    mainElement.PushMessageTitle = mainElement.Label;
-                                    mainElement.EnableQuickSync = true;
-                                    var caseId = await core.CaseCreate(mainElement, "", siteDto.SiteId, int.Parse(folderId.Value)).ConfigureAwait(false);
-                                    assignmentSite.CaseMicrotingUid = caseId;
-                                    await assignmentSite.Update(timePlanningDbContext).ConfigureAwait(false);
-
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
                                 catch (Exception e)
@@ -546,22 +532,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         UpdatedByUserId = userId
                     };
                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
-                    // var option =
-                    var newTaskId = await timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId").ConfigureAwait(false);
-                    var folderId = await timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId").ConfigureAwait(false);;
-
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value)).ConfigureAwait(false);
-                    var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
-                    var mainElement = await core.ReadeForm(int.Parse(newTaskId.Value), language).ConfigureAwait(false);
-                    mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
-                    mainElement.EndDate = DateTime.UtcNow.AddYears(10);
-                    mainElement.DisplayOrder = int.MinValue;
-                    mainElement.Repeated = 0;
-                    mainElement.PushMessageTitle = mainElement.Label;
-                    mainElement.EnableQuickSync = true;
-                    var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, int.Parse(folderId.Value)).ConfigureAwait(false);
-                    assignmentSite.CaseMicrotingUid = caseId;
-                    await assignmentSite.Update(timePlanningDbContext).ConfigureAwait(false);
 
                     return new OperationDataResult<int>(true, site.Id);
                 }
