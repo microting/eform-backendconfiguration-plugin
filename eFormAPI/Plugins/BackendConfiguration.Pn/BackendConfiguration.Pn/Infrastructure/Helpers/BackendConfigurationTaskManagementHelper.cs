@@ -164,7 +164,7 @@ public static class BackendConfigurationTaskManagementHelper
 
         await bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
             updateModel.CaseStatusEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid),
-            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList)).ConfigureAwait(false);
+            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList, userService.UserId, userService.UserId)).ConfigureAwait(false);
 
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }

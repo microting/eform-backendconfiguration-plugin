@@ -25,20 +25,14 @@ using KeyValuePair = Microting.eForm.Dto.KeyValuePair;
 
 namespace BackendConfiguration.Pn.Handlers;
 
-public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
+public class WorkOrderCreatedHandler(
+    BackendConfigurationDbContextHelper backendConfigurationDbContextHelper,
+    ChemicalDbContextHelper chemicalDbContextHelper,
+    Core sdkCore,
+    IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+    : IHandleMessages<WorkOrderCreated>
 {
-    private readonly Core _sdkCore;
-    private readonly BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
-    private readonly ChemicalDbContextHelper _chemicalDbContextHelper;
-    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-
-    public WorkOrderCreatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, ChemicalDbContextHelper chemicalDbContextHelper, Core sdkCore, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
-    {
-        _backendConfigurationDbContextHelper = backendConfigurationDbContextHelper;
-        _chemicalDbContextHelper = chemicalDbContextHelper;
-        _sdkCore = sdkCore;
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-    }
+    private readonly ChemicalDbContextHelper _chemicalDbContextHelper = chemicalDbContextHelper;
 
     public async Task Handle(WorkOrderCreated message)
     {
@@ -89,8 +83,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         List<KeyValuePair<string, string>> picturesOfTasks
         )
     {
-        var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
-        var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
+        var backendConfigurationPnDbContext = backendConfigurationDbContextHelper.GetDbContext();
+        var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
 
         var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
         DateTime startDate = new DateTime(2022, 12, 5);
@@ -108,19 +102,19 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             {
                 case "1":
                     displayOrder = 100_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Urgent")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Urgent")}<br>";
                     break;
                 case "2":
                     displayOrder = 200_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("High")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("High")}<br>";
                     break;
                 case "3":
                     displayOrder = 300_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Medium")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Medium")}<br>";
                     break;
                 case "4":
                     displayOrder = 400_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Low")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Low")}<br>";
                     break;
             }
 
@@ -129,37 +123,37 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             switch (workOrderCase.CaseStatusesEnum)
             {
                 case CaseStatusesEnum.Ongoing:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
+                    textStatus = backendConfigurationLocalizationService.GetString("Ongoing");
                     break;
                 case CaseStatusesEnum.Completed:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Completed");
+                    textStatus = backendConfigurationLocalizationService.GetString("Completed");
                     break;
                 case CaseStatusesEnum.Awaiting:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Awaiting");
+                    textStatus = backendConfigurationLocalizationService.GetString("Awaiting");
                     break;
                 case CaseStatusesEnum.Ordered:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Ordered");
+                    textStatus = backendConfigurationLocalizationService.GetString("Ordered");
                     break;
             }
 
-            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
+            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
 
             var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
-                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
+                ? $"<strong>{backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
                 : "";
 
-            var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
+            var outerDescription = $"<strong>{backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
                                    areaName +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
                                    priorityText +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
                                    (!string.IsNullOrEmpty(workOrderCase.CreatedByText)
-                                       ? $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
+                                       ? $"<strong>{backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
                                        : "") +
                                    assignedTo +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
 
-            var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage).ConfigureAwait(false);
+            var mainElement = await sdkCore.ReadeForm(eformId, siteLanguage).ConfigureAwait(false);
             // mainElement.CheckListFolderName = await sdkDbContext.Folders
             //     .Where(x => x.Id == folderId)
             //     .Select(x => x.MicrotingUid.ToString())
@@ -233,16 +227,16 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                     foreach (var picture in picturesOfTasks)
                     {
                         var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
-                        var storageResult = _sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+                        var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
 
-                        await _sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                        await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
                         showPicture.Value = picture.Value;
                         ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
                         j++;
                     }
                 }
             }
-            var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
+            var caseId = await sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
             var newWorkOrderCase = new WorkorderCase
             {
                 CaseId = (int)caseId!,
@@ -259,7 +253,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                 LastUpdatedByName = "",
                 LeadingCase = false,
                 Priority = workOrderCase.Priority,
-                CreatedByUserId = createdByUserId
+                CreatedByUserId = createdByUserId,
+                UpdatedByUserId = createdByUserId
             };
             await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
@@ -270,7 +265,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
     {
         // var filePath = Path.Combine(basePicturePath, imageName);
         Stream stream;
-        var storageResult = await _sdkCore.GetFileFromS3Storage(imageName).ConfigureAwait(false);
+        var storageResult = await sdkCore.GetFileFromS3Storage(imageName).ConfigureAwait(false);
         stream = storageResult.ResponseStream;
 
         using (var image = new MagickImage(stream))
@@ -362,14 +357,14 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         File.Delete(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName));
 
         // Upload PDF
-        string hash = await _sdkCore.PdfUpload(tempPDFFilePath).ConfigureAwait(false);
+        string hash = await sdkCore.PdfUpload(tempPDFFilePath).ConfigureAwait(false);
         if (hash != null)
         {
             //rename local file
             FileInfo fileInfo = new FileInfo(tempPDFFilePath);
             fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
             fileInfo.Delete();
-            await _sdkCore.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf").ConfigureAwait(false);
+            await sdkCore.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf").ConfigureAwait(false);
         }
 
         return hash;

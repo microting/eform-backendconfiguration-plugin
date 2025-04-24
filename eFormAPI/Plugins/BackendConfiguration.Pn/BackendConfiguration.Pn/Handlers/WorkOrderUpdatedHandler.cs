@@ -19,19 +19,12 @@ using KeyValuePair = Microting.eForm.Dto.KeyValuePair;
 
 namespace BackendConfiguration.Pn.Handlers;
 
-public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
+public class WorkOrderUpdatedHandler(
+    Core sdkCore,
+    BackendConfigurationDbContextHelper backendConfigurationDbContextHelper,
+    IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+    : IHandleMessages<WorkOrderUpdated>
 {
-    private readonly Core _sdkCore;
-    private readonly BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
-    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-
-    public WorkOrderUpdatedHandler(Core sdkCore, BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
-    {
-        _sdkCore = sdkCore;
-        _backendConfigurationDbContextHelper = backendConfigurationDbContextHelper;
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-    }
-
     public async Task Handle(WorkOrderUpdated message)
     {
         await DeployWorkOrderEform(message.PropertyWorkers,
@@ -48,7 +41,10 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             message.PushMessageTitle,
             message.UpdatedByName,
             message.HasImages,
-            message.PicturesOfTask);
+            message.PicturesOfTask,
+            message.CreatedByUserId,
+            message.UpdatedByUserId)
+            .ConfigureAwait(false);
     }
 
     private async Task DeployWorkOrderEform(
@@ -66,12 +62,14 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
         string pushMessageTitle,
         string updatedByName,
         bool hasImages,
-        List<KeyValuePair<string, string>> picturesOfTasks)
+        List<KeyValuePair<string, string>> picturesOfTasks,
+        int createdByUserId,
+        int updatedByUserId)
     {
 
 
-        var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
-        var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
+        var backendConfigurationPnDbContext = backendConfigurationDbContextHelper.GetDbContext();
+        var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
 
         int? folderId = null;
         var i = 0;
@@ -91,19 +89,19 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             {
                 case "1":
                     displayOrder = 100_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Urgent")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Urgent")}<br>";
                     break;
                 case "2":
                     displayOrder = 200_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("High")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("High")}<br>";
                     break;
                 case "3":
                     displayOrder = 300_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Medium")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Medium")}<br>";
                     break;
                 case "4":
                     displayOrder = 400_000_000 + displayOrder;
-                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Low")}<br>";
+                    priorityText = $"<strong>{backendConfigurationLocalizationService.GetString("Priority")}:</strong> {backendConfigurationLocalizationService.GetString("Low")}<br>";
                     break;
             }
 
@@ -112,36 +110,36 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             switch (status)
             {
                 case CaseStatusesEnum.Ongoing:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
+                    textStatus = backendConfigurationLocalizationService.GetString("Ongoing");
                     break;
                 case CaseStatusesEnum.Completed:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Completed");
+                    textStatus = backendConfigurationLocalizationService.GetString("Completed");
                     break;
                 case CaseStatusesEnum.Awaiting:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Awaiting");
+                    textStatus = backendConfigurationLocalizationService.GetString("Awaiting");
                     break;
                 case CaseStatusesEnum.Ordered:
-                    textStatus = _backendConfigurationLocalizationService.GetString("Ordered");
+                    textStatus = backendConfigurationLocalizationService.GetString("Ordered");
                     break;
             }
 
-            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
+            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
 
             var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
-                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
+                ? $"<strong>{backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
                 : "";
 
-            var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+            var outerDescription = $"<strong>{backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                                    areaName +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
                                    priorityText +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
                                    (!string.IsNullOrEmpty(workOrderCase.CreatedByText)
-                                       ? $"<strong>{_backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
+                                       ? $"<strong>{backendConfigurationLocalizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
                                        : "") +
                                    assignedTo +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
-            var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage);
+                                   $"<strong>{backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+            var mainElement = await sdkCore.ReadeForm(eformId, siteLanguage);
             mainElement.Label = " ";
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
@@ -218,9 +216,9 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                     foreach (var picture in picturesOfTasks)
                     {
                         var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
-                        var storageResult = _sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+                        var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
 
-                        await _sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                        await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
                         showPicture.Value = picture.Value;
                         ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
 
@@ -231,7 +229,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             int caseId = 0;
             if (status != CaseStatusesEnum.Completed)
             {
-                caseId = (int)await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+                caseId = (int)await sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
             }
 
             var createdBySite =
@@ -255,7 +253,9 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                 AssignedToSdkSiteId = assignedToSite.Id,
                 LastUpdatedByName = updatedByName,
                 LeadingCase = i == 0,
-                Priority = workOrderCase.Priority
+                Priority = workOrderCase.Priority,
+                CreatedByUserId = createdByUserId,
+                UpdatedByUserId = updatedByUserId
             }.Create(backendConfigurationPnDbContext);
             i++;
         }

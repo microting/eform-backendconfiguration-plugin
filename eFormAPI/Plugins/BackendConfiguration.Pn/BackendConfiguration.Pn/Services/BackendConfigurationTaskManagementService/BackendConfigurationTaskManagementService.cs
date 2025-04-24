@@ -320,6 +320,8 @@ public class BackendConfigurationTaskManagementService(
                 }
             }
 
+            workOrderCase.UpdatedByUserId = userService.UserId;
+
             await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var allChildTasks = await backendConfigurationPnDbContext.WorkorderCases
@@ -445,7 +447,9 @@ public class BackendConfigurationTaskManagementService(
                 LeadingCase = true,
                 LastAssignedToName = site.Name,
                 AssignedToSdkSiteId = site.Id,
-                Priority = createModel.Priority.ToString()
+                Priority = createModel.Priority.ToString(),
+                CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId,
             };
             await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
