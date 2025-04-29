@@ -763,7 +763,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.NameTranslations)
                 .Include(x => x.PlanningsTags)
                 .Include(x => x.PlanningSites)
-                .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+                .FirstAsync();
 
             foreach (var site in sitesToAdd
                          .Select(x =>
@@ -778,6 +778,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                              }))
             {
                 await site.Create(_backendConfigurationPnDbContext);
+            }
+
+            if (planning.WorkflowState == Constants.WorkflowStates.Removed)
+            {
+                planning.WorkflowState = Constants.WorkflowStates.Created;
             }
 
             foreach (var site in sitesToRemove.Select(siteId =>
