@@ -19,7 +19,7 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Testcontainers" Version="4.4.0" />
-        <PackageReference Include="Testcontainers.MariaDb" Version="4.3.0" />
+        <PackageReference Include="Testcontainers.MariaDb" Version="4.4.0" />
     </ItemGroup>
 
     <ItemGroup>
