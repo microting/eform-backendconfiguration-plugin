@@ -1,8 +1,14 @@
 version: 2
 updates:
 - package-ecosystem: nuget
-  directory: "/eFormAPI/Plugins/BackendConfiguration.Pn"
+  directory: "/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test"
   schedule:
     interval: daily
-    time: "04:00"
-  open-pull-requests-limit: 10
+- package-ecosystem: nuget
+  directory: "/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Integration.Test"
+  schedule:
+    interval: daily
+- package-ecosystem: nuget
+  directory: "/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn"
+  schedule:
+    interval: daily
