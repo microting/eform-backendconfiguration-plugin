@@ -357,7 +357,8 @@ export class PropertyWorkerRowObject {
                 propertyWorker.properties[i]
               )
             )
-          ).$('..').click();
+          // ).$('..').click();
+          ).click();
           await browser.pause(500);
         }
       }
