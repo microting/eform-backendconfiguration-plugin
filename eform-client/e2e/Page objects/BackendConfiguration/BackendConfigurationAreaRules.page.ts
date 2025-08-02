@@ -660,7 +660,7 @@ export class AreaRuleRowObject {
               await backendConfigurationAreaRulesPage.checkboxCreateAssignment(
                 areaRulePlanningCreateUpdate.workers[i].workerNumber
               )
-            ).$('..')
+            )
           ).click();
         }
       }
