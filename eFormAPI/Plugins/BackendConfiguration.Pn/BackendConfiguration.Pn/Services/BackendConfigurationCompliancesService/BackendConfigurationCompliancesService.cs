@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Controllers;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 
 using BackendConfigurationLocalizationService;
@@ -383,6 +385,38 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
         return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+    }
+
+    public async Task<OperationDataResult<CompliancesStatsModel>> Stats()
+    {
+        var complianceList = _backendConfigurationPnDbContext.Compliances;
+        var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
+        var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var oneWeekCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-7));
+        var twoWeeksCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-7) && x.Deadline >= DateTime.UtcNow.AddDays(-14));
+        var oneMonthCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-14) && x.Deadline >= DateTime.UtcNow.AddDays(-30));
+        var twoMonthsCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-30) && x.Deadline >= DateTime.UtcNow.AddDays(-60));
+        var threeMonthsCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-60) && x.Deadline >= DateTime.UtcNow.AddDays(-90));
+        var sixMonthsCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-90) && x.Deadline >= DateTime.UtcNow.AddDays(-180));
+        var moreThanSixMonthsCount = await complianceList.CountAsync(x => x.Deadline < DateTime.UtcNow.AddDays(-180));
+
+        var totalCount = complianceList.Count();
+
+        var statsModel = new CompliancesStatsModel
+        {
+            OneWeekInTheFutureCount = oneWeekInTheFutureCount,
+            TodayCount = todayCount,
+            TotalCount = totalCount,
+            OneWeekCount = oneWeekCount,
+            TwoWeeksCount = twoWeeksCount,
+            OneMonthCount = oneMonthCount,
+            TwoMonthsCount = twoMonthsCount,
+            ThreeMonthsCount = threeMonthsCount,
+            SixMonthsCount = sixMonthsCount,
+            MoreThanSixMonthsCount = moreThanSixMonthsCount
+        };
+
+        return new OperationDataResult<CompliancesStatsModel>(true, statsModel);
     }
 
     private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)

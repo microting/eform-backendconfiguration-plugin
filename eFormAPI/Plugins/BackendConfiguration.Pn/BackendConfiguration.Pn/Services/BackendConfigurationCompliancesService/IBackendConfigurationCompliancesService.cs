@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Controllers;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
@@ -39,4 +40,5 @@ public interface IBackendConfigurationCompliancesService
     Task<OperationDataResult<ReplyElement>> Read(int id);
     Task<OperationResult> Update(ReplyRequest model);
     Task<OperationResult> Delete(int id);
+    Task<OperationDataResult<CompliancesStatsModel>> Stats();
 }
