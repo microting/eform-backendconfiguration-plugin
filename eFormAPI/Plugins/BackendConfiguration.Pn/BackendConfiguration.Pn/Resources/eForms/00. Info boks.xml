@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-    <Id>22</Id>
+    <Id>142657</Id>
     <Repeated>0</Repeated>
-    <Label>00. Info boks</Label>
+    <Label>Info boks</Label>
     <StartDate>2021-12-02</StartDate>
     <EndDate>2031-12-02</EndDate>
     <Language>da</Language>
@@ -13,14 +13,14 @@
     <DisplayOrder>0</DisplayOrder>
     <ElementList>
         <Element type="DataElement">
-            <Id>22</Id>
-            <Label>00. Info boks</Label>
+            <Id>142657</Id>
+            <Label>Info boks</Label>
             <Description><![CDATA[]]></Description>
             <DisplayOrder>0</DisplayOrder>
             <ReviewEnabled>false</ReviewEnabled>
             <ManualSync>false</ManualSync>
             <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
-            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <DoneButtonDisabled>false</DoneButtonDisabled>
             <ApprovalEnabled>false</ApprovalEnabled>
             <DataItemList>
                 <DataItem type="None">
