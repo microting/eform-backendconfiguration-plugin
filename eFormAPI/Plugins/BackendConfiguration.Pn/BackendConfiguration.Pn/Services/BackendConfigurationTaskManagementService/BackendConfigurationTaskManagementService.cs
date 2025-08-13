@@ -433,6 +433,12 @@ public class BackendConfigurationTaskManagementService(
             createModel.Description = string.IsNullOrEmpty(createModel.Description)
                 ? ""
                 : createModel.Description.Replace("<div>", "").Replace("</div>", "");
+
+            if (createModel.CaseStatusEnum == CaseStatusesEnum.NewTask)
+            {
+                createModel.CaseStatusEnum = CaseStatusesEnum.Ongoing;
+            }
+
             var newWorkOrderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
