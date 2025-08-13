@@ -45,7 +45,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
       await btn.click();
       const itemObj = new EntitySelectItemEditRowObject();
       const item = await itemObj.getRow(i + 1);
-      const editBtn = await $$('#entityItemEditBtn')[i];
+      const editBtn = await $$('.entityItemEditBtn')[i];
       await editBtn.click();
       const ele = $(`#entityItemEditNameBox`);
       await ele.waitForDisplayed({timeout: 40000});
