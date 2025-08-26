@@ -550,6 +550,19 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         {
             await newArea.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
+
+        var brokenWorkorderCases = await backendConfigurationPnDbContext.WorkorderCases
+            .Where(x => x.CaseStatusesEnum == CaseStatusesEnum.NewTask)
+            .Where(x => x.WorkflowState !=
+                        Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            .Where(x => x.ParentWorkorderCaseId != null)
+            .ToListAsync();
+
+        foreach (var brokenWorkorderCase in brokenWorkorderCases)
+        {
+            brokenWorkorderCase.CaseStatusesEnum = CaseStatusesEnum.Awaiting;
+            await brokenWorkorderCase.Update(backendConfigurationPnDbContext);
+        }
     }
 
     public void ConfigureDbContext(IServiceCollection services, string connectionString)
