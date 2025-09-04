@@ -24,6 +24,7 @@ const workerForCreate = {
   surname: generateRandmString(),
   language: 'Dansk',
   properties: [0],
+  workerEmail: generateRandmString() + '@test.com',
 };
 
 describe('Backend Configuration Area Rules Planning Type3', function () {
