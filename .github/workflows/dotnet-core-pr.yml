@@ -147,9 +147,7 @@ jobs:
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_Angular.EformPlugins set Status = 2'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_SDK`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_SDK`'
-        docker exec -i mariadbtest mysql -u root --password=secretpassword -e "use 420_SDK; show tables"
         docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK -e "use 420_SDK; show tables"
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-backend-configuration-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-backend-configuration-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
