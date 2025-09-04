@@ -17,6 +17,7 @@ const workerForCreate: PropertyWorker = {
   surname: generateRandmString(),
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: generateRandmString() + '@test.com',
 };
 
 const nameArea: string = '00. Logbøger';

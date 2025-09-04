@@ -19,12 +19,14 @@ const workerForCreate: PropertyWorker = {
   surname: 'x',
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 const workerForCreate2: PropertyWorker = {
   name: 'b',
   surname: 'x',
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const task = {
