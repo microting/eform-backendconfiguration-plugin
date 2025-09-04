@@ -19,6 +19,7 @@ const workerForCreate: PropertyWorker = {
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const task = {

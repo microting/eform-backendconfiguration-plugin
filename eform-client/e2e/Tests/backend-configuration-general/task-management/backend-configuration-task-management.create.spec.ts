@@ -23,6 +23,7 @@ const workerForCreate = {
   language: 'Dansk',
   properties: [0],
   workOrderFlow: true,
+  workerEmail: generateRandmString() + '@test.com',
 };
 const areas = [generateRandmString(), generateRandmString(), generateRandmString(),]
 const filters: TaskManagementFilters = {
