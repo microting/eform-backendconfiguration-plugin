@@ -42,6 +42,10 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
     return cy.get('#lastName').should('be.visible').should('be.enabled');
   };
 
+  public createEmailInput() {
+    return cy.get('#workerEmail').should('be.visible').should('be.enabled');
+  };
+
   public getFirstRowObject() {
     return new WorkerRowObject().getRow(1);
   };
@@ -64,6 +68,10 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
 
   public editLastNameInput() {
     return cy.get('#lastName').should('be.visible').should('be.enabled');
+  };
+
+  public editEmailInput() {
+    return cy.get('#workerEmail').should('be.visible').should('be.enabled');
   };
 
   public saveEditBtn() {
@@ -125,6 +133,9 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
       }
       if (propertyWorker.surname) {
         this.createLastNameInput().should('be.visible').clear().type(propertyWorker.surname);
+      }
+      if (propertyWorker.workerEmail) {
+        this.createEmailInput().should('be.visible').clear().type(propertyWorker.workerEmail);
       }
       if (propertyWorker.language) {
         selectLanguage('#profileLanguageSelector', propertyWorker.language);
@@ -233,4 +244,5 @@ export class PropertyWorker {
   language?: string;
   properties?: string[];
   workOrderFlow?: boolean;
+  workerEmail?: string;
 }

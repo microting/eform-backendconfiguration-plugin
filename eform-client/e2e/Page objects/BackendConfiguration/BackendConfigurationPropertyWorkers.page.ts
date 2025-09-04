@@ -46,6 +46,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
     return ele;
   }
 
+  public async createEmailInput(): Promise<WebdriverIO.Element> {
+    const ele = await $('#workerEmail');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // ele.waitForClickable({timeout: 40000});
+    return ele;
+  }
+
   async getFirstRowObject(): Promise<PropertyWorkerRowObject> {
     const result = new PropertyWorkerRowObject();
     return await result.getRow(1);
@@ -79,6 +86,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async editLastNameInput(): Promise<WebdriverIO.Element> {
     const ele = await $('#lastName');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async editEmailInput(): Promise<WebdriverIO.Element> {
+    const ele = await $('#workerEmail');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -191,6 +205,11 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await (
           await backendConfigurationPropertyWorkersPage.createLastNameInput()
         ).setValue(propertyWorker.surname);
+      }
+      if (propertyWorker.workerEmail) {
+        await (
+          await backendConfigurationPropertyWorkersPage.createEmailInput()
+        ).setValue(propertyWorker.workerEmail);
       }
       if (propertyWorker.language) {
         await (
@@ -335,6 +354,12 @@ export class PropertyWorkerRowObject {
         ).setValue(propertyWorker.surname);
         await browser.pause(500);
       }
+      if (propertyWorker.workerEmail) {
+        await (
+          await backendConfigurationPropertyWorkersPage.editEmailInput()
+        ).setValue(propertyWorker.workerEmail);
+        await browser.pause(500);
+      }
       if (propertyWorker.language) {
         await (
           await (
@@ -415,5 +440,6 @@ export class PropertyWorker {
   surname?: string;
   language?: string;
   properties?: number[];
-  workOrderFlow?: boolean
+  workOrderFlow?: boolean;
+  workerEmail?: string;
 }
