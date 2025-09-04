@@ -98,6 +98,13 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {
+      header: this.translateService.stream('Email'),
+      sortProp: {id: 'workerEmail'},
+      field: 'workerEmail',
+      sortable: true,
+      formatter: (rowData: DeviceUserModel) => rowData.workerEmail ? `${rowData.workerEmail}` : `N/A`,
+    },
+    {
       header: this.translateService.stream('Task management'),
       sortProp: {id: 'TaskManagementEnabled'},
       field: 'taskManagementEnabled',

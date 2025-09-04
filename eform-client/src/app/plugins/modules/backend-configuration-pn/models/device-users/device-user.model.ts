@@ -47,4 +47,5 @@ export class DeviceUserModel {
   startSunday: number;
   endSunday: number;
   breakSunday: number;
+  workerEmail: string;
 }

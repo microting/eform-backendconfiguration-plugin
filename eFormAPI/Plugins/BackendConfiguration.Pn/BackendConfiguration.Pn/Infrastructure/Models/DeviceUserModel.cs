@@ -104,6 +104,8 @@ public class DeviceUserModel
 
     public string EmployeeNo { get; set; }
 
+    public string WorkerEmail { get; set; }
+
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
         return new DeviceUserModel

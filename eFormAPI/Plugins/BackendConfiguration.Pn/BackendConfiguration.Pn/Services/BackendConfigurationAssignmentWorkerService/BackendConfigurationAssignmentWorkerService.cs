@@ -361,7 +361,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     WorkerUid = worker.MicrotingUid,
                     UserFirstName = worker.FirstName,
                     UserLastName = worker.LastName,
-                    site.WorkflowState
+                    site.WorkflowState,
+                    WorkerEmail = worker.Email
 
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -377,6 +378,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     SiteId = x.Id,
                     SiteUid = x.MicrotingUid,
                     SiteName = x.Name,
+                    WorkerEmail = x.WorkerEmail,
                     Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked
