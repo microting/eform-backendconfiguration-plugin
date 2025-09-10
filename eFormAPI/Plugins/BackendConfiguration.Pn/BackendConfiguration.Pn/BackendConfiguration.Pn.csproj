@@ -219,13 +219,13 @@
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.7" />
       <PackageReference Include="Ical.Net" Version="5.1.0" />
-      <PackageReference Include="Microting.eForm" Version="9.0.51" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.43" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.47" />
+      <PackageReference Include="Microting.eForm" Version="9.0.52" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.44" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.49" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="9.0.1" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.106" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.106" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.107" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.107" />
       <PackageReference Include="Microting.TimePlanningBase" Version="9.0.49" />
       <PackageReference Include="QuestPDF" Version="2025.7.1" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
