@@ -99,14 +99,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     },
     {
       header: this.translateService.stream('Email'),
-      sortProp: {id: 'workerEmail'},
+      sortProp: {id: 'WorkerEmail'},
       field: 'workerEmail',
       sortable: true,
       formatter: (rowData: DeviceUserModel) => rowData.workerEmail ? `${rowData.workerEmail}` : `N/A`,
     },
     {
       header: this.translateService.stream('Phone number'),
-      sortProp: {id: 'phoneNumber'},
+      sortProp: {id: 'PhoneNumber'},
       field: 'phoneNumber',
       sortable: true,
       formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,

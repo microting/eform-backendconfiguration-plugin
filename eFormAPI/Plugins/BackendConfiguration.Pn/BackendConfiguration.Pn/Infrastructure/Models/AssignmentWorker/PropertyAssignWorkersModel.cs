@@ -33,7 +33,7 @@ public class PropertyAssignWorkersModel
     public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
         = [];
 
-    public bool? TimeRegistrationEnabled { get; set; }
+    public bool TimeRegistrationEnabled { get; set; }
 
-    public bool? TaskManagementEnabled { get; set; }
+    public bool TaskManagementEnabled { get; set; }
 }

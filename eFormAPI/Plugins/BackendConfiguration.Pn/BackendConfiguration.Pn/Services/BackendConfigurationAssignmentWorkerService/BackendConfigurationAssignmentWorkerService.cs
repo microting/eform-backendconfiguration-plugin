@@ -139,7 +139,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     }
 
                     assignWorkersModels.Add(new PropertyAssignWorkersModel
-                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
+                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled ?? false });
                 }
 
                 var properties = await backendConfigurationPnDbContext.Properties
@@ -201,7 +201,7 @@ public class BackendConfigurationAssignmentWorkerService(
                         .ToListAsync().ConfigureAwait(false);
 
                     assignWorkersModels.Add(new PropertyAssignWorkersModel
-                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
+                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled ?? false });
                 }
 
                 var properties = await backendConfigurationPnDbContext.Properties
@@ -363,7 +363,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     UserLastName = worker.LastName,
                     site.WorkflowState,
                     WorkerEmail = worker.Email,
-                    PhoneNumber = worker.PhoneNumber,
+                    worker.PhoneNumber,
 
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -490,9 +490,16 @@ public class BackendConfigurationAssignmentWorkerService(
             // Convert deviceUsers to IQueryable
             var deviceUsersQuery = deviceUsers.AsQueryable();
 
+            var tempList = deviceUsersQuery.ToList();
+
+            foreach (var deviceUserModel in tempList)
+            {
+                Console.WriteLine("Device user: " + deviceUserModel.SiteName + " with workerEmail: " + deviceUserModel.WorkerEmail + " and phone number: " + deviceUserModel.PhoneNumber);
+            }
+
             try
             {
-                deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName" });
+                deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName", "WorkerEmail", "PhoneNumber", "EmployeeNo" });
             }
             catch (Exception e)
             {
