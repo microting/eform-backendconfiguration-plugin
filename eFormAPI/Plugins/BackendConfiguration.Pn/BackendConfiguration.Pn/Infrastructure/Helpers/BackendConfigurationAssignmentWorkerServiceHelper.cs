@@ -295,6 +295,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
                         worker.EmployeeNo = deviceUserModel.EmployeeNo;
                         worker.Email = deviceUserModel.WorkerEmail;
+                        worker.PhoneNumber = deviceUserModel.PhoneNumber;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
 
                         if (isUpdated)
@@ -521,6 +522,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             worker.EmployeeNo = deviceUserModel.EmployeeNo;
             worker.PinCode = deviceUserModel.PinCode;
             worker.Email = deviceUserModel.WorkerEmail;
+            worker.PhoneNumber = deviceUserModel.PhoneNumber;
             await worker.Update(sdkDbContext).ConfigureAwait(false);
 
             if (deviceUserModel.TimeRegistrationEnabled == true)

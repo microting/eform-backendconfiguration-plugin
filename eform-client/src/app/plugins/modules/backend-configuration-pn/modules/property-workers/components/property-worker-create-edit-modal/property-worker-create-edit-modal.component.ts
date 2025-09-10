@@ -89,6 +89,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         Validators.required,
         (control) => validator.isEmail(control.value) ? null : {invalidEmail: true}
       ]],
+      phoneNumber: [this.selectedDeviceUser.phoneNumber || '', [
+        (control) => {
+          const value = control.value;
+          if (!value) {
+            return null;
+          }
+          return validator.isMobilePhone(value) ? null : {invalidPhoneNumber: true};
+        }
+      ]],
       pinCode: [this.selectedDeviceUser.pinCode || ''],
       employeeNo: [this.selectedDeviceUser.employeeNo || ''],
       languageCode: [this.selectedDeviceUser.languageCode || ''],

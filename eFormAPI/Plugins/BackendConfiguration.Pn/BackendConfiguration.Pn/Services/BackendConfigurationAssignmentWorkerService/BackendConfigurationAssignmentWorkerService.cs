@@ -362,7 +362,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     UserFirstName = worker.FirstName,
                     UserLastName = worker.LastName,
                     site.WorkflowState,
-                    WorkerEmail = worker.Email
+                    WorkerEmail = worker.Email,
+                    PhoneNumber = worker.PhoneNumber,
 
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -379,6 +380,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     SiteUid = x.MicrotingUid,
                     SiteName = x.Name,
                     WorkerEmail = x.WorkerEmail,
+                    PhoneNumber = x.PhoneNumber,
                     Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked
