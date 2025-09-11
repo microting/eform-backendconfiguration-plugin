@@ -113,13 +113,13 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   // Add this method to your component
   updateFormControlDisabledStates() {
     // userFirstName and userLastName
-    if (this.selectedDeviceUser.isBackendUser) {
-      this.form.get('userFirstName')?.disable();
-      this.form.get('userLastName')?.disable();
-    } else {
-      this.form.get('userFirstName')?.enable();
-      this.form.get('userLastName')?.enable();
-    }
+    // if (this.selectedDeviceUser.isBackendUser) {
+    //   this.form.get('userFirstName')?.disable();
+    //   this.form.get('userLastName')?.disable();
+    // } else {
+    //   this.form.get('userFirstName')?.enable();
+    //   this.form.get('userLastName')?.enable();
+    // }
 
     // languageCode
     const shouldDisableLanguage =
