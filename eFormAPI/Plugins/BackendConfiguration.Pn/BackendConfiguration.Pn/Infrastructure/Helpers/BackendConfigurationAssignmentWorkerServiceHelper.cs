@@ -511,7 +511,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
+            var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (site != null)
             {
@@ -525,7 +525,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
 
-            if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
+            if (sdkDbContext.Workers.AsNoTracking().Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
             {
                 // this email is already in use
                 return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
