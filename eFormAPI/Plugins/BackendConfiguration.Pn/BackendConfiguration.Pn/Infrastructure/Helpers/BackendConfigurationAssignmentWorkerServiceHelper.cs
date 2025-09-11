@@ -228,7 +228,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                if (updateModel.TaskManagementEnabled!)
+                if (!updateModel.TaskManagementEnabled)
                 {
                     foreach (var propertyWorker in assignments)
                     {
