@@ -82,7 +82,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = true,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         // Act
@@ -153,7 +154,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -171,7 +173,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         // Act
@@ -243,7 +246,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -261,7 +265,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = true,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         // Act
@@ -335,7 +340,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = true,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -353,7 +359,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         // Act
@@ -639,7 +646,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
