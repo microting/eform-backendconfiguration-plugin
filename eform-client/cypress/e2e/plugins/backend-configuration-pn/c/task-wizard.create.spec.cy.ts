@@ -19,6 +19,7 @@ const workerForCreate: PropertyWorker = {
   surname: generateRandmString(5),
   language: 'Dansk',
   properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const task = {
@@ -99,7 +100,7 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-property span').should('have.text', task.property);
     cy.get('.cdk-row .cdk-column-folder span').should('have.text', bindArea);
     cy.get('.cdk-row .cdk-column-taskName span').should('have.text', task.translations[0]);
-    cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName + ' (9)');
+    cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName + ' (11)');
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
     cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatType}`);

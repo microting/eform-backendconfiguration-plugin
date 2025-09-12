@@ -1293,7 +1293,7 @@ public static class BackendConfigurationSeedAreas
                 RepeatType = 0, // days
                 ComplianceEnabled = false
             },
-            IsFarm = false
+            IsFarm = true
         },
 
         new Area

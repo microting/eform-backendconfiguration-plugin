@@ -54,9 +54,9 @@ public static class BackendConfigurationSeedEforms
 		// headers = ["", "", ""];
 		// item = new KeyValuePair<string, List<string>>("25.02 Vis kemisk produkt", headers);
 		// theList.Add(item);
-		// headers = ["", "", ""];
-		// item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
-		// theList.Add(item);
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
+		theList.Add(item);
 
 		headers = ["", "", ""];
 		item = new KeyValuePair<string, List<string>>("Kvittering", headers);

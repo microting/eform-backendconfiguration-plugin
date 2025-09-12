@@ -44,6 +44,14 @@ public class CompliancesController : Controller
         _backendConfigurationCompliancesService = backendConfigurationCompliancesService;
     }
 
+    [HttpGet]
+    [Route("stats")]
+    [AllowAnonymous]
+    public Task<OperationDataResult<CompliancesStatsModel>> Stats()
+    {
+        return _backendConfigurationCompliancesService.Stats();
+    }
+
     [HttpPost]
     [Route("index")]
     public Task<OperationDataResult<Paged<CompliancesModel>>> Index([FromBody] CompliancesRequestModel request)

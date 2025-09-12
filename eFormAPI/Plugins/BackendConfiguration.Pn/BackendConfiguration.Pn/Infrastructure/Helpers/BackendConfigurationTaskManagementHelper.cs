@@ -101,37 +101,33 @@ public static class BackendConfigurationTaskManagementHelper
             .FirstOrDefaultAsync();
 
         var textStatus = "";
-        switch (workOrderCase.CaseStatusesEnum)
+        if (updateModel.CaseStatusEnum == CaseStatusesEnum.NewTask)
         {
-            case CaseStatusesEnum.Ongoing:
-                textStatus = localizationService.GetString("Ongoing");
-                break;
-            case CaseStatusesEnum.Completed:
-                textStatus = localizationService.GetString("Completed");
-                break;
-            case CaseStatusesEnum.Ordered:
-                textStatus = localizationService.GetString("Ordered");
-                break;
-            case CaseStatusesEnum.Awaiting:
-                textStatus = localizationService.GetString("Awaiting");
-                break;
+            workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Ongoing;
+            updateModel.CaseStatusEnum = CaseStatusesEnum.Ongoing;
         }
 
-        switch (updateModel.Priority)
+        textStatus = workOrderCase.CaseStatusesEnum switch
         {
-            case 1:
-                priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>";
-                break;
-            case 2:
-                priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>";
-                break;
-            case 3:
-                priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>";
-                break;
-            case 4:
-                priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>";
-                break;
-        }
+            CaseStatusesEnum.Ongoing => localizationService.GetString("Ongoing"),
+            CaseStatusesEnum.Completed => localizationService.GetString("Completed"),
+            CaseStatusesEnum.Ordered => localizationService.GetString("Ordered"),
+            CaseStatusesEnum.Awaiting => localizationService.GetString("Awaiting"),
+            _ => textStatus
+        };
+
+        priorityText = updateModel.Priority switch
+        {
+            1 =>
+                $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>",
+            2 =>
+                $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>",
+            3 =>
+                $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>",
+            4 =>
+                $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>",
+            _ => priorityText
+        };
         label += $"<strong>{localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                  (!string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
                      ? $"<strong>{localizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"

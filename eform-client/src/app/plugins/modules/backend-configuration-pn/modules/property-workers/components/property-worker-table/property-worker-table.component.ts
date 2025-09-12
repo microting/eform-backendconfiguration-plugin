@@ -98,6 +98,20 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {
+      header: this.translateService.stream('Email'),
+      sortProp: {id: 'WorkerEmail'},
+      field: 'workerEmail',
+      sortable: true,
+      formatter: (rowData: DeviceUserModel) => rowData.workerEmail ? `${rowData.workerEmail}` : `N/A`,
+    },
+    {
+      header: this.translateService.stream('Phone number'),
+      sortProp: {id: 'PhoneNumber'},
+      field: 'phoneNumber',
+      sortable: true,
+      formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,
+    },
+    {
       header: this.translateService.stream('Task management'),
       sortProp: {id: 'TaskManagementEnabled'},
       field: 'taskManagementEnabled',
@@ -197,6 +211,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     selectedSimpleSite.startSunday = simpleSiteDto.startSunday;
     selectedSimpleSite.endSunday = simpleSiteDto.endSunday;
     selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
+    selectedSimpleSite.workerEmail = simpleSiteDto.workerEmail;
+    selectedSimpleSite.phoneNumber = simpleSiteDto.phoneNumber;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

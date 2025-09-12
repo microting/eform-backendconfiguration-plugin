@@ -20,7 +20,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             Chr = Guid.NewGuid().ToString(),
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
-            IsFarm = false,
+            IsFarm = true,
             LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),

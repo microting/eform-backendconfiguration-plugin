@@ -105,23 +105,14 @@ public class WorkOrderUpdatedHandler(
                     break;
             }
 
-            var textStatus = "";
-
-            switch (status)
+            var textStatus = status switch
             {
-                case CaseStatusesEnum.Ongoing:
-                    textStatus = backendConfigurationLocalizationService.GetString("Ongoing");
-                    break;
-                case CaseStatusesEnum.Completed:
-                    textStatus = backendConfigurationLocalizationService.GetString("Completed");
-                    break;
-                case CaseStatusesEnum.Awaiting:
-                    textStatus = backendConfigurationLocalizationService.GetString("Awaiting");
-                    break;
-                case CaseStatusesEnum.Ordered:
-                    textStatus = backendConfigurationLocalizationService.GetString("Ordered");
-                    break;
-            }
+                CaseStatusesEnum.Ongoing => backendConfigurationLocalizationService.GetString("Ongoing"),
+                CaseStatusesEnum.Completed => backendConfigurationLocalizationService.GetString("Completed"),
+                CaseStatusesEnum.Awaiting => backendConfigurationLocalizationService.GetString("Awaiting"),
+                CaseStatusesEnum.Ordered => backendConfigurationLocalizationService.GetString("Ordered"),
+                _ => ""
+            };
 
             var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
 

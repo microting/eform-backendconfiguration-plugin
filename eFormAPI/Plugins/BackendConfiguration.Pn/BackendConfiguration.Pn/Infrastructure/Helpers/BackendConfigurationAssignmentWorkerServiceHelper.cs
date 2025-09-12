@@ -228,7 +228,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                if (!(bool)updateModel.TaskManagementEnabled!)
+                if (!updateModel.TaskManagementEnabled)
                 {
                     foreach (var propertyWorker in assignments)
                     {
@@ -286,6 +286,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
                     if (worker != null)
                     {
+
+                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
+                        {
+                            // this email is already in use
+                            return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+                        }
                         var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
                             deviceUserModel.UserLastName, worker.Email, deviceUserModel.LanguageCode).ConfigureAwait(false);
@@ -294,6 +300,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             worker.PinCode = deviceUserModel.PinCode;
                         }
                         worker.EmployeeNo = deviceUserModel.EmployeeNo;
+                        worker.Email = deviceUserModel.WorkerEmail;
+                        worker.PhoneNumber = deviceUserModel.PhoneNumber;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
 
                         if (isUpdated)
@@ -515,10 +523,18 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
             site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 
-            Worker worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+            var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+
+            if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
+            {
+                // this email is already in use
+                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+            }
 
             worker.EmployeeNo = deviceUserModel.EmployeeNo;
             worker.PinCode = deviceUserModel.PinCode;
+            worker.Email = deviceUserModel.WorkerEmail;
+            worker.PhoneNumber = deviceUserModel.PhoneNumber;
             await worker.Update(sdkDbContext).ConfigureAwait(false);
 
             if (deviceUserModel.TimeRegistrationEnabled == true)

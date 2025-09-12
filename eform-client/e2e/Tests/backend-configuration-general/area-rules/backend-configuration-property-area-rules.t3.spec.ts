@@ -23,6 +23,7 @@ const workerForCreate = {
   surname: generateRandmString(),
   language: 'Dansk',
   properties: [0],
+  workerEmail: generateRandmString() + '@test.com',
 };
 const areaRuleForCreate: AreaRuleCreateUpdate = {
   name: generateRandmString(),

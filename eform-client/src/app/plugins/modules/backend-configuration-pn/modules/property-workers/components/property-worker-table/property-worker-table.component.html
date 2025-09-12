@@ -4,6 +4,8 @@
   [cellTemplate]="{
     siteId: deviceUserIdTpl,
     siteName: fullNameTpl,
+    workerEmail: workerEmailTpl,
+    phoneNumber: phoneNumberTpl,
     language: languageTpl,
     customerOtp: customerOtpTpl,
     manufacturer: manufacturerTpl,
@@ -50,6 +52,14 @@
 
 <ng-template #fullNameTpl let-row let-i="index">
   <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{row.siteName}}</div>
+</ng-template>
+
+<ng-template #workerEmailTpl let-row let-i="index">
+  <div class="workerEmail" id="workerEmail-{{i}}">{{row.workerEmail}}</div>
+</ng-template>
+
+<ng-template #phoneNumberTpl let-row let-i="index">
+  <div class="phoneNumber" id="phoneNumber-{{i}}">{{row.phoneNumber}}</div>
 </ng-template>
 
 <ng-template #languageTpl let-row let-i="index">

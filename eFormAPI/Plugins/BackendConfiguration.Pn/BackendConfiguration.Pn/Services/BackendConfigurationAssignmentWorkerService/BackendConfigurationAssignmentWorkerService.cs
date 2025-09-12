@@ -139,7 +139,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     }
 
                     assignWorkersModels.Add(new PropertyAssignWorkersModel
-                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
+                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled ?? false });
                 }
 
                 var properties = await backendConfigurationPnDbContext.Properties
@@ -201,7 +201,7 @@ public class BackendConfigurationAssignmentWorkerService(
                         .ToListAsync().ConfigureAwait(false);
 
                     assignWorkersModels.Add(new PropertyAssignWorkersModel
-                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
+                        { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled ?? false });
                 }
 
                 var properties = await backendConfigurationPnDbContext.Properties
@@ -361,7 +361,9 @@ public class BackendConfigurationAssignmentWorkerService(
                     WorkerUid = worker.MicrotingUid,
                     UserFirstName = worker.FirstName,
                     UserLastName = worker.LastName,
-                    site.WorkflowState
+                    site.WorkflowState,
+                    WorkerEmail = worker.Email,
+                    worker.PhoneNumber,
 
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -377,6 +379,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     SiteId = x.Id,
                     SiteUid = x.MicrotingUid,
                     SiteName = x.Name,
+                    WorkerEmail = x.WorkerEmail,
+                    PhoneNumber = x.PhoneNumber,
                     Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked
@@ -486,9 +490,16 @@ public class BackendConfigurationAssignmentWorkerService(
             // Convert deviceUsers to IQueryable
             var deviceUsersQuery = deviceUsers.AsQueryable();
 
+            var tempList = deviceUsersQuery.ToList();
+
+            foreach (var deviceUserModel in tempList)
+            {
+                Console.WriteLine("Device user: " + deviceUserModel.SiteName + " with workerEmail: " + deviceUserModel.WorkerEmail + " and phone number: " + deviceUserModel.PhoneNumber);
+            }
+
             try
             {
-                deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName" });
+                deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName", "WorkerEmail", "PhoneNumber", "EmployeeNo" });
             }
             catch (Exception e)
             {

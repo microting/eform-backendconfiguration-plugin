@@ -1,127 +1,148 @@
 <h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate}}</h3>
-<div mat-dialog-content>
-  <div class="d-flex flex-column">
-  <mat-form-field>
-    <mat-label>{{'First name' | translate }}</mat-label>
-    <input
-      matInput
-      [disabled]="selectedDeviceUser.isBackendUser"
-      [(ngModel)]="selectedDeviceUser.userFirstName"
-      required
-      type="text"
-      id="firstName"
-      name="userName">
-  </mat-form-field>
-  <mat-form-field>
-    <mat-label>{{'Last name' | translate }}</mat-label>
-    <input
-      matInput
-      [disabled]="selectedDeviceUser.isBackendUser"
-      [(ngModel)]="selectedDeviceUser.userLastName"
-      type="text"
-      name="email"
-      id="lastName"
-      required>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-label>{{'PIN code' | translate }}</mat-label>
-    <input
-      matInput
-      [(ngModel)]="selectedDeviceUser.pinCode"
-      type="text"
-      name="pinCode"
-      onkeypress="return (event.charCode == 8 || event.charCode == 0 || event.charCode == 13) ? null : event.charCode >= 48 && event.charCode <= 57"
-      pattern="[0-9]*"
-      id="pinCode"
-      required>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-label>{{'Employee no' | translate }}</mat-label>
-    <input
-      matInput
-      [(ngModel)]="selectedDeviceUser.employeeNo"
-      type="text"
-      name="employeeNo"
-      id="employeeNo"
-      required>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-label>{{'Language' | translate }}</mat-label>
-    <mtx-select
-      id="profileLanguageSelector"
-      [bindLabel]="'name'"
-      [bindValue]="'languageCode'"
-      [clearable]="false"
-      [(ngModel)]="selectedDeviceUser.languageCode"
-      [disabled]="timeRegistrationEnabled || taskManagementEnabled || getAssignmentCount() > 0"
-      [items]="activeLanguages">
-      <ng-template ng-label-tmp let-item="item">
-        {{item.name | translate}}
-      </ng-template>
-      <ng-template ng-option-tmp let-item="item">
-        {{item.name | translate}}
-      </ng-template>
-    </mtx-select>
-  </mat-form-field>
-  <mat-slide-toggle
-    *ngIf="authStateService.checkClaim('time_registration_enable')"
-    color="primary"
-    class="mb-2"
-    id="timeRegistrationEnabledToggle"
-    [checked]="selectedDeviceUser.timeRegistrationEnabled"
-    [(ngModel)]="selectedDeviceUser.timeRegistrationEnabled">
-    {{ "Timeregistration" | translate }}
-  </mat-slide-toggle>
-  <mat-slide-toggle
-    *ngIf="authStateService.checkClaim('task_management_enable')"
-    color="primary"
-    class="mb-2"
-    id="taskManagementEnabledToggle"
-    [checked]="selectedDeviceUser.taskManagementEnabled"
-    [disabled]="selectedDeviceUser.hasWorkOrdersAssigned"
-    [(ngModel)]="selectedDeviceUser.taskManagementEnabled">
-    {{ "Task management" | translate }}
-  </mat-slide-toggle>
+<form [formGroup]="form">
+  <div mat-dialog-content>
+    <div class="d-flex flex-column">
+      <mat-form-field>
+        <mat-label>{{'First name' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="userFirstName"
+          required
+          type="text"
+          id="firstName"
+          name="userName">
+        <mat-error *ngIf="form.get('userFirstName').hasError('required')">
+          Required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'Last name' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="userLastName"
+          type="text"
+          id="lastName"
+          required>
+        <mat-error *ngIf="form.get('userLastName').hasError('required')">
+          Required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'e-mail' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="workerEmail"
+          type="email"
+          id="workerEmail"
+          required>
+        <mat-error *ngIf="form.get('workerEmail').hasError('invalidEmail')">
+          Invalid email address
+        </mat-error>
+        <mat-error *ngIf="form.get('workerEmail').hasError('required')">
+          Required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'Phone' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="phoneNumber"
+          type="tel"
+          name="phoneNumber"
+          id="phoneNumber">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'PIN code' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="pinCode"
+          type="text"
+          name="pinCode"
+          pattern="([0-9]*|\*{4})"
+          id="pinCode">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'Employee no' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="employeeNo"
+          type="text"
+          id="employeeNo">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{'Language' | translate }}</mat-label>
+        <mtx-select
+          id="profileLanguageSelector"
+          [bindLabel]="'name'"
+          [bindValue]="'languageCode'"
+          [clearable]="false"
+          formControlName="languageCode"
+          [items]="activeLanguages">
+          <ng-template ng-label-tmp let-item="item">
+            {{item.name | translate}}
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{item.name | translate}}
+          </ng-template>
+        </mtx-select>
+      </mat-form-field>
+      <mat-slide-toggle
+        *ngIf="authStateService.checkClaim('time_registration_enable')"
+        color="primary"
+        class="mb-2"
+        id="timeRegistrationEnabledToggle"
+        formControlName="timeRegistrationEnabled">
+        {{ "Timeregistration" | translate }}
+      </mat-slide-toggle>
+      <mat-slide-toggle
+        *ngIf="authStateService.checkClaim('task_management_enable')"
+        color="primary"
+        class="mb-2"
+        id="taskManagementEnabledToggle"
+        formControlName="taskManagementEnabled">
+        {{ "Task management" | translate }}
+      </mat-slide-toggle>
 
-  <mtx-grid
-    [data]="availableProperties"
-    [columns]="tableHeaders"
-    [cellTemplate]="{select: selectTpl}"
-    [pageOnFront]="false"
-    [rowStriped]="true"
-    [showPaginator]="false"
-    id="pairingModalTableBody"
-  >
-  </mtx-grid>
+      <mtx-grid
+        [data]="availableProperties"
+        [columns]="tableHeaders"
+        [cellTemplate]="{select: selectTpl}"
+        [pageOnFront]="false"
+        [rowStriped]="true"
+        [showPaginator]="false"
+        id="pairingModalTableBody"
+      >
+      </mtx-grid>
 
-  <ng-template #selectTpl let-row let-i="index">
-    <div class="column-select">
-      <mat-checkbox
-        id="checkboxCreateAssignment{{ i }}"
-        (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
-        [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
-        [disabled]="getAssignmentIsLockedByPropertyId(row.id)"
-      ></mat-checkbox>
+      <ng-template #selectTpl let-row let-i="index">
+        <div class="column-select">
+          <mat-checkbox
+            id="checkboxCreateAssignment{{ i }}"
+            (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
+            [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
+            [disabled]="getAssignmentIsLockedByPropertyId(row.id)"
+          ></mat-checkbox>
+        </div>
+      </ng-template>
+      <br>
     </div>
-  </ng-template>
-  <br>
-</div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button
-    mat-raised-button
-    color="accent"
-    (click)="edit ? updateSingle() : createDeviceUser()"
-    [disabled]="!selectedDeviceUser.userFirstName || !selectedDeviceUser.userLastName"
-    id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
-  >
-    {{(edit ? 'Save' : 'Create') | translate}}
-  </button>
-  <button
-    mat-raised-button
-    id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
-    (click)="hide()"
-  >
-    {{'Cancel' | translate}}
-  </button>
-</div>
-</div>
+    <div mat-dialog-actions class="d-flex flex-row justify-content-end">
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="edit ? updateSingle() : createDeviceUser()"
+        [disabled]="form.invalid"
+        id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
+      >
+        {{(edit ? 'Save' : 'Create') | translate}}
+      </button>
+      <button
+        mat-raised-button
+        id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
+        (click)="hide()"
+      >
+        {{'Cancel' | translate}}
+      </button>
+    </div>
+  </div>
+</form>

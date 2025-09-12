@@ -216,21 +216,21 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async createEntityItemName(i: number) {
-    const ele = await $$(`#createEntityItemName`)[i];
+    const ele = await $$(`.createEntityItemName`)[i];
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async entityItemEditBtn(i: number) {
-    const ele = await $$(`#entityItemEditBtn`)[i];
+    const ele = await $$(`.entityItemEditBtn`)[i];
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async entityItemDeleteBtn(i: number) {
-    const ele = await $$(`#entityItemDeleteBtn`)[i];
+    const ele = await $$(`.entityItemDeleteBtn`)[i];
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -238,7 +238,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
 
   public async getCountEntityListItems(): Promise<number> {
     await browser.pause(500);
-    return $$(`#createEntityItemName`).length;
+    return $$(`.createEntityItemName`).length;
   }
 
   public async getFirstAreaRuleRowObject(): Promise<AreaRuleRowObject> {
@@ -660,7 +660,7 @@ export class AreaRuleRowObject {
               await backendConfigurationAreaRulesPage.checkboxCreateAssignment(
                 areaRulePlanningCreateUpdate.workers[i].workerNumber
               )
-            ).$('..')
+            )
           ).click();
         }
       }

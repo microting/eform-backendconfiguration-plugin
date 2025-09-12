@@ -74,7 +74,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                     ItemPlanningTagId = planningTag.Id,
                     WorkorderEnable = propertyCreateModel.WorkorderEnable,
                     IndustryCode = propertyCreateModel.IndustryCode,
-                    IsFarm = propertyCreateModel.IsFarm,
+                    IsFarm = true,
                     MainMailAddress = propertyCreateModel.MainMailAddress
                 };
                 await newProperty.Create(backendConfigurationPnDbContext).ConfigureAwait(false);

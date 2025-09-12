@@ -16,6 +16,8 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import validator from 'validator';
 
 @AutoUnsubscribe()
 @Component({
@@ -56,19 +58,21 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   getLanguagesSub$: Subscription;
   appLanguages: LanguagesModel = new LanguagesModel();
   activeLanguages: Array<any> = [];
+  form: FormGroup;
 
   constructor(
+    private fb: FormBuilder,
     public propertiesService: BackendConfigurationPnPropertiesService,
     public authStateService: AuthStateService,
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<PropertyWorkerCreateEditModalComponent>,
     private appSettingsStateService: AppSettingsStateService,
     @Inject(MAT_DIALOG_DATA) model:
-      {
-        deviceUser: DeviceUserModel,
-        assignments: PropertyAssignmentWorkerModel[],
-        availableProperties: CommonDictionaryModel[],
-      },
+    {
+      deviceUser: DeviceUserModel,
+      assignments: PropertyAssignmentWorkerModel[],
+      availableProperties: CommonDictionaryModel[],
+    },
   ) {
     this.assignments = [...model.assignments];
     this.availableProperties = [...model.availableProperties];
@@ -76,15 +80,69 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.selectedDeviceUserCopy = {...model.deviceUser};
     this.assignmentsCopy = [...model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
-    this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled
+    this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
+
+    this.form = this.fb.group({
+      userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
+      userLastName: [this.selectedDeviceUser.userLastName || '', Validators.required],
+      workerEmail: [this.selectedDeviceUser.workerEmail || '', [
+        Validators.required,
+        (control) => validator.isEmail(control.value) ? null : {invalidEmail: true}
+      ]],
+      phoneNumber: [this.selectedDeviceUser.phoneNumber || '', [
+        (control) => {
+          const value = control.value;
+          if (!value) {
+            return null;
+          }
+          return validator.isMobilePhone(value) ? null : {invalidPhoneNumber: true};
+        }
+      ]],
+      pinCode: [this.selectedDeviceUser.pinCode || ''],
+      employeeNo: [this.selectedDeviceUser.employeeNo || ''],
+      languageCode: [this.selectedDeviceUser.languageCode || ''],
+      timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
+      taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
+    });
   }
 
   get languages() {
     return this.appLanguages.languages.filter((x) => x.isActive);
   }
 
+  // Add this method to your component
+  updateFormControlDisabledStates() {
+    // userFirstName and userLastName
+    // if (this.selectedDeviceUser.isBackendUser) {
+    //   this.form.get('userFirstName')?.disable();
+    //   this.form.get('userLastName')?.disable();
+    // } else {
+    //   this.form.get('userFirstName')?.enable();
+    //   this.form.get('userLastName')?.enable();
+    // }
+
+    // languageCode
+    const shouldDisableLanguage =
+      this.timeRegistrationEnabled ||
+      this.taskManagementEnabled ||
+      this.getAssignmentCount() > 0;
+    if (shouldDisableLanguage) {
+      this.form.get('languageCode')?.disable();
+    } else {
+      this.form.get('languageCode')?.enable();
+    }
+
+    // taskManagementEnabled (mat-slide-toggle)
+    if (this.selectedDeviceUser.hasWorkOrdersAssigned) {
+      this.form.get('taskManagementEnabled')?.disable();
+    } else {
+      this.form.get('taskManagementEnabled')?.enable();
+    }
+  }
+
   ngOnInit() {
     this.getEnabledLanguages();
+    this.updateFormControlDisabledStates();
   }
 
   hide(result = false) {
@@ -121,38 +179,29 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   updateSingle() {
-    if (
-      this.selectedDeviceUserCopy.userFirstName !==
-      this.selectedDeviceUser.userFirstName ||
-      this.selectedDeviceUserCopy.userLastName !==
-      this.selectedDeviceUser.userLastName ||
-      this.selectedDeviceUserCopy.language !==
-      this.selectedDeviceUser.language ||
-      this.selectedDeviceUserCopy.languageCode !==
-      this.selectedDeviceUser.languageCode ||
-      this.selectedDeviceUserCopy.timeRegistrationEnabled !==
-      this.selectedDeviceUser.timeRegistrationEnabled ||
-      this.selectedDeviceUser.employeeNo !==
-      this.selectedDeviceUserCopy.employeeNo ||
-      this.selectedDeviceUser.pinCode !== '****'
-    ) {
-      // if fields device user edited
-      this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;
-      this.deviceUserCreate$ = this.propertiesService
-        .updateSingleDeviceUser(this.selectedDeviceUser)
-        .subscribe((operation) => {
-          if (operation && operation.success && this.assignments) {
-            this.assignWorkerToPropertiesUpdate();
-          } else {
-            this.hide(true);
-          }
-        });
-    } else {
-      this.assignWorkerToPropertiesUpdate();
+    if (this.form.invalid) {
+      return;
     }
+    const formValue = this.form.value;
+    Object.assign(this.selectedDeviceUser, formValue);
+    this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;
+    this.deviceUserCreate$ = this.propertiesService
+      .updateSingleDeviceUser(this.selectedDeviceUser)
+      .subscribe((operation) => {
+        if (operation && operation.success && this.assignments) {
+          this.assignWorkerToPropertiesUpdate();
+        } else {
+          this.hide(true);
+        }
+      });
   }
 
   createDeviceUser() {
+    if (this.form.invalid) {
+      return;
+    }
+    const formValue = this.form.value;
+    Object.assign(this.selectedDeviceUser, formValue);
     this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {
@@ -171,8 +220,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .assignPropertiesToWorker({
         siteId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.selectedDeviceUser.timeRegistrationEnabled,
-        taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled})
+        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled,
+        taskManagementEnabled: this.form.value.taskManagementEnabled
+      })
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.hide(true);
@@ -185,12 +235,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .updateAssignPropertiesToWorker({
         siteId: this.selectedDeviceUser.normalId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.selectedDeviceUser.timeRegistrationEnabled,
-        taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled,
+        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled,
+        taskManagementEnabled: this.form.value.taskManagementEnabled,
       })
       .subscribe((operation) => {
         if (operation && operation.success) {
-          //this.userUpdated.emit();
           this.hide(true);
         }
       });
@@ -223,9 +272,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
             this.edit = true;
           }
           if (!this.edit) {
-            this.selectedDeviceUser.languageCode = this.languages[0].languageCode;
+            this.form.patchValue({languageCode: this.languages[0].languageCode});
             if (this.authStateService.checkClaim('task_management_enable')) {
-              this.selectedDeviceUser.taskManagementEnabled = false;
+              this.form.patchValue({taskManagementEnabled: false});
             }
           }
         }
