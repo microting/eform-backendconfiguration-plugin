@@ -220,8 +220,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .assignPropertiesToWorker({
         siteId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled,
-        taskManagementEnabled: this.form.value.taskManagementEnabled
+        // eslint-disable-next-line max-len
+        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled === undefined ? this.selectedDeviceUser.timeRegistrationEnabled : this.form.value.timeRegistrationEnabled,
+        // eslint-disable-next-line max-len
+        taskManagementEnabled: this.form.value.taskManagementEnabled === undefined ? this.selectedDeviceUser.taskManagementEnabled : this.form.value.taskManagementEnabled,
       })
       .subscribe((operation) => {
         if (operation && operation.success) {
@@ -235,8 +237,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .updateAssignPropertiesToWorker({
         siteId: this.selectedDeviceUser.normalId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled,
-        taskManagementEnabled: this.form.value.taskManagementEnabled,
+        // eslint-disable-next-line max-len
+        timeRegistrationEnabled: this.form.value.timeRegistrationEnabled === undefined ? this.selectedDeviceUser.timeRegistrationEnabled : this.form.value.timeRegistrationEnabled,
+        // eslint-disable-next-line max-len
+        taskManagementEnabled: this.form.value.taskManagementEnabled === undefined ? this.selectedDeviceUser.taskManagementEnabled : this.form.value.taskManagementEnabled,
       })
       .subscribe((operation) => {
         if (operation && operation.success) {
