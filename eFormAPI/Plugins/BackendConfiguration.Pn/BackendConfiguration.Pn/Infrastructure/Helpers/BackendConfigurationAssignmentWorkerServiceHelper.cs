@@ -280,6 +280,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
                 var siteDto = await core.SiteRead(deviceUserModel.SiteMicrotingUid).ConfigureAwait(false);
+                var oldSiteName = siteDto.SiteName;
                 if (siteDto.WorkerUid == null) return new OperationResult(false, "DeviceUserNotFound");
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
@@ -388,7 +389,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                                 if (assignments.Count != 0)
                                 {
-                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -401,7 +402,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         UpdatedByUserId = userId
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
-                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
                                 catch (Exception e)

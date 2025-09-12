@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public class GoogleSheetHelper
 {
-    public static async Task PushToGoogleSheet(Core core, TimePlanningPnDbContext dbContext, ILogger logger)
+    public static async Task PushToGoogleSheet(Core core, TimePlanningPnDbContext dbContext, ILogger logger, string? oldSiteName = null, string? newSiteName = null)
     {
         var privateKeyId = Environment.GetEnvironmentVariable("PRIVATE_KEY_ID");
         var googleSheetId = dbContext.PluginConfigurationValues
@@ -85,6 +86,11 @@ public class GoogleSheetHelper
             {
                 var timerHeader = $"{siteName} - timer";
                 var textHeader = $"{siteName} - tekst";
+                if (newSiteName == siteName)
+                {
+                    timerHeader = $"{oldSiteName} - tekst";
+                    textHeader = $"{oldSiteName} - timer";
+                }
                 if (!newHeaders.Contains(timerHeader))
                 {
                     newHeaders.Add(timerHeader);
@@ -115,6 +121,32 @@ public class GoogleSheetHelper
                 await updateHeaderRequest.ExecuteAsync();
 
                 logger.LogInformation("Headers updated successfully.");
+            }
+
+            // loop through all the existing headers and find the oldSiteName and rename it to newSiteName
+            if (!string.IsNullOrEmpty(oldSiteName) && !string.IsNullOrEmpty(newSiteName) && newSiteName != oldSiteName)
+            {
+                for (int i = 0; i < existingHeaders.Count; i++)
+                {
+                    if (existingHeaders[i].ToString() == $"{oldSiteName} - timer")
+                    {
+                        existingHeaders[i] = $"{newSiteName} - timer";
+                    }
+                    else if (existingHeaders[i].ToString() == $"{oldSiteName} - tekst")
+                    {
+                        existingHeaders[i] = $"{newSiteName} - tekst";
+                    }
+                }
+                var updateRequest = new ValueRange
+                {
+                    Values = new List<IList<object>> { existingHeaders }
+                };
+                var columnLetter = GetColumnLetter(existingHeaders.Count);
+                var updateHeaderRequest =
+                    service.Spreadsheets.Values.Update(updateRequest, googleSheetId, $"{sheetName}!A1:{columnLetter}1");
+                updateHeaderRequest.ValueInputOption =
+                    SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                await updateHeaderRequest.ExecuteAsync();
             }
 
             AutoAdjustColumnWidths(service, googleSheetId, sheetName, logger);
