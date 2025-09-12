@@ -280,13 +280,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
                 var siteDto = await core.SiteRead(deviceUserModel.SiteMicrotingUid).ConfigureAwait(false);
-                if (siteDto.WorkerUid != null)
+                if (siteDto.WorkerUid == null) return new OperationResult(false, "DeviceUserNotFound");
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
                     var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
-                    if (worker != null)
+                    if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
-
                         if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
                         {
                             // this email is already in use
@@ -479,21 +478,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 }
                             }
                         }
-                        // {
-                        //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
-                        //     site.LanguageId = language.Id;
-                        //     await site.Update(db);
-                        // }
                         return isUpdated
                             ? new OperationResult(true, "DeviceUserUpdatedSuccessfully")
                             : new OperationResult(false,
                                 "DeviceUserParamCouldNotBeUpdated");
                     }
 
-                    return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                 }
 
-                return new OperationResult(false, "DeviceUserNotFound");
             }
             catch (Exception ex)
             {
