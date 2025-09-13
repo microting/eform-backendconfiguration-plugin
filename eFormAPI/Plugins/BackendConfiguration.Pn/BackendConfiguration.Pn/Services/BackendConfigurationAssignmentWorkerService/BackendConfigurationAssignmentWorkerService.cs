@@ -527,7 +527,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, backendConfigurationPnDbContext,
-            timePlanningDbContext, logger);
+            timePlanningDbContext, logger, itemsPlanningPnDbContext);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }

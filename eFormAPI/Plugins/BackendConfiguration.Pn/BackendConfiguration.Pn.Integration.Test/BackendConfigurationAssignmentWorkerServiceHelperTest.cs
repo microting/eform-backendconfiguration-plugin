@@ -180,7 +180,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -273,7 +273,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -367,7 +367,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
