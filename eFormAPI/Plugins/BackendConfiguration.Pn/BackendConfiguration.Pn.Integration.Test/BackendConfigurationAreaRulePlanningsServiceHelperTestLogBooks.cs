@@ -53,7 +53,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -454,7 +455,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -858,7 +860,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -1262,7 +1265,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -1688,7 +1692,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -1817,7 +1822,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel2, core, 1,
@@ -2159,7 +2165,8 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
