@@ -18,12 +18,18 @@ import {
 } from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserClaimsDeviceUsersDelete, selectCurrentUserClaimsDeviceUsersUpdate} from 'src/app/state';
+import {
+  selectAuthIsAdmin,
+  selectCurrentUserClaimsDeviceUsersDelete,
+  selectCurrentUserClaimsDeviceUsersUpdate
+} from 'src/app/state';
 import {
   selectPropertyWorkersNameFilters,
   selectPropertyWorkersPaginationIsSortDsc,
   selectPropertyWorkersPaginationSort
 } from '../../../../state';
+import {format} from "date-fns";
+import {AuthStateService} from "src/app/common/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -49,6 +55,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   public selectPropertyWorkersPaginationSort$ = this.store.select(selectPropertyWorkersPaginationSort);
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -57,6 +64,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   constructor(
     private store: Store,
     private translateService: TranslateService,
+    private authStateService: AuthStateService,
     public propertyWorkersStateService: PropertyWorkersStateService,
     private dialog: MatDialog,
     private overlay: Overlay,) {
@@ -298,5 +306,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  getFormattedDate(date: Date) {
+    return format(date, 'P', {locale: this.authStateService.dateFnsLocale});
   }
 }

@@ -46,8 +46,18 @@
   </div>
 </ng-template>
 
+<!--<ng-template #deviceUserIdTpl let-row let-i="index">-->
+<!--  <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>-->
+<!--</ng-template>-->
+
 <ng-template #deviceUserIdTpl let-row let-i="index">
-  <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>
+  <div class="deviceUserId" id="deviceUserId-{{i}}">
+    <ng-container *ngIf="selectAuthIsAdmin$ | async;">
+      <span>{{row.siteId}}<small class="microting-uid"> ({{getFormattedDate(row.createdAt)}} / {{getFormattedDate(row.updatedAt)}})</small></span>
+    </ng-container>
+    <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
+      {{row.siteId}}
+    </ng-container></div>
 </ng-template>
 
 <ng-template #fullNameTpl let-row let-i="index">

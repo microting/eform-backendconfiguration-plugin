@@ -9,6 +9,7 @@ using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
@@ -23,6 +24,7 @@ using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
 using Microsoft.Extensions.Logging;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -253,6 +255,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId,
+            IUserService userService,
+            UserManager<EformUser> userManager,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             TimePlanningPnDbContext timePlanningDbContext,
             ILogger logger,
@@ -276,6 +280,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
                     if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
+                        var oldEmail = worker.Email;
                         if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
                         {
                             // this email is already in use
@@ -292,6 +297,16 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.Email = deviceUserModel.WorkerEmail;
                         worker.PhoneNumber = deviceUserModel.PhoneNumber;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
+
+                        var user = await userService.GetByUsernameAsync(oldEmail).ConfigureAwait(false);
+                        if (user != null)
+                        {
+                            user.Email = deviceUserModel.WorkerEmail;
+                            user.FirstName = deviceUserModel.UserFirstName;
+                            user.LastName = deviceUserModel.UserLastName;
+                            user.Locale = language.LanguageCode;
+                            var result = await userManager.UpdateAsync(user);
+                        }
 
                         if (isUpdated)
                         {
