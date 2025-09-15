@@ -462,12 +462,20 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext)
         {
+
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            if (sdkDbContext.Workers.AsNoTracking().Any(x => x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
+            {
+                // this email is already in use
+                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+            }
+
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
             // var result = await _deviceUsersService.Create(deviceUserModel);
             var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
             var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (site != null)
@@ -481,12 +489,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 
             var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
-
-            if (sdkDbContext.Workers.AsNoTracking().Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
-            {
-                // this email is already in use
-                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
-            }
 
             worker.EmployeeNo = deviceUserModel.EmployeeNo;
             worker.PinCode = deviceUserModel.PinCode;
