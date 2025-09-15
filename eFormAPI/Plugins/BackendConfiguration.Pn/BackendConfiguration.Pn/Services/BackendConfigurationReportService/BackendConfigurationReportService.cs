@@ -749,7 +749,7 @@ public class BackendConfigurationReportService(
 
                         var dbCase =
                             await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
-                        var workerId = sdkDbContext.SiteWorkers.First(x => x.Id == dbCase.SiteId).WorkerId;
+                        var workerId = sdkDbContext.SiteWorkers.First(x => x.SiteId == dbCase.SiteId).WorkerId;
                         var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.Id == workerId);
 
                         if (dbCase == null)
