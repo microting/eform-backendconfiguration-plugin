@@ -150,55 +150,55 @@ public static class WorkOrderHelper
                 && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
                 && x.WorkflowState != Constants.WorkflowStates.Removed))
         {
-            // find all cases that are not removed and assignedTo is equal to site.name and update them with the new name
-            var workorderCases = await backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.AssignedToSdkSiteId == propertyWorker.WorkerId)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                .Where(x => x.LeadingCase == true)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var workorderCase in workorderCases)
-            {
-                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
-            }
-
-            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.CreatedBySdkSiteId == propertyWorker.WorkerId)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                .Where(x => x.LeadingCase == true)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var workorderCase in workorderCases)
-            {
-                if(workorderCase.AssignedToSdkSiteId == null)
-                {
-                    continue;
-                }
-
-                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
-            }
-
-            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.UpdatedBySdkSiteId == propertyWorker.WorkerId)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                .Where(x => x.LeadingCase == true)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var workorderCase in workorderCases)
-            {
-                if(workorderCase.AssignedToSdkSiteId == null)
-                {
-                    continue;
-                }
-
-                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
-            }
+            // // find all cases that are not removed and assignedTo is equal to site.name and update them with the new name
+            // var workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+            //     .Where(x => x.AssignedToSdkSiteId == propertyWorker.WorkerId)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //     .Where(x => x.LeadingCase == true)
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var workorderCase in workorderCases)
+            // {
+            //     await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+            //         localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
+            // }
+            //
+            // workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+            //     .Where(x => x.CreatedBySdkSiteId == propertyWorker.WorkerId)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //     .Where(x => x.LeadingCase == true)
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var workorderCase in workorderCases)
+            // {
+            //     if(workorderCase.AssignedToSdkSiteId == null)
+            //     {
+            //         continue;
+            //     }
+            //
+            //     await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+            //         localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
+            // }
+            //
+            // workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+            //     .Where(x => x.UpdatedBySdkSiteId == propertyWorker.WorkerId)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+            //     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //     .Where(x => x.LeadingCase == true)
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var workorderCase in workorderCases)
+            // {
+            //     if(workorderCase.AssignedToSdkSiteId == null)
+            //     {
+            //         continue;
+            //     }
+            //
+            //     await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+            //         localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
+            // }
 
 
             return;

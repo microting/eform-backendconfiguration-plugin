@@ -4,10 +4,12 @@ using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -32,7 +34,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         // Act
@@ -178,9 +181,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         // Act
+        var userService = Substitute.For<IUserService>();
+        var userManager = Substitute.For<UserManager<EformUser>>(
+            Substitute.For<IUserStore<EformUser>>(),
+            null, null, null, null, null, null, null, null);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
+            userService, userManager,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -270,10 +278,16 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         // Act
+        var userService = Substitute.For<IUserService>();
+        var userManager = Substitute.For<UserManager<EformUser>>(
+            Substitute.For<IUserStore<EformUser>>(),
+            null, null, null, null, null, null, null, null);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
+            userService,
+            userManager,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -364,10 +378,16 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         // Act
+        var userService = Substitute.For<IUserService>();
+        var userManager = Substitute.For<UserManager<EformUser>>(
+            Substitute.For<IUserStore<EformUser>>(),
+            null, null, null, null, null, null, null, null);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
+            userService,
+            userManager,
             BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, logger);
+            TimePlanningPnDbContext, logger, ItemsPlanningPnDbContext);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -399,7 +419,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Assert timeregistrationSiteAssignments
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(1));
         Assert.That(timeregistrationSiteAssignments[0].SiteId, Is.EqualTo(sites[2].MicrotingUid));
-        Assert.That(timeregistrationSiteAssignments[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(timeregistrationSiteAssignments[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(timeregistrationSiteAssignments[0].Resigned, Is.True);
+        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Year, Is.EqualTo(DateTime.Now.Year));
+        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Month, Is.EqualTo(DateTime.Now.Month));
+        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Day, Is.EqualTo(DateTime.Now.Day));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(0));
@@ -437,7 +461,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -532,7 +557,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             LanguageCode = "da",
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
-            UserLastName = Guid.NewGuid().ToString()
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
@@ -799,7 +825,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             TimeRegistrationEnabled = false,
             UserFirstName = Guid.NewGuid().ToString(),
             UserLastName = Guid.NewGuid().ToString(),
-            TaskManagementEnabled = true
+            TaskManagementEnabled = true,
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,

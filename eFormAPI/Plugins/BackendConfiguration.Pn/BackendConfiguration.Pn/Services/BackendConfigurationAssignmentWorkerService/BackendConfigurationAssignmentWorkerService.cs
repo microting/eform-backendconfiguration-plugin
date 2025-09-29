@@ -25,7 +25,9 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Services.RebusService;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
@@ -51,6 +53,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 public class BackendConfigurationAssignmentWorkerService(
     IEFormCoreService coreHelper,
+    UserManager<EformUser> userManager,
     IUserService userService,
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
     IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
@@ -364,6 +367,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     site.WorkflowState,
                     WorkerEmail = worker.Email,
                     worker.PhoneNumber,
+                    site.CreatedAt,
+                    site.UpdatedAt
 
                 };
             sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -371,6 +376,8 @@ public class BackendConfigurationAssignmentWorkerService(
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel
                 {
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt,
                     UserFirstName = x.UserFirstName,
                     UserLastName = x.UserLastName,
                     EmployeeNo = x.EmployeeNo,
@@ -490,13 +497,6 @@ public class BackendConfigurationAssignmentWorkerService(
             // Convert deviceUsers to IQueryable
             var deviceUsersQuery = deviceUsers.AsQueryable();
 
-            var tempList = deviceUsersQuery.ToList();
-
-            foreach (var deviceUserModel in tempList)
-            {
-                Console.WriteLine("Device user: " + deviceUserModel.SiteName + " with workerEmail: " + deviceUserModel.WorkerEmail + " and phone number: " + deviceUserModel.PhoneNumber);
-            }
-
             try
             {
                 deviceUsersQuery = QueryHelper.AddFilterAndSortToQuery(deviceUsersQuery, requestModel, new List<string> { "SiteName", "WorkerEmail", "PhoneNumber", "EmployeeNo" });
@@ -526,8 +526,8 @@ public class BackendConfigurationAssignmentWorkerService(
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
-            userService.UserId, backendConfigurationPnDbContext,
-            timePlanningDbContext, logger);
+            userService.UserId, userService, userManager, backendConfigurationPnDbContext,
+            timePlanningDbContext, logger, itemsPlanningPnDbContext);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }

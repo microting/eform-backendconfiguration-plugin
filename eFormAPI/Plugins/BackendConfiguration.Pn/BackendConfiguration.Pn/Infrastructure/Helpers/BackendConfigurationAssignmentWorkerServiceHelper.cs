@@ -9,6 +9,7 @@ using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
@@ -23,6 +24,7 @@ using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
 using Microsoft.Extensions.Logging;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -193,20 +195,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
-
-                    // foreach (var propertyWorker in assignmentsForDelete)
-                    // {
-                    //     var documentSites = await caseTemplatePnDbContext.DocumentSites.Where(x => x.PropertyId == propertyWorker.PropertyId
-                    //     && x.SdkSiteId == propertyWorker.WorkerId).ToListAsync();
-                    //     foreach (var documentSite in documentSites)
-                    //     {
-                    //         if (documentSite.SdkCaseId != 0)
-                    //         {
-                    //             await core.CaseDelete(documentSite.SdkCaseId);
-                    //         }
-                    //     }
-                    // }
-
                 }
 
                 foreach (var documentId in documentIds)
@@ -267,7 +255,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId,
-            BackendConfigurationPnDbContext backendConfigurationPnDbContext, TimePlanningPnDbContext timePlanningDbContext, ILogger logger)
+            IUserService userService,
+            UserManager<EformUser> userManager,
+            BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+            TimePlanningPnDbContext timePlanningDbContext,
+            ILogger logger,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -280,13 +273,14 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
                 var siteDto = await core.SiteRead(deviceUserModel.SiteMicrotingUid).ConfigureAwait(false);
-                if (siteDto.WorkerUid != null)
+                var oldSiteName = siteDto.SiteName;
+                if (siteDto.WorkerUid == null) return new OperationResult(false, "DeviceUserNotFound");
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
                     var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
-                    if (worker != null)
+                    if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
-
+                        var oldEmail = worker.Email;
                         if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
                         {
                             // this email is already in use
@@ -303,6 +297,16 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.Email = deviceUserModel.WorkerEmail;
                         worker.PhoneNumber = deviceUserModel.PhoneNumber;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
+
+                        var user = await userService.GetByUsernameAsync(oldEmail).ConfigureAwait(false);
+                        if (user != null)
+                        {
+                            user.Email = deviceUserModel.WorkerEmail;
+                            user.FirstName = deviceUserModel.UserFirstName;
+                            user.LastName = deviceUserModel.UserLastName;
+                            user.Locale = language.LanguageCode;
+                            var result = await userManager.UpdateAsync(user);
+                        }
 
                         if (isUpdated)
                         {
@@ -367,6 +371,31 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 }
                             }
                         }
+
+                        // find all PlanningCases where the DoneByUserId is the same as the worker.Id and update the DoneByUserName to the new name
+                        var planningCases = await itemsPlanningPnDbContext.PlanningCases
+                            .Where(x => x.DoneByUserId == worker.Id)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Status == 100)
+                            .ToListAsync().ConfigureAwait(false);
+                        foreach (var planningCase in planningCases)
+                        {
+                            planningCase.DoneByUserName = fullName;
+                            await planningCase.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
+
+                        // find all PlanningCaseSites where the DoneByUserId is the same as the SiteId and update the DoneByUserName to the new name
+                        var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                            .Where(x => x.DoneByUserId == worker.Id)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Status == 100)
+                            .ToListAsync().ConfigureAwait(false);
+                        foreach (var planningCaseSite in planningCaseSites)
+                        {
+                            planningCaseSite.DoneByUserName = fullName;
+                            await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
+
                         //var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
                         if (deviceUserModel.TimeRegistrationEnabled == false && timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
@@ -375,87 +404,21 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                             foreach (var assignmentForDelete in assignmentForDeletes)
                             {
-                                await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
-                                if (assignmentForDelete.CaseMicrotingUid != null)
-                                {
-                                    await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
-                                }
-                            }
-                            var planRegistrations = await timePlanningDbContext.PlanRegistrations.Where(x => x.SdkSitId == siteDto.SiteId).ToListAsync().ConfigureAwait(false);
-
-                            foreach (var planRegistration in planRegistrations)
-                            {
-                                try
-                                {
-                                    if (planRegistration.StatusCaseId != 0)
-                                    {
-                                        await core.CaseDelete(planRegistration.StatusCaseId).ConfigureAwait(false);
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine(e);
-                                    //throw;
-                                }
+                                assignmentForDelete.Resigned = true;
+                                assignmentForDelete.ResignedAtDate = DateTime.UtcNow;
+                                await assignmentForDelete.Update(timePlanningDbContext).ConfigureAwait(false);
                             }
                         }
                         else
                         {
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
-                                var registrationDevices = await timePlanningDbContext.RegistrationDevices
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .ToListAsync().ConfigureAwait(false);
-
-                                if (registrationDevices.Any())
-                                {
-                                    var assignmentForDeletes = await timePlanningDbContext.AssignedSites.Where(x =>
-                                        x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
-
-                                    foreach (var assignmentForDelete in assignmentForDeletes)
-                                    {
-                                        //await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
-                                        if (assignmentForDelete.CaseMicrotingUid != null)
-                                        {
-                                            await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
-                                        }
-                                    }
-
-                                    var planRegistrations = await timePlanningDbContext.PlanRegistrations.Where(x => x.SdkSitId == siteDto.SiteId).ToListAsync().ConfigureAwait(false);
-
-                                    foreach (var planRegistration in planRegistrations)
-                                    {
-                                        if (planRegistration.StatusCaseId != 0)
-                                        {
-                                            await core.CaseDelete(planRegistration.StatusCaseId).ConfigureAwait(false);
-                                        }
-                                    }
-
-                                    var assignments1 = await timePlanningDbContext.AssignedSites.Where(x =>
-                                        x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
-
-                                    if (assignments1.Any())
-                                    {
-                                        return new OperationDataResult<int>(true, siteDto.SiteId);
-                                    }
-
-                                    var assignmentSite = new AssignedSite
-                                    {
-                                        SiteId = siteDto.SiteId,
-                                        CreatedByUserId = userId,
-                                        UpdatedByUserId = userId
-                                    };
-                                    await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
-                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
-                                    return new OperationDataResult<int>(true, siteDto.SiteId);
-                                }
-
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
                                     x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
-                                if (assignments.Any())
+                                if (assignments.Count != 0)
                                 {
-                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger);
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -468,7 +431,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         UpdatedByUserId = userId
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
-
+                                    await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
                                 catch (Exception e)
@@ -479,21 +442,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 }
                             }
                         }
-                        // {
-                        //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
-                        //     site.LanguageId = language.Id;
-                        //     await site.Update(db);
-                        // }
+
                         return isUpdated
                             ? new OperationResult(true, "DeviceUserUpdatedSuccessfully")
                             : new OperationResult(false,
                                 "DeviceUserParamCouldNotBeUpdated");
                     }
 
-                    return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                 }
 
-                return new OperationResult(false, "DeviceUserNotFound");
             }
             catch (Exception ex)
             {
@@ -505,13 +462,21 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext)
         {
+
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            if (sdkDbContext.Workers.AsNoTracking().Any(x => x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
+            {
+                // this email is already in use
+                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+            }
+
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
             // var result = await _deviceUsersService.Create(deviceUserModel);
             var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
+            var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (site != null)
             {
@@ -524,12 +489,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 
             var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
-
-            if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
-            {
-                // this email is already in use
-                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
-            }
 
             worker.EmployeeNo = deviceUserModel.EmployeeNo;
             worker.PinCode = deviceUserModel.PinCode;

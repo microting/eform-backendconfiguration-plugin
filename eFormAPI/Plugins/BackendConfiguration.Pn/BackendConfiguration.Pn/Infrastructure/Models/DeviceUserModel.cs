@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #nullable enable
+using System;
 using System.Collections.Generic;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models;
@@ -92,9 +93,7 @@ public class DeviceUserModel
     public bool IsLocked { get; set; }
     public bool IsBackendUser { get; set; }
     public bool HasWorkOrdersAssigned { get; set; }
-
     public string Manufacturer { get; set; }
-
     public string Model { get; set; }
     public string Os { get; set; }
     public string OsVersion { get; set; }
@@ -107,6 +106,8 @@ public class DeviceUserModel
 
     public string? WorkerEmail { get; set; }
     public string? PhoneNumber { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {

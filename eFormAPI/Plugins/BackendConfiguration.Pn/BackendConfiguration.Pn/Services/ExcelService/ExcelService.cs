@@ -58,7 +58,7 @@ public class ExcelService(
             Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
 
             var filePath = Path.Combine(Path.GetTempPath(), "results",
-                $"{propertyName}_{filtersModel.AreaName}.xlsx");
+                $"{propertyName.Replace("/", "")}_{filtersModel.AreaName}.xlsx");
 
             using (var document =
                    SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
