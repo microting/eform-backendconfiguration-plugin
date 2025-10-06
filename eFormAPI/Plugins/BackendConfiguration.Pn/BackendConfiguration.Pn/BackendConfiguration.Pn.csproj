@@ -218,7 +218,7 @@
       <PackageReference Include="ChemicalsBase" Version="8.0.10" />
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.7" />
-      <PackageReference Include="Ical.Net" Version="5.1.0" />
+      <PackageReference Include="Ical.Net" Version="5.1.1" />
       <PackageReference Include="Microting.eForm" Version="9.0.56" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.46" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.51" />
@@ -226,11 +226,11 @@
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="9.0.1" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.109" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.109" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="9.0.51" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="9.0.52" />
       <PackageReference Include="QuestPDF" Version="2025.7.2" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
-      <PackageReference Include="Sentry" Version="5.15.1" />
+      <PackageReference Include="Sentry" Version="5.16.0" />
     </ItemGroup>
 
     <ItemGroup>
