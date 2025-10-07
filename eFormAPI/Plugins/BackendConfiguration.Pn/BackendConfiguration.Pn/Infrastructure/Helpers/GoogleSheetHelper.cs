@@ -88,8 +88,8 @@ public class GoogleSheetHelper
                 var textHeader = $"{siteName} - tekst";
                 if (newSiteName == siteName)
                 {
-                    timerHeader = $"{oldSiteName} - tekst";
-                    textHeader = $"{oldSiteName} - timer";
+                    timerHeader = $"{oldSiteName} - timer";
+                    textHeader = $"{oldSiteName} - tekst";
                 }
                 if (!newHeaders.Contains(timerHeader))
                 {
