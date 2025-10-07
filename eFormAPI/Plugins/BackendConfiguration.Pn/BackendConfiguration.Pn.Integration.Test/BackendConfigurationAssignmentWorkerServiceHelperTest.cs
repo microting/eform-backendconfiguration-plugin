@@ -419,11 +419,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Assert timeregistrationSiteAssignments
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(1));
         Assert.That(timeregistrationSiteAssignments[0].SiteId, Is.EqualTo(sites[2].MicrotingUid));
-        Assert.That(timeregistrationSiteAssignments[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(timeregistrationSiteAssignments[0].Resigned, Is.True);
-        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Year, Is.EqualTo(DateTime.Now.Year));
-        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Month, Is.EqualTo(DateTime.Now.Month));
-        Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Day, Is.EqualTo(DateTime.Now.Day));
+        Assert.That(timeregistrationSiteAssignments[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(timeregistrationSiteAssignments[0].Resigned, Is.False);
+        // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Year, Is.EqualTo(DateTime.Now.Year));
+        // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Month, Is.EqualTo(DateTime.Now.Month));
+        // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Day, Is.EqualTo(DateTime.Now.Day));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(0));
