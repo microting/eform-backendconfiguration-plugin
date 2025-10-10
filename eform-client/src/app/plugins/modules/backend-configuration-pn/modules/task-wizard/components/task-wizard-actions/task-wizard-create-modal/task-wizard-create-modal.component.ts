@@ -9,6 +9,7 @@ import {
   TemplateListModel,
   TemplateRequestModel
 } from 'src/app/common/models';
+import {FormBuilder, FormGroup, FormControl, Validators, FormArray} from '@angular/forms';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../../../../enums';
 import {TaskWizardCreateModel} from '../../../../../models';
 import {TranslateService} from '@ngx-translate/core';
@@ -32,10 +33,10 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-    selector: 'app-task-wizard-create-modal',
-    templateUrl: './task-wizard-create-modal.component.html',
-    styleUrls: ['./task-wizard-create-modal.component.scss'],
-    standalone: false
+  selector: 'app-task-wizard-create-modal',
+  templateUrl: './task-wizard-create-modal.component.html',
+  styleUrls: ['./task-wizard-create-modal.component.scss'],
+  standalone: false
 })
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   planningTagsModal: PlanningTagsComponent
@@ -53,6 +54,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   repeatTypeWeek: { name: string, id: number }[] = [];
   repeatTypeMonth: { name: string, id: number }[] = [];
   dayOfWeekArr: { id: number, name: string }[] = [];
+  taskForm: FormGroup;
   selectedFolderName: string = '';
   appLanguages: LanguagesModel = new LanguagesModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
@@ -78,6 +80,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   public isAuth$ = this.store.select(selectAuthIsAuth);
 
   private folderSelectedSub$: Subscription;
+  private repeatTypeSub$: Subscription;
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -92,6 +95,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private overlay: Overlay,
     private authStateService: AuthStateService,
+    private fb: FormBuilder,
   ) {
     this.typeahead
       .pipe(
@@ -106,6 +110,8 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       });
   }
+
+  repeatEveryOptions: { id: number, name: string }[] = [];
 
   ngOnInit(): void {
     this.statuses = Object.keys(TaskWizardStatusesEnum)
@@ -162,6 +168,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
       {id: 6, name: this.translateService.instant('Saturday')},
       {id: 0, name: this.translateService.instant('Sunday')}
     ];
+
     if (this.model.eformId === null) {
       let templateRequestModel = new TemplateRequestModel();
       templateRequestModel.nameFilter = 'Kvittering';
@@ -171,28 +178,85 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
         let templatesModel = data.model;
         this.templatesModel = templatesModel;
         this.model.eformId = templatesModel.templates[0].id;
+        this.taskForm.patchValue({eformId: templatesModel.templates[0].id});
       });
     }
+
+    this.taskForm = this.fb.group({
+      status: new FormControl(this.model?.status ?? TaskWizardStatusesEnum.Active),
+      propertyId: new FormControl(this.model?.propertyId, Validators.required),
+      itemPlanningTagId: new FormControl(this.model?.itemPlanningTagId),
+      startDate: new FormControl(this.model?.startDate),
+      repeatType: new FormControl(this.model?.repeatType ?? 0),
+      repeatEvery: new FormControl(this.model?.repeatEvery),
+      eformId: new FormControl(this.model?.eformId, Validators.required),
+      tagIds: new FormControl(this.model?.tagIds || []),
+      sites: new FormControl(this.model?.sites || []),
+      folderId: new FormControl(this.model?.folderId),
+      translates: this.fb.array(
+        this.model.translates.map(t => this.fb.group({
+          languageId: [t.languageId],
+          id: [t.id],
+          name: [t.name, Validators.required],
+          description: [t.description]
+        }))
+      )
+    });
+
+    const repeatTypeControl = this.taskForm.get('repeatType');
+    const repeatEveryControl = this.taskForm.get('repeatEvery');
+
+    this.repeatTypeSub$ = repeatTypeControl!.valueChanges.subscribe((type: number) => {
+      if (!type) {
+        repeatEveryControl?.patchValue(null, {emitEvent: false});
+        repeatEveryControl?.disable({emitEvent: false});
+        this.repeatEveryOptions = [];
+      } else {
+        repeatEveryControl?.enable({emitEvent: false});
+
+        switch (type) {
+          case RepeatTypeEnum.Day:
+            this.repeatEveryOptions = this.repeatTypeDay;
+            break;
+          case RepeatTypeEnum.Week:
+            this.repeatEveryOptions = this.repeatTypeWeek;
+            break;
+          case RepeatTypeEnum.Month:
+            this.repeatEveryOptions = this.repeatTypeMonth;
+            break;
+          default:
+            this.repeatEveryOptions = [];
+        }
+
+        const current = repeatEveryControl?.value;
+        if (!this.repeatEveryOptions.some(opt => opt.id === current)) {
+          repeatEveryControl?.patchValue(this.repeatEveryOptions[0]?.id ?? null, {emitEvent: false});
+        }
+      }
+      this.cd.markForCheck();
+    });
   }
 
   changePropertyId(property: CommonDictionaryModel) {
-    this.model.propertyId = property.id;
+    this.taskForm.patchValue({
+      propertyId: property.id,
+      sites: [],
+      folderId: null
+    });
     this.changeProperty.emit(property.id);
-    this.model.folderId = null;
-    this.model.sites = [];
     this.selectedFolderName = '';
   }
 
   changeTagIds(tags: SharedTagModel[]) {
-    this.model.tagIds = tags.map(x => x.id);
+    this.taskForm.patchValue({
+      tagIds: tags ? tags.map((x) => x.id) : [],
+    });
   }
 
   changePlanningTagId(tag: SharedTagModel) {
-    if(tag) {
-      this.model.itemPlanningTagId = tag.id;
-    } else {
-      this.model.itemPlanningTagId = null;
-    }
+    this.taskForm.patchValue({
+      itemPlanningTagId: tag ? tag.id : null,
+    });
   }
 
   /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
@@ -203,32 +267,35 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     this.model.translates[index].name = name;
   }
 
-  updateEformId(eform: TemplateDto) {
-    this.model.eformId = eform.id;
+  updateEformId(event: any) {
+    const eformId = event?.id ?? event;
+    this.taskForm.patchValue({eformId: eformId});
   }
 
   updateStartDate(e: MatDatepickerInputEvent<any, any>) {
-    this.model.startDate = set(e.value, {
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-      date: e.value.getDate(),
-      year: e.value.getFullYear(),
-      month: e.value.getMonth(),
+    if (!e?.value) {
+      return;
+    }
+    const normalized = set(e.value, {hours: 0, minutes: 0, seconds: 0, milliseconds: 0});
+    this.taskForm.patchValue({startDate: normalized});
+  }
+
+
+  changeRepeatType(event: any) {
+    const typeId = event?.id ?? event;
+    this.taskForm.patchValue({repeatType: typeId});
+  }
+
+  changeRepeatEvery(value: number) {
+    this.taskForm.patchValue({repeatEvery: value});
+  }
+
+  changeStatus(event: boolean) {
+    this.taskForm.patchValue({
+      status: event
+        ? TaskWizardStatusesEnum.Active
+        : TaskWizardStatusesEnum.NotActive,
     });
-  }
-
-  changeRepeatType(repeatType: { id: number, name: string }) {
-    this.model.repeatType = repeatType.id;
-  }
-
-  changeRepeatEvery(repeatEvery: { id: number, name: string }) {
-    this.model.repeatEvery = repeatEvery.id;
-  }
-
-  changeStatus(status: boolean) {
-    this.model.status = status ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
   }
 
   getLanguageName(languageId) {
@@ -236,57 +303,61 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   repeatTypeMass() {
-    switch (this.model.repeatType) {
-      case RepeatTypeEnum.Day: { // day
+    const repeatType = this.taskForm?.get('repeatType')?.value;
+    switch (repeatType) {
+      case RepeatTypeEnum.Day:
         return this.repeatTypeDay;
-      }
-      case RepeatTypeEnum.Week: { // week
+      case RepeatTypeEnum.Week:
         return this.repeatTypeWeek;
-      }
-      case RepeatTypeEnum.Month: { // month
+      case RepeatTypeEnum.Month:
         return this.repeatTypeMonth;
-      }
-      default: {
+      default:
         return [];
-      }
     }
   }
 
   getAssignmentBySiteId(siteId: number): boolean {
-    const index = this.model.sites.findIndex(
+    const index = this.taskForm.get('sites')?.value?.findIndex(
       (x) => x === siteId
     );
     return index !== -1;
   }
 
   addToArray(e: MatCheckboxChange, siteId: number) {
-    if (e.checked && !this.getAssignmentBySiteId(siteId)) {
-      this.model.sites = [...this.model.sites, siteId];
-    } else if (!e.checked && this.getAssignmentBySiteId(siteId)) {
-      this.model.sites = [...this.model.sites.filter(x => x !== siteId)];
+    const sites: number[] = [...(this.taskForm.get('sites')?.value || [])];
+    if (e.checked && !sites.includes(siteId)) {
+      sites.push(siteId);
+    } else if (!e.checked && sites.includes(siteId)) {
+      sites.splice(sites.indexOf(siteId), 1);
     }
+    this.taskForm.patchValue({sites});
   }
 
   openFoldersModal() {
-    if(this.model.propertyId) {
+    if (this.taskForm.value.propertyId) {
       const foldersModal = this.dialog.open(TaskWizardFoldersModalComponent,
         {...dialogConfigHelper(this.overlay), hasBackdrop: true});
       foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
       foldersModal.componentInstance.folders = this.foldersTreeDto;
       foldersModal.componentInstance.eFormSdkFolderId =
-        this.model.folderId ? this.model.folderId : null;
+        this.taskForm.value.folderId ? this.taskForm.value.folderId : null;
       this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
-        this.model.folderId = x.id;
-        this.selectedFolderName = findFullNameById(
-          x.id,
-          this.foldersTreeDto
-        );
+        this.taskForm.patchValue({folderId: x.id});
+        this.selectedFolderName = findFullNameById(x.id, this.foldersTreeDto);
       });
     }
   }
 
+
   create() {
-    this.createTask.emit(this.model);
+
+    const task: TaskWizardCreateModel = {
+      ...this.taskForm.value,
+      translates: this.taskForm.get('translates')?.value,
+    };
+
+
+    this.createTask.emit(task);
   }
 
   openTagsModal() {
