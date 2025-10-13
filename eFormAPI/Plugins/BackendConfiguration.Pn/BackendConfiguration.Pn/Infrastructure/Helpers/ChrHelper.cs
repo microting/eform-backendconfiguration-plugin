@@ -10,24 +10,42 @@ public class ChrHelper
 {
     public async Task<ChrResult> GetCompanyInfo(int number)
     {
-        var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("User-agent", "Microting eForm - CVR opslag");
-        var url = $"https://chrregister.microting.com/Chr?chrNumber={number}";
-        Console.WriteLine($"calling url is: {url}");
-        var response = await client.GetAsync(url).ConfigureAwait(false);
-        var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        Console.WriteLine($"result is: {result}");
-        JsonSerializerOptions options = new JsonSerializerOptions
+        // var client = new HttpClient();
+        // client.DefaultRequestHeaders.Add("User-agent", "Microting eForm - CVR opslag");
+        // var url = $"https://chrregister.microting.com/Chr?chrNumber={number}";
+        // Console.WriteLine($"calling url is: {url}");
+        // var response = await client.GetAsync(url).ConfigureAwait(false);
+        // var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        // Console.WriteLine($"result is: {result}");
+        // JsonSerializerOptions options = new JsonSerializerOptions
+        // {
+        //     PropertyNameCaseInsensitive = true,
+        //     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+        //     NumberHandling = JsonNumberHandling.AllowReadingFromString
+        // };
+        // options.Converters.Add(new StringConverter());
+        //
+        // var res = JsonSerializer.Deserialize<ChrResult>(result, options);
+        //
+        // return res;
+
+        // Temporary return for testing without calling the real service
+        // TODO - remove when real service is working
+        return new ChrResult
         {
-            PropertyNameCaseInsensitive = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString
+            ChrNummer = number.ToString(),
+            Ejendom = new Ejendom
+            {
+                adresse = "",
+                byNavn = "",
+                postNummer = "",
+                postDistrikt = "",
+                kommuneNummer = "",
+                kommuneNavn = "",
+                datoOpret = DateTime.Now.AddYears(-1).ToString("yyyy-MM-dd"),
+                datoOpdatering = DateTime.Now.ToString("yyyy-MM-dd")
+            }
         };
-        options.Converters.Add(new StringConverter());
-
-        var res = JsonSerializer.Deserialize<ChrResult>(result, options);
-
-        return res;
     }
 }
 
