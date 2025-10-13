@@ -70,47 +70,47 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   }
 
   onNameFilterChanged(number: number) {
-    if (number === 0) {
-      this.propertyIsFarm = false;
-    }
-    if (number === 1111111) {
+    // if (number === 0) {
+    //   this.propertyIsFarm = false;
+    // }
+    // if (number === 1111111) {
       this.propertyIsFarm = true;
       this.selectedProperty.isFarm = true;
-    }
-    if (number > 1111111) {
-      if (number.toString().length > 7) {
-        this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
-          .subscribe((data) => {
-            if (data && data.success) {
-              if (data.model.industrycode.toString().slice(0, 2) === '01') {
-                this.propertyIsFarm = true;
-                this.selectedProperty.isFarm = true;
-                if (data.model.error !== 'NOT_FOUND') {
-                  this.selectedProperty.address = data.model.address + ', ' + data.model.city;
-                  this.selectedProperty.name = data.model.name;
-                  this.selectedProperty.industryCode = data.model.industrycode;
-                }
-              } else {
-                if (data.model.error === 'REQUIRES_PAID_SUBSCRIPTION') {
-                  this.propertyIsFarm = true;
-                  this.selectedProperty.isFarm = true;
-                } else {
-                  this.propertyIsFarm = false;
-                  this.selectedProperty.isFarm = false;
-                  if (data.model.error !== 'NOT_FOUND') {
-                    this.selectedProperty.address = data.model.address + ', ' + data.model.city;
-                    this.selectedProperty.name = data.model.name;
-                    this.selectedProperty.industryCode = data.model.industrycode;
-                  }
-                }
-              }
-            }
-          });
-      }
-    } else {
-      // this.selectedProperty.name = '';
-      // this.selectedProperty.address = '';
-    }
+    // }
+    // if (number > 1111111) {
+    //   if (number.toString().length > 7) {
+    //     this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
+    //       .subscribe((data) => {
+    //         if (data && data.success) {
+    //           if (data.model.industrycode.toString().slice(0, 2) === '01') {
+    //             this.propertyIsFarm = true;
+    //             this.selectedProperty.isFarm = true;
+    //             if (data.model.error !== 'NOT_FOUND') {
+    //               this.selectedProperty.address = data.model.address + ', ' + data.model.city;
+    //               this.selectedProperty.name = data.model.name;
+    //               this.selectedProperty.industryCode = data.model.industrycode;
+    //             }
+    //           } else {
+    //             if (data.model.error === 'REQUIRES_PAID_SUBSCRIPTION') {
+    //               this.propertyIsFarm = true;
+    //               this.selectedProperty.isFarm = true;
+    //             } else {
+    //               this.propertyIsFarm = false;
+    //               this.selectedProperty.isFarm = false;
+    //               if (data.model.error !== 'NOT_FOUND') {
+    //                 this.selectedProperty.address = data.model.address + ', ' + data.model.city;
+    //                 this.selectedProperty.name = data.model.name;
+    //                 this.selectedProperty.industryCode = data.model.industrycode;
+    //               }
+    //             }
+    //           }
+    //         }
+    //       });
+    //   }
+    // } else {
+    //   // this.selectedProperty.name = '';
+    //   // this.selectedProperty.address = '';
+    // }
   }
 
   // addToArray(e: any, languageId: number) {
