@@ -81,7 +81,6 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
     // }
     // if (number === 1111111) {
       this.propertyIsFarm = true;
-      this.selectedProperty.isFarm = true;
     // }
     // if (number > 1111111) {
     //   if (number.toString().length > 7) {
@@ -135,15 +134,6 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   getLanguageIsChecked(languageId: number): boolean {
     const language = this.selectedLanguages.find((x) => x.id === languageId);
     return language ? language.checked : false;
-  }
-
-  get isDisabledSaveButton(): boolean {
-    if (this.selectedProperty/* && this.selectedProperty.languagesIds*/) {
-      return (
-        !this.selectedProperty.name/* ||
-        !this.selectedLanguages.some((x) => x.checked)*/
-      );
-    }
   }
 
   onChrNumberChanged(number: number) {
