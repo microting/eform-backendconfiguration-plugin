@@ -36,10 +36,10 @@
 </div>
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button mat-raised-button color="accent" (click)="onCreateProperty()" [disabled]="isDisabledSaveButton">
+  <button mat-raised-button color="accent" (click)="onCreateProperty()" [disabled]="isDisabledSaveButton" id="propertyCreateSaveBtn">
     {{'Save' | translate}}
   </button>
-  <button mat-raised-button (click)="hide()">
+  <button mat-raised-button (click)="hide()" id="propertyCreateSaveCancelBtn">
     {{'Cancel' | translate}}
   </button>
 </div>

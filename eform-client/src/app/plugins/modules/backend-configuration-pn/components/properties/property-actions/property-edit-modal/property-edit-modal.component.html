@@ -67,12 +67,14 @@
     color="accent"
     (click)="onUpdateProperty()"
     [disabled]="isDisabledSaveButton"
+    id="propertyEditSaveBtn"
   >
     {{ 'Save' | translate }}
   </button>
   <button
     mat-raised-button
     (click)="hide()"
+    id="propertyEditSaveCancelBtn"
   >
     {{ 'Cancel' | translate }}
   </button>
