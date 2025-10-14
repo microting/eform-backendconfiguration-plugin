@@ -1,4 +1,5 @@
 import {Component, EventEmitter, OnInit,} from '@angular/core';
+import {FormBuilder, FormGroup, FormArray, FormControl} from '@angular/forms';
 import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {
@@ -21,14 +22,15 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
-    selector: 'app-documents-document-create',
-    templateUrl: './documents-document-create.component.html',
-    styleUrls: ['./documents-document-create.component.scss'],
-    standalone: false
+  selector: 'app-documents-document-create',
+  templateUrl: './documents-document-create.component.html',
+  styleUrls: ['./documents-document-create.component.scss'],
+  standalone: false
 })
 export class DocumentsDocumentCreateComponent implements OnInit {
+  form: FormGroup;
   newDocumentModel: DocumentModel = new DocumentModel();
-  selectedFolder: number;
+  // selectedFolder: number;
   documentCreated: EventEmitter<void> = new EventEmitter<void>();
   folders: DocumentSimpleFolderModel[] = [];
   availableProperties: CommonDictionaryModel[] = [];
@@ -44,9 +46,12 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     return applicationLanguages2;
   }
 
+
   get disabledSaveBtn() {
-    return !this.newDocumentModel.documentTranslations.some(x => x.name);
+    const translations = this.form?.get('translations')?.value || [];
+    return !translations.some((t: any) => !!t.name?.trim());
   }
+
 
   getLanguageByLanguageId(languageId: number) {
     const languages = this.languages.filter(x => x.id === languageId);
@@ -66,6 +71,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   constructor(
+    private fb: FormBuilder,
     private authStore: Store,
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
@@ -81,6 +87,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     // ).id;
   }
 
+
   ngOnInit(): void {
     this.getFolders();
     this.initCreateForm();
@@ -89,19 +96,45 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
   initCreateForm() {
     this.newDocumentModel = new DocumentModel();
+
+    this.form = this.fb.group({
+      status: new FormControl(this.newDocumentModel.status),
+      folderId: new FormControl(null),
+      documentProperties: new FormControl([]),
+      translations: this.fb.array([]),
+    });
+
+    const translationsArray = this.form.get('translations') as FormArray;
+
     for (const language of applicationLanguages2) {
-      this.newDocumentModel = {
-        ...this.newDocumentModel,
-        documentUploadedDatas: [
-          ...this.newDocumentModel.documentUploadedDatas,
-          ...(['pdf', 'docx'].map((extension) => ({languageId: language.id, name: '', file: null, extension: extension}))),
-        ],
-        documentTranslations: [
-          ...this.newDocumentModel.documentTranslations,
-          ...(['pdf', 'docx'].map((extension) => ({languageId: language.id, description: '', name: '', extensionFile: extension}))),
-        ],
-      };
+      const extension = 'pdf';
+
+      this.newDocumentModel.documentUploadedDatas.push({
+        languageId: language.id,
+        name: '',
+        file: null,
+        extension
+      });
+      this.newDocumentModel.documentTranslations.push({
+        languageId: language.id,
+        description: '',
+        name: '',
+        extensionFile: extension
+      });
+
+      translationsArray.push(
+        this.fb.group({
+          languageId: [language.id],
+          extension: [extension],
+          name: [''],
+          description: [''],
+        })
+      );
     }
+  }
+
+  get translationsArray() {
+    return this.form.get('translations') as FormArray;
   }
 
   updateEndDate(e: MatDatepickerInputEvent<any, any>) {
@@ -123,8 +156,36 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   createDocument() {
-    this.newDocumentModel.folderId = this.selectedFolder;
-    //this.newDocumentModel.endDate = format(this.newDocumentModel.endDate as Date, PARSING_DATE_FORMAT);
+    const formValue = this.form.value;
+
+    this.newDocumentModel.status = formValue.status;
+    this.newDocumentModel.folderId = formValue.folderId;
+
+    const selectedProps: number[] = Array.isArray(formValue.documentProperties)
+      ? formValue.documentProperties
+      : [];
+
+    this.newDocumentModel.documentProperties = selectedProps.map((id: number) => ({
+      propertyId: id,
+      documentId: this.newDocumentModel.id
+    }));
+
+    const formTranslations = Array.isArray(formValue.translations) ? formValue.translations : [];
+    this.newDocumentModel.documentTranslations = this.newDocumentModel.documentTranslations.map(t => {
+      const control = formTranslations.find(
+        (c: any) => c.languageId === t.languageId && c.extension === t.extensionFile
+      );
+      if (control) {
+        t.name = control.name;
+        t.description = control.description;
+      }
+      return t;
+    });
+
+    if (this.newDocumentModel.endDate) {
+      this.newDocumentModel.endDate = format(this.newDocumentModel.endDate as Date, PARSING_DATE_FORMAT);
+    }
+
     this.backendConfigurationPnDocumentsService.createDocument(this.newDocumentModel)
       .subscribe((data) => {
         if (data && data.success) {
@@ -133,6 +194,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         }
       });
   }
+
 
   getFolders() {
     this.getSimpleFoldersSub$ = this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage)
@@ -157,7 +219,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     const originalArray = this.newDocumentModel.documentProperties;
     this.newDocumentModel.documentProperties = [...documentProperties].map(propertyId => {
       const assignmentObject = originalArray.find(x => x.propertyId === propertyId);
-      if(assignmentObject){
+      if (assignmentObject) {
         return assignmentObject;
       }
       return {propertyId: propertyId, documentId: this.newDocumentModel.id}
