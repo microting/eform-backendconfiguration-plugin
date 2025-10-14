@@ -78,34 +78,34 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   onNameFilterChanged(number: string) {
     this.editPropertyForm.patchValue({ cvr: number });
 
-    if (+number === 0) {
-      this.propertyIsFarm = false;
-      this.editPropertyForm.patchValue({ isFarm: false });
-    }
-
-    if (+number === 1111111) {
-      this.propertyIsFarm = true;
-      this.editPropertyForm.patchValue({ isFarm: true });
-    }
-
-    if (+number > 1111111 && number.toString().length > 7) {
-      this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number).subscribe((data) => {
-        if (data?.success) {
-          const industryPrefix = data.model.industrycode.toString().slice(0, 2);
-          const isFarm = industryPrefix === '01' || data.model.error === 'REQUIRES_PAID_SUBSCRIPTION';
-
-          this.propertyIsFarm = isFarm;
-          this.editPropertyForm.patchValue({
-            isFarm,
-            name: data.model.name || '',
-            address: data.model.address ? `${data.model.address}, ${data.model.city}` : '',
-            industryCode: data.model.industrycode || '',
-          });
-        }
-      });
-    } else {
-      this.editPropertyForm.patchValue({ name: '', address: '' });
-    }
+    // if (+number === 0) {
+    //   this.propertyIsFarm = false;
+    //   this.editPropertyForm.patchValue({ isFarm: false });
+    // }
+    //
+    // if (+number === 1111111) {
+    this.propertyIsFarm = true;
+    this.editPropertyForm.patchValue({ isFarm: true });
+    // }
+    //
+    // if (+number > 1111111 && number.toString().length > 7) {
+    //   this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number).subscribe((data) => {
+    //     if (data?.success) {
+    //       const industryPrefix = data.model.industrycode.toString().slice(0, 2);
+    //       const isFarm = industryPrefix === '01' || data.model.error === 'REQUIRES_PAID_SUBSCRIPTION';
+    //
+    //       this.propertyIsFarm = isFarm;
+    //       this.editPropertyForm.patchValue({
+    //         isFarm,
+    //         name: data.model.name || '',
+    //         address: data.model.address ? `${data.model.address}, ${data.model.city}` : '',
+    //         industryCode: data.model.industrycode || '',
+    //       });
+    //     }
+    //   });
+    // } else {
+    //   this.editPropertyForm.patchValue({ name: '', address: '' });
+    // }
   }
 
   onChrNumberChanged(number: number) {
