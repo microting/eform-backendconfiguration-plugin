@@ -15,6 +15,7 @@
       <mat-label>{{'CHR name' | translate}}</mat-label>
       <input matInput type="text" formControlName="name">
     </mat-form-field>
+
     <mat-form-field>
       <mat-label>{{'CHR Number' | translate}}</mat-label>
       <input matInput type="text" formControlName="chr" (input)="onChrNumberChanged($event.target.value)">

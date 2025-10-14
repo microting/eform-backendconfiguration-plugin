@@ -75,65 +75,37 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
     this.propertyUpdate.emit(updatedProperty);
   }
 
-  onNameFilterChanged(number: number) {
-    // if (number === 0) {
-    //   this.propertyIsFarm = false;
-    // }
-    // if (number === 1111111) {
+  onNameFilterChanged(number: string) {
+    this.editPropertyForm.patchValue({ cvr: number });
+
+    if (+number === 0) {
+      this.propertyIsFarm = false;
+      this.editPropertyForm.patchValue({ isFarm: false });
+    }
+
+    if (+number === 1111111) {
       this.propertyIsFarm = true;
-    // }
-    // if (number > 1111111) {
-    //   if (number.toString().length > 7) {
-    //     this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
-    //       .subscribe((data) => {
-    //         if (data && data.success) {
-    //           if (data.model.industrycode.toString().slice(0, 2) === '01') {
-    //             this.propertyIsFarm = true;
-    //             this.selectedProperty.isFarm = true;
-    //             if (data.model.error !== 'NOT_FOUND') {
-    //               this.selectedProperty.address = data.model.address + ', ' + data.model.city;
-    //               this.selectedProperty.name = data.model.name;
-    //               this.selectedProperty.industryCode = data.model.industrycode;
-    //             }
-    //           } else {
-    //             if (data.model.error === 'REQUIRES_PAID_SUBSCRIPTION') {
-    //               this.propertyIsFarm = true;
-    //               this.selectedProperty.isFarm = true;
-    //             } else {
-    //               this.propertyIsFarm = false;
-    //               this.selectedProperty.isFarm = false;
-    //               if (data.model.error !== 'NOT_FOUND') {
-    //                 this.selectedProperty.address = data.model.address + ', ' + data.model.city;
-    //                 this.selectedProperty.name = data.model.name;
-    //                 this.selectedProperty.industryCode = data.model.industrycode;
-    //               }
-    //             }
-    //           }
-    //         }
-    //       });
-    //   }
-    // } else {
-    //   // this.selectedProperty.name = '';
-    //   // this.selectedProperty.address = '';
-    // }
-  }
+      this.editPropertyForm.patchValue({ isFarm: true });
+    }
 
-  // addToArray(e: any, languageId: number) {
-  //   if (e.target.checked) {
-  //     this.selectedLanguages = [
-  //       ...this.selectedLanguages,
-  //       { id: languageId, checked: true },
-  //     ];
-  //   } else {
-  //     this.selectedLanguages = this.selectedLanguages.filter(
-  //       (x) => x.id !== languageId
-  //     );
-  //   }
-  // }
+    if (+number > 1111111 && number.toString().length > 7) {
+      this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number).subscribe((data) => {
+        if (data?.success) {
+          const industryPrefix = data.model.industrycode.toString().slice(0, 2);
+          const isFarm = industryPrefix === '01' || data.model.error === 'REQUIRES_PAID_SUBSCRIPTION';
 
-  getLanguageIsChecked(languageId: number): boolean {
-    const language = this.selectedLanguages.find((x) => x.id === languageId);
-    return language ? language.checked : false;
+          this.propertyIsFarm = isFarm;
+          this.editPropertyForm.patchValue({
+            isFarm,
+            name: data.model.name || '',
+            address: data.model.address ? `${data.model.address}, ${data.model.city}` : '',
+            industryCode: data.model.industrycode || '',
+          });
+        }
+      });
+    } else {
+      this.editPropertyForm.patchValue({ name: '', address: '' });
+    }
   }
 
   onChrNumberChanged(number: number) {
