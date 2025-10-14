@@ -3,6 +3,7 @@ import {
   DocumentModel,
   DocumentSimpleFolderModel
 } from '../../../../../models';
+import { FormArray, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
 import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
@@ -26,6 +27,7 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
     standalone: false
 })
 export class DocumentsDocumentEditComponent implements OnInit {
+  form: FormGroup;
   documentModel: DocumentModel = new DocumentModel();
   selectedFolder: number;
   documentUpdated: EventEmitter<void> = new EventEmitter<void>();
@@ -42,9 +44,13 @@ export class DocumentsDocumentEditComponent implements OnInit {
   get languages() {
     return applicationLanguages2;
   }
+  get translationsArray() {
+    return this.form.get('translations') as FormArray;
+  }
 
   get disabledSaveBtn() {
-    return !this.documentModel.documentTranslations.some(x => x.name);
+    const translations = this.form?.get('translations')?.value || [];
+    return !translations.some((t: any) => !!t.name?.trim());
   }
 
   getLanguageByLanguageId(languageId: number) {
@@ -66,6 +72,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   constructor(
+    private fb: FormBuilder,
     private authStore: Store,
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
@@ -84,6 +91,33 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.getFolders();
+    this.getPropertiesDictionary();
+  }
+
+  initEditForm() {
+    this.form = this.fb.group({
+      status: new FormControl(this.documentModel.status),
+      folderId: new FormControl(this.documentModel.folderId),
+      documentProperties: new FormControl(this.documentModel.documentProperties.map(p => p.propertyId)),
+      translations: this.fb.array([]),
+    });
+
+    const translationsArray = this.form.get('translations') as FormArray;
+
+    for (const language of this.languages) {
+      const existing = this.documentModel.documentTranslations.find(
+        t => t.languageId === language.id && t.extensionFile === 'pdf'
+      );
+      translationsArray.push(
+        this.fb.group({
+          languageId: [language.id],
+          extension: ['pdf'],
+          name: [existing?.name || ''],
+          description: [existing?.description || ''],
+        })
+      );
+    }
   }
 
   updateEndDate(e: MatDatepickerInputEvent<any, any>) {
@@ -105,27 +139,55 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getDocument(documentId: number) {
-    this.documentSub$ = this.backendConfigurationPnDocumentsService.getSingleDocument(documentId).subscribe((data) => {
+    this.documentSub$ = this.backendConfigurationPnDocumentsService.getSingleDocument(documentId)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.documentModel = data.model;
+          this.documentProperties = this.documentModel.documentProperties.map(x => x.propertyId);
+          this.selectedFolder = this.documentModel.folderId;
+
+          this.initEditForm();
+
+          this.getFolders();
+          this.getPropertiesDictionary();
+        }
+      });
+  }
+
+  updateDocument() {
+    const formValue = this.form.value;
+
+    this.documentModel.status = formValue.status;
+    this.documentModel.folderId = formValue.folderId;
+    this.documentModel.documentProperties = formValue.documentProperties.map((id: number) => ({
+      propertyId: id,
+      documentId: this.documentModel.id,
+    }));
+
+    const formTranslations = formValue.translations || [];
+    this.documentModel.documentTranslations = this.documentModel.documentTranslations.map(t => {
+      if (t.extensionFile === 'pdf') {
+        const control = formTranslations.find(c => c.languageId === t.languageId);
+        if (control) {
+          t.name = control.name;
+          t.description = control.description;
+        }
+      }
+      return t;
+    });
+
+    if (this.documentModel.endDate) {
+      this.documentModel.endDate = format(this.documentModel.endDate as Date, PARSING_DATE_FORMAT);
+    }
+
+    this.backendConfigurationPnDocumentsService.updateDocument(this.documentModel).subscribe(data => {
       if (data && data.success) {
-        this.documentModel = data.model;
-        this.documentProperties = this.documentModel.documentProperties.map(x => x.propertyId);
-        this.selectedFolder = this.documentModel.folderId;
-        this.getFolders();
+        this.documentUpdated.emit();
+        this.hide();
       }
     });
   }
 
-  updateDocument() {
-    this.documentModel.folderId = this.selectedFolder;
-    this.documentModel.endDate = format(this.documentModel.endDate as Date, PARSING_DATE_FORMAT);
-    this.backendConfigurationPnDocumentsService.updateDocument(this.documentModel)
-      .subscribe((data) => {
-        if (data && data.success) {
-          this.documentUpdated.emit();
-          this.hide();
-        }
-      });
-  }
 
   removeFile(selectedLanguage: number, extension: string) {
     const filesIndexByLanguage = this.documentModel.documentUploadedDatas.findIndex(
@@ -142,12 +204,15 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getFolders() {
-    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
-      if (data && data.success) {
-        this.folders = data.model;
-        this.getPropertiesDictionary();
-      }
-    });
+    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.folders = data.model;
+          if (this.form && this.documentModel.folderId) {
+            this.form.get('folderId')?.setValue(this.documentModel.folderId);
+          }
+        }
+      });
   }
 
   getPropertiesDictionary() {
@@ -290,3 +355,4 @@ export class DocumentsDocumentEditComponent implements OnInit {
     ];
   }
 }
+

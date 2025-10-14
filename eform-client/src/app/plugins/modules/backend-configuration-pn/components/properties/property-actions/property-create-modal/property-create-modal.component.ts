@@ -1,26 +1,23 @@
-import {
-  Component,
-  EventEmitter,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
-import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
-import {PropertyCreateModel} from '../../../../models';
-import {AuthStateService} from 'src/app/common/store';
-import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {MatDialogRef} from '@angular/material/dialog';
-import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
+import { Component, EventEmitter, OnDestroy, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { applicationLanguages, applicationLanguagesTranslated } from 'src/app/common/const';
+import { PropertyCreateModel } from '../../../../models';
+import { AuthStateService } from 'src/app/common/store';
+import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import { MatDialogRef } from '@angular/material/dialog';
+import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
+import { Subscription } from 'rxjs';
 
 @AutoUnsubscribe()
 @Component({
-    selector: 'app-property-create-modal',
-    templateUrl: './property-create-modal.component.html',
-    styleUrls: ['./property-create-modal.component.scss'],
-    standalone: false
+  selector: 'app-property-create-modal',
+  templateUrl: './property-create-modal.component.html',
+  styleUrls: ['./property-create-modal.component.scss'],
+  standalone: false
 })
 export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
+  newPropertyForm: FormGroup;
   newProperty: PropertyCreateModel = new PropertyCreateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
   propertyIsFarm: boolean = false;
@@ -33,11 +30,23 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private fb: FormBuilder,
     public authStateService: AuthStateService,
     private propertiesService: BackendConfigurationPnPropertiesService,
-    public dialogRef: MatDialogRef<PropertyCreateModalComponent>,
+    public dialogRef: MatDialogRef<PropertyCreateModalComponent>
   ) {
     this.propertyIsFarm = false;
+
+    // Initialize reactive form
+    this.newPropertyForm = this.fb.group({
+      cvr: ['', Validators.required],
+      mainMailAddress: ['', [Validators.required, Validators.email]],
+      name: ['', Validators.required],
+      chr: [''],
+      address: [''],
+      workorderEnable: [false],
+      isFarm: [false]
+    });
   }
 
   ngOnDestroy(): void {
@@ -48,18 +57,18 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
 
   hide() {
     this.dialogRef.close();
-    this.newProperty = new PropertyCreateModel();
+    this.newPropertyForm.reset();
     this.selectedLanguages = [];
+    this.propertyIsFarm = false;
   }
 
   onCreateProperty() {
-    this.propertyCreate.emit({
-      ...this.newProperty,
-      languagesIds: applicationLanguagesTranslated.map((x) => x.id),
-    });
+    const newProperty: PropertyCreateModel = {
+      ...this.newPropertyForm.value,
+      languagesIds: applicationLanguagesTranslated.map(x => x.id)
+    };
+    this.propertyCreate.emit(newProperty);
   }
-
-
   onNameFilterChanged(number: string) {
     this.newProperty.cvr = number;
     // if (+number === 0) {
@@ -106,46 +115,20 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   }
 
   onChrNumberChanged(number: number) {
-    if (number > 11111) {
-      if (number.toString().length > 5) {
-        this.getChrInformationSub$ = this.propertiesService.getChrInformation(number)
-          .subscribe((data) => {
-            if (data && data.success) {
-              if (data.model.ejendom.byNavn === '' || data.model.ejendom.byNavn === null) {
-                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.postDistrikt;
-              } else {
-                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.byNavn;
-              }
-            }
-          });
-      }
+    if (number > 11111 && number.toString().length > 5) {
+      this.getChrInformationSub$ = this.propertiesService.getChrInformation(number)
+        .subscribe((data) => {
+          if (data?.success) {
+            const address = data.model.ejendom.byNavn || '';
+            this.newPropertyForm.patchValue({
+              address: `${data.model.ejendom.adresse}, ${address || data.model.ejendom.postDistrikt}`
+            });
+          }
+        });
     }
-  }
-
-  // addToArray(e: any, languageId: number) {
-  //   if (e.target.checked) {
-  //     this.selectedLanguages = [
-  //       ...this.selectedLanguages,
-  //       { id: languageId, checked: true },
-  //     ];
-  //   } else {
-  //     this.selectedLanguages = this.selectedLanguages.filter(
-  //       (x) => x.id !== languageId
-  //     );
-  //   }
-  // }
-
-  getLanguageIsChecked(languageId: number): boolean {
-    const language = this.selectedLanguages.find((x) => x.id === languageId);
-    return language ? language.checked : false;
   }
 
   get isDisabledSaveButton(): boolean {
-    if (this.newProperty /*&& this.newProperty.languagesIds*/) {
-      return (
-        !this.newProperty.name/* || !this.selectedLanguages.some((x) => x.checked)*/
-      );
-    }
-    return false;
+    return this.newPropertyForm.invalid;
   }
 }

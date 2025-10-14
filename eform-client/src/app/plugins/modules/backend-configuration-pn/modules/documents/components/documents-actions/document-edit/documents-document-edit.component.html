@@ -1,213 +1,221 @@
-<h3 mat-dialog-title>{{'Edit document' | translate}}</h3>
-<div mat-dialog-content>
-  <div class="d-flex flex-column">
-  <mat-card class="mb-3">
-    <mat-card-content *ngIf="folders !== undefined">
-      <div class="d-flex flex-column">
-        <mat-slide-toggle
-          id="documentStatusToggle"
-          [(ngModel)]="documentModel.status"
-        >
-          {{ 'Enabled' | translate }}
-        </mat-slide-toggle>
-        <mat-form-field>
-          <mat-label>{{'Selected folder' | translate}}</mat-label>
-          <mtx-select
-            class="custom"
-            dropdownPosition="bottom"
-            [clearable]="false"
+<h3 mat-dialog-title>{{ 'Edit document' | translate }}</h3>
+<div [formGroup]="form">
+  <div mat-dialog-content>
+    <div class="d-flex flex-column">
+      <mat-card class="mb-3">
+        <mat-card-content *ngIf="folders !== undefined">
+          <div class="d-flex flex-column">
+            <mat-slide-toggle
+              id="documentStatusToggle"
+              formControlName="status"
+            >
+              {{ 'Enabled' | translate }}
+            </mat-slide-toggle>
+            <mat-form-field>
+              <mat-label>{{ 'Selected folder' | translate }}</mat-label>
+              <mtx-select
+                class="custom"
+                dropdownPosition="bottom"
+                [clearable]="false"
+                [bindLabel]="'name'"
+                [bindValue]="'id'"
+                formControlName="folderId"
+                id="editDocumentFolderSelector"
+                [items]="folders"
+              >
+              </mtx-select>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="mb-3">
+        <mat-card-title>{{ 'Assign to property' | translate }}</mat-card-title>
+        <mat-card-content *ngIf="availableProperties !== undefined">
+          <mtx-checkbox-group
+            class="d-grid grid-2-columns"
+            [items]="availableProperties"
             [bindLabel]="'name'"
             [bindValue]="'id'"
-            [(ngModel)]="selectedFolder"
-            id="editDocumentFolderSelector"
-            [items]="folders"
-          >
-          </mtx-select>
-        </mat-form-field>
-      </div>
-    </mat-card-content>
-  </mat-card>
-  <mat-card class="mb-3">
-    <mat-card-title>{{ 'Assign to property' | translate }}</mat-card-title>
-    <mat-card-content *ngIf="availableProperties !== undefined">
-      <mtx-checkbox-group
-        class="d-grid grid-2-columns"
-        [items]="availableProperties"
-        [bindLabel]="'name'"
-        [bindValue]="'id'"
-        [ngModel]="documentProperties"
-        (ngModelChange)="addToArray($event)"
-        [showSelectAll]="true"
-        [selectAllLabel]="'Select/unselect all' | translate">
-      </mtx-checkbox-group>
-    </mat-card-content>
-  </mat-card>
+            formControlName="documentProperties"
+            [showSelectAll]="true"
+            [selectAllLabel]="'Select/unselect all' | translate">
+          </mtx-checkbox-group>
+        </mat-card-content>
+      </mat-card>
 
-  <div class="d-flex flex-row align-items-center">
-    <ng-container *ngFor="let translation of languages; let translationIndex = index; last as isLast;">
-      <div class="mb-3 flex-shrink-0 flex-grow-1">
-        <mat-card>
-          <mat-card-title>{{ getLanguageByLanguageId(translation.id).text }}</mat-card-title>
-          <mat-card-content>
-            <!--<mat-form-field>
-              <mat-label>{{'Name DOCX' | translate}}</mat-label>
-              <input
-                matInput
-                type="text"
-                id="createDocumentNameDocxTranslation_{{ translationIndex }}"
-                name="createDocumentNameDocxTranslation_{{translationIndex}}"
-                [(ngModel)]="getTranslateByLanguageId(translation.id, 'docx').name"
-              />
-            </mat-form-field>
-            <formatting-text-editor
-              [(value)]="getTranslateByLanguageId(translation.id, 'docx').description"
-              [placeholder]="'Description DOCX' | translate"
-              id="createDocumentDescriptionDocxTranslation_{{translationIndex}}"
-            >
-            </formatting-text-editor>
-            <div class="mt-3">
-              <input
-                type="file"
-                hidden
-                [accept]="'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
-                (change)="onFileSelected($event, translation.id, 'docx')"
-                id="docInput{{ translationIndex }}"
-                #fileDocUpload
-              />
-              <div>{{getFileNameByLanguage(translation.id, 'docx') || 'No file uploaded yet.' | translate}}
-                <button
-                  mat-icon-button
-                  color="accent"
-                  (click)="fileDocUpload.click()"
-                  [matTooltip]="'Select DOCX' | translate"
+      <div formArrayName="translations" class="d-flex flex-row align-items-center">
+        <ng-container *ngFor="let translation of translationsArray.controls; let i = index; let isLast = last">
+          <div [formGroupName]="i" class="mb-3 flex-shrink-0 flex-grow-1">
+            <mat-card>
+              <mat-card-title>{{ getLanguageByLanguageId(translation.get('languageId').value).text }}</mat-card-title>
+              <mat-card-content>
+                <!--<mat-form-field>
+                  <mat-label>{{'Name DOCX' | translate}}</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    id="createDocumentNameDocxTranslation_{{ translationIndex }}"
+                    name="createDocumentNameDocxTranslation_{{translationIndex}}"
+                    [(ngModel)]="getTranslateByLanguageId(translation.id, 'docx').name"
+                  />
+                </mat-form-field>
+                <formatting-text-editor
+                  [(value)]="getTranslateByLanguageId(translation.id, 'docx').description"
+                  [placeholder]="'Description DOCX' | translate"
+                  id="createDocumentDescriptionDocxTranslation_{{translationIndex}}"
                 >
-                  <mat-icon>upload_file</mat-icon>
-                </button>
-                <ng-container *ngIf="getFileNameByLanguage(translation.id, 'docx')">
-                  <button
-                    mat-icon-button
-                    color="accent"
-                    (click)="getFile(translation.id, 'docx')"
-                    matTooltip="{{ 'Download DOCX' | translate }}"
-                  >
-                    <mat-icon>download</mat-icon>
-                    &lt;!&ndash;              <mat-icon svgIcon="file-word"></mat-icon>&ndash;&gt;
-                  </button>
-                  <button
-                    mat-icon-button
-                    color="warn"
-                    (click)="removeFile(translation.id, 'docx')"
-                    matTooltip="{{ 'Delete file' | translate }}"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </ng-container>
-              </div>
-            </div>-->
-            <mat-form-field>
-              <mat-label>{{'Name PDF' | translate}}</mat-label>
-              <input
-                matInput
-                type="text"
-                id="createDocumentNamePdfTranslation_{{ translationIndex }}"
-                name="createDocumentNamePdfTranslation_{{translationIndex}}"
-                [(ngModel)]="getTranslateByLanguageId(translation.id, 'pdf').name"
-              />
-            </mat-form-field>
-            <formatting-text-editor
-              [(value)]="getTranslateByLanguageId(translation.id, 'pdf').description"
-              [placeholder]="'Description PDF' | translate"
-              id="createDocumentDescriptionPdfTranslation_{{translationIndex}}"
-            >
-            </formatting-text-editor>
-            <div class="mt-3">
-              <input
-                type="file"
-                hidden
-                [accept]="'application/pdf'"
-                (change)="onFileSelected($event, translation.id, 'pdf')"
-                id="pdfInput{{ translationIndex }}"
-                #filePdfUpload
-              />
-              <div>{{getFileNameByLanguage(translation.id, 'pdf') || 'No file uploaded yet.' | translate}}
-                <button
-                  mat-icon-button
-                  color="accent"
-                  (click)="filePdfUpload.click()"
-                  [matTooltip]=" 'Select PDF' | translate "
+                </formatting-text-editor>
+                <div class="mt-3">
+                  <input
+                    type="file"
+                    hidden
+                    [accept]="'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+                    (change)="onFileSelected($event, translation.id, 'docx')"
+                    id="docInput{{ translationIndex }}"
+                    #fileDocUpload
+                  />
+                  <div>{{getFileNameByLanguage(translation.id, 'docx') || 'No file uploaded yet.' | translate}}
+                    <button
+                      mat-icon-button
+                      color="accent"
+                      (click)="fileDocUpload.click()"
+                      [matTooltip]="'Select DOCX' | translate"
+                    >
+                      <mat-icon>upload_file</mat-icon>
+                    </button>
+                    <ng-container *ngIf="getFileNameByLanguage(translation.id, 'docx')">
+                      <button
+                        mat-icon-button
+                        color="accent"
+                        (click)="getFile(translation.id, 'docx')"
+                        matTooltip="{{ 'Download DOCX' | translate }}"
+                      >
+                        <mat-icon>download</mat-icon>
+                        &lt;!&ndash;              <mat-icon svgIcon="file-word"></mat-icon>&ndash;&gt;
+                      </button>
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        (click)="removeFile(translation.id, 'docx')"
+                        matTooltip="{{ 'Delete file' | translate }}"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </ng-container>
+                  </div>
+                </div>-->
+                <mat-form-field>
+                  <mat-label>{{ 'Name PDF' | translate }}</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    id="createDocumentNamePdfTranslation_{{ i }}"
+                    name="createDocumentNamePdfTranslation_{{i}}"
+                    formControlName="name"
+                  />
+                </mat-form-field>
+                <formatting-text-editor
+                  [value]="translation.get('description').value"
+                  (valueChange)="translation.get('description').setValue($event)"
+                  [placeholder]="'Description PDF' | translate"
+                  id="createDocumentDescriptionPdfTranslation_{{i}}"
                 >
-                  <mat-icon>upload_file</mat-icon>
-                </button>
-                <ng-container *ngIf="getFileNameByLanguage(translation.id)">
-                  <button
-                    mat-icon-button
-                    color="accent"
-                    (click)="getFile(translation.id, 'pdf')"
-                    matTooltip="{{ 'Download PDF' | translate }}"
-                  >
-                    <mat-icon>download</mat-icon>
-                    <!--              <mat-icon svgIcon="file-pdf"></mat-icon>-->
-                  </button>
-                  <button
-                    mat-icon-button
-                    color="warn"
-                    (click)="removeFile(translation.id, 'pdf')"
-                    matTooltip="{{ 'Delete file' | translate }}"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </ng-container>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
+                </formatting-text-editor>
+                <div class="mt-3">
+                  <input
+                    type="file"
+                    hidden
+                    [accept]="'application/pdf'"
+                    (change)="onFileSelected($event, translation.get('languageId').value, 'pdf')"
+                    id="pdfInput{{ i }}"
+                    #filePdfUpload
+                  />
+                  <div>{{ getFileNameByLanguage(translation.get('languageId').value, 'pdf') || ('No file uploaded yet.' | translate) }}
+                    <button
+                      mat-icon-button
+                      color="accent"
+                      (click)="filePdfUpload.click()"
+                      [matTooltip]=" 'Select PDF' | translate "
+                    >
+                      <mat-icon>upload_file</mat-icon>
+                    </button>
+                    <ng-container *ngIf="getFileNameByLanguage(translation.get('languageId').value)">
+                      <button
+                        mat-icon-button
+                        color="accent"
+                        (click)="getFile(translation.get('languageId').value)"
+                        matTooltip="{{ 'Download PDF' | translate }}"
+                      >
+                        <mat-icon>download</mat-icon>
+                        <!--              <mat-icon svgIcon="file-pdf"></mat-icon>-->
+                      </button>
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        (click)="removeFile(translation.get('languageId').value, 'pdf')"
+                        matTooltip="{{ 'Delete file' | translate }}"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </ng-container>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+          <button
+            *ngIf="!isLast"
+            mat-icon-button
+            [color]="'accent'"
+            [matTooltip]="'copyFromTo' | translate : {
+              from: getLanguageByLanguageId(translationsArray.at(i).get('languageId').value).text,
+              to: getLanguageByLanguageId(translationsArray.at(i + 1).get('languageId').value).text
+            }"
+            (click)="copyValues(
+              translationsArray.at(i).get('languageId').value,
+              translationsArray.at(i + 1).get('languageId').value
+            )"
+          >
+            <mat-icon>forward</mat-icon>
+          </button>
+        </ng-container>
       </div>
-      <button
-        *ngIf="!isLast"
-        mat-icon-button
-        [color]="'accent'"
-        [matTooltip]="'copyFromTo'|translate:{from: translation.text, to: languages[translationIndex + 1].text}"
-        (click)="copyValues(translation.id, languages[translationIndex + 1].id)"
-      >
-        <mat-icon>forward</mat-icon>
-      </button>
-    </ng-container>
+      <!--<mat-card class="mb-3">
+        <mat-card-content>
+          <mat-form-field>
+            <mat-label>{{'End date' | translate}}</mat-label>
+            <input
+              matInput
+              [matDatepicker]="picker"
+              [value]="documentModel.endDate"
+              (dateChange)="updateEndDate($event)"
+              (dateInput)="updateEndDate($event)"
+              (click)="picker.open()"
+              id="createStartFrom"
+              name="createStartFrom"
+            >
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>-->
+    </div>
   </div>
-  <!--<mat-card class="mb-3">
-    <mat-card-content>
-      <mat-form-field>
-        <mat-label>{{'End date' | translate}}</mat-label>
-        <input
-          matInput
-          [matDatepicker]="picker"
-          [value]="documentModel.endDate"
-          (dateChange)="updateEndDate($event)"
-          (dateInput)="updateEndDate($event)"
-          (click)="picker.open()"
-          id="createStartFrom"
-          name="createStartFrom"
-        >
-        <mat-datepicker #picker></mat-datepicker>
-      </mat-form-field>
-    </mat-card-content>
-  </mat-card>-->
-</div>
-</div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button
-    mat-raised-button
-    color="accent"
-    id="documentEditSaveBtn"
-    (click)="updateDocument()"
-    [disabled]="disabledSaveBtn"
-  >
-    {{ 'Update' | translate }}
-  </button>
-  <button
-    mat-raised-button
-    id="documentEditCancelBtn"
-    (click)="hide()"
-  >
-    {{ 'Cancel' | translate }}
-  </button>
+  <div mat-dialog-actions class="d-flex flex-row justify-content-end">
+    <button
+      mat-raised-button
+      color="accent"
+      id="documentEditSaveBtn"
+      (click)="updateDocument()"
+      [disabled]="disabledSaveBtn"
+    >
+      {{ 'Update' | translate }}
+    </button>
+    <button
+      mat-raised-button
+      id="documentEditCancelBtn"
+      (click)="hide()"
+    >
+      {{ 'Cancel' | translate }}
+    </button>
+  </div>
 </div>

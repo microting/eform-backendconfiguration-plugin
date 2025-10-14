@@ -9,6 +9,7 @@ import {
   TemplateListModel,
   TemplateRequestModel
 } from 'src/app/common/models';
+import {FormBuilder, FormGroup, FormControl, Validators} from '@angular/forms';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../../../../enums';
 import {TaskWizardCreateModel} from '../../../../../models';
 import {TranslateService} from '@ngx-translate/core';
@@ -31,16 +32,17 @@ import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
-    selector: 'app-task-wizard-update-modal',
-    templateUrl: './task-wizard-update-modal.component.html',
-    styleUrls: ['./task-wizard-update-modal.component.scss'],
-    standalone: false
+  selector: 'app-task-wizard-update-modal',
+  templateUrl: './task-wizard-update-modal.component.html',
+  styleUrls: ['./task-wizard-update-modal.component.scss'],
+  standalone: false
 })
 export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   planningTagsModal: PlanningTagsComponent;
   updateTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   typeahead = new EventEmitter<string>();
   changeProperty: EventEmitter<number> = new EventEmitter<number>();
+  taskForm: FormGroup;
   properties: CommonDictionaryModel[] = [];
   tags: CommonDictionaryModel[] = [];
   sites: CommonDictionaryModel[] = [];
@@ -84,7 +86,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   get disabledSaveButton(): boolean {
-    return R.equals(this.model, this.copyModel);
+    return R.equals(this.taskForm.value, this.copyModel);
   }
 
   constructor(
@@ -95,6 +97,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private fb: FormBuilder
   ) {
     this.typeahead
       .pipe(
@@ -111,33 +114,39 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.initForm();
+
     this.statuses = Object.keys(TaskWizardStatusesEnum)
-      .filter(key => isNaN(Number(key))) // Filter out numeric keys that TypeScript adds to enumerations
-      .map(key => {
-        return {
-          label: this.translateService.instant(key),
-          value: TaskWizardStatusesEnum[key],
-        };
-      });
-    this.model.translates = fixTranslationsByLanguages(this.model.translates,
-      this.appLanguages.languages
-        .filter(x => x.isActive)
-        .map(x => ({languageId: x.id})));
+      .filter(key => isNaN(Number(key)))
+      .map(key => ({
+        label: this.translateService.instant(key),
+        value: TaskWizardStatusesEnum[key],
+      }));
+
+    const activeLanguages = (this.appLanguages.languages ?? [])
+      .filter(x => x.isActive)
+      .map(x => ({languageId: x.id}));
+
+    this.model.translates = fixTranslationsByLanguages(this.model.translates, activeLanguages);
+
     this.repeatEveryArr = generateWeeksList(this.translateService, 52);
     this.repeatTypeArr = Object.keys(RepeatTypeEnum)
-      .filter(key => isNaN(Number(key))) // Filter out numeric keys that TypeScript adds to enumerations
-      .map(key => {
-        return {
-          name: this.translateService.instant(key),
-          id: RepeatTypeEnum[key],
-        };
-      });
-    this.repeatTypeDay = R.map(x => {
-      return {name: x === 1 ? this.translateService.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 31)); // 1, 2, ..., 29, 30.
-    this.repeatTypeWeek = R.map(x => {
-      return {name: x === 1 ? this.translateService.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 51)); // 1, 2, ..., 49, 50.
+      .filter(key => isNaN(Number(key)))
+      .map(key => ({
+        name: this.translateService.instant(key),
+        id: RepeatTypeEnum[key],
+      }));
+
+    this.repeatTypeDay = R.map(x => ({
+      name: x === 1 ? this.translateService.instant('Every') : x.toString(),
+      id: x
+    }), R.range(1, 31));
+
+    this.repeatTypeWeek = R.map(x => ({
+      name: x === 1 ? this.translateService.instant('Every') : x.toString(),
+      id: x
+    }), R.range(1, 51));
+
     this.repeatTypeMonth = [
       {id: 1, name: this.translateService.instant('Every month')},
       {id: 2, name: this.translateService.instant('2nd months')},
@@ -153,8 +162,8 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
       {id: 96, name: this.translateService.instant('96 (8 years)')},
       {id: 108, name: this.translateService.instant('108 (9 years)')},
       {id: 120, name: this.translateService.instant('120 (10 years)')},
-    ]; // 1, 2, ..., 23, 24.
-    // }, R.range(1, 25)); // 1, 2, ..., 23, 24.
+    ];
+
     this.dayOfWeekArr = [
       {id: 1, name: this.translateService.instant('Monday')},
       {id: 2, name: this.translateService.instant('Tuesday')},
@@ -166,25 +175,51 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     ];
   }
 
+  initForm() {
+    this.taskForm = this.fb.group({
+      status: new FormControl(this.model?.status ?? TaskWizardStatusesEnum.Active),
+      propertyId: new FormControl(this.model?.propertyId, Validators.required),
+      itemPlanningTagId: new FormControl(this.model?.itemPlanningTagId),
+      startDate: new FormControl(this.model?.startDate),
+      repeatType: new FormControl(this.model?.repeatType ?? 0),
+      repeatEvery: new FormControl(this.model?.repeatEvery),
+      eformId: new FormControl(this.model?.eformId, Validators.required),
+      tagIds: new FormControl(this.model?.tagIds || []),
+      sites: new FormControl(this.model?.sites || []),
+      folderId: new FormControl(this.model?.folderId),
+      translates: this.fb.array(
+        this.model.translates.map(t => this.fb.group({
+          languageId: [t.languageId],
+          id: [t.id],
+          name: [t.name || '', Validators.required],
+          description: [t.description || '']
+        }))
+      )
+    });
+  }
+
   changePropertyId(property: CommonDictionaryModel) {
-    this.model.propertyId = property.id;
+    this.taskForm.patchValue({
+      propertyId: property.id,
+      sites: [],
+      folderId: null
+    });
     this.changeProperty.emit(property.id);
-    this.model.folderId = null;
-    this.model.sites = [];
     this.selectedFolderName = '';
   }
 
   changeTagIds(tags: SharedTagModel[]) {
-    this.model.tagIds = tags.map(x => x.id);
+    this.taskForm.patchValue({
+      tagIds: tags ? tags.map((x) => x.id) : [],
+    });
   }
 
   changePlanningTagId(tag: SharedTagModel) {
-    if(tag) {
-      this.model.itemPlanningTagId = tag.id;
-    } else {
-      this.model.itemPlanningTagId = null;
-    }
+    this.taskForm.patchValue({
+      itemPlanningTagId: tag ? tag.id : null,
+    });
   }
+
 
   /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
       this.model.translates[index] = translationsModel;
@@ -194,89 +229,96 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     this.model.translates[index].name = name;
   }
 
-  updateEformId(eform: TemplateDto) {
-    this.model.eformId = eform.id;
+  updateEformId(event: any) {
+    const eformId = event?.id ?? event;
+    this.taskForm.patchValue({eformId: eformId});
   }
 
   updateStartDate(e: MatDatepickerInputEvent<any, any>) {
-    this.model.startDate = set(e.value, {
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-      date: e.value.getDate(),
-      year: e.value.getFullYear(),
-      month: e.value.getMonth(),
+    if (!e?.value) {
+      return;
+    }
+    const normalized = set(e.value, {hours: 0, minutes: 0, seconds: 0, milliseconds: 0});
+    this.taskForm.patchValue({startDate: normalized});
+  }
+
+  changeRepeatType(event: any) {
+    const typeId = event?.id ?? event;
+    this.taskForm.patchValue({repeatType: typeId});
+  }
+
+  changeRepeatEvery(value: number) {
+    this.taskForm.patchValue({repeatEvery: value});
+  }
+
+  changeStatus(event: boolean) {
+    this.taskForm.patchValue({
+      status: event
+        ? TaskWizardStatusesEnum.Active
+        : TaskWizardStatusesEnum.NotActive,
     });
   }
 
-  changeRepeatType(repeatType: { id: number, name: string }) {
-    this.model.repeatType = repeatType.id;
-  }
-
-  changeRepeatEvery(repeatEvery: { id: number, name: string }) {
-    this.model.repeatEvery = repeatEvery.id;
-  }
-
-  changeStatus(status: boolean) {
-    this.model.status = status ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
-  }
-
-  getLanguageName(languageId) {
-    return this.appLanguages.languages.find(x => x.id === languageId).name;
+  getLanguageName(languageId: number): string {
+    const lang = (this.appLanguages.languages ?? []).find(x => x.id === languageId);
+    return lang ? lang.name : 'Unknown';
   }
 
   repeatTypeMass() {
-    switch (this.model.repeatType) {
-      case RepeatTypeEnum.Day: { // day
+    const repeatType = this.taskForm?.get('repeatType')?.value;
+    switch (repeatType) {
+      case RepeatTypeEnum.Day:
         return this.repeatTypeDay;
-      }
-      case RepeatTypeEnum.Week: { // week
+      case RepeatTypeEnum.Week:
         return this.repeatTypeWeek;
-      }
-      case RepeatTypeEnum.Month: { // month
+      case RepeatTypeEnum.Month:
         return this.repeatTypeMonth;
-      }
-      default: {
+      default:
         return [];
-      }
     }
   }
 
   getAssignmentBySiteId(siteId: number): boolean {
-    const index = this.model.sites.findIndex(
+    const index = this.taskForm.get('sites')?.value?.findIndex(
       (x) => x === siteId
     );
     return index !== -1;
   }
 
   addToArray(e: MatCheckboxChange, siteId: number) {
-    if (e.checked && !this.getAssignmentBySiteId(siteId)) {
-      this.model.sites = [...this.model.sites, siteId];
-    } else if (!e.checked && this.getAssignmentBySiteId(siteId)) {
-      this.model.sites = [...this.model.sites.filter(x => x !== siteId)];
+    const sites: number[] = [...(this.taskForm.get('sites')?.value || [])];
+    if (e.checked && !sites.includes(siteId)) {
+      sites.push(siteId);
+    } else if (!e.checked && sites.includes(siteId)) {
+      sites.splice(sites.indexOf(siteId), 1);
     }
+    this.taskForm.patchValue({sites});
   }
 
   openFoldersModal() {
-    if(this.model.propertyId) {
+    if (this.taskForm.value.propertyId) {
       const foldersModal = this.dialog.open(TaskWizardFoldersModalComponent,
         {...dialogConfigHelper(this.overlay), hasBackdrop: true});
       foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
       foldersModal.componentInstance.folders = this.foldersTreeDto;
-      foldersModal.componentInstance.eFormSdkFolderId = this.model.folderId;
+      foldersModal.componentInstance.eFormSdkFolderId =
+        this.taskForm.value.folderId ? this.taskForm.value.folderId : null;
       this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
-        this.model.folderId = x.id;
-        this.selectedFolderName = findFullNameById(
-          x.id,
-          this.foldersTreeDto
-        );
+        this.taskForm.patchValue({folderId: x.id});
+        this.selectedFolderName = findFullNameById(x.id, this.foldersTreeDto);
       });
     }
   }
 
   update() {
-    this.updateTask.emit(this.model);
+
+    const task: TaskWizardCreateModel = {
+      ...this.taskForm.value,
+      translates: this.taskForm.get('translates')?.value,
+    };
+
+
+    this.updateTask.emit(task);
   }
 
   openTagsModal() {
@@ -288,9 +330,48 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   fillModelAndCopyModel(model: TaskWizardCreateModel) {
+
+    if (!this.taskForm) {
+      this.initForm();
+    }
+
     this.model = R.clone(model);
+    this.taskForm.patchValue({
+      propertyId: model.propertyId,
+      itemPlanningTagId: model.itemPlanningTagId,
+      folderId: model.folderId,
+      startDate: model.startDate,
+      tagIds: model.tagIds || [],
+      repeatType: model.repeatType,
+      repeatEvery: model.repeatEvery,
+      eformId: model.eformId,
+      status: model.status,
+      sites: model.sites || [],
+      translates: model.translates || [],
+    });
+
+
+    const translatesFormArray = this.fb.array(
+      (model.translates || []).map(t =>
+        this.fb.group({
+          languageId: [t.languageId],
+          id: [t.id],
+          name: [t.name || '', Validators.required],
+          description: [t.description || ''],
+        })
+      )
+    );
+    this.taskForm.setControl('translates', translatesFormArray);
+
     this.copyModel = R.clone(model);
+
+    this.selectedFolderName = model.folderId
+      ? findFullNameById(model.folderId, this.foldersTreeDto)
+      : '';
+
+    this.cd.detectChanges();
   }
+
 
   ngOnDestroy(): void {
   }

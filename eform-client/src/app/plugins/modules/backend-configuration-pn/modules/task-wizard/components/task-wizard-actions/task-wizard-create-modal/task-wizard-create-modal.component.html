@@ -1,263 +1,314 @@
-<h3 mat-dialog-title>{{'Create new task' | translate}}</h3>
-<div mat-dialog-content>
-  <mat-slide-toggle class="p-2"
-                    color="primary"
-                    id="createTaskStatusToggle"
-                    [checked]="model.status === TaskWizardStatusesEnum.Active"
-                    [ngModel]="model.status === TaskWizardStatusesEnum.Active"
-                    (ngModelChange)="changeStatus($event)">
-    {{ 'Status' | translate }}
-  </mat-slide-toggle>
-  <div class="d-flex flex-row">
-  <mat-form-field class="p-2">
-    <mat-label>{{ 'Location' | translate }}</mat-label>
-    <mtx-select
-      [items]="properties"
-      [bindValue]="'id'"
-      [bindLabel]="'name'"
-      id="createProperty"
-      [value]="model.propertyId"
-      (change)="changePropertyId($event)"
-      [clearable]="false"
-    />
-  </mat-form-field>
-  <mat-form-field class="p-2">
-    <mat-label>{{ 'Report tag' | translate }}</mat-label>
-    <mtx-select
-      [items]="tags"
-      [bindValue]="'id'"
-      [bindLabel]="'name'"
-      id="createTableTags"
-      [value]="model.itemPlanningTagId"
-      (change)="changePlanningTagId($event)"
-      [clearable]="true"
-      [multiple]="false"
-    />
-  </mat-form-field>
-    <div class="pt-6">
-      <button
-        matSuffix
-        mat-icon-button
-        color="primary"
-        id="planningManageTagsBtn1"
-        (click)="openTagsModal()"
-        matTooltip="{{ 'Manage tags' | translate }}"
-      >
-        <mat-icon>discount</mat-icon>
-      </button>
-    </div>
-  </div>
-
-  <div class="d-flex flex-row">
-  <div style="width: 450px" class="p-2">
-    <button
-      mat-icon-button
-      color="accent"
-      id="createFolder"
-      (click)="openFoldersModal()"
-      style="margin-left: -10px"
-      [disabled]="!model.propertyId"
-      [matTooltip]="(!model.propertyId ? 'Need to select property': 'Select folder') | translate"
+<h3 mat-dialog-title>{{ 'Create new task' | translate }}</h3>
+<div [formGroup]="taskForm">
+  <div mat-dialog-content>
+    <mat-slide-toggle
+      class="p-2"
+      color="primary"
+      id="createTaskStatusToggle"
+      formControlName="status"
+      [checked]="taskForm.value.status === TaskWizardStatusesEnum.Active"
+      (change)="changeStatus($event.checked)"
     >
-      <mat-icon>folder</mat-icon>
-    </button>
-    <span>{{selectedFolderName || ('Folder not selected' | translate)}}</span>
-  </div>
-  </div>
+      {{ 'Status' | translate }}
+    </mat-slide-toggle>
 
-  <div class="d-flex flex-row">
-    <mat-form-field class="p-2">
-      <mat-label>{{'Start from' | translate}}</mat-label>
-      <input
-        matInput
-        [matDatepicker]="picker"
-        [value]="model.startDate"
-        (dateChange)="updateStartDate($event)"
-        (dateInput)="updateStartDate($event)"
-        (click)="picker.open()"
-        id="createStartFrom"
-        name="createStartFrom"
-      >
-      <mat-datepicker #picker></mat-datepicker>
-    </mat-form-field>
-
-    <mat-form-field class="p-2">
-      <mat-label>{{ 'Grouping tags' | translate }}</mat-label>
-      <mtx-select
-        [items]="tags"
-        [bindValue]="'id'"
-        [bindLabel]="'name'"
-        id="createTags"
-        [value]="model.tagIds"
-        (change)="changeTagIds($event)"
-        [clearable]="true"
-        [multiple]="true"
-      />
-    </mat-form-field>
-    <div class="pt-6">
-      <button
-        matSuffix
-        mat-icon-button
-        color="primary"
-        id="planningManageTagsBtn2"
-        (click)="openTagsModal()"
-        matTooltip="{{ 'Manage tags' | translate }}"
-      >
-        <mat-icon>discount</mat-icon>
-      </button>
-    </div>
-  </div>
-
-  <div class="d-flex flex-row">
-    <mat-form-field class="p-2">
-      <mat-label>{{ 'Repeat type' | translate }}</mat-label>
-      <mtx-select
-        [items]="repeatTypeArr"
-        [bindValue]="'id'"
-        [bindLabel]="'name'"
-        id="createRepeatType"
-        [value]="model.repeatType"
-        (change)="changeRepeatType($event)"
-        [clearable]="false"
-        [multiple]="false"
-      />
-    </mat-form-field>
-    <mat-form-field class="p-2" *ngIf="model.repeatType !== 0">
-      <mat-label>{{ 'Repeat every' | translate }}</mat-label>
-      <mtx-select
-        [items]="repeatTypeMass()"
-        [bindValue]="'id'"
-        [bindLabel]="'name'"
-        id="createRepeatEvery"
-        [value]="model.repeatEvery"
-        (change)="changeRepeatEvery($event)"
-        [clearable]="false"
-        [multiple]="false"
-        [disabled]="model.repeatType === 0"
-        [readonly]="model.repeatType === 0"
-      />
-    </mat-form-field>
-  </div>
-  <!--  <mat-form-field (click)="openFoldersModal()">
-      <mat-label>{{ 'Folder' | translate }}</mat-label>
-      <input
-        matInput
-        id="createFolder"
-        [ngModel]="selectedFolderName"
-        [disabled]="true"
-      >
-    </mat-form-field>-->
-  <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
-    <ng-container *ngIf="i % 2 === 0">
-      <div class="d-flex flex-row">
-        <!-- Render the current item -->
-<!--        <div>{{getLanguageName(languageModel.languageId)}}</div>-->
-        <mat-form-field class="p-2">
-          <mat-label>{{'Task description' | translate}} ({{getLanguageName(languageModel.languageId)}})</mat-label>
-          <input
-            type="text"
-            matInput
-            id="createName{{i}}"
-            name="createName{{i}}"
-            [ngModel]="languageModel.name"
-            (ngModelChange)="updateName($event, i)"
-          >
-        </mat-form-field>
-        <!-- Check if there's a next item and render it -->
-
-          <mat-form-field *ngIf="model.translates[i + 1]" class="p-2">
-            <mat-label>{{'Task description' | translate}} ({{getLanguageName(model.translates[i + 1].languageId)}})</mat-label>
-            <input
-              type="text"
-              matInput
-              id="createName{{i + 1}}"
-              [ngModel]="model.translates[i + 1].name"
-              (ngModelChange)="updateName($event, i + 1)"
-            >
-          </mat-form-field>
-<!--          {{ getLanguageName(model.translates[i + 1].languageId) }}-->
+    <div class="d-flex flex-row">
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'Location' | translate }}</mat-label>
+        <mtx-select
+          [items]="properties"
+          [bindValue]="'id'"
+          [bindLabel]="'name'"
+          id="createProperty"
+          formControlName="propertyId"
+          (change)="changePropertyId($event)"
+          [clearable]="false"
+        />
+      </mat-form-field>
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'Report tag' | translate }}</mat-label>
+        <mtx-select
+          [items]="tags"
+          [bindValue]="'id'"
+          [bindLabel]="'name'"
+          id="createTableTags"
+          formControlName="itemPlanningTagId"
+          (change)="changePlanningTagId($event)"
+          [clearable]="true"
+          [multiple]="false"
+        />
+      </mat-form-field>
+      <div class="pt-6">
+        <button
+          matSuffix
+          mat-icon-button
+          color="primary"
+          id="planningManageTagsBtn1"
+          (click)="openTagsModal()"
+          matTooltip="{{ 'Manage tags' | translate }}"
+        >
+          <mat-icon>discount</mat-icon>
+        </button>
       </div>
-    </ng-container>
-    <!-- create  -->
-<!--    <mat-card-->
-<!--      [class.mt-2]="!isFirst"-->
-<!--      [class.mb-2]="isLast">-->
-<!--      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>-->
-<!--      <mat-card-content>-->
-<!--        <mat-form-field>-->
-<!--          <mat-label>{{'Task description' | translate}} ({{getLanguageName(languageModel.languageId)}})</mat-label>-->
-<!--          <input-->
-<!--            type="text"-->
-<!--            matInput-->
-<!--            id="createName{{i}}"-->
-<!--            [ngModel]="languageModel.name"-->
-<!--            (ngModelChange)="updateName($event, i)"-->
-<!--          >-->
-<!--        </mat-form-field>-->
-<!--      </mat-card-content>-->
-<!--    </mat-card>-->
+    </div>
 
-    <!--<app-eform-translation
-          [class.mt-2]="!isFirst"
-          [class.mb-2]="isLast"
-          [model]="languageModel"
-          (modelChange)="updateLanguageModel($event, i)"
-          [title]="getLanguageName(languageModel.languageId)"/>-->
-  </ng-container>
-  <div class="d-flex flex-row">
-  <mat-form-field class="p-2">
-    <mat-label>{{'eForm template' | translate}}</mat-label>
-    <mtx-select
-      [items]="templatesModel.templates"
-      [bindLabel]="'label'"
-      [bindValue]="'id'"
-      [typeahead]="typeahead"
-      [value]="model.eformId"
-      (change)="updateEformId($event)"
-      id="createTemplateSelector"
-      [clearable]="false"
-      [multiple]="false"
-    ></mtx-select>
-  </mat-form-field>
+    <div class="d-flex flex-row">
+      <div style="width: 450px" class="p-2">
+        <button
+          mat-icon-button
+          color="accent"
+          id="createFolder"
+          (click)="openFoldersModal()"
+          style="margin-left: -10px"
+          [disabled]="!taskForm.value.propertyId"
+          [matTooltip]="(!taskForm.value.propertyId ? 'Need to select property' : 'Select folder') | translate"
+        >
+          <mat-icon>folder</mat-icon>
+        </button>
+        <span>{{ selectedFolderName || ('Folder not selected' | translate) }}</span>
+      </div>
+    </div>
+
+    <div class="d-flex flex-row">
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'Start from' | translate }}</mat-label>
+        <input
+          matInput
+          [matDatepicker]="picker"
+          matInput
+          [matDatepicker]="picker"
+          formControlName="startDate"
+          (dateChange)="updateStartDate($event)"
+          (dateInput)="updateStartDate($event)"
+          (click)="picker.open()"
+          id="createStartFrom"
+          name="createStartFrom"
+        >
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'Grouping tags' | translate }}</mat-label>
+        <mtx-select
+          [items]="tags"
+          [bindValue]="'id'"
+          [bindLabel]="'name'"
+          id="createTags"
+          formControlName="tagIds"
+          (change)="changeTagIds($event)"
+          [clearable]="true"
+          [multiple]="true"
+        />
+      </mat-form-field>
+      <div class="pt-6">
+        <button
+          matSuffix
+          mat-icon-button
+          color="primary"
+          id="planningManageTagsBtn2"
+          (click)="openTagsModal()"
+          matTooltip="{{ 'Manage tags' | translate }}"
+        >
+          <mat-icon>discount</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="d-flex flex-row">
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'Repeat type' | translate }}</mat-label>
+        <mtx-select
+          [items]="repeatTypeArr"
+          [bindValue]="'id'"
+          [bindLabel]="'name'"
+          id="createRepeatType"
+          formControlName="repeatType"
+          (change)="changeRepeatType($event.id ?? $event)"
+          [clearable]="false"
+          [multiple]="false"
+        />
+      </mat-form-field>
+      <mat-form-field class="p-2" *ngIf="taskForm.get('repeatType')?.value !== 0">
+        <mat-label>{{ 'Repeat every' | translate }}</mat-label>
+        <mtx-select
+          [items]="repeatTypeMass()"
+          [bindValue]="'id'"
+          [bindLabel]="'name'"
+          id="createRepeatEvery"
+          formControlName="repeatEvery"
+          (change)="changeRepeatEvery($event.id ?? $event)"
+          [clearable]="false"
+          [multiple]="false"
+          [disabled]="taskForm.value.repeatType === 0"
+          [readonly]="taskForm.value.repeatType === 0"
+        />
+      </mat-form-field>
+    </div>
+    <!--  <mat-form-field (click)="openFoldersModal()">
+        <mat-label>{{ 'Folder' | translate }}</mat-label>
+        <input
+          matInput
+          id="createFolder"
+          [ngModel]="selectedFolderName"
+          [disabled]="true"
+        >
+      </mat-form-field>-->
+    <!--  <div  formArrayName="translates">-->
+    <!--  <ng-container *ngFor="let languageModel of taskForm.get('translates')['controls']; let i = index; first as isFirst; last as isLast" [formGroupName]="i">-->
+    <!--    <ng-container *ngIf="i % 2 === 0">-->
+    <!--      <div class="d-flex flex-row">-->
+    <!--        &lt;!&ndash; Render the current item &ndash;&gt;-->
+    <!--&lt;!&ndash;        <div>{{getLanguageName(languageModel.languageId)}}</div>&ndash;&gt;-->
+    <!--        <mat-form-field class="p-2">-->
+    <!--          <mat-label>{{'Task description' | translate}} ({{ getLanguageName(translate.get('languageId')?.value) }})</mat-label>-->
+    <!--          <input-->
+    <!--            type="text"-->
+    <!--            matInput-->
+    <!--            id="createName{{i}}"-->
+    <!--            name="createName{{i}}"-->
+    <!--            formControlName="name"-->
+    <!--            (ngModelChange)="updateName($event, i)"-->
+    <!--          >-->
+    <!--        </mat-form-field>-->
+    <!--        &lt;!&ndash; Check if there's a next item and render it &ndash;&gt;-->
+
+    <!--          <mat-form-field *ngIf="model.translates[i + 1]" class="p-2">-->
+    <!--            <mat-label>{{'Task description' | translate}} ({{getLanguageName(model.translates[i + 1].languageId)}})</mat-label>-->
+    <!--            <input-->
+    <!--              type="text"-->
+    <!--              matInput-->
+    <!--              id="createName{{i + 1}}"-->
+    <!--              [ngModel]="model.translates[i + 1].name"-->
+    <!--              (ngModelChange)="updateName($event, i + 1)"-->
+    <!--            >-->
+    <!--          </mat-form-field>-->
+    <!--&lt;!&ndash;          {{ getLanguageName(model.translates[i + 1].languageId) }}&ndash;&gt;-->
+    <!--      </div>-->
+    <!--    </ng-container>-->
+    <!--    &lt;!&ndash; create  &ndash;&gt;-->
+    <!--&lt;!&ndash;    <mat-card&ndash;&gt;-->
+    <!--&lt;!&ndash;      [class.mt-2]="!isFirst"&ndash;&gt;-->
+    <!--&lt;!&ndash;      [class.mb-2]="isLast">&ndash;&gt;-->
+    <!--&lt;!&ndash;      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>&ndash;&gt;-->
+    <!--&lt;!&ndash;      <mat-card-content>&ndash;&gt;-->
+    <!--&lt;!&ndash;        <mat-form-field>&ndash;&gt;-->
+    <!--&lt;!&ndash;          <mat-label>{{'Task description' | translate}} ({{getLanguageName(languageModel.languageId)}})</mat-label>&ndash;&gt;-->
+    <!--&lt;!&ndash;          <input&ndash;&gt;-->
+    <!--&lt;!&ndash;            type="text"&ndash;&gt;-->
+    <!--&lt;!&ndash;            matInput&ndash;&gt;-->
+    <!--&lt;!&ndash;            id="createName{{i}}"&ndash;&gt;-->
+    <!--&lt;!&ndash;            [ngModel]="languageModel.name"&ndash;&gt;-->
+    <!--&lt;!&ndash;            (ngModelChange)="updateName($event, i)"&ndash;&gt;-->
+    <!--&lt;!&ndash;          >&ndash;&gt;-->
+    <!--&lt;!&ndash;        </mat-form-field>&ndash;&gt;-->
+    <!--&lt;!&ndash;      </mat-card-content>&ndash;&gt;-->
+    <!--&lt;!&ndash;    </mat-card>&ndash;&gt;-->
+
+    <!--    &lt;!&ndash;<app-eform-translation-->
+    <!--          [class.mt-2]="!isFirst"-->
+    <!--          [class.mb-2]="isLast"-->
+    <!--          [model]="languageModel"-->
+    <!--          (modelChange)="updateLanguageModel($event, i)"-->
+    <!--          [title]="getLanguageName(languageModel.languageId)"/>&ndash;&gt;-->
+    <!--  </ng-container>-->
+    <!--  </div>-->
+
+
+    <div formArrayName="translates">
+      <ng-container
+        *ngFor="let translate of taskForm.get('translates')['controls']; let i = index"
+        [formGroupName]="i"
+      >
+        <ng-container *ngIf="i % 2 === 0">
+          <div class="d-flex flex-row">
+            <!-- First translation -->
+            <mat-form-field class="p-2">
+              <mat-label>
+                {{ 'Task description' | translate }}
+                ({{ getLanguageName(translate.get('languageId')?.value) }})
+              </mat-label>
+              <input
+                matInput
+                type="text"
+                id="createName{{ i }}"
+                formControlName="name"
+              />
+            </mat-form-field>
+
+            <!-- Next translation if exists -->
+            <ng-container *ngIf="taskForm.get('translates')['controls'][i + 1] as nextTranslate">
+              <mat-form-field class="p-2">
+                <mat-label>
+                  {{ 'Task description' | translate }}
+                  ({{ getLanguageName(nextTranslate.get('languageId')?.value) }})
+                </mat-label>
+                <input
+                  matInput
+                  type="text"
+                  id="createName{{ i + 1 }}"
+                  [formControl]="nextTranslate.get('name')"
+                />
+              </mat-form-field>
+            </ng-container>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
+    <div class="d-flex flex-row">
+      <mat-form-field class="p-2">
+        <mat-label>{{ 'eForm template' | translate }}</mat-label>
+        <mtx-select
+          [items]="templatesModel.templates"
+          [bindLabel]="'label'"
+          [bindValue]="'id'"
+          [typeahead]="typeahead"
+          formControlName="eformId"
+          (change)="updateEformId($event.id ?? $event)"
+          id="createTemplateSelector"
+          [clearable]="false"
+          [multiple]="false"
+        ></mtx-select>
+      </mat-form-field>
     </div>
 
 
-  <div class="d-flex flex-row">
-  <mtx-grid
-    class="mb-2 p-2"
-    [data]="sites"
-    [columns]="tableHeaders"
-    [cellTemplate]="{select: selectTpl}"
-    [showPaginator]="false"
-    [pageOnFront]="false"
-    [rowStriped]="true"
-    [showToolbar]="false"
-    [showColumnMenuButton]="false"
-    noResultText="{{'No employees found' | translate}}"
-  />
+    <div class="d-flex flex-row">
+      <mtx-grid
+        class="mb-2 p-2"
+        [data]="sites"
+        [columns]="tableHeaders"
+        [cellTemplate]="{select: selectTpl}"
+        [showPaginator]="false"
+        [pageOnFront]="false"
+        [rowStriped]="true"
+        [showToolbar]="false"
+        [showColumnMenuButton]="false"
+        noResultText="{{'No employees found' | translate}}"
+      />
+    </div>
+    <ng-template #selectTpl let-row let-i="index">
+      <mat-checkbox class="mat-checkbox"
+                    id="checkboxCreateAssignment{{ i }}"
+                    (change)="addToArray($event, row.id)"
+                    [checked]="getAssignmentBySiteId(row.id)"
+                    [value]="getAssignmentBySiteId(row.id).toString()"/>
+    </ng-template>
   </div>
-  <ng-template #selectTpl let-row let-i="index">
-    <mat-checkbox class="mat-checkbox"
-                  id="checkboxCreateAssignment{{ i }}"
-                  (change)="addToArray($event, row.id)"
-                  [checked]="getAssignmentBySiteId(row.id)"
-                  [value]="getAssignmentBySiteId(row.id).toString()"/>
-  </ng-template>
-</div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button
-    mat-raised-button
-    color="accent"
-    id="createTaskBtn"
-    (click)="create()"
-  >
-    {{ 'Create' | translate }}
-  </button>
-  <button
-    mat-raised-button
-    id="cancelCreateTaskBtn"
-    (click)="hide()"
-  >
-    {{ 'Cancel' | translate }}
-  </button>
+  <div mat-dialog-actions class="d-flex flex-row justify-content-end">
+    <button
+      mat-raised-button
+      color="accent"
+      id="createTaskBtn"
+      (click)="create()"
+    >
+      {{ 'Create' | translate }}
+    </button>
+    <button
+      mat-raised-button
+      id="cancelCreateTaskBtn"
+      (click)="hide()"
+    >
+      {{ 'Cancel' | translate }}
+    </button>
+  </div>
 </div>
