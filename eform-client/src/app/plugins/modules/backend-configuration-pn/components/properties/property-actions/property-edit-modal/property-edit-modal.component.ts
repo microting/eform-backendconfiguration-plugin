@@ -45,7 +45,7 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
 
     this.editPropertyForm = this.fb.group({
       cvr: [model.cvr, Validators.required],
-      mainMailAddress: [model.mainMailAddress, [Validators.required, Validators.email]],
+      mainMailAddress: [model.mainMailAddress],
       name: [model.name, Validators.required],
       chr: [model.chr],
       address: [model.address],

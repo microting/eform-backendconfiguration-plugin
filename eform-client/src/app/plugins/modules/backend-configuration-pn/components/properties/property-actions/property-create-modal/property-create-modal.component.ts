@@ -40,7 +40,7 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
     // Initialize reactive form
     this.newPropertyForm = this.fb.group({
       cvr: ['', Validators.required],
-      mainMailAddress: ['', [Validators.required, Validators.email]],
+      mainMailAddress: [''],
       name: ['', Validators.required],
       chr: [''],
       address: [''],
