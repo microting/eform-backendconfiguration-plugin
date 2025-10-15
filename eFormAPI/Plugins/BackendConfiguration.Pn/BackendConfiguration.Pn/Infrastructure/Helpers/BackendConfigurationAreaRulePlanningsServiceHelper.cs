@@ -1007,6 +1007,18 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 .ConfigureAwait(false);
                                         }
 
+                                        if (areaRule.Area.Type == AreaTypesEnum.Type3)
+                                        {
+                                            var tailbiteTag = await itemsPlanningPnDbContext.PlanningTags
+                                                .FirstOrDefaultAsync(x => x.Name == "Halebid")
+                                                .ConfigureAwait(false);
+
+                                            if (tailbiteTag != null)
+                                            {
+                                                planning.ReportGroupPlanningTagId = tailbiteTag.Id;
+                                            }
+                                        }
+
                                         await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                                         if (!itemsPlanningPnDbContext.PlanningSites.Any(x =>
                                                 x.PlanningId == planning.Id &&
