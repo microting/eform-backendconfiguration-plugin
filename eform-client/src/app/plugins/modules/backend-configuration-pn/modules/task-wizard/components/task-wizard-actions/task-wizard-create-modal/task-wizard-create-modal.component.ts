@@ -183,22 +183,22 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     }
 
     this.taskForm = this.fb.group({
-      status: new FormControl(this.model?.status ?? TaskWizardStatusesEnum.Active),
-      propertyId: new FormControl(this.model?.propertyId, Validators.required),
-      itemPlanningTagId: new FormControl(this.model?.itemPlanningTagId),
-      startDate: new FormControl(this.model?.startDate),
-      repeatType: new FormControl(this.model?.repeatType ?? 0),
-      repeatEvery: new FormControl(this.model?.repeatEvery),
-      eformId: new FormControl(this.model?.eformId, Validators.required),
-      tagIds: new FormControl(this.model?.tagIds || []),
-      sites: new FormControl(this.model?.sites || []),
-      folderId: new FormControl(this.model?.folderId),
+      taskStatus: [this.model?.status === TaskWizardStatusesEnum.Active],
+      propertyId: [this.model?.propertyId, Validators.required],
+      itemPlanningTagId: [this.model?.itemPlanningTagId],
+      startDate: [this.model?.startDate],
+      repeatType: [this.model?.repeatType ?? 0],
+      repeatEvery: [this.model?.repeatEvery],
+      eformId: [this.model?.eformId, Validators.required],
+      tagIds: [this.model?.tagIds || []],
+      sites: [this.model?.sites || []],
+      folderId: [this.model?.folderId],
       translates: this.fb.array(
         this.model.translates.map(t => this.fb.group({
           languageId: [t.languageId],
           id: [t.id],
-          name: [t.name, Validators.required],
-          description: [t.description]
+          name: [t.name || '', Validators.required],
+          description: [t.description || '']
         }))
       )
     });
@@ -292,10 +292,9 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
 
   changeStatus(event: boolean) {
     this.taskForm.patchValue({
-      status: event
-        ? TaskWizardStatusesEnum.Active
-        : TaskWizardStatusesEnum.NotActive,
+      taskStatus: event,
     });
+    this.model.status = event ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
   }
 
   getLanguageName(languageId) {
@@ -355,7 +354,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
       ...this.taskForm.value,
       translates: this.taskForm.get('translates')?.value,
     };
-
+    task.status = this.taskForm.value.taskStatus ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
 
     this.createTask.emit(task);
   }

@@ -114,7 +114,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.initForm();
+    // this.initForm();
 
     this.statuses = Object.keys(TaskWizardStatusesEnum)
       .filter(key => isNaN(Number(key)))
@@ -177,16 +177,16 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   initForm() {
     this.taskForm = this.fb.group({
-      status: new FormControl(this.model?.status ?? TaskWizardStatusesEnum.Active),
-      propertyId: new FormControl(this.model?.propertyId, Validators.required),
-      itemPlanningTagId: new FormControl(this.model?.itemPlanningTagId),
-      startDate: new FormControl(this.model?.startDate),
-      repeatType: new FormControl(this.model?.repeatType ?? 0),
-      repeatEvery: new FormControl(this.model?.repeatEvery),
-      eformId: new FormControl(this.model?.eformId, Validators.required),
-      tagIds: new FormControl(this.model?.tagIds || []),
-      sites: new FormControl(this.model?.sites || []),
-      folderId: new FormControl(this.model?.folderId),
+      taskStatus: [this.model?.status === TaskWizardStatusesEnum.Active],
+      propertyId: [this.model?.propertyId, Validators.required],
+      itemPlanningTagId: [this.model?.itemPlanningTagId],
+      startDate: [this.model?.startDate],
+      repeatType: [this.model?.repeatType ?? 0],
+      repeatEvery: [this.model?.repeatEvery],
+      eformId: [this.model?.eformId, Validators.required],
+      tagIds: [this.model?.tagIds || []],
+      sites: [this.model?.sites || []],
+      folderId: [this.model?.folderId],
       translates: this.fb.array(
         this.model.translates.map(t => this.fb.group({
           languageId: [t.languageId],
@@ -253,10 +253,9 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   changeStatus(event: boolean) {
     this.taskForm.patchValue({
-      status: event
-        ? TaskWizardStatusesEnum.Active
-        : TaskWizardStatusesEnum.NotActive,
+      taskStatus: event,
     });
+    this.model.status = event ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
   }
 
   getLanguageName(languageId: number): string {
@@ -316,7 +315,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
       ...this.taskForm.value,
       translates: this.taskForm.get('translates')?.value,
     };
-
+    task.status = this.taskForm.value.taskStatus ? TaskWizardStatusesEnum.Active : TaskWizardStatusesEnum.NotActive;
 
     this.updateTask.emit(task);
   }
@@ -331,25 +330,8 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   fillModelAndCopyModel(model: TaskWizardCreateModel) {
 
-    if (!this.taskForm) {
-      this.initForm();
-    }
-
     this.model = R.clone(model);
-    this.taskForm.patchValue({
-      propertyId: model.propertyId,
-      itemPlanningTagId: model.itemPlanningTagId,
-      folderId: model.folderId,
-      startDate: model.startDate,
-      tagIds: model.tagIds || [],
-      repeatType: model.repeatType,
-      repeatEvery: model.repeatEvery,
-      eformId: model.eformId,
-      status: model.status,
-      sites: model.sites || [],
-      translates: model.translates || [],
-    });
-
+    this.initForm();
 
     const translatesFormArray = this.fb.array(
       (model.translates || []).map(t =>
