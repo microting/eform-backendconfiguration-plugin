@@ -9,6 +9,7 @@
         matInput
         type="text"
         formControlName="cvr"
+        id="editCVRNumber"
         (input)="onNameFilterChanged($event.target.value)"
       />
     </mat-form-field>
@@ -18,6 +19,7 @@
       <input
         matInput
         type="text"
+        id="editMainMailAddress"
         formControlName="mainMailAddress"
       />
     </mat-form-field>
@@ -27,6 +29,7 @@
       <input
         matInput
         type="text"
+        id="editPropertyName"
         formControlName="name"
       />
     </mat-form-field>
@@ -37,6 +40,7 @@
         matInput
         type="text"
         formControlName="chr"
+        id="editCHRNumber"
         (input)="onChrNumberChanged($event.target.value)"
       />
     </mat-form-field>
@@ -46,6 +50,7 @@
       <input
         matInput
         type="text"
+        id="editPropertyAddress"
         formControlName="address"
       />
     </mat-form-field>
@@ -53,6 +58,7 @@
     <mat-slide-toggle
       *ngIf="selectAuthIsAdmin$ | async"
       color="primary"
+      id="propertyEditWorkorderFlowEnableToggle"
       formControlName="workorderEnable"
     >
       {{ 'Task management' | translate }}

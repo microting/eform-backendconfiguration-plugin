@@ -3,32 +3,33 @@
   <div class="d-flex flex-column" [formGroup]="newPropertyForm">
     <mat-form-field>
       <mat-label>{{'CVR Number' | translate}}</mat-label>
-      <input matInput type="text" formControlName="cvr" (input)="onNameFilterChanged($event.target.value)">
+      <input matInput type="text" formControlName="cvr" (input)="onNameFilterChanged($event.target.value)" id="createCVRNumber">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'e-mail addresses' | translate}}</mat-label>
-      <input matInput type="text" formControlName="mainMailAddress">
+      <input matInput type="text" formControlName="mainMailAddress" id="createMainMailAddress">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'CHR name' | translate}}</mat-label>
-      <input matInput type="text" formControlName="name">
+      <input matInput type="text" formControlName="name" id="createPropertyName">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'CHR Number' | translate}}</mat-label>
-      <input matInput type="text" formControlName="chr" (input)="onChrNumberChanged($event.target.value)">
+      <input matInput type="text" formControlName="chr" (input)="onChrNumberChanged($event.target.value)" id="createCHRNumber">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'CHR address' | translate}}</mat-label>
-      <input matInput type="text" formControlName="address">
+      <input matInput type="text" formControlName="address" id="createPropertyAddress">
     </mat-form-field>
 
     <mat-slide-toggle
       *ngIf="authStateService.checkClaim('task_management_enable')"
       color="primary"
+      id="propertyCreateWorkorderFlowEnableToggle"
       formControlName="workorderEnable">
       {{ "Task management" | translate }}
     </mat-slide-toggle>
