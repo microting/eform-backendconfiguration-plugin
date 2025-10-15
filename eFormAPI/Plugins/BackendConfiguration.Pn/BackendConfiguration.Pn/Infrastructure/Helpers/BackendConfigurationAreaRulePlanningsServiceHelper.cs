@@ -1022,6 +1022,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     await tailBiteTag.Update(itemsPlanningPnDbContext)
                                                         .ConfigureAwait(false);
                                                 }
+                                                if (!tailBiteTag.IsLocked) // if tag is not locked, we lock it
+                                                {
+                                                    tailBiteTag.IsLocked = true;
+                                                    await tailBiteTag.Update(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
+                                                }
                                             }
                                             else // create tag
                                             {
@@ -1029,7 +1035,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 {
                                                     Name = "Halebid",
                                                     CreatedByUserId = userId,
-                                                    UpdatedByUserId = userId
+                                                    UpdatedByUserId = userId,
+                                                    IsLocked = true
                                                 };
                                                 await newTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                                 planning.ReportGroupPlanningTagId = newTag.Id;

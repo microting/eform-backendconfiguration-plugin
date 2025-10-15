@@ -213,7 +213,7 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getLinkedFolderListByMultipleProperties(ids: number[]): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+  getLinkedFolderListByMultipleProperties(ids: number[]): Observable<OperationDataResult<FolderDto[]>> {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.GetFolderList,
       ids

@@ -60,7 +60,8 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                 var planningTag = new PlanningTag
                 {
-                    Name = $"0. {propertyCreateModel.FullName()}"
+                    Name = $"0. {propertyCreateModel.FullName()}",
+                    IsLocked = true
                 };
                 await planningTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                 var newProperty = new Property
@@ -515,6 +516,11 @@ public static class BackendConfigurationPropertiesServiceHelper
         {
             property.FolderIdForNewTasks = parentFolderTranslation.Id;
         }
+        var folderIdForNewTasks = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForNewTasks);
+        folderIdForNewTasks.IsLocked = true;
+        folderIdForNewTasks.IsEditable = false;
+        folderIdForNewTasks.ManagedByPlugin = true;
+        await folderIdForNewTasks.Update(sdkDbContext);
 
         parentFolderTranslation =
             await sdkDbContext.Folders
@@ -589,6 +595,11 @@ public static class BackendConfigurationPropertiesServiceHelper
             var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForOngoingTasks);
             await core.FolderUpdate(folder.Id, translateFolderForNewTask, folder.ParentId);
         }
+        var folderIdForOngoingTasks = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForOngoingTasks);
+        folderIdForOngoingTasks.IsLocked = true;
+        folderIdForOngoingTasks.IsEditable = false;
+        folderIdForOngoingTasks.ManagedByPlugin = true;
+        await folderIdForOngoingTasks.Update(sdkDbContext);
 
         parentFolderTranslation =
             await sdkDbContext.Folders
@@ -623,6 +634,11 @@ public static class BackendConfigurationPropertiesServiceHelper
             };
             parentFolderId =
                 await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
+            var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == parentFolderId);
+            folder.IsLocked = true;
+            folder.IsEditable = false;
+            folder.ManagedByPlugin = true;
+            await folder.Update(sdkDbContext);
         }
         else
         {
@@ -665,6 +681,11 @@ public static class BackendConfigurationPropertiesServiceHelper
             var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForCompletedTasks);
             await core.FolderUpdate(folder.Id, translateFolderForNewTask, folder.ParentId);
         }
+        var folderIdForCompletedTasks = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForCompletedTasks);
+        folderIdForCompletedTasks.IsLocked = true;
+        folderIdForCompletedTasks.IsEditable = false;
+        folderIdForCompletedTasks.ManagedByPlugin = true;
+        await folderIdForCompletedTasks.Update(sdkDbContext);
 
         parentFolderTranslation =
             await sdkDbContext.Folders
