@@ -1009,13 +1009,30 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
                                         if (areaRule.Area.Type == AreaTypesEnum.Type3)
                                         {
-                                            var tailbiteTag = await itemsPlanningPnDbContext.PlanningTags
+                                            var tailBiteTag = await itemsPlanningPnDbContext.PlanningTags
                                                 .FirstOrDefaultAsync(x => x.Name == "Halebid")
                                                 .ConfigureAwait(false);
 
-                                            if (tailbiteTag != null)
+                                            if (tailBiteTag != null)
                                             {
-                                                planning.ReportGroupPlanningTagId = tailbiteTag.Id;
+                                                planning.ReportGroupPlanningTagId = tailBiteTag.Id;
+                                                if (tailBiteTag.WorkflowState == Constants.WorkflowStates.Removed)
+                                                {
+                                                    tailBiteTag.WorkflowState = Constants.WorkflowStates.Created;
+                                                    await tailBiteTag.Update(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
+                                                }
+                                            }
+                                            else // create tag
+                                            {
+                                                var newTag = new PlanningTag
+                                                {
+                                                    Name = "Halebid",
+                                                    CreatedByUserId = userId,
+                                                    UpdatedByUserId = userId
+                                                };
+                                                await newTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                planning.ReportGroupPlanningTagId = newTag.Id;
                                             }
                                         }
 
