@@ -404,9 +404,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                             foreach (var assignmentForDelete in assignmentForDeletes)
                             {
-                                assignmentForDelete.Resigned = true;
-                                assignmentForDelete.ResignedAtDate = DateTime.UtcNow;
-                                await assignmentForDelete.Update(timePlanningDbContext).ConfigureAwait(false);
+                                await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
                             }
                         }
                         else

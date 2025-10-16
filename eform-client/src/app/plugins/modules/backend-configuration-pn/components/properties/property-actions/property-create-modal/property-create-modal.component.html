@@ -3,32 +3,33 @@
   <div class="d-flex flex-column" [formGroup]="newPropertyForm">
     <mat-form-field>
       <mat-label>{{'CVR Number' | translate}}</mat-label>
-      <input matInput type="text" formControlName="cvr" (input)="onNameFilterChanged($event.target.value)">
+      <input matInput type="text" formControlName="cvr" (input)="onNameFilterChanged($event.target.value)" id="createCVRNumber">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'e-mail addresses' | translate}}</mat-label>
-      <input matInput type="text" formControlName="mainMailAddress">
+      <input matInput type="text" formControlName="mainMailAddress" id="createMainMailAddress">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'CHR name' | translate}}</mat-label>
-      <input matInput type="text" formControlName="name">
+      <input matInput type="text" formControlName="name" id="createPropertyName">
     </mat-form-field>
 
-    <mat-form-field *ngIf="propertyIsFarm">
+    <mat-form-field>
       <mat-label>{{'CHR Number' | translate}}</mat-label>
-      <input matInput type="text" formControlName="chr" (input)="onChrNumberChanged($event.target.value)">
+      <input matInput type="text" formControlName="chr" (input)="onChrNumberChanged($event.target.value)" id="createCHRNumber">
     </mat-form-field>
 
     <mat-form-field>
       <mat-label>{{'CHR address' | translate}}</mat-label>
-      <input matInput type="text" formControlName="address">
+      <input matInput type="text" formControlName="address" id="createPropertyAddress">
     </mat-form-field>
 
     <mat-slide-toggle
       *ngIf="authStateService.checkClaim('task_management_enable')"
       color="primary"
+      id="propertyCreateWorkorderFlowEnableToggle"
       formControlName="workorderEnable">
       {{ "Task management" | translate }}
     </mat-slide-toggle>
@@ -36,10 +37,10 @@
 </div>
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button mat-raised-button color="accent" (click)="onCreateProperty()" [disabled]="isDisabledSaveButton">
+  <button mat-raised-button color="accent" (click)="onCreateProperty()" [disabled]="isDisabledSaveButton" id="propertyCreateSaveBtn">
     {{'Save' | translate}}
   </button>
-  <button mat-raised-button (click)="hide()">
+  <button mat-raised-button (click)="hide()" id="propertyCreateSaveCancelBtn">
     {{'Cancel' | translate}}
   </button>
 </div>

@@ -5,8 +5,7 @@
       class="p-2"
       color="primary"
       id="createTaskStatusToggle"
-      formControlName="status"
-      [checked]="taskForm.value.status === TaskWizardStatusesEnum.Active"
+      formControlName="taskStatus"
       (change)="changeStatus($event.checked)"
     >
       {{ 'Status' | translate }}

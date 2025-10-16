@@ -64,6 +64,10 @@ public class BackendConfigurationCaseService(
                 {
                     var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, foundCase.DoneAt.Value.Hour, foundCase.DoneAt.Value.Minute, foundCase.DoneAt.Value.Second);
                     foundCase.DoneAtUserModifiable = newDoneAt;
+                } else
+                {
+                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month, model.DoneAt.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+                    foundCase.DoneAtUserModifiable = newDoneAt;
                 }
 
                 foundCase.Status = 100;
@@ -71,6 +75,7 @@ public class BackendConfigurationCaseService(
                 {
                     foundCase.SiteId = model.SiteId;
                 }
+                foundCase.WorkflowState = Constants.WorkflowStates.Created;
                 await foundCase.Update(sdkDbContext);
                 var planningCase = await dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
                 var planningCaseSite = await dbContext.PlanningCaseSites.FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id && x.Status == 100);

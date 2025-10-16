@@ -4,8 +4,7 @@
     <mat-slide-toggle class="p-2"
                       color="accent"
                       id="updateTaskStatusToggle"
-                      [checked]="taskForm?.value?.status === TaskWizardStatusesEnum.Active"
-                      formControlName="status"
+                      formControlName="taskStatus"
                       (change)="changeStatus($event.checked)">
       {{ 'Status' | translate }}
     </mat-slide-toggle>

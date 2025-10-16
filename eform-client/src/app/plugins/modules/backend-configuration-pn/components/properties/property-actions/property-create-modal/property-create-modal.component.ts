@@ -40,7 +40,7 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
     // Initialize reactive form
     this.newPropertyForm = this.fb.group({
       cvr: ['', Validators.required],
-      mainMailAddress: ['', [Validators.required, Validators.email]],
+      mainMailAddress: [''],
       name: ['', Validators.required],
       chr: [''],
       address: [''],
@@ -72,42 +72,42 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   onNameFilterChanged(number: string) {
     this.newPropertyForm.patchValue({ cvr: number });
 
-    if (+number === 0) {
-      this.propertyIsFarm = false;
-      this.newPropertyForm.patchValue({ isFarm: false });
-    }
-
-    if (+number === 1111111) {
-      this.propertyIsFarm = true;
-      this.newPropertyForm.patchValue({ isFarm: true });
-    }
-
-    if (+number > 1111111 && number.toString().length > 7) {
-      this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number)
-        .subscribe((data) => {
-          if (data?.success) {
-            if (data.model.industrycode.toString().slice(0, 2) === '01') {
-              this.propertyIsFarm = true;
-              this.newPropertyForm.patchValue({
-                isFarm: true,
-                name: data.model.name,
-                address: `${data.model.address}, ${data.model.city}`,
-                industryCode: data.model.industrycode
-              });
-            } else {
-              this.propertyIsFarm = data.model.error === 'REQUIRES_PAID_SUBSCRIPTION';
-              this.newPropertyForm.patchValue({
-                isFarm: this.propertyIsFarm,
-                name: data.model.name || '',
-                address: data.model.address ? `${data.model.address}, ${data.model.city}` : '',
-                industryCode: data.model.industrycode || ''
-              });
-            }
-          }
-        });
-    } else {
-      this.newPropertyForm.patchValue({ name: '', address: '' });
-    }
+    // if (+number === 0) {
+    //   this.propertyIsFarm = false;
+    //   this.newPropertyForm.patchValue({ isFarm: false });
+    // }
+    //
+    // if (+number === 1111111) {
+    this.propertyIsFarm = true;
+    this.newPropertyForm.patchValue({ isFarm: true });
+    // }
+    //
+    // if (+number > 1111111 && number.toString().length > 7) {
+    //   this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number)
+    //     .subscribe((data) => {
+    //       if (data?.success) {
+    //         if (data.model.industrycode.toString().slice(0, 2) === '01') {
+    //           this.propertyIsFarm = true;
+    //           this.newPropertyForm.patchValue({
+    //             isFarm: true,
+    //             name: data.model.name,
+    //             address: `${data.model.address}, ${data.model.city}`,
+    //             industryCode: data.model.industrycode
+    //           });
+    //         } else {
+    //           this.propertyIsFarm = data.model.error === 'REQUIRES_PAID_SUBSCRIPTION';
+    //           this.newPropertyForm.patchValue({
+    //             isFarm: this.propertyIsFarm,
+    //             name: data.model.name || '',
+    //             address: data.model.address ? `${data.model.address}, ${data.model.city}` : '',
+    //             industryCode: data.model.industrycode || ''
+    //           });
+    //         }
+    //       }
+    //     });
+    // } else {
+    //   this.newPropertyForm.patchValue({ name: '', address: '' });
+    // }
   }
 
   onChrNumberChanged(number: number) {
