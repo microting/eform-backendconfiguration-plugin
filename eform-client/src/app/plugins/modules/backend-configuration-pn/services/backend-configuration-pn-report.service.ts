@@ -59,7 +59,7 @@ export class BackendConfigurationPnReportService {
     );
   }
 
-  getPlanningsTags(): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+  getPlanningsTags(): Observable<OperationDataResult<SharedTagModel[]>> {
     return this.apiBaseService.get<SharedTagModel[]>(
       BackendConfigurationPnReportsMethods.Tags
     );

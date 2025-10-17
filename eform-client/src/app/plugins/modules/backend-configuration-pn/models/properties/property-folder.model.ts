@@ -5,4 +5,7 @@ export interface PropertyFolderModel {
   parentId?: number;
   microtingUId?: number;
   children?: PropertyFolderModel[];
+  isLocked: boolean;
+  isEditable: boolean;
+  managedByPlugin: boolean;
 }

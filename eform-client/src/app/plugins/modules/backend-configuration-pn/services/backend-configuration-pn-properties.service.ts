@@ -192,14 +192,14 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getLinkedFolderDtos(id: number): Observable<OperationDataResult<PropertyFolderModel[]>> {
+  getLinkedFolderDtos(id: number): Observable<OperationDataResult<FolderDto[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.GetFolderDtos,
       { propertyId: id }
     );
   }
 
-  getLinkedFolderDtosByMultipleProperties(ids: number[]): Observable<OperationDataResult<PropertyFolderModel[]>> {
+  getLinkedFolderDtosByMultipleProperties(ids: number[]): Observable<OperationDataResult<FolderDto[]>> {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.GetFolderDtos,
       ids
@@ -213,7 +213,7 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getLinkedFolderListByMultipleProperties(ids: number[]): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+  getLinkedFolderListByMultipleProperties(ids: number[]): Observable<OperationDataResult<FolderDto[]>> {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.GetFolderList,
       ids
