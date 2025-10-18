@@ -1,6 +1,10 @@
 <mtx-grid
   [data]="documents"
   [columns]="tableHeaders"
+  [cellTemplate]="{
+    status: statusTpl,
+    documentProperties: documentPropertiesTpl
+  }"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -30,3 +34,26 @@
     </div>
   </div>
 </ng-template>-->
+
+
+
+<ng-template #statusTpl let-row>
+  <mat-chip
+    [ngClass]="{
+      'status-active': row.status === true,
+      'status-inactive': row.status === false
+    }"
+  >
+    <span title="{{(row.status ? 'ON' : 'OFF') | translate}}">{{(row.status ? 'Active' : 'NotActive') | translate | translate}}</span>
+  </mat-chip>
+</ng-template>
+
+
+
+<ng-template #documentPropertiesTpl let-row>
+  <div class="d-flex flex-wrap">
+    <mat-chip color="primary" *ngFor="let documentProperty of row.documentProperties">
+      <span>{{documentProperty.propertyName}}</span>
+    </mat-chip>
+  </div>
+</ng-template>

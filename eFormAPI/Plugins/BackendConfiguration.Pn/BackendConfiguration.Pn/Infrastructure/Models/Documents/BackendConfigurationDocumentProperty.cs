@@ -5,4 +5,5 @@ public class BackendConfigurationDocumentProperty
     public int Id { get; set; }
     public int PropertyId { get; set; }
     public int DocumentId { get; set; }
+    public string PropertyName { get; set; }
 }

@@ -149,7 +149,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 				        {
 					        Id = y.Id,
 					        DocumentId = y.DocumentId,
-					        PropertyId = y.PropertyId
+					        PropertyId = y.PropertyId,
 				        }).ToList()
 		        })
 		        .ToListAsync().ConfigureAwait(false);
@@ -172,6 +172,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     }
                     var property = await _backendConfigurationPnDbContext.Properties.FirstAsync(x =>
                         x.Id == backendConfigurationDocumentProperty.PropertyId);
+                    backendConfigurationDocumentProperty.PropertyName = property.Name;
                     propertyNames += property.Name;
                 }
                 backendConfigurationDocumentModel.PropertyNames = propertyNames;

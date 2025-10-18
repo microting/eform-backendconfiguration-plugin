@@ -170,6 +170,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
         this.folders = folders.model;
       }
       if (documents && documents.success && documents.model) {
+        // debugger;
         this.documents = documents.model;
       }
     });

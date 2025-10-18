@@ -232,7 +232,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
       if (assignmentObject) {
         return assignmentObject;
       }
-      return {propertyId: propertyId, documentId: this.documentModel.id};
+      return {propertyId: propertyId, documentId: this.documentModel.id, propertyName: ''};
     });
     this.documentProperties = this.documentModel.documentProperties.map(x => x.propertyId);
   }
