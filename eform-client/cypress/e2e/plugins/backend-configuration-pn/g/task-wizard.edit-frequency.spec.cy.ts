@@ -175,7 +175,9 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
       .should('eq', 'Ikke aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
 
     cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
@@ -226,9 +228,15 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName + ' (3)');
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatType}`);
-    cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('eq', `${task.repeatEvery} ${task.repeatType}`);
+    cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('eq', 'Aktiv');
+    cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
   });
   after(() => {
     backendConfigurationPropertiesPage.goToProperties();
