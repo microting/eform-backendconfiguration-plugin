@@ -105,7 +105,7 @@ describe('Area rules type 1', () => {
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
     cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
-      .should('eq', `${task.repeatEvery} ${task.repeatType}`);
+      .should('eq', `${task.repeatType}`);
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
       .should('eq', 'Aktiv');
