@@ -3,7 +3,7 @@ export class DeviceUserModel {
   siteId: number;
   siteUid: number;
   siteName: string;
-  propertyNames: string;
+  propertyNames:  string | string[];
   propertyIds: number[];
   userFirstName: string;
   userLastName: string;
