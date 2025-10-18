@@ -24,6 +24,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MatCardModule} from '@angular/material/card';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {StatisticsModule} from '../statistics/statistics.module';
+import {MatChip} from "@angular/material/chips";
 
 @NgModule({
   declarations: [
@@ -33,27 +34,28 @@ import {StatisticsModule} from '../statistics/statistics.module';
     TaskManagementCreateShowModalComponent,
     TaskManagementDeleteModalComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    TaskManagementRouting,
-    EformSharedModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatDatepickerModule,
-    StatisticsModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        TaskManagementRouting,
+        EformSharedModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatDatepickerModule,
+        StatisticsModule,
+        MatChip,
+    ],
   providers: [],
 })
 export class TaskManagementModule {
