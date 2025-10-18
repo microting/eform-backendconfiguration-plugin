@@ -135,7 +135,9 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
       .should('eq', 'Aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
     // edit task
     cy.get('#advanced').click();
     cy.get('#folders').click();
@@ -177,7 +179,7 @@ describe('Area rules type 1', () => {
       .should('eq', 'Ikke aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
-      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
 
     cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
@@ -236,7 +238,7 @@ describe('Area rules type 1', () => {
       .should('eq', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
-      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
   });
   after(() => {
     backendConfigurationPropertiesPage.goToProperties();
