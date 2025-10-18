@@ -232,7 +232,7 @@ describe('Area rules type 1', () => {
       .should('have.text', `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`);
     cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
-      .should('eq', `${editedTask.repeatEvery} ${editedTask.repeatType}`);
+      .should('eq', `${editedTask.repeatType}`);
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
       .should('eq', 'Aktiv');

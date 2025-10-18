@@ -111,7 +111,7 @@ describe('Area rules type 1', () => {
       .should('eq', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
-      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
   });
   after(() => {
     backendConfigurationPropertiesPage.goToProperties();
