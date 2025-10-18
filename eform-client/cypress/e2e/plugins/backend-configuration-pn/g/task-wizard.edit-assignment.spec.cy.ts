@@ -132,8 +132,12 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName + ' (11)');
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatEvery} ${task.repeatType}`);
-    cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
+    cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('eq', `${task.repeatEvery} ${task.repeatType}`);
+    cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text')
+      .should('eq', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
     /* ==== Generated with Cypress Studio ==== */
     cy.get('#mat-expansion-panel-header-2 > .mat-content').click();
