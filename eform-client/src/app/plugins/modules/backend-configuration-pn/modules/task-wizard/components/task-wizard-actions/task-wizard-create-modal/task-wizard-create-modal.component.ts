@@ -28,7 +28,7 @@ import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAuth, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -75,9 +75,11 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     status: TaskWizardStatusesEnum.Active,
     sites: [],
     tagIds: [],
-    translates: []
+    translates: [],
+    complianceEnabled: true
   };
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectCurrentUserIsAdmin$ = this.store.select(selectCurrentUserIsAdmin);
 
   private folderSelectedSub$: Subscription;
   private repeatTypeSub$: Subscription;
@@ -193,6 +195,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
       tagIds: [this.model?.tagIds || []],
       sites: [this.model?.sites || []],
       folderId: [this.model?.folderId],
+      complianceEnabled: [this.model?.complianceEnabled],
       translates: this.fb.array(
         this.model.translates.map(t => this.fb.group({
           languageId: [t.languageId],
@@ -371,4 +374,11 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   protected readonly RepeatTypeEnum = RepeatTypeEnum;
+
+  changeComplianceEnabled(checked: boolean) {
+    this.taskForm.patchValue({
+      complianceEnabled: checked,
+    });
+    this.model.complianceEnabled = !!checked;
+  }
 }

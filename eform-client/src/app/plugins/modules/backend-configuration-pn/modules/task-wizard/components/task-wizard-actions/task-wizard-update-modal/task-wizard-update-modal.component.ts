@@ -27,7 +27,7 @@ import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAuth, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -75,11 +75,13 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     status: TaskWizardStatusesEnum.Active,
     sites: [],
     tagIds: [],
-    translates: []
+    translates: [],
+    complianceEnabled: true
   };
 
   folderSelectedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectCurrentUserIsAdmin$ = this.store.select(selectCurrentUserIsAdmin);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -187,6 +189,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
       tagIds: [this.model?.tagIds || []],
       sites: [this.model?.sites || []],
       folderId: [this.model?.folderId],
+      complianceEnabled: [this.model?.complianceEnabled],
       translates: this.fb.array(
         this.model.translates.map(t => this.fb.group({
           languageId: [t.languageId],
@@ -356,5 +359,12 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
 
   ngOnDestroy(): void {
+  }
+
+  changeComplianceEnabled(checked: boolean) {
+    this.taskForm.patchValue({
+      complianceEnabled: checked,
+    });
+    this.model.complianceEnabled = !!checked;
   }
 }

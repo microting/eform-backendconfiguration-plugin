@@ -244,6 +244,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
             tagIds: data.model.tags,
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
+            complianceEnabled: data.model.complianceEnabled,
           });
           this.updateModal.componentInstance.typeahead.emit(data.model.eformName);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
@@ -290,6 +291,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
               tagIds: updateModel.tagIds,
               translates: updateModel.translates,
               itemPlanningTagId: updateModel.itemPlanningTagId,
+              complianceEnabled: updateModel.complianceEnabled,
             }, this.updateModal);
           });
         }

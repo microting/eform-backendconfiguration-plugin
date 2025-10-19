@@ -28,7 +28,8 @@ export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy 
     status: TaskWizardStatusesEnum.Active,
     sites: [],
     tagIds: [],
-    translates: []
+    translates: [],
+    complianceEnabled: true
   };
   selectedSite: any;
 

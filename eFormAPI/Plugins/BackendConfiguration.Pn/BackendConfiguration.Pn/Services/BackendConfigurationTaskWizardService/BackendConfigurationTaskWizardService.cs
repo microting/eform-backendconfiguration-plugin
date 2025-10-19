@@ -292,6 +292,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     FolderId = x.FolderId,
                     EformId = (int)x.AreaRule.EformId,
                     Id = x.Id,
+                    ComplianceEnabled = x.ComplianceEnabled,
                     AssignedTo = x.PlanningSites
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => y.SiteId)
@@ -524,7 +525,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 RepeatType = (int?)createModel.RepeatType,
                 Notifications = true,
                 NotificationsModifiable = false,
-                ComplianceEnabled = true,
+                ComplianceEnabled = createModel.ComplianceEnabled,
                 AreaRulesPlannings =
                 [
                     new()
@@ -748,7 +749,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var oldItemPlanningTagId = areaRulePlanning.ItemPlanningTagId;
             areaRulePlanning.ItemPlanningTagId = updateModel.ItemPlanningTagId;
             areaRulePlanning.UpdatedByUserId = _userService.UserId;
-            areaRulePlanning.ComplianceEnabled = true;
+            areaRulePlanning.ComplianceEnabled = updateModel.ComplianceEnabled;
             areaRulePlanning.SendNotifications = true;
             await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 

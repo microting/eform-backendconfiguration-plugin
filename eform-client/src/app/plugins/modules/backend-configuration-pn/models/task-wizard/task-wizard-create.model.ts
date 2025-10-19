@@ -13,4 +13,5 @@ export interface TaskWizardCreateModel {
   repeatEvery: number,
   status: TaskWizardStatusesEnum,
   sites: number[],
+  complianceEnabled: boolean,
 }

@@ -15,4 +15,5 @@ export interface TaskWizardTaskModel {
   repeatEvery: number;
   status: TaskWizardStatusesEnum;
   assignedTo: number[];
+  complianceEnabled: boolean;
 }

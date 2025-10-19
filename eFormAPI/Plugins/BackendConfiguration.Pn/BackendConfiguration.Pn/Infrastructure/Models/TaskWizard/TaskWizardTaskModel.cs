@@ -20,4 +20,5 @@ public class TaskWizardTaskModel
     public int RepeatEvery { get; set; }
     public TaskWizardStatuses Status { get; set; }
     public List<int> AssignedTo { get; set; } = [];
+    public bool ComplianceEnabled { get; set; }
 }

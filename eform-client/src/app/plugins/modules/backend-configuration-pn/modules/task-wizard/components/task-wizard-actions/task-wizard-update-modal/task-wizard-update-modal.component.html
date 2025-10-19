@@ -8,6 +8,15 @@
                       (change)="changeStatus($event.checked)">
       {{ 'Status' | translate }}
     </mat-slide-toggle>
+    <mat-slide-toggle *ngIf="selectCurrentUserIsAdmin$ | async"
+      class="p-2"
+      color="primary"
+      id="complianceEnabledToggle"
+      formControlName="complianceEnabled"
+      (change)="changeComplianceEnabled($event.checked)"
+    >
+      {{ 'Compliance' | translate }}
+    </mat-slide-toggle>
     <div class="d-flex flex-row">
       <mat-form-field class="p-3">
         <mat-label>{{ 'Location' | translate }}</mat-label>
