@@ -46,12 +46,12 @@
 
 <ng-template #priorityTpl let-row>
   <mat-chip color="primary" [ngClass]="getPriorityClass(row.priority)">
-    <div>{{TaskManagementPrioritiesEnum[row.priority] | translate}}</div>
+    <span>{{TaskManagementPrioritiesEnum[row.priority] | translate}}</span>
   </mat-chip>
 </ng-template>
 
 <ng-template #statusTpl let-row>
   <mat-chip color="primary">
-    <div>{{row.status | translate}}</div>
+    <span>{{row.status | translate}}</span>
   </mat-chip>
 </ng-template>

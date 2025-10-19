@@ -134,7 +134,8 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .invoke('text')
       .should('eq', 'Aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
+      .invoke('text').should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
 
     // Copy task
     cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
@@ -158,21 +159,22 @@ describe('Area rules type 1', () => {
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
     cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
       .eq(0).invoke('text')
-      .should('have.text', `${task.repeatEvery} ${task.repeatType}`);
+      .should('eq', `${task.repeatEvery} ${task.repeatType}`);
     cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')
       .eq(1).invoke('text')
-      .should('have.text', `${task.repeatEvery} ${task.repeatType}`);
+      .should('eq', `${task.repeatEvery} ${task.repeatType}`);
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .eq(0).invoke('text')
-      .should('have.text', 'Aktiv');
+      .should('eq', 'Aktiv');
     cy.get('.cdk-row .cdk-column-status mat-chip span.mat-mdc-chip-action-label')
       .eq(1).invoke('text')
-      .should('have.text', 'Aktiv');
+      .should('eq', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
       .eq(0).invoke('text')
-      .should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
     cy.get('.cdk-row .cdk-column-assignedTo mat-chip span.mat-mdc-chip-action-label')
-      .eq(1).invoke('text').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+      .eq(1).invoke('text')
+      .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
 
     // Copy and set new eform
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
