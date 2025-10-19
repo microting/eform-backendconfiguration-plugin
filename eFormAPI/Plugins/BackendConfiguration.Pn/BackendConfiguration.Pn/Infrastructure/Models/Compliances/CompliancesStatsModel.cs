@@ -4,6 +4,7 @@ public class CompliancesStatsModel
 {
     public int OneWeekInTheFutureCount { get; set; }
     public int TodayCount { get; set; }
+    public int TodayCountEnvironmentInspectionTag { get; set; }
     public int TotalCount { get; set; }
     public int OneWeekCount { get; set; }
     public int TwoWeeksCount { get; set; }

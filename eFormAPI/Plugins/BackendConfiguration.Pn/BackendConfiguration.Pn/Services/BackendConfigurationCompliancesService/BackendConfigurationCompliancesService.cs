@@ -389,9 +389,18 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
     public async Task<OperationDataResult<CompliancesStatsModel>> Stats()
     {
+        var envTag = await _itemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstAsync();
         var complianceList = _backendConfigurationPnDbContext.Compliances;
         var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
         var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var todayComplianceCountEnvironmentInspectionTag = await complianceList.Where(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+        var todayCountEnvironmentInspectionTag = todayComplianceCountEnvironmentInspectionTag.Where(x =>
+        {
+            var planningTags = _itemsPlanningPnDbContext.PlanningsTags
+                .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
+                .ToList();
+            return planningTags.Any();
+        }).Count();
         var oneWeekCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-7));
         var twoWeeksCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-7) && x.Deadline >= DateTime.UtcNow.AddDays(-14));
         var oneMonthCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-14) && x.Deadline >= DateTime.UtcNow.AddDays(-30));
@@ -413,7 +422,8 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             TwoMonthsCount = twoMonthsCount,
             ThreeMonthsCount = threeMonthsCount,
             SixMonthsCount = sixMonthsCount,
-            MoreThanSixMonthsCount = moreThanSixMonthsCount
+            MoreThanSixMonthsCount = moreThanSixMonthsCount,
+            TodayCountEnvironmentInspectionTag = todayCountEnvironmentInspectionTag
         };
 
         return new OperationDataResult<CompliancesStatsModel>(true, statsModel);

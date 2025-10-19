@@ -34,6 +34,7 @@ using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using QuestPDF.Infrastructure;
 using Sentry;
 
@@ -531,13 +532,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         folder.IsEditable = false;
                         await folder.Update(sdkDbContext).ConfigureAwait(false);
                     }
+
                     // join the table Folder with the FolderTranslations to find the "Exceeded tasks" folder with the parentId set to the property.FolderId
                     var folderAndFolderTranslation = await sdkDbContext.Folders
                         .Join(sdkDbContext.FolderTranslations,
                             lookupFolder => lookupFolder.Id,
                             folderTranslation => folderTranslation.FolderId,
                             (lookupFolder, folderTranslation) => new {lookupFolder, folderTranslation})
-                        .Where(x => x.lookupFolder.ParentId == folder.Id && x.folderTranslation.Name == "00. Overdue tasks")
+                        .Where(x => x.lookupFolder.ParentId == folder.Id &&
+                                    x.folderTranslation.Name == "00. Overdue tasks")
                         .FirstOrDefaultAsync();
                     if (folderAndFolderTranslation == null) // if the folder does not exist create it
                     {
@@ -547,47 +550,44 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         newFolder.ManagedByPlugin = true;
                         newFolder.IsEditable = false;
                         await newFolder.Update(sdkDbContext).ConfigureAwait(false);
-                    } else
+                    }
+                    else
                     {
                         var existingFolder = folderAndFolderTranslation.lookupFolder;
-                        if (!existingFolder.IsLocked || !existingFolder.ManagedByPlugin || !existingFolder.IsEditable)
+                        if (!existingFolder.IsLocked || !existingFolder.ManagedByPlugin || existingFolder.IsEditable ||
+                            !existingFolder.ChildrenProhibited)
                         {
                             existingFolder.IsLocked = true;
                             existingFolder.ManagedByPlugin = true;
                             existingFolder.IsEditable = false;
+                            existingFolder.ChildrenProhibited = true;
                             await existingFolder.Update(sdkDbContext).ConfigureAwait(false);
                         }
                     }
 
                     var folderForNewTasks = await sdkDbContext.Folders
                         .FirstOrDefaultAsync(x => x.Id == property.FolderIdForNewTasks);
-                    if (folderForNewTasks is { IsLocked: false })
-                    {
-                        folderForNewTasks.IsLocked = true;
-                        folderForNewTasks.ManagedByPlugin = true;
-                        folderForNewTasks.IsEditable = false;
-                        await folderForNewTasks.Update(sdkDbContext).ConfigureAwait(false);
-                    }
+                    folderForNewTasks.IsLocked = true;
+                    folderForNewTasks.ManagedByPlugin = true;
+                    folderForNewTasks.IsEditable = false;
+                    folderForNewTasks.ChildrenProhibited = true;
+                    await folderForNewTasks.Update(sdkDbContext).ConfigureAwait(false);
 
                     var folderForCompletedTasks = await sdkDbContext.Folders
                         .FirstOrDefaultAsync(x => x.Id == property.FolderIdForCompletedTasks);
-                    if (folderForCompletedTasks is { IsLocked: false })
-                    {
-                        folderForCompletedTasks.IsLocked = true;
-                        folderForCompletedTasks.ManagedByPlugin = true;
-                        folderForCompletedTasks.IsEditable = false;
-                        await folderForCompletedTasks.Update(sdkDbContext).ConfigureAwait(false);
-                    }
+                    folderForCompletedTasks.IsLocked = true;
+                    folderForCompletedTasks.ManagedByPlugin = true;
+                    folderForCompletedTasks.IsEditable = false;
+                    folderForNewTasks.ChildrenProhibited = true;
+                    await folderForCompletedTasks.Update(sdkDbContext).ConfigureAwait(false);
 
                     var folderForOngoingTasks = await sdkDbContext.Folders
                         .FirstOrDefaultAsync(x => x.Id == property.FolderIdForOngoingTasks);
-                    if (folderForOngoingTasks is { IsLocked: false })
-                    {
-                        folderForOngoingTasks.IsLocked = true;
-                        folderForOngoingTasks.ManagedByPlugin = true;
-                        folderForOngoingTasks.IsEditable = false;
-                        await folderForOngoingTasks.Update(sdkDbContext).ConfigureAwait(false);
-                    }
+                    folderForOngoingTasks.IsLocked = true;
+                    folderForOngoingTasks.ManagedByPlugin = true;
+                    folderForOngoingTasks.IsEditable = false;
+                    folderForNewTasks.ChildrenProhibited = true;
+                    await folderForOngoingTasks.Update(sdkDbContext).ConfigureAwait(false);
                 }
 
                 var itemPlanningTag =
@@ -597,23 +597,23 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     itemPlanningTag.IsLocked = true;
                     await itemPlanningTag.Update(itemsPlanningContext).ConfigureAwait(false);
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 SentrySdk.CaptureException(ex);
             }
-
         }
 
-        var parentFolderTranslation =
+        var parentFolderTranslations =
             await sdkDbContext.Folders
                 // .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.FolderTranslations)
                 .Where(x => x.ParentId == null)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.FolderTranslations.Any(y => y.Name == "00.03 Andres opgaver"));
-        if (parentFolderTranslation != null)
+                .Where(x =>
+                    x.FolderTranslations.Any(y => y.Name == "00.03 Andres opgaver")).ToListAsync();
+        foreach (var parentFolderTranslation in parentFolderTranslations)
         {
             var folder = await sdkDbContext.Folders
                 .FirstAsync(x => x.ParentId == parentFolderTranslation.Id);
@@ -625,24 +625,44 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 await folder.Update(sdkDbContext).ConfigureAwait(false);
             }
         }
-        var ft =
+
+        parentFolderTranslations =
             await sdkDbContext.Folders
                 // .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.FolderTranslations)
                 .Where(x => x.ParentId == null)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.FolderTranslations.Any(y => y.Name == "00.01 Mine hasteopgaver"));
-        if (ft != null)
+                .Where(x =>
+                    x.FolderTranslations.Any(y => y.Name == "00.01 Mine hasteopgaver")).ToListAsync();
+        foreach (var parentFolderTranslation in parentFolderTranslations)
         {
-            var f = await sdkDbContext.Folders
-                .FirstAsync(x => x.ParentId == ft.Id);
-            if (!f.IsLocked || !f.ManagedByPlugin || !f.IsEditable)
+            var folder = await sdkDbContext.Folders
+                .FirstAsync(x => x.ParentId == parentFolderTranslation.Id);
+            if (!folder.IsLocked || !folder.ManagedByPlugin || !folder.IsEditable)
             {
-                f.IsLocked = true;
-                f.ManagedByPlugin = true;
-                f.IsEditable = false;
-                await f.Update(sdkDbContext).ConfigureAwait(false);
+                folder.IsLocked = true;
+                folder.ManagedByPlugin = true;
+                folder.IsEditable = false;
+                await folder.Update(sdkDbContext).ConfigureAwait(false);
+            }
+        }
+
+        var envTag = await itemsPlanningContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstOrDefaultAsync();
+        switch (envTag)
+        {
+            case {IsLocked: false}:
+                envTag.IsLocked = true;
+                await envTag.Update(itemsPlanningContext).ConfigureAwait(false);
+                break;
+            case null:
+            {
+                var newTag = new PlanningTag
+                {
+                    Name = "Miljøtilsyn",
+                    IsLocked = true
+                };
+                await newTag.Create(itemsPlanningContext).ConfigureAwait(false);
+                break;
             }
         }
 
