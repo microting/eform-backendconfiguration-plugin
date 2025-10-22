@@ -31,8 +31,9 @@ export class PropertiesTableComponent implements OnInit {
   @Input() nameSearchSubject = new Subject();
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
-  @Input() tableHeaders: MtxGridColumn[];
-  @Input() adminTableHeaders: MtxGridColumn[];
+  @Input() tableHeaders: MtxGridColumn[] = [];
+  @Input() adminTableHeaders: MtxGridColumn[] = [];
+
   @Output()
   showEditPropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
@@ -68,7 +69,20 @@ export class PropertiesTableComponent implements OnInit {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+    this.tableHeaders = [
+      { header: 'ID', field: 'id', sortable: true },
+      { header: 'Name', field: 'name', sortable: true },
+      { header: 'CVR', field: 'cvr', sortable: true  },
+      { header: 'CHR', field: 'chr', sortable: true  },
+      { header: 'Address', field: 'address', sortable: true  },
+      { header: 'Compliance', field: 'compliance' },
+      { header: 'Actions', field: 'actions', pinned: 'right'},
+    ];
+
+    this.adminTableHeaders = [...this.tableHeaders];
+
+  }
 
   onShowDeletePropertyModal(propertyModel: PropertyModel) {
     this.showDeletePropertyModal.emit(propertyModel);

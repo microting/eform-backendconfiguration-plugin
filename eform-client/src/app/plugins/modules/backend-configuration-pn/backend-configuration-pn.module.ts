@@ -60,6 +60,7 @@ import {
   taskWizardReducer,
   taskWorkerAssignmentReducer,
 } from './state';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 
 @NgModule({
@@ -103,6 +104,9 @@ import {
       taskWizardState: taskWizardReducer,
       taskWorkerAssignmentState: taskWorkerAssignmentReducer,
     },),
+    MatMenu,
+    MatMenuTrigger,
+    MatMenuItem,
   ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
