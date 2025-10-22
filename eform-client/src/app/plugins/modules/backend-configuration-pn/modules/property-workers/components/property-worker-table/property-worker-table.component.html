@@ -3,6 +3,7 @@
   [columns]="tableHeaders"
   [cellTemplate]="{
     siteId: deviceUserIdTpl,
+    propertyNames: propertyNamesTpl,
     siteName: fullNameTpl,
     workerEmail: workerEmailTpl,
     phoneNumber: phoneNumberTpl,
@@ -46,6 +47,14 @@
   </div>
 </ng-template>
 
+<ng-template #propertyNamesTpl let-row>
+  <div class="d-flex flex-wrap">
+    <mat-chip color="primary" *ngFor="let name of row.propertyNames">
+      <span>{{name}}</span>
+    </mat-chip>
+  </div>
+</ng-template>
+
 <!--<ng-template #deviceUserIdTpl let-row let-i="index">-->
 <!--  <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>-->
 <!--</ng-template>-->
@@ -59,6 +68,16 @@
       {{row.siteId}}
     </ng-container></div>
 </ng-template>
+
+<!--<ng-template #propertyNamesTpl let-row>-->
+<!--  <div class="d-flex flex-column">-->
+<!--    <div *ngFor="let bla of row.propertyNames">-->
+<!--      <mat-chip color="primary">-->
+<!--        <span>{{bla}}</span>-->
+<!--      </mat-chip>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</ng-template>-->
 
 <ng-template #fullNameTpl let-row let-i="index">
   <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{row.siteName}}</div>
@@ -132,16 +151,43 @@
 
 <ng-template #manufacturerTpl let-row>
   <ng-container *ngIf="row.osVersion !== null">
-  <div class="manufacturer" id="manufacturer-{{row.id}}">
-    {{row.model}} ({{row.osVersion}})
-  </div>
+    <ng-container *ngIf="row['manufacturer'] === 'iOS' ">
+      <div class="manufacturer" id="manufacturer-{{row.id}}">
+                <span [matTooltip]="row['deviceModel']" class="neutral-icon">
+                  <mat-icon>phone_iphone</mat-icon>
+                </span>
+        {{row.model}} ({{row.osVersion}})
+      </div>
+    </ng-container>
+    <ng-container *ngIf="row['manufacturer'] === 'Android' ">
+      <div class="manufacturer" id="manufacturer-{{row.id}}">
+                <span [matTooltip]="row['deviceModel']" class="neutral-icon">
+                  <mat-icon>android</mat-icon>
+                </span>
+        {{row.model}} ({{row.osVersion}})
+      </div>
+    </ng-container>
   </ng-container>
 </ng-template>
 
 <ng-template #taskManagementEnabledTpl let-row>
-  <span title="{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}</span>
+  <mat-chip
+    [ngClass]="{
+      'status-active': TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] === 'Active',
+      'status-inactive': TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] !== 'Active'
+    }"
+  >
+    <span title="{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}</span>
+  </mat-chip>
 </ng-template>
 
 <ng-template #timeRegistrationEnabledTpl let-row>
-  <span title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}</span>
+  <mat-chip
+    [ngClass]="{
+      'status-active': TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] === 'Active',
+      'status-inactive': TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] !== 'Active'
+    }"
+  >
+    <span title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}</span>
+  </mat-chip>
 </ng-template>

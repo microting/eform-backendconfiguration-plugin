@@ -32,6 +32,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MtxCheckboxGroupModule} from '@ng-matero/extensions/checkbox-group';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {StatisticsModule} from '../statistics/statistics.module';
+import {MatChip} from "@angular/material/chips";
 
 @NgModule({
   declarations: [
@@ -46,30 +47,31 @@ import {StatisticsModule} from '../statistics/statistics.module';
     DocumentsDocumentEditComponent,
     DocumentsDocumentDeleteComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    DocumentsRouting,
-    EformSharedModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatSlideToggleModule,
-    MatCheckboxModule,
-    MtxCheckboxGroupModule,
-    MatDatepickerModule,
-    StatisticsModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        DocumentsRouting,
+        EformSharedModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatSlideToggleModule,
+        MatCheckboxModule,
+        MtxCheckboxGroupModule,
+        MatDatepickerModule,
+        StatisticsModule,
+        MatChip,
+    ],
   providers: [],
 })
 

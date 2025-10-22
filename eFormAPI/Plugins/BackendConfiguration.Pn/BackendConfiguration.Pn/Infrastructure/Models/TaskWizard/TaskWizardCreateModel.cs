@@ -19,4 +19,5 @@ public class TaskWizardCreateModel
     public int RepeatEvery { get; set; }
     public TaskWizardStatuses Status { get; set; }
     public List<int> Sites { get; set; } = [];
+    public bool ComplianceEnabled { get; set; }
 }

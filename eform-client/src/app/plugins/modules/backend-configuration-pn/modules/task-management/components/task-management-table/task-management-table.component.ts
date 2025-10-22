@@ -65,13 +65,14 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'Priority'},
       sortable: true,
       class: 'priority',
-      formatter: (rowData: WorkOrderCaseModel) => this.translateService.instant(TaskManagementPrioritiesEnum[rowData.priority])},
+      // formatter: (rowData: WorkOrderCaseModel) => this.translateService.instant(TaskManagementPrioritiesEnum[rowData.priority])
+    },
     {
       header: this.translateService.stream('Status'),
       field: 'status',
       sortProp: {id: 'CaseStatusesEnum'},
       sortable: true,
-      formatter: (rowData: WorkOrderCaseModel) => `<span>${this.translateService.instant(rowData.status)}</span>`,
+      // formatter: (rowData: WorkOrderCaseModel) => `<span>${this.translateService.instant(rowData.status)}</span>`,
       class: 'status'
     },
     {
@@ -129,5 +130,18 @@ export class TaskManagementTableComponent implements OnInit {
 
   onOpenDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
     this.openDeleteModal.emit(workOrderCaseModel);
+  }
+
+  protected readonly TaskManagementPrioritiesEnum = TaskManagementPrioritiesEnum;
+
+  priorityClassMap = {
+    [TaskManagementPrioritiesEnum.Urgent]: 'priority-urgent',
+    [TaskManagementPrioritiesEnum.High]: 'priority-high',
+    [TaskManagementPrioritiesEnum.Medium]: 'priority-medium',
+    [TaskManagementPrioritiesEnum.Low]: 'priority-low',
+  };
+
+  getPriorityClass(priority: number): string {
+    return this.priorityClassMap[priority] || '';
   }
 }

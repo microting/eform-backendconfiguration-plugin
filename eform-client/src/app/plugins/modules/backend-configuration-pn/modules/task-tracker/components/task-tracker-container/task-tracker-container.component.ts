@@ -244,6 +244,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             tagIds: data.model.tags,
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
+            complianceEnabled: data.model.complianceEnabled,
           });
           this.propertyService.getLinkedSites(data.model.propertyId, true)
             .subscribe((sites) => {
@@ -287,6 +288,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             tagIds: data.model.tags,
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
+            complianceEnabled: data.model.complianceEnabled,
           });
           this.updateModal.componentInstance.typeahead.emit(data.model.eformName);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
@@ -329,6 +331,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
               tagIds: updateModel.tagIds,
               translates: data.model.translations,
               itemPlanningTagId: data.model.itemPlanningTagId,
+              complianceEnabled: updateModel.complianceEnabled,
             }, this.updateModal);
           });
         }

@@ -167,7 +167,8 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
     this.newDocumentModel.documentProperties = selectedProps.map((id: number) => ({
       propertyId: id,
-      documentId: this.newDocumentModel.id
+      documentId: this.newDocumentModel.id,
+      propertyName: '',
     }));
 
     const formTranslations = Array.isArray(formValue.translations) ? formValue.translations : [];
@@ -222,26 +223,27 @@ export class DocumentsDocumentCreateComponent implements OnInit {
       if (assignmentObject) {
         return assignmentObject;
       }
-      return {propertyId: propertyId, documentId: this.newDocumentModel.id}
+      return {propertyId: propertyId, documentId: this.newDocumentModel.id, propertyName: ''};
     });
     this.documentProperties = this.newDocumentModel.documentProperties.map(x => x.propertyId);
   }
 
-  getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
-    const assignment = this.newDocumentModel.documentProperties.find(
-      (x) => x.propertyId === propertyId
-    );
-    return assignment !== undefined;
-  }
-
-  getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
-    return (
-      this.newDocumentModel.documentProperties.find((x) => x.propertyId === propertyId) ?? {
-        propertyId: propertyId,
-        documentId: this.newDocumentModel.id,
-      }
-    );
-  }
+  // getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
+  //   const assignment = this.newDocumentModel.documentProperties.find(
+  //     (x) => x.propertyId === propertyId
+  //   );
+  //   return assignment !== undefined;
+  // }
+  //
+  // getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
+  //   return (
+  //     this.newDocumentModel.documentProperties.find((x) => x.propertyId === propertyId) ?? {
+  //       propertyId: propertyId,
+  //       documentId: this.newDocumentModel.id,
+  //       propertyName: '',
+  //     }
+  //   );
+  // }
 
   removeFile(selectedLanguage: number, extension: string) {
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(

@@ -2,6 +2,7 @@
   <mtx-grid
     [data]="workOrderCases"
     [columns]="tableHeaders"
+    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="true"
@@ -16,3 +17,41 @@
   </mtx-grid>
 
 </div>
+
+
+
+<ng-template #propertyNameTpl let-row>
+<!--  <mat-chip color="primary">-->
+    <span>{{row.propertyName}}</span>
+<!--  </mat-chip>-->
+</ng-template>
+
+<ng-template #createdByNameTpl let-row>
+<!--  <mat-chip color="primary">-->
+    <div>{{row.createdByName}}</div>
+<!--  </mat-chip>-->
+</ng-template>
+
+<ng-template #lastAssignedToTpl let-row>
+<!--  <mat-chip color="primary">-->
+    <div>{{row.lastAssignedTo}}</div>
+<!--  </mat-chip>-->
+</ng-template>
+
+<ng-template #lastUpdatedByTpl let-row>
+<!--  <mat-chip color="primary">-->
+    <div>{{row.lastUpdatedBy}}</div>
+<!--  </mat-chip>-->
+</ng-template>
+
+<ng-template #priorityTpl let-row>
+  <mat-chip color="primary" [ngClass]="getPriorityClass(row.priority)">
+    <span>{{TaskManagementPrioritiesEnum[row.priority] | translate}}</span>
+  </mat-chip>
+</ng-template>
+
+<ng-template #statusTpl let-row>
+  <mat-chip color="primary">
+    <span>{{row.status | translate}}</span>
+  </mat-chip>
+</ng-template>

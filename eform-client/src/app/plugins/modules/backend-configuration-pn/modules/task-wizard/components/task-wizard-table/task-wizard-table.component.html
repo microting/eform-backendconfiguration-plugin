@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{id: idTpl, tags: tagsTpl, tagReport: reportTagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
+  [cellTemplate]="{id: idTpl, tags: tagsTpl, tagReport: reportTagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl, assignedTo: assignedToTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -43,15 +43,15 @@
 
 <ng-template #repeatTpl let-row>
   <ng-container *ngIf="row.repeatEvery === 0 && row.repeatType === RepeatTypeEnum.Day; else elseRepeatEveryTpl">
-    <span title="{{RepeatTypeEnum[0] | translate}}">{{RepeatTypeEnum[0] | translate}}</span>
+    <mat-chip color="primary">
+      <span title="{{RepeatTypeEnum[0] | translate}}">{{RepeatTypeEnum[0] | translate}}</span>
+    </mat-chip>
   </ng-container>
   <ng-template #elseRepeatEveryTpl>
-    <span title="{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}">{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}</span>
+    <mat-chip color="primary">
+      <span title="{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}">{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}</span>
+    </mat-chip>
   </ng-template>
-</ng-template>
-
-<ng-template #statusTpl let-row>
-  <span title="{{TaskWizardStatusesEnum[row.status] | translate}}">{{TaskWizardStatusesEnum[row.status] | translate}}</span>
 </ng-template>
 
 <ng-template #idTpl let-row>
@@ -61,4 +61,25 @@
   <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
     <span>{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
   </ng-container>
+</ng-template>
+
+<ng-template #statusTpl let-row>
+  <mat-chip
+    [ngClass]="{
+      'status-active': TaskWizardStatusesEnum[row.status] === 'Active',
+      'status-inactive': TaskWizardStatusesEnum[row.status] !== 'Active'
+    }"
+  >
+    <span title="{{TaskWizardStatusesEnum[row.status] | translate}}">{{TaskWizardStatusesEnum[row.status] | translate}}</span>
+  </mat-chip>
+</ng-template>
+
+<ng-template #assignedToTpl let-row>
+  <div class="d-flex flex-column">
+    <div *ngFor="let worker of row.assignedTo">
+      <mat-chip color="primary">
+        <span>{{worker}}</span>
+      </mat-chip>
+    </div>
+  </div>
 </ng-template>

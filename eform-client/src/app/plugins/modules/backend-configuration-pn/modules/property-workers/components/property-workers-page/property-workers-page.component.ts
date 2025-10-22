@@ -201,7 +201,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .getDeviceUsersFiltered()
       .subscribe((data) => {
         if (data && data.model) {
-          this.sitesDto = data.model;
+          // const result = data.model;
+          this.sitesDto = data.model.map(site => ({
+            ...site,
+            propertyNames: Array.isArray(site.propertyNames)
+              ? site.propertyNames
+              : (typeof site.propertyNames === 'string' && site.propertyNames.length > 0
+                ? site.propertyNames.split(',').map((name: string) => name.trim())
+                : [])
+          }));
           //this.getWorkerPropertiesAssignments();
         }
       });

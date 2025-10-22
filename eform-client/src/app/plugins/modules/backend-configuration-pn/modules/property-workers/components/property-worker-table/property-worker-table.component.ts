@@ -96,7 +96,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     {
       header: this.translateService.stream('Property'),
       field: 'propertyNames',
-      formatter: (rowData: DeviceUserModel) => rowData.propertyNames.replace(',', '<br>'),
+      // formatter: (rowData: DeviceUserModel) => rowData.propertyNames
     },
     {
       header: this.translateService.stream('Name'),

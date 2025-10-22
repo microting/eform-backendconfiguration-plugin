@@ -33,9 +33,9 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
     {
-      field: 'propertyNames',
+      field: 'documentProperties',
       header: this.translateService.stream('Properties'),
-      formatter: (document: DocumentModel) => document.propertyNames
+      // formatter: (document: DocumentModel) => document.propertyNames
     },
     {
       field: 'propertyFolder',
@@ -67,7 +67,7 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
     {
       field: 'status',
       header: this.translateService.stream('Status'),
-      formatter: (document: DocumentModel) => this.translateService.instant(document.status ? 'ON' : 'OFF'),
+      // formatter: (document: DocumentModel) => this.translateService.instant(document.status ? 'ON' : 'OFF'),
       sortable: true, sortProp: {id: 'Status'}
     },
     {

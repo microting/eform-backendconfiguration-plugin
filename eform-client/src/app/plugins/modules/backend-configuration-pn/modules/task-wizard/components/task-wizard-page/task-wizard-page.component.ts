@@ -242,6 +242,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             tagIds: data.model.tags,
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
+            complianceEnabled: data.model.complianceEnabled,
           });
           this.updateModal.componentInstance.typeahead.emit(model.eform);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
@@ -288,6 +289,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
               tagIds: updateModel.tagIds,
               translates: updateModel.translates,
               itemPlanningTagId: updateModel.itemPlanningTagId,
+              complianceEnabled: updateModel.complianceEnabled,
             }, this.updateModal);
           });
         }
@@ -316,6 +318,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             tagIds: data.model.tags,
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
+            complianceEnabled: data.model.complianceEnabled,
           };
           this.createModal.componentInstance.typeahead.emit(model.eform);
           this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
