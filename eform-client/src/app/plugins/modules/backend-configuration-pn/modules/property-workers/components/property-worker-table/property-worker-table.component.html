@@ -118,36 +118,43 @@
 <!--  <div [innerHTML]="this.getWorkerPropertyNames(row.siteId)"></div>-->
 <!--</ng-template>-->
 <ng-template #actionsTpl let-row let-i="index">
-  <div class="">
-    <button
-      mat-icon-button
-      matTooltip="{{ 'Show assignments' | translate }}"
-      id="editAssignmentsBtn-{{i}}"
-      [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
-    >
-      <mat-icon>visibility</mat-icon>
+  <div class="device-user-actions" id="device-user-actions-{{i}}">
+    <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
     </button>
-    <button
-      mat-icon-button
-      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
-      matTooltip="{{ 'Edit Device User' | translate }}"
-      id="editDeviceUserBtn-{{i}}"
-      (click)="openEditModal(row)"
-    >
-      <mat-icon>edit</mat-icon>
-    </button>
-    <button
-      mat-icon-button
-      color="warn"
-      *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked"
-      matTooltip="{{ 'Delete Device User' | translate }}"
-      id="deleteDeviceUserBtn-{{i}}"
-      (click)="openDeleteDeviceUserModal(row)"
-    >
-      <mat-icon>delete</mat-icon>
-    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        id="editAssignmentsBtn-{{i}}"
+        [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
+      >
+        <mat-icon>visibility</mat-icon>
+        <span>{{ 'Show assignments' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+        id="editDeviceUserBtn-{{i}}"
+        (click)="openEditModal(row)"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit Device User' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        color="warn"
+        *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked"
+        id="deleteDeviceUserBtn-{{i}}"
+        (click)="openDeleteDeviceUserModal(row)"
+      >
+        <mat-icon color="warn">delete</mat-icon>
+        <span>{{ 'Delete Device User' | translate }}</span>
+      </button>
+    </mat-menu>
   </div>
 </ng-template>
+
 
 <ng-template #manufacturerTpl let-row>
   <ng-container *ngIf="row.osVersion !== null">

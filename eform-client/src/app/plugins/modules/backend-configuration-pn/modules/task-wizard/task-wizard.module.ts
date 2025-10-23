@@ -28,6 +28,7 @@ import {FormattingTextEditorModule} from 'src/app/common/modules/eform-imported/
 import {MatCardModule} from '@angular/material/card';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
   imports: [
@@ -53,6 +54,9 @@ import {StatisticsModule} from '../statistics/statistics.module';
     MatCardModule,
     PlanningsModule,
     StatisticsModule,
+    MatMenu,
+    MatMenuItem,
+    MatMenuTrigger,
   ],
   declarations: [
     TaskWizardFiltersComponent,

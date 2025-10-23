@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{id: idTpl, tags: tagsTpl, tagReport: reportTagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl, assignedTo: assignedToTpl}"
+  [cellTemplate]="{id: idTpl, tags: tagsTpl, tagReport: reportTagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl, assignedTo: assignedToTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -83,3 +83,44 @@
     </div>
   </div>
 </ng-template>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="task-actions" id="task-actions-{{i}}">
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button
+        *ngIf="row.createdInGuide"
+        mat-menu-item
+        id="editTaskBtn-{{i}}"
+        (click)="editTask.emit(row)"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit task' | translate }}</span>
+      </button>
+
+      <button
+        *ngIf="row.createdInGuide"
+        mat-menu-item
+        id="copyTaskBtn-{{i}}"
+        (click)="copyTask.emit(row)"
+      >
+        <mat-icon>content_copy</mat-icon>
+        <span>{{ 'Copy task' | translate }}</span>
+      </button>
+
+      <button
+        *ngIf="row.createdInGuide"
+        mat-menu-item
+        id="deleteTaskBtn-{{i}}"
+        (click)="deleteTask.emit(row)"
+      >
+        <mat-icon color="warn">delete</mat-icon>
+        <span>{{ 'Delete task' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+</ng-template>
+
+
