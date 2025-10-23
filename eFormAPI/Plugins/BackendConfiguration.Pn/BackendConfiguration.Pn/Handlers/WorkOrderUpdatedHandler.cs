@@ -35,7 +35,7 @@ public class WorkOrderUpdatedHandler(
             message.WorkorderCaseId,
             message.NewDescription,
             message.DeviceUsersGroupId,
-            message.PdfHash,
+            // message.PdfHash,
             message.AssignedToSite,
             message.PushMessageBody,
             message.PushMessageTitle,
@@ -56,7 +56,7 @@ public class WorkOrderUpdatedHandler(
         int workorderCaseId,
         string newDescription,
         int? deviceUsersGroupId,
-        string pdfHash,
+        // string pdfHash,
         Site assignedToSite,
         string pushMessageBody,
         string pushMessageTitle,
@@ -161,7 +161,7 @@ public class WorkOrderUpdatedHandler(
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
-            ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+            // ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
 
             List<Microting.eForm.Dto.KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
             var newKvpList = new List<KeyValuePair>();
@@ -192,31 +192,31 @@ public class WorkOrderUpdatedHandler(
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            if (hasImages == false)
+            ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            // if (hasImages == false)
+            // {
+            //     ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            // }
+            // unit.eFormVersion ??= "1.0.0";
+            // if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
+            // {
+            if (hasImages)
             {
-                ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
-            }
-            unit.eFormVersion ??= "1.0.0";
-            if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
-            {
-                if (hasImages)
+                // add a new show picture element for each picture in the picturesOfTasks list
+                int j = 0;
+                foreach (var picture in picturesOfTasks)
                 {
-                    ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
-                    // add a new show picture element for each picture in the picturesOfTasks list
-                    int j = 0;
-                    foreach (var picture in picturesOfTasks)
-                    {
-                        var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
-                        var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+                    var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
+                    var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
 
-                        await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
-                        showPicture.Value = picture.Value;
-                        ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
+                    await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                    showPicture.Value = picture.Value;
+                    ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
 
-                        j++;
-                    }
+                    j++;
                 }
             }
+            // }
             int caseId = 0;
             if (status != CaseStatusesEnum.Completed)
             {
