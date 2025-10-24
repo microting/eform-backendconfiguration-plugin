@@ -65,7 +65,7 @@
 
 <ng-template #actionsTpl let-row let-i="index">
   <div class="property-actions" id="property-actions-{{i}}">
-    <button mat-icon-button [matMenuTriggerFor]="menu">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu">
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #menu="matMenu">

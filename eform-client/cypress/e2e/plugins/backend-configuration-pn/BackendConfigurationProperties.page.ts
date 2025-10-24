@@ -269,12 +269,24 @@ export class PropertyRowObject {
   editPropertyBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
   deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
+  private openMenu(rowNum: number) {
+    const index = rowNum - 1;
+
+    cy.get(`#property-actions-${index}`)
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+    cy.get('mat-mdc-menu-panel', { timeout: 500 }).should('be.visible');
+  }
+
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    const index = rowNum - 1;
+    const row = () => cy.get('.mat-mdc-row').eq(index);
     this.row = row();
-    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+    this.openMenu(rowNum);
+    this.viewAreasBtn = () => row().find(`[id^=showPropertyAreasBtn-${index}]`).should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () => row().find(`[id^=editPropertyBtn]-${index}`).should('be.visible').should('be.enabled');
+    this.deleteBtn = () => row().find(`[id^=deletePropertyBtn]-${index}`).should('be.visible').should('be.enabled');
     return this;
   }
 
