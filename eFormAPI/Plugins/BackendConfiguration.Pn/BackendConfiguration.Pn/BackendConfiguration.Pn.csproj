@@ -217,7 +217,7 @@
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="8.0.10" />
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
-      <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.7" />
+      <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.8" />
       <PackageReference Include="Ical.Net" Version="5.1.1" />
       <PackageReference Include="Microting.eForm" Version="9.0.66" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.53" />
