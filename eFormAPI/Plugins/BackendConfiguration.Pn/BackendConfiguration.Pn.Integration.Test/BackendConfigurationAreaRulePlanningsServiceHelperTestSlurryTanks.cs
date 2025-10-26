@@ -754,7 +754,7 @@
 //         // Assert.That(cases[1].SiteId, Is.EqualTo(sites[2].Id));
 //         // Assert.That(cases[1].CheckListId, Is.EqualTo(areaRules[0].EformId));
 //         // Assert.That(cases[1].FolderId, Is.Null);
-//         // Assert.That(cases[1].Status, Is.EqualTo(66));
+//         // Assert.That(cases[1].Status, Is.EqualTo(33));
 //         // Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 //     }
 //
@@ -1177,7 +1177,7 @@
 //         // Assert.That(cases[1].SiteId, Is.EqualTo(sites[2].Id));
 //         // Assert.That(cases[1].CheckListId, Is.EqualTo(alarmeFormid));
 //         // Assert.That(cases[1].FolderId, Is.Null);
-//         // Assert.That(cases[1].Status, Is.EqualTo(66));
+//         // Assert.That(cases[1].Status, Is.EqualTo(33));
 //         // Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 //         // Assert.That(cases[2].SiteId, Is.EqualTo(sites[2].Id));
 //         // Assert.That(cases[2].CheckListId, Is.EqualTo(areaRules[0].EformId));
@@ -1727,7 +1727,7 @@
 //         Assert.That(cases[1].SiteId, Is.EqualTo(sites[3].Id));
 //         Assert.That(cases[1].CheckListId, Is.EqualTo(floatingLayerEformId));
 //         Assert.That(cases[1].FolderId, Is.Null);
-//         Assert.That(cases[1].Status, Is.EqualTo(66));
+//         Assert.That(cases[1].Status, Is.EqualTo(33));
 //         Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 //         // Assert.That(cases[2].SiteId, Is.EqualTo(sites[2].Id));
 //         // Assert.That(cases[2].CheckListId, Is.EqualTo(areaRules[0].EformId));
@@ -2330,7 +2330,7 @@
 //         Assert.That(cases[1].SiteId, Is.EqualTo(sites[3].Id));
 //         Assert.That(cases[1].CheckListId, Is.EqualTo(floatingLayerEformId));
 //         Assert.That(cases[1].FolderId, Is.Null);
-//         Assert.That(cases[1].Status, Is.EqualTo(66));
+//         Assert.That(cases[1].Status, Is.EqualTo(33));
 //         Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
 //         // Assert.That(cases[2].SiteId, Is.EqualTo(sites[2].Id));
 //         // Assert.That(cases[2].CheckListId, Is.EqualTo(areaRules[0].EformId));
@@ -3055,7 +3055,7 @@
 //         Assert.That(cases[1].SiteId, Is.EqualTo(sites[2].Id));
 //         Assert.That(cases[1].CheckListId, Is.EqualTo(floatingLayerEformId));
 //         Assert.That(cases[1].FolderId, Is.Null);
-//         Assert.That(cases[1].Status, Is.EqualTo(66));
+//         Assert.That(cases[1].Status, Is.EqualTo(33));
 //         Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 //         Assert.That(cases[2].SiteId, Is.EqualTo(sites[3].Id));
 //         Assert.That(cases[2].CheckListId, Is.EqualTo(floatingLayerEformId));
