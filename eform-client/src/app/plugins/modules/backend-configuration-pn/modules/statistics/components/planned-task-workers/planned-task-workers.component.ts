@@ -22,11 +22,11 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   chartData: { name: string, value: number }[] = [];
   xAxisTicks: any[] = [];
   colorSchemeLight = {
-    domain: ['#0000ff']
+    domain: ['#a3d7b1']
   };
   customColorsLight = [];
   colorSchemeDark = {
-    domain: ['#0000ff']
+    domain: ['#a3d7b1']
   };
   customColorsDark = [];
   isDarkTheme = true;
@@ -91,8 +91,8 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
       !changes.plannedTaskWorkers.isFirstChange() &&
       changes.plannedTaskWorkers.currentValue) {
       this.chartData = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: x.statValue}));
-      this.customColorsDark = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
-      this.customColorsLight = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
+      this.customColorsDark = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#a3d7b1'}));
+      this.customColorsLight = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#a3d7b1'}));
       this.getxAxisTicks();
     }
   }

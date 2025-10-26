@@ -26,45 +26,45 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   priorityNamesTranslated: string[] = [];
   xAxisTicks: any[] = [];
   colorSchemeLight = {
-    domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
+    domain: ['#a71d2a', '#dc3545', '#0000ff', '#f8d7da']
   };
   customColorsLight = [
     {
       name: this.priorityNames[0],
-      value: '#ff0000',
+      value: '#a71d2a',
     },
     {
       name: this.priorityNames[1],
-      value: '#ffbb33',
+      value: '#dc3545',
     },
     {
       name: this.priorityNames[2],
-      value: '#0000ff',
+      value: '#f5a5a8',
     },
     {
       name: this.priorityNames[3],
-      value: '#1414fa',
+      value: '#f8d7da',
     },
   ];
   colorSchemeDark = {
-    domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
+    domain: ['#a71d2a', '#dc3545', '#f5a5a8', '#f8d7da']
   };
   customColorsDark = [
     {
       name: this.priorityNames[0],
-      value: '#ff0000',
+      value: '#a71d2a',
     },
     {
       name: this.priorityNames[1],
-      value: '#ffbb33',
+      value: '#dc3545',
     },
     {
       name: this.priorityNames[2],
-      value: '#0000ff',
+      value: '#f5a5a8',
     },
     {
       name: this.priorityNames[3],
-      value: '#1414fa',
+      value: '#f8d7da',
     },
   ];
   isDarkTheme = true;
