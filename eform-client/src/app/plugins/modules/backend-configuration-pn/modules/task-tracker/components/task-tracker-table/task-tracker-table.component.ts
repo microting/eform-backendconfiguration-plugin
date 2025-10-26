@@ -11,7 +11,6 @@ import {
   ColumnsModel,
   ComplianceModel,
   DateListModel,
-  ReportEformItemModel,
   TaskModel
 } from '../../../../models';
 import {RepeatTypeEnum} from '../../../../enums';
@@ -29,7 +28,6 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {ThemePalette} from "@angular/material/core";
 
 @Component({
     selector: 'app-task-tracker-table',

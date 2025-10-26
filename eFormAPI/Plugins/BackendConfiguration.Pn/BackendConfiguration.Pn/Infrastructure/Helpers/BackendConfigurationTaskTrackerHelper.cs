@@ -134,8 +134,8 @@ public static class BackendConfigurationTaskTrackerHelper
 				var planning = await itemsPlanningPnDbContext.Plannings
 					.Where(x => x.Id == compliance.PlanningId)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					//.Include(x => x.PlanningsTags)
-					//.ThenInclude(x => x.PlanningTag)
+					.Include(x => x.PlanningsTags)
+					.ThenInclude(x => x.PlanningTag)
 					.FirstOrDefaultAsync();
 
 				if (planning == null)
@@ -163,13 +163,13 @@ public static class BackendConfigurationTaskTrackerHelper
 					}
 				}
 
-				/*if (filtersModel.TagIds.Any()) // filtration by planning(?) tags
+				if (filtersModel.TagIds.Any()) // filtration by planning(?) tags
 				{
 					if (!planning.PlanningsTags.Any(x => filtersModel.TagIds.Contains(x.PlanningTagId)))
 					{
 						continue;
 					}
-				}*/
+				}
 
 				var taskName = await itemsPlanningPnDbContext.PlanningNameTranslation
 					.Where(x => x.LanguageId == userLanguageId)
