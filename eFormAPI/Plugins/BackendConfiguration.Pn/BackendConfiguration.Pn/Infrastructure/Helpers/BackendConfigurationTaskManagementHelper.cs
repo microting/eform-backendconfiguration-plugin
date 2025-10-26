@@ -77,7 +77,7 @@ public static class BackendConfigurationTaskManagementHelper
         }
 
         var property = workOrderCase.PropertyWorker.Property;
-        var hash = await GeneratePdf(picturesOfTasks, site.Id, core);
+        // var hash = await GeneratePdf(picturesOfTasks, site.Id, core);
 
         var label = $"<strong>{localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
 
@@ -159,8 +159,7 @@ public static class BackendConfigurationTaskManagementHelper
         }
 
         await bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
-            updateModel.CaseStatusEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid),
-            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList, userService.UserId, userService.UserId)).ConfigureAwait(false);
+            updateModel.CaseStatusEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid), site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList, userService.UserId, userService.UserId)).ConfigureAwait(false);
 
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }

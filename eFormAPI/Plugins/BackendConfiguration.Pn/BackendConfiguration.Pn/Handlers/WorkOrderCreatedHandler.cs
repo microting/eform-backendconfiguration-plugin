@@ -36,7 +36,7 @@ public class WorkOrderCreatedHandler(
 
     public async Task Handle(WorkOrderCreated message)
     {
-        var pdfHash = await GeneratePdf(message.PicturesOfTasks).ConfigureAwait(false);
+        // var pdfHash = await GeneratePdf(message.PicturesOfTasks).ConfigureAwait(false);
         await DeployEform(
             message.PropertyWorkers,
             message.EformId,
@@ -46,7 +46,7 @@ public class WorkOrderCreatedHandler(
             message.WorkorderCaseId,
             message.NewDescription,
             message.DeviceUsersGroupId,
-            pdfHash,
+            // pdfHash,
             message.AssignedToSite,
             message.PushMessageBody,
             message.PushMessageTitle,
@@ -69,7 +69,7 @@ public class WorkOrderCreatedHandler(
         int workorderCaseId,
         string newDescription,
         int? deviceUsersGroupId,
-        string pdfHash,
+        // string pdfHash,
         Site assignedToSite,
         string pushMessageBody,
         string pushMessageTitle,
@@ -173,7 +173,7 @@ public class WorkOrderCreatedHandler(
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
-            ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+            // ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
             List<Microting.eForm.Dto.KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
             var newKvpList = new List<KeyValuePair>();
             foreach (var keyValuePair in kvpList)
@@ -203,30 +203,30 @@ public class WorkOrderCreatedHandler(
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            if (hasImages == false)
+            // if (hasImages == false)
+            // {
+            ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            // }
+            // unit.eFormVersion ??= "1.0.0";
+            // if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
+            // {
+            if (hasImages)
             {
-                ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
-            }
-            unit.eFormVersion ??= "1.0.0";
-            if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
-            {
-                if (hasImages)
+                // ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+                // add a new show picture element for each picture in the picturesOfTasks list
+                int j = 0;
+                foreach (var picture in picturesOfTasks)
                 {
-                    ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
-                    // add a new show picture element for each picture in the picturesOfTasks list
-                    int j = 0;
-                    foreach (var picture in picturesOfTasks)
-                    {
-                        var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
-                        var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+                    var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
+                    var storageResult = sdkCore.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
 
-                        await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
-                        showPicture.Value = picture.Value;
-                        ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
-                        j++;
-                    }
+                    await sdkCore.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                    showPicture.Value = picture.Value;
+                    ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
+                    j++;
                 }
             }
+            // }
             var caseId = await sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
             var newWorkOrderCase = new WorkorderCase
             {

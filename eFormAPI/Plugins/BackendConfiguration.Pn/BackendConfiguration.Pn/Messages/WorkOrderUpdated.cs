@@ -13,7 +13,7 @@ public class WorkOrderUpdated(
     int workorderCaseId,
     string newDescription,
     int? deviceUsersGroupId,
-    string pdfHash,
+    // string pdfHash,
     Site assignedToSite,
     string pushMessageBody,
     string pushMessageTitle,
@@ -31,7 +31,7 @@ public class WorkOrderUpdated(
     public readonly int WorkorderCaseId = workorderCaseId;
     public readonly string NewDescription = newDescription;
     public int? DeviceUsersGroupId = deviceUsersGroupId;
-    public readonly string PdfHash = pdfHash;
+    // public readonly string PdfHash = pdfHash;
     public readonly Site AssignedToSite = assignedToSite;
     public readonly string PushMessageBody = pushMessageBody;
     public readonly string PushMessageTitle = pushMessageTitle;
