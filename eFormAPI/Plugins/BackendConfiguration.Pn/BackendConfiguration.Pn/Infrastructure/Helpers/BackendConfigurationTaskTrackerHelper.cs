@@ -155,7 +155,7 @@ public static class BackendConfigurationTaskTrackerHelper
 
 				if (areaRulePlanning == null) continue;
 
-				if (deadlineDate> dateTimeNow && !areaRulePlanning.ComplianceEnabled)
+				if (deadlineDate < dateTimeNow && !areaRulePlanning.ComplianceEnabled)
 				{
 					var comp = await backendConfigurationPnDbContext.Compliances.FirstAsync(x => x.Id == compliance.Id);
 					await comp.Delete(backendConfigurationPnDbContext);
