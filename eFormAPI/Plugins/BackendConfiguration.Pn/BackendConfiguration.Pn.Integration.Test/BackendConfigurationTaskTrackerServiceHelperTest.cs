@@ -74,7 +74,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			LanguageCode = "da",
 			TimeRegistrationEnabled = false,
 			UserFirstName = Guid.NewGuid().ToString(),
-			UserLastName = Guid.NewGuid().ToString()
+			UserLastName = Guid.NewGuid().ToString(),
+			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
 			TimePlanningPnDbContext);
@@ -203,7 +204,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			LanguageCode = "da",
 			TimeRegistrationEnabled = false,
 			UserFirstName = Guid.NewGuid().ToString(),
-			UserLastName = Guid.NewGuid().ToString()
+			UserLastName = Guid.NewGuid().ToString(),
+			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
 			TimePlanningPnDbContext);
@@ -332,7 +334,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			LanguageCode = "da",
 			TimeRegistrationEnabled = false,
 			UserFirstName = Guid.NewGuid().ToString(),
-			UserLastName = Guid.NewGuid().ToString()
+			UserLastName = Guid.NewGuid().ToString(),
+			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
 			TimePlanningPnDbContext);
@@ -461,7 +464,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			LanguageCode = "da",
 			TimeRegistrationEnabled = false,
 			UserFirstName = Guid.NewGuid().ToString(),
-			UserLastName = Guid.NewGuid().ToString()
+			UserLastName = Guid.NewGuid().ToString(),
+			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
 			TimePlanningPnDbContext);
