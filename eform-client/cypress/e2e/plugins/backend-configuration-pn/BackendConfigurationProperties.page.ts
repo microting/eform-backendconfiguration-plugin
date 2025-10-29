@@ -227,6 +227,10 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     cy.get('app-properties-table .mat-mdc-row').then(rows => {
       const rowNum = rows.length;
       cy.log(rowNum.toString());
+      if (rowNum === 0) {
+        cy.log('No properties to delete.');
+        return;
+      }
 
       for (let i = rowNum; i > 0; i--) {
         cy.intercept('POST', '**/api/backend-configuration-pn/properties/index').as('getProperties');
@@ -269,19 +273,36 @@ export class PropertyRowObject {
   editPropertyBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
   deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
-  private openMenu(rowNum: number) {
-    cy.get(`#property-actions-${rowNum}`).find('#actionMenu').should('be.visible').click({ force: true });
-  }
 
   getRow(rowNum: number) {
-    this.openMenu(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    this.row = row();
 
-    cy.get('.mat-mdc-menu-panel', { timeout: 5000 }).should('be.visible');
+    row()
+      .should('exist')
+      .then($r => {
+        if ($r.length === 0) {
+          cy.log(`No row found at index ${rowNum} — skipping action menu click.`);
+          return;
+        }
 
-    this.viewAreasBtn = () => cy.get(`#showPropertyAreasBtn-${rowNum}`).should('be.visible').should('be.enabled');
-    this.editPropertyBtn = () => cy.get(`#editPropertyBtn-${rowNum}`).should('be.visible').should('be.enabled');
-    this.deleteBtn = () =>  cy.get(`#deletePropertyBtn-${rowNum}`).should('be.visible').should('be.enabled');
+        const $actionCell = $r.find('[id^="action-items"]');
 
+        if ($actionCell.length > 0) {
+          cy.wrap($actionCell)
+            .find('#actionMenu', { timeout: 500 })
+            .filter(':visible')
+            .should('be.visible')
+            .click({ force: true });
+        } else {
+          cy.log(`Row ${rowNum} has no [id^="action-items"], skipping click.`);
+          return;
+        }
+      });
+
+    this.viewAreasBtn = () =>  cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () =>  cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () =>  cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
 
@@ -293,11 +314,36 @@ export class PropertyRowObject {
       .parent() // met-mdc-cell
       .parent(); // mat-mdc-row
     this.row = row();
-    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+
+
+    row()
+      .should('exist')
+      .then($r => {
+        if ($r.length === 0) {
+          cy.log(`No row found for property name: ${propertyName}`);
+          return;
+        }
+
+        const $actionCell = $r.find('[id^="action-items"]');
+
+        if ($actionCell.length > 0) {
+          cy.wrap($actionCell)
+            .find('#actionMenu', { timeout: 500 })
+            .filter(':visible')
+            .should('be.visible')
+            .click({ force: true });
+        } else {
+          cy.log(`No action-items found in row for: ${propertyName}, skipping menu click.`);
+          return;
+        }
+      });
+
+    this.viewAreasBtn = () => cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () => cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () => cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
+
 
   goToAreas() {
     this.viewAreasBtn().click();
