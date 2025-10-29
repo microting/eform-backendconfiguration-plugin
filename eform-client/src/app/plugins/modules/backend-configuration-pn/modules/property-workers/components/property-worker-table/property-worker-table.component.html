@@ -126,7 +126,7 @@
     <mat-menu #menu="matMenu">
       <button
         mat-menu-item
-        id="editAssignmentsBtn-{{i}}"
+        id="editAssignmentsBtn-{{i + 1}}"
         [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
       >
         <mat-icon>visibility</mat-icon>
@@ -135,7 +135,7 @@
       <button
         mat-menu-item
         *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
-        id="editDeviceUserBtn-{{i}}"
+        id="editDeviceUserBtn-{{i + 1}}"
         (click)="openEditModal(row)"
       >
         <mat-icon>edit</mat-icon>
@@ -145,7 +145,7 @@
         mat-menu-item
         color="warn"
         *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked"
-        id="deleteDeviceUserBtn-{{i}}"
+        id="deleteDeviceUserBtn-{{i + 1}}"
         (click)="openDeleteDeviceUserModal(row)"
       >
         <mat-icon color="warn">delete</mat-icon>

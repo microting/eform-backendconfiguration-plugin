@@ -71,7 +71,7 @@
     <mat-menu #menu="matMenu">
       <button
         mat-menu-item
-        id="showPropertyAreasBtn-{{i}}"
+        id="showPropertyAreasBtn-{{i + 1}}"
         [routerLink]="'../property-areas/' + row.id"
         [disabled]="!row.isWorkersAssigned"
       >
@@ -90,7 +90,7 @@
       <button
         *ngIf="row.workorderEnable"
         mat-menu-item
-        id="updateEntityList-{{i}}"
+        id="updateEntityList-{{i + 1}}"
         (click)="onShowEditEntityListModal(row)"
       >
         <mat-icon>list</mat-icon>
@@ -98,7 +98,7 @@
       </button>
       <button
         mat-menu-item
-        id="editPropertyBtn-{{i}}"
+        id="editPropertyBtn-{{i + 1}}"
         (click)="onShowEditPropertyModal(row)"
         [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
       >
@@ -108,7 +108,7 @@
       <button
         mat-menu-item
         color="warn"
-        id="deletePropertyBtn-{{i}}"
+        id="deletePropertyBtn-{{i+1}}"
         (click)="onShowDeletePropertyModal(row)"
         [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
       >

@@ -192,14 +192,22 @@ export class WorkerRowObject {
   editDeviceUserBtn: Cypress.Chainable<JQuery<HTMLElement>>;
   deleteBtn: Cypress.Chainable<JQuery<HTMLElement>>;
 
+  private openMenu(rowNum: number) {
+    cy.get(`#device-user-actions-${rowNum}`).find('#actionMenu').should('be.visible').click({ force: true });
+  }
+
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
-    this.row = row();
-    this.editAssignmentsBtn = row().find('[id^=editAssignmentsBtn]').should('be.visible').should('be.enabled');
-    this.editDeviceUserBtn = row().find('[id^=editDeviceUserBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = row().find('[id^=deleteDeviceUserBtn]').should('be.visible').should('be.enabled');
+    this.openMenu(rowNum-1);
+
+    cy.get('.mat-mdc-menu-panel', { timeout: 5000 }).should('be.visible');
+
+    this.editAssignmentsBtn = cy.get(`#editAssignmentsBtn-${rowNum}`).should('be.visible').should('be.enabled');
+    this.editDeviceUserBtn = cy.get(`#editDeviceUserBtn-${rowNum}`).should('be.visible').should('be.enabled');
+    this.deleteBtn = cy.get(`#deleteDeviceUserBtn-${rowNum}`).should('be.visible').should('be.enabled');
+
     return this;
   }
+
 
   // find first row with text
   getRowByName(deviceUserName: string) {
