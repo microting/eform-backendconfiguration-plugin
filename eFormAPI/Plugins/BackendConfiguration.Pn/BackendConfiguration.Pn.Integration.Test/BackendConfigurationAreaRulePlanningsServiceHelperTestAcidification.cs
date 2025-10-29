@@ -338,7 +338,7 @@
 //         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
 //         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
 //         Assert.That(cases[0].FolderId, Is.Null);
-//         Assert.That(cases[0].Status, Is.EqualTo(66));
+//         Assert.That(cases[0].Status, Is.EqualTo(33));
 //         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 //     }
 // }

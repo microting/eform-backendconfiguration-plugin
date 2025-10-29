@@ -25,53 +25,53 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   labels: string[] = ['Exceeded', 'Today', '1-7 days', '8-30 days', 'Over 30 days'];
   labelsTranslated: string[] = [];
   colorSchemeLight = {
-    domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa', '#3b3bff']
+    domain: ['#dc3545', '#a3d7b1', '#a3d7b1', '#a3d7b1', '#a3d7b1']
   };
   customColorsLight = [
     {
       name: this.labels[0],
-      value: '#ff0000',
+      value: '#dc3545',
     },
     {
       name: this.labels[1],
-      value: '#ffbb33',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[2],
-      value: '#0000ff',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[3],
-      value: '#1414fa',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[4],
-      value: '#3b3bff',
+      value: '#a3d7b1',
     },
   ];
   colorSchemeDark = {
-    domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa', '#3b3bff']
+    domain: ['#dc3545', '#a3d7b1', '#a3d7b1', '#a3d7b1', '#a3d7b1']
   };
   customColorsDark = [
     {
       name: this.labels[0],
-      value: '#ff0000',
+      value: '#dc3545',
     },
     {
       name: this.labels[1],
-      value: '#ffbb33',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[2],
-      value: '#0000ff',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[3],
-      value: '#1414fa',
+      value: '#a3d7b1',
     },
     {
       name: this.labels[4],
-      value: '#3b3bff',
+      value: '#a3d7b1',
     },
   ];
   isDarkTheme = true;
