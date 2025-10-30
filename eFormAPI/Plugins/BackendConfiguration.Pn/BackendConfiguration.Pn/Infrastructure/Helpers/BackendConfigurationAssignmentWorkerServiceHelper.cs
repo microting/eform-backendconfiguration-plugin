@@ -302,6 +302,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         if (user != null)
                         {
                             user.Email = deviceUserModel.WorkerEmail;
+                            user.UserName = deviceUserModel.WorkerEmail;
                             user.FirstName = deviceUserModel.UserFirstName;
                             user.LastName = deviceUserModel.UserLastName;
                             user.Locale = language.LanguageCode;
