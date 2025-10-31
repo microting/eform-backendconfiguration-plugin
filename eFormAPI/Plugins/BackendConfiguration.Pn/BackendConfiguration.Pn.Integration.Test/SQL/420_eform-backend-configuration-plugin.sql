@@ -847,6 +847,7 @@ CREATE TABLE `ComplianceVersions` (
   `MicrotingSdkeFormId` int(11) NOT NULL DEFAULT 0,
   `CheckListSiteId` int(11) NOT NULL DEFAULT 0,
   `PlanningCaseSiteId` int(11) NOT NULL DEFAULT 0,
+  `MovedToExpiredFolder` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -886,6 +887,7 @@ CREATE TABLE `Compliances` (
   `MicrotingSdkeFormId` int(11) NOT NULL DEFAULT 0,
   `CheckListSiteId` int(11) NOT NULL DEFAULT 0,
   `PlanningCaseSiteId` int(11) NOT NULL DEFAULT 0,
+  `MovedToExpiredFolder` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`),
   UNIQUE KEY `IX_PlanningId_Deadline` (`PlanningId`,`Deadline`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
