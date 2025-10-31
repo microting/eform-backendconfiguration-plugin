@@ -49,7 +49,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   propertyHeaderEnabled: boolean = false;
   currentDate: Date = this.setDate(new Date());
   // changedate is "2025-10-30 00:00:00"
-  parsedDate = Date.parse('2025-10-30 00:00:00');
+  parsedDate = Date.parse('2025-11-15 00:00:00');
   changeDate: Date = new Date(this.parsedDate);
 
   tableHeaders: MtxGridColumn[] = [
