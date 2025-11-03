@@ -302,6 +302,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         if (user != null)
                         {
                             user.Email = deviceUserModel.WorkerEmail;
+                            user.UserName = deviceUserModel.WorkerEmail;
                             user.FirstName = deviceUserModel.UserFirstName;
                             user.LastName = deviceUserModel.UserLastName;
                             user.Locale = language.LanguageCode;
@@ -482,7 +483,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
 
             var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName, deviceUserModel.UserLastName,
-                null, deviceUserModel.LanguageCode).ConfigureAwait(false);
+                deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
             site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 

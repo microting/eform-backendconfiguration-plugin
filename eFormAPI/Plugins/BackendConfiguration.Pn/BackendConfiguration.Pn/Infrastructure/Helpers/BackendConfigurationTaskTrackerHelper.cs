@@ -75,10 +75,10 @@ public static class BackendConfigurationTaskTrackerHelper
 				.ToListAsync();
 
 
-			var newDate = DateTime.Now;
+			// var newDate = DateTime.Now;
 			// var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
 			// var endDate = currentDate.AddDays(28);
-			var weeks = new List<TaskTrackerWeeksListModel>();
+			// var weeks = new List<TaskTrackerWeeksListModel>();
 			// var localCurrentDate = currentDate;
 			// while (localCurrentDate < endDate) // get week numbers
 			// {
@@ -142,6 +142,25 @@ public static class BackendConfigurationTaskTrackerHelper
 				{
 					continue;
 				}
+				var deadlineDate = compliance.Deadline.AddDays(-1);
+
+				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
+					.Include(x => x.AreaRulePlanningTags)
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(x => x.ItemPlanningId == compliance.PlanningId);
+
+				var areaRulePlanning = await areaRulePlanningQuery
+					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id, x.ComplianceEnabled })
+					.FirstOrDefaultAsync();
+
+				if (areaRulePlanning == null) continue;
+
+				if (deadlineDate < dateTimeNow && !areaRulePlanning.ComplianceEnabled)
+				{
+					var comp = await backendConfigurationPnDbContext.Compliances.FirstAsync(x => x.Id == compliance.Id);
+					await comp.Delete(backendConfigurationPnDbContext);
+					continue;
+				}
 
 				var planningSiteIds = await itemsPlanningPnDbContext.PlanningSites
 					.Where(x => x.PlanningId == compliance.PlanningId)
@@ -183,24 +202,12 @@ public static class BackendConfigurationTaskTrackerHelper
 					.ToList();
 
 				var workerIds = sitesWithNames.Select(x => x.Key).ToList();
-
-				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
-					.Include(x => x.AreaRulePlanningTags)
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Where(x => x.ItemPlanningId == compliance.PlanningId);
-
-				var areaRulePlanning = await areaRulePlanningQuery
-					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id })
-					.FirstOrDefaultAsync();
-
-				if (areaRulePlanning == null) continue;
 				var areaRuleCreatedInWizard = await backendConfigurationPnDbContext.AreaRules
 					.Where(x => x.Id == areaRulePlanning.AreaRuleId)
 					.Select(x => x.CreatedInGuide)
 					.FirstOrDefaultAsync();
 
 				var startDate = areaRulePlanning.StartDate ?? planning.StartDate;
-				var deadlineDate = compliance.Deadline.AddDays(-1);
 
 				// var listWithDateTasks = planning.RepeatType switch
 				// {
