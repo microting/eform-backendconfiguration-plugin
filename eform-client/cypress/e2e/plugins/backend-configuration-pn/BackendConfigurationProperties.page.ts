@@ -16,6 +16,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     this.backendConfigurationPnPropertiesButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
+
       }
     });
     this.backendConfigurationPnPropertiesButton().click();
@@ -286,12 +287,13 @@ export class PropertyRowObject {
           return;
         }
 
-        const $actionCell = $r.find('[id^="action-items"]');
+        const $actionCell = $r.find('[id^="action-items"]').filter(':visible').first();
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
             .find('#actionMenu', { timeout: 500 })
             .filter(':visible')
+            .first()
             .should('be.visible')
             .click({ force: true });
         } else {
