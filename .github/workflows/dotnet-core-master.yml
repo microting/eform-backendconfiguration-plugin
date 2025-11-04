@@ -63,7 +63,7 @@ jobs:
         path: work-items-planning-container.tar        
   backend-pn-test:
     needs: backend-pn-build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
