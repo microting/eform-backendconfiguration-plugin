@@ -70,7 +70,8 @@ public static class BackendConfigurationTaskTrackerHelper
 				.Select(x => new
 				{
 					x.PropertyId, x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.MicrotingSdkeFormId, x.Id, x.AreaId,
-					x.PlanningCaseSiteId
+					x.PlanningCaseSiteId,
+					x.MovedToExpiredFolder
 				})
 				.ToListAsync();
 
@@ -289,6 +290,7 @@ public static class BackendConfigurationTaskTrackerHelper
 						SdkFolderName =
 							folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId) == null ? "" : folderTranslations.First(x => x.FolderId == planning.SdkFolderId).Name,
 						CreatedInWizard = areaRuleCreatedInWizard,
+						MovedToExpiredFolder = compliance.MovedToExpiredFolder
 					};
 
 					if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)

@@ -47,7 +47,7 @@ public class TaskTrackerModel
 	/// <summary>
 	/// Gets or sets the tags of the task tracker model.
 	/// </summary>
-	public List<CommonTagModel> Tags { get; set; } 
+	public List<CommonTagModel> Tags { get; set; }
 		= [];
 
 	/// <summary>
@@ -130,4 +130,6 @@ public class TaskTrackerModel
     public string SdkFolderName { get; set; }
 
     public bool CreatedInWizard { get; set; }
+
+    public bool MovedToExpiredFolder { get; set; }
 }
