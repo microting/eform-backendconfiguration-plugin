@@ -50,7 +50,7 @@
 <ng-template #propertyNamesTpl let-row>
   <div class="d-flex flex-wrap">
     <mat-chip color="primary" *ngFor="let name of row.propertyNames">
-      <span>{{name}}</span>
+      <span>{{ name }}</span>
     </mat-chip>
   </div>
 </ng-template>
@@ -62,11 +62,13 @@
 <ng-template #deviceUserIdTpl let-row let-i="index">
   <div class="deviceUserId" id="deviceUserId-{{i}}">
     <ng-container *ngIf="selectAuthIsAdmin$ | async;">
-      <span>{{row.siteId}}<small class="microting-uid"> ({{getFormattedDate(row.createdAt)}} / {{getFormattedDate(row.updatedAt)}})</small></span>
+      <span>{{ row.siteId }}<small class="microting-uid"> ({{ getFormattedDate(row.createdAt) }}
+        / {{ getFormattedDate(row.updatedAt) }})</small></span>
     </ng-container>
     <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
-      {{row.siteId}}
-    </ng-container></div>
+      {{ row.siteId }}
+    </ng-container>
+  </div>
 </ng-template>
 
 <!--<ng-template #propertyNamesTpl let-row>-->
@@ -80,19 +82,19 @@
 <!--</ng-template>-->
 
 <ng-template #fullNameTpl let-row let-i="index">
-  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{row.siteName}}</div>
+  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{ row.siteName }}</div>
 </ng-template>
 
 <ng-template #workerEmailTpl let-row let-i="index">
-  <div class="workerEmail" id="workerEmail-{{i}}">{{row.workerEmail}}</div>
+  <div class="workerEmail" id="workerEmail-{{i}}">{{ row.workerEmail }}</div>
 </ng-template>
 
 <ng-template #phoneNumberTpl let-row let-i="index">
-  <div class="phoneNumber" id="phoneNumber-{{i}}">{{row.phoneNumber}}</div>
+  <div class="phoneNumber" id="phoneNumber-{{i}}">{{ row.phoneNumber }}</div>
 </ng-template>
 
 <ng-template #languageTpl let-row let-i="index">
-  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{row.language | translate}}</div>
+  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{ row.language | translate }}</div>
 </ng-template>
 
 <ng-template #customerOtpTpl let-row>
@@ -117,6 +119,8 @@
 <!--<ng-template #propertyTpl let-row>-->
 <!--  <div [innerHTML]="this.getWorkerPropertyNames(row.siteId)"></div>-->
 <!--</ng-template>-->
+
+
 <ng-template #actionsTpl let-row let-i="index">
   <div class="device-user-actions" id="action-items-{{i}}">
     <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
@@ -155,7 +159,6 @@
   </div>
 </ng-template>
 
-
 <ng-template #manufacturerTpl let-row>
   <ng-container *ngIf="row.osVersion !== null">
     <ng-container *ngIf="row['manufacturer'] === 'iOS' ">
@@ -163,7 +166,7 @@
                 <span [matTooltip]="row['deviceModel']" class="neutral-icon">
                   <mat-icon>phone_iphone</mat-icon>
                 </span>
-        {{row.model}} ({{row.osVersion}})
+        {{ row.model }} ({{ row.osVersion }})
       </div>
     </ng-container>
     <ng-container *ngIf="row['manufacturer'] === 'Android' ">
@@ -171,7 +174,7 @@
                 <span [matTooltip]="row['deviceModel']" class="neutral-icon">
                   <mat-icon>android</mat-icon>
                 </span>
-        {{row.model}} ({{row.osVersion}})
+        {{ row.model }} ({{ row.osVersion }})
       </div>
     </ng-container>
   </ng-container>
@@ -184,7 +187,8 @@
       'status-inactive': TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] !== 'Active'
     }"
   >
-    <span title="{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}</span>
+    <span
+      title="{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate }}</span>
   </mat-chip>
 </ng-template>
 
@@ -195,6 +199,7 @@
       'status-inactive': TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] !== 'Active'
     }"
   >
-    <span title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}</span>
+    <span
+      title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate }}</span>
   </mat-chip>
 </ng-template>

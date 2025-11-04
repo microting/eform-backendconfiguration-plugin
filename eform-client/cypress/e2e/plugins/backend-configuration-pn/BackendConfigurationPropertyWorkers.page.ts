@@ -193,7 +193,7 @@ export class WorkerRowObject {
   deleteBtn: Cypress.Chainable<JQuery<HTMLElement>>;
 
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').should('exist').eq(rowNum - 1);
     this.row = row();
     row()
       .should('exist')
@@ -203,12 +203,13 @@ export class WorkerRowObject {
           return;
         }
 
-        const $actionCell = $r.find('[id^="action-items"]');
+        const $actionCell = $r.find('[id^="action-items"]').first();
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
             .find('#actionMenu', { timeout: 500 })
             .filter(':visible')
+            .first()
             .should('be.visible')
             .click({ force: true });
         } else {

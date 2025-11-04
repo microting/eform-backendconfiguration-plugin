@@ -194,7 +194,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     } else {
       cy.intercept('POST', '/api/backend-configuration-pn/properties/index').as('createProperty');
       this.propertyCreateSaveBtn().click();
-      cy.wait('@createProperty', {timeout: 60000});
+      cy.wait('@createProperty', { timeout: 60000 });
     }
     cy.wait(500);
     this.propertyCreateBtn().should('be.visible').should('be.enabled');
@@ -241,7 +241,6 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
       }
     });
   }
-
   goToPlanningPage() {
     cy.intercept('POST', '**/api/items-planning-pn/plannings/index').as('getPlannings');
     this.planningsButton().then(($ele) => {
@@ -253,7 +252,6 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     cy.wait('@getPlannings');
     this.planningCreateBtn().should('be.visible').should('be.enabled');
   }
-
   public planningsButton() {
     return cy.get('#items-planning-pn-plannings');
   }
@@ -277,42 +275,8 @@ export class PropertyRowObject {
   deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
 
-  // getRow(rowNum: number) {
-  //   const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
-  //   this.row = row();
-  //
-  //   row()
-  //     .should('exist')
-  //     .then($r => {
-  //       if ($r.length === 0) {
-  //         cy.log(`No row found at index ${rowNum} — skipping action menu click.`);
-  //         return;
-  //       }
-  //
-  //       const $actionCell = $r.find('[id^="action-items"]').filter(':visible').first();
-  //
-  //       if ($actionCell.length > 0) {
-  //         cy.wrap($actionCell)
-  //           .find('#actionMenu', { timeout: 500 })
-  //           .filter(':visible')
-  //           .first()
-  //           .should('be.visible')
-  //           .click({ force: true });
-  //       } else {
-  //         cy.log(`Row ${rowNum} has no [id^="action-items"], skipping click.`);
-  //         return;
-  //       }
-  //     });
-  //
-  //   this.viewAreasBtn = () =>  cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-  //   this.editPropertyBtn = () =>  cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-  //   this.deleteBtn = () =>  cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
-  //   return this;
-  // }
-
-
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').should('exist').eq(rowNum - 1);
     this.row = row();
 
     row()
@@ -327,25 +291,20 @@ export class PropertyRowObject {
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
-            .find('#actionMenu', {timeout: 1000})
+            .find('#actionMenu', { timeout: 500 })
             .filter(':visible')
             .first()
-            .should('exist')
             .should('be.visible')
-            .click({force: true});
+            .click({ force: true });
         } else {
           cy.log(`Row ${rowNum} has no [id^="action-items"], skipping click.`);
           return;
         }
       });
 
-    this.viewAreasBtn = () =>
-      this.row.within(() => cy.get('[id^=showPropertyAreasBtn]').first().should('be.visible').should('be.enabled'));
-    this.editPropertyBtn = () =>
-      this.row.within(() => cy.get('[id^=editPropertyBtn]').first().should('be.visible').should('be.enabled'));
-    this.deleteBtn = () =>
-      this.row.within(() => cy.get('[id^=deletePropertyBtn]').first().should('be.visible').should('be.enabled'));
-
+    this.viewAreasBtn = () =>  cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () =>  cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () =>  cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
 
@@ -371,10 +330,10 @@ export class PropertyRowObject {
 
         if ($actionCell.length > 0) {
           cy.wrap($actionCell)
-            .find('#actionMenu', {timeout: 500})
+            .find('#actionMenu', { timeout: 500 })
             .filter(':visible')
             .should('be.visible')
-            .click({force: true});
+            .click({ force: true });
         } else {
           cy.log(`No action-items found in row for: ${propertyName}, skipping menu click.`);
           return;

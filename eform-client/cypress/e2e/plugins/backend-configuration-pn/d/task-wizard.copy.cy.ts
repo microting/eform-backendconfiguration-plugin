@@ -138,7 +138,20 @@ describe('Area rules type 1', () => {
       .invoke('text').should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
 
     // Copy task
-    cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    // cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    cy.get('.task-actions')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=copyTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
+
     cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
     cy.get('#createTaskBtn').click();
     cy.wait('@createTask', { timeout: 60000 });
@@ -178,7 +191,19 @@ describe('Area rules type 1', () => {
 
     // Copy and set new eform
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
-    cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    // cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    cy.get('.task-actions')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=copyTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
     cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
     selectValueInNgSelector('#createTemplateSelector', editedTask.eformName, true);
     cy.get('#createTaskBtn').click();
