@@ -326,6 +326,7 @@ export class PropertyRowObject {
   }
 
   public async delete(clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
   }
@@ -353,6 +354,7 @@ export class PropertyRowObject {
   }
 
   public async edit(property: PropertyCreateUpdate, clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openEditModal(property);
     await this.closeEditModal(clickCancel);
   }
@@ -505,6 +507,12 @@ export class PropertyRowObject {
     await (
       await backendConfigurationPropertiesPage.propertyCreateBtn()
     ).waitForClickable({ timeout: 40000 });
+  }
+
+  private async clickActionsMenu() {
+    await browser.pause(500);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(500);
   }
 }
 
