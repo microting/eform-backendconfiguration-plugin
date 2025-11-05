@@ -611,7 +611,7 @@ public class BackendConfigurationPropertiesService(
                 .Where(x => x.Id == propertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.FolderId.HasValue)
-                .Select(x => x.FolderId.Value)
+                .Select(x => x.FolderId!.Value)
                 .ToListAsync();
 
             folderIds.AddRange(await backendConfigurationPnDbContext.ProperyAreaFolders
@@ -655,7 +655,7 @@ public class BackendConfigurationPropertiesService(
                 .Where(x => propertyIds.Contains(x.Id))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.FolderId.HasValue)
-                .Select(x => x.FolderId.Value)
+                .Select(x => x.FolderId!.Value)
                 .ToListAsync();
 
             folderIds.AddRange(await backendConfigurationPnDbContext.ProperyAreaFolders
@@ -747,6 +747,12 @@ public class BackendConfigurationPropertiesService(
             var query = backendConfigurationPnDbContext.PropertyWorkers
                 //.Where(x => propertyIds.Contains(x.PropertyId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            // if propertyIds is null or empty return an empty list
+            if (propertyIds == null || !propertyIds.Any())
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, new List<CommonDictionaryModel>());
+            }
 
             if (propertyIds.Any())
             {

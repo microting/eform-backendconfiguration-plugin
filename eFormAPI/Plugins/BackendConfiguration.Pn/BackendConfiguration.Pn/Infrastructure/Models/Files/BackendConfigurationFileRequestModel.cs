@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#nullable enable
 namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
