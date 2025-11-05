@@ -396,7 +396,7 @@ public static class PairItemWithSiteHelper
 
     private static async Task<Folder> GetTopFolder(int folderId, MicrotingDbContext dbContext)
     {
-        var result = await dbContext.Folders.FirstOrDefaultAsync(y => y.Id == folderId).ConfigureAwait(false);
+        var result = await dbContext.Folders.FirstAsync(y => y.Id == folderId).ConfigureAwait(false);
         if (result.ParentId != null)
         {
             result = await GetTopFolder((int)result.ParentId, dbContext).ConfigureAwait(false);
