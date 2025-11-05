@@ -23,6 +23,7 @@ export interface TaskModel {
   weeks: WeekListModel[];
   sdkFolderName: string;
   createdInWizard: boolean;
+  movedToExpiredFolder: boolean
 }
 
 export interface WeekListModel {
