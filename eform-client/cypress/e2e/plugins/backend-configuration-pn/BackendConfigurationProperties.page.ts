@@ -16,6 +16,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     this.backendConfigurationPnPropertiesButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
+
       }
     });
     this.backendConfigurationPnPropertiesButton().click();
@@ -227,6 +228,10 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     cy.get('app-properties-table .mat-mdc-row').then(rows => {
       const rowNum = rows.length;
       cy.log(rowNum.toString());
+      if (rowNum === 0) {
+        cy.log('No properties to delete.');
+        return;
+      }
 
       for (let i = rowNum; i > 0; i--) {
         cy.intercept('POST', '**/api/backend-configuration-pn/properties/index').as('getProperties');
@@ -269,14 +274,40 @@ export class PropertyRowObject {
   editPropertyBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
   deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
+
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').should('exist').eq(rowNum - 1);
     this.row = row();
-    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+
+    row()
+      .should('exist')
+      .then($r => {
+        if ($r.length === 0) {
+          cy.log(`No row found at index ${rowNum} — skipping action menu click.`);
+          return;
+        }
+
+        const $actionCell = $r.find('[id^="action-items"]').filter(':visible').first();
+
+        if ($actionCell.length > 0) {
+          cy.wrap($actionCell)
+            .find('#actionMenu', { timeout: 500 })
+            .filter(':visible')
+            .first()
+            .should('be.visible')
+            .click({ force: true });
+        } else {
+          cy.log(`Row ${rowNum} has no [id^="action-items"], skipping click.`);
+          return;
+        }
+      });
+
+    this.viewAreasBtn = () =>  cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () =>  cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () =>  cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
+
 
   // find first row with text
   getRowByPropertyName(propertyName: string) {
@@ -285,11 +316,36 @@ export class PropertyRowObject {
       .parent() // met-mdc-cell
       .parent(); // mat-mdc-row
     this.row = row();
-    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+
+
+    row()
+      .should('exist')
+      .then($r => {
+        if ($r.length === 0) {
+          cy.log(`No row found for property name: ${propertyName}`);
+          return;
+        }
+
+        const $actionCell = $r.find('[id^="action-items"]');
+
+        if ($actionCell.length > 0) {
+          cy.wrap($actionCell)
+            .find('#actionMenu', { timeout: 500 })
+            .filter(':visible')
+            .should('be.visible')
+            .click({ force: true });
+        } else {
+          cy.log(`No action-items found in row for: ${propertyName}, skipping menu click.`);
+          return;
+        }
+      });
+
+    this.viewAreasBtn = () => cy.get('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () => cy.get('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () => cy.get('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
+
 
   goToAreas() {
     this.viewAreasBtn().click();

@@ -3,7 +3,8 @@
   [columns]="tableHeaders"
   [cellTemplate]="{
     status: statusTpl,
-    documentProperties: documentPropertiesTpl
+    documentProperties: documentPropertiesTpl,
+    actions: actionsTpl
   }"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -55,5 +56,35 @@
     <mat-chip color="primary" *ngFor="let documentProperty of row.documentProperties">
       <span>{{documentProperty.propertyName}}</span>
     </mat-chip>
+  </div>
+</ng-template>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="document-actions" id="action-items-{{i}}">
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        *ngIf="row.isLocked === false"
+        mat-menu-item
+        id="editDocumentBtn-{{i}}"
+        (click)="onShowEditDocumentModal(row)"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit document' | translate }}</span>
+      </button>
+
+      <button
+        *ngIf="row.isLocked === false"
+        mat-menu-item
+        id="deleteDocumentBtn-{{i}}"
+        (click)="onOpenDeleteModal(row)"
+      >
+        <mat-icon color="warn">delete</mat-icon>
+        <span>{{ 'Delete document' | translate }}</span>
+      </button>
+    </mat-menu>
   </div>
 </ng-template>

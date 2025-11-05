@@ -158,7 +158,19 @@ describe('Area rules type 1', () => {
     cy.wait('@createFolder', { timeout: 60000 });
     cy.wait(1000);
     cy.get('#backend-configuration-pn-task-wizard').scrollIntoView().click();
-    cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
+    // cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
+    cy.get('[id^=action-items]')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=editTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
     // // change task
     cy.get('#updateTaskStatusToggle').click();
     cy.get('#updateTaskBtn').click();
@@ -181,7 +193,19 @@ describe('Area rules type 1', () => {
       .invoke('text')
       .should('eq', `${workerForCreate.name} ${workerForCreate.surname}`);
 
-    cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
+    // cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
+    cy.get('[id^=action-items]')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=editTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     // cy.get('#updateProperty').click();
     // //selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);

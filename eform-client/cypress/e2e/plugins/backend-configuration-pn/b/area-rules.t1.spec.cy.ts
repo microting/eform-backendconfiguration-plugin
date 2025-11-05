@@ -35,6 +35,7 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
     const propertyInTable = backendConfigurationPropertiesPage.getRowObjectByName(property.name);
+    cy.wait(1000);
     propertyInTable.goToAreas();
     propertyInTable.bindAreasByName([nameArea]);
     cy.wait(500);

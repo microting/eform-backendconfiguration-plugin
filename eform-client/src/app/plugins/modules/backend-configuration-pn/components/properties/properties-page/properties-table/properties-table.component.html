@@ -30,23 +30,23 @@
   (sortChange)="sortTable($event)">
 </mtx-grid>
 <ng-template #idTpl let-row let-i="index">
-  <div class="propertyId" id="propertyId-{{i}}">{{row.id}}</div>
+  <div class="propertyId" id="propertyId-{{i}}">{{ row.id }}</div>
 </ng-template>
 
 <ng-template #propertyNameTpl let-row let-i="index">
-  <div class="propertyName" id="propertyName-{{i}}">{{row.name}}</div>
+  <div class="propertyName" id="propertyName-{{i}}">{{ row.name }}</div>
 </ng-template>
 
 <ng-template #cvrTpl let-row let-i="index">
-  <div class="propertyCVR" id="propertyCVR-{{i}}">{{row.cvr}}</div>
+  <div class="propertyCVR" id="propertyCVR-{{i}}">{{ row.cvr }}</div>
 </ng-template>
 
 <ng-template #chrTpl let-row let-i="index">
-  <div class="propertyCHR" id="propertyCHR-{{i}}">{{row.chr}}</div>
+  <div class="propertyCHR" id="propertyCHR-{{i}}">{{ row.chr }}</div>
 </ng-template>
 
 <ng-template #addressTpl let-row let-i="index">
-  <div class="propertyAddress" id="propertyAddress-{{i}}">{{row.address}}</div>
+  <div class="propertyAddress" id="propertyAddress-{{i}}">{{ row.address }}</div>
 </ng-template>
 
 
@@ -63,51 +63,58 @@
   </button>
 </ng-template>
 
-<ng-template #actionsTpl let-row let-i=index>
-  <button
-    mat-icon-button
-    id="showPropertyAreasBtn-{{i}}"
-    matTooltip="{{ 'View areas' | translate }}"
-    [routerLink]="'../property-areas/' + row.id"
-    [disabled]="!row.isWorkersAssigned"
-  >
-    <mat-icon>home_repair_service</mat-icon>
-  </button>
-<!--  <button-->
-<!--    *ngIf="authStateService.isAdmin"-->
-<!--    mat-icon-button-->
-<!--    id="docxReportBtn-{{i}}"-->
-<!--    matTooltip="{{ 'Select report' | translate }}"-->
-<!--    (click)="onShowDocxReportModal(row.id)"-->
-<!--  >-->
-<!--    <mat-icon [svgIcon]="'file-word'"></mat-icon>-->
-<!--  </button>-->
-  <button
-    *ngIf="row.workorderEnable"
-    mat-icon-button
-    id="updateEntityList-{{i}}"
-    (click)="onShowEditEntityListModal(row)"
-    matTooltip="{{ 'Edit list of areas for task management' | translate }}"
-  >
-    <mat-icon>list</mat-icon>
-  </button>
-  <button
-    mat-icon-button
-    id="editPropertyBtn-{{i}}"
-    matTooltip="{{ 'Edit property' | translate }}"
-    (click)="onShowEditPropertyModal(row)"
-    [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
-  >
-    <mat-icon>edit</mat-icon>
-  </button>
-  <button
-    mat-icon-button
-    color="warn"
-    id="deletePropertyBtn-{{i}}"
-    matTooltip="{{ 'Delete property' | translate }}"
-    (click)="onShowDeletePropertyModal(row)"
-    [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
-  >
-    <mat-icon>delete</mat-icon>
-  </button>
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="property-actions" id="action-items-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        id="showPropertyAreasBtn-{{i}}"
+        [routerLink]="'../property-areas/' + row.id"
+        [disabled]="!row.isWorkersAssigned"
+      >
+        <mat-icon>home_repair_service</mat-icon>
+        <span>{{ 'View areas' | translate }}</span>
+      </button>
+      <!--  <button-->
+      <!--    *ngIf="authStateService.isAdmin"-->
+      <!--    mat-icon-button-->
+      <!--    id="docxReportBtn-{{i}}"-->
+      <!--    matTooltip="{{ 'Select report' | translate }}"-->
+      <!--    (click)="onShowDocxReportModal(row.id)"-->
+      <!--  >-->
+      <!--    <mat-icon [svgIcon]="'file-word'"></mat-icon>-->
+      <!--  </button>-->
+      <button
+        *ngIf="row.workorderEnable"
+        mat-menu-item
+        id="updateEntityList-{{i}}"
+        (click)="onShowEditEntityListModal(row)"
+      >
+        <mat-icon>list</mat-icon>
+        <span>{{ 'Edit list of areas for task management' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        id="editPropertyBtn-{{i}}"
+        (click)="onShowEditPropertyModal(row)"
+        [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit property' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        color="warn"
+        id="deletePropertyBtn-{{i}}"
+        (click)="onShowDeletePropertyModal(row)"
+        [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
+      >
+        <mat-icon color="warn">delete</mat-icon>
+        <span>{{ 'Delete property' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
 </ng-template>

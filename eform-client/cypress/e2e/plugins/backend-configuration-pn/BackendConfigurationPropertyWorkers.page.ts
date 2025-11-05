@@ -193,11 +193,34 @@ export class WorkerRowObject {
   deleteBtn: Cypress.Chainable<JQuery<HTMLElement>>;
 
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').should('exist').eq(rowNum - 1);
     this.row = row();
-    this.editAssignmentsBtn = row().find('[id^=editAssignmentsBtn]').should('be.visible').should('be.enabled');
-    this.editDeviceUserBtn = row().find('[id^=editDeviceUserBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = row().find('[id^=deleteDeviceUserBtn]').should('be.visible').should('be.enabled');
+    row()
+      .should('exist')
+      .then($r => {
+        if ($r.length === 0) {
+          cy.log(`No row found at index ${rowNum} — skipping action menu click.`);
+          return;
+        }
+
+        const $actionCell = $r.find('[id^="action-items"]').first();
+
+        if ($actionCell.length > 0) {
+          cy.wrap($actionCell)
+            .find('#actionMenu', { timeout: 500 })
+            .filter(':visible')
+            .first()
+            .should('be.visible')
+            .click({ force: true });
+        } else {
+          cy.log(`Row ${rowNum} has no [id^="action-items"], skipping click.`);
+          return;
+        }
+      });
+
+    this.editAssignmentsBtn = cy.get('[id^=editAssignmentsBtn]').should('be.visible').should('be.enabled');
+    this.editDeviceUserBtn = cy.get('[id^=editDeviceUserBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = cy.get('[id^=deleteDeviceUserBtn]').should('be.visible').should('be.enabled');
     return this;
   }
 

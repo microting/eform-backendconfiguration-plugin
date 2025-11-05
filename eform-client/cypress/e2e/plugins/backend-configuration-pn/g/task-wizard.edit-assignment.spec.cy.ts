@@ -154,7 +154,19 @@ describe('Area rules type 1', () => {
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.intercept('POST', '**/api/templates/index').as('getTemplates');
-    cy.get('.editBtn').click();
+    // cy.get('.editBtn').click();
+    cy.get('[id^=action-items]')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=editTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait('@getTemplates', { timeout: 60000 });
     //cy.get('.editBtn > .mat-mdc-button-touch-target').click();
@@ -174,7 +186,19 @@ describe('Area rules type 1', () => {
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.intercept('POST', '**/api/templates/index').as('getTemplates');
-    cy.get('.editBtn').click();
+    // cy.get('.editBtn').click();
+    cy.get('[id^=action-items]')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Now click the Copy Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=editTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait('@getTemplates', { timeout: 60000 });
     //cy.get('.editBtn > .mat-mdc-button-touch-target').click();

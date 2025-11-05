@@ -82,43 +82,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
       sortProp: {id: 'AssignedTo'},
       formatter: (model: TaskWizardModel) => model.assignedTo.join('<br/>')
     },
-    {
-      field: 'actions',
-      header: this.translateService.stream('Actions'),
-      type: 'button',
-      width: '180px',
-      pinned: 'right',
-      right: '0px',
-      buttons: [
-        {
-          iif: (model: TaskWizardModel) => model.createdInGuide,
-          color: 'accent',
-          type: 'icon',
-          icon: 'edit',
-          tooltip: this.translateService.stream('Edit task'),
-          click: (model: TaskWizardModel) => this.editTask.emit(model),
-          class: 'editBtn',
-        },
-        {
-          iif: (model: TaskWizardModel) => model.createdInGuide,
-          color: 'accent',
-          type: 'icon',
-          icon: 'content_copy',
-          tooltip: this.translateService.stream('Copy task'),
-          click: (model: TaskWizardModel) => this.copyTask.emit(model),
-          class: 'copyBtn',
-        },
-        {
-          iif: (model: TaskWizardModel) => model.createdInGuide,
-          color: 'warn',
-          type: 'icon',
-          icon: 'delete',
-          tooltip: this.translateService.stream('Delete task'),
-          click: (model: TaskWizardModel) => this.deleteTask.emit(model),
-          class: 'deleteBtn',
-        },
-      ],
-    },
+    { field: 'actions', header: this.translateService.stream('Actions'), pinned: 'right' }
   ];
   public selectTaskWizardPaginationSort$ = this.store.select(selectTaskWizardPaginationSort);
   public selectTaskWizardPaginationIsSortDsc$ = this.store.select(selectTaskWizardPaginationIsSortDsc);

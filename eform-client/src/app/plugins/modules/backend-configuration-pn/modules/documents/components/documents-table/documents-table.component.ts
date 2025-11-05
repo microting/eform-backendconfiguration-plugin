@@ -70,33 +70,7 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
       // formatter: (document: DocumentModel) => this.translateService.instant(document.status ? 'ON' : 'OFF'),
       sortable: true, sortProp: {id: 'Status'}
     },
-    {
-      field: 'actions',
-      header: this.translateService.stream('Actions'),
-      type: 'button',
-      width: '160px',
-      pinned: 'right',
-      right: '0px',
-      buttons: [
-        {
-          type: 'icon',
-          icon: 'edit',
-          tooltip: this.translateService.stream('Edit document'),
-          iif: (document: DocumentModel) => document.isLocked === false,
-          click: (document: DocumentModel) => this.onShowEditDocumentModal(document),
-          class: 'editDocumentBtn',
-        },
-        {
-          color: 'warn',
-          type: 'icon',
-          icon: 'delete',
-          tooltip: this.translateService.stream('Delete document'),
-          iif: (document: DocumentModel) => document.isLocked === false,
-          click: (document: DocumentModel) => this.onOpenDeleteModal(document),
-          class: 'deleteDocumentBtn',
-        },
-      ],
-    },
+    { field: 'actions', header: this.translateService.stream('Actions'), pinned: 'right' }
   ];
   @Input() documents: DocumentModel[] = [];
   @Input() folders: DocumentSimpleFolderModel[] = [];
