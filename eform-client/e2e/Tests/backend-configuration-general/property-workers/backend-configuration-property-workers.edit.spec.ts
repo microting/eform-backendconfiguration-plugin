@@ -76,6 +76,9 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     // expect(worker.lastName).eq(workerForCreate.surname);
     expect(worker.language).eq(workerForCreate.language);
     // check inputs
+    await browser.pause(500);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(500);
     await worker.openEditModal(null);
     expect(
       await (

@@ -479,7 +479,7 @@ export class TaskRowObject {
   }
 
   private async clickActionsMenu() {
-    await browser.pause(500);
+    await browser.pause(1000);
     await $$('#actionMenu')[0].click();
     await browser.pause(500);
   }
