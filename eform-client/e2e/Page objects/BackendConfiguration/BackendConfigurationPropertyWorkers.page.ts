@@ -162,7 +162,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async rowNum(): Promise<number> {
-    await browser.pause(500);
+    await browser.pause(1000);
     return (await $$('tbody > tr')).length;
   }
 
