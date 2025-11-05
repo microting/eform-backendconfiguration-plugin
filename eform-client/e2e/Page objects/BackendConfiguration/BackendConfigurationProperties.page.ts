@@ -439,7 +439,6 @@ export class PropertyRowObject {
   }
 
   public async openBindPropertyWithAreasModal(bindAreas?: number[]) {
-    await this.clickActionsMenu();
     await this.editPropertyAreasBtn.click();
     await browser.pause(500);
     await (await backendConfigurationPropertiesPage.configurePropertyAreasBtn()).click();
@@ -484,7 +483,6 @@ export class PropertyRowObject {
   }
 
   public async openAreasViewModal(indexAreaForClick: number) {
-    await this.clickActionsMenu();
     await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
     await this.editPropertyAreasBtn.click();
     await (
