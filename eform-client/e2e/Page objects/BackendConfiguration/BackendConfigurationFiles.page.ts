@@ -321,6 +321,7 @@ export class FileRowObject {
   }
 
   public async delete(clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
   }
@@ -348,11 +349,18 @@ export class FileRowObject {
   }
 
   public async editFile(fileEdit: BackendFileEdit, clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openEditModal(fileEdit);
     await this.closeEditModal(clickCancel);
     if (fileEdit.tags && fileEdit.tags.length > 0) {
       await this.editTags(fileEdit.tags);
     }
+  }
+
+  private async clickActionsMenu() {
+    await browser.pause(500);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(500);
   }
 
   public async openEditModal(fileEdit: BackendFileEdit) {

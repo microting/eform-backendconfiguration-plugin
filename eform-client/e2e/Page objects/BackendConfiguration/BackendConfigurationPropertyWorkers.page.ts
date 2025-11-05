@@ -411,6 +411,7 @@ export class PropertyWorkerRowObject {
   async getAssignedProperties(): Promise<
     { propertyName: string; checked: boolean }[]
   > {
+    await this.clickActionsMenu();
     await this.openEditModal();
     const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{

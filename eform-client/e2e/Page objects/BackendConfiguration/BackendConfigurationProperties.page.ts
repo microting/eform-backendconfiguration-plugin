@@ -439,6 +439,7 @@ export class PropertyRowObject {
   }
 
   public async openBindPropertyWithAreasModal(bindAreas?: number[]) {
+    await this.clickActionsMenu();
     await this.editPropertyAreasBtn.click();
     await browser.pause(500);
     await (await backendConfigurationPropertiesPage.configurePropertyAreasBtn()).click();
