@@ -472,6 +472,7 @@ export class PropertyRowObject {
   }
 
   public async getBindAreas() {
+    await this.clickActionsMenu();
     await this.openBindPropertyWithAreasModal();
     await browser.pause(500);
     const checkboxes = await $$(`mat-checkbox-input`);
@@ -483,6 +484,7 @@ export class PropertyRowObject {
   }
 
   public async openAreasViewModal(indexAreaForClick: number) {
+    await this.clickActionsMenu()
     await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
     await this.editPropertyAreasBtn.click();
     await (
