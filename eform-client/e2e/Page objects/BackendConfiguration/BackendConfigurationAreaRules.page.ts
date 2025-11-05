@@ -466,7 +466,7 @@ export class AreaRuleRowObject {
   }
 
   public async delete(clickCancel = false, waitCreateBtn = true) {
-    await this.clickActionsMenu();
+    // await this.clickActionsMenu();
     if (this.deleteRuleBtn) {
       await this.openDeleteModal();
       await this.closeDeleteModal(clickCancel, waitCreateBtn);
