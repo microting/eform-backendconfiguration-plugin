@@ -291,4 +291,5 @@ export const ukUA = {
   'PIN code': 'PIN-код',
   'Employee no': 'Співробітник №',
   'Deactivate task': 'Деактивувати завдання',
+  Areas: 'Області',
 };

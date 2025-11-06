@@ -308,4 +308,5 @@ export const enUS= {
   'PIN code': 'PIN code',
   'Employee no': 'Employee no',
   'Deactivate task': 'Deactivate task',
+  'Areas': 'Areas'
 };

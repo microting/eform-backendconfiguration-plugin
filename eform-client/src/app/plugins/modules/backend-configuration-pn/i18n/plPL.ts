@@ -291,4 +291,5 @@ export const plPL = {
   'PIN code': 'Kod PIN',
   'Employee no': 'Pracownik numer',
   'Deactivate task': 'Dezaktywuj zadanie',
+  Areas: 'Obszary',
 };

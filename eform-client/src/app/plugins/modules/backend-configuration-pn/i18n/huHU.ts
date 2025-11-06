@@ -291,4 +291,5 @@ export const huHU = {
   'PIN code': 'PIN-kód',
   'Employee no': 'számú alkalmazott',
   'Deactivate task': 'Inaktiválja a feladatot',
+  Areas: 'Területek',
 };

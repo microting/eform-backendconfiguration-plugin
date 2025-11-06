@@ -291,4 +291,5 @@ export const svSE = {
   'PIN code': 'Pinkod',
   'Employee no': 'Anställningsnummer',
   'Deactivate task': 'Inaktivera uppgiften',
+  Areas: 'Områden',
 };

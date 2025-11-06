@@ -291,4 +291,5 @@ export const slSL = {
   'PIN code': 'PIN koda',
   'Employee no': 'Uslužbenec št',
   'Deactivate task': 'Deaktiviraj nalogo',
+  Areas: 'Območja',
 };
