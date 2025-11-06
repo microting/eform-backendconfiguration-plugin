@@ -69,35 +69,9 @@ export class FilesTableComponent implements OnInit {
     {
       field: 'actions',
       header: this.translateService.stream('Actions'),
-      type: 'button',
       width: '200px',
       pinned: 'right',
       right: '0px',
-      buttons: [
-        {
-          type: 'icon',
-          icon: 'visibility',
-          tooltip: this.translateService.stream('View File'),
-          click: (filesModel: FilesModel) => this.onOpenView(filesModel),
-          class: 'viewPdfBtn',
-        },
-        {
-          color: 'accent',
-          type: 'icon',
-          icon: 'edit',
-          tooltip: this.translateService.stream('Edit file name'),
-          click: (filesModel: FilesModel) => this.onShowEditDocumentModal(filesModel),
-          class: 'editFilenameBtn',
-        },
-        {
-          color: 'warn',
-          type: 'icon',
-          icon: 'delete',
-          tooltip: this.translateService.stream('Delete file'),
-          click: (filesModel: FilesModel) => this.onOpenDeleteModal(filesModel),
-          class: 'deleteFileBtn',
-        },
-      ],
     },
   ];
   pdfSub$: any;

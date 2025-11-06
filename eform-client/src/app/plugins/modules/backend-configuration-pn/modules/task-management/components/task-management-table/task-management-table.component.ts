@@ -78,27 +78,9 @@ export class TaskManagementTableComponent implements OnInit {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      type: 'button',
       width: '100px',
       pinned: 'right',
       right: '0px',
-      buttons: [
-        {
-          type: 'icon',
-          icon: 'edit',
-          click: (rowData: WorkOrderCaseModel) => this.onOpenViewModal(rowData.id),
-          tooltip: this.translateService.stream('Edit task'),
-          class: 'taskManagementViewBtn',
-        },
-        {
-          type: 'icon',
-          icon: 'delete',
-          color: 'warn',
-          click: (rowData: WorkOrderCaseModel) => this.onOpenDeleteModal(rowData),
-          tooltip: this.translateService.stream('Delete task'),
-          class: 'taskManagementDeleteTaskBtn',
-        },
-      ]
     },
   ];
 

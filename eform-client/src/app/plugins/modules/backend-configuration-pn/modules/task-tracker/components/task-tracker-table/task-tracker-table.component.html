@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{tags: tagsTpl}"
+  [cellTemplate]="{tags: tagsTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -20,6 +20,35 @@
         <span>{{ tag.name }}</span>
       </mat-chip>
     </mat-chip-list>
+  </div>
+</ng-template>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="task-tracker-actions" id="action-items-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        *ngIf="(row.createdInWizard && !row.taskIsExpired) || (row.taskIsExpired && row.createdInWizard && !row.movedToExpiredFolder)"
+        id="editTaskBtn-{{i}}"
+        (click)="redirectToCompliance(row)"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        *ngIf="row.createdInWizard && !row.movedToExpiredFolder"
+        id="deleteTaskBtn-{{i}}"
+        (click)="onShowDeleteComplianceModal(row)"
+      >
+        <mat-icon>delete</mat-icon>
+        <span>{{ 'Delete Case' | translate }}</span>
+      </button>
+    </mat-menu>
   </div>
 </ng-template>
 
