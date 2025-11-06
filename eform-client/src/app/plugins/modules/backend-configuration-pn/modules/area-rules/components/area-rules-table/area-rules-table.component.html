@@ -3,6 +3,7 @@
   <mtx-grid
     [data]="tableItemsForAreaRulesDefaultT3"
     [columns]="tableHeadersT3"
+    [cellTemplate]="{actions: actionsT3Tpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="true"
@@ -17,6 +18,7 @@
   <mtx-grid
     [data]="tableItemsForAreaRulesDefaultT10b"
     [columns]="tableHeadersT10b_"
+    [cellTemplate]="{actions: actionsT10bTpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="true"
@@ -139,5 +141,61 @@
     >
       <mat-icon svgIcon="file-pdf"></mat-icon>
     </a>
+  </ng-template>
+
+  <ng-template #actionsT3Tpl let-row let-i="index">
+    <div class="area-rules-actions" id="action-items-t3-{{i}}">
+      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+
+      <mat-menu #menu="matMenu">
+        <button
+          mat-menu-item
+          id="showAreaRulePlanningBtn-t3-{{i}}"
+          (click)="onShowPlanAreaRule(row)"
+        >
+          <mat-icon color="accent">assignment</mat-icon>
+          <span>{{ 'Plan and assign' | translate }}</span>
+        </button>
+        <button
+          mat-menu-item
+          id="updateEntityList-t3-{{i}}"
+          class="updateEntityList"
+          (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+        >
+          <mat-icon color="accent">list</mat-icon>
+          <span>{{ 'Edit list of stables for tailbites' | translate }}</span>
+        </button>
+      </mat-menu>
+    </div>
+  </ng-template>
+
+  <ng-template #actionsT10bTpl let-row let-i="index">
+    <div class="area-rules-actions" id="action-items-t10b-{{i}}">
+      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+
+      <mat-menu #menu="matMenu">
+        <button
+          mat-menu-item
+          id="showAreaRulePlanningBtn-t10b-{{i}}"
+          (click)="onShowPlanAreaRule(row)"
+        >
+          <mat-icon color="accent">assignment</mat-icon>
+          <span>{{ 'Plan and assign' | translate }}</span>
+        </button>
+        <button
+          mat-menu-item
+          *ngIf="!row.isDefault && selectedArea.type !== 9 && !row.planningStatus"
+          id="showEditRuleBtn-t10b-{{i}}"
+          (click)="onShowEditRuleModal(row)"
+        >
+          <mat-icon color="accent">edit</mat-icon>
+          <span>{{ 'Edit rule' | translate }}</span>
+        </button>
+      </mat-menu>
+    </div>
   </ng-template>
 </ng-container>

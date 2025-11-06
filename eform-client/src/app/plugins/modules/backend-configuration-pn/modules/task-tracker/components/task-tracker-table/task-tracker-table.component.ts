@@ -70,26 +70,6 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     // actions column with custom buttons
     {header: this.translateService.stream('Actions'), field: 'actions', sortable: false, width: '100px',
       pinned: 'right',
-      type: 'button',
-      buttons: [  // action buttons for each row
-        {
-          // eslint-disable-next-line max-len
-          iif: (record: TaskModel) => (record.createdInWizard && !record.taskIsExpired) || (record.taskIsExpired && record.createdInWizard && !record.movedToExpiredFolder),
-          type: 'icon',
-          icon: 'edit',
-          tooltip: this.translateService.stream('Edit'),
-          click: (record: TaskModel) => this.redirectToCompliance(record),
-        },
-        {
-          // eslint-disable-next-line max-len
-          iif: (record: TaskModel) => record.createdInWizard && !record.movedToExpiredFolder,
-          type: 'icon',
-          tooltip:  this.translateService.stream('Delete Case'),
-          icon: 'delete',
-          //color: (record: TaskModel) => this.deleteIconColor(record), // TODO: Uncomment when the logic is implemented
-          click: (record: TaskModel) => this.onShowDeleteComplianceModal(record),
-        }
-      ],
     },
   ];
   complianceDeleteComponentAfterClosedSub$: Subscription;
