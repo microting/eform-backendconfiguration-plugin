@@ -98,12 +98,38 @@ describe('Area rules type 1', () => {
     cy.wait(500);
 
     cy.get('.cdk-row').should('have.length', 1);
-    cy.get('.cdk-row .cdk-column-actions .deleteBtn.mat-warn').first().click();
+    // Open the action menu
+    cy.get('.task-actions')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Click the Delete Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=deleteTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
+
     cy.get('#taskWizardDeleteCancelBtn').click();
     cy.wait(500);
     cy.get('.cdk-row').should('have.length', 1);
 
-    cy.get('.cdk-row .cdk-column-actions .deleteBtn.mat-warn').first().click();
+    // Open the action menu again
+    cy.get('.task-actions')
+      .first()
+      .find('#actionMenu')
+      .should('be.visible')
+      .click({ force: true });
+
+    // Click the Delete Task button inside the opened menu
+    cy.get('.cdk-overlay-container')
+      .find('[id^=deleteTaskBtn]')
+      .should('be.visible')
+      .first()
+      .click({ force: true });
+
     cy.get('#taskWizardDeleteDeleteBtn').click();
     cy.wait(500);
     cy.get('.cdk-row').should('not.exist');
