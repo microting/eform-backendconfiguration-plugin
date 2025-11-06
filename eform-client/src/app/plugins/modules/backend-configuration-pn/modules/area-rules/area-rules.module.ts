@@ -25,6 +25,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
   declarations: [
@@ -55,6 +56,9 @@ import {MatTableModule} from '@angular/material/table';
     MatCheckboxModule,
     MatCardModule,
     MatTableModule,
+    MatMenuTrigger,
+    MatMenu,
+    MatMenuItem,
   ],
 })
 export class AreaRulesModule {

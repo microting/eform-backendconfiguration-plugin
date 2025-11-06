@@ -110,6 +110,62 @@
   </ng-container>
 </ng-template>
 
+<ng-template #actionsT3Tpl let-row let-i="index">
+  <div class="area-rules-actions" id="action-items-t3-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        id="showAreaRulePlanningBtn-t3-{{i}}"
+        (click)="onShowPlanAreaRule(row)"
+      >
+        <mat-icon color="accent">assignment</mat-icon>
+        <span>{{ 'Plan and assign' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        id="updateEntityList-t3-{{i}}"
+        class="updateEntityList"
+        (click)="onShowEditEntityListModal(selectedArea.groupId)"
+      >
+        <mat-icon color="accent">list</mat-icon>
+        <span>{{ 'Edit list of stables for tailbites' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+</ng-template>
+
+<ng-template #actionsT10bTpl let-row let-i="index">
+  <div class="area-rules-actions" id="action-items-t10b-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        id="showAreaRulePlanningBtn-t10b-{{i}}"
+        (click)="onShowPlanAreaRule(row)"
+      >
+        <mat-icon color="accent">assignment</mat-icon>
+        <span>{{ 'Plan and assign' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        *ngIf="!row.isDefault && selectedArea.type !== 9 && !row.planningStatus"
+        id="showEditRuleBtn-t10b-{{i}}"
+        (click)="onShowEditRuleModal(row)"
+      >
+        <mat-icon color="accent">edit</mat-icon>
+        <span>{{ 'Edit rule' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+</ng-template>
+
 <ng-container *ngIf="selectedArea.type === 9">
   <h3 class="mt-3">{{'Chemicals' | translate}}</h3>
   <mtx-grid
@@ -141,61 +197,5 @@
     >
       <mat-icon svgIcon="file-pdf"></mat-icon>
     </a>
-  </ng-template>
-
-  <ng-template #actionsT3Tpl let-row let-i="index">
-    <div class="area-rules-actions" id="action-items-t3-{{i}}">
-      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
-        <mat-icon>more_vert</mat-icon>
-      </button>
-
-      <mat-menu #menu="matMenu">
-        <button
-          mat-menu-item
-          id="showAreaRulePlanningBtn-t3-{{i}}"
-          (click)="onShowPlanAreaRule(row)"
-        >
-          <mat-icon color="accent">assignment</mat-icon>
-          <span>{{ 'Plan and assign' | translate }}</span>
-        </button>
-        <button
-          mat-menu-item
-          id="updateEntityList-t3-{{i}}"
-          class="updateEntityList"
-          (click)="onShowEditEntityListModal(selectedArea.groupId)"
-        >
-          <mat-icon color="accent">list</mat-icon>
-          <span>{{ 'Edit list of stables for tailbites' | translate }}</span>
-        </button>
-      </mat-menu>
-    </div>
-  </ng-template>
-
-  <ng-template #actionsT10bTpl let-row let-i="index">
-    <div class="area-rules-actions" id="action-items-t10b-{{i}}">
-      <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
-        <mat-icon>more_vert</mat-icon>
-      </button>
-
-      <mat-menu #menu="matMenu">
-        <button
-          mat-menu-item
-          id="showAreaRulePlanningBtn-t10b-{{i}}"
-          (click)="onShowPlanAreaRule(row)"
-        >
-          <mat-icon color="accent">assignment</mat-icon>
-          <span>{{ 'Plan and assign' | translate }}</span>
-        </button>
-        <button
-          mat-menu-item
-          *ngIf="!row.isDefault && selectedArea.type !== 9 && !row.planningStatus"
-          id="showEditRuleBtn-t10b-{{i}}"
-          (click)="onShowEditRuleModal(row)"
-        >
-          <mat-icon color="accent">edit</mat-icon>
-          <span>{{ 'Edit rule' | translate }}</span>
-        </button>
-      </mat-menu>
-    </div>
   </ng-template>
 </ng-container>
