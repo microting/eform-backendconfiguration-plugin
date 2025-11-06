@@ -163,7 +163,7 @@ public class GoogleSheetHelper
 
                 // ... existing code ...
 
-                SetAlternatingColumnColors(service, googleSheetId, sheetId!.Value, newHeaders.Count, logger);
+                // SetAlternatingColumnColors(service, googleSheetId, sheetId!.Value, newHeaders.Count, logger);
 
                 logger.LogInformation("Headers are already up-to-date.");
             }
