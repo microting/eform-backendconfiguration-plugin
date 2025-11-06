@@ -326,6 +326,7 @@ export class PropertyRowObject {
   }
 
   public async delete(clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
   }
@@ -353,6 +354,7 @@ export class PropertyRowObject {
   }
 
   public async edit(property: PropertyCreateUpdate, clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openEditModal(property);
     await this.closeEditModal(clickCancel);
   }
@@ -431,6 +433,7 @@ export class PropertyRowObject {
   }
 
   public async editBindWithAreas(bindAreas?: number[], clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openBindPropertyWithAreasModal(bindAreas);
     await this.closeBindPropertyWithAreasModal(clickCancel);
   }
@@ -469,6 +472,7 @@ export class PropertyRowObject {
   }
 
   public async getBindAreas() {
+    await this.clickActionsMenu();
     await this.openBindPropertyWithAreasModal();
     await browser.pause(500);
     const checkboxes = await $$(`mat-checkbox-input`);
@@ -480,6 +484,7 @@ export class PropertyRowObject {
   }
 
   public async openAreasViewModal(indexAreaForClick: number) {
+    await this.clickActionsMenu()
     await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
     await this.editPropertyAreasBtn.click();
     await (
@@ -505,6 +510,12 @@ export class PropertyRowObject {
     await (
       await backendConfigurationPropertiesPage.propertyCreateBtn()
     ).waitForClickable({ timeout: 40000 });
+  }
+
+  private async clickActionsMenu() {
+    await browser.pause(1000);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(1000);
   }
 }
 

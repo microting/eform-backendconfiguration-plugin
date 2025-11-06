@@ -162,7 +162,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async rowNum(): Promise<number> {
-    await browser.pause(500);
+    await browser.pause(1000);
     return (await $$('tbody > tr')).length;
   }
 
@@ -296,6 +296,7 @@ export class PropertyWorkerRowObject {
   }
 
   async delete(clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
   }
@@ -328,6 +329,7 @@ export class PropertyWorkerRowObject {
   }
 
   async edit(propertyWorker?: PropertyWorker, clickCancel = false) {
+    await this.clickActionsMenu();
     await this.openEditModal(propertyWorker);
     await this.closeEditModal(clickCancel);
   }
@@ -409,6 +411,7 @@ export class PropertyWorkerRowObject {
   async getAssignedProperties(): Promise<
     { propertyName: string; checked: boolean }[]
   > {
+    await this.clickActionsMenu();
     await this.openEditModal();
     const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{
@@ -432,6 +435,12 @@ export class PropertyWorkerRowObject {
     }
     await this.closeEditModal(true);
     return masForReturn;
+  }
+
+  private async clickActionsMenu() {
+    await browser.pause(1000);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(1000);
   }
 }
 

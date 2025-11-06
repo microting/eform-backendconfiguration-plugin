@@ -392,6 +392,7 @@ export class TaskRowObject {
 
   public async delete(clickCancel = false) {
     if (this.deleteTaskBtn) {
+      await this.clickActionsMenu();
       await this.openDeleteModal();
       await this.closeDeleteModal(clickCancel);
     }
@@ -475,6 +476,12 @@ export class TaskRowObject {
       ).getText();
     await this.closeShowModal(true);
     return task;
+  }
+
+  private async clickActionsMenu() {
+    await browser.pause(1000);
+    await $$('#actionMenu')[0].click();
+    await browser.pause(1000);
   }
 }
 
