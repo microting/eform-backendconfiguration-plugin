@@ -381,8 +381,8 @@ export class TaskRowObject {
     this.createdBy1 = await (await $$('td.createdByName')[rowNum]).getText();
     this.createdBy2 = await (await $$('td.createdByText')[rowNum]).getText();
     this.lastAssignedTo = await (await $$('td.lastAssignedTo')[rowNum]).getText();
-    this.showTaskBtn = await $$('button.taskManagementViewBtn')[rowNum];
-    this.deleteTaskBtn = await $$('button.taskManagementDeleteTaskBtn')[rowNum];
+    this.showTaskBtn = await $('#taskManagementViewBtn-'+rowNum);
+    this.deleteTaskBtn = await $('#taskManagementDeleteTaskBtn-'+rowNum);
     this.description = await (await $$('td.description')[rowNum]).getText();
     this.lastUpdatedDate = await (await $$('td.lastUpdateDate')[rowNum]).getText();
     this.lastUpdatedBy = await (await $$('td.lastUpdatedBy')[rowNum]).getText();
@@ -391,20 +391,16 @@ export class TaskRowObject {
   }
 
   public async delete(clickCancel = false) {
-    if (this.deleteTaskBtn) {
-      await this.clickActionsMenu();
-      await this.openDeleteModal();
-      await this.closeDeleteModal(clickCancel);
-    }
+    await this.clickActionsMenu();
+    await this.openDeleteModal();
+    await this.closeDeleteModal(clickCancel);
   }
 
   public async openDeleteModal() {
-    if (this.deleteTaskBtn) {
-      await this.deleteTaskBtn.click();
-      await (
-        await backendConfigurationTaskManagementPage.taskManagementDeleteCancelBtn()
-      ).waitForClickable({ timeout: 40000 });
-    }
+    await this.deleteTaskBtn.click();
+    await (
+      await backendConfigurationTaskManagementPage.taskManagementDeleteCancelBtn()
+    ).waitForClickable({ timeout: 40000 });
   }
 
   public async closeDeleteModal(clickCancel = false) {
