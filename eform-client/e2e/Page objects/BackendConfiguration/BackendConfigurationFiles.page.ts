@@ -268,8 +268,6 @@ export class FileRowObject {
   constructor() {
   }
 
-  public row: WebdriverIO.Element;
-  public checkbox: WebdriverIO.Element;
   public id: number;
   public createDate: string;
   public fileName: string;
@@ -282,41 +280,27 @@ export class FileRowObject {
 
   public async getRow(rowNum: number): Promise<FileRowObject> {
     rowNum = rowNum - 1;
-    this.row = (await $$('tbody > tr'))[rowNum];
-    if (this.row) {
-      this.checkbox = await this.row.$('.mat-column-select .column-select');
-      this.id = +await (await this.row.$('.mat-column-id span')).getText();
-      this.createDate = await (await this.row.$('.mat-column-createDate span')).getText();
-      this.fileName = await (await this.row.$('.mat-column-fileName span')).getText();
-      const properties = await this.row.$$('.mat-column-property mat-chip');
-      this.properties = [];
-      for (let i = 0; i < properties.length; i++) {
-        const text = await properties[i].getText();
-        this.properties.push(text.toString());
-      }
-      // if (properties.length > 0) {
-      //   properties[properties.length - 1] = properties[properties.length - 1].replace('edit', ''); // delete button
-      //   this.properties = properties
-      //     .filter(x => x) // delete empty strings
-      //     .map(x => x.replaceAll('\n', '')); // delete enters
-      // }
-      const tags = await this.row.$$('.mat-column-tags mat-chip');
-      this.tags = [];
-      for (let i = 0; i < tags.length; i++) {
-        const text = await tags[i].getText();
-        this.tags.push(text.toString());
-      }
-      // if (tags.length > 0) {
-      // //   tags[tags.length - 1] = tags[tags.length - 1].replace('edit', ''); // delete button
-      //    this.tags = tags
-      //      //.filter(x => x.te) // delete empty strings
-      //      .map(x => (await x.getText()).replaceAll('\n', '')); // delete enters
-      // }
-      this.editTagsBtn = await this.row.$('.mat-column-tags button');
-      this.viewPDFBtn = await this.row.$$('.mat-column-actions button')[0];
-      this.editFileNameBtn = await this.row.$$('.mat-column-actions button')[1];
-      this.deleteFileBtn = await this.row.$$('.mat-column-actions button')[2];
+    this.id = +await (await $('#fileId-'+rowNum)).getText();
+    this.createDate = await (await $('#fileCreateDate-'+rowNum)).getText();
+    this.fileName = await (await $('#fileName-'+rowNum)).getText();
+    // Get properties from mat-chip elements - need to use row context since it's dynamic
+    const row = (await $$('tbody > tr'))[rowNum];
+    const properties = await row.$$('.mat-column-property mat-chip');
+    this.properties = [];
+    for (let i = 0; i < properties.length; i++) {
+      const text = await properties[i].getText();
+      this.properties.push(text.toString());
     }
+    const tags = await row.$$('.mat-column-tags mat-chip');
+    this.tags = [];
+    for (let i = 0; i < tags.length; i++) {
+      const text = await tags[i].getText();
+      this.tags.push(text.toString());
+    }
+    this.editTagsBtn = await $('#editTagsBtn-'+rowNum);
+    this.viewPDFBtn = await $('#viewPdfBtn-'+rowNum);
+    this.editFileNameBtn = await $('#editFilenameBtn-'+rowNum);
+    this.deleteFileBtn = await $('#deleteFileBtn-'+rowNum);
     return this;
   }
 
