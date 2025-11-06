@@ -506,7 +506,7 @@ export class AreaRuleRowObject {
     clickCancel = false,
     waitCreateBtn = true
   ) {
-    await this.clickActionsMenu();
+    // await this.clickActionsMenu();
     await this.openEditModal(areaRule);
     await this.closeEditModal(clickCancel, waitCreateBtn);
   }
