@@ -28,6 +28,7 @@ import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plan
 import {StatisticsModule} from '../statistics/statistics.module';
 import {MatChipsModule} from '@angular/material/chips';
 import {NgSelectModule} from "@ng-select/ng-select";
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
   declarations: [
@@ -62,6 +63,9 @@ import {NgSelectModule} from "@ng-select/ng-select";
     StatisticsModule,
     MatChipsModule,
     NgSelectModule,
+    MatMenuTrigger,
+    MatMenu,
+    MatMenuItem,
   ],
   providers: [],
 })
