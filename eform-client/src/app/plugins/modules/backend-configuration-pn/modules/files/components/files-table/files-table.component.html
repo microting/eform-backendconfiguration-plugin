@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="_files.entities"
   [columns]="tableHeaders"
-  [cellTemplate]="{select: selectTpl, property: propertyTpl, tags: tagsTpl, actions: actionsTpl}"
+  [cellTemplate]="{select: selectTpl, id: idTpl, createDate: createDateTpl, fileName: fileNameTpl, property: propertyTpl, tags: tagsTpl, actions: actionsTpl}"
   [headerExtraTemplate]="selectHeaderTpl"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -43,7 +43,19 @@
   </div>
 </ng-template>
 
-<ng-template #propertyTpl let-row>
+<ng-template #idTpl let-row let-i="index">
+  <div class="fileId" id="fileId-{{i}}">{{ row.id }}</div>
+</ng-template>
+
+<ng-template #createDateTpl let-row let-i="index">
+  <div class="fileCreateDate" id="fileCreateDate-{{i}}">{{ row.createDate | date:'dd.MM.yyyy HH:mm:ss' }}</div>
+</ng-template>
+
+<ng-template #fileNameTpl let-row let-i="index">
+  <div class="fileName" id="fileName-{{i}}">{{ row.fileName }}.{{ row.fileExtension }}</div>
+</ng-template>
+
+<ng-template #propertyTpl let-row let-i="index">
   <div class="d-flex flex-wrap align-items-center">
     <mat-chip-list>
       <mat-chip *ngFor="let property of row.properties">
@@ -53,7 +65,7 @@
   </div>
 </ng-template>
 
-<ng-template #tagsTpl let-row>
+<ng-template #tagsTpl let-row let-i="index">
   <div class="d-flex flex-wrap align-items-center">
     <mat-chip-list>
       <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
@@ -63,6 +75,7 @@
     <button
       mat-icon-button
       color="primary"
+      id="editTagsBtn-{{i}}"
       matTooltip="{{'Edit tags file' | translate}}"
       (click)="openEditTags(row)">
       <mat-icon>edit</mat-icon>
