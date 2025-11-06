@@ -36,6 +36,7 @@ import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {DragulaModule} from 'ng2-dragula';
 import {MtxProgressModule} from '@ng-matero/extensions/progress';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
 
 @NgModule({
   declarations: [
@@ -51,33 +52,36 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     DownloadFilesNameArchiveComponent,
     FileCreateZoomPageComponent,
   ],
-    imports: [
-        CommonModule,
-        TranslateModule,
-        RouterModule,
-        FilesRouting,
-        EformSharedModule,
-        ReactiveFormsModule,
-        EformImportedModule,
-        FormsModule,
-        MatButtonModule,
-        MatTooltipModule,
-        MatIconModule,
-        MatFormFieldModule,
-        MtxSelectModule,
-        MatInputModule,
-        MtxGridModule,
-        MatDialogModule,
-        MatCardModule,
-        MatSlideToggleModule,
-        MatCheckboxModule,
-        EformSharedTagsModule,
-        MatChipsModule,
-        PdfViewerModule,
-        DragulaModule,
-        MtxProgressModule,
-        MatDatepickerModule,
-    ],
+  imports: [
+    CommonModule,
+    TranslateModule,
+    RouterModule,
+    FilesRouting,
+    EformSharedModule,
+    ReactiveFormsModule,
+    EformImportedModule,
+    FormsModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MtxSelectModule,
+    MatInputModule,
+    MtxGridModule,
+    MatDialogModule,
+    MatCardModule,
+    MatSlideToggleModule,
+    MatCheckboxModule,
+    EformSharedTagsModule,
+    MatChipsModule,
+    PdfViewerModule,
+    DragulaModule,
+    MtxProgressModule,
+    MatDatepickerModule,
+    MatMenuTrigger,
+    MatMenu,
+    MatMenuItem,
+  ],
 })
 
 export class FilesModule {
