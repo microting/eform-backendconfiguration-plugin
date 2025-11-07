@@ -1,6 +1,9 @@
 <mtx-grid
   [data]="items"
   [columns]="mergedTableHeaders"
+  [cellTemplate]="{
+    actions: actionsTpl
+  }"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -8,3 +11,40 @@
   [showColumnMenuButton]="false"
 >
 </mtx-grid>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="report-actions" id="action-items-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        *ngIf="row.imagesCount !== 0"
+        id="viewImagesBtn-{{i}}"
+        (click)="onClickViewPicture(row.microtingSdkCaseId)"
+      >
+        <mat-icon>image</mat-icon>
+        <span>{{ 'View images' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        id="editCaseBtn-{{i}}"
+        (click)="onClickEditCase(row.microtingSdkCaseId, row.eFormId, row.id)"
+      >
+        <mat-icon>edit</mat-icon>
+        <span>{{ 'Edit' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        color="warn"
+        id="deleteCaseBtn-{{i}}"
+        (click)="onShowDeletePlanningCaseModal(row)"
+      >
+        <mat-icon color="warn">delete</mat-icon>
+        <span>{{ 'Delete' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+</ng-template>
