@@ -54,29 +54,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      type: 'button',
-      buttons: [
-        {
-          tooltip: this.translateService.stream('View images'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          icon: 'image',
-          iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
-        },
-        {
-          tooltip: this.translateService.stream('Edit'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          icon: 'edit',
-        },
-        {
-          tooltip: this.translateService.stream('Delete'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onShowDeletePlanningCaseModal(record),
-          color: 'warn',
-          icon: 'delete',
-        }
-      ]
+      width: '160px',
+      pinned: 'right',
     },
   ];
   adminTableHeaders: MtxGridColumn[] = [
@@ -96,29 +75,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      type: 'button',
-      buttons: [
-        {
-          tooltip: this.translateService.stream('View images'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          icon: 'image',
-          iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
-        },
-        {
-          tooltip: this.translateService.stream('Edit'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          icon: 'edit',
-        },
-        {
-          tooltip: this.translateService.stream('Delete'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onShowDeletePlanningCaseModal(record),
-          color: 'warn',
-          icon: 'delete',
-        }
-      ]
+      width: '160px',
+      pinned: 'right',
     },
   ];
   mergedTableHeaders: MtxGridColumn[] = [];
@@ -169,12 +127,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
         };
       });
       if (this.isAdmin) {
-        this.adminTableHeaders.find(x => x.field === 'actions').class = ((record: ReportEformItemModel, _) =>
-          record ? `id-${record.id}` : '');//microtingSdkCaseId${record.microtingSdkCaseId}-eFormId${record.eFormId}-
         this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
       } else {
-        this.tableHeaders.find(x => x.field === 'actions').class = ((record: ReportEformItemModel, _) =>
-          record ? `id-${record.id}` : '');//microtingSdkCaseId${record.microtingSdkCaseId}-eFormId${record.eFormId}-
         this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
       }
     }
