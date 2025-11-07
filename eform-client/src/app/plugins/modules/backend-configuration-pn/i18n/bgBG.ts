@@ -291,4 +291,5 @@ export const bgBG = {
   'PIN code': 'ПИН код',
   'Employee no': 'Служител №',
   'Deactivate task': 'Деактивирайте задачата',
+  Areas: 'Области',
 };

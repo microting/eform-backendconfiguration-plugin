@@ -72,7 +72,7 @@
         id="editDocumentBtn-{{i}}"
         (click)="onShowEditDocumentModal(row)"
       >
-        <mat-icon>edit</mat-icon>
+        <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
         <span>{{ 'Edit document' | translate }}</span>
       </button>
 
@@ -82,7 +82,7 @@
         id="deleteDocumentBtn-{{i}}"
         (click)="onOpenDeleteModal(row)"
       >
-        <mat-icon color="warn">delete</mat-icon>
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete document' | translate }}</span>
       </button>
     </mat-menu>

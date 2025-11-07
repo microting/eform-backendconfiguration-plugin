@@ -291,4 +291,5 @@ export const isIS = {
   'PIN code': 'PIN númer',
   'Employee no': 'Starfsmaður nr',
   'Deactivate task': 'Slökktu á verkefni',
+  Areas: 'Svæði',
 };

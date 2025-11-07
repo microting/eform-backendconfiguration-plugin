@@ -291,4 +291,5 @@ export const elGR = {
   'PIN code': 'Κωδικό PIN',
   'Employee no': 'Υπάλληλος αρ',
   'Deactivate task': 'Απενεργοποίηση εργασίας',
+  Areas: 'Περιοχές',
 };

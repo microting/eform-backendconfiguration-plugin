@@ -291,4 +291,5 @@ export const ltLT = {
   'PIN code': 'PIN kodas',
   'Employee no': 'Darbuotojas Nr',
   'Deactivate task': 'Išjungti užduotį',
+  Areas: 'Sritys',
 };

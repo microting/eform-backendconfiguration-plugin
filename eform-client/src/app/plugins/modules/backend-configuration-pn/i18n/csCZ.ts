@@ -291,4 +291,5 @@ export const csCZ = {
   'PIN code': 'PIN kód',
   'Employee no': 'Zaměstnanec č',
   'Deactivate task': 'Deaktivovat úkol',
+  Areas: 'Oblasti',
 };

@@ -291,4 +291,5 @@ export const nlNL = {
   'PIN code': 'Pincode',
   'Employee no': 'Werknemer nummer',
   'Deactivate task': 'Taak deactiveren',
+  Areas: 'Gebieden',
 };

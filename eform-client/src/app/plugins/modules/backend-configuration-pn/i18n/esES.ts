@@ -291,4 +291,5 @@ export const esES = {
   'PIN code': 'Código PIN',
   'Employee no': 'Numero de empleado',
   'Deactivate task': 'Desactivar tarea',
+  Areas: 'Áreas',
 };

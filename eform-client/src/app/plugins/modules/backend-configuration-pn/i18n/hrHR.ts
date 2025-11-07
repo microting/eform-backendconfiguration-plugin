@@ -291,4 +291,5 @@ export const hrHR = {
   'PIN code': 'PIN kod',
   'Employee no': 'Zaposlenik br',
   'Deactivate task': 'Deaktiviraj zadatak',
+  Areas: 'Područja',
 };

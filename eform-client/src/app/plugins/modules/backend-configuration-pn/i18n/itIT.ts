@@ -291,4 +291,5 @@ export const itIT = {
   'PIN code': 'Codice PIN',
   'Employee no': 'Dipendente n',
   'Deactivate task': 'Disattivare l&#39;attività',
+  Areas: 'Aree',
 };
