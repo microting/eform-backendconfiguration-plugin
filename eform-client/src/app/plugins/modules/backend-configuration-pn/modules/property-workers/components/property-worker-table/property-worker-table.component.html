@@ -110,7 +110,7 @@
       matTooltip="{{ 'New OTP' | translate }}"
       (click)="openOtpModal(row)"
     >
-      <mat-icon>key</mat-icon>
+      <mat-icon fontSet="material-symbols-outlined">key</mat-icon>
     </button>
   </ng-container>
   <ng-container *ngIf="!row.unitId"> N/A</ng-container>
@@ -133,7 +133,7 @@
         id="editAssignmentsBtn-{{i}}"
         [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
       >
-        <mat-icon>visibility</mat-icon>
+        <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
         <span>{{ 'Show assignments' | translate }}</span>
       </button>
       <button
@@ -142,7 +142,7 @@
         id="editDeviceUserBtn-{{i}}"
         (click)="openEditModal(row)"
       >
-        <mat-icon>edit</mat-icon>
+        <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
         <span>{{ 'Edit Device User' | translate }}</span>
       </button>
       <button
@@ -152,7 +152,7 @@
         id="deleteDeviceUserBtn-{{i}}"
         (click)="openDeleteDeviceUserModal(row)"
       >
-        <mat-icon color="warn">delete</mat-icon>
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete Device User' | translate }}</span>
       </button>
     </mat-menu>
@@ -164,7 +164,7 @@
     <ng-container *ngIf="row['manufacturer'] === 'iOS' ">
       <div class="manufacturer" id="manufacturer-{{row.id}}">
                 <span [matTooltip]="row['deviceModel']" class="neutral-icon">
-                  <mat-icon>phone_iphone</mat-icon>
+                  <mat-icon fontSet="material-symbols-outlined">ios</mat-icon>
                 </span>
         {{ row.model }} ({{ row.osVersion }})
       </div>

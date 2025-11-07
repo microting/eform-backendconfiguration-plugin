@@ -78,7 +78,7 @@
       id="editTagsBtn-{{i}}"
       matTooltip="{{'Edit tags file' | translate}}"
       (click)="openEditTags(row)">
-      <mat-icon>edit</mat-icon>
+      <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
     </button>
   </div>
 </ng-template>
@@ -114,7 +114,7 @@
         class="deleteFileBtn"
         (click)="onOpenDeleteModal(row)"
       >
-        <mat-icon color="warn">delete</mat-icon>
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete file' | translate }}</span>
       </button>
     </mat-menu>
