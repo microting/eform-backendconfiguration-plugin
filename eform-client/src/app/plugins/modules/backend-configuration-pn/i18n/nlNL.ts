@@ -292,4 +292,5 @@ export const nlNL = {
   'Employee no': 'Werknemer nummer',
   'Deactivate task': 'Taak deactiveren',
   Areas: 'Gebieden',
+  Pictures: 'Foto&#39;s',
 };

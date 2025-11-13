@@ -292,4 +292,5 @@ export const plPL = {
   'Employee no': 'Pracownik numer',
   'Deactivate task': 'Dezaktywuj zadanie',
   Areas: 'Obszary',
+  Pictures: 'Kino',
 };
