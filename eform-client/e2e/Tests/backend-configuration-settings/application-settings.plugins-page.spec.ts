@@ -69,7 +69,7 @@ describe('Application settings page - site header section', function () {
     };
 
     // Find and activate Microting Items Planning Plugin
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Items Planning Plugin') {
         await activatePlugin(i, plugin.name);
@@ -78,7 +78,7 @@ describe('Application settings page - site header section', function () {
     }
 
     // Find and activate Microting Time Planning Plugin
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Time Planning Plugin') {
         await activatePlugin(i, plugin.name);
@@ -87,7 +87,7 @@ describe('Application settings page - site header section', function () {
     }
 
     // Find and activate Microting Backend Configuration Plugin
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Backend Configuration Plugin') {
         await activatePlugin(i, plugin.name);
@@ -96,7 +96,7 @@ describe('Application settings page - site header section', function () {
     }
 
     // Verify all plugins are activated
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Items Planning Plugin') {
         await checkPluginStatus(i, 'toggle_on', plugin.name);
@@ -104,7 +104,7 @@ describe('Application settings page - site header section', function () {
       }
     }
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Time Planning Plugin') {
         await checkPluginStatus(i, 'toggle_on', plugin.name);
@@ -112,7 +112,7 @@ describe('Application settings page - site header section', function () {
       }
     }
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i < 10; i++) {
       const plugin = await pluginPage.getPluginRowObjByIndex(i);
       if (plugin.name === 'Microting Backend Configuration Plugin') {
         await checkPluginStatus(i, 'toggle_on', plugin.name);
