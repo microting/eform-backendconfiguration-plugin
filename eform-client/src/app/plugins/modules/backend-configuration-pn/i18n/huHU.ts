@@ -292,4 +292,5 @@ export const huHU = {
   'Employee no': 'számú alkalmazott',
   'Deactivate task': 'Inaktiválja a feladatot',
   Areas: 'Területek',
+  Pictures: 'Képek',
 };

@@ -292,4 +292,5 @@ export const svSE = {
   'Employee no': 'Anställningsnummer',
   'Deactivate task': 'Inaktivera uppgiften',
   Areas: 'Områden',
+  Pictures: 'Bilder',
 };

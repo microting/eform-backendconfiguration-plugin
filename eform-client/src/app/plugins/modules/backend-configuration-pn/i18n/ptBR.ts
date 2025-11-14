@@ -292,4 +292,5 @@ export const ptBR = {
   'Employee no': 'Funcionário não',
   'Deactivate task': 'Desativar tarefa',
   Areas: 'Áreas',
+  Pictures: 'Fotos',
 };

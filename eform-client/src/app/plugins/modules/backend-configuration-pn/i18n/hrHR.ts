@@ -292,4 +292,5 @@ export const hrHR = {
   'Employee no': 'Zaposlenik br',
   'Deactivate task': 'Deaktiviraj zadatak',
   Areas: 'Područja',
+  Pictures: 'Slike',
 };

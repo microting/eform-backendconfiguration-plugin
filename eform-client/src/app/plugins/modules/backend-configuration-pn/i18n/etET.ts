@@ -292,4 +292,5 @@ export const etET = {
   'Employee no': 'Töötaja nr',
   'Deactivate task': 'Deaktiveerige ülesanne',
   Areas: 'Piirkonnad',
+  Pictures: 'Pildid',
 };

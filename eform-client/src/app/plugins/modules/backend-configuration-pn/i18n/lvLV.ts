@@ -292,4 +292,5 @@ export const lvLV = {
   'Employee no': 'Darbinieks Nr',
   'Deactivate task': 'Deaktivizēt uzdevumu',
   Areas: 'Apgabali',
+  Pictures: 'Attēli',
 };

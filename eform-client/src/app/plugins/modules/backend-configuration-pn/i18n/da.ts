@@ -294,4 +294,5 @@ export const da = {
   'Employee no': 'Medarbejder nummer',
   'Deactivate task': 'Deaktiver opgave',
   Areas: 'Områder',
+  Pictures: 'Billeder',
 };

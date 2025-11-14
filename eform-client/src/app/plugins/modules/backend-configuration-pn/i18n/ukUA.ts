@@ -292,4 +292,5 @@ export const ukUA = {
   'Employee no': 'Співробітник №',
   'Deactivate task': 'Деактивувати завдання',
   Areas: 'Області',
+  Pictures: 'Зображення',
 };

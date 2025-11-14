@@ -535,7 +535,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         AreaId = areaId,
                         FolderId = (int)createModel.FolderId,
                         ItemPlanningId = planning.Id,
-                        ComplianceEnabled = true,
+                        ComplianceEnabled = createModel.ComplianceEnabled,
                         PlanningSites = createModel.Sites
                             .Select(x =>
                                 new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
