@@ -21,14 +21,14 @@ describe('Application settings page - site header section', function () {
     // Helper function to activate a plugin by index using action menu
     const activatePlugin = async (index: number, pluginName: string) => {
       // Open action menu
-      const actionMenuBtn = await $(`#action-items-${index}`).$('#actionMenu');
+      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('#actionMenu');
       await actionMenuBtn.waitForDisplayed({ timeout: 40000 });
       await actionMenuBtn.waitForClickable({ timeout: 40000 });
       await actionMenuBtn.click();
       await browser.pause(500);
       
       // Click on the status button inside the menu
-      const statusBtn = await $(`#plugin-status-button${index}`);
+      const statusBtn = await $(`#plugin-status-button${index - 1}`);
       await statusBtn.waitForDisplayed({ timeout: 40000 });
       await statusBtn.waitForClickable({ timeout: 40000 });
       await statusBtn.click();
@@ -50,14 +50,14 @@ describe('Application settings page - site header section', function () {
     // Helper function to check plugin status via action menu
     const checkPluginStatus = async (index: number, expectedStatus: string, pluginName: string) => {
       // Open action menu
-      const actionMenuBtn = await $(`#action-items-${index}`).$('#actionMenu');
+      const actionMenuBtn = await $(`#action-items-${index - 1}`).$('#actionMenu');
       await actionMenuBtn.waitForDisplayed({ timeout: 40000 });
       await actionMenuBtn.waitForClickable({ timeout: 40000 });
       await actionMenuBtn.click();
       await browser.pause(500);
       
       // Check status
-      const statusBtn = await $(`#plugin-status-button${index}`);
+      const statusBtn = await $(`#plugin-status-button${index - 1}`);
       await statusBtn.waitForDisplayed({ timeout: 40000 });
       const statusIcon = await statusBtn.$('mat-icon');
       const status = await statusIcon.getText();
