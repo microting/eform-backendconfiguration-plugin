@@ -51,12 +51,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     },
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Name'), field: 'itemName'},
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      width: '160px',
-      pinned: 'right',
-    },
   ];
   adminTableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
@@ -72,12 +66,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      width: '160px',
-      pinned: 'right',
-    },
   ];
   mergedTableHeaders: MtxGridColumn[] = [];
 
@@ -126,10 +114,16 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         };
       });
+      const actionsColumn: MtxGridColumn = {
+        header: this.translateService.stream('Actions'),
+        field: 'actions',
+        width: '160px',
+        pinned: 'right',
+      };
       if (this.isAdmin) {
-        this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
+        this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders, actionsColumn];
       } else {
-        this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
+        this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders, actionsColumn];
       }
     }
   }

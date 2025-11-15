@@ -46,12 +46,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Name'), field: 'itemName'},
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      width: '160px',
-      pinned: 'right',
-    },
     {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
   adminTableHeaders: MtxGridColumn[] = [
@@ -63,12 +57,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      width: '160px',
-      pinned: 'right',
-    },
     {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
   mergedTableHeaders: MtxGridColumn[] = [];
@@ -119,10 +107,17 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
       let isAdmin = false;
       this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
       const tableHeaders = [...(isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
+      const actionsColumn: MtxGridColumn = {
+        header: this.translateService.stream('Actions'),
+        field: 'actions',
+        width: '160px',
+        pinned: 'right',
+      };
 
       this.mergedTableHeaders = [
         ...tableHeaders,
-        ...itemHeaders
+        ...itemHeaders,
+        actionsColumn
       ];
     }
   }
