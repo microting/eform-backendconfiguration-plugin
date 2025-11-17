@@ -291,4 +291,5 @@ export const roRO = {
   'PIN code': 'Cod PIN',
   'Employee no': 'Angajat nr',
   'Deactivate task': 'Dezactivați sarcina',
+  Areas: 'Zone',
 };

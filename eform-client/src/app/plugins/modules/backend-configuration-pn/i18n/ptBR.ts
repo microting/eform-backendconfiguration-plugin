@@ -291,4 +291,5 @@ export const ptBR = {
   'PIN code': 'Código PIN',
   'Employee no': 'Funcionário não',
   'Deactivate task': 'Desativar tarefa',
+  Areas: 'Áreas',
 };

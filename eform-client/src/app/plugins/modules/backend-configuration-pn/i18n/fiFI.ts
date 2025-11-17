@@ -291,4 +291,5 @@ export const fiFI = {
   'PIN code': 'Pin-koodi',
   'Employee no': 'Työntekijä nro',
   'Deactivate task': 'Poista tehtävä käytöstä',
+  Areas: 'Alueet',
 };

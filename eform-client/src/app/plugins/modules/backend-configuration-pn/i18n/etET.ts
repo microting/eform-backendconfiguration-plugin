@@ -291,4 +291,5 @@ export const etET = {
   'PIN code': 'PIN-koodi',
   'Employee no': 'Töötaja nr',
   'Deactivate task': 'Deaktiveerige ülesanne',
+  Areas: 'Piirkonnad',
 };

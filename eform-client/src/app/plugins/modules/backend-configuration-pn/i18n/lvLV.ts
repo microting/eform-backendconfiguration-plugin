@@ -291,4 +291,5 @@ export const lvLV = {
   'PIN code': 'PIN kods',
   'Employee no': 'Darbinieks Nr',
   'Deactivate task': 'Deaktivizēt uzdevumu',
+  Areas: 'Apgabali',
 };

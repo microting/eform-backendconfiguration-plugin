@@ -293,4 +293,5 @@ export const da = {
   'PIN code': 'PIN kode',
   'Employee no': 'Medarbejder nummer',
   'Deactivate task': 'Deaktiver opgave',
+  Areas: 'Områder',
 };

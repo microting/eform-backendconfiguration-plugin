@@ -49,29 +49,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      type: 'button',
-      buttons: [
-        {
-          tooltip: this.translateService.stream('View images'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          icon: 'image',
-          iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
-        },
-        {
-          tooltip: this.translateService.stream('Edit'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          icon: 'edit',
-        },
-        {
-          tooltip: this.translateService.stream('Delete'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onShowDeletePlanningCaseModal(record),
-          color: 'warn',
-          icon: 'delete',
-        }
-      ]
+      width: '160px',
+      pinned: 'right',
     },
     {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
@@ -87,29 +66,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      type: 'button',
-      buttons: [
-        {
-          tooltip: this.translateService.stream('View images'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          icon: 'image',
-          iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
-        },
-        {
-          tooltip: this.translateService.stream('Edit'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          icon: 'edit',
-        },
-        {
-          tooltip: this.translateService.stream('Delete'),
-          type: 'icon',
-          click: (record: ReportEformItemModel) => this.onShowDeletePlanningCaseModal(record),
-          color: 'warn',
-          icon: 'delete',
-        }
-      ]
+      width: '160px',
+      pinned: 'right',
     },
     {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
   ];
@@ -161,9 +119,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
       let isAdmin = false;
       this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
       const tableHeaders = [...(isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
-      const index = tableHeaders
-        .findIndex(x => x.field === 'actions');
-      tableHeaders[index].width = this.items.filter(x => x.imagesCount > 0).length > 0 ? '160px' : '110px';
 
       this.mergedTableHeaders = [
         ...tableHeaders,

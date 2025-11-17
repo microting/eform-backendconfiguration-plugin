@@ -2,7 +2,7 @@
   <mtx-grid
     [data]="workOrderCases"
     [columns]="tableHeaders"
-    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl}"
+    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl, actions: actionsTpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="true"
@@ -54,4 +54,33 @@
   <mat-chip color="primary">
     <span>{{row.status | translate}}</span>
   </mat-chip>
+</ng-template>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="task-management-actions" id="action-items-{{i}}">
+    <button id="actionMenu" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button
+        mat-menu-item
+        id="taskManagementViewBtn-{{i}}"
+        class="taskManagementViewBtn"
+        (click)="onOpenViewModal(row.id)"
+      >
+        <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
+        <span>{{ 'Edit task' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        id="taskManagementDeleteTaskBtn-{{i}}"
+        class="taskManagementDeleteTaskBtn"
+        (click)="onOpenDeleteModal(row)"
+      >
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+        <span>{{ 'Delete task' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
 </ng-template>

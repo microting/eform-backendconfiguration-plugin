@@ -291,4 +291,5 @@ export const skSK = {
   'PIN code': 'PIN kód',
   'Employee no': 'Zamestnanec č',
   'Deactivate task': 'Deaktivovať úlohu',
+  Areas: 'Oblasti',
 };

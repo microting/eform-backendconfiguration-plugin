@@ -102,7 +102,7 @@
         (click)="onShowEditPropertyModal(row)"
         [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
       >
-        <mat-icon>edit</mat-icon>
+        <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
         <span>{{ 'Edit property' | translate }}</span>
       </button>
       <button
@@ -112,7 +112,7 @@
         (click)="onShowDeletePropertyModal(row)"
         [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
       >
-        <mat-icon color="warn">delete</mat-icon>
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete property' | translate }}</span>
       </button>
     </mat-menu>

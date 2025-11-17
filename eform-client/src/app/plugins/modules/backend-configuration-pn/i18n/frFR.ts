@@ -291,4 +291,5 @@ export const frFR = {
   'PIN code': 'Code PIN',
   'Employee no': 'Numéro d&#39;employé',
   'Deactivate task': 'Désactiver la tâche',
+  Areas: 'Zones',
 };

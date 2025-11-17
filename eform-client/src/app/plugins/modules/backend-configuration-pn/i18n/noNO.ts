@@ -291,4 +291,5 @@ export const noNO = {
   'PIN code': 'PIN-kode',
   'Employee no': 'Ansatt nummer',
   'Deactivate task': 'Deaktiver oppgave',
+  Areas: 'Områder',
 };

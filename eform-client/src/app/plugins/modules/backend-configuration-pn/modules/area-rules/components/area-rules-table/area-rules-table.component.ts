@@ -200,24 +200,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
     {
       field: 'actions',
       header: this.translateService.stream('Actions'),
-      type: 'button',
-      buttons: [
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'assignment',
-          click: (rowData: AreaRuleSimpleModel) => this.onShowPlanAreaRule(rowData),
-          tooltip: this.translateService.stream('Plan and assign'),
-        },
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'list',
-          click: () => this.onShowEditEntityListModal(this.selectedArea.groupId),
-          tooltip: this.translateService.stream('Edit list of stables for tailbites'),
-          class: 'updateEntityList',
-        },
-      ]
     },
   ];
 
@@ -416,24 +398,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
     {
       field: 'actions',
       header: this.translateService.stream('Actions'),
-      type: 'button',
-      buttons: [
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'assignment',
-          click: (rowData: AreaRuleSimpleModel) => this.onShowPlanAreaRule(rowData),
-          tooltip: this.translateService.stream('Plan and assign'),
-        },
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'edit',
-          iif: (rowData: AreaRuleSimpleModel) => !rowData.isDefault && this.selectedArea.type !== 9 && !rowData.planningStatus,
-          click: (rowData: AreaRuleSimpleModel) => this.onShowEditRuleModal(rowData),
-          tooltip: this.translateService.stream('Edit rule'),
-        },
-      ]
     },
   ];
 
