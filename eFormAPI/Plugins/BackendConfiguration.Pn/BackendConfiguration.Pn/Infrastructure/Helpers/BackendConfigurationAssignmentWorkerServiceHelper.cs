@@ -288,7 +288,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
                         var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
-                            deviceUserModel.UserLastName, worker.Email, deviceUserModel.LanguageCode).ConfigureAwait(false);
+                            deviceUserModel.UserLastName, deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
                         if (deviceUserModel.PinCode != "****") {
                             worker.PinCode = deviceUserModel.PinCode;
