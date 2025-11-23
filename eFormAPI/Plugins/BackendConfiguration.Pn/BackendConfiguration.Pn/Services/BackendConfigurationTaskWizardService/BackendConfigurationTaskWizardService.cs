@@ -1126,42 +1126,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     }
 
                     await planning.Update(_itemsPlanningPnDbContext);
-
-                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x =>
-                            x.PlanningId == planning.Id &&
-                            x.WorkflowState != Constants.WorkflowStates.Removed) ||
-                        !areaRulePlanning.ComplianceEnabled)
-                    {
-                        var complianceList = await _backendConfigurationPnDbContext.Compliances
-                            .Where(x => x.PlanningId == planning.Id)
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .ToListAsync().ConfigureAwait(false);
-                        foreach (var compliance in complianceList)
-                        {
-                            await compliance.Delete(_backendConfigurationPnDbContext)
-                                .ConfigureAwait(false);
-                            if (_backendConfigurationPnDbContext.Compliances.Any(x =>
-                                    x.PropertyId == areaRulePlanning.PropertyId &&
-                                    x.Deadline < DateTime.UtcNow &&
-                                    x.WorkflowState != Constants.WorkflowStates.Removed))
-                            {
-                                areaRulePlanning.AreaRule.Property.ComplianceStatusThirty = 2;
-                                areaRulePlanning.AreaRule.Property.ComplianceStatus = 2;
-                            }
-                            else
-                            {
-                                if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
-                                        x.PropertyId == areaRulePlanning.AreaRule.Property.Id && x.WorkflowState !=
-                                        Constants.WorkflowStates.Removed))
-                                {
-                                    areaRulePlanning.AreaRule.Property.ComplianceStatusThirty = 0;
-                                    areaRulePlanning.AreaRule.Property.ComplianceStatus = 0;
-                                }
-                            }
-
-                            await areaRulePlanning.AreaRule.Property.Update(_backendConfigurationPnDbContext);
-                        }
-                    }
                 }
 
                     break;

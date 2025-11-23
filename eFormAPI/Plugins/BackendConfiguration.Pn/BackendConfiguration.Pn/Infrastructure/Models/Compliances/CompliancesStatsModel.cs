@@ -1,3 +1,5 @@
+using System;
+
 namespace BackendConfiguration.Pn.Controllers;
 
 public class CompliancesStatsModel
@@ -13,4 +15,10 @@ public class CompliancesStatsModel
     public int ThreeMonthsCount { get; set; }
     public int SixMonthsCount { get; set; }
     public int MoreThanSixMonthsCount { get; set; }
+    public int NumberOfPlannedTasks { get; set; }
+    public DateTime? DateOfOldestPlannedTask { get; set; }
+    public int NumberOfPlannedEnvironmentInspectionTagTasks { get; set; }
+    public DateTime? DateOfOldestEnvironmentInspectionTagPlannedTask { get; set; }
+    public int NumberOfAdHocTasks { get; set; }
+    public DateTime? DateOfOldestAdHocTask { get; set; }
 }

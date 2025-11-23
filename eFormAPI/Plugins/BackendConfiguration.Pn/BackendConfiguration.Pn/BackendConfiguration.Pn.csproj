@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ServerGarbageCollection>false</ServerGarbageCollection>
     </PropertyGroup>
 
@@ -216,17 +216,17 @@
 
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="8.0.21" />
-      <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
+      <PackageReference Include="Google.Apis.Sheets.v4" Version="1.72.0.3966" />
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.8" />
-      <PackageReference Include="Ical.Net" Version="5.1.1" />
-      <PackageReference Include="Microting.eForm" Version="9.0.70" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.58" />
+      <PackageReference Include="Ical.Net" Version="5.1.2" />
+      <PackageReference Include="Microting.eForm" Version="9.0.72" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.59" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.62" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="9.0.4" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.120" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.120" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="9.0.63" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="9.0.5" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.121" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.121" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="9.0.64" />
       <PackageReference Include="QuestPDF" Version="2025.7.4" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />

@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 using BackendConfiguration.Pn.Controllers;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 
@@ -393,6 +394,13 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         var complianceList = _backendConfigurationPnDbContext.Compliances;
         var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
         var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var NumberOfPlannedEnvironmentInspectionTagTasks = complianceList.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList().Where(x =>
+        {
+            var planningTags = _itemsPlanningPnDbContext.PlanningsTags
+                .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
+                .ToList();
+            return planningTags.Any();
+        }).Count();
         var todayComplianceCountEnvironmentInspectionTag = await complianceList.Where(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
         var todayCountEnvironmentInspectionTag = todayComplianceCountEnvironmentInspectionTag.Where(x =>
         {
@@ -401,6 +409,16 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 .ToList();
             return planningTags.Any();
         }).Count();
+        var oldestEnvironmentInspectionTagPlannedTask = todayComplianceCountEnvironmentInspectionTag
+            .Where(x =>
+            {
+                var planningTags = _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
+                    .ToList();
+                return planningTags.Any();
+            })
+            .OrderBy(x => x.Deadline)
+            .FirstOrDefault()?.Deadline;
         var oneWeekCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-7));
         var twoWeeksCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-7) && x.Deadline >= DateTime.UtcNow.AddDays(-14));
         var oneMonthCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-14) && x.Deadline >= DateTime.UtcNow.AddDays(-30));
@@ -408,6 +426,19 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         var threeMonthsCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-60) && x.Deadline >= DateTime.UtcNow.AddDays(-90));
         var sixMonthsCount = await complianceList.CountAsync(x => x.Deadline <= DateTime.UtcNow.AddDays(-90) && x.Deadline >= DateTime.UtcNow.AddDays(-180));
         var moreThanSixMonthsCount = await complianceList.CountAsync(x => x.Deadline < DateTime.UtcNow.AddDays(-180));
+
+        var numberOfWorkorderTasks = await _backendConfigurationPnDbContext.WorkorderCases
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+            .Where(x => x.LeadingCase == true)
+            .CountAsync();
+
+        var oldestWorkorderTask = await _backendConfigurationPnDbContext.WorkorderCases
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed && x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+            .Where(x => x.LeadingCase == true)
+            .OrderBy(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
 
         var totalCount = complianceList.Count();
 
@@ -423,7 +454,11 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             ThreeMonthsCount = threeMonthsCount,
             SixMonthsCount = sixMonthsCount,
             MoreThanSixMonthsCount = moreThanSixMonthsCount,
-            TodayCountEnvironmentInspectionTag = todayCountEnvironmentInspectionTag
+            TodayCountEnvironmentInspectionTag = todayCountEnvironmentInspectionTag,
+            DateOfOldestEnvironmentInspectionTagPlannedTask = oldestEnvironmentInspectionTagPlannedTask,
+            NumberOfAdHocTasks = numberOfWorkorderTasks,
+            DateOfOldestAdHocTask = oldestWorkorderTask.CreatedAt,
+            NumberOfPlannedEnvironmentInspectionTagTasks = NumberOfPlannedEnvironmentInspectionTagTasks
         };
 
         return new OperationDataResult<CompliancesStatsModel>(true, statsModel);
