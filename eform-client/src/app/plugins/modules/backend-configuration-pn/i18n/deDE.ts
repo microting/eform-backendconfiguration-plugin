@@ -353,4 +353,5 @@ export const deDE = {
   'Employee no': 'Mitarbeiter-Nr.',
   'Deactivate task': 'Aufgabe deaktivieren',
   Areas: 'Gebiete',
+  Pictures: 'Bilder',
 };

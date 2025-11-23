@@ -368,10 +368,14 @@ public class BackendConfigurationAssignmentWorkerService(
                     WorkerEmail = worker.Email,
                     worker.PhoneNumber,
                     site.CreatedAt,
-                    site.UpdatedAt
+                    site.UpdatedAt,
+                    worker.Resigned,
+                    worker.ResignedAtDate
 
                 };
-            sitesQuery = sitesQuery.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+            sitesQuery = sitesQuery
+                .Where(x => x.Resigned == requestModel.ShowResigned)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel
@@ -390,7 +394,9 @@ public class BackendConfigurationAssignmentWorkerService(
                     PhoneNumber = x.PhoneNumber,
                     Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
-                    IsLocked = x.IsLocked
+                    IsLocked = x.IsLocked,
+                    Resigned = x.Resigned,
+                    ResignedAtDate = x.ResignedAtDate
                 })
                 .ToListAsync().ConfigureAwait(false);
 

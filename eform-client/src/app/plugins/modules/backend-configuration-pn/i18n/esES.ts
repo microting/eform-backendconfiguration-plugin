@@ -292,4 +292,5 @@ export const esES = {
   'Employee no': 'Numero de empleado',
   'Deactivate task': 'Desactivar tarea',
   Areas: 'Áreas',
+  Pictures: 'Fotos',
 };

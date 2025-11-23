@@ -292,4 +292,5 @@ export const bgBG = {
   'Employee no': 'Служител №',
   'Deactivate task': 'Деактивирайте задачата',
   Areas: 'Области',
+  Pictures: 'Снимки',
 };

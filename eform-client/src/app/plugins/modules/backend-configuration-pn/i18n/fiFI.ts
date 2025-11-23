@@ -292,4 +292,5 @@ export const fiFI = {
   'Employee no': 'Työntekijä nro',
   'Deactivate task': 'Poista tehtävä käytöstä',
   Areas: 'Alueet',
+  Pictures: 'Kuvia',
 };

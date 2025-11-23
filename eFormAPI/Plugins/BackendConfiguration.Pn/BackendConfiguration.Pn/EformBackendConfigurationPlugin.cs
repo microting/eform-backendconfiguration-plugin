@@ -603,6 +603,24 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 Console.WriteLine(ex.Message);
                 SentrySdk.CaptureException(ex);
             }
+
+            var compliancesForProperty = await backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PropertyId == property.Id)
+                .Where(x => x.PlanningCaseSiteId == 0)
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var complianceForProperty in compliancesForProperty)
+            {
+                var planningCaseSite =
+                    await itemsPlanningContext.PlanningCaseSites.FirstOrDefaultAsync(x =>
+                        x.MicrotingSdkCaseId == complianceForProperty.MicrotingSdkCaseId);
+                if (planningCaseSite != null)
+                {
+                    complianceForProperty.PlanningCaseSiteId = planningCaseSite.PlanningCaseId;
+                    await complianceForProperty.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+            }
         }
 
         var parentFolderTranslations =

@@ -292,4 +292,5 @@ export const csCZ = {
   'Employee no': 'Zaměstnanec č',
   'Deactivate task': 'Deaktivovat úkol',
   Areas: 'Oblasti',
+  Pictures: 'Obrázky',
 };

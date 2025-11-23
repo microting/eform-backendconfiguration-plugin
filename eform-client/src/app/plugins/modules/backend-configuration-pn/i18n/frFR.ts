@@ -292,4 +292,5 @@ export const frFR = {
   'Employee no': 'Numéro d&#39;employé',
   'Deactivate task': 'Désactiver la tâche',
   Areas: 'Zones',
+  Pictures: 'Photos',
 };

@@ -16,7 +16,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import validator from 'validator';
 
 @AutoUnsubscribe()
@@ -103,6 +103,43 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       languageCode: [this.selectedDeviceUser.languageCode || ''],
       timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
       taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
+      resigned: [this.selectedDeviceUser.resigned || false],
+      resignedAtDate: [
+        this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
+        this.selectedDeviceUser.resigned ? Validators.required : null
+      ],
+    });
+
+    if (this.selectedDeviceUser.resigned) {
+      Object.keys(this.form.controls).forEach(key => {
+        if (key !== 'resigned' && key !== 'resignedAtDate') {
+          this.form.get(key)?.disable();
+        }
+      });
+    }
+
+    this.form.valueChanges.subscribe(formValue => {
+      Object.assign(this.selectedDeviceUser, formValue);
+    });
+
+    this.updateDisabledFieldsBasedOnResigned();
+
+    this.form.get('resigned')?.valueChanges.subscribe(() => {
+      this.updateDisabledFieldsBasedOnResigned();
+    });
+
+  }
+
+  private updateDisabledFieldsBasedOnResigned() {
+    const isResigned = this.form.get('resigned')?.value;
+    Object.keys(this.form.controls).forEach(key => {
+      if (key !== 'resigned' && key !== 'resignedAtDate') {
+        if (isResigned) {
+          this.form.get(key)?.disable({ emitEvent: false });
+        } else {
+          this.form.get(key)?.enable({ emitEvent: false });
+        }
+      }
     });
   }
 
@@ -123,6 +160,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
 
     // languageCode
     const shouldDisableLanguage =
+      this.selectedDeviceUser.resigned ||
       this.timeRegistrationEnabled ||
       this.taskManagementEnabled ||
       this.getAssignmentCount() > 0;
@@ -133,7 +171,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
 
     // taskManagementEnabled (mat-slide-toggle)
-    if (this.selectedDeviceUser.hasWorkOrdersAssigned) {
+    if (this.selectedDeviceUser.hasWorkOrdersAssigned || this.selectedDeviceUser.resigned) {
       this.form.get('taskManagementEnabled')?.disable();
     } else {
       this.form.get('taskManagementEnabled')?.enable();
@@ -172,6 +210,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   getAssignmentIsLockedByPropertyId(propertyId: number): boolean {
+    if (this.selectedDeviceUser.resigned) {
+      return true;
+    }
     const assignment = this.assignments.find(
       (x) => x.propertyId === propertyId
     );

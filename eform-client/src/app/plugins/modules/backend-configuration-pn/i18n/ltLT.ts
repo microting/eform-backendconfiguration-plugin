@@ -292,4 +292,5 @@ export const ltLT = {
   'Employee no': 'Darbuotojas Nr',
   'Deactivate task': 'Išjungti užduotį',
   Areas: 'Sritys',
+  Pictures: 'Paveikslėliai',
 };
