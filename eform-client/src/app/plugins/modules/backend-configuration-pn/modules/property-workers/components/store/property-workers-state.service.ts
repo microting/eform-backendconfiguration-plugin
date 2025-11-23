@@ -33,7 +33,8 @@ export class PropertyWorkersStateService {
       propertyIds: this.currentFilters.propertyIds,
       nameFilter: this.currentFilters.nameFilter,
       sort: this.currentPagination.sort,
-      isSortDsc: this.currentPagination.isSortDsc
+      isSortDsc: this.currentPagination.isSortDsc,
+      showResigned: this.currentFilters.showResigned,
     });
   }
 
@@ -50,6 +51,13 @@ export class PropertyWorkersStateService {
     this.store.dispatch(propertyWorkersUpdateFilters({
       ...this.currentFilters,
       propertyIds: propertyIds,
+    }));
+  }
+
+  updateShowResigned(showResigned: boolean) {
+    this.store.dispatch(propertyWorkersUpdateFilters({
+      ...this.currentFilters,
+      showResigned: showResigned,
     }));
   }
 

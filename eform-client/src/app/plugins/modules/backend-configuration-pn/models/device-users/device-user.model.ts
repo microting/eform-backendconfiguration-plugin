@@ -49,4 +49,6 @@ export class DeviceUserModel {
   breakSunday: number;
   workerEmail: string;
   phoneNumber: string;
+  resigned: boolean;
+  resignedAtDate: Date;
 }

@@ -44,6 +44,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
+  showResigned: boolean = false;
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
@@ -125,7 +126,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           deviceUser: selectedSimpleSite,
           assignments: workersAssignments ? workersAssignments.assignments : [],
           availableProperties: this.availableProperties,
-        }), minWidth: 500
+        }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
@@ -137,7 +138,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           deviceUser: {},
           assignments: [],
           availableProperties: this.availableProperties,
-        }), minWidth: 500
+        }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
@@ -197,10 +198,17 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   }
 
   getDeviceUsersFiltered(propertyIds?: number[]) {
+    let anyIsResigned = false;
     this.getSites$ = this.propertyWorkersStateService
       .getDeviceUsersFiltered()
       .subscribe((data) => {
         if (data && data.model) {
+          data.model.forEach(site => {
+            if (site.resigned) {
+              anyIsResigned = true;
+            }
+          });
+          this.showResigned = anyIsResigned;
           // const result = data.model;
           this.sitesDto = data.model.map(site => ({
             ...site,

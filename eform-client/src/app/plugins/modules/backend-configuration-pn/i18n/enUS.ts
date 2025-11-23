@@ -309,5 +309,8 @@ export const enUS= {
   'Employee no': 'Employee no',
   'Deactivate task': 'Deactivate task',
   'Areas': 'Areas',
-  'Pictures': 'Pictures'
+  'Pictures': 'Pictures',
+  'Delete employee': 'Delete employee',
+  'Resigned': 'Resigned',
+  'Show resigned': 'Show resigned',
 };

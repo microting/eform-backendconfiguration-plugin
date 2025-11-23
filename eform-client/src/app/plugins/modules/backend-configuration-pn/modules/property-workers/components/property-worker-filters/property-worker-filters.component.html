@@ -11,6 +11,14 @@
         [bindLabel]="'name'"
       />
     </mat-form-field>
+    <mat-slide-toggle
+      formControlName="showResigned"
+      color="primary"
+      class="mb-2"
+      id="showCalculationsAsNumberToggle"
+    >
+      {{ 'Show resigned' | translate }}
+    </mat-slide-toggle>
 <!--    <mat-form-field>-->
 <!--      <mat-label>{{'Workers' | translate}}</mat-label>-->
 <!--      <mtx-select-->

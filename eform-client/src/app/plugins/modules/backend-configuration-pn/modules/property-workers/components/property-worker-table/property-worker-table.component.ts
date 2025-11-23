@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
@@ -28,8 +28,8 @@ import {
   selectPropertyWorkersPaginationIsSortDsc,
   selectPropertyWorkersPaginationSort
 } from '../../../../state';
-import {format} from "date-fns";
-import {AuthStateService} from "src/app/common/store";
+import {format} from 'date-fns';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,12 +38,13 @@ import {AuthStateService} from "src/app/common/store";
     styleUrls: ['./property-worker-table.component.scss'],
     standalone: false
 })
-export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
+export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChanges {
   //@Input() propertyWorkers: any[] = [];
   @Input() sitesDto: any[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Input() availableProperties: CommonDictionaryModel[] = [];
   @Input() workersAssignments: PropertyAssignWorkersModel[] = [];
+  @Input() showResigned: boolean = false;
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
@@ -79,90 +80,114 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['showResigned']) {
+      this.buildTableHeaders();
+    }
+  }
 
-  tableHeaders: MtxGridColumn[] = [
-    {
-      header: this.translateService.stream('ID'),
-      field: 'siteId',
-      sortProp: {id: 'SiteId'},
-      sortable: true,
-    },
-    {
-      header: this.translateService.stream('Employee no'),
-      field: 'employeeNo',
-      sortProp: {id: 'EmployeeNo'},
-      sortable: true,
-    },
-    {
-      header: this.translateService.stream('Property'),
-      field: 'propertyNames',
-      // formatter: (rowData: DeviceUserModel) => rowData.propertyNames
-    },
-    {
-      header: this.translateService.stream('Name'),
-      sortProp: {id: 'SiteName'},
-      field: 'siteName',
-      sortable: true,
-      formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Email'),
-      sortProp: {id: 'WorkerEmail'},
-      field: 'workerEmail',
-      sortable: true,
-      formatter: (rowData: DeviceUserModel) => rowData.workerEmail ? `${rowData.workerEmail}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Phone number'),
-      sortProp: {id: 'PhoneNumber'},
-      field: 'phoneNumber',
-      sortable: true,
-      formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Task management'),
-      sortProp: {id: 'TaskManagementEnabled'},
-      field: 'taskManagementEnabled',
-      sortable: true,
-      //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Timeregistration'),
-      sortProp: {id: 'TimeRegistrationEnabled'},
-      field: 'timeRegistrationEnabled',
-      sortable: true,
-      //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Language'),
-      field: 'language',
-      sortable: true,
-      sortProp: {id: 'LanguageId'},
-    },
-    {
-      header: this.translateService.stream('Customer no & OTP'),
-      field: 'customerOtp',
-    },
-    {
-      header: this.translateService.stream('Model & OS version'),
-      field: 'manufacturer',
-      sortable: true,
-      sortProp: {id: 'Manufacturer'},
-    },
-    {
-      header: this.translateService.stream('Software version'),
-      field: 'version',
-      sortable: true,
-      sortProp: {id: 'Version'},
-    },
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      width: '160px',
-      pinned: 'right',
-      disabled: this.deviceUsersDelete || this.deviceUsersUpdate,
-    },
-  ];
+
+  public tableHeaders: MtxGridColumn[] = [];
+
+
+  buildTableHeaders() {
+    const baseHeaders: MtxGridColumn[] = [
+      {
+        header: this.translateService.stream('ID'),
+        field: 'siteId',
+        sortProp: {id: 'SiteId'},
+        sortable: true,
+      },
+      // "Resigned" column will be conditionally inserted here
+      {
+        header: this.translateService.stream('Employee no'),
+        field: 'employeeNo',
+        sortProp: {id: 'EmployeeNo'},
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Property'),
+        field: 'propertyNames',
+      },
+      {
+        header: this.translateService.stream('Name'),
+        sortProp: {id: 'SiteName'},
+        field: 'siteName',
+        sortable: true,
+        formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
+      },
+      {
+        header: this.translateService.stream('Email'),
+        sortProp: {id: 'WorkerEmail'},
+        field: 'workerEmail',
+        sortable: true,
+        formatter: (rowData: DeviceUserModel) => rowData.workerEmail ? `${rowData.workerEmail}` : `N/A`,
+      },
+      {
+        header: this.translateService.stream('Phone number'),
+        sortProp: {id: 'PhoneNumber'},
+        field: 'phoneNumber',
+        sortable: true,
+        formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,
+      },
+      {
+        header: this.translateService.stream('Task management'),
+        sortProp: {id: 'TaskManagementEnabled'},
+        field: 'taskManagementEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Timeregistration'),
+        sortProp: {id: 'TimeRegistrationEnabled'},
+        field: 'timeRegistrationEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Language'),
+        field: 'language',
+        sortable: true,
+        sortProp: {id: 'LanguageId'},
+      },
+      {
+        header: this.translateService.stream('Customer no & OTP'),
+        field: 'customerOtp',
+      },
+      {
+        header: this.translateService.stream('Model & OS version'),
+        field: 'manufacturer',
+        sortable: true,
+        sortProp: {id: 'Manufacturer'},
+      },
+      {
+        header: this.translateService.stream('Software version'),
+        field: 'version',
+        sortable: true,
+        sortProp: {id: 'Version'},
+      },
+      {
+        header: this.translateService.stream('Actions'),
+        field: 'actions',
+        width: '160px',
+        pinned: 'right',
+        disabled: this.deviceUsersDelete || this.deviceUsersUpdate,
+      },
+    ];
+
+    // const hasResigned = this.sitesDto && this.sitesDto.some((row: DeviceUserModel) => row.resigned);
+
+    if (this.showResigned) {
+      baseHeaders.splice(1, 0, {
+        header: this.translateService.stream('Resigned'),
+        field: 'resignedAtDate',
+        type: 'date',
+        formatter: (rowData: DeviceUserModel) => rowData.resigned ? this.getFormattedDate(rowData.resignedAtDate) : '-',
+        sortProp: {id: 'ResignedAtDate'},
+        sortable: true,
+      });
+    }
+
+    this.tableHeaders = baseHeaders;
+  }
 
 
   // get userClaims() {
@@ -233,7 +258,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
           assignments: workersAssignments ? workersAssignments.assignments : [],
           //assignments: [],
           availableProperties: this.availableProperties,
-        }), minWidth: 500
+        }), minWidth: 1024
       })
 
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
@@ -302,6 +327,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    this.buildTableHeaders();
     //this.getDeviceUsersFiltered();
   }
 
