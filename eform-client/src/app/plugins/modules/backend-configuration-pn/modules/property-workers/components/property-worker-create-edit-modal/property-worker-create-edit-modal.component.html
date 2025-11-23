@@ -87,6 +87,29 @@
           </ng-template>
         </mtx-select>
       </mat-form-field>
+      <div class="d-flex flex-row">
+        <mat-checkbox class="p-1"
+                      [id]="'resigned'"
+                      [name]="'resigned'"
+                      formControlName="resigned">
+          <div>{{ 'Resigned' | translate }}</div>
+        </mat-checkbox>
+        <mat-form-field *ngIf="selectedDeviceUser.resigned">
+          <mat-label>{{ 'Resigned at date' | translate }}</mat-label>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <input
+            required
+            matInput
+            [matDatepicker]="picker"
+            formControlName="resignedAtDate"
+            (click)="picker.open()"
+          >
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error class="text-warn" *ngIf="!selectedDeviceUser.resignedAtDate">
+            {{ 'Date is required'| translate }}*
+          </mat-error>
+        </mat-form-field>
+      </div>
       <mat-slide-toggle
         *ngIf="authStateService.checkClaim('time_registration_enable')"
         color="primary"

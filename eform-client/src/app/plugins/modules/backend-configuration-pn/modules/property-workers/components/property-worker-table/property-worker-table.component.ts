@@ -246,6 +246,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
     selectedSimpleSite.workerEmail = simpleSiteDto.workerEmail;
     selectedSimpleSite.phoneNumber = simpleSiteDto.phoneNumber;
+    selectedSimpleSite.resigned = simpleSiteDto.resigned;
+    selectedSimpleSite.resignedAtDate = simpleSiteDto.resignedAtDate;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

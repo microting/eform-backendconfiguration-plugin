@@ -24,27 +24,31 @@ import {
   PropertyWorkerFiltersComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/property-worker-filters/property-worker-filters.component';
 import {MatChip} from "@angular/material/chips";
+import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/material/datepicker";
 
 @NgModule({
-  imports: [
-    CommonModule,
-    PropertyWorkersRouting,
-    EformSharedModule,
-    TranslateModule,
-    FormsModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MtxGridModule,
-    MatInputModule,
-    MatDialogModule,
-    MtxSelectModule,
-    MatSlideToggleModule,
-    MatCheckboxModule,
-    MatMenuModule,
-    ReactiveFormsModule,
-    MatChip,
-  ],
+    imports: [
+        CommonModule,
+        PropertyWorkersRouting,
+        EformSharedModule,
+        TranslateModule,
+        FormsModule,
+        MatIconModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MtxGridModule,
+        MatInputModule,
+        MatDialogModule,
+        MtxSelectModule,
+        MatSlideToggleModule,
+        MatCheckboxModule,
+        MatMenuModule,
+        ReactiveFormsModule,
+        MatChip,
+        MatDatepicker,
+        MatDatepickerInput,
+        MatDatepickerToggle,
+    ],
   declarations: [
     PropertyWorkersPageComponent,
     PropertyWorkerOtpModalComponent,

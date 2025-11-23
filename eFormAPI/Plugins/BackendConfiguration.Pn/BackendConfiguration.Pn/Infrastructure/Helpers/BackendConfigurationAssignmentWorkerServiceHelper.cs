@@ -287,6 +287,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
                         }
                         var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+
+                        if (string.IsNullOrEmpty(deviceUserModel.WorkerEmail) || !deviceUserModel.WorkerEmail.Contains("@") && deviceUserModel.TimeRegistrationEnabled == false)
+                        {
+                            // generate a fake email
+                            deviceUserModel.WorkerEmail = $"user_{worker.Id}_{siteDto.SiteId}@microting.invalid".ToLower();
+                            // return new OperationResult(false, "EmailIsNotValid");
+                        }
                         var isUpdated = await core.SiteUpdate(deviceUserModel.SiteMicrotingUid, fullName, deviceUserModel.UserFirstName,
                             deviceUserModel.UserLastName, deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
@@ -296,6 +303,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.EmployeeNo = deviceUserModel.EmployeeNo;
                         worker.Email = deviceUserModel.WorkerEmail;
                         worker.PhoneNumber = deviceUserModel.PhoneNumber;
+                        worker.Resigned = deviceUserModel.Resigned;
+                        worker.ResignedAtDate = deviceUserModel.ResignedAtDate;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
 
                         var user = await userService.GetByUsernameAsync(oldEmail).ConfigureAwait(false);
