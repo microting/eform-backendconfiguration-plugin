@@ -126,10 +126,9 @@
     ></textarea>
   </mat-form-field>
 </div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     id="taskManagementCreateShowSaveBtn"
     [disabled]="!(workOrderCaseForm.valid)"
     (click)="create()"
@@ -137,7 +136,7 @@
     {{(!isCreate ? 'Save' : 'Create') | translate}}
   </button>
   <button
-    mat-raised-button
+   class="btn-cancel"
     (click)="hide()"
     id="taskManagementCreateShowSaveCancelBtn"
   >

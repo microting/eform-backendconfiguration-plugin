@@ -10,8 +10,7 @@
 <!--    <mat-icon>discount</mat-icon>-->
 <!--  </button>-->
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     [matTooltip]="'Create new task' | translate"
     (click)="onCreateTask()"
     id="createNewTaskBtn"
@@ -37,12 +36,11 @@
 />
 <button
   *ngIf="selectAuthIsAdmin$ | async;"
-  mat-raised-button
+  class="btn-warning mb-4"
   [disabled]="
     !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
   "
   id="deleteMultiplePluginsBtn"
-  color="warn"
   matTooltip="{{ 'Deactivate selected' | translate }}"
   (click)="showDeactivateMultipleTasksModal()"
 >
