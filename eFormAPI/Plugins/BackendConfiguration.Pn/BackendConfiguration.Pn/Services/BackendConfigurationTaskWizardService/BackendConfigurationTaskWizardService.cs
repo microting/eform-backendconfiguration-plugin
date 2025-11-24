@@ -802,6 +802,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.AreaRule.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.AreaRule.RepeatType = (int?)updateModel.RepeatType;
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            areaRulePlanning.AreaRule.ComplianceEnabled = updateModel.ComplianceEnabled;
             if (!oldStatus && areaRulePlanning.Status)
             {
                 areaRulePlanning.StartDate = updateModel.StartDate;
