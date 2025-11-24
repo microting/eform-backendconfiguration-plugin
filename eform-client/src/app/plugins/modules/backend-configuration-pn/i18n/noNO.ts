@@ -293,4 +293,8 @@ export const noNO = {
   'Deactivate task': 'Deaktiver oppgave',
   Areas: 'Områder',
   Pictures: 'Bilder',
+  'Delete employee': 'Slett ansatt',
+  Resigned: 'Sa opp',
+  'Show resigned': 'Vis oppgitt',
+  'Resigned at date': 'Sa opp på dato',
 };

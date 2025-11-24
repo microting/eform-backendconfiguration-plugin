@@ -293,4 +293,8 @@ export const hrHR = {
   'Deactivate task': 'Deaktiviraj zadatak',
   Areas: 'Područja',
   Pictures: 'Slike',
+  'Delete employee': 'Izbriši zaposlenika',
+  Resigned: 'Dao ostavku',
+  'Show resigned': 'Prikaži ostavku',
+  'Resigned at date': 'Ostavka dana',
 };

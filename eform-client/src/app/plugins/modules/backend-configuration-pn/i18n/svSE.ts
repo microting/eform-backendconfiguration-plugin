@@ -293,4 +293,8 @@ export const svSE = {
   'Deactivate task': 'Inaktivera uppgiften',
   Areas: 'Områden',
   Pictures: 'Bilder',
+  'Delete employee': 'Ta bort anställd',
+  Resigned: 'Resignerad',
+  'Show resigned': 'Visa avgick',
+  'Resigned at date': 'Avgick vid datumet',
 };

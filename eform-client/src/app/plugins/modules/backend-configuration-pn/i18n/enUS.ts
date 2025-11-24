@@ -313,4 +313,5 @@ export const enUS= {
   'Delete employee': 'Delete employee',
   'Resigned': 'Resigned',
   'Show resigned': 'Show resigned',
+  'Resigned at date': 'Resigned at date',
 };

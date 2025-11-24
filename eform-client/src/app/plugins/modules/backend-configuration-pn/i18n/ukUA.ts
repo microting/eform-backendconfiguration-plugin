@@ -293,4 +293,8 @@ export const ukUA = {
   'Deactivate task': 'Деактивувати завдання',
   Areas: 'Області',
   Pictures: 'Зображення',
+  'Delete employee': 'Видалити співробітника',
+  Resigned: 'У відставку',
+  'Show resigned': 'Показати у відставці',
+  'Resigned at date': 'Звільнений у дату',
 };

@@ -293,4 +293,8 @@ export const lvLV = {
   'Deactivate task': 'Deaktivizēt uzdevumu',
   Areas: 'Apgabali',
   Pictures: 'Attēli',
+  'Delete employee': 'Dzēst darbinieku',
+  Resigned: 'Atkāpās no amata',
+  'Show resigned': 'Rādīt atkāpās',
+  'Resigned at date': 'Atkāpšanās no amata datumā',
 };

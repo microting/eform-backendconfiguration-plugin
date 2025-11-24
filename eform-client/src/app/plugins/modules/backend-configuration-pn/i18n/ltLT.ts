@@ -293,4 +293,8 @@ export const ltLT = {
   'Deactivate task': 'Išjungti užduotį',
   Areas: 'Sritys',
   Pictures: 'Paveikslėliai',
+  'Delete employee': 'Ištrinti darbuotoją',
+  Resigned: 'Atsistatydino',
+  'Show resigned': 'Rodyti atsistatydino',
+  'Resigned at date': 'Atsistatydino nuo datos',
 };

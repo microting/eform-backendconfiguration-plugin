@@ -293,4 +293,8 @@ export const fiFI = {
   'Deactivate task': 'Poista tehtävä käytöstä',
   Areas: 'Alueet',
   Pictures: 'Kuvia',
+  'Delete employee': 'Poista työntekijä',
+  Resigned: 'Erosi',
+  'Show resigned': 'Näytä erosi',
+  'Resigned at date': 'Erosi päivämääränä',
 };

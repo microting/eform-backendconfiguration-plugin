@@ -295,4 +295,8 @@ export const da = {
   'Deactivate task': 'Deaktiver opgave',
   Areas: 'Områder',
   Pictures: 'Billeder',
+  'Delete employee': 'Slet medarbejder',
+  Resigned: 'Fratrådt',
+  'Show resigned': 'Vis fratrådte',
+  'Resigned at date': 'Fratrådte d.',
 };

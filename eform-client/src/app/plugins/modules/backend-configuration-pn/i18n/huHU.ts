@@ -293,4 +293,8 @@ export const huHU = {
   'Deactivate task': 'Inaktiválja a feladatot',
   Areas: 'Területek',
   Pictures: 'Képek',
+  'Delete employee': 'Alkalmazott törlése',
+  Resigned: 'Lemondó',
+  'Show resigned': 'Show lemondott',
+  'Resigned at date': 'Lemondott ezen a napon',
 };

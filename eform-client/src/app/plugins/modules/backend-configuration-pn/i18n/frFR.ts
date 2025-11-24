@@ -293,4 +293,8 @@ export const frFR = {
   'Deactivate task': 'Désactiver la tâche',
   Areas: 'Zones',
   Pictures: 'Photos',
+  'Delete employee': 'Supprimer l&#39;employé',
+  Resigned: 'Résigné',
+  'Show resigned': 'Afficher la démission',
+  'Resigned at date': 'Démission à la date',
 };
