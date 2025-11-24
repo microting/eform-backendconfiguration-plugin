@@ -171,10 +171,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
 
     // taskManagementEnabled (mat-slide-toggle)
-    if (this.selectedDeviceUser.hasWorkOrdersAssigned || this.selectedDeviceUser.resigned) {
+    if (this.selectedDeviceUser.hasWorkOrdersAssigned) {
       this.form.get('taskManagementEnabled')?.disable();
+      this.form.get('resigned').disable();
     } else {
-      this.form.get('taskManagementEnabled')?.enable();
+      if (this.selectedDeviceUser.resigned) {
+        this.form.get('taskManagementEnabled')?.disable();
+      } else {
+        this.form.get('taskManagementEnabled')?.enable();
+      }
     }
   }
 
@@ -216,6 +221,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     const assignment = this.assignments.find(
       (x) => x.propertyId === propertyId
     );
+    if (assignment) {
+      if (assignment.isLocked) {
+        this.form.get('resigned').disable();
+      }
+    }
     return assignment ? assignment.isLocked : false;
   }
 
