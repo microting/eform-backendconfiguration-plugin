@@ -25,11 +25,13 @@
 
 <div class="d-flex flex-row justify-content-end mb-2">
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     [disabled]="selectedFileIds.length === 0"
     (click)="downloadSelectedFiles()"
-    >{{'Download selected' | translate}}</button>
+    >
+    <mat-icon>download</mat-icon>
+    <span>{{'Download selected' | translate}}</span>
+  </button>
 </div>
 <app-files-table
   [files]="files"

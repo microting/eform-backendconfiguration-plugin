@@ -1,14 +1,14 @@
 <eform-new-subheader>
   <button
     *ngIf="authStateService.checkClaim('properties_create')"
-    mat-icon-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     id="propertyCreateBtn"
     matTooltip="{{ 'Create Property' | translate }}"
     (click)="showPropertyCreateModal()"
     [matTooltipPosition]="'left'"
   >
     <mat-icon>add</mat-icon>
+    <span>{{'New property' | translate}}</span>
   </button>
 </eform-new-subheader>
 

@@ -304,15 +304,14 @@
   </div>
   <div mat-dialog-actions class="d-flex flex-row justify-content-end">
     <button
-      mat-raised-button
-      color="accent"
+      class="btn-primary btn-primary--icon-left"
       id="createTaskBtn"
       (click)="create()"
     >
-      {{ 'Create' | translate }}
+      <span>{{ 'Create' | translate }}</span>
     </button>
     <button
-      mat-raised-button
+      class="btn-cancel"
       id="cancelCreateTaskBtn"
       (click)="hide()"
     >

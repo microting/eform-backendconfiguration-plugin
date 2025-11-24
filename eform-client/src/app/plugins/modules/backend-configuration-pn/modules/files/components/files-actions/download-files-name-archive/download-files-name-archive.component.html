@@ -13,16 +13,15 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     id="downloadFilesBtn"
     (click)="downloadFiles()"
     [disabled]="disabled"
   >
-    {{ 'Download' | translate }}
+    <span>{{ 'Download' | translate }}</span>
   </button>
   <button
-    mat-raised-button
+    class="btn-cancel"
     id="cancelDownloadFilesBtn"
     (click)="hide()"
   >

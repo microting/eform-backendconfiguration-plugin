@@ -53,13 +53,11 @@
       </mtx-select>
     </mat-form-field>
     <button
-      mat-raised-button
+      class="btn-primary btn-primary--icon-left"
       id="showReportBtn"
-      color="accent"
       (click)="updateTable.emit()"
-      class="mx-2"
     >
-      {{ 'Show' | translate }}
+      <span>{{ 'Show' | translate }}</span>
     </button>
   </div>
 

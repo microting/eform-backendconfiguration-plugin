@@ -28,16 +28,15 @@
     </mat-form-field>
     <div class="d-flex flex-row align-items-center ml-4">
       <button
-        mat-raised-button
-        color="accent"
+        class="btn-primary btn-primary--icon-left"
         [disabled]="generateForm.invalid"
         (click)="onSubmit()"
         id="generateTableBtn"
       >
-        {{ 'Generate report' | translate }}
+        <span>{{ 'Generate report' | translate }}</span>
       </button>
       <button
-        mat-icon-button
+        class="btn-secondary btn-secondary--icon-rounded-border"
         [disabled]="generateForm.invalid"
         (click)="onWordSave()"
         id="generateWordBtn"
@@ -46,7 +45,7 @@
         <mat-icon svgIcon="file-word"></mat-icon>
       </button>
       <button
-        mat-icon-button
+        class="btn-secondary btn-secondary--icon-rounded-border"
         [disabled]="generateForm.invalid"
         (click)="onExcelSave()"
         id="generateExcelBtn"
@@ -55,7 +54,7 @@
         <mat-icon svgIcon="file-excel"></mat-icon>
       </button>
       <button
-        mat-icon-button
+        class="btn-secondary btn-secondary--icon-rounded-border"
         [disabled]="generateForm.invalid"
         (click)="onPdfSave()"
         id="generatePdfBtn"
