@@ -115,16 +115,7 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="accent"
-    (click)="onUpdateAreaRule()"
-    id="areaRuleEditSaveBtn"
-    *ngIf="!planningStatus"
-  >
-    {{'Save' | translate}}
-  </button>
-  <button
-    mat-raised-button
+    class="btn-cancel"
     id="areaRuleEditSaveCancelBtn"
     (click)="hide()"
     *ngIf="!planningStatus"
@@ -132,12 +123,20 @@
     {{'Cancel' | translate}}
   </button>
   <button
-    mat-raised-button
+    class="btn-cancel"
     id="areaRuleEditCloseBtn"
     (click)="hide()"
     *ngIf="planningStatus"
   >
     {{ 'Close' | translate }}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    (click)="onUpdateAreaRule()"
+    id="areaRuleEditSaveBtn"
+    *ngIf="!planningStatus"
+  >
+    <span>{{'Save' | translate}}</span>
   </button>
 </div>
 

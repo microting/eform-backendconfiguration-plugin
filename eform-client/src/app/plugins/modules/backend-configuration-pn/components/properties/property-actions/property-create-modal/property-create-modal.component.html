@@ -38,17 +38,17 @@
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    class="btn-primary btn-primary--icon-left"
-    (click)="onCreateProperty()"
-    [disabled]="isDisabledSaveButton" id="propertyCreateSaveBtn"
-  >
-    {{'Save' | translate}}
-  </button>
-  <button
     class="btn-cancel"
     (click)="hide()"
     id="propertyCreateSaveCancelBtn"
   >
     {{'Cancel' | translate}}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    (click)="onCreateProperty()"
+    [disabled]="isDisabledSaveButton" id="propertyCreateSaveBtn"
+  >
+    {{'Save' | translate}}
   </button>
 </div>

@@ -69,18 +69,18 @@
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
+    class="btn-cancel"
+    (click)="hide()"
+    id="propertyEditSaveCancelBtn"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+  <button
     class="btn-primary btn-primary--icon-left"
     (click)="onUpdateProperty()"
     [disabled]="isDisabledSaveButton"
     id="propertyEditSaveBtn"
   >
     <span>{{ 'Save' | translate }}</span>
-  </button>
-  <button
-    class="btn-cancel"
-    (click)="hide()"
-    id="propertyEditSaveCancelBtn"
-  >
-    {{ 'Cancel' | translate }}
   </button>
 </div>

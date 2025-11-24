@@ -28,18 +28,18 @@
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
     mat-raised-button
+    id="cancelDeleteBtn"
+    (click)="hide()"
+  >
+    {{'Cancel' | translate}}
+  </button>
+  <button
+    mat-raised-button
     color="warn"
     id="saveDeleteBtn"
     (click)="deleteSingle()"
   >
     {{'Delete' | translate}}
-  </button>
-  <button
-    mat-raised-button
-    id="cancelDeleteBtn"
-    (click)="hide()"
-  >
-    {{'Cancel' | translate}}
   </button>
 </div>
 

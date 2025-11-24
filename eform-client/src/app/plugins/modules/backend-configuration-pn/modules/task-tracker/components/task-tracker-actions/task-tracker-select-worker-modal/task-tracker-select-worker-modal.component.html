@@ -18,18 +18,18 @@
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
+    class="btn-cancel"
+    (click)="hide()"
+    id="taskManagementCreateShowSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+  <button
     class="btn-primary btn-primary--icon-left"
     id="taskManagementCreateShowSaveBtn"
     (click)="create()"
     [disabled]="!selectedSite"
   >
     <span>{{'Select' | translate}}</span>
-  </button>
-  <button
-    class="btn-cancel"
-    (click)="hide()"
-    id="taskManagementCreateShowSaveCancelBtn"
-  >
-    {{'Cancel' | translate}}
   </button>
 </div>

@@ -201,20 +201,19 @@
   </div>
   <div mat-dialog-actions class="d-flex flex-row justify-content-end">
     <button
-      mat-raised-button
-      color="accent"
-      id="createDocumentSaveBtn"
-      (click)="createDocument()"
-      [disabled]="disabledSaveBtn"
-    >
-      {{ 'Create' | translate }}
-    </button>
-    <button
-      mat-raised-button
+      class="btn-cancel"
       id="createDocumentCancelBtn"
       (click)="hide()"
     >
       {{ 'Cancel' | translate }}
+    </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="createDocumentSaveBtn"
+      (click)="createDocument()"
+      [disabled]="disabledSaveBtn"
+    >
+      <span>{{ 'Create' | translate }}</span>
     </button>
   </div>
 </div>

@@ -9,16 +9,15 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="warn"
-    (click)="requestOtp()"
-  >
-    {{'OK' | translate}}
-  </button>
-  <button
-    mat-raised-button
+    class="btn-cancel"
     (click)="hide()"
   >
     {{'Cancel' | translate}}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    (click)="requestOtp()"
+  >
+    <span>{{'OK' | translate}}</span>
   </button>
 </div>

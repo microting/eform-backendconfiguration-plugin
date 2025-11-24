@@ -154,19 +154,19 @@
     </div>
     <div mat-dialog-actions class="d-flex flex-row justify-content-end">
       <button
+        class="btn-cancel"
+        id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
+        (click)="hide()"
+      >
+        {{'Cancel' | translate}}
+      </button>
+      <button
         class="btn-primary btn-primary--icon-left"
         (click)="edit ? updateSingle() : createDeviceUser()"
         [disabled]="form.invalid"
         id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
       >
         <span>{{(edit ? 'Save' : 'Create') | translate}}</span>
-      </button>
-      <button
-        class="btn-cancel"
-        id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
-        (click)="hide()"
-      >
-        {{'Cancel' | translate}}
       </button>
     </div>
   </div>
