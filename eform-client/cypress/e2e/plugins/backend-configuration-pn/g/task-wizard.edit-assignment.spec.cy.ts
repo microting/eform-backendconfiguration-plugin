@@ -172,7 +172,7 @@ describe('Area rules type 1', () => {
     //cy.get('.editBtn > .mat-mdc-button-touch-target').click();
     cy.get('#checkboxUpdateAssignment1-input').check();
     cy.intercept('PUT', '**/api/backend-configuration-pn/task-wizard').as('updateTask');
-    cy.get('#updateTaskBtn > .mdc-button__label').click();
+    cy.get('#updateTaskBtn').click();
     cy.wait('@updateTask', { timeout: 60000 });
     cy.wait(500);
     backendConfigurationPropertiesPage.goToPlanningPage();
@@ -182,7 +182,7 @@ describe('Area rules type 1', () => {
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate2.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
-    cy.get('#changeAssignmentsCancel > .mdc-button__label').click();
+    cy.get('#changeAssignmentsCancel').click();
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.intercept('POST', '**/api/templates/index').as('getTemplates');
@@ -204,7 +204,7 @@ describe('Area rules type 1', () => {
     //cy.get('.editBtn > .mat-mdc-button-touch-target').click();
     cy.get('#checkboxUpdateAssignment0-input').uncheck();
     cy.intercept('PUT', '**/api/backend-configuration-pn/task-wizard').as('updateTask');
-    cy.get('#updateTaskBtn > .mdc-button__label').click();
+    cy.get('#updateTaskBtn').click();
     cy.wait('@updateTask', { timeout: 60000 });
     cy.wait(500);
     backendConfigurationPropertiesPage.goToPlanningPage();
