@@ -37,12 +37,11 @@
 />
 <button
   *ngIf="selectAuthIsAdmin$ | async;"
-  mat-raised-button
+  class="btn-warning mb-4"
   [disabled]="
     !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
   "
   id="deleteMultiplePluginsBtn"
-  color="warn"
   matTooltip="{{ 'Deactivate selected' | translate }}"
   (click)="showDeactivateMultipleTasksModal()"
 >
