@@ -292,4 +292,5 @@ export const slSL = {
   'Employee no': 'Uslužbenec št',
   'Deactivate task': 'Deaktiviraj nalogo',
   Areas: 'Območja',
+  Pictures: 'Slike',
 };

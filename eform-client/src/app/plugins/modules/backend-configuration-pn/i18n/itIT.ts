@@ -292,4 +292,5 @@ export const itIT = {
   'Employee no': 'Dipendente n',
   'Deactivate task': 'Disattivare l&#39;attività',
   Areas: 'Aree',
+  Pictures: 'Immagini',
 };

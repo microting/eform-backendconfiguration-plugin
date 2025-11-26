@@ -292,4 +292,5 @@ export const ptPT = {
   'Employee no': 'Funcionário não',
   'Deactivate task': 'Desativar tarefa',
   Areas: 'Áreas',
+  Pictures: 'Fotos',
 };

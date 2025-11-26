@@ -292,4 +292,5 @@ export const isIS = {
   'Employee no': 'Starfsmaður nr',
   'Deactivate task': 'Slökktu á verkefni',
   Areas: 'Svæði',
+  Pictures: 'Myndir',
 };

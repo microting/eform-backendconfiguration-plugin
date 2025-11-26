@@ -292,4 +292,5 @@ export const noNO = {
   'Employee no': 'Ansatt nummer',
   'Deactivate task': 'Deaktiver oppgave',
   Areas: 'Områder',
+  Pictures: 'Bilder',
 };

@@ -1,0 +1,10 @@
+/* Add to your component's CSS file */
+.modal-columns {
+  display: flex;
+  gap: 24px; /* space between columns */
+}
+
+#column1, #column2 {
+  flex: 1 1 0;
+  min-width: 0;
+}

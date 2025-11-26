@@ -7,6 +7,7 @@ import {
 
 export interface PropertyWorkersFiltrationModel extends FiltrationStateModel {
   propertyIds: number[];
+  showResigned: boolean;
 }
 
 export interface PropertyWorkersState {
@@ -27,6 +28,7 @@ export const propertyWorkersInitialState: PropertyWorkersState = {
     propertyIds: [],
     nameFilter: '',
     tagIds: [],
+    showResigned: false,
   }
 };
 

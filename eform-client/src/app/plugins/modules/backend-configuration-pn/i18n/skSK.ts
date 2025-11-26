@@ -292,4 +292,5 @@ export const skSK = {
   'Employee no': 'Zamestnanec č',
   'Deactivate task': 'Deaktivovať úlohu',
   Areas: 'Oblasti',
+  Pictures: 'Obrázky',
 };

@@ -27,10 +27,12 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
 
   filtersForm: FormGroup<{
     propertyIds: FormControl<number[]>,
+    showResigned: FormControl<boolean>,
     //workerIds: FormControl<number[]>,
   }>;
   getFiltersAsyncSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
+  valueChangesShowResignedSub$: Subscription;
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
   constructor(
@@ -39,6 +41,7 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   ) {
     this.filtersForm = new FormGroup({
       propertyIds: new FormControl([]),
+      showResigned: new FormControl(false),
       //workerIds: new FormControl([]),
     });
   }
@@ -60,6 +63,11 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
         this.propertyWorkersStateService.updatePropertyIds(value);
         this.updateTable.emit();
       });
+    this.valueChangesShowResignedSub$ = this.filtersForm.get('showResigned').valueChanges
+      .subscribe((value: boolean) => {
+        this.propertyWorkersStateService.updateShowResigned(value);
+        this.updateTable.emit();
+      });
     // .pipe(
     //   debounce(x => interval(200)),
     //   filter(value => !R.equals(value, this.propertyWorkersStateService.store.getValue().filters.propertyIds)),
@@ -76,5 +84,9 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   // }
 
   ngOnDestroy(): void {
+  }
+
+  onShowResignedSitesChanged($event: any) {
+
   }
 }

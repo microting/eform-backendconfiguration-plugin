@@ -108,6 +108,8 @@ public class DeviceUserModel
     public string? PhoneNumber { get; set; }
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public bool Resigned { get; set; }
+    public DateTime ResignedAtDate { get; set; }
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {

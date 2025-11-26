@@ -292,4 +292,5 @@ export const elGR = {
   'Employee no': 'Υπάλληλος αρ',
   'Deactivate task': 'Απενεργοποίηση εργασίας',
   Areas: 'Περιοχές',
+  Pictures: 'Εικόνες',
 };

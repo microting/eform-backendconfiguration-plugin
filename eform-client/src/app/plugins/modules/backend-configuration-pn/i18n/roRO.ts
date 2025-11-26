@@ -292,4 +292,5 @@ export const roRO = {
   'Employee no': 'Angajat nr',
   'Deactivate task': 'Dezactivați sarcina',
   Areas: 'Zone',
+  Pictures: 'Imagini',
 };
