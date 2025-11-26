@@ -1,29 +1,29 @@
 <eform-new-subheader>
-  <button
-    matSuffix
-    mat-icon-button
-    id="addNewFileBtn"
-    matTooltip="{{ 'Upload PDF' | translate }}"
-    routerLink="./create"
-    color="accent"
-  >
-    <mat-icon>file_upload</mat-icon>
-  </button>
-  <button
-    matSuffix
-    mat-icon-button
-    id="manageTagsBtn"
-    matTooltip="{{ 'Manage tags' | translate }}"
-    (click)="openTagsModal()"
-    color="primary"
-  >
-    <mat-icon>discount</mat-icon>
-  </button>
+  <div class="d-flex flex-row justify-content-center align-items-center gap-12">
+    <button
+      matSuffix
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      id="addNewFileBtn"
+      matTooltip="{{ 'Upload PDF' | translate }}"
+      routerLink="./create"
+    >
+      <mat-icon>file_upload</mat-icon>
+    </button>
+    <button
+      matSuffix
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      id="manageTagsBtn"
+      matTooltip="{{ 'Manage tags' | translate }}"
+      (click)="openTagsModal()"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+  </div>
 </eform-new-subheader>
 
 <app-files-filters [availableTags]="availableTags" (updateTable)="updateTable()"></app-files-filters>
 
-<div class="d-flex flex-row justify-content-end mb-2">
+<div class="d-flex flex-row justify-content-end mb-4">
   <button
     class="btn-primary btn-primary--icon-left"
     [disabled]="selectedFileIds.length === 0"

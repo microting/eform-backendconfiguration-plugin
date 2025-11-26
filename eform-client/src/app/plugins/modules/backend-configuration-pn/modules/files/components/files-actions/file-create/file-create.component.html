@@ -1,32 +1,32 @@
 <eform-new-subheader forceStaticTitle="true" [title]="'Upload files' | translate">
-  <button
-    mat-raised-button
-    id="backBtn"
-    color="primary"
-    *ngIf="selectedFile === null"
-    [routerLink]="'..'"
-  >
-    {{'Back' | translate}}
-  </button>
-  <button
-    mat-raised-button
-    id="uploadFilesBtn"
-    (click)="uploadFiles()"
-    color="accent"
-    *ngIf="selectedFile === null"
-    [disabled]="disabledUploadBtn"
-  >
-    {{'Upload files' | translate}}
-  </button>
-  <button
-    mat-icon-button
-    id="manageTagsBtn"
-    matTooltip="{{ 'Manage tags' | translate }}"
-    (click)="openTagsModal()"
-    color="primary"
-  >
-    <mat-icon>discount</mat-icon>
-  </button>
+  <div class="d-flex flex-row justify-content-center align-items-center gap-12">
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="backBtn"
+      *ngIf="selectedFile === null"
+      [routerLink]="'..'"
+    >
+      {{'Back' | translate}}
+    </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="uploadFilesBtn"
+      (click)="uploadFiles()"
+      *ngIf="selectedFile === null"
+      [disabled]="disabledUploadBtn"
+    >
+      <mat-icon>upload</mat-icon>
+      <span>{{'Upload files' | translate}}</span>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      id="manageTagsBtn"
+      matTooltip="{{ 'Manage tags' | translate }}"
+      (click)="openTagsModal()"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+  </div>
 </eform-new-subheader>
 
 <ng-container *ngIf="selectedFile === null">
