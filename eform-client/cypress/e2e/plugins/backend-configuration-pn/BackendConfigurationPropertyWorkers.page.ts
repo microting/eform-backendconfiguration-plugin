@@ -141,6 +141,7 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
         selectLanguage('#profileLanguageSelector', propertyWorker.language);
       }
       if (propertyWorker.properties) {
+        cy.get('#propertiesTab').should('be.visible').click();
         cy.wait(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           const row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(propertyWorker.properties[i]).parent().parent().parent().scrollIntoView();

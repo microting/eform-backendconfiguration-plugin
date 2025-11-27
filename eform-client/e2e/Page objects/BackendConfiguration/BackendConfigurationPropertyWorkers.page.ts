@@ -226,6 +226,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await browser.pause(500);
       }
       if (propertyWorker.properties) {
+        await (await $('#propertiesTab')).click();
         await browser.pause(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           await (
