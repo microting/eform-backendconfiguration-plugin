@@ -416,6 +416,7 @@ export class PropertyWorkerRowObject {
     await this.clickActionsMenu();
     await this.openEditModal();
     await (await $('#propertiesTab')).click();
+    await browser.pause(500);
     const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{
       propertyName: string;
