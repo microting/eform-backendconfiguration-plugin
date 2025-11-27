@@ -7,166 +7,166 @@
     >
       <mat-tab label="{{'General' | translate }}" >
         <br>
-    <div class="modal-columns">
-    <div class="d-flex flex-column" id="column1">
-      <mat-form-field>
-        <mat-label>{{'First name' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="userFirstName"
-          required
-          type="text"
-          id="firstName"
-          name="userName">
-        <mat-error *ngIf="form.get('userFirstName').hasError('required')">
-          Required
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{'e-mail' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="workerEmail"
-          type="email"
-          id="workerEmail"
-          required>
-        <mat-error *ngIf="form.get('workerEmail').hasError('invalidEmail')">
-          Invalid email address
-        </mat-error>
-        <mat-error *ngIf="form.get('workerEmail').hasError('required')">
-          Required
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{'Employee no' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="employeeNo"
-          type="text"
-          id="employeeNo">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{'Language' | translate }}</mat-label>
-        <mtx-select
-          id="profileLanguageSelector"
-          [bindLabel]="'name'"
-          [bindValue]="'languageCode'"
-          [clearable]="false"
-          formControlName="languageCode"
-          [items]="activeLanguages">
-          <ng-template ng-label-tmp let-item="item">
-            {{item.name | translate}}
-          </ng-template>
-          <ng-template ng-option-tmp let-item="item">
-            {{item.name | translate}}
-          </ng-template>
-        </mtx-select>
-      </mat-form-field>
-      <mat-slide-toggle
-        *ngIf="authStateService.checkClaim('time_registration_enable')"
-        color="primary"
-        class="mb-2"
-        id="timeRegistrationEnabledToggle"
-        formControlName="timeRegistrationEnabled">
-        {{ "Timeregistration" | translate }}
-      </mat-slide-toggle>
-      <mat-slide-toggle
-        *ngIf="authStateService.checkClaim('task_management_enable')"
-        color="primary"
-        class="mb-2"
-        id="taskManagementEnabledToggle"
-        formControlName="taskManagementEnabled">
-        {{ "Task management" | translate }}
-      </mat-slide-toggle>
-    </div>
-    <div class="d-flex flex-column" id="column2">
-      <mat-form-field>
-        <mat-label>{{'Last name' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="userLastName"
-          type="text"
-          id="lastName"
-          required>
-        <mat-error *ngIf="form.get('userLastName').hasError('required')">
-          Required
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{'Phone' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="phoneNumber"
-          type="tel"
-          name="phoneNumber"
-          id="phoneNumber">
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{'PIN code' | translate }}</mat-label>
-        <input
-          matInput
-          formControlName="pinCode"
-          type="text"
-          name="pinCode"
-          pattern="([0-9]*|\*{4})"
-          id="pinCode">
-      </mat-form-field>
-      <div class="d-flex flex-row">
-        <mat-checkbox class="p-1"
-                      [id]="'resigned'"
-                      [name]="'resigned'"
-                      formControlName="resigned">
-          <div>{{ 'Resigned' | translate }}</div>
-        </mat-checkbox>
-        <mat-form-field *ngIf="selectedDeviceUser.resigned">
-          <mat-label>{{ 'Resigned at date' | translate }}</mat-label>
-          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-          <input
-            required
-            matInput
-            [matDatepicker]="picker"
-            formControlName="resignedAtDate"
-            (click)="picker.open()"
-          >
-          <mat-datepicker #picker></mat-datepicker>
-          <mat-error class="text-warn" *ngIf="!selectedDeviceUser.resignedAtDate">
-            {{ 'Date is required'| translate }}*
-          </mat-error>
-        </mat-form-field>
-      </div>
-    </div>
+        <div class="modal-columns">
+          <div class="d-flex flex-column" id="column1">
+            <mat-form-field>
+              <mat-label>{{'First name' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="userFirstName"
+                required
+                type="text"
+                id="firstName"
+                name="userName">
+              <mat-error *ngIf="form.get('userFirstName').hasError('required')">
+                Required
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'e-mail' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="workerEmail"
+                type="email"
+                id="workerEmail"
+                required>
+              <mat-error *ngIf="form.get('workerEmail').hasError('invalidEmail')">
+                Invalid email address
+              </mat-error>
+              <mat-error *ngIf="form.get('workerEmail').hasError('required')">
+                Required
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'Employee no' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="employeeNo"
+                type="text"
+                id="employeeNo">
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'Language' | translate }}</mat-label>
+              <mtx-select
+                id="profileLanguageSelector"
+                [bindLabel]="'name'"
+                [bindValue]="'languageCode'"
+                [clearable]="false"
+                formControlName="languageCode"
+                [items]="activeLanguages">
+                <ng-template ng-label-tmp let-item="item">
+                  {{item.name | translate}}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                  {{item.name | translate}}
+                </ng-template>
+              </mtx-select>
+            </mat-form-field>
+            <mat-slide-toggle
+              *ngIf="authStateService.checkClaim('time_registration_enable')"
+              color="primary"
+              class="mb-2"
+              id="timeRegistrationEnabledToggle"
+              formControlName="timeRegistrationEnabled">
+              {{ "Timeregistration" | translate }}
+            </mat-slide-toggle>
+            <mat-slide-toggle
+              *ngIf="authStateService.checkClaim('task_management_enable')"
+              color="primary"
+              class="mb-2"
+              id="taskManagementEnabledToggle"
+              formControlName="taskManagementEnabled">
+              {{ "Task management" | translate }}
+            </mat-slide-toggle>
+          </div>
+          <div class="d-flex flex-column" id="column2">
+            <mat-form-field>
+              <mat-label>{{'Last name' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="userLastName"
+                type="text"
+                id="lastName"
+                required>
+              <mat-error *ngIf="form.get('userLastName').hasError('required')">
+                Required
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'Phone' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="phoneNumber"
+                type="tel"
+                name="phoneNumber"
+                id="phoneNumber">
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'PIN code' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="pinCode"
+                type="text"
+                name="pinCode"
+                pattern="([0-9]*|\*{4})"
+                id="pinCode">
+            </mat-form-field>
+            <div class="d-flex flex-row">
+              <mat-checkbox class="p-1"
+                            [id]="'resigned'"
+                            [name]="'resigned'"
+                            formControlName="resigned">
+                <div>{{ 'Resigned' | translate }}</div>
+              </mat-checkbox>
+              <mat-form-field *ngIf="selectedDeviceUser.resigned">
+                <mat-label>{{ 'Resigned at date' | translate }}</mat-label>
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <input
+                  required
+                  matInput
+                  [matDatepicker]="picker"
+                  formControlName="resignedAtDate"
+                  (click)="picker.open()"
+                >
+                <mat-datepicker #picker></mat-datepicker>
+                <mat-error class="text-warn" *ngIf="!selectedDeviceUser.resignedAtDate">
+                  {{ 'Date is required'| translate }}*
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
 
-    </div>
+        </div>
         <br>
       </mat-tab>
       <mat-tab label="{{'Properties' | translate }}">
-    <div class="modal-columns">
-    <div class="d-flex flex-column" id="column2">
-      <br>
-      <mtx-grid
-        [data]="availableProperties"
-        [columns]="tableHeaders"
-        [cellTemplate]="{select: selectTpl}"
-        [pageOnFront]="false"
-        [rowStriped]="true"
-        [showPaginator]="false"
-        id="pairingModalTableBody"
-      >
-      </mtx-grid>
+        <div class="modal-columns">
+          <div class="d-flex flex-column" id="column2">
+            <br>
+            <mtx-grid
+              [data]="availableProperties"
+              [columns]="tableHeaders"
+              [cellTemplate]="{select: selectTpl}"
+              [pageOnFront]="false"
+              [rowStriped]="true"
+              [showPaginator]="false"
+              id="pairingModalTableBody"
+            >
+            </mtx-grid>
 
-      <ng-template #selectTpl let-row let-i="index">
-        <div class="column-select">
-          <mat-checkbox
-            id="checkboxCreateAssignment{{ i }}"
-            (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
-            [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
-            [disabled]="getAssignmentIsLockedByPropertyId(row.id)"
-          ></mat-checkbox>
+            <ng-template #selectTpl let-row let-i="index">
+              <div class="column-select">
+                <mat-checkbox
+                  id="checkboxCreateAssignment{{ i }}"
+                  (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
+                  [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
+                  [disabled]="getAssignmentIsLockedByPropertyId(row.id)"
+                ></mat-checkbox>
+              </div>
+            </ng-template>
+            <br>
+          </div>
         </div>
-      </ng-template>
-      <br>
-    </div>
-    </div>
 
       </mat-tab>
     </mat-tab-group>
