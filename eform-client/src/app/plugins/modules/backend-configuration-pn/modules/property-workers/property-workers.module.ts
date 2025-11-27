@@ -25,6 +25,7 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/property-worker-filters/property-worker-filters.component';
 import {MatChip} from "@angular/material/chips";
 import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/material/datepicker";
+import {MatTab, MatTabGroup} from "@angular/material/tabs";
 
 @NgModule({
     imports: [
@@ -48,6 +49,8 @@ import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/m
         MatDatepicker,
         MatDatepickerInput,
         MatDatepickerToggle,
+        MatTab,
+        MatTabGroup,
     ],
   declarations: [
     PropertyWorkersPageComponent,
