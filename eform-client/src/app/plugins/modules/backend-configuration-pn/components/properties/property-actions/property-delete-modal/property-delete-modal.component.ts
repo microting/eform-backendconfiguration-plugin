@@ -1,7 +1,9 @@
 import {
   Component,
   EventEmitter,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import { PropertyModel } from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 

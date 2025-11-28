@@ -3,7 +3,9 @@ import {
   OnInit,
   QueryList,
   ViewChild,
-  ViewChildren, inject} from '@angular/core';
+  ViewChildren,
+  inject
+} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {EFormService, CasesService} from 'src/app/common/services';
 import {

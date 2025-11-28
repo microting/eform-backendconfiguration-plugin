@@ -3,7 +3,9 @@ import {
   EventEmitter,
   Input, OnChanges,
   OnInit,
-  Output, SimpleChanges, inject} from '@angular/core';
+  Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {
   Columns,

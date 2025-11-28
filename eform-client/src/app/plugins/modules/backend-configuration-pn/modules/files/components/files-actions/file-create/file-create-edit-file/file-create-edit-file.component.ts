@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {FilesCreateModel} from '../../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';

@@ -1,7 +1,9 @@
 import {
   Component,
   EventEmitter,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import {FolderCreateModel, FolderDto,} from 'src/app/common/models';
 import {applicationLanguages2} from 'src/app/common/const';
 import {LocaleService} from 'src/app/common/services';

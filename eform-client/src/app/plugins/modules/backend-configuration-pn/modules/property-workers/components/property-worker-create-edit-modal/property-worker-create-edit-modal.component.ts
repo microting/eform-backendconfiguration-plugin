@@ -2,7 +2,9 @@ import {
   Component,
   EventEmitter
   OnDestroy,
-  OnInit, Output, inject} from '@angular/core';
+  OnInit, Output,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';

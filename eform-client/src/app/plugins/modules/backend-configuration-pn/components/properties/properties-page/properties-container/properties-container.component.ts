@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subject, Subscription} from 'rxjs';
 import {EntityItemModel, Paged} from 'src/app/common/models';

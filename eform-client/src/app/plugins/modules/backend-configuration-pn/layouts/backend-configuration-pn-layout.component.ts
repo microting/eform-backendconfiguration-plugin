@@ -1,4 +1,6 @@
-import {AfterContentInit, Component, OnInit, inject} from '@angular/core';
+import {AfterContentInit, Component, OnInit,
+  inject
+} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {translates} from './../i18n/translates';
 import {addPluginToVisited, selectPluginsVisitedPlugins} from 'src/app/state';

@@ -1,4 +1,6 @@
-import {Component, EventEmitter OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {EntityItemModel} from 'src/app/common/models';
 import { EntityItemEditNameComponent } from 'src/app/common/modules/eform-shared/components';
 import {EntitySelectService} from 'src/app/common/services';

@@ -1,5 +1,7 @@
 import {CommonDictionaryModel, WorkerModel} from 'src/app/common/models';
-import {Component, EventEmitter OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TaskWizardCreateModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import * as R from 'ramda';

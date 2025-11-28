@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {
   DocumentModel,
   DocumentSimpleFolderModel

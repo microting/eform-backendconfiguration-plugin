@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {DownloadFilesNameArchiveComponent, FileNameEditComponent, FileTagsComponent, FileTagsEditComponent} from '../';
 import {FilesModel} from '../../../../models';
 import {

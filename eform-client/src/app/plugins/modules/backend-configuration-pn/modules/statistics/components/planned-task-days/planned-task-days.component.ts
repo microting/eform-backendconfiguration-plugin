@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {PlannedTaskDaysModel,} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';

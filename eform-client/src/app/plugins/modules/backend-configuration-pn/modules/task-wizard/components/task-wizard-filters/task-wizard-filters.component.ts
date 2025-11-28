@@ -3,7 +3,9 @@ import {
   EventEmitter, Input,
   OnDestroy,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {CommonDictionaryModel, FolderDto} from 'src/app/common/models';
 import {FormControl, FormGroup} from '@angular/forms';

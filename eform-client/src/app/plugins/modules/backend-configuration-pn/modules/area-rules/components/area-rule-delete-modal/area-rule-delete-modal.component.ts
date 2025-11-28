@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {AreaRuleSimpleModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 

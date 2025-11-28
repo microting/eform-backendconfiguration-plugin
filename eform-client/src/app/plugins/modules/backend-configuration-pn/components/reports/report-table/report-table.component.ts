@@ -7,7 +7,9 @@ import {
   OnDestroy,
   OnInit,
   Output,
-  SimpleChanges, inject} from '@angular/core';
+  SimpleChanges,
+  inject
+} from '@angular/core';
 import {ReportEformItemModel} from '../../../models/report';
 import {CaseDeleteComponent} from '../../../components';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';

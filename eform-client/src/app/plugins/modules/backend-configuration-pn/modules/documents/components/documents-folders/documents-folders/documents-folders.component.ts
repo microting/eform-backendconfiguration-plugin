@@ -3,7 +3,9 @@ import {
   EventEmitter,
   OnDestroy,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {
   Paged,
 } from 'src/app/common/models';

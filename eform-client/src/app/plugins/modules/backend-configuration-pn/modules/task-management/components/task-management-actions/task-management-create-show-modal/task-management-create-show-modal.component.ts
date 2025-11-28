@@ -1,4 +1,6 @@
-import {Component, EventEmitter OnDestroy, OnInit, Output, inject} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit, Output,
+  inject
+} from '@angular/core';
 import { CommonDictionaryModel } from 'src/app/common/models';
 import {
   BackendConfigurationPnPropertiesService,

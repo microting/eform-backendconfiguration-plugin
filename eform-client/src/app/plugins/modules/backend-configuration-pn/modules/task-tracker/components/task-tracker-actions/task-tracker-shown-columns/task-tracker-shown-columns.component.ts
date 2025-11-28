@@ -1,4 +1,6 @@
-import {Component, EventEmitter OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';

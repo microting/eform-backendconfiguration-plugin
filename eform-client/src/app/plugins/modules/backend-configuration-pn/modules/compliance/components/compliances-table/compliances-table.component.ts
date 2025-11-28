@@ -1,4 +1,6 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,
+  inject
+} from '@angular/core';
 import {ComplianceModel, ReportEformItemModel} from '../../../../models';
 import {PropertyCompliancesColorBadgesEnum} from '../../../../enums';
 import {CompliancesStateService} from '../store';

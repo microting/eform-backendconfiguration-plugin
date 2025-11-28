@@ -1,7 +1,9 @@
 import {
   Component, EventEmitter, Input,
   OnDestroy,
-  OnInit, Output, inject} from '@angular/core';
+  OnInit, Output,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TaskWizardModel} from '../../../../models';

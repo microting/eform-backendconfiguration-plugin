@@ -1,4 +1,6 @@
-import {Component, OnInit, inject} from '@angular/core';
+import {Component, OnInit,
+  inject
+} from '@angular/core';
 import {UnitsService} from 'src/app/common/services';
 import {DeviceUserModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';

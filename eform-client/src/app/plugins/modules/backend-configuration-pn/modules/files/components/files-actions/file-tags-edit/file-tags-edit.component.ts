@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {FilesModel} from '../../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../../services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';

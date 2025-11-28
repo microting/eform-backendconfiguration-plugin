@@ -2,7 +2,9 @@ import {
   Component,
   EventEmitter,
   OnDestroy,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import {FolderDto} from 'src/app/common/models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MatDialogRef} from '@angular/material/dialog';

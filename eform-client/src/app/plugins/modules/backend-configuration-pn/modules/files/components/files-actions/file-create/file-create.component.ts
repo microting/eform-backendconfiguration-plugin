@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {FilesCreateModel} from '../../../../../models';
 import {SharedTagModel} from 'src/app/common/models';
 import {

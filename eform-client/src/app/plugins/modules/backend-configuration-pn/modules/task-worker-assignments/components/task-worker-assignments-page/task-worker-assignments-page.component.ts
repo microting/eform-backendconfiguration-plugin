@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, inject} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   CommonDictionaryModel, LanguagesModel,

@@ -1,4 +1,6 @@
-import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
 import {filter, tap} from 'rxjs/operators';

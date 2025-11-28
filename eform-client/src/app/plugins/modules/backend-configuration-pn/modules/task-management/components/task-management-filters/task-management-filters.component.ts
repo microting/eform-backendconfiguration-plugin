@@ -3,7 +3,9 @@ import {
   EventEmitter,
   OnDestroy,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, take} from 'rxjs';

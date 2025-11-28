@@ -4,7 +4,9 @@ import {
   EventEmitter
   OnInit,
   TemplateRef,
-  ViewChild, inject} from '@angular/core';
+  ViewChild,
+  inject
+} from '@angular/core';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
 import { EFormService } from 'src/app/common/services';

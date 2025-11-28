@@ -1,4 +1,6 @@
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, inject} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   CommonDictionaryModel,

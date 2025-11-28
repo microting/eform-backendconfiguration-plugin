@@ -5,7 +5,9 @@ import {
   Input,
   OnChanges, OnInit,
   Output,
-  SimpleChanges, inject} from '@angular/core';
+  SimpleChanges,
+  inject
+} from '@angular/core';
 import {Paged,} from 'src/app/common/models';
 import {
   AreaRuleT2AlarmsEnum,

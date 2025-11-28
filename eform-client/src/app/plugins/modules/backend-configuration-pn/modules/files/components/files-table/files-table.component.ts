@@ -3,7 +3,9 @@ import {
   EventEmitter,
   Input,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {FilesModel} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';

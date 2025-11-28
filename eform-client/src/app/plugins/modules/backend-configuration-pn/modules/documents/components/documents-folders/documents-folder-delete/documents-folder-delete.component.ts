@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnInit, inject} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {AuthStateService} from 'src/app/common/store';
 import {applicationLanguages} from 'src/app/common/const';

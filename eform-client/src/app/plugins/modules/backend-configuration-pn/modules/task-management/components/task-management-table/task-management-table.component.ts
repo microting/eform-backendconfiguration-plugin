@@ -3,7 +3,9 @@ import {
   EventEmitter,
   Input,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {WorkOrderCaseModel} from '../../../../models';
 import {
   TaskManagementStateService

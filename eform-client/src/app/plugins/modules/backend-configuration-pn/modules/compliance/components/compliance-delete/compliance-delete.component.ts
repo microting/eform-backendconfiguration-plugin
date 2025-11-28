@@ -1,4 +1,6 @@
-import {Component, OnInit, inject} from '@angular/core';
+import {Component, OnInit,
+  inject
+} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {ComplianceModel} from 'src/app/plugins/modules/backend-configuration-pn/models';

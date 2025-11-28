@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {AdHocTaskWorkers,} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';

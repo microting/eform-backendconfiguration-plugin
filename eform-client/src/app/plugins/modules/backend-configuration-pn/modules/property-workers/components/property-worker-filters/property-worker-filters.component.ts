@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output,
+  inject
+} from '@angular/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {FormControl, FormGroup} from '@angular/forms';

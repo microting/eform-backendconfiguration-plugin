@@ -1,7 +1,9 @@
 import {
   Component
   OnDestroy,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import {PropertyAreaModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnReportService} from '../../../../services';
 import * as R from 'ramda';

@@ -1,4 +1,6 @@
-import { Component, EventEmitter, OnDestroy, OnInit, inject} from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { applicationLanguages, applicationLanguagesTranslated } from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';

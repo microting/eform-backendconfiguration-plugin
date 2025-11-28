@@ -1,6 +1,8 @@
 import {
   Component,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import {BackendConfigurationPnReportService} from '../../../services';
 import {ReportEformItemModel} from '../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';

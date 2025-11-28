@@ -4,7 +4,9 @@ import {
   Input,
   OnInit,
   Output,
-  OnDestroy, inject} from '@angular/core';
+  OnDestroy,
+  inject
+} from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
 import {SharedTagModel} from 'src/app/common/models';

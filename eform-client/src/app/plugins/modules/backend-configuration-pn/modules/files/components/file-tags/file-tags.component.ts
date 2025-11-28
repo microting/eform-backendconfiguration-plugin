@@ -6,7 +6,9 @@ import {
   OnDestroy,
   OnInit,
   Output,
-  SimpleChanges, inject} from '@angular/core';
+  SimpleChanges,
+  inject
+} from '@angular/core';
 import {
   SharedTagCreateComponent,
   SharedTagDeleteComponent,

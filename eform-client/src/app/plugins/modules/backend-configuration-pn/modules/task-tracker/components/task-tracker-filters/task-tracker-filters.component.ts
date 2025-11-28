@@ -3,7 +3,9 @@ import {
   EventEmitter, Input,
   OnDestroy,
   OnInit,
-  Output, inject} from '@angular/core';
+  Output,
+  inject
+} from '@angular/core';
 import {TaskTrackerStateService} from '../store';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';

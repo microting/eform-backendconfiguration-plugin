@@ -1,4 +1,6 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,
+  inject
+} from '@angular/core';
 import {Paged, TableHeaderElementModel} from 'src/app/common/models';
 import {PropertyModel} from '../../../../models/properties';
 import {PropertiesStateService} from '../../store';

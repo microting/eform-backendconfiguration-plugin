@@ -1,7 +1,9 @@
 import {
   Component,
   EventEmitter,
-  OnInit, inject} from '@angular/core';
+  OnInit,
+  inject
+} from '@angular/core';
 import {format} from 'date-fns';
 import {
   AreaInitialFieldsModel,

@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {
   PropertyAreaModel,
   PropertyAreasUpdateModel,
