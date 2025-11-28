@@ -58,9 +58,9 @@ export class PropertyAreasEditModalComponent implements OnInit {
   
 
   ngOnInit() {
-    this.selectedProperty = {...model.selectedProperty, languagesIds: []};
+    this.selectedProperty = {...this.model.selectedProperty, languagesIds: []};
     this.selectAuthIsAdmin$.subscribe((isAdmin) => {
-      this.selectedPropertyAreas = model.propertyAreas
+      this.selectedPropertyAreas = this.model.propertyAreas
         .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
     });
 

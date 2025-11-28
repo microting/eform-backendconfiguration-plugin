@@ -43,20 +43,20 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   
 
   ngOnInit() {
-    this.selectedLanguages = model.languages.map((x) => ({ id: x.id, checked: true }));
+    this.selectedLanguages = this.model.languages.map((x) => ({ id: x.id, checked: true }));
 
     this.editPropertyForm = this.fb.group({
-      cvr: [model.cvr, Validators.required],
-      mainMailAddress: [model.mainMailAddress],
-      name: [model.name, Validators.required],
-      chr: [model.chr],
-      address: [model.address],
-      workorderEnable: [model.workorderEnable || false],
-      isFarm: [model.isFarm || false],
-      industryCode: [model.industryCode || '']
+      cvr: [this.model.cvr, Validators.required],
+      mainMailAddress: [this.model.mainMailAddress],
+      name: [this.model.name, Validators.required],
+      chr: [this.model.chr],
+      address: [this.model.address],
+      workorderEnable: [this.model.workorderEnable || false],
+      isFarm: [this.model.isFarm || false],
+      industryCode: [this.model.industryCode || '']
     });
 
-    this.propertyIsFarm = model.isFarm || false;
+    this.propertyIsFarm = this.model.isFarm || false;
 }
 
   hide() {

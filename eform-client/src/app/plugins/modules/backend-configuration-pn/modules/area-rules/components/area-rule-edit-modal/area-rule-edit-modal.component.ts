@@ -131,15 +131,15 @@ export class AreaRuleEditModalComponent implements OnInit {
   
 
   ngOnInit() {
-    this.planningStatus = model.planningStatus;
+    this.planningStatus = this.model.planningStatus;
     //this.selectedAreaRule = R.clone(model.areaRule);
     this.selectedAreaRule = new AreaRuleUpdateModel();
-    this.selectedAreaRule.id = model.areaRule.id;
-    this.selectedAreaRule.eformId = model.areaRule.eformId;
-    this.selectedAreaRule.eformName = model.areaRule.eformName;
-    this.selectedAreaRule.typeSpecificFields = R.clone(model.areaRule.typeSpecificFields);
-    this.selectedAreaRule.translatedNames = R.clone(model.areaRule.translatedNames);
-    this.selectedArea = model.selectedArea;
+    this.selectedAreaRule.id = this.model.areaRule.id;
+    this.selectedAreaRule.eformId = this.model.areaRule.eformId;
+    this.selectedAreaRule.eformName = this.model.areaRule.eformName;
+    this.selectedAreaRule.typeSpecificFields = R.clone(this.model.areaRule.typeSpecificFields);
+    this.selectedAreaRule.translatedNames = R.clone(this.model.areaRule.translatedNames);
+    this.selectedArea = this.model.selectedArea;
 
     this.typeahead
       .pipe(

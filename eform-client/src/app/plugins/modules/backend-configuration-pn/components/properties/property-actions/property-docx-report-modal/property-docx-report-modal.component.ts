@@ -40,7 +40,7 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.getPropertyAreasSub$ = this.backendConfigurationPnPropertiesService
-      .getPropertyAreas(propertyId)
+      .getPropertyAreas(this.propertyId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.areasList = data.model.filter(x => x.activated && x.name === '24. IE-indberetning');
