@@ -39,6 +39,7 @@ export class TaskManagementCreateShowModalComponent
   private overlay = inject(Overlay);
   private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
   public dialogRef = inject(MatDialogRef<TaskManagementCreateShowModalComponent>);
+  private workOrderCase = inject<WorkOrderCaseForReadModel | undefined>(MAT_DIALOG_DATA);
 
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   propertyAreas: string[] = [];
@@ -87,26 +88,26 @@ export class TaskManagementCreateShowModalComponent
       }, Validators.required),
     });
     this.getProperties();
-    if (workOrderCase) {
-      this.currentWorkOrderCase = workOrderCase;
-      this.getPropertyAreas(workOrderCase.propertyId);
-      this.getSites(workOrderCase.propertyId);
+    if (this.workOrderCase) {
+      this.currentWorkOrderCase = this.workOrderCase;
+      this.getPropertyAreas(this.workOrderCase.propertyId);
+      this.getSites(this.workOrderCase.propertyId);
       this.workOrderCaseForm.patchValue(
         {
-          propertyId: workOrderCase.propertyId,
-          areaName: workOrderCase.areaName,
+          propertyId: this.workOrderCase.propertyId,
+          areaName: this.workOrderCase.areaName,
           // assignedTo: workOrderCase.assignedSiteId,
-          descriptionTask: workOrderCase.description.replace(/<br\s*\/?>/gi, '\n'),
-          priority: workOrderCase.priority,
-          caseStatusEnum: workOrderCase.caseStatusEnum,
+          descriptionTask: this.workOrderCase.description.replace(/<br\s*\/?>/gi, '\n'),
+          priority: this.workOrderCase.priority,
+          caseStatusEnum: this.workOrderCase.caseStatusEnum,
         },
         { emitEvent: false }
       );
       // this.workOrderCaseForm.disable({ emitEvent: false });
       this.workOrderCaseForm.controls['propertyId'].disable({ emitEvent: false });
       this.workOrderCaseForm.controls['areaName'].disable({ emitEvent: false });
-      this.description = workOrderCase.description;
-      workOrderCase.pictureNames.forEach((fileName) => {
+      this.description = this.workOrderCase.description;
+      this.workOrderCase.pictureNames.forEach((fileName) => {
         this.imageSubs$.push(
           this.imageService.getImage(fileName).subscribe((blob) => {
             const imageUrl = URL.createObjectURL(blob);

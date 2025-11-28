@@ -22,6 +22,7 @@ export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
   public dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   public dialogRef = inject(MatDialogRef<AreaRuleEntityListModalComponent>);
+  private groupId = inject<number | undefined>(MAT_DIALOG_DATA);
 
   entityListChanged: EventEmitter<Array<EntityItemModel>> = new EventEmitter<Array<EntityItemModel>>();
   entityList: Array<EntityItemModel> = [];
@@ -32,8 +33,8 @@ export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
   
 
   ngOnInit() {
-    if (groupId) {
-      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(groupId)
+    if (this.groupId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(this.groupId)
         .subscribe(data => {
           if (data && data.success && data.model) {
             this.entityList = [...data.model.entityGroupItemLst];

@@ -116,7 +116,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   
 
   ngOnInit() {
-    this.setData(model.areaRule, model.propertyId, model.area, model.areaRulePlan);
+    this.setData(this.model.areaRule, this.model.propertyId, this.model.area, this.model.areaRulePlan);
 
     this.repeatTypeDay = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
