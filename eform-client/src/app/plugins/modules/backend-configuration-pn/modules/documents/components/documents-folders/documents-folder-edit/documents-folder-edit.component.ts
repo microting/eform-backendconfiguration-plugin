@@ -50,7 +50,7 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
   
 
   ngOnInit() {
-    this.getFolder(selectedFolder.id);
+    this.getFolder(this.selectedFolder.id);
 
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguageId = languageId;

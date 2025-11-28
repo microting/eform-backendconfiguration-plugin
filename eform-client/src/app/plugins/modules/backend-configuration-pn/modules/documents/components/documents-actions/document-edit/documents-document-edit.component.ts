@@ -36,7 +36,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
   private localeService = inject(LocaleService);
   public dialogRef = inject(MatDialogRef<DocumentsDocumentEditComponent>);
-  private documentModel = inject<DocumentModel>(MAT_DIALOG_DATA);
+  private injectedDocumentModel = inject<DocumentModel>(MAT_DIALOG_DATA);
 
   form: FormGroup;
   documentModel: DocumentModel = new DocumentModel();
@@ -84,7 +84,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
 
   
   constructor() {
-    this.getDocument(documentModel.id);
+    this.getDocument(this.injectedDocumentModel.id);
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguage = languageId;
     });
