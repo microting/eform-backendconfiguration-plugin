@@ -1,4 +1,6 @@
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit,} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   CommonDictionaryModel,
@@ -39,6 +41,16 @@ import {Store} from '@ngrx/store';
   standalone: false
 })
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<TaskWizardCreateModalComponent>);
+  private eFormService = inject(EFormService);
+  private cd = inject(ChangeDetectorRef);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private authStateService = inject(AuthStateService);
+  private fb = inject(FormBuilder);
+
   planningTagsModal: PlanningTagsComponent
   createTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   changeProperty: EventEmitter<number> = new EventEmitter<number>();
@@ -88,17 +100,8 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     return TaskWizardStatusesEnum;
   }
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<TaskWizardCreateModalComponent>,
-    private eFormService: EFormService,
-    private cd: ChangeDetectorRef,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private authStateService: AuthStateService,
-    private fb: FormBuilder,
-  ) {
+  
+  constructor() {
     this.typeahead
       .pipe(
         debounceTime(200),
@@ -112,6 +115,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       });
   }
+
 
   repeatEveryOptions: { id: number, name: string }[] = [];
 

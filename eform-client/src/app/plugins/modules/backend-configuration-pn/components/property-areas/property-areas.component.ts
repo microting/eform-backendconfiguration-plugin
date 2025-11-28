@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit,} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {
   PropertyAreaModel,
   PropertyAreasUpdateModel,
@@ -26,6 +28,16 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class PropertyAreasComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  public route = inject(ActivatedRoute);
+  public router = inject(Router);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private translateService = inject(TranslateService);
+  public authStateService = inject(AuthStateService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+
   selectedProperty: PropertyModel = new PropertyModel();
   selectedPropertyAreas: Array<PropertyAreaModel> = new Array<PropertyAreaModel>();
   breadcrumbs = [
@@ -83,18 +95,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   public isAuth$ = this.store.select(selectAuthIsAuth);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
-  constructor(
-    private store: Store,
-    public route: ActivatedRoute,
-    public router: Router,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-    private translateService: TranslateService,
-    public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-  ) {
-  }
+  
 
   ngOnInit() {
     this.routerSub$ = this.route.params.subscribe((params) => {

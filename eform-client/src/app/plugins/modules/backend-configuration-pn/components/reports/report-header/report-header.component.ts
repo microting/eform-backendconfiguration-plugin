@@ -5,6 +5,7 @@ import {
   OnInit,
   Output,
   OnDestroy,
+  inject
 } from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
@@ -25,6 +26,10 @@ import {format, parse} from 'date-fns';
     standalone: false
 })
 export class ReportHeaderComponent implements OnInit, OnDestroy {
+  private reportStateService = inject(ReportStateService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   @Output()
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Output()
@@ -37,17 +42,13 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
 
   valueChangesSub$: Subscription;
 
-  constructor(
-    private reportStateService: ReportStateService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-  ) {
-    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
-    iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-  }
+  
 
   ngOnInit() {
+    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
+    this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
+    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
+
     const reportPnGenerateModel = this.reportStateService.extractData();
     this.generateForm = new FormGroup(
       {
@@ -59,7 +60,7 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
           dateTo: new FormControl(
             reportPnGenerateModel.dateTo &&
             parse(reportPnGenerateModel.dateTo, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
-        },),
+  },),
       });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
       (value) => {

@@ -1,8 +1,8 @@
 import {
   Component,
   EventEmitter,
-  Inject,
   OnInit,
+  inject
 } from '@angular/core';
 import {
   PropertyAreaModel,
@@ -24,6 +24,12 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class PropertyAreasEditModalComponent implements OnInit {
+  private store = inject(Store);
+  public authStateService = inject(AuthStateService);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<PropertyAreasEditModalComponent>);
+  private model = inject<{ selectedProperty: PropertyModel, propertyAreas: PropertyAreaModel[] }>(MAT_DIALOG_DATA);
+
   updatePropertyAreas: EventEmitter<PropertyAreasUpdateModel> = new EventEmitter<PropertyAreasUpdateModel>();
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedPropertyAreas: PropertyAreaModel[] = [];
@@ -49,21 +55,15 @@ export class PropertyAreasEditModalComponent implements OnInit {
   public isAuth$ = this.store.select(selectAuthIsAuth);
   private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
-  constructor(
-    private store: Store,
-    public authStateService: AuthStateService,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<PropertyAreasEditModalComponent>,
-    @Inject(MAT_DIALOG_DATA) model: { selectedProperty: PropertyModel, propertyAreas: PropertyAreaModel[] }
-  ) {
-    this.selectedProperty = {...model.selectedProperty, languagesIds: []};
-    this.selectAuthIsAdmin$.subscribe((isAdmin) => {
-      this.selectedPropertyAreas = model.propertyAreas
-        .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
-    });
-  }
+  
 
   ngOnInit() {
+    this.selectedProperty = {...this.model.selectedProperty, languagesIds: []};
+    this.selectAuthIsAdmin$.subscribe((isAdmin) => {
+      this.selectedPropertyAreas = this.model.propertyAreas
+        .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
+    });
+
   }
 
   get getSelectedPropertyAreas() {

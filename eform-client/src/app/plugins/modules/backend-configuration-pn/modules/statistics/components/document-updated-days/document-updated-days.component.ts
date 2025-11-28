@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {DocumentUpdatedDaysModel,} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
@@ -17,6 +19,10 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private authStateService = inject(AuthStateService);
+
   @Input() documentUpdatedDaysModel: DocumentUpdatedDaysModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
@@ -109,15 +115,13 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
   private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private authStateService: AuthStateService
-  ) {
+  
+  constructor() {
     this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
   }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.documentUpdatedDaysModel &&

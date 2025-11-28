@@ -1,7 +1,7 @@
 import {
   Component,
-  Inject,
   OnInit,
+  inject
 } from '@angular/core';
 import {BackendConfigurationPnReportService} from '../../../../services';
 import {ReportEformItemModel} from '../../../../models';
@@ -14,12 +14,11 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class CaseDeleteComponent implements OnInit {
-  constructor(
-    private backendConfigurationPnReportService: BackendConfigurationPnReportService,
-    public dialogRef: MatDialogRef<CaseDeleteComponent>,
-    @Inject(MAT_DIALOG_DATA) public reportEformItemModel: ReportEformItemModel
-  ) {
-  }
+  private backendConfigurationPnReportService = inject(BackendConfigurationPnReportService);
+  public dialogRef = inject(MatDialogRef<CaseDeleteComponent>);
+  public reportEformItemModel = inject<ReportEformItemModel>(MAT_DIALOG_DATA);
+
+  
 
   ngOnInit() {
   }

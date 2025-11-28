@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {TaskTrackerStateService} from '../store';
 import {FormControl, FormGroup} from '@angular/forms';
@@ -28,6 +29,11 @@ import {
     standalone: false
 })
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translate = inject(TranslateService);
+  private taskTrackerStateService = inject(TaskTrackerStateService);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() tags: CommonDictionaryModel[] = [];
@@ -45,13 +51,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getSitesSub$: Subscription;
   private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
 
-  constructor(
-    private store: Store,
-    private translate: TranslateService,
-    private taskTrackerStateService: TaskTrackerStateService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     this.subToFormChanges();

@@ -1,4 +1,6 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,
+  inject
+} from '@angular/core';
 import {Paged, TableHeaderElementModel} from 'src/app/common/models';
 import {PropertyModel} from '../../../../models/properties';
 import {PropertiesStateService} from '../../store';
@@ -28,6 +30,13 @@ import {
     standalone: false
 })
 export class PropertiesTableComponent implements OnInit {
+  private store = inject(Store);
+  public propertiesStateService = inject(PropertiesStateService);
+  private entitySelectService = inject(EntitySelectService);
+  public authStateService = inject(AuthStateService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   @Input() nameSearchSubject = new Subject();
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
@@ -58,16 +67,11 @@ export class PropertiesTableComponent implements OnInit {
     return PropertyCompliancesColorBadgesEnum;
   }
 
-  constructor(
-    private store: Store,
-    public propertiesStateService: PropertiesStateService,
-    private entitySelectService: EntitySelectService,
-    public authStateService: AuthStateService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    ) {
-    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
+  
+  constructor() {
+    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
+
 
   ngOnInit(): void {
     this.tableHeaders = [

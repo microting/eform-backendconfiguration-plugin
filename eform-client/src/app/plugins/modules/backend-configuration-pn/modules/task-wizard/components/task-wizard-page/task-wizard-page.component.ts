@@ -1,4 +1,6 @@
-import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
 import {filter, tap} from 'rxjs/operators';
@@ -38,6 +40,19 @@ import {
     standalone: false
 })
 export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit {
+  private store = inject(Store);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  private itemsPlanningPnTagsService = inject(ItemsPlanningPnTagsService);
+  private taskWizardStateService = inject(TaskWizardStateService);
+  private translateService = inject(TranslateService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private backendConfigurationPnTaskWizardService = inject(BackendConfigurationPnTaskWizardService);
+  private appSettingsStateService = inject(AppSettingsStateService);
+  public authStateService = inject(AuthStateService);
+  private route = inject(ActivatedRoute);
+  private statisticsStateService = inject(StatisticsStateService);
+
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   properties: CommonDictionaryModel[] = [];
   folders: FolderDto[] = [];
@@ -88,20 +103,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
 
-  constructor(
-    private store: Store,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
-    private taskWizardStateService: TaskWizardStateService,
-    private translateService: TranslateService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
-    private appSettingsStateService: AppSettingsStateService,
-    public authStateService: AuthStateService,
-    private route: ActivatedRoute,
-    private statisticsStateService: StatisticsStateService,
-  ) {
+  
+  constructor() {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
@@ -111,6 +114,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       }
     });
   }
+
 
   ngOnInit(): void {
     let propertyIds: number[] = [];

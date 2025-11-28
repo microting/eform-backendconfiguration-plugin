@@ -1,8 +1,8 @@
 import {
   Component,
   EventEmitter,
-  Inject,
   OnInit,
+  inject
 } from '@angular/core';
 import { PropertyModel } from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -14,12 +14,12 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class PropertyDeleteModalComponent implements OnInit {
+  public dialogRef = inject(MatDialogRef<PropertyDeleteModalComponent>);
+  public propertyModel = inject<PropertyModel>(MAT_DIALOG_DATA);
+
   propertyDelete: EventEmitter<number> = new EventEmitter<number>();
 
-  constructor(
-    public dialogRef: MatDialogRef<PropertyDeleteModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public propertyModel: PropertyModel = new PropertyModel()
-  ) {}
+  
 
   ngOnInit() {}
 

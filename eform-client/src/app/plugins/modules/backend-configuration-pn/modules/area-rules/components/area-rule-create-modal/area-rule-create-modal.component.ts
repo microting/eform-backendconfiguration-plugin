@@ -2,10 +2,10 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
-  Inject,
   OnInit,
   TemplateRef,
   ViewChild,
+  inject
 } from '@angular/core';
 import {debounceTime, switchMap} from 'rxjs/operators';
 import {TemplateListModel, TemplateRequestModel} from 'src/app/common/models';
@@ -33,6 +33,13 @@ import {MtxGridColumn, MtxGridCellTemplate} from '@ng-matero/extensions/grid';
     standalone: false
 })
 export class AreaRuleCreateModalComponent implements OnInit {
+  private eFormService = inject(EFormService);
+  private cd = inject(ChangeDetectorRef);
+  private backendConfigurationPnAreasService = inject(BackendConfigurationPnAreasService);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<AreaRuleCreateModalComponent>);
+  private injectedData = inject<{selectedArea: AreaModel, areaRules: AreaRuleSimpleModel[]}>(MAT_DIALOG_DATA);
+
   @ViewChild('checkboxTpl', { static: true }) checkboxTpl!: TemplateRef<any>;
   @ViewChild('weekdaysTpl', { static: true }) weekdaysTpl!: TemplateRef<any>;
   selectedArea: AreaModel = new AreaModel();
@@ -135,17 +142,11 @@ export class AreaRuleCreateModalComponent implements OnInit {
 
   dataForTable: Array<Array<Array<PoolHourModel>>> = [];
 
-  constructor(
-    private eFormService: EFormService,
-    private cd: ChangeDetectorRef,
-    private backendConfigurationPnAreasService: BackendConfigurationPnAreasService,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<AreaRuleCreateModalComponent>,
-    @Inject(MAT_DIALOG_DATA) model: {selectedArea: AreaModel, areaRules: AreaRuleSimpleModel[]}
-  ) {
+  
 
-    this.selectedArea = model.selectedArea;
-    this.areaRules = model.areaRules;
+  ngOnInit() {
+    this.selectedArea = this.injectedData.selectedArea;
+    this.areaRules = this.injectedData.areaRules;
 
     this.typeahead
       .pipe(
@@ -179,12 +180,10 @@ export class AreaRuleCreateModalComponent implements OnInit {
         });
       this.areaRules.forEach(x => this.newAreaRulesForType8 = [...this.newAreaRulesForType8, x.translatedName]);
     }
-  }
 
-  ngOnInit() {
     this.hours.forEach((x, index) => {
       this.templates = {...this.templates, [`${index}.isActive`]: this.checkboxTpl};
-    });
+  });
     this.templates = {...this.templates, weekdays: this.weekdaysTpl};
   }
 

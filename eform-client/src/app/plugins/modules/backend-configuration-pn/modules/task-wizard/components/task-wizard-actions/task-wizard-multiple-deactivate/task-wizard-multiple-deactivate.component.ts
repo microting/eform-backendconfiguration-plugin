@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Inject, OnInit,} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
@@ -8,11 +10,11 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class TaskWizardMultipleDeactivateComponent implements OnInit {
+  public dialogRef = inject(MatDialogRef<TaskWizardMultipleDeactivateComponent>);
+  public selectedTaskCount = inject<number>(MAT_DIALOG_DATA);
+
   deactivateMultipleTasks: EventEmitter<void> = new EventEmitter<void>();
-  constructor(
-    public dialogRef: MatDialogRef<TaskWizardMultipleDeactivateComponent>,
-    @Inject(MAT_DIALOG_DATA) public selectedTaskCount: number,
-  ) {}
+  
 
   ngOnInit() {}
 

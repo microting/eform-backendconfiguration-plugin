@@ -1,8 +1,8 @@
 import {
   Component,
-  Inject,
   OnDestroy,
   OnInit,
+  inject
 } from '@angular/core';
 import {PropertyAreaModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnReportService} from '../../../../services';
@@ -22,6 +22,12 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+  private reportService = inject(BackendConfigurationPnReportService);
+  private toasterService = inject(ToastrService);
+  public dialogRef = inject(MatDialogRef<PropertyDocxReportModalComponent>);
+  public propertyId = inject<number>(MAT_DIALOG_DATA);
+
   selectedArea: PropertyAreaModel;
   selectedYear: number;
   areasList: PropertyAreaModel[] = [];
@@ -30,23 +36,17 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
   downloadReportSub$: Subscription;
   getPropertyAreasSub$: Subscription;
 
-  constructor(
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    private reportService: BackendConfigurationPnReportService,
-    private toasterService: ToastrService,
-    public dialogRef: MatDialogRef<PropertyDocxReportModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public propertyId: number
-  ) {
+  
+
+  ngOnInit() {
     this.getPropertyAreasSub$ = this.backendConfigurationPnPropertiesService
-      .getPropertyAreas(propertyId)
+      .getPropertyAreas(this.propertyId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.areasList = data.model.filter(x => x.activated && x.name === '24. IE-indberetning');
         }
       });
-  }
 
-  ngOnInit() {
     const currentYear = new Date().getFullYear();
     this.years = R.range(currentYear - 1, currentYear + 10);
   }

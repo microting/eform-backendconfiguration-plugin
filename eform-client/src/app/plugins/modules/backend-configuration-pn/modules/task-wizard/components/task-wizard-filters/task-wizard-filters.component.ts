@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {CommonDictionaryModel, FolderDto} from 'src/app/common/models';
@@ -28,6 +29,11 @@ import {ActivatedRoute} from '@angular/router';
     standalone: false
 })
 export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private route = inject(ActivatedRoute);
+  private taskWizardStateService = inject(TaskWizardStateService);
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() folders: FolderDto[] = [];
@@ -54,12 +60,8 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
   currentFilters: TaskWizardFiltrationModel;
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private route: ActivatedRoute,
-    private taskWizardStateService: TaskWizardStateService,
-  ) {
+  
+  constructor() {
     this.selectTaskWizardFilters$.subscribe(x => this.currentFilters = x);
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
@@ -67,6 +69,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   ngOnInit(): void {
     this.filtersForm = new FormGroup({

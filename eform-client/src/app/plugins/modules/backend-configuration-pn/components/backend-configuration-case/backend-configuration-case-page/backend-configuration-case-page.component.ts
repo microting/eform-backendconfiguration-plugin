@@ -4,6 +4,7 @@ import {
   QueryList,
   ViewChild,
   ViewChildren,
+  inject
 } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {EFormService, CasesService} from 'src/app/common/services';
@@ -27,6 +28,13 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class BackendConfigurationCasePageComponent implements OnInit {
+  private activateRoute = inject(ActivatedRoute);
+  private casesService = inject(CasesService);
+  private store = inject(Store);
+  private eFormService = inject(EFormService);
+  private router = inject(Router);
+  private backendConfigurationPnCasesService = inject(BackendConfigurationPnCasesService);
+
   @ViewChildren(CaseEditElementComponent)
   editElements: QueryList<CaseEditElementComponent>;
   @ViewChild('caseConfirmation', { static: false }) caseConfirmation;
@@ -41,14 +49,9 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   maxDate: Date;
   initialDate: Date;
 
-  constructor(
-    private activateRoute: ActivatedRoute,
-    private casesService: CasesService,
-    private store: Store,
-    private eFormService: EFormService,
-    private router: Router,
-    private backendConfigurationPnCasesService: BackendConfigurationPnCasesService
-  ) {
+  
+
+  ngOnInit() {
     this.activateRoute.params.subscribe((params) => {
       this.id = +params['id'];
       this.planningId = +params['planningId'];
@@ -57,9 +60,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
     this.activateRoute.queryParams.subscribe((queryParams) => {
       this.reverseRoute = queryParams['reverseRoute'];
     })
-  }
 
-  ngOnInit() {
     this.loadTemplateInfo();
     this.maxDate = new Date();
   }

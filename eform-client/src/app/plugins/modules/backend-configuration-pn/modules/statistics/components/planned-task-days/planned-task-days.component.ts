@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {PlannedTaskDaysModel,} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
@@ -16,6 +18,10 @@ import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
     standalone: false
 })
 export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private authStateService = inject(AuthStateService);
+
   @Input() plannedTaskDaysModel: PlannedTaskDaysModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
@@ -124,15 +130,13 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
   private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private authStateService: AuthStateService
-  ) {
+  
+  constructor() {
     this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
   }
+
 
   changeData(labelsTranslated: string[], plannedTaskDaysModel: PlannedTaskDaysModel) {
     this.chartData = [
