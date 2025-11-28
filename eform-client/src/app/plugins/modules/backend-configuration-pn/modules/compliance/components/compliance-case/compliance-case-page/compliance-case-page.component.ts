@@ -3,8 +3,7 @@ import {
   OnInit,
   QueryList,
   ViewChild,
-  ViewChildren,
-} from '@angular/core';
+  ViewChildren, inject} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {EFormService} from 'src/app/common/services';
 import {
@@ -28,6 +27,11 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class ComplianceCasePageComponent implements OnInit {
+  private activateRoute = inject(ActivatedRoute);
+  private backendConfigurationPnCompliancesService = inject(BackendConfigurationPnCompliancesService);
+  private eFormService = inject(EFormService);
+  private router = inject(Router);
+
   @ViewChildren(CaseEditElementComponent)
   editElements: QueryList<CaseEditElementComponent>;
   @ViewChild('caseConfirmation', {static: false}) caseConfirmation;
@@ -45,12 +49,9 @@ export class ComplianceCasePageComponent implements OnInit {
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
 
-  constructor(
-    private activateRoute: ActivatedRoute,
-    private backendConfigurationPnCompliancesService: BackendConfigurationPnCompliancesService,
-    private eFormService: EFormService,
-    private router: Router,
-  ) {
+  
+
+  ngOnInit() {
     this.activateRoute.params.subscribe((params) => {
       this.id = +params['sdkCaseId'];
       this.propertyId = +params['propertyId'];
@@ -63,9 +64,7 @@ export class ComplianceCasePageComponent implements OnInit {
     activateRoute.queryParams.subscribe((params) => {
       this.reverseRoute = params['reverseRoute'];
     });
-  }
 
-  ngOnInit() {
     this.loadTemplateInfo();
     this.maxDate = new Date();
   }

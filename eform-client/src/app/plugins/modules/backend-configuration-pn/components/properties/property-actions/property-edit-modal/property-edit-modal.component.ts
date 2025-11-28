@@ -1,10 +1,8 @@
 import {
   Component,
-  EventEmitter,
-  Inject,
+  EventEmitter
   OnDestroy,
-  OnInit,
-} from '@angular/core';
+  OnInit, inject} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { applicationLanguages } from 'src/app/common/const';
 import { PropertyModel, PropertyUpdateModel } from '../../../../models';
@@ -24,6 +22,13 @@ import { selectAuthIsAuth } from 'src/app/state/auth/auth.selector';
   standalone: false,
 })
 export class PropertyEditModalComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  private store = inject(Store);
+  public authStateService = inject(AuthStateService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public dialogRef = inject(MatDialogRef<PropertyEditModalComponent>);
+  public model = inject<PropertyModel>(MAT_DIALOG_DATA);
+
   propertyUpdate: EventEmitter<PropertyUpdateModel> = new EventEmitter<PropertyUpdateModel>();
   editPropertyForm: FormGroup;
   propertyIsFarm = false;
@@ -33,14 +38,9 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   getCompanyTypeSub$: Subscription;
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
-  constructor(
-    private fb: FormBuilder,
-    private store: Store,
-    public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    public dialogRef: MatDialogRef<PropertyEditModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public model: PropertyModel
-  ) {
+  
+
+  ngOnInit() {
     this.selectedLanguages = model.languages.map((x) => ({ id: x.id, checked: true }));
 
     this.editPropertyForm = this.fb.group({
@@ -55,9 +55,7 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
     });
 
     this.propertyIsFarm = model.isFarm || false;
-  }
-
-  ngOnInit() {}
+}
 
   hide() {
     this.dialogRef.close();

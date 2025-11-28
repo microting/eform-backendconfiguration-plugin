@@ -1,9 +1,7 @@
 import {
   Component,
   EventEmitter,
-  Inject,
-  OnInit,
-} from '@angular/core';
+  OnInit, inject} from '@angular/core';
 import {format} from 'date-fns';
 import {
   AreaInitialFieldsModel,
@@ -32,6 +30,15 @@ import {generateWeeksList} from '../../helpers';
     standalone: false
 })
 export class AreaRulePlanModalComponent implements OnInit {
+  private translate = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<AreaRulePlanModalComponent>);
+  private model = inject<{
+      areaRule: AreaRuleSimpleModel | AreaRuleNameAndTypeSpecificFields,
+      propertyId: number,
+      area: AreaModel,
+      areaRulePlan: AreaRulePlanningModel,
+    }>(MAT_DIALOG_DATA);
+
   updateAreaRulePlan: EventEmitter<AreaRulePlanningModel> = new EventEmitter<AreaRulePlanningModel>();
   selectedArea: AreaModel = new AreaModel();
   selectedAreaRulePlanning: AreaRulePlanningModel = new AreaRulePlanningModel();
@@ -104,23 +111,14 @@ export class AreaRulePlanModalComponent implements OnInit {
     return this.selectedArea.availableWorkers.filter(x => assignedSites.some(y => y === x.siteId));
   }
 
-  constructor(
-    private translate: TranslateService,
-    public dialogRef: MatDialogRef<AreaRulePlanModalComponent>,
-    @Inject(MAT_DIALOG_DATA) model: {
-      areaRule: AreaRuleSimpleModel | AreaRuleNameAndTypeSpecificFields,
-      propertyId: number,
-      area: AreaModel,
-      areaRulePlan: AreaRulePlanningModel,
-    },
-  ) {
-    this.setData(model.areaRule, model.propertyId, model.area, model.areaRulePlan);
-  }
+  
 
   ngOnInit() {
+    this.setData(model.areaRule, model.propertyId, model.area, model.areaRulePlan);
+
     this.repeatTypeDay = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 31)); // 1, 2, ..., 29, 30.
+  }, R.range(1, 31)); // 1, 2, ..., 29, 30.
     this.repeatTypeWeek = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
     }, R.range(1, 51)); // 1, 2, ..., 49, 50.

@@ -1,10 +1,8 @@
 import {
   Component,
-  EventEmitter,
-  Inject,
+  EventEmitter
   OnDestroy,
-  OnInit, Output,
-} from '@angular/core';
+  OnInit, Output, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
@@ -27,6 +25,18 @@ import validator from 'validator';
     standalone: false
 })
 export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  public propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public authStateService = inject(AuthStateService);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
+  private appSettingsStateService = inject(AppSettingsStateService);
+  private model = inject<{
+      deviceUser: DeviceUserModel,
+      assignments: PropertyAssignmentWorkerModel[],
+      availableProperties: CommonDictionaryModel[],
+    }>(MAT_DIALOG_DATA);
+
   availableProperties: CommonDictionaryModel[] = [];
   edit: boolean = false;
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
@@ -60,75 +70,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   activeLanguages: Array<any> = [];
   form: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    public propertiesService: BackendConfigurationPnPropertiesService,
-    public authStateService: AuthStateService,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<PropertyWorkerCreateEditModalComponent>,
-    private appSettingsStateService: AppSettingsStateService,
-    @Inject(MAT_DIALOG_DATA) model:
-    {
-      deviceUser: DeviceUserModel,
-      assignments: PropertyAssignmentWorkerModel[],
-      availableProperties: CommonDictionaryModel[],
-    },
-  ) {
-    this.assignments = [...model.assignments];
-    this.availableProperties = [...model.availableProperties];
-    this.selectedDeviceUser = {...model.deviceUser ?? new DeviceUserModel()};
-    this.selectedDeviceUserCopy = {...model.deviceUser};
-    this.assignmentsCopy = [...model.assignments];
-    this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
-    this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
-
-    this.form = this.fb.group({
-      userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
-      userLastName: [this.selectedDeviceUser.userLastName || '', Validators.required],
-      workerEmail: [this.selectedDeviceUser.workerEmail || '', [
-        Validators.required,
-        (control) => validator.isEmail(control.value) ? null : {invalidEmail: true}
-      ]],
-      phoneNumber: [this.selectedDeviceUser.phoneNumber || '', [
-        (control) => {
-          const value = control.value;
-          if (!value) {
-            return null;
-          }
-          return validator.isMobilePhone(value) ? null : {invalidPhoneNumber: true};
-        }
-      ]],
-      pinCode: [this.selectedDeviceUser.pinCode || ''],
-      employeeNo: [this.selectedDeviceUser.employeeNo || ''],
-      languageCode: [this.selectedDeviceUser.languageCode || ''],
-      timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
-      taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
-      resigned: [this.selectedDeviceUser.resigned || false],
-      resignedAtDate: [
-        this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
-        this.selectedDeviceUser.resigned ? Validators.required : null
-      ],
-    });
-
-    if (this.selectedDeviceUser.resigned) {
-      Object.keys(this.form.controls).forEach(key => {
-        if (key !== 'resigned' && key !== 'resignedAtDate') {
-          this.form.get(key)?.disable();
-        }
-      });
-    }
-
-    this.form.valueChanges.subscribe(formValue => {
-      Object.assign(this.selectedDeviceUser, formValue);
-    });
-
-    this.updateDisabledFieldsBasedOnResigned();
-
-    this.form.get('resigned')?.valueChanges.subscribe(() => {
-      this.updateDisabledFieldsBasedOnResigned();
-    });
-
-  }
+  
 
   private updateDisabledFieldsBasedOnResigned() {
     const isResigned = this.form.get('resigned')?.value;
@@ -184,6 +126,60 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   ngOnInit() {
+    this.assignments = [...model.assignments];
+    this.availableProperties = [...model.availableProperties];
+    this.selectedDeviceUser = {...model.deviceUser ?? new DeviceUserModel()};
+    this.selectedDeviceUserCopy = {...model.deviceUser};
+    this.assignmentsCopy = [...model.assignments];
+    this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
+    this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
+
+    this.form = this.fb.group({
+      userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
+      userLastName: [this.selectedDeviceUser.userLastName || '', Validators.required],
+      workerEmail: [this.selectedDeviceUser.workerEmail || '', [
+        Validators.required,
+        (control) => validator.isEmail(control.value) ? null : {invalidEmail: true}
+      ]],
+      phoneNumber: [this.selectedDeviceUser.phoneNumber || '', [
+        (control) => {
+          const value = control.value;
+          if (!value) {
+            return null;
+          }
+          return validator.isMobilePhone(value) ? null : {invalidPhoneNumber: true};
+        }
+      ]],
+      pinCode: [this.selectedDeviceUser.pinCode || ''],
+      employeeNo: [this.selectedDeviceUser.employeeNo || ''],
+      languageCode: [this.selectedDeviceUser.languageCode || ''],
+      timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
+      taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
+      resigned: [this.selectedDeviceUser.resigned || false],
+      resignedAtDate: [
+        this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
+        this.selectedDeviceUser.resigned ? Validators.required : null
+      ],
+    });
+
+    if (this.selectedDeviceUser.resigned) {
+      Object.keys(this.form.controls).forEach(key => {
+        if (key !== 'resigned' && key !== 'resignedAtDate') {
+          this.form.get(key)?.disable();
+        }
+      });
+    }
+
+    this.form.valueChanges.subscribe(formValue => {
+      Object.assign(this.selectedDeviceUser, formValue);
+    });
+
+    this.updateDisabledFieldsBasedOnResigned();
+
+    this.form.get('resigned')?.valueChanges.subscribe(() => {
+      this.updateDisabledFieldsBasedOnResigned();
+    });
+
     this.getEnabledLanguages();
     this.updateFormControlDisabledStates();
   }

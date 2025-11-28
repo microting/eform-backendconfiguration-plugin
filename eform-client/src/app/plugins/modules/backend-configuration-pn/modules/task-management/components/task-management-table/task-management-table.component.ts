@@ -3,8 +3,7 @@ import {
   EventEmitter,
   Input,
   OnInit,
-  Output,
-} from '@angular/core';
+  Output, inject} from '@angular/core';
 import {WorkOrderCaseModel} from '../../../../models';
 import {
   TaskManagementStateService
@@ -28,6 +27,10 @@ import {
     standalone: false
 })
 export class TaskManagementTableComponent implements OnInit {
+  private store = inject(Store);
+  public taskManagementStateService = inject(TaskManagementStateService);
+  private translateService = inject(TranslateService);
+
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id', sortProp: {id: 'Id'}, sortable: true, class: 'id'},
     {
@@ -91,12 +94,7 @@ export class TaskManagementTableComponent implements OnInit {
   public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
   public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
 
-  constructor(
-    private store: Store,
-    public taskManagementStateService: TaskManagementStateService,
-    private translateService: TranslateService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
   }

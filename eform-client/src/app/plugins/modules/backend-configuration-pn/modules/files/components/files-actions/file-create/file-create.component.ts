@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit, ViewChild,} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
 import {FilesCreateModel} from '../../../../../models';
 import {SharedTagModel} from 'src/app/common/models';
 import {
@@ -20,6 +20,12 @@ import {ActivatedRoute, Router} from '@angular/router';
     standalone: false
 })
 export class FileCreateComponent implements OnInit, OnDestroy {
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  private backendConfigurationPnFilesService = inject(BackendConfigurationPnFilesService);
+  private tagsService = inject(BackendConfigurationPnFileTagsService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
 
   mimePdfType = 'application/pdf';
@@ -60,14 +66,7 @@ export class FileCreateComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  constructor(
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnFilesService: BackendConfigurationPnFilesService,
-    private tagsService: BackendConfigurationPnFileTagsService,
-    private router: Router,
-    private route: ActivatedRoute,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     this.getProperties();

@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit,} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -40,6 +40,16 @@ import { Sort } from '@angular/material/sort';
     standalone: false
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
+  private areasService = inject(BackendConfigurationPnAreasService);
+  public authStateService = inject(AuthStateService);
+  private route = inject(ActivatedRoute);
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+  private translateService = inject(TranslateService);
+  private entitySelectService = inject(EntitySelectService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private areaRulesStateService = inject(AreaRulesStateService);
+
   areaRules: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
   chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
@@ -75,19 +85,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   onUpdateAreaRuleSub$: Subscription;
   propertyUpdateSub$: Subscription;
 
-  constructor(
-    private areasService: BackendConfigurationPnAreasService,
-    public authStateService: AuthStateService,
-    private route: ActivatedRoute,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    private translateService: TranslateService,
-    private entitySelectService: EntitySelectService,
-    // public chemicalsStateService: ChemicalsStateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-    private areaRulesStateService: AreaRulesStateService,
-  ) {
-  }
+  
 
   ngOnInit() {
     this.routerSub$ = this.route.params.subscribe((params) => {

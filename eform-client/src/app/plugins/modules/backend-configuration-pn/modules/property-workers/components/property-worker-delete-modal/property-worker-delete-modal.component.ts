@@ -1,6 +1,6 @@
 import {
   Component,
-  Inject,
+  inject,
   OnInit,
 } from '@angular/core';
 import {DeviceUserService} from 'src/app/common/services';
@@ -15,13 +15,10 @@ import {DeviceUserModel} from '../../../../models';
     standalone: false
 })
 export class PropertyWorkerDeleteModalComponent implements OnInit {
-  constructor(
-    private deviceUserService: DeviceUserService,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    public dialogRef: MatDialogRef<PropertyWorkerDeleteModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public selectedDeviceUser: DeviceUserModel = new DeviceUserModel()
-  ) {
-  }
+  private deviceUserService = inject(DeviceUserService);
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+  public dialogRef = inject(MatDialogRef<PropertyWorkerDeleteModalComponent>);
+  public selectedDeviceUser = inject<DeviceUserModel>(MAT_DIALOG_DATA);
 
   ngOnInit() {
   }

@@ -3,8 +3,7 @@ import {
   EventEmitter, Input,
   OnDestroy,
   OnInit,
-  Output,
-} from '@angular/core';
+  Output, inject} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, take} from 'rxjs';
@@ -28,6 +27,11 @@ import {
     standalone: false
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translate = inject(TranslateService);
+  public filesStateService = inject(FilesStateService);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   private _availableTags: SharedTagModel[] = [];
   filtersForm: FormGroup;
@@ -75,14 +79,11 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     }
   }
 
-  constructor(
-    private store: Store,
-    private translate: TranslateService,
-    public filesStateService: FilesStateService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-  ) {
+  
+  constructor() {
     this.selectFiltersSub$ = this.selectFilesFilters$.subscribe((filters) => this.currentFilters = filters)
   }
+
 
   ngOnInit(): void {
     this.getProperties();

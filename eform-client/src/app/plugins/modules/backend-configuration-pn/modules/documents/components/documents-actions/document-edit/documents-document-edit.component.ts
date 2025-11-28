@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, inject} from '@angular/core';
 import {
   DocumentModel,
   DocumentSimpleFolderModel
@@ -27,6 +27,15 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
     standalone: false
 })
 export class DocumentsDocumentEditComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private authStore = inject(Store);
+  private templateFilesService = inject(TemplateFilesService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  private localeService = inject(LocaleService);
+  public dialogRef = inject(MatDialogRef<DocumentsDocumentEditComponent>);
+  private documentModel = inject<DocumentModel>(MAT_DIALOG_DATA);
+
   form: FormGroup;
   documentModel: DocumentModel = new DocumentModel();
   selectedFolder: number;
@@ -71,16 +80,8 @@ export class DocumentsDocumentEditComponent implements OnInit {
     return {name: '', description: '', extensionFile: extension, languageId: languageId};
   }
 
-  constructor(
-    private fb: FormBuilder,
-    private authStore: Store,
-    private templateFilesService: TemplateFilesService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    localeService: LocaleService,
-    public dialogRef: MatDialogRef<DocumentsDocumentEditComponent>,
-    @Inject(MAT_DIALOG_DATA) documentModel: DocumentModel,
-  ) {
+  
+  constructor() {
     this.getDocument(documentModel.id);
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguage = languageId;
@@ -89,6 +90,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
   }
+
 
   ngOnInit(): void {
     this.getFolders();

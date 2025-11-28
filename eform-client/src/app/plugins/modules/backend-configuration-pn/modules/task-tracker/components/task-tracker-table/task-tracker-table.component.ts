@@ -3,8 +3,7 @@ import {
   EventEmitter,
   Input, OnChanges,
   OnInit,
-  Output, SimpleChanges,
-} from '@angular/core';
+  Output, SimpleChanges, inject} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {
   Columns,
@@ -36,6 +35,14 @@ import {Overlay} from '@angular/cdk/overlay';
     standalone: false
 })
 export class TaskTrackerTableComponent implements OnInit, OnChanges {
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private taskTrackerStateService = inject(TaskTrackerStateService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
@@ -93,16 +100,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
 
-  constructor(
-    private dialog: MatDialog,
-    private overlay: Overlay,
-    private store: Store,
-    private translateService: TranslateService,
-    private taskTrackerStateService: TaskTrackerStateService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     // this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {

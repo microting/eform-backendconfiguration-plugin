@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges,} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {FilesCreateModel} from '../../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -19,6 +19,10 @@ import * as R from 'ramda';
     standalone: false
 })
 export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
+  private dragulaService = inject(DragulaService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   @Output() saveFile: EventEmitter<FilesCreateModel> = new EventEmitter<FilesCreateModel>();
   @Output() cancelSaveFile: EventEmitter<void> = new EventEmitter<void>();
   @Input() file: FilesCreateModel;
@@ -57,11 +61,8 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
     //return [];
   }
 
-  constructor(
-    private dragulaService: DragulaService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-  ) {
+  
+  constructor() {
     this.dragulaService.createGroup(this.dragulaContainerName, {
       moves: (el, container, handle) => {
         return handle.classList.contains(this.dragulaHandle);
@@ -72,6 +73,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
       direction:'horizontal'
     });
   }
+
 
   deletePage(indexPage: number) {
     this.fileAsPdfDocument.removePage(indexPage);

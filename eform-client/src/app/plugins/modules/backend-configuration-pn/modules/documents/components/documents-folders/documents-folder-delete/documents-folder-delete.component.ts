@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnInit,} from '@angular/core';
+import {Component, EventEmitter, OnInit, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {AuthStateService} from 'src/app/common/store';
 import {applicationLanguages} from 'src/app/common/const';
@@ -14,17 +14,16 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class DocumentsFolderDeleteComponent implements OnInit {
+  private authStore = inject(Store);
+  private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  private authStateService = inject(AuthStateService);
+  public dialogRef = inject(MatDialogRef<DocumentsFolderDeleteComponent>);
+  public folder = inject<DocumentFolderModel>(MAT_DIALOG_DATA);
+
   folderDelete: EventEmitter<void> = new EventEmitter<void>();
   private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
-  constructor(
-    private authStore: Store,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    private authStateService: AuthStateService,
-    public dialogRef: MatDialogRef<DocumentsFolderDeleteComponent>,
-    @Inject(MAT_DIALOG_DATA) public folder: DocumentFolderModel,
-  ) {
-  }
+  
 
   ngOnInit() {
   }

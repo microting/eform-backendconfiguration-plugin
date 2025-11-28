@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subject, Subscription} from 'rxjs';
 import {EntityItemModel, Paged} from 'src/app/common/models';
@@ -33,6 +33,14 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
     standalone: false
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public propertiesStateService = inject(PropertiesStateService);
+  public authStateService = inject(AuthStateService);
+  private entitySelectService = inject(EntitySelectService);
+  private translateService = inject(TranslateService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   isFarms: boolean = false;
   tableHeaders: MtxGridColumn[] = [
     {
@@ -127,26 +135,18 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   updateEntitySelectableGroupSub$: Subscription;
   nameSearchSubjectSub$: Subscription;
 
-  constructor(
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    public propertiesStateService: PropertiesStateService,
-    public authStateService: AuthStateService,
-    private entitySelectService: EntitySelectService,
-    private translateService: TranslateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-  ) {
-    this.nameSearchSubjectSub$ = this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
-      this.propertiesStateService.updateNameFilter(val.toString());
-      this.getProperties();
-    });
-  }
+  
 
   // get backendConfigurationPnClaims() {
   //   return BackendConfigurationPnClaims;
   // }
 
   ngOnInit() {
+    this.nameSearchSubjectSub$ = this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
+      this.propertiesStateService.updateNameFilter(val.toString());
+      this.getProperties();
+    });
+
     this.getProperties();
   }
 

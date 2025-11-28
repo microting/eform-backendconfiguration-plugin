@@ -1,5 +1,5 @@
 import {CommonDictionaryModel, WorkerModel} from 'src/app/common/models';
-import {Component, EventEmitter, Inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TaskWizardCreateModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import * as R from 'ramda';
@@ -12,6 +12,9 @@ import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configurat
     standalone: false
 })
 export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy {
+  public dialogRef = inject(MatDialogRef<TaskTrackerSelectWorkerModalComponent>);
+  private workers = inject<WorkerModel[]>(MAT_DIALOG_DATA);
+
   sites: CommonDictionaryModel[] = [];
   workerName: string;
   workerSelected: EventEmitter<CommonDictionaryModel> = new EventEmitter<CommonDictionaryModel>();
@@ -33,9 +36,7 @@ export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy 
   };
   selectedSite: any;
 
-  constructor(
-    public dialogRef: MatDialogRef<TaskTrackerSelectWorkerModalComponent>,
-    @Inject(MAT_DIALOG_DATA) workers: WorkerModel[]) {}
+  
 
   ngOnDestroy(): void {
     }

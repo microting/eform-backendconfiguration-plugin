@@ -1,10 +1,8 @@
 import {
   Component,
-  EventEmitter,
-  Inject,
+  EventEmitter
   OnDestroy,
-  OnInit,
-} from '@angular/core';
+  OnInit, inject} from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import {FolderDto,} from 'src/app/common/models';
 import {DocumentFolderModel} from '../../../../../models';
@@ -26,6 +24,14 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
+  private authStore = inject(Store);
+  public backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  private toastrService = inject(ToastrService);
+  private translateService = inject(TranslateService);
+  private localeService = inject(LocaleService);
+  public dialogRef = inject(MatDialogRef<DocumentsFolderEditComponent>);
+  private selectedFolder = inject<DocumentFolderModel>(MAT_DIALOG_DATA);
+
   name = '';
   selectedParentFolder: FolderDto;
   selectedLanguageId: number;
@@ -39,15 +45,9 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     return applicationLanguages2;
   }
 
-  constructor(
-    private authStore: Store,
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    private toastrService: ToastrService,
-    private translateService: TranslateService,
-    localeService: LocaleService,
-    public dialogRef: MatDialogRef<DocumentsFolderEditComponent>,
-    @Inject(MAT_DIALOG_DATA) selectedFolder: DocumentFolderModel,
-  ) {
+  
+
+  ngOnInit() {
     this.getFolder(selectedFolder.id);
 
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
@@ -56,9 +56,7 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     // this.selectedLanguage = applicationLanguages2.find(
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
-  }
 
-  ngOnInit() {
   }
 
   hide() {
@@ -71,11 +69,11 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     this.folderUpdateModel = new DocumentFolderModel();
     this.folderUpdateModel = {
       ...this.folderUpdateModel,
-      id: model.id,
+      id: selectedFolder.id,
       documentFolderTranslations: [],
     };
     for (let i = 0; i < applicationLanguages2.length; i++) {
-      const translations = model.documentFolderTranslations.find(
+      const translations = selectedFolder.documentFolderTranslations.find(
         (x) => x.languageId === applicationLanguages2[i].id
       );
       this.folderUpdateModel.documentFolderTranslations.push({

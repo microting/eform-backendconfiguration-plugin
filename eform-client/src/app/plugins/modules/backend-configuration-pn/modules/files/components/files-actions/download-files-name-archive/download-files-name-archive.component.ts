@@ -1,4 +1,4 @@
-import {Component, EventEmitter} from '@angular/core';
+import {Component, EventEmitter, inject} from '@angular/core';
 import {MatDialogRef} from '@angular/material/dialog';
 
 @Component({
@@ -8,6 +8,8 @@ import {MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class DownloadFilesNameArchiveComponent {
+  public dialogRef = inject(MatDialogRef<DownloadFilesNameArchiveComponent>);
+
   clickDownloadFiles: EventEmitter<string> = new EventEmitter<string>();
   zipName: string = '';
 
@@ -15,8 +17,7 @@ export class DownloadFilesNameArchiveComponent {
     return !this.zipName;
   }
 
-  constructor(public dialogRef: MatDialogRef<DownloadFilesNameArchiveComponent>,) {
-  }
+  
 
   hide() {
     this.dialogRef.close();

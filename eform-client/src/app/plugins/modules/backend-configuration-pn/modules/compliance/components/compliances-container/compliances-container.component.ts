@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
@@ -18,6 +18,12 @@ import { CompliancesStateService } from '../store';
     standalone: false
 })
 export class CompliancesContainerComponent implements OnInit, OnDestroy {
+  public authStateService = inject(AuthStateService);
+  private route = inject(ActivatedRoute);
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+  private translateService = inject(TranslateService);
+  private compliancesStateService = inject(CompliancesStateService);
+
   breadcrumbs = [
     {
       name: '',
@@ -35,13 +41,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
   routerSub$: Subscription;
   getAllCompliancesSub$: Subscription;
 
-  constructor(
-    public authStateService: AuthStateService,
-    private route: ActivatedRoute,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    private translateService: TranslateService,
-    private compliancesStateService: CompliancesStateService
-  ) {}
+  
 
   ngOnInit() {
     this.routerSub$ = this.route.params.subscribe((params) => {

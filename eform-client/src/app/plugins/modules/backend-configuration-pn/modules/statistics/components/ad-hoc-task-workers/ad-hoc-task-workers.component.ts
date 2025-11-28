@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject} from '@angular/core';
 import {AdHocTaskWorkers,} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
@@ -15,6 +15,9 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
+  private store = inject(Store);
+  private authStateService = inject(AuthStateService);
+
   @Input() adHocTaskWorkers: AdHocTaskWorkers;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
@@ -77,14 +80,13 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
 
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
 
-  constructor(
-    private store: Store,
-    private authStateService: AuthStateService
-  ) {
+  
+  constructor() {
     this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
   }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.adHocTaskWorkers &&

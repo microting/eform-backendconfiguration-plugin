@@ -5,8 +5,7 @@ import {
   Input,
   OnChanges, OnInit,
   Output,
-  SimpleChanges,
-} from '@angular/core';
+  SimpleChanges, inject} from '@angular/core';
 import {Paged,} from 'src/app/common/models';
 import {
   AreaRuleT2AlarmsEnum,
@@ -39,6 +38,14 @@ import {
     standalone: false
 })
 export class AreaRulesTableComponent implements OnChanges, OnInit {
+  private store = inject(Store);
+  private authStateService = inject(AuthStateService);
+  private templateFilesService = inject(TemplateFilesService);
+  private translateService = inject(TranslateService);
+  public areaRulesStateService = inject(AreaRulesStateService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   @Input() areaRules: AreaRuleSimpleModel[] = [];
   @Input() chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   @Input() selectedArea: AreaModel = new AreaModel();
@@ -457,17 +464,11 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   public selectAreaRulesPaginationSort$ = this.store.select(selectAreaRulesPaginationSort);
   public selectAreaRulesPaginationIsSortDsc$ = this.store.select(selectAreaRulesPaginationIsSortDsc);
 
-  constructor(
-    private store: Store,
-    private authStateService: AuthStateService,
-    private templateFilesService: TemplateFilesService,
-    private translateService: TranslateService,
-    public areaRulesStateService: AreaRulesStateService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-  ) {
+  
+  constructor() {
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, inject} from '@angular/core';
 import {AreaRuleSimpleModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
@@ -9,13 +9,12 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class AreaRuleDeleteModalComponent implements OnInit {
+  public dialogRef = inject(MatDialogRef<AreaRuleDeleteModalComponent>);
+  public areaRule = inject<AreaRuleSimpleModel>(MAT_DIALOG_DATA);
+
   deleteAreaRule: EventEmitter<number> = new EventEmitter<number>();
 
-  constructor(
-    public dialogRef: MatDialogRef<AreaRuleDeleteModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public areaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel(),
-  ) {
-  }
+  
 
   ngOnInit() {
   }

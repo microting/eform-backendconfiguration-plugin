@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, PropertyModel, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
@@ -43,6 +43,19 @@ import {
     standalone: false
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private loaderService = inject(LoaderService);
+  public taskManagementStateService = inject(TaskManagementStateService);
+  public taskManagementService = inject(BackendConfigurationPnTaskManagementService);
+  private toasterService = inject(ToastrService);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private statisticsStateService = inject(StatisticsStateService);
+  private route = inject(ActivatedRoute);
+
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
   adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
@@ -80,20 +93,9 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  constructor(
-    private store: Store,
-    private loaderService: LoaderService,
-    public taskManagementStateService: TaskManagementStateService,
-    public taskManagementService: BackendConfigurationPnTaskManagementService,
-    private toasterService: ToastrService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private statisticsStateService: StatisticsStateService,
-    private route: ActivatedRoute,
-  ) {
+  
+
+  ngOnInit() {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     this.route.queryParams.subscribe(x => {
@@ -135,9 +137,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
         // }
         this.updateTable();
       });
-  }
 
-  ngOnInit() {
     this.loaderService.setLoading(false);
     this.getProperties();
   }

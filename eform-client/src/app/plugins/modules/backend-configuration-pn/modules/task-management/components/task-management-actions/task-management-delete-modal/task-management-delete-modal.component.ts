@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit, Output,} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit, Output, inject} from '@angular/core';
 import {
   WorkOrderCaseModel,
 } from '../../../../../models';
@@ -13,13 +13,12 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
+  public dialogRef = inject(MatDialogRef<TaskManagementDeleteModalComponent>);
+  public workOrderCase = inject<WorkOrderCaseModel>(MAT_DIALOG_DATA);
+
   @Output() workOrderCaseDelete: EventEmitter<number> = new EventEmitter<number>();
 
-  constructor(
-    public dialogRef: MatDialogRef<TaskManagementDeleteModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public workOrderCase: WorkOrderCaseModel = new WorkOrderCaseModel(),
-  ) {
-  }
+  
 
   ngOnInit(): void {
   }

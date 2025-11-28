@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
@@ -8,15 +8,17 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class FileCreateZoomPageComponent {
+  public dialogRef = inject(MatDialogRef<FileCreateZoomPageComponent>);
+  private model = inject<{ page: number, src: Uint8Array }>(MAT_DIALOG_DATA);
+
   page: number = 0;
   src: Uint8Array = new Uint8Array();
   zoom: number = 1;
 
-  constructor(
-    public dialogRef: MatDialogRef<FileCreateZoomPageComponent>,
-    @Inject(MAT_DIALOG_DATA) model: { page: number, src: Uint8Array },
-  ) {
+  
+  constructor() {
     this.page = model.page;
     this.src = model.src;
   }
+
 }

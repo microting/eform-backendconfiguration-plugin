@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   TaskModel,
@@ -60,6 +60,24 @@ import {
     standalone: false
 })
 export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private loaderService = inject(LoaderService);
+  public taskTrackerStateService = inject(TaskTrackerStateService);
+  public taskTrackerService = inject(BackendConfigurationPnTaskTrackerService);
+  private toasterService = inject(ToastrService);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private areasService = inject(BackendConfigurationPnAreasService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+  private backendConfigurationPnTaskWizardService = inject(BackendConfigurationPnTaskWizardService);
+  private appSettingsStateService = inject(AppSettingsStateService);
+  private itemsPlanningPnTagsService = inject(ItemsPlanningPnTagsService);
+  public statisticsStateService = inject(StatisticsStateService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   tasks: TaskModel[] = [];
   columns: Columns = {
@@ -116,25 +134,9 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  constructor(
-    private store: Store,
-    private loaderService: LoaderService,
-    public taskTrackerStateService: TaskTrackerStateService,
-    public taskTrackerService: BackendConfigurationPnTaskTrackerService,
-    private toasterService: ToastrService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private areasService: BackendConfigurationPnAreasService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
-    private appSettingsStateService: AppSettingsStateService,
-    private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
-    public statisticsStateService: StatisticsStateService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) {
+  
+
+  ngOnInit() {
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
@@ -162,9 +164,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
           this.getPlannedTaskDays();
         }
       });
-  }
 
-  ngOnInit() {
     this.updateTable();
     this.getColumns();
     this.getProperties();

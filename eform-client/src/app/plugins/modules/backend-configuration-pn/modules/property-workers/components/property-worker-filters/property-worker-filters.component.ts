@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject} from '@angular/core';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {FormControl, FormGroup} from '@angular/forms';
@@ -20,6 +20,9 @@ import {
     standalone: false
 })
 export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
+  private store = inject(Store);
+  public propertyWorkersStateService = inject(PropertyWorkersStateService);
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Input() properties: CommonDictionaryModel[] = [];
   //@Input() availableSites: Array<DeviceUserModel>;
@@ -35,16 +38,15 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   valueChangesShowResignedSub$: Subscription;
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
-  constructor(
-    private store: Store,
-    public propertyWorkersStateService: PropertyWorkersStateService,
-  ) {
+  
+  constructor() {
     this.filtersForm = new FormGroup({
       propertyIds: new FormControl([]),
       showResigned: new FormControl(false),
       //workerIds: new FormControl([]),
     });
   }
+
 
   ngOnInit(): void {
     this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$

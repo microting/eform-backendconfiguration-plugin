@@ -4,8 +4,7 @@ import {
   Input,
   OnInit,
   Output,
-  OnDestroy,
-} from '@angular/core';
+  OnDestroy, inject} from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
 import {SharedTagModel} from 'src/app/common/models';
@@ -25,6 +24,10 @@ import {format, parse} from 'date-fns';
     standalone: false
 })
 export class ReportHeaderComponent implements OnInit, OnDestroy {
+  private reportStateService = inject(ReportStateService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   @Output()
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Output()
@@ -37,17 +40,13 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
 
   valueChangesSub$: Subscription;
 
-  constructor(
-    private reportStateService: ReportStateService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-  ) {
+  
+
+  ngOnInit() {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-  }
 
-  ngOnInit() {
     const reportPnGenerateModel = this.reportStateService.extractData();
     this.generateForm = new FormGroup(
       {
@@ -59,7 +58,7 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
           dateTo: new FormControl(
             reportPnGenerateModel.dateTo &&
             parse(reportPnGenerateModel.dateTo, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
-        },),
+  },),
       });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
       (value) => {

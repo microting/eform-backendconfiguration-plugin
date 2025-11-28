@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import {
   AdHocTaskPrioritiesModel,
   AdHocTaskWorkers,
@@ -31,6 +31,12 @@ import {
     standalone: false
 })
 export class StatisticsContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  public statisticsStateService = inject(StatisticsStateService);
+  private backendConfigurationPnPropertiesService = inject(BackendConfigurationPnPropertiesService);
+  private router = inject(Router);
+  private taskTrackerStateService = inject(TaskTrackerStateService);
+
   plannedTaskDays: PlannedTaskDaysModel;
   adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
   adHocTaskWorkers: AdHocTaskWorkers;
@@ -80,19 +86,15 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   public selectSideMenuOpened$ = this.store.select(selectSideMenuOpened);
   public selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  constructor(
-    private store: Store,
-    public statisticsStateService: StatisticsStateService,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    private router: Router,
-    private taskTrackerStateService: TaskTrackerStateService,
-  ) {
+  
+  constructor() {
     this.getPropertyIdAsyncSub$ = this.selectStatisticsPropertyId$
       .subscribe(propertyId => this.selectedPropertyId = propertyId);
     this.selectSideMenuOpened$.subscribe((sideMenuOpened) => {
       this.sideMenuOpened = sideMenuOpened;
     });
   }
+
 
   ngOnInit(): void {
     this.getAllStatistics();

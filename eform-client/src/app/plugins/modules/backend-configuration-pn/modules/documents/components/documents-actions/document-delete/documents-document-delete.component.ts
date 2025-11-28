@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnInit, } from '@angular/core';
+import {Component, EventEmitter, OnInit, inject} from '@angular/core';
 import {DocumentModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {Subscription} from 'rxjs';
@@ -15,6 +15,13 @@ import {DomSanitizer} from '@angular/platform-browser';
     standalone: false
 })
 export class DocumentsDocumentDeleteComponent implements OnInit {
+  private templateFilesService = inject(TemplateFilesService);
+  private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  public dialogRef = inject(MatDialogRef<DocumentsDocumentDeleteComponent>);
+  private documentModel = inject<DocumentModel>(MAT_DIALOG_DATA);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   documentDeleted: EventEmitter<void> = new EventEmitter<void>();
   newDocumentModel: DocumentModel = new DocumentModel();
   pdfSub$: Subscription;
@@ -43,17 +50,12 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
     }
   }
 
-  constructor(
-    private templateFilesService: TemplateFilesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    public dialogRef: MatDialogRef<DocumentsDocumentDeleteComponent>,
-    @Inject(MAT_DIALOG_DATA) documentModel: DocumentModel,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-  ) {
+  
+  constructor() {
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
     this.getDocument(documentModel.id);
   }
+
 
   ngOnInit(): void {}
 

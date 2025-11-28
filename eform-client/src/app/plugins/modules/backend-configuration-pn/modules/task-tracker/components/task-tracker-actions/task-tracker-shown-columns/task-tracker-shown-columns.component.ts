@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, EventEmitter OnDestroy, OnInit, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
@@ -14,15 +14,16 @@ import {FormControl, FormGroup} from '@angular/forms';
     standalone: false
 })
 export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
+  private data = inject<Columns>(MAT_DIALOG_DATA);
+  private translate = inject(TranslateService);
+  private _formBuilder = inject(FormBuilder);
+  private dialogRef = inject(MatDialogRef<TaskTrackerShownColumnsComponent>);
+
   public columnsChanged = new EventEmitter<Columns>();
   columns: FormGroup;
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA) data: Columns,
-    private translate: TranslateService,
-    private _formBuilder: FormBuilder,
-    private dialogRef: MatDialogRef<TaskTrackerShownColumnsComponent>
-  ) {
+  
+  constructor() {
     this.columns = new FormGroup({
       property: new FormControl(data['property']),
       task: new FormControl(data['task']),
@@ -34,6 +35,7 @@ export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
       calendar: new FormControl(data['calendar']),
     });
   }
+
 
   save() {
     this.columnsChanged.emit(this.columns.value);

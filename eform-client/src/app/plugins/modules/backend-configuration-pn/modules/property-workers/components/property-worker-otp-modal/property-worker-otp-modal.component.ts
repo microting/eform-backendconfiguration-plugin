@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import {Component, OnInit, inject} from '@angular/core';
 import {UnitsService} from 'src/app/common/services';
 import {DeviceUserModel} from '../../../../models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -10,11 +10,11 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class PropertyWorkerOtpModalComponent implements OnInit {
-  constructor(
-    private unitsService: UnitsService,
-    public dialogRef: MatDialogRef<PropertyWorkerOtpModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public selectedSimpleSite: DeviceUserModel = new DeviceUserModel(),
-  ) {}
+  private unitsService = inject(UnitsService);
+  public dialogRef = inject(MatDialogRef<PropertyWorkerOtpModalComponent>);
+  public selectedSimpleSite = inject<DeviceUserModel>(MAT_DIALOG_DATA);
+
+  
 
   ngOnInit() {
   }

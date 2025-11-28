@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject} from '@angular/core';
 import {ComplianceModel, ReportEformItemModel} from '../../../../models';
 import {PropertyCompliancesColorBadgesEnum} from '../../../../enums';
 import {CompliancesStateService} from '../store';
@@ -25,6 +25,15 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class CompliancesTableComponent implements OnInit {
+  private store = inject(Store);
+  public compliancesStateService = inject(CompliancesStateService);
+  public authStateService = inject(AuthStateService);
+  private translateService = inject(TranslateService);
+  private router = inject(Router);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private route = inject(ActivatedRoute);
+
   mergedTableHeaders: MtxGridColumn[] = [];
   @Output() complianceDeleted: EventEmitter<void> = new EventEmitter<void>();
 
@@ -132,17 +141,7 @@ export class CompliancesTableComponent implements OnInit {
   public isAuth$ = this.store.select(selectAuthIsAuth);
   private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
-  constructor(
-    private store: Store,
-    public compliancesStateService: CompliancesStateService,
-    public authStateService: AuthStateService,
-    private translateService: TranslateService,
-    private router: Router,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-    private route: ActivatedRoute,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     let isAdmin = false;

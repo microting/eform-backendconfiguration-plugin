@@ -1,8 +1,7 @@
 import {
   Component, EventEmitter, Input,
   OnDestroy,
-  OnInit, Output,
-} from '@angular/core';
+  OnInit, Output, inject} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TaskWizardModel} from '../../../../models';
@@ -29,6 +28,11 @@ import {PlanningModel} from "src/app/plugins/modules/items-planning-pn/models";
     standalone: false
 })
 export class TaskWizardTableComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private authStateService = inject(AuthStateService);
+  public taskWizardStateService = inject(TaskWizardStateService);
+
   @Input() tasks: TaskWizardModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() deleteTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
@@ -96,13 +100,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
     return RepeatTypeEnum;
   }
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private authStateService: AuthStateService,
-    public taskWizardStateService: TaskWizardStateService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
   }

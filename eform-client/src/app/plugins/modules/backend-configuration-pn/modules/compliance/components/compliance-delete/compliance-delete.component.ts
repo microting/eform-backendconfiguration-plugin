@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import {Component, OnInit, inject} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {ComplianceModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
@@ -11,12 +11,12 @@ import {BackendConfigurationPnCompliancesService} from 'src/app/plugins/modules/
     standalone: false
 })
 export class ComplianceDeleteComponent implements OnInit {
-  constructor(
-    private service: BackendConfigurationPnCompliancesService,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<ComplianceDeleteComponent>,
-    @Inject(MAT_DIALOG_DATA) public complianceModel: ComplianceModel
-  ) { }
+  private service = inject(BackendConfigurationPnCompliancesService);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<ComplianceDeleteComponent>);
+  public complianceModel = inject<ComplianceModel>(MAT_DIALOG_DATA);
+
+  
   ngOnInit() {
   }
   deleteCompliance() {

@@ -1,8 +1,7 @@
 import {
   Component,
   EventEmitter,
-  OnInit,
-} from '@angular/core';
+  OnInit, inject} from '@angular/core';
 import {FolderCreateModel, FolderDto,} from 'src/app/common/models';
 import {applicationLanguages2} from 'src/app/common/const';
 import {LocaleService} from 'src/app/common/services';
@@ -21,6 +20,13 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class DocumentsFolderCreateComponent implements OnInit {
+  private authStore = inject(Store);
+  public backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  private toastrService = inject(ToastrService);
+  private translateService = inject(TranslateService);
+  private localeService = inject(LocaleService);
+  public dialogRef = inject(MatDialogRef<DocumentsFolderCreateComponent>);
+
   folderCreate: EventEmitter<void> = new EventEmitter<void>();
   name = '';
   selectedParentFolder: FolderDto;
@@ -33,23 +39,16 @@ export class DocumentsFolderCreateComponent implements OnInit {
     return applicationLanguages2;
   }
 
-  constructor(
-    private authStore: Store,
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    private toastrService: ToastrService,
-    private translateService: TranslateService,
-    localeService: LocaleService,
-    public dialogRef: MatDialogRef<DocumentsFolderCreateComponent>,
-  ) {
+  
+
+  ngOnInit() {
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguage = languageId;
     });
     // this.selectedLanguage = applicationLanguages2.find(
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
-  }
 
-  ngOnInit() {
     this.initCreateForm();
   }
 
