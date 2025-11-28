@@ -128,11 +128,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   ngOnInit() {
-    this.assignments = [...model.assignments];
-    this.availableProperties = [...model.availableProperties];
-    this.selectedDeviceUser = {...model.deviceUser ?? new DeviceUserModel()};
-    this.selectedDeviceUserCopy = {...model.deviceUser};
-    this.assignmentsCopy = [...model.assignments];
+    this.assignments = [...this.model.assignments];
+    this.availableProperties = [...this.model.availableProperties];
+    this.selectedDeviceUser = {...this.model.deviceUser ?? new DeviceUserModel()};
+    this.selectedDeviceUserCopy = {...this.model.deviceUser};
+    this.assignmentsCopy = [...this.model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
 
