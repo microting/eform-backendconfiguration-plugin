@@ -69,7 +69,7 @@ export class PropertiesTableComponent implements OnInit {
 
   
   constructor() {
-    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
+    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
 
 
