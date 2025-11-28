@@ -1,6 +1,6 @@
 import {
   Component,
-  EventEmitter
+  EventEmitter,
   OnDestroy,
   OnInit,
   inject

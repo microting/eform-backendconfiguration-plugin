@@ -1,7 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
-  EventEmitter
+  EventEmitter,
   OnInit,
   TemplateRef,
   ViewChild,
