@@ -30,7 +30,7 @@ export class FileNameEditComponent implements OnInit, OnDestroy {
 
   
   constructor() {
-    this.oldFileModel = {...fileModel};
+    this.oldFileModel = {...this.fileModel};
     this.getAllPropertiesSub$ = this.backendConfigurationPnPropertiesService.getAllPropertiesDictionary()
       .subscribe((data) => {
         if (data && data.success && data.model) {

@@ -19,8 +19,8 @@ export class FileCreateZoomPageComponent {
 
   
   constructor() {
-    this.page = model.page;
-    this.src = model.src;
+    this.page = this.model.page;
+    this.src = this.model.src;
   }
 
 }

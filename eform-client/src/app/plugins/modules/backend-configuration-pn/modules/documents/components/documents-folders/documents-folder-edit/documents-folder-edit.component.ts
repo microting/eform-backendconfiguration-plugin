@@ -71,11 +71,11 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     this.folderUpdateModel = new DocumentFolderModel();
     this.folderUpdateModel = {
       ...this.folderUpdateModel,
-      id: selectedFolder.id,
+      id: this.selectedFolder.id,
       documentFolderTranslations: [],
     };
     for (let i = 0; i < applicationLanguages2.length; i++) {
-      const translations = selectedFolder.documentFolderTranslations.find(
+      const translations = this.selectedFolder.documentFolderTranslations.find(
         (x) => x.languageId === applicationLanguages2[i].id
       );
       this.folderUpdateModel.documentFolderTranslations.push({

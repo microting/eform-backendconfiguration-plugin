@@ -29,9 +29,9 @@ export class FileTagsEditComponent implements OnInit {
 
   
   constructor() {
-    this.oldFileModel = {...model.fileModel};
-    this.currentTagIds = model.fileModel.tags.map(x => x.id);
-    this.availableTags = model.availableTags;
+    this.oldFileModel = {...this.model.fileModel};
+    this.currentTagIds = this.model.fileModel.tags.map(x => x.id);
+    this.availableTags = this.model.availableTags;
   }
 
 
