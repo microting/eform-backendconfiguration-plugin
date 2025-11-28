@@ -15,7 +15,7 @@ import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configurat
 })
 export class TaskTrackerSelectWorkerModalComponent implements OnInit, OnDestroy {
   public dialogRef = inject(MatDialogRef<TaskTrackerSelectWorkerModalComponent>);
-  private workers = inject<WorkerModel[]>(MAT_DIALOG_DATA);
+  private injectedWorkers = inject<WorkerModel[]>(MAT_DIALOG_DATA);
 
   sites: CommonDictionaryModel[] = [];
   workerName: string;
