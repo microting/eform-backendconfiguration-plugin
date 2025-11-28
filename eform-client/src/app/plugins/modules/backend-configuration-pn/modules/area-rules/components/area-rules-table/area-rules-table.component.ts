@@ -468,7 +468,7 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
 
   
   constructor() {
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
+    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
 
 

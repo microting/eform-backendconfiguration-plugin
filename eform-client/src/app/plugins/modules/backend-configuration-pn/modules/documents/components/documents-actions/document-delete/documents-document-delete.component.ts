@@ -54,8 +54,8 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
 
   
   constructor() {
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    this.getDocument(documentModel.id);
+    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
+    this.getDocument(this.documentModel.id);
   }
 
 
