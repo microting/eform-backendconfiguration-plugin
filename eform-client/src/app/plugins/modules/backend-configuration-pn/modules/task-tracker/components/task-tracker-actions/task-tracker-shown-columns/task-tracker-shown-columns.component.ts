@@ -27,14 +27,14 @@ export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
   
   constructor() {
     this.columns = new FormGroup({
-      property: new FormControl(data['property']),
-      task: new FormControl(data['task']),
-      tags: new FormControl(data['tags']),
-      workers: new FormControl(data['workers']),
-      start: new FormControl(data['start']),
-      repeat: new FormControl(data['repeat']),
-      deadline: new FormControl(data['deadline']),
-      calendar: new FormControl(data['calendar']),
+      property: new FormControl(this.data['property']),
+      task: new FormControl(this.data['task']),
+      tags: new FormControl(this.data['tags']),
+      workers: new FormControl(this.data['workers']),
+      start: new FormControl(this.data['start']),
+      repeat: new FormControl(this.data['repeat']),
+      deadline: new FormControl(this.data['deadline']),
+      calendar: new FormControl(this.data['calendar']),
     });
   }
 
