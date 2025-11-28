@@ -1,4 +1,4 @@
-import {Component, EventEmitter OnDestroy, OnInit,
+import {Component, EventEmitter, OnDestroy, OnInit,
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';

@@ -1,5 +1,5 @@
 import {CommonDictionaryModel, WorkerModel} from 'src/app/common/models';
-import {Component, EventEmitter OnDestroy, OnInit, ViewChild,
+import {Component, EventEmitter, OnDestroy, OnInit, ViewChild,
   inject
 } from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';

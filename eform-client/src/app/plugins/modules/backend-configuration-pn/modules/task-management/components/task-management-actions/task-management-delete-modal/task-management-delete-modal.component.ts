@@ -1,4 +1,4 @@
-import {Component, EventEmitter OnDestroy, OnInit, Output,
+import {Component, EventEmitter, OnDestroy, OnInit, Output,
   inject
 } from '@angular/core';
 import {
