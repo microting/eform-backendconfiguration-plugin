@@ -63,7 +63,7 @@ export class ComplianceCasePageComponent implements OnInit {
       this.complianceId = +params['complianceId'];
       this.workerId = +params['siteId'];
     });
-    activateRoute.queryParams.subscribe((params) => {
+    this.activateRoute.queryParams.subscribe((params) => {
       this.reverseRoute = params['reverseRoute'];
     });
 
