@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild,
+  inject
+} from '@angular/core';
 import {DownloadFilesNameArchiveComponent, FileNameEditComponent, FileTagsComponent, FileTagsEditComponent} from '../';
 import {FilesModel} from '../../../../models';
 import {
@@ -26,6 +28,14 @@ import {Store} from "@ngrx/store";
     standalone: false
 })
 export class FilesContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  public filesStateService = inject(FilesStateService);
+  private tagsService = inject(BackendConfigurationPnFileTagsService);
+  private translateService = inject(TranslateService);
+  private filesService = inject(BackendConfigurationPnFilesService);
+
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
   availableTags: SharedTagModel[] = [];
   files: Paged<FilesModel> = new Paged<FilesModel>();
@@ -39,16 +49,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   downloadFilesSub$: Subscription;
   clickDownloadFilesSub$: Subscription;
 
-  constructor(
-    private store: Store,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    public filesStateService: FilesStateService,
-    private tagsService: BackendConfigurationPnFileTagsService,
-    private translateService: TranslateService,
-    private filesService: BackendConfigurationPnFilesService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     this.getTags();

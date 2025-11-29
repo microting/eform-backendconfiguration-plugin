@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
@@ -14,26 +16,28 @@ import {FormControl, FormGroup} from '@angular/forms';
     standalone: false
 })
 export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
+  private data = inject<Columns>(MAT_DIALOG_DATA);
+  private translate = inject(TranslateService);
+  private _formBuilder = inject(FormBuilder);
+  private dialogRef = inject(MatDialogRef<TaskTrackerShownColumnsComponent>);
+
   public columnsChanged = new EventEmitter<Columns>();
   columns: FormGroup;
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA) data: Columns,
-    private translate: TranslateService,
-    private _formBuilder: FormBuilder,
-    private dialogRef: MatDialogRef<TaskTrackerShownColumnsComponent>
-  ) {
+  
+  constructor() {
     this.columns = new FormGroup({
-      property: new FormControl(data['property']),
-      task: new FormControl(data['task']),
-      tags: new FormControl(data['tags']),
-      workers: new FormControl(data['workers']),
-      start: new FormControl(data['start']),
-      repeat: new FormControl(data['repeat']),
-      deadline: new FormControl(data['deadline']),
-      calendar: new FormControl(data['calendar']),
+      property: new FormControl(this.data['property']),
+      task: new FormControl(this.data['task']),
+      tags: new FormControl(this.data['tags']),
+      workers: new FormControl(this.data['workers']),
+      start: new FormControl(this.data['start']),
+      repeat: new FormControl(this.data['repeat']),
+      deadline: new FormControl(this.data['deadline']),
+      calendar: new FormControl(this.data['calendar']),
     });
   }
+
 
   save() {
     this.columnsChanged.emit(this.columns.value);

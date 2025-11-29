@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {FilesModel} from '../../../../../models';
 import {BackendConfigurationPnFilesService} from '../../../../../services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -12,6 +14,10 @@ import * as R from 'ramda';
     standalone: false
 })
 export class FileTagsEditComponent implements OnInit {
+  private backendConfigurationPnFilesService = inject(BackendConfigurationPnFilesService);
+  public dialogRef = inject(MatDialogRef<FileTagsEditComponent>);
+  private model = inject<{ fileModel: FilesModel, availableTags: SharedTagModel[] }>(MAT_DIALOG_DATA);
+
   fileTagsUpdated: EventEmitter<void> = new EventEmitter<void>();
   oldFileModel: FilesModel;
   currentTagIds: number[] = [];
@@ -21,15 +27,13 @@ export class FileTagsEditComponent implements OnInit {
     return R.equals(this.oldFileModel.tags.map(x => x.id), this.currentTagIds);
   }
 
-  constructor(
-    private backendConfigurationPnFilesService: BackendConfigurationPnFilesService,
-    public dialogRef: MatDialogRef<FileTagsEditComponent>,
-    @Inject(MAT_DIALOG_DATA) model: { fileModel: FilesModel, availableTags: SharedTagModel[] }
-  ) {
-    this.oldFileModel = {...model.fileModel};
-    this.currentTagIds = model.fileModel.tags.map(x => x.id);
-    this.availableTags = model.availableTags;
+  
+  constructor() {
+    this.oldFileModel = {...this.model.fileModel};
+    this.currentTagIds = this.model.fileModel.tags.map(x => x.id);
+    this.availableTags = this.model.availableTags;
   }
+
 
   ngOnInit(): void {
   }

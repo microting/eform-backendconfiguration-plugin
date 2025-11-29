@@ -1,4 +1,6 @@
-import { Component, EventEmitter, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { applicationLanguages, applicationLanguagesTranslated } from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';
@@ -16,6 +18,11 @@ import { Subscription } from 'rxjs';
   standalone: false
 })
 export class PropertyCreateModalComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  public authStateService = inject(AuthStateService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public dialogRef = inject(MatDialogRef<PropertyCreateModalComponent>);
+
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newPropertyForm: FormGroup;
   newProperty: PropertyCreateModel = new PropertyCreateModel();
@@ -29,12 +36,12 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
     return applicationLanguages;
   }
 
-  constructor(
-    private fb: FormBuilder,
-    public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    public dialogRef: MatDialogRef<PropertyCreateModalComponent>
-  ) {
+  
+
+  ngOnDestroy(): void {
+  }
+
+  ngOnInit() {
     this.propertyIsFarm = false;
 
     // Initialize reactive form
@@ -47,12 +54,7 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
       workorderEnable: [false],
       isFarm: [false]
     });
-  }
 
-  ngOnDestroy(): void {
-  }
-
-  ngOnInit() {
   }
 
   hide() {

@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit,} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {EntityItemModel} from 'src/app/common/models';
 import { EntityItemEditNameComponent } from 'src/app/common/modules/eform-shared/components';
 import {EntitySelectService} from 'src/app/common/services';
@@ -16,21 +18,23 @@ import {Subscription} from 'rxjs';
     standalone: false
 })
 export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
+  private entitySelectService = inject(EntitySelectService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  public dialogRef = inject(MatDialogRef<AreaRuleEntityListModalComponent>);
+  private groupId = inject<number | undefined>(MAT_DIALOG_DATA);
+
   entityListChanged: EventEmitter<Array<EntityItemModel>> = new EventEmitter<Array<EntityItemModel>>();
   entityList: Array<EntityItemModel> = [];
 
   entityItemEditNameComponentAfterClosedSub$: Subscription;
   getEntitySelectableGroupSub$: Subscription;
 
-  constructor(
-    private entitySelectService: EntitySelectService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    public dialogRef: MatDialogRef<AreaRuleEntityListModalComponent>,
-    @Inject(MAT_DIALOG_DATA) groupId?: number
-    ) {
-    if (groupId) {
-      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(groupId)
+  
+
+  ngOnInit() {
+    if (this.groupId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(this.groupId)
         .subscribe(data => {
           if (data && data.success && data.model) {
             this.entityList = [...data.model.entityGroupItemLst];
@@ -43,9 +47,7 @@ export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
           }
         })
     }
-  }
-
-  ngOnInit() {}
+}
 
   hide() {
     this.dialogRef.close();

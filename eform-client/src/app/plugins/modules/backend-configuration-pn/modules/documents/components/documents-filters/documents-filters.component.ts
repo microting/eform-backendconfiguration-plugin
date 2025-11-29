@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -26,6 +27,8 @@ import {
     standalone: false
 })
 export class DocumentsFiltersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Input() folders: DocumentSimpleFolderModel[];
   @Input() documents: DocumentSimpleModel[];
@@ -40,10 +43,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   expireChangesSub$: Subscription;
   selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
-  constructor(
-    private store: Store,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     this.selectFiltersSub$ = this.selectDocumentsFilters$

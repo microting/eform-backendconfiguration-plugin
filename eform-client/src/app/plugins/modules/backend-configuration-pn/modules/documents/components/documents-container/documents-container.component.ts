@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {
   DocumentsDocumentCreateComponent,
   DocumentsDocumentDeleteComponent,
@@ -41,6 +43,17 @@ import {
     standalone: false
 })
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  public backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private translate = inject(TranslateService);
+  public documentsStateService = inject(DocumentsStateService);
+  public localeService = inject(LocaleService);
+  private route = inject(ActivatedRoute);
+  private statisticsStateService = inject(StatisticsStateService);
+
   folders: DocumentSimpleFolderModel[];
   documents: Paged<DocumentModel> = new Paged<DocumentModel>();
   simpleDocuments: DocumentSimpleModel[];
@@ -73,17 +86,8 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  constructor(
-    private store: Store,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private translate: TranslateService,
-    public documentsStateService: DocumentsStateService,
-    public localeService: LocaleService,
-    private route: ActivatedRoute,
-    private statisticsStateService: StatisticsStateService,) {
+  
+  constructor() {
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguage = languageId;
     });
@@ -105,6 +109,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   ngOnInit(): void {
     this.getProperties();

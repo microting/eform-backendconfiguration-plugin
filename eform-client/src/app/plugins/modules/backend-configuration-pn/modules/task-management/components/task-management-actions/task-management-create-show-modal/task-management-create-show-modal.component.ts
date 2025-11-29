@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit, Output,} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit, Output,
+  inject
+} from '@angular/core';
 import { CommonDictionaryModel } from 'src/app/common/models';
 import {
   BackendConfigurationPnPropertiesService,
@@ -28,6 +30,17 @@ import {Lightbox} from 'ng-gallery/lightbox';
 })
 export class TaskManagementCreateShowModalComponent
   implements OnInit, OnDestroy {
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  private sitesService = inject(SitesService);
+  private imageService = inject(TemplateFilesService);
+  public gallery = inject(Gallery);
+  public lightbox = inject(Lightbox);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
+  public dialogRef = inject(MatDialogRef<TaskManagementCreateShowModalComponent>);
+  private workOrderCase = inject<WorkOrderCaseForReadModel | undefined>(MAT_DIALOG_DATA);
+
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -46,18 +59,8 @@ export class TaskManagementCreateShowModalComponent
   getPropertiesAssignmentsSub$: Subscription;
   currentWorkOrderCase: WorkOrderCaseForReadModel;
 
-  constructor(
-    private propertyService: BackendConfigurationPnPropertiesService,
-    private sitesService: SitesService,
-    private imageService: TemplateFilesService,
-    public gallery: Gallery,
-    public lightbox: Lightbox,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private taskManagementService: BackendConfigurationPnTaskManagementService,
-    public dialogRef: MatDialogRef<TaskManagementCreateShowModalComponent>,
-    @Inject(MAT_DIALOG_DATA) workOrderCase?: WorkOrderCaseForReadModel,
-  ) {
+  
+  constructor() {
     this.workOrderCaseForm = new FormGroup({
       propertyId: new FormControl({
         value: null,
@@ -85,26 +88,26 @@ export class TaskManagementCreateShowModalComponent
       }, Validators.required),
     });
     this.getProperties();
-    if (workOrderCase) {
-      this.currentWorkOrderCase = workOrderCase;
-      this.getPropertyAreas(workOrderCase.propertyId);
-      this.getSites(workOrderCase.propertyId);
+    if (this.workOrderCase) {
+      this.currentWorkOrderCase = this.workOrderCase;
+      this.getPropertyAreas(this.workOrderCase.propertyId);
+      this.getSites(this.workOrderCase.propertyId);
       this.workOrderCaseForm.patchValue(
         {
-          propertyId: workOrderCase.propertyId,
-          areaName: workOrderCase.areaName,
+          propertyId: this.workOrderCase.propertyId,
+          areaName: this.workOrderCase.areaName,
           // assignedTo: workOrderCase.assignedSiteId,
-          descriptionTask: workOrderCase.description.replace(/<br\s*\/?>/gi, '\n'),
-          priority: workOrderCase.priority,
-          caseStatusEnum: workOrderCase.caseStatusEnum,
+          descriptionTask: this.workOrderCase.description.replace(/<br\s*\/?>/gi, '\n'),
+          priority: this.workOrderCase.priority,
+          caseStatusEnum: this.workOrderCase.caseStatusEnum,
         },
         { emitEvent: false }
       );
       // this.workOrderCaseForm.disable({ emitEvent: false });
       this.workOrderCaseForm.controls['propertyId'].disable({ emitEvent: false });
       this.workOrderCaseForm.controls['areaName'].disable({ emitEvent: false });
-      this.description = workOrderCase.description;
-      workOrderCase.pictureNames.forEach((fileName) => {
+      this.description = this.workOrderCase.description;
+      this.workOrderCase.pictureNames.forEach((fileName) => {
         this.imageSubs$.push(
           this.imageService.getImage(fileName).subscribe((blob) => {
             const imageUrl = URL.createObjectURL(blob);
@@ -144,6 +147,7 @@ export class TaskManagementCreateShowModalComponent
       this.isCreate = true;
     }
   }
+
 
   ngOnInit(): void {
   }

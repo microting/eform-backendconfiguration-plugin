@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnInit,} from '@angular/core';
+import {Component, EventEmitter, OnInit,
+  inject
+} from '@angular/core';
 import {FormBuilder, FormGroup, FormArray, FormControl} from '@angular/forms';
 import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {CommonDictionaryModel,} from 'src/app/common/models';
@@ -28,6 +30,14 @@ import {Store} from '@ngrx/store';
   standalone: false
 })
 export class DocumentsDocumentCreateComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private authStore = inject(Store);
+  private templateFilesService = inject(TemplateFilesService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  private localeService = inject(LocaleService);
+  public dialogRef = inject(MatDialogRef<DocumentsDocumentCreateComponent>);
+
   form: FormGroup;
   newDocumentModel: DocumentModel = new DocumentModel();
   // selectedFolder: number;
@@ -70,15 +80,8 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     }
   }
 
-  constructor(
-    private fb: FormBuilder,
-    private authStore: Store,
-    private templateFilesService: TemplateFilesService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    localeService: LocaleService,
-    public dialogRef: MatDialogRef<DocumentsDocumentCreateComponent>,
-  ) {
+  
+  constructor() {
     this.selectCurrentUserLanguageId$.subscribe((languageId) => {
       this.selectedLanguage = languageId;
     });
@@ -86,6 +89,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
   }
+
 
 
   ngOnInit(): void {

@@ -4,6 +4,7 @@ import {
   Input, OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {DocumentModel, DocumentSimpleFolderModel, DocumentTranslationModel,} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -30,6 +31,13 @@ import {
     standalone: false
 })
 export class DocumentsTableComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private templateFilesService = inject(TemplateFilesService);
+  private translateService = inject(TranslateService);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+  public documentsStateService = inject(DocumentsStateService);
+
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
     {
@@ -82,17 +90,12 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   public selectDocumentsPaginationSort$ = this.store.select(selectDocumentsPaginationSort);
   public selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
 
-  constructor(
-    private store: Store,
-    private templateFilesService: TemplateFilesService,
-    private translateService: TranslateService,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    public documentsStateService: DocumentsStateService,
-  ) {
-    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
+  
+  constructor() {
+    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
+    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
+
 
   getLanguageById(languageId: number) {
     const index = applicationLanguages2.findIndex(x => x.id === languageId);

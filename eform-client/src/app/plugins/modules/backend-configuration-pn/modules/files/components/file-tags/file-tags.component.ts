@@ -7,6 +7,7 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  inject
 } from '@angular/core';
 import {
   SharedTagCreateComponent,
@@ -31,6 +32,10 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
     standalone: false
 })
 export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
+  private tagsService = inject(BackendConfigurationPnFileTagsService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   @Input() availableTags: SharedTagModel[] = [];
   @Output() tagsChanged: EventEmitter<void> = new EventEmitter<void>();
   dialogRef: MatDialogRef<SharedTagsComponent>;
@@ -46,11 +51,7 @@ export class FileTagsComponent implements OnInit, OnDestroy, OnChanges {
   showMultipleTagTagSub$: Subscription;
   createdTagsSub$: Subscription;
 
-  constructor(
-    private tagsService: BackendConfigurationPnFileTagsService,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-  ) {}
+  
 
   ngOnInit() {}
 

@@ -2,10 +2,10 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
-  Inject,
   OnInit,
   TemplateRef,
   ViewChild,
+  inject
 } from '@angular/core';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
@@ -28,6 +28,12 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
     standalone: false
 })
 export class AreaRuleEditModalComponent implements OnInit {
+  private eFormService = inject(EFormService);
+  private cd = inject(ChangeDetectorRef);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<AreaRuleEditModalComponent>);
+  private model = inject<{areaRule: AreaRuleModel, selectedArea: AreaModel, planningStatus: boolean}>(MAT_DIALOG_DATA);
+
   @ViewChild('checkboxTpl', { static: true }) checkboxTpl!: TemplateRef<any>;
   @ViewChild('weekdaysTpl', { static: true }) weekdaysTpl!: TemplateRef<any>;
   selectedArea: AreaModel = new AreaModel();
@@ -122,22 +128,18 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   dataForTable: Array<Array<Array<PoolHourModel>>> = [];
 
-  constructor(
-    private eFormService: EFormService,
-    private cd: ChangeDetectorRef,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<AreaRuleEditModalComponent>,
-    @Inject(MAT_DIALOG_DATA) model: {areaRule: AreaRuleModel, selectedArea: AreaModel, planningStatus: boolean}
-  ) {
-    this.planningStatus = model.planningStatus;
+  
+
+  ngOnInit() {
+    this.planningStatus = this.model.planningStatus;
     //this.selectedAreaRule = R.clone(model.areaRule);
     this.selectedAreaRule = new AreaRuleUpdateModel();
-    this.selectedAreaRule.id = model.areaRule.id;
-    this.selectedAreaRule.eformId = model.areaRule.eformId;
-    this.selectedAreaRule.eformName = model.areaRule.eformName;
-    this.selectedAreaRule.typeSpecificFields = R.clone(model.areaRule.typeSpecificFields);
-    this.selectedAreaRule.translatedNames = R.clone(model.areaRule.translatedNames);
-    this.selectedArea = model.selectedArea;
+    this.selectedAreaRule.id = this.model.areaRule.id;
+    this.selectedAreaRule.eformId = this.model.areaRule.eformId;
+    this.selectedAreaRule.eformName = this.model.areaRule.eformName;
+    this.selectedAreaRule.typeSpecificFields = R.clone(this.model.areaRule.typeSpecificFields);
+    this.selectedAreaRule.translatedNames = R.clone(this.model.areaRule.translatedNames);
+    this.selectedArea = this.model.selectedArea;
 
     this.typeahead
       .pipe(
@@ -151,12 +153,10 @@ export class AreaRuleEditModalComponent implements OnInit {
         this.templatesModel = items.model;
         this.cd.markForCheck();
       });
-  }
 
-  ngOnInit() {
     this.hours.forEach((x, index) => {
       this.templates = {...this.templates, [`${index}.isActive`]: this.checkboxTpl};
-    });
+  });
     this.templates = {...this.templates, weekdays: this.weekdaysTpl};
 
     this.dataForTable = this.getDataForTable();
