@@ -32,7 +32,7 @@ import {
 } from '../../../../state';
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
-import {PasswordValidationIcon, PdfIcon} from "src/app/common/const";
+import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from "src/app/common/const";
 import {MatIconRegistry} from "@angular/material/icon";
 import {DomSanitizer} from "@angular/platform-browser";
 
@@ -328,6 +328,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
 
   ngOnInit() {
     this.iconRegistry.addSvgIconLiteral('password-validation', this.sanitizer.bypassSecurityTrustHtml(PasswordValidationIcon));
+    this.iconRegistry.addSvgIconLiteral('android-icon', this.sanitizer.bypassSecurityTrustHtml(AndroidIcon));
+    this.iconRegistry.addSvgIconLiteral('ios-icon', this.sanitizer.bypassSecurityTrustHtml(iOSIcon));
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertyWorkersStateService.updateNameFilter(val);
     });
