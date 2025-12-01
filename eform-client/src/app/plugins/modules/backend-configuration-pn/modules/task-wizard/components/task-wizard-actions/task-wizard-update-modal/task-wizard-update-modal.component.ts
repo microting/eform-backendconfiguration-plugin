@@ -1,4 +1,6 @@
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit,} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   CommonDictionaryModel,
@@ -38,6 +40,15 @@ import {Store} from '@ngrx/store';
   standalone: false
 })
 export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<TaskWizardUpdateModalComponent>);
+  private eFormService = inject(EFormService);
+  private cd = inject(ChangeDetectorRef);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private fb = inject(FormBuilder);
+
   planningTagsModal: PlanningTagsComponent;
   updateTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   typeahead = new EventEmitter<string>();
@@ -91,16 +102,8 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     return R.equals(this.taskForm.value, this.copyModel);
   }
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<TaskWizardUpdateModalComponent>,
-    private eFormService: EFormService,
-    private cd: ChangeDetectorRef,
-    public dialog: MatDialog,
-    private overlay: Overlay,
-    private fb: FormBuilder
-  ) {
+  
+  constructor() {
     this.typeahead
       .pipe(
         debounceTime(200),
@@ -114,6 +117,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       });
   }
+
 
   ngOnInit(): void {
     // this.initForm();

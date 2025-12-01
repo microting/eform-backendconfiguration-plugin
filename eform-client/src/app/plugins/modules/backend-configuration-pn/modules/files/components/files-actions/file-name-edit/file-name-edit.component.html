@@ -28,19 +28,18 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="accent"
-    id="fileNameSaveBtn"
-    (click)="updateFile()"
-    [disabled]="disabledSaveBtn"
-  >
-    {{ 'Update' | translate }}
-  </button>
-  <button
-    mat-raised-button
+    class="btn-cancel"
     id="cancelSaveFileNameBtn"
     (click)="hide()"
   >
     {{ 'Cancel' | translate }}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    id="fileNameSaveBtn"
+    (click)="updateFile()"
+    [disabled]="disabledSaveBtn"
+  >
+    <span>{{ 'Update' | translate }}</span>
   </button>
 </div>

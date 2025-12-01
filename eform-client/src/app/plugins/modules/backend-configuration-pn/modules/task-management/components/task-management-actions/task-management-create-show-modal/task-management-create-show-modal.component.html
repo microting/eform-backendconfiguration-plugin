@@ -128,19 +128,19 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
   <button
+    class="btn-cancel"
+    (click)="hide()"
+    id="taskManagementCreateShowSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+  <button
     class="btn-primary btn-primary--icon-left"
     id="taskManagementCreateShowSaveBtn"
     [disabled]="!(workOrderCaseForm.valid)"
     (click)="create()"
   >
-    {{(!isCreate ? 'Save' : 'Create') | translate}}
-  </button>
-  <button
-   class="btn-cancel"
-    (click)="hide()"
-    id="taskManagementCreateShowSaveCancelBtn"
-  >
-    {{'Cancel' | translate}}
+    <span>{{(!isCreate ? 'Save' : 'Create') | translate}}</span>
   </button>
 </div>
 </div>

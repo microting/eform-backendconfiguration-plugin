@@ -293,4 +293,8 @@ export const ptPT = {
   'Deactivate task': 'Desativar tarefa',
   Areas: 'Áreas',
   Pictures: 'Fotos',
+  'Delete employee': 'Excluir funcionário',
+  Resigned: 'Resignado',
+  'Show resigned': 'Mostrar demissão',
+  'Resigned at date': 'Demitiu-se em [data]',
 };

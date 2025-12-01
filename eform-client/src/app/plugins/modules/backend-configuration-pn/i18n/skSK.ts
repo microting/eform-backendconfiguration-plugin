@@ -293,4 +293,8 @@ export const skSK = {
   'Deactivate task': 'Deaktivovať úlohu',
   Areas: 'Oblasti',
   Pictures: 'Obrázky',
+  'Delete employee': 'Odstrániť zamestnanca',
+  Resigned: 'Rezignoval/a',
+  'Show resigned': 'Zobraziť rezignáciu',
+  'Resigned at date': 'Dátum rezignácie',
 };

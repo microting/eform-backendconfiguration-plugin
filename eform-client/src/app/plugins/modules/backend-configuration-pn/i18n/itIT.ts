@@ -293,4 +293,8 @@ export const itIT = {
   'Deactivate task': 'Disattivare l&#39;attività',
   Areas: 'Aree',
   Pictures: 'Immagini',
+  'Delete employee': 'Elimina dipendente',
+  Resigned: 'Rassegnato',
+  'Show resigned': 'Mostra dimissioni',
+  'Resigned at date': 'Dimessosi alla data',
 };

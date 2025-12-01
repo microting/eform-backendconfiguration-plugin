@@ -293,4 +293,8 @@ export const isIS = {
   'Deactivate task': 'Slökktu á verkefni',
   Areas: 'Svæði',
   Pictures: 'Myndir',
+  'Delete employee': 'Eyða starfsmanni',
+  Resigned: 'Sagði upp',
+  'Show resigned': 'Sýna sagði upp',
+  'Resigned at date': 'Sagði af sér þann dag',
 };

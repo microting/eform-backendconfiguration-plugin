@@ -1,4 +1,6 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   CommonDictionaryModel, LanguagesModel,
@@ -42,6 +44,20 @@ import {AppSettingsStateService} from 'src/app/modules/application-settings/comp
     standalone: false
 })
 export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  public taskWorkerAssignmentsStateService = inject(TaskWorkerAssignmentsStateService);
+  private activatedRoute = inject(ActivatedRoute);
+  private sitesService = inject(SitesService);
+  private backendConfigurationPnAreasService = inject(BackendConfigurationPnAreasService);
+  private areasService = inject(BackendConfigurationPnAreasService);
+  private translateService = inject(TranslateService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  private backendConfigurationPnTaskWizardService = inject(BackendConfigurationPnTaskWizardService);
+  private itemsPlanningPnTagsService = inject(ItemsPlanningPnTagsService);
+  private appSettingsStateService = inject(AppSettingsStateService);
+
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   tableHeaders: MtxGridColumn[] = [
     {
@@ -109,22 +125,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   public selectTaskWorkerAssignmentPaginationSort$ = this.store.select(selectTaskWorkerAssignmentPaginationSort);
   public selectTaskWorkerAssignmentPaginationIsSortDsc$ = this.store.select(selectTaskWorkerAssignmentPaginationIsSortDsc);
 
-  constructor(
-    private store: Store,
-    public taskWorkerAssignmentsStateService: TaskWorkerAssignmentsStateService,
-    private activatedRoute: ActivatedRoute,
-    private sitesService: SitesService,
-    private backendConfigurationPnAreasService: BackendConfigurationPnAreasService,
-    private areasService: BackendConfigurationPnAreasService,
-    private translateService: TranslateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
-    private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
-    private appSettingsStateService: AppSettingsStateService,
-  ) {
-  }
+  
 
   ngOnInit() {
     this.activatedRoute.params.subscribe((params) => {

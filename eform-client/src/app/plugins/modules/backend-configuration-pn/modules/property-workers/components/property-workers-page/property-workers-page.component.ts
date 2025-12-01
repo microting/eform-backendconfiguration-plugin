@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {
@@ -34,6 +36,12 @@ import {
     standalone: false
 })
 export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public propertyWorkersStateService = inject(PropertyWorkersStateService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
@@ -48,14 +56,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
-  constructor(
-    private store: Store,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    public propertyWorkersStateService: PropertyWorkersStateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-  ) {
-  }
+  
 
   ngOnInit() {
     let propertyIds: number[] = [];

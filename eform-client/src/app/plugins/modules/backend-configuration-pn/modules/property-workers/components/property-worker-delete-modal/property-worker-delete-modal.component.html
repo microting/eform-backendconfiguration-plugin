@@ -25,20 +25,20 @@
     </div>
   </div>
 </div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    id="cancelDeleteBtn"
+    (click)="hide()"
+  >
+    {{'Cancel' | translate}}
+  </button>
   <button
     class="btn-delete"
     id="saveDeleteBtn"
     (click)="deleteSingle()"
   >
     {{'Delete' | translate}}
-  </button>
-  <button
-    class="btn-cancel"
-    id="cancelDeleteBtn"
-    (click)="hide()"
-  >
-    {{'Cancel' | translate}}
   </button>
 </div>
 

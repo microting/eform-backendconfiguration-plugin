@@ -293,4 +293,8 @@ export const elGR = {
   'Deactivate task': 'Απενεργοποίηση εργασίας',
   Areas: 'Περιοχές',
   Pictures: 'Εικόνες',
+  'Delete employee': 'Διαγραφή υπαλλήλου',
+  Resigned: 'Καρτερικός',
+  'Show resigned': 'Η εκπομπή παραιτήθηκε',
+  'Resigned at date': 'Παραιτήθηκε την ημερομηνία',
 };

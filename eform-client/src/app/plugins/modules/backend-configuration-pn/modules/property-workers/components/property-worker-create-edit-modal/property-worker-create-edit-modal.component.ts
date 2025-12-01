@@ -1,9 +1,9 @@
 import {
   Component,
   EventEmitter,
-  Inject,
   OnDestroy,
   OnInit, Output,
+  inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -27,6 +27,18 @@ import validator from 'validator';
     standalone: false
 })
 export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  public propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public authStateService = inject(AuthStateService);
+  private translateService = inject(TranslateService);
+  public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
+  private appSettingsStateService = inject(AppSettingsStateService);
+  private model = inject<{
+      deviceUser: DeviceUserModel,
+      assignments: PropertyAssignmentWorkerModel[],
+      availableProperties: CommonDictionaryModel[],
+    }>(MAT_DIALOG_DATA);
+
   availableProperties: CommonDictionaryModel[] = [];
   edit: boolean = false;
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
@@ -60,25 +72,67 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   activeLanguages: Array<any> = [];
   form: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    public propertiesService: BackendConfigurationPnPropertiesService,
-    public authStateService: AuthStateService,
-    private translateService: TranslateService,
-    public dialogRef: MatDialogRef<PropertyWorkerCreateEditModalComponent>,
-    private appSettingsStateService: AppSettingsStateService,
-    @Inject(MAT_DIALOG_DATA) model:
-    {
-      deviceUser: DeviceUserModel,
-      assignments: PropertyAssignmentWorkerModel[],
-      availableProperties: CommonDictionaryModel[],
-    },
-  ) {
-    this.assignments = [...model.assignments];
-    this.availableProperties = [...model.availableProperties];
-    this.selectedDeviceUser = {...model.deviceUser ?? new DeviceUserModel()};
-    this.selectedDeviceUserCopy = {...model.deviceUser};
-    this.assignmentsCopy = [...model.assignments];
+  
+
+  private updateDisabledFieldsBasedOnResigned() {
+    const isResigned = this.form.get('resigned')?.value;
+    Object.keys(this.form.controls).forEach(key => {
+      if (key !== 'resigned' && key !== 'resignedAtDate') {
+        if (isResigned) {
+          this.form.get(key)?.disable({ emitEvent: false });
+        } else {
+          this.form.get(key)?.enable({ emitEvent: false });
+        }
+      }
+    });
+  }
+
+  get languages() {
+    return this.appLanguages.languages.filter((x) => x.isActive);
+  }
+
+  // Add this method to your component
+  updateFormControlDisabledStates() {
+    // userFirstName and userLastName
+    // if (this.selectedDeviceUser.isBackendUser) {
+    //   this.form.get('userFirstName')?.disable();
+    //   this.form.get('userLastName')?.disable();
+    // } else {
+    //   this.form.get('userFirstName')?.enable();
+    //   this.form.get('userLastName')?.enable();
+    // }
+
+    // languageCode
+    const shouldDisableLanguage =
+      this.selectedDeviceUser.resigned ||
+      this.timeRegistrationEnabled ||
+      this.taskManagementEnabled ||
+      this.getAssignmentCount() > 0;
+    if (shouldDisableLanguage) {
+      this.form.get('languageCode')?.disable();
+    } else {
+      this.form.get('languageCode')?.enable();
+    }
+
+    // taskManagementEnabled (mat-slide-toggle)
+    if (this.selectedDeviceUser.hasWorkOrdersAssigned) {
+      this.form.get('taskManagementEnabled')?.disable();
+      this.form.get('resigned').disable();
+    } else {
+      if (this.selectedDeviceUser.resigned) {
+        this.form.get('taskManagementEnabled')?.disable();
+      } else {
+        this.form.get('taskManagementEnabled')?.enable();
+      }
+    }
+  }
+
+  ngOnInit() {
+    this.assignments = [...this.model.assignments];
+    this.availableProperties = [...this.model.availableProperties];
+    this.selectedDeviceUser = {...this.model.deviceUser ?? new DeviceUserModel()};
+    this.selectedDeviceUserCopy = {...this.model.deviceUser};
+    this.assignmentsCopy = [...this.model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
 
@@ -128,57 +182,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.updateDisabledFieldsBasedOnResigned();
     });
 
-  }
-
-  private updateDisabledFieldsBasedOnResigned() {
-    const isResigned = this.form.get('resigned')?.value;
-    Object.keys(this.form.controls).forEach(key => {
-      if (key !== 'resigned' && key !== 'resignedAtDate') {
-        if (isResigned) {
-          this.form.get(key)?.disable({ emitEvent: false });
-        } else {
-          this.form.get(key)?.enable({ emitEvent: false });
-        }
-      }
-    });
-  }
-
-  get languages() {
-    return this.appLanguages.languages.filter((x) => x.isActive);
-  }
-
-  // Add this method to your component
-  updateFormControlDisabledStates() {
-    // userFirstName and userLastName
-    // if (this.selectedDeviceUser.isBackendUser) {
-    //   this.form.get('userFirstName')?.disable();
-    //   this.form.get('userLastName')?.disable();
-    // } else {
-    //   this.form.get('userFirstName')?.enable();
-    //   this.form.get('userLastName')?.enable();
-    // }
-
-    // languageCode
-    const shouldDisableLanguage =
-      this.selectedDeviceUser.resigned ||
-      this.timeRegistrationEnabled ||
-      this.taskManagementEnabled ||
-      this.getAssignmentCount() > 0;
-    if (shouldDisableLanguage) {
-      this.form.get('languageCode')?.disable();
-    } else {
-      this.form.get('languageCode')?.enable();
-    }
-
-    // taskManagementEnabled (mat-slide-toggle)
-    if (this.selectedDeviceUser.hasWorkOrdersAssigned || this.selectedDeviceUser.resigned) {
-      this.form.get('taskManagementEnabled')?.disable();
-    } else {
-      this.form.get('taskManagementEnabled')?.enable();
-    }
-  }
-
-  ngOnInit() {
     this.getEnabledLanguages();
     this.updateFormControlDisabledStates();
   }
@@ -216,6 +219,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     const assignment = this.assignments.find(
       (x) => x.propertyId === propertyId
     );
+    if (assignment) {
+      if (assignment.isLocked) {
+        this.form.get('resigned').disable();
+      }
+    }
     return assignment ? assignment.isLocked : false;
   }
 

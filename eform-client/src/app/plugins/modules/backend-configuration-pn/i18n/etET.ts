@@ -293,4 +293,8 @@ export const etET = {
   'Deactivate task': 'Deaktiveerige ülesanne',
   Areas: 'Piirkonnad',
   Pictures: 'Pildid',
+  'Delete employee': 'Kustuta töötaja',
+  Resigned: 'Astus tagasi',
+  'Show resigned': 'Näita astus tagasi',
+  'Resigned at date': 'Astus tagasi kuupäeval',
 };

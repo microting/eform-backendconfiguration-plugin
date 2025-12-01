@@ -293,4 +293,8 @@ export const esES = {
   'Deactivate task': 'Desactivar tarea',
   Areas: 'Áreas',
   Pictures: 'Fotos',
+  'Delete employee': 'Eliminar empleado',
+  Resigned: 'Resignado',
+  'Show resigned': 'Mostrar resignado',
+  'Resigned at date': 'Dimitió en la fecha',
 };

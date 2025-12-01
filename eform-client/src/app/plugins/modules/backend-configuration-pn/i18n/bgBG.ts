@@ -293,4 +293,8 @@ export const bgBG = {
   'Deactivate task': 'Деактивирайте задачата',
   Areas: 'Области',
   Pictures: 'Снимки',
+  'Delete employee': 'Изтриване на служител',
+  Resigned: 'Оставка',
+  'Show resigned': 'Покажи оставка',
+  'Resigned at date': 'Оставка на дата',
 };

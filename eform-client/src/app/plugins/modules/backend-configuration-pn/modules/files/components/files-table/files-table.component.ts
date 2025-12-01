@@ -4,6 +4,7 @@ import {
   Input,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {FilesModel} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -26,6 +27,11 @@ import {
     standalone: false
 })
 export class FilesTableComponent implements OnInit {
+  private store = inject(Store);
+  public filesStateService = inject(FilesStateService);
+  private translateService = inject(TranslateService);
+  private filesService = inject(BackendConfigurationPnFilesService);
+
   _files: Paged<FilesModel> = new Paged<FilesModel>();
   @Input()
   set files(files: Paged<FilesModel>) {
@@ -83,13 +89,7 @@ export class FilesTableComponent implements OnInit {
   public selectFilesPaginationIsSortDsc$ = this.store.select(selectFilesPaginationIsSortDsc);
   public selectFilesNameFilters$ = this.store.select(selectFilesNameFilters);
 
-  constructor(
-    private store: Store,
-    public filesStateService: FilesStateService,
-    private translateService: TranslateService,
-    private filesService: BackendConfigurationPnFilesService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
   }

@@ -202,19 +202,19 @@
   </div>
   <div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-12">
     <button
+      class="btn-cancel"
+      id="documentEditCancelBtn"
+      (click)="hide()"
+    >
+      {{ 'Cancel' | translate }}
+    </button>
+    <button
       class="btn-primary btn-primary--icon-left"
       id="documentEditSaveBtn"
       (click)="updateDocument()"
       [disabled]="disabledSaveBtn"
     >
-      {{ 'Update' | translate }}
-    </button>
-    <button
-     class="btn-cancel"
-      id="documentEditCancelBtn"
-      (click)="hide()"
-    >
-      {{ 'Cancel' | translate }}
+      <span>{{ 'Update' | translate }}</span>
     </button>
   </div>
 </div>

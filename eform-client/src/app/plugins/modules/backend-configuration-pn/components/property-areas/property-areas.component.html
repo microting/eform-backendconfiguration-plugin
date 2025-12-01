@@ -5,13 +5,13 @@
 >
   <button
     *ngIf="selectAuthIsAdmin$ | async"
-    mat-icon-button
+    class="btn-primary btn-primary--icon-left"
     id="configurePropertyAreasBtn"
-    color="accent"
     (click)="showConfigurePropertyAreas()"
     matTooltip="{{ 'Add controlareas to property' | translate }} : {{ selectedProperty.name }}"
   >
     <mat-icon>add</mat-icon>
+    <span>{{ 'Add controlareas to property' | translate }} : {{ selectedProperty.name }}"</span>
   </button>
 </eform-new-subheader>
 

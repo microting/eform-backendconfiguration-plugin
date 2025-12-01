@@ -8,6 +8,7 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  inject
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../models/report';
 import {CaseDeleteComponent} from '../../../components';
@@ -31,6 +32,11 @@ import {Store} from '@ngrx/store';
     standalone: false
 })
 export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   @Input() items: ReportEformItemModel[] = [];
   @Input() reportIndex: number;
   @Input() itemHeaders: { key: string; value: string }[] = [];
@@ -86,14 +92,11 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,
-  ) {
+  
+  constructor() {
     this.selectAuthIsAdmin$.pipe(take(1)).subscribe((selectAuthIsAdmin) => this.isAdmin = selectAuthIsAdmin);
   }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (/*!changes.itemHeaders.isFirstChange() && */changes.itemHeaders) {

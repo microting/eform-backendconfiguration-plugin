@@ -293,4 +293,8 @@ export const nlNL = {
   'Deactivate task': 'Taak deactiveren',
   Areas: 'Gebieden',
   Pictures: 'Foto&#39;s',
+  'Delete employee': 'Werknemer verwijderen',
+  Resigned: 'Afgetreden',
+  'Show resigned': 'Toon ontslag genomen',
+  'Resigned at date': 'Afgetreden op datum',
 };

@@ -293,4 +293,8 @@ export const slSL = {
   'Deactivate task': 'Deaktiviraj nalogo',
   Areas: 'Območja',
   Pictures: 'Slike',
+  'Delete employee': 'Izbriši zaposlenega',
+  Resigned: 'Odstopil',
+  'Show resigned': 'Pokaži odstopil',
+  'Resigned at date': 'Odstopil dne',
 };

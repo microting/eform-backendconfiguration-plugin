@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -36,6 +37,16 @@ import {TaskManagementStateService} from '../store';
     standalone: false
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  private translate = inject(TranslateService);
+  private propertyService = inject(BackendConfigurationPnPropertiesService);
+  private sitesService = inject(SitesService);
+  public dialog = inject(MatDialog);
+  private entitySelectService = inject(EntitySelectService);
+  private overlay = inject(Overlay);
+  private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
+  private taskManagementStateService = inject(TaskManagementStateService);
+
   @Output()
   updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output()
@@ -72,18 +83,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   priorityValueChangesSub$: Subscription;
   public selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
 
-  constructor(
-    private store: Store,
-    private translate: TranslateService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    private sitesService: SitesService,
-    public dialog: MatDialog,
-    private entitySelectService: EntitySelectService,
-    private overlay: Overlay,
-    private taskManagementService: BackendConfigurationPnTaskManagementService,
-    private taskManagementStateService: TaskManagementStateService,
-  ) {
-  }
+  
 
   ngOnInit(): void {
     this.getProperties();

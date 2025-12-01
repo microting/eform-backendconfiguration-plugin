@@ -225,7 +225,12 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await value.click();
         await browser.pause(500);
       }
+      if(propertyWorker.workOrderFlow === true){
+        await (await this.TaskManagementEnableToggleInput()).click();
+        await browser.pause(500);
+      }
       if (propertyWorker.properties) {
+        await (await $('#propertiesTab')).click();
         await browser.pause(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           await (
@@ -237,10 +242,6 @@ class BackendConfigurationPropertyWorkersPage extends Page {
           ).click();
           await browser.pause(500);
         }
-      }
-      if(propertyWorker.workOrderFlow === true){
-        await (await this.TaskManagementEnableToggleInput()).click();
-        await browser.pause(500);
       }
     }
   }
@@ -377,6 +378,7 @@ export class PropertyWorkerRowObject {
         await browser.pause(500);
       }
       if (propertyWorker.properties) {
+        await (await $('#propertiesTab')).click();
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           await (
             await (
@@ -413,6 +415,8 @@ export class PropertyWorkerRowObject {
   > {
     await this.clickActionsMenu();
     await this.openEditModal();
+    await (await $('#propertiesTab')).click();
+    await browser.pause(500);
     const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{
       propertyName: string;

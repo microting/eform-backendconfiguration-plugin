@@ -28,7 +28,10 @@
     class="btn-primary btn-primary--icon-left"
     [disabled]="selectedFileIds.length === 0"
     (click)="downloadSelectedFiles()"
-    >{{'Download selected' | translate}}</button>
+    >
+    <mat-icon>download</mat-icon>
+    <span>{{'Download selected' | translate}}</span>
+  </button>
 </div>
 <app-files-table
   [files]="files"

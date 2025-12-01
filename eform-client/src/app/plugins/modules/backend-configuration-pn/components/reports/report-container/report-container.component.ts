@@ -1,4 +1,6 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit,
+  inject
+} from '@angular/core';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {
@@ -32,6 +34,17 @@ import {TranslateService} from "@ngx-translate/core";
     standalone: false
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
+  private translateService = inject(TranslateService);
+  private reportService = inject(BackendConfigurationPnReportService);
+  private toastrService = inject(ToastrService);
+  public gallery = inject(Gallery);
+  public lightbox = inject(Lightbox);
+  private imageService = inject(TemplateFilesService);
+  private viewportScroller = inject(ViewportScroller);
+  private store = inject(Store);
+  private reportStateService = inject(ReportStateService);
+  private router = inject(Router);
+
   reportsModel: ReportEformPnModel[] = [];
   availableTags: SharedTagModel[] = [];
   currentUserFullName: string;
@@ -47,29 +60,18 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   generateReportSub$: Subscription;
   downloadReportSub$: Subscription;
 
-  constructor(
-    private translateService: TranslateService,
-    private reportService: BackendConfigurationPnReportService,
-    private toastrService: ToastrService,
-    public gallery: Gallery,
-    public lightbox: Lightbox,
-    private imageService: TemplateFilesService,
-    private viewportScroller: ViewportScroller,
-    private store: Store,
-    private reportStateService: ReportStateService,
-    private router: Router,
-  ) {
+  
+
+  ngOnInit() {
     this.selectReportsV1ScrollPosition$
       .pipe(take(1))
       .subscribe(scrollPosition => this.scrollPosition = scrollPosition);
-  }
 
-  ngOnInit() {
     let reportPnGenerateModel: ReportPnGenerateModel = {
       ...this.reportStateService.extractData(),
       type: '',
       version2: false
-    };
+  };
     if (reportPnGenerateModel.dateFrom !== null) {
       this.startWithParams = true;
       this.onGenerateReport(reportPnGenerateModel);

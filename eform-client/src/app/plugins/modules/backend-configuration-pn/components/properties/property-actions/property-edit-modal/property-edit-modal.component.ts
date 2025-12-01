@@ -1,9 +1,9 @@
 import {
   Component,
   EventEmitter,
-  Inject,
   OnDestroy,
   OnInit,
+  inject
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { applicationLanguages } from 'src/app/common/const';
@@ -24,6 +24,13 @@ import { selectAuthIsAuth } from 'src/app/state/auth/auth.selector';
   standalone: false,
 })
 export class PropertyEditModalComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  private store = inject(Store);
+  public authStateService = inject(AuthStateService);
+  private propertiesService = inject(BackendConfigurationPnPropertiesService);
+  public dialogRef = inject(MatDialogRef<PropertyEditModalComponent>);
+  public model = inject<PropertyModel>(MAT_DIALOG_DATA);
+
   propertyUpdate: EventEmitter<PropertyUpdateModel> = new EventEmitter<PropertyUpdateModel>();
   editPropertyForm: FormGroup;
   propertyIsFarm = false;
@@ -33,31 +40,24 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
   getCompanyTypeSub$: Subscription;
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
-  constructor(
-    private fb: FormBuilder,
-    private store: Store,
-    public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    public dialogRef: MatDialogRef<PropertyEditModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public model: PropertyModel
-  ) {
-    this.selectedLanguages = model.languages.map((x) => ({ id: x.id, checked: true }));
+  
+
+  ngOnInit() {
+    this.selectedLanguages = this.model.languages.map((x) => ({ id: x.id, checked: true }));
 
     this.editPropertyForm = this.fb.group({
-      cvr: [model.cvr, Validators.required],
-      mainMailAddress: [model.mainMailAddress],
-      name: [model.name, Validators.required],
-      chr: [model.chr],
-      address: [model.address],
-      workorderEnable: [model.workorderEnable || false],
-      isFarm: [model.isFarm || false],
-      industryCode: [model.industryCode || '']
+      cvr: [this.model.cvr, Validators.required],
+      mainMailAddress: [this.model.mainMailAddress],
+      name: [this.model.name, Validators.required],
+      chr: [this.model.chr],
+      address: [this.model.address],
+      workorderEnable: [this.model.workorderEnable || false],
+      isFarm: [this.model.isFarm || false],
+      industryCode: [this.model.industryCode || '']
     });
 
-    this.propertyIsFarm = model.isFarm || false;
-  }
-
-  ngOnInit() {}
+    this.propertyIsFarm = this.model.isFarm || false;
+}
 
   hide() {
     this.dialogRef.close();

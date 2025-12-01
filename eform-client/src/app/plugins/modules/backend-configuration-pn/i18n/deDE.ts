@@ -354,4 +354,8 @@ export const deDE = {
   'Deactivate task': 'Aufgabe deaktivieren',
   Areas: 'Gebiete',
   Pictures: 'Bilder',
+  'Delete employee': 'Mitarbeiter löschen',
+  Resigned: 'Resigniert',
+  'Show resigned': 'Show trat zurück',
+  'Resigned at date': 'Ausgeschieden am',
 };

@@ -20,15 +20,15 @@
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
     mat-raised-button
+    id="taskManagementDeleteCancelBtn"
+    (click)="hide()">
+    {{'Cancel' | translate}}
+  </button>
+  <button
+    mat-raised-button
     color="warn"
     id="taskManagementDeleteBtn"
     (click)="delete()">
     {{'Delete' | translate}}
-  </button>
-  <button
-    mat-raised-button
-    id="taskManagementDeleteCancelBtn"
-    (click)="hide()">
-    {{'Cancel' | translate}}
   </button>
 </div>

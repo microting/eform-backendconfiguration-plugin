@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges,
+  inject
+} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
@@ -30,6 +32,9 @@ import {
 } from '../../../../state';
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
+import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from "src/app/common/const";
+import {MatIconRegistry} from "@angular/material/icon";
+import {DomSanitizer} from "@angular/platform-browser";
 
 @AutoUnsubscribe()
 @Component({
@@ -39,6 +44,15 @@ import {AuthStateService} from 'src/app/common/store';
     standalone: false
 })
 export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChanges {
+  private store = inject(Store);
+  private translateService = inject(TranslateService);
+  private authStateService = inject(AuthStateService);
+  public propertyWorkersStateService = inject(PropertyWorkersStateService);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private iconRegistry = inject(MatIconRegistry);
+  private sanitizer = inject(DomSanitizer);
+
   //@Input() propertyWorkers: any[] = [];
   @Input() sitesDto: any[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
@@ -62,23 +76,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     return TaskWizardStatusesEnum;
   }
 
-  constructor(
-    private store: Store,
-    private translateService: TranslateService,
-    private authStateService: AuthStateService,
-    public propertyWorkersStateService: PropertyWorkersStateService,
-    private dialog: MatDialog,
-    private overlay: Overlay,) {
-    this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
-      this.propertyWorkersStateService.updateNameFilter(val);
-    });
-    this.selectCurrentUserClaimsDeviceUsersDelete$.subscribe((data) => {
-      this.deviceUsersDelete = data;
-    });
-    this.selectCurrentUserClaimsDeviceUsersUpdate$.subscribe((data) => {
-      this.deviceUsersUpdate = data;
-    });
-  }
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['showResigned']) {
@@ -329,6 +327,19 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
 
 
   ngOnInit() {
+    this.iconRegistry.addSvgIconLiteral('password-validation', this.sanitizer.bypassSecurityTrustHtml(PasswordValidationIcon));
+    this.iconRegistry.addSvgIconLiteral('android-icon', this.sanitizer.bypassSecurityTrustHtml(AndroidIcon));
+    this.iconRegistry.addSvgIconLiteral('ios-icon', this.sanitizer.bypassSecurityTrustHtml(iOSIcon));
+    this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
+      this.propertyWorkersStateService.updateNameFilter(val);
+    });
+    this.selectCurrentUserClaimsDeviceUsersDelete$.subscribe((data) => {
+      this.deviceUsersDelete = data;
+    });
+    this.selectCurrentUserClaimsDeviceUsersUpdate$.subscribe((data) => {
+      this.deviceUsersUpdate = data;
+    });
+
     this.buildTableHeaders();
     //this.getDeviceUsersFiltered();
   }

@@ -293,4 +293,8 @@ export const roRO = {
   'Deactivate task': 'Dezactivați sarcina',
   Areas: 'Zone',
   Pictures: 'Imagini',
+  'Delete employee': 'Ștergeți angajatul',
+  Resigned: 'Demisionat',
+  'Show resigned': 'Arătați demisionat',
+  'Resigned at date': 'Demisionat la data de',
 };

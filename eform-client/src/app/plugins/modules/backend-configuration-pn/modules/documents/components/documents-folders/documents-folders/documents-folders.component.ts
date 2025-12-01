@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  inject
 } from '@angular/core';
 import {
   Paged,
@@ -29,17 +30,17 @@ import {Store} from "@ngrx/store";
     standalone: false
 })
 export class DocumentsFoldersComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
+  public dialogRef = inject(MatDialogRef<DocumentsFoldersComponent>);
+  public backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
+  public dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+
   folders: Paged<DocumentFolderModel> = new Paged<DocumentFolderModel>();
   @Output() foldersChanged: EventEmitter<void> = new EventEmitter<void>();
   folderCreateSub$: any;
 
-  constructor(
-    private store: Store,
-    public dialogRef: MatDialogRef<DocumentsFoldersComponent>,
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    public dialog: MatDialog,
-    private overlay: Overlay,) {
-  }
+  
 
   ngOnDestroy(): void {
   }

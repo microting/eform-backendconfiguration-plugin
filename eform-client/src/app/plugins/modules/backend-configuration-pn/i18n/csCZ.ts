@@ -293,4 +293,8 @@ export const csCZ = {
   'Deactivate task': 'Deaktivovat úkol',
   Areas: 'Oblasti',
   Pictures: 'Obrázky',
+  'Delete employee': 'Smazat zaměstnance',
+  Resigned: 'Rezignoval',
+  'Show resigned': 'Zobrazit rezignaci',
+  'Resigned at date': 'Rezignoval/a k datu',
 };

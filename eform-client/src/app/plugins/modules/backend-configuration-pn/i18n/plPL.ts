@@ -293,4 +293,8 @@ export const plPL = {
   'Deactivate task': 'Dezaktywuj zadanie',
   Areas: 'Obszary',
   Pictures: 'Kino',
+  'Delete employee': 'Usuń pracownika',
+  Resigned: 'Zrezygnowany',
+  'Show resigned': 'Pokaż zrezygnowany',
+  'Resigned at date': 'Zrezygnował w dniu',
 };
