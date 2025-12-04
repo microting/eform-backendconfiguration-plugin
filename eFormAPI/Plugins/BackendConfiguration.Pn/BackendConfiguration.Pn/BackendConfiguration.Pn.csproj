@@ -219,7 +219,7 @@
       <PackageReference Include="Google.Apis.Sheets.v4" Version="1.72.0.3966" />
       <PackageReference Include="HtmlToOpenXml.dll" Version="3.2.8" />
       <PackageReference Include="Ical.Net" Version="5.1.2" />
-      <PackageReference Include="Microting.eForm" Version="9.0.72" />
+      <PackageReference Include="Microting.eForm" Version="9.0.74" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="9.0.59" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.62" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
