@@ -380,6 +380,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     entityItemIncrementer++;
                                 }
                             }
+
+                            var assignment = await timePlanningDbContext.AssignedSites.FirstOrDefaultAsync(x =>
+                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                            if (assignment != null)
+                            {
+                                assignment.Resigned = deviceUserModel.Resigned;
+                                assignment.ResignedAtDate = deviceUserModel.ResignedAtDate;
+                                await assignment.Update(timePlanningDbContext).ConfigureAwait(false);
+                            }
                         }
 
                         // find all PlanningCases where the DoneByUserId is the same as the worker.Id and update the DoneByUserName to the new name
