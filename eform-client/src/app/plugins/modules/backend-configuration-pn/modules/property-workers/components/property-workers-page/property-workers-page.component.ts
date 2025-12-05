@@ -1,5 +1,6 @@
-import {Component, OnDestroy, OnInit,
-  inject
+import {
+  Component, OnDestroy, OnInit,
+  inject, ViewChild
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -29,6 +30,7 @@ import {
   selectPropertyWorkersFilters
 } from '../../../../state/property-workers/property-workers.selector';
 import {EformTagService} from 'src/app/common/services';
+import {EformsTagsComponent} from "src/app/common/modules/eform-shared-tags/components";
 
 @AutoUnsubscribe()
 @Component({
@@ -43,6 +45,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private eFormTagService = inject(EformTagService);
+  @ViewChild('modalTags', {static: true}) modalSiteTags: EformsTagsComponent;
 
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
@@ -147,6 +150,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
+  }
+
+  openEditTagsModal() {
+    this.modalSiteTags.show();
   }
 
   getPropertiesDictionary() {
