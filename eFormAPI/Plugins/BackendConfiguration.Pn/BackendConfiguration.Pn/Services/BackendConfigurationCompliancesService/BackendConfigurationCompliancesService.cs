@@ -440,6 +440,26 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             .OrderBy(x => x.CreatedAt)
             .FirstOrDefaultAsync();
 
+        var numberOfActiveAreaRulePlannings = _backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.Status)
+            .Distinct()
+            .ToList()
+            .Count;
+
+        var numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = _itemsPlanningPnDbContext.PlanningCases
+            .Where(x => x.Status == 100)
+            .Where(x => x.UpdatedAt >= DateTime.UtcNow.AddDays(-30))
+            .ToList()
+            .Where(x =>
+            {
+                var planningTags = _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
+                    .ToList();
+                return planningTags.Any();
+            })
+            .Count();
+
         var totalCount = complianceList.Count();
 
         var statsModel = new CompliancesStatsModel
@@ -458,7 +478,9 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             DateOfOldestEnvironmentInspectionTagPlannedTask = oldestEnvironmentInspectionTagPlannedTask,
             NumberOfAdHocTasks = numberOfWorkorderTasks,
             DateOfOldestAdHocTask = oldestWorkorderTask?.CreatedAt,
-            NumberOfPlannedEnvironmentInspectionTagTasks = numberOfPlannedEnvironmentInspectionTagTasks
+            NumberOfPlannedEnvironmentInspectionTagTasks = numberOfPlannedEnvironmentInspectionTagTasks,
+            NumberOfPlannedTasks = numberOfActiveAreaRulePlannings,
+            NumberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days
         };
 
         return new OperationDataResult<CompliancesStatsModel>(true, statsModel);
