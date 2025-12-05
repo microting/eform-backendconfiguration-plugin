@@ -39,8 +39,6 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
 
-  
-
   ngOnInit() {
     this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
     this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
