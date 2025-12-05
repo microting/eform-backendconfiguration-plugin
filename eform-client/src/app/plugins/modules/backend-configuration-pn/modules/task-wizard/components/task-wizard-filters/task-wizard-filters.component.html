@@ -1,5 +1,5 @@
-<div class="d-flex flex-column" [formGroup]="filtersForm">
-  <div class="d-flex need-wrapper">
+<div class="d-flex flex-row align-items-center gap-12 px-3" [formGroup]="filtersForm">
+<!--  <div class="d-flex need-wrapper">-->
     <mat-form-field>
       <mat-label>{{'Location' | translate}}</mat-label>
       <mtx-select
@@ -22,8 +22,8 @@
         [bindLabel]="'name'"
       />
     </mat-form-field>
-  </div>
-  <div class="d-flex need-wrapper">
+<!--  </div>-->
+<!--  <div class="d-flex need-wrapper">-->
     <mat-form-field>
       <mat-label>{{'Tags' | translate}}</mat-label>
       <mtx-select
@@ -58,4 +58,4 @@
       />
     </mat-form-field>
   </div>
-</div>
+<!--</div>-->

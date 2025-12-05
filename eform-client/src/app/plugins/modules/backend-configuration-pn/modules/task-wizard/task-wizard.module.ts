@@ -29,6 +29,9 @@ import {MatCardModule} from '@angular/material/card';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {
+  FolderTreeSelectComponent
+} from "src/app/common/modules/eform-shared/components/eform-tree-select/folder-tree-select.component";
 
 @NgModule({
   imports: [
@@ -57,6 +60,7 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenu,
     MatMenuItem,
     MatMenuTrigger,
+    FolderTreeSelectComponent,
   ],
   declarations: [
     TaskWizardFiltersComponent,

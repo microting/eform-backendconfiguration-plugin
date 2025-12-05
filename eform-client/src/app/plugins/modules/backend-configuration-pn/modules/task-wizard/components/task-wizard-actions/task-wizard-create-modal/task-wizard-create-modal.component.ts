@@ -68,6 +68,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   dayOfWeekArr: { id: number, name: string }[] = [];
   taskForm: FormGroup;
   selectedFolderName: string = '';
+  selectedFolderId: number = null;
   appLanguages: LanguagesModel = new LanguagesModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   templatesModel: TemplateListModel = new TemplateListModel();
@@ -100,7 +101,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     return TaskWizardStatusesEnum;
   }
 
-  
+
   constructor() {
     this.typeahead
       .pipe(
@@ -264,6 +265,12 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     this.taskForm.patchValue({
       itemPlanningTagId: tag ? tag.id : null,
     });
+  }
+
+  onFolderSelected(folder: FolderDto) {
+    this.taskForm.patchValue({ folderId: folder.id });
+    this.selectedFolderId = folder.id;
+    this.selectedFolderName = findFullNameById(folder.id, this.foldersTreeDto);
   }
 
   /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
