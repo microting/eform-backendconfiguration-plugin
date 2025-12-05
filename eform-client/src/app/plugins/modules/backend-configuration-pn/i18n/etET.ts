@@ -297,4 +297,5 @@ export const etET = {
   Resigned: 'Astus tagasi',
   'Show resigned': 'Näita astus tagasi',
   'Resigned at date': 'Astus tagasi kuupäeval',
+  'Show expired task on mobile': 'Kuva aegunud ülesanne mobiilis',
 };

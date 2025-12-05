@@ -297,4 +297,5 @@ export const hrHR = {
   Resigned: 'Dao ostavku',
   'Show resigned': 'Prikaži ostavku',
   'Resigned at date': 'Ostavka dana',
+  'Show expired task on mobile': 'Prikaži istekli zadatak na mobilnom uređaju',
 };

@@ -297,4 +297,5 @@ export const svSE = {
   Resigned: 'Resignerad',
   'Show resigned': 'Visa avgick',
   'Resigned at date': 'Avgick vid datumet',
+  'Show expired task on mobile': 'Visa utgången uppgift på mobilen',
 };

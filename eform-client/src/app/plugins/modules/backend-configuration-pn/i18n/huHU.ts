@@ -297,4 +297,5 @@ export const huHU = {
   Resigned: 'Lemondó',
   'Show resigned': 'Show lemondott',
   'Resigned at date': 'Lemondott ezen a napon',
+  'Show expired task on mobile': 'Lejárt feladat megjelenítése mobilon',
 };

@@ -297,4 +297,5 @@ export const frFR = {
   Resigned: 'Résigné',
   'Show resigned': 'Afficher la démission',
   'Resigned at date': 'Démission à la date',
+  'Show expired task on mobile': 'Afficher les tâches expirées sur mobile',
 };

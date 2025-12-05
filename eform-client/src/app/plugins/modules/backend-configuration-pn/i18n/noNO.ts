@@ -297,4 +297,5 @@ export const noNO = {
   Resigned: 'Sa opp',
   'Show resigned': 'Vis oppgitt',
   'Resigned at date': 'Sa opp på dato',
+  'Show expired task on mobile': 'Vis utløpt oppgave på mobil',
 };

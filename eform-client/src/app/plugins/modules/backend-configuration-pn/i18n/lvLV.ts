@@ -297,4 +297,5 @@ export const lvLV = {
   Resigned: 'Atkāpās no amata',
   'Show resigned': 'Rādīt atkāpās',
   'Resigned at date': 'Atkāpšanās no amata datumā',
+  'Show expired task on mobile': 'Rādīt beidzies uzdevumu mobilajā ierīcē',
 };

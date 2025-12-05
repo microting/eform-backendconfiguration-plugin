@@ -6,7 +6,7 @@
                       id="updateTaskStatusToggle"
                       formControlName="taskStatus"
                       (change)="changeStatus($event.checked)">
-      {{ 'Status' | translate }}
+      {{ 'Active' | translate }}
     </mat-slide-toggle>
     <mat-slide-toggle *ngIf="selectCurrentUserIsAdmin$ | async"
       class="p-2"
@@ -15,7 +15,7 @@
       formControlName="complianceEnabled"
       (change)="changeComplianceEnabled($event.checked)"
     >
-      {{ 'Compliance' | translate }}
+      {{ 'Show expired task on mobile' | translate }}
     </mat-slide-toggle>
     <div class="d-flex flex-row">
       <mat-form-field class="p-3">
