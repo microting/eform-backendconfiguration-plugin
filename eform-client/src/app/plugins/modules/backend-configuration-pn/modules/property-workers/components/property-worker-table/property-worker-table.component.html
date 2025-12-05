@@ -10,6 +10,7 @@
     language: languageTpl,
     customerOtp: customerOtpTpl,
     manufacturer: manufacturerTpl,
+    tags: tagsTpl,
     actions: actionsTpl,
     taskManagementEnabled: taskManagementEnabledTpl,
     timeRegistrationEnabled: timeRegistrationEnabledTpl,
@@ -202,4 +203,9 @@
     <span
       title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate }}</span>
   </mat-chip>
+</ng-template>
+<ng-template #tagsTpl let-row>
+  <div id="tags">
+    <app-eform-tag [tags]="getTagsBySiteDto(row)"/>
+  </div>
 </ng-template>

@@ -28,6 +28,7 @@ import {Store} from '@ngrx/store';
 import {
   selectPropertyWorkersFilters
 } from '../../../../state/property-workers/property-workers.selector';
+import {EformTagService} from 'src/app/common/services';
 
 @AutoUnsubscribe()
 @Component({
@@ -41,6 +42,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private eFormTagService = inject(EformTagService);
 
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
@@ -53,10 +55,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   showResigned: boolean = false;
+  availableTags: Array<CommonDictionaryModel> = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
-  
+
 
   ngOnInit() {
     let propertyIds: number[] = [];
@@ -80,6 +83,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe();
+    this.loadAllTags();
     //this.getWorkerPropertiesAssignments();
   }
 
@@ -139,6 +143,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           deviceUser: {},
           assignments: [],
           availableProperties: this.availableProperties,
+          availableTags: this.availableTags,
         }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
@@ -186,6 +191,14 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       // @ts-ignore
       `<span title="${resultString.replaceAll('<br>', '\n')}">${resultString}</span>` :
       '--';
+  }
+
+  loadAllTags() {
+    this.eFormTagService.getAvailableTags().subscribe((data) => {
+      if (data && data.success) {
+        this.availableTags = data.model;
+      }
+    });
   }
 
   onSearchChanged(name: string) {

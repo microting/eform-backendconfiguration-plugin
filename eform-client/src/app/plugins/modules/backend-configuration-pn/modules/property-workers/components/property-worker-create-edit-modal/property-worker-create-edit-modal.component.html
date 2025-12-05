@@ -1,4 +1,4 @@
-<h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate}}</h3>
+<h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate }}</h3>
 <form [formGroup]="form">
   <div mat-dialog-content>
     <mat-tab-group
@@ -10,7 +10,7 @@
         <div class="modal-columns">
           <div class="d-flex flex-column" id="column1">
             <mat-form-field>
-              <mat-label>{{'First name' | translate }}</mat-label>
+              <mat-label>{{ 'First name' | translate }}</mat-label>
               <input
                 matInput
                 formControlName="userFirstName"
@@ -23,7 +23,7 @@
               </mat-error>
             </mat-form-field>
             <mat-form-field>
-              <mat-label>{{'e-mail' | translate }}</mat-label>
+              <mat-label>{{ 'e-mail' | translate }}</mat-label>
               <input
                 matInput
                 formControlName="workerEmail"
@@ -38,7 +38,7 @@
               </mat-error>
             </mat-form-field>
             <mat-form-field>
-              <mat-label>{{'Employee no' | translate }}</mat-label>
+              <mat-label>{{ 'Employee no' | translate }}</mat-label>
               <input
                 matInput
                 formControlName="employeeNo"
@@ -46,7 +46,7 @@
                 id="employeeNo">
             </mat-form-field>
             <mat-form-field>
-              <mat-label>{{'Language' | translate }}</mat-label>
+              <mat-label>{{ 'Language' | translate }}</mat-label>
               <mtx-select
                 id="profileLanguageSelector"
                 [bindLabel]="'name'"
@@ -55,13 +55,93 @@
                 formControlName="languageCode"
                 [items]="activeLanguages">
                 <ng-template ng-label-tmp let-item="item">
-                  {{item.name | translate}}
+                  {{ item.name | translate }}
                 </ng-template>
                 <ng-template ng-option-tmp let-item="item">
-                  {{item.name | translate}}
+                  {{ item.name | translate }}
                 </ng-template>
               </mtx-select>
             </mat-form-field>
+          </div>
+          <div class="d-flex flex-column" id="column2">
+            <mat-form-field>
+              <mat-label>{{ 'Last name' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="userLastName"
+                type="text"
+                id="lastName"
+                required>
+              <mat-error *ngIf="form.get('userLastName').hasError('required')">
+                Required
+              </mat-error>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{ 'Phone' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="phoneNumber"
+                type="tel"
+                name="phoneNumber"
+                id="phoneNumber">
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{ 'PIN code' | translate }}</mat-label>
+              <input
+                matInput
+                formControlName="pinCode"
+                type="text"
+                name="pinCode"
+                pattern="([0-9]*|\*{4})"
+                id="pinCode">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="modal-columns">
+          <mat-form-field>
+            <mat-label>{{ 'Current tags' | translate }}</mat-label>
+            <mtx-select
+              class="custom"
+              [dropdownPosition]="'bottom'"
+              [bindValue]="'id'"
+              [bindLabel]="'name'"
+              [items]="availableTags"
+              id="tagSelector"
+              [multiple]="true"
+              appendTo="body"
+              formControlName="tags">
+            </mtx-select>
+          </mat-form-field>
+        </div>
+        <div class="modal-columns">
+          <div class="d-flex flex-column" id="column1">
+            <mat-checkbox class="p-1"
+                          [id]="'resigned'"
+                          [name]="'resigned'"
+                          formControlName="resigned">
+              <div>{{ 'Resigned' | translate }}</div>
+            </mat-checkbox>
+          </div>
+          <div class="d-flex flex-column" id="column2">
+            <mat-form-field *ngIf="selectedDeviceUser.resigned">
+              <mat-label>{{ 'Resigned at date' | translate }}</mat-label>
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <input
+                required
+                matInput
+                [matDatepicker]="picker"
+                formControlName="resignedAtDate"
+                (click)="picker.open()"
+              >
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-error class="text-warn" *ngIf="!selectedDeviceUser.resignedAtDate">
+                {{ 'Date is required'| translate }}*
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="modal-columns">
+          <div class="d-flex flex-column" id="column1">
             <mat-slide-toggle
               *ngIf="authStateService.checkClaim('time_registration_enable')"
               color="primary"
@@ -80,62 +160,7 @@
             </mat-slide-toggle>
           </div>
           <div class="d-flex flex-column" id="column2">
-            <mat-form-field>
-              <mat-label>{{'Last name' | translate }}</mat-label>
-              <input
-                matInput
-                formControlName="userLastName"
-                type="text"
-                id="lastName"
-                required>
-              <mat-error *ngIf="form.get('userLastName').hasError('required')">
-                Required
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>{{'Phone' | translate }}</mat-label>
-              <input
-                matInput
-                formControlName="phoneNumber"
-                type="tel"
-                name="phoneNumber"
-                id="phoneNumber">
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>{{'PIN code' | translate }}</mat-label>
-              <input
-                matInput
-                formControlName="pinCode"
-                type="text"
-                name="pinCode"
-                pattern="([0-9]*|\*{4})"
-                id="pinCode">
-            </mat-form-field>
-            <div class="d-flex flex-row">
-              <mat-checkbox class="p-1"
-                            [id]="'resigned'"
-                            [name]="'resigned'"
-                            formControlName="resigned">
-                <div>{{ 'Resigned' | translate }}</div>
-              </mat-checkbox>
-              <mat-form-field *ngIf="selectedDeviceUser.resigned">
-                <mat-label>{{ 'Resigned at date' | translate }}</mat-label>
-                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                <input
-                  required
-                  matInput
-                  [matDatepicker]="picker"
-                  formControlName="resignedAtDate"
-                  (click)="picker.open()"
-                >
-                <mat-datepicker #picker></mat-datepicker>
-                <mat-error class="text-warn" *ngIf="!selectedDeviceUser.resignedAtDate">
-                  {{ 'Date is required'| translate }}*
-                </mat-error>
-              </mat-form-field>
-            </div>
           </div>
-
         </div>
         <br>
       </mat-tab>
@@ -176,7 +201,7 @@
         id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
         (click)="hide()"
       >
-        {{'Cancel' | translate}}
+        {{ 'Cancel' | translate }}
       </button>
       <button
         class="btn-primary btn-primary--icon-left"
@@ -184,7 +209,7 @@
         [disabled]="form.invalid"
         id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
       >
-        <span>{{(edit ? 'Save' : 'Create') | translate}}</span>
+        <span>{{ (edit ? 'Save' : 'Create') | translate }}</span>
       </button>
     </div>
   </div>

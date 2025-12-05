@@ -370,7 +370,12 @@ public class BackendConfigurationAssignmentWorkerService(
                     site.CreatedAt,
                     site.UpdatedAt,
                     worker.Resigned,
-                    worker.ResignedAtDate
+                    worker.ResignedAtDate,
+                    SiteTags = site.SiteTags
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(y => y.Tag.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(t => (int)t.TagId)
+                        .ToList()
 
                 };
             sitesQuery = sitesQuery
@@ -396,7 +401,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked,
                     Resigned = x.Resigned,
-                    ResignedAtDate = x.ResignedAtDate
+                    ResignedAtDate = x.ResignedAtDate,
+                    Tags = x.SiteTags
                 })
                 .ToListAsync().ConfigureAwait(false);
 

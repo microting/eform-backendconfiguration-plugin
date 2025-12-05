@@ -277,7 +277,51 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 if (siteDto.WorkerUid == null) return new OperationResult(false, "DeviceUserNotFound");
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
-                    var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+                    var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+                    var site = await sdkDbContext.Sites
+                        .Include(x => x.SiteTags)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.MicrotingUid ==deviceUserModel.SiteMicrotingUid)
+                        .FirstAsync();
+
+                    var siteTagIds = site.SiteTags
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.TagId != null)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => (int)x.TagId)
+                        .ToList();
+
+                    var forRemove = siteTagIds
+                        .Where(x => !deviceUserModel.Tags.Contains(x))
+                        .ToList();
+
+                    foreach (var tagIdForRemove in forRemove)
+                    {
+                        var siteTag = await sdkDbContext.SiteTags
+                            .Where(x => x.TagId == tagIdForRemove)
+                            .Where(x => x.SiteId == site.Id)
+                            .FirstOrDefaultAsync();
+
+                        if (siteTag != null)
+                        {
+                            await siteTag.Delete(sdkDbContext);
+                        }
+                    }
+
+                    var forCreate = deviceUserModel.Tags
+                        .Where(x => !siteTagIds.Contains(x))
+                        .ToList();
+
+                    foreach (var tagIdForCreate in forCreate)
+                    {
+                        var siteTag = new SiteTag
+                        {
+                            TagId = tagIdForCreate,
+                            SiteId = site.Id
+                        };
+
+                        await siteTag.Create(sdkDbContext);
+                    }
                     if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
                         var oldEmail = worker.Email;

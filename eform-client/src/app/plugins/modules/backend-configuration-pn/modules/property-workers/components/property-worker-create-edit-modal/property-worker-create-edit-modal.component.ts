@@ -37,6 +37,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       deviceUser: DeviceUserModel,
       assignments: PropertyAssignmentWorkerModel[],
       availableProperties: CommonDictionaryModel[],
+      availableTags: CommonDictionaryModel[];
     }>(MAT_DIALOG_DATA);
 
   availableProperties: CommonDictionaryModel[] = [];
@@ -47,6 +48,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   assignmentsCopy: PropertyAssignmentWorkerModel[] = [];
   taskManagementEnabled: boolean = false;
   timeRegistrationEnabled: boolean = false;
+  availableTags: CommonDictionaryModel[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
@@ -72,7 +74,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   activeLanguages: Array<any> = [];
   form: FormGroup;
 
-  
+
 
   private updateDisabledFieldsBasedOnResigned() {
     const isResigned = this.form.get('resigned')?.value;
@@ -135,6 +137,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.assignmentsCopy = [...this.model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
+    this.availableTags = [...this.model.availableTags];
 
     this.form = this.fb.group({
       userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
@@ -155,6 +158,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       pinCode: [this.selectedDeviceUser.pinCode || ''],
       employeeNo: [this.selectedDeviceUser.employeeNo || ''],
       languageCode: [this.selectedDeviceUser.languageCode || ''],
+      tags: [this.selectedDeviceUser.tags || []],
       timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
       taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
       resigned: [this.selectedDeviceUser.resigned || false],

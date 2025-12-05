@@ -51,4 +51,5 @@ export class DeviceUserModel {
   phoneNumber: string;
   resigned: boolean;
   resignedAtDate: Date;
+  tags: number[];
 }
