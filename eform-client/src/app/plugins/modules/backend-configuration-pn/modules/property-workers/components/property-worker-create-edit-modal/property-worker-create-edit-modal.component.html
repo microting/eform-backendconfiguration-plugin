@@ -18,7 +18,8 @@
                 type="text"
                 id="firstName"
                 name="userName"
-                tabindex="1">
+                tabindex="1"
+                cdkFocusInitial>
               <mat-error *ngIf="form.get('userFirstName').hasError('required')">
                 Required
               </mat-error>
@@ -33,6 +34,7 @@
                 required
                 tabindex="3">
               <button
+                *ngIf="shouldShowGenerateEmailButton()"
                 matSuffix
                 mat-icon-button
                 type="button"

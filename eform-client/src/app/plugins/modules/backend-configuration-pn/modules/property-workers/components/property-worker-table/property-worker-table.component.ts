@@ -60,6 +60,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() workersAssignments: PropertyAssignWorkersModel[] = [];
   @Input() showResigned: boolean = false;
   @Input() availableTags: CommonDictionaryModel[] = [];
+  @Input() alreadyUsedEmails: string[] = [];
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
@@ -262,6 +263,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
           //assignments: [],
           availableProperties: this.availableProperties,
           availableTags: this.availableTags,
+          alreadyUsedEmails: this.alreadyUsedEmails
         }), minWidth: 1024
       })
 
