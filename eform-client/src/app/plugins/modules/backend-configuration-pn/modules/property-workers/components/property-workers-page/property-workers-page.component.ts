@@ -50,6 +50,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
+  alreadyUsedEmails: string[] = [];
 
   getSites$: Subscription;
   getPropertiesDictionary$: Subscription;
@@ -147,6 +148,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           assignments: [],
           availableProperties: this.availableProperties,
           availableTags: this.availableTags,
+          alreadyUsedEmails: this.alreadyUsedEmails,
         }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
@@ -225,6 +227,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.model) {
           data.model.forEach(site => {
+            // add the site.workerEmail to alreadyUsedEmails to prevent from creating new worker with the same email
+            if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
+              this.alreadyUsedEmails.push(site.workerEmail);
+            }
             if (site.resigned) {
               anyIsResigned = true;
             }

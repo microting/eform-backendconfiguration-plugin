@@ -17,7 +17,8 @@
                 required
                 type="text"
                 id="firstName"
-                name="userName">
+                name="userName"
+                tabindex="1">
               <mat-error *ngIf="form.get('userFirstName').hasError('required')">
                 Required
               </mat-error>
@@ -29,7 +30,17 @@
                 formControlName="workerEmail"
                 type="email"
                 id="workerEmail"
-                required>
+                required
+                tabindex="3">
+              <button
+                matSuffix
+                mat-icon-button
+                type="button"
+                (click)="generateRandomEmail()"
+                matTooltip="{{ 'Generate random email' | translate }}"
+                id="generateEmailBtn">
+                <mat-icon>autorenew</mat-icon>
+              </button>
               <mat-error *ngIf="form.get('workerEmail').hasError('invalidEmail')">
                 Invalid email address
               </mat-error>
@@ -43,11 +54,13 @@
                 matInput
                 formControlName="employeeNo"
                 type="text"
-                id="employeeNo">
+                id="employeeNo"
+                tabindex="5">
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'Language' | translate }}</mat-label>
               <mtx-select
+                tabindex="7"
                 id="profileLanguageSelector"
                 [bindLabel]="'name'"
                 [bindValue]="'languageCode'"
@@ -71,7 +84,8 @@
                 formControlName="userLastName"
                 type="text"
                 id="lastName"
-                required>
+                required
+                tabindex="2">
               <mat-error *ngIf="form.get('userLastName').hasError('required')">
                 Required
               </mat-error>
@@ -83,7 +97,8 @@
                 formControlName="phoneNumber"
                 type="tel"
                 name="phoneNumber"
-                id="phoneNumber">
+                id="phoneNumber"
+                tabindex="4">
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'PIN code' | translate }}</mat-label>
@@ -93,7 +108,8 @@
                 type="text"
                 name="pinCode"
                 pattern="([0-9]*|\*{4})"
-                id="pinCode">
+                id="pinCode"
+                tabindex="6">
             </mat-form-field>
           </div>
         </div>
@@ -101,6 +117,7 @@
           <mat-form-field>
             <mat-label>{{ 'Current tags' | translate }}</mat-label>
             <mtx-select
+              tabindex="8"
               class="custom"
               [dropdownPosition]="'bottom'"
               [bindValue]="'id'"
@@ -205,6 +222,7 @@
         {{ 'Cancel' | translate }}
       </button>
       <button
+        tabindex="9"
         class="btn-primary btn-primary--icon-left"
         (click)="edit ? updateSingle() : createDeviceUser()"
         [disabled]="form.invalid"

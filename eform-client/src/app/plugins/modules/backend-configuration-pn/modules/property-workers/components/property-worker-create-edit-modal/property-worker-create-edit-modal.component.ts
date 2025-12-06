@@ -37,7 +37,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       deviceUser: DeviceUserModel,
       assignments: PropertyAssignmentWorkerModel[],
       availableProperties: CommonDictionaryModel[],
-      availableTags: CommonDictionaryModel[];
+      availableTags: CommonDictionaryModel[],
+      alreadyUsedEmails: string[];
     }>(MAT_DIALOG_DATA);
 
   availableProperties: CommonDictionaryModel[] = [];
@@ -49,6 +50,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   taskManagementEnabled: boolean = false;
   timeRegistrationEnabled: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
+  alreadyUsedEmails: string[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
@@ -138,6 +140,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
     this.availableTags = [...this.model.availableTags];
+    this.alreadyUsedEmails = [...this.model.alreadyUsedEmails];
 
     this.form = this.fb.group({
       userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
@@ -337,5 +340,21 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         }
       }))
       .subscribe();
+  }
+
+  generateRandomEmail(): void {
+    const firstName = this.form.get('userFirstName')?.value?.toLowerCase().trim() || 'user';
+    const lastName = this.form.get('userLastName')?.value?.toLowerCase().trim() || 'name';
+    let email: string;
+    let randomNumber: number;
+
+    do {
+      randomNumber = Math.floor(Math.random() * (100000 - 1000 + 1)) + 1000;
+      email = `${firstName}_${lastName}_${randomNumber}_invalid@microting.com`;
+    } while (this.alreadyUsedEmails.includes(email));
+
+    this.form.patchValue({
+      workerEmail: email
+    });
   }
 }
