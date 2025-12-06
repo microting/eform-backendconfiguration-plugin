@@ -166,13 +166,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         // Assert areaProperties
         Assert.That(areaProperties, Is.Not.Null);
-        Assert.That(areaProperties.Count, Is.EqualTo(1));
+        Assert.That(areaProperties.Count, Is.EqualTo(2));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaProperties[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(56));
+        Assert.That(folderTranslations.Count, Is.EqualTo(59));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyCreateModel.Name));
@@ -271,12 +271,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(folderTranslations[51].LanguageId, Is.EqualTo(24));
         Assert.That(folderTranslations[52].Name, Is.EqualTo("00. Prekoračeni zad"));
         Assert.That(folderTranslations[52].LanguageId, Is.EqualTo(25));
-        Assert.That(folderTranslations[53].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[53].Name, Is.EqualTo("00. Logbøger"));
         Assert.That(folderTranslations[53].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[54].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[54].Name, Is.EqualTo("01. Log books"));
         Assert.That(folderTranslations[54].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[55].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[55].Name, Is.EqualTo("01. Logbücher"));
         Assert.That(folderTranslations[55].LanguageId, Is.EqualTo(3));
+        Assert.That(folderTranslations[56].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[56].LanguageId, Is.EqualTo(1));
+        Assert.That(folderTranslations[57].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[57].LanguageId, Is.EqualTo(2));
+        Assert.That(folderTranslations[58].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[58].LanguageId, Is.EqualTo(3));
 
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
@@ -544,13 +550,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         // Assert areaProperties
         Assert.That(areaProperties, Is.Not.Null);
-        Assert.That(areaProperties.Count, Is.EqualTo(1));
+        Assert.That(areaProperties.Count, Is.EqualTo(2));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaProperties[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(56));
+        Assert.That(folderTranslations.Count, Is.EqualTo(59));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyCreateModel.Name));
@@ -643,12 +649,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(folderTranslations[51].LanguageId, Is.EqualTo(24));
         Assert.That(folderTranslations[52].Name, Is.EqualTo("00. Prekoračeni zad"));
         Assert.That(folderTranslations[52].LanguageId, Is.EqualTo(25));
-        Assert.That(folderTranslations[53].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[53].Name, Is.EqualTo("00. Logbøger"));
         Assert.That(folderTranslations[53].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[54].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[54].Name, Is.EqualTo("01. Log books"));
         Assert.That(folderTranslations[54].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[55].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[55].Name, Is.EqualTo("01. Logbücher"));
         Assert.That(folderTranslations[55].LanguageId, Is.EqualTo(3));
+        Assert.That(folderTranslations[56].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[56].LanguageId, Is.EqualTo(1));
+        Assert.That(folderTranslations[57].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[57].LanguageId, Is.EqualTo(2));
+        Assert.That(folderTranslations[58].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[58].LanguageId, Is.EqualTo(3));
 
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
@@ -945,13 +957,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         // Assert areaProperties
         Assert.That(areaProperties, Is.Not.Null);
-        Assert.That(areaProperties.Count, Is.EqualTo(1));
+        Assert.That(areaProperties.Count, Is.EqualTo(2));
         Assert.That(areaProperties[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaProperties[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaProperties[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(56));
+        Assert.That(folderTranslations.Count, Is.EqualTo(59));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyCreateModel.Name));
@@ -1044,12 +1056,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         Assert.That(folderTranslations[51].LanguageId, Is.EqualTo(24));
         Assert.That(folderTranslations[52].Name, Is.EqualTo("00. Prekoračeni zad"));
         Assert.That(folderTranslations[52].LanguageId, Is.EqualTo(25));
-        Assert.That(folderTranslations[53].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[53].Name, Is.EqualTo("00. Logbøger"));
         Assert.That(folderTranslations[53].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[54].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[54].Name, Is.EqualTo("01. Log books"));
         Assert.That(folderTranslations[54].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[55].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[55].Name, Is.EqualTo("01. Logbücher"));
         Assert.That(folderTranslations[55].LanguageId, Is.EqualTo(3));
+        Assert.That(folderTranslations[56].Name, Is.EqualTo("05. Halebid"));
+        Assert.That(folderTranslations[56].LanguageId, Is.EqualTo(1));
+        Assert.That(folderTranslations[57].Name, Is.EqualTo("05. Tail biting"));
+        Assert.That(folderTranslations[57].LanguageId, Is.EqualTo(2));
+        Assert.That(folderTranslations[58].Name, Is.EqualTo("05. Schwanzbeißen"));
+        Assert.That(folderTranslations[58].LanguageId, Is.EqualTo(3));
 
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);

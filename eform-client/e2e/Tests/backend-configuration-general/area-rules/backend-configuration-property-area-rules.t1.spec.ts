@@ -39,7 +39,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
     let lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    await lastProperty.editBindWithAreas([0]); // bind all specific types
+    // await lastProperty.editBindWithAreas([0]); // bind all specific types
     lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });

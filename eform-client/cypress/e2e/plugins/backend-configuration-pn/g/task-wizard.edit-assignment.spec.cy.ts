@@ -77,11 +77,11 @@ describe('Area rules type 1', () => {
     cy.wait(1000);
     backendConfigurationPropertyWorkersPage.create(workerForCreate2);
     backendConfigurationPropertiesPage.goToProperties();
-    for (let i = 0; i < 1; i++) {
-      const propertyEl = backendConfigurationPropertiesPage.getRowObjectByNum(i);
-      propertyEl.goToAreas();
-      propertyEl.bindAreasByName(['00. Logbøger'], false, true);
-    }
+    // for (let i = 0; i < 1; i++) {
+    //   const propertyEl = backendConfigurationPropertiesPage.getRowObjectByNum(i);
+    //   propertyEl.goToAreas();
+    //   propertyEl.bindAreasByName(['00. Logbøger'], false, true);
+    // }
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait(3000);
     cy.get('#createNewTaskBtn').should('be.enabled').click();

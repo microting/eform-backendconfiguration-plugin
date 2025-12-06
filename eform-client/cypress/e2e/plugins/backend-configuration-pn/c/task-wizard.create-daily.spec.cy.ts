@@ -50,10 +50,10 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
-    const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
+    // const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
     const bindArea = '00. Logbøger';
-    propertyEl.goToAreas();
-    propertyEl.bindAreasByName([bindArea]);
+    // propertyEl.goToAreas();
+    // propertyEl.bindAreasByName([bindArea]);
     cy.intercept('GET', '**/api/backend-configuration-pn/task-wizard/properties?**').as('getProperties');
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait('@getProperties', { timeout: 60000 });
