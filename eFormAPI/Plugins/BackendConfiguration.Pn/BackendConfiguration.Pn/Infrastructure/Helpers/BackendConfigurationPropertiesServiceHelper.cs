@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
+using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
@@ -167,6 +168,22 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                 // create a new folder for exceeded tasks
                 await core.FolderCreate(commonTranslations, property.FolderId).ConfigureAwait(false);
+
+                var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
+                    .Where(x => x.Name == "00. Logbøger")
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                if (areaTranslation != null)
+                {
+                    var propertyAreaUpdateModel = new PropertyAreasUpdateModel
+                    {
+                        Areas = [
+                            new PropertyAreaModel { AreaId = areaTranslation.AreaId, Activated = true }
+                        ],
+                        PropertyId = property.Id
+                    };
+                    await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreaUpdateModel, core,
+                        backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
+                }
 
                 return new OperationResult(true,
                     "SuccessfullyCreatingProperties");
