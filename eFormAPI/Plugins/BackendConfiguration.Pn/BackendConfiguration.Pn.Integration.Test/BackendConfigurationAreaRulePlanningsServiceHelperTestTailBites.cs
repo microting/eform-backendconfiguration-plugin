@@ -4,9 +4,12 @@ using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
 
@@ -50,8 +53,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -69,8 +79,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        var userService = Substitute.For<IUserService>();
-        userService.UserId.Returns(1);
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
@@ -390,6 +398,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
         var deviceUserModel = new DeviceUserModel
         {
             CustomerNo = 0,
@@ -404,7 +417,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -422,8 +437,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        var userService = Substitute.For<IUserService>();
-        userService.UserId.Returns(1);
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
@@ -781,8 +794,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             WorkerEmail = $"{Guid.NewGuid()}@test.com"
         };
 
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext);
+            TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -800,8 +820,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        var userService = Substitute.For<IUserService>();
-        userService.UserId.Returns(1);
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 

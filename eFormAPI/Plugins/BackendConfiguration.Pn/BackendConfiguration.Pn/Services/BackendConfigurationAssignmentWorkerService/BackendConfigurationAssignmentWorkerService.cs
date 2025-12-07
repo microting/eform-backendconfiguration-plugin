@@ -569,7 +569,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core,
             userService.UserId,
-            timePlanningDbContext);
+            timePlanningDbContext, baseDbContext, userService, userManager);
 
         return new OperationDataResult<int>(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message), result.Model);

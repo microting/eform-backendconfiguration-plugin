@@ -2,6 +2,7 @@ using BackendConfiguration.Pn.Services.RebusService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
+using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
@@ -26,6 +27,7 @@ public class TestBaseSetup
     protected TimePlanningPnDbContext? TimePlanningPnDbContext;
     protected MicrotingDbContext? MicrotingDbContext;
     protected CaseTemplatePnDbContext? CaseTemplatePnDbContext;
+    protected BaseDbContext BaseDbContext;
     protected IBus? Bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
@@ -149,6 +151,27 @@ public class TestBaseSetup
         return microtingDbContext;
     }
 
+    private BaseDbContext GetBaseDbContext(string connectionStr)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<BaseDbContext>();
+
+        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_Angular").Replace("bla", "root")
+            , new MariaDbServerVersion(
+                ServerVersion.AutoDetect(connectionStr)),
+            mySqlOptionsAction: builder => {
+                builder.EnableRetryOnFailure();
+                builder.TranslateParameterizedCollectionsToConstants();
+            });
+        var baseDbContext = new BaseDbContext(optionsBuilder.Options);
+        // var file = Path.Combine("SQL", "420_SDK.sql");
+        // var rawSql = File.ReadAllText(file);
+
+        baseDbContext.Database.EnsureCreated();
+        // baseDbContext.Database.Migrate();
+
+        return baseDbContext;
+    }
+
     protected async Task<Core> GetCore()
     {
         var core = new Core();
@@ -184,6 +207,9 @@ public class TestBaseSetup
 
         CaseTemplatePnDbContext.Database.SetCommandTimeout(300);
 
+        BaseDbContext = GetBaseDbContext(_mariadbTestcontainer.GetConnectionString());
+        BaseDbContext.Database.SetCommandTimeout(300);
+
         var rebusService =
             new RebusService(
                 new EFormCoreService(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
@@ -211,6 +237,7 @@ public class TestBaseSetup
         await TimePlanningPnDbContext!.DisposeAsync();
         await MicrotingDbContext!.DisposeAsync();
         await CaseTemplatePnDbContext!.DisposeAsync();
+        await BaseDbContext.DisposeAsync();
         if (Bus != null) Bus.Dispose();
     }
 }

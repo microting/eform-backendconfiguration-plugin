@@ -383,7 +383,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     Formats = "de-DE"
                                 };
 
-                                var result = await userManager.CreateAsync(user, "replace_me_with_a_proper_password_2024!").ConfigureAwait(false);
+                                var result = await userManager.CreateAsync(user, "Replace_me_with_a_proper_password_2024!").ConfigureAwait(false);
                                 if (result.Succeeded)
                                 {
                                     await userManager.AddToRoleAsync(user, EformRole.User);
@@ -631,65 +631,190 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         }
 
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
-            int userId, TimePlanningPnDbContext timePlanningDbContext)
+            int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
+            IUserService userService, UserManager<EformUser> userManager)
         {
-
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
-
-            if (sdkDbContext.Workers.AsNoTracking().Any(x => x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
+            try
             {
-                // this email is already in use
-                return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
-            }
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
-            deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
-            // var result = await _deviceUsersService.Create(deviceUserModel);
-            var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
-
-            var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
-
-            if (site != null)
-            {
-                return new OperationDataResult<int>(false, "TheEmployeeAlreadyExist");
-            }
-
-            var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName, deviceUserModel.UserLastName,
-                deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
-
-            site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
-
-            var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
-
-            worker.EmployeeNo = deviceUserModel.EmployeeNo;
-            worker.PinCode = deviceUserModel.PinCode;
-            worker.Email = deviceUserModel.WorkerEmail;
-            worker.PhoneNumber = deviceUserModel.PhoneNumber;
-            await worker.Update(sdkDbContext).ConfigureAwait(false);
-
-            if (deviceUserModel.TimeRegistrationEnabled == true)
-            {
-                try
+                if (sdkDbContext.Workers.AsNoTracking().Any(x =>
+                        x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
-                    var assignmentSite = new AssignedSite
+                    // this email is already in use
+                    return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
+                }
+
+                deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
+                deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
+                // var result = await _deviceUsersService.Create(deviceUserModel);
+                var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+
+                var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x =>
+                    x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName &&
+                    x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (site != null)
+                {
+                    return new OperationDataResult<int>(false, "TheEmployeeAlreadyExist");
+                }
+
+                var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName,
+                    deviceUserModel.UserLastName,
+                    deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
+
+                site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync()
+                    .ConfigureAwait(false);
+
+                var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid)
+                    .ConfigureAwait(false);
+
+                worker.EmployeeNo = deviceUserModel.EmployeeNo;
+                worker.PinCode = deviceUserModel.PinCode;
+                worker.Email = deviceUserModel.WorkerEmail;
+                worker.PhoneNumber = deviceUserModel.PhoneNumber;
+                await worker.Update(sdkDbContext).ConfigureAwait(false);
+
+                var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail).ConfigureAwait(false);
+                if (user != null)
+                {
+                    user.Email = deviceUserModel.WorkerEmail;
+                    user.UserName = deviceUserModel.WorkerEmail;
+                    user.FirstName = deviceUserModel.UserFirstName;
+                    user.LastName = deviceUserModel.UserLastName;
+                    user.Locale = deviceUserModel.LanguageCode;
+                    var result = await userManager.UpdateAsync(user);
+                }
+                else
+                {
+                    if (deviceUserModel.TimeRegistrationEnabled != null &&
+                        ((bool)deviceUserModel.TimeRegistrationEnabled || deviceUserModel.ArchiveEnabled ||
+                         deviceUserModel.WebAccessEnabled))
                     {
-                        SiteId = (int)site.MicrotingUid!,
-                        CreatedByUserId = userId,
-                        UpdatedByUserId = userId
-                    };
-                    await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
+                        user = new EformUser
+                        {
+                            Email = deviceUserModel.WorkerEmail,
+                            UserName = deviceUserModel.WorkerEmail,
+                            FirstName = deviceUserModel.UserFirstName.Trim(),
+                            LastName = deviceUserModel.UserLastName.Trim(),
+                            Locale = deviceUserModel.LanguageCode,
+                            EmailConfirmed = true,
+                            TwoFactorEnabled = false,
+                            IsGoogleAuthenticatorEnabled = false,
+                            TimeZone = "Europe/Copenhagen",
+                            Formats = "de-DE"
+                        };
 
-                    return new OperationDataResult<int>(true, site.Id);
+                        var result = await userManager.CreateAsync(user, "Replace_me_with_a_proper_password_2024!")
+                            .ConfigureAwait(false);
+                        if (result.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(user, EformRole.User);
+                        }
+                    }
                 }
-                catch (Exception e)
+
+                if (user != null)
                 {
-                    Console.WriteLine(e);
-                    // _logger.LogError(e.Message);
-                    return new OperationDataResult<int>(false, "");
-                }
-            }
+                    var securityGroupUserWebAccess = await baseDbContext.SecurityGroupUsers
+                        .Include(x => x.SecurityGroup)
+                        .Where(x => x.EformUserId == user!.Id)
+                        .Where(x => x.SecurityGroup.Name == "eForm users")
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                    if (deviceUserModel.WebAccessEnabled == false && securityGroupUserWebAccess != null)
+                    {
+                        var forDelete =
+                            await baseDbContext.SecurityGroupUsers.FirstAsync(x =>
+                                x.Id == securityGroupUserWebAccess.Id);
+                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
 
-            return new OperationDataResult<int>(true, site.Id);
+                    }
+
+                    if (deviceUserModel.WebAccessEnabled && securityGroupUserWebAccess == null)
+                    {
+                        var newSecurityGroupUser = new SecurityGroupUser
+                        {
+                            EformUserId = user!.Id,
+                            SecurityGroupId = baseDbContext.SecurityGroups
+                                .Where(x => x.Name == "eForm users")
+                                .Select(x => x.Id)
+                                .First()
+                        };
+                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                    }
+
+                    var securityGroupUserArchive = await baseDbContext.SecurityGroupUsers
+                        .Include(x => x.SecurityGroup)
+                        .Where(x => x.EformUserId == user!.Id)
+                        .Where(x => x.SecurityGroup.Name == "Kun arkiv")
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
+                    if (deviceUserModel.ArchiveEnabled == false && securityGroupUserArchive != null)
+                    {
+                        var forDelete =
+                            await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserArchive.Id);
+                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                    }
+
+                    if (deviceUserModel.ArchiveEnabled && securityGroupUserArchive == null)
+                    {
+                        var newSecurityGroupUser = new SecurityGroupUser
+                        {
+                            EformUserId = user!.Id,
+                            SecurityGroupId = baseDbContext.SecurityGroups
+                                .Where(x => x.Name == "Kun arkiv")
+                                .Select(x => x.Id)
+                                .First()
+                        };
+                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                    }
+                }
+
+                if (deviceUserModel.TimeRegistrationEnabled == true)
+                {
+                    try
+                    {
+                        var assignmentSite = new AssignedSite
+                        {
+                            SiteId = (int)site.MicrotingUid!,
+                            CreatedByUserId = userId,
+                            UpdatedByUserId = userId
+                        };
+                        await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
+
+                        var newSecurityGroupUser = new SecurityGroupUser
+                        {
+                            EformUserId = user!.Id,
+                            SecurityGroupId = baseDbContext.SecurityGroups
+                                .Where(x => x.Name == "Kun tid")
+                                .Select(x => x.Id)
+                                .First()
+                        };
+                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                        return new OperationDataResult<int>(true, site.Id);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        // _logger.LogError(e.Message);
+                        return new OperationDataResult<int>(false, "");
+                    }
+                }
+
+                return new OperationDataResult<int>(true, site.Id);
+            } catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
+            }
         }
 
 
