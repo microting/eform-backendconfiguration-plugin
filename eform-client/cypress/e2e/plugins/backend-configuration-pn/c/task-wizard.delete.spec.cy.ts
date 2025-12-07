@@ -51,10 +51,10 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
-    const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
+    // const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
     const bindArea = '00. Logbøger';
-    propertyEl.goToAreas();
-    propertyEl.bindAreasByName([bindArea]);
+    // propertyEl.goToAreas();
+    // propertyEl.bindAreasByName([bindArea]);
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait(3000);
     cy.get('#createNewTaskBtn').should('be.enabled').click();

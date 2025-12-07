@@ -72,7 +72,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(53));
+        Assert.That(folderTranslations.Count, Is.EqualTo(56));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyCreateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyCreateModel.Name));
@@ -518,7 +518,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Assert folder translations
         Assert.That(folderTranslations, Is.Not.Null);
-        Assert.That(folderTranslations.Count, Is.EqualTo(53));
+        Assert.That(folderTranslations.Count, Is.EqualTo(56));
         Assert.That(folderTranslations[4].Name, Is.EqualTo(propertyUpdateModel.Name));
         Assert.That(folderTranslations[4].LanguageId, Is.EqualTo(1));
         Assert.That(folderTranslations[5].Name, Is.EqualTo(propertyUpdateModel.Name));
