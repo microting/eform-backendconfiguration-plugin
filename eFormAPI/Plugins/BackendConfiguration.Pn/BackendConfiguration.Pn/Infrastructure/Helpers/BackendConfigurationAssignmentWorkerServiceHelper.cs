@@ -24,6 +24,8 @@ using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
 using Microsoft.Extensions.Logging;
+using Microting.EformAngularFrontendBase.Infrastructure.Data;
+using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
@@ -259,6 +261,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             UserManager<EformUser> userManager,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             TimePlanningPnDbContext timePlanningDbContext,
+            BaseDbContext baseDbContext,
             ILogger logger,
             ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
@@ -361,6 +364,32 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             user.Locale = language.LanguageCode;
                             var result = await userManager.UpdateAsync(user);
                         }
+                        else
+                        {
+                            if (deviceUserModel.TimeRegistrationEnabled != null && ((bool)deviceUserModel.TimeRegistrationEnabled || deviceUserModel.ArchiveEnabled ||
+                                    deviceUserModel.WebAccessEnabled))
+                            {
+                                user = new EformUser
+                                {
+                                    Email = deviceUserModel.WorkerEmail,
+                                    UserName = deviceUserModel.WorkerEmail,
+                                    FirstName = deviceUserModel.UserFirstName.Trim(),
+                                    LastName = deviceUserModel.UserLastName.Trim(),
+                                    Locale = deviceUserModel.LanguageCode,
+                                    EmailConfirmed = true,
+                                    TwoFactorEnabled = false,
+                                    IsGoogleAuthenticatorEnabled = false,
+                                    TimeZone = "Europe/Copenhagen",
+                                    Formats = "de-DE"
+                                };
+
+                                var result = await userManager.CreateAsync(user, "replace_me_with_a_proper_password_2024!").ConfigureAwait(false);
+                                if (result.Succeeded)
+                                {
+                                    await userManager.AddToRoleAsync(user, EformRole.User);
+                                }
+                            }
+                        }
 
                         if (isUpdated)
                         {
@@ -459,7 +488,66 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
-                        //var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
+                        var securityGroupUserWebAccess = await baseDbContext.SecurityGroupUsers
+                            .Include(x => x.SecurityGroup)
+                            .Where(x => x.EformUserId == user!.Id)
+                            .Where(x => x.SecurityGroup.Name == "eForm users")
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                        if (deviceUserModel.WebAccessEnabled == false && securityGroupUserWebAccess != null)
+                        {
+                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserWebAccess.Id);
+                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                        }
+                        if (deviceUserModel.WebAccessEnabled && securityGroupUserWebAccess == null)
+                        {
+                            var newSecurityGroupUser = new SecurityGroupUser
+                            {
+                                EformUserId = user!.Id,
+                                SecurityGroupId = baseDbContext.SecurityGroups
+                                    .Where(x => x.Name == "eForm users")
+                                    .Select(x => x.Id)
+                                    .First()
+                            };
+                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                        }
+
+                        var securityGroupUserArchive = await baseDbContext.SecurityGroupUsers
+                            .Include(x => x.SecurityGroup)
+                            .Where(x => x.EformUserId == user!.Id)
+                            .Where(x => x.SecurityGroup.Name == "Kun arkiv")
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                        if (deviceUserModel.ArchiveEnabled == false && securityGroupUserArchive != null)
+                        {
+                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserArchive.Id);
+                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                        }
+                        if (deviceUserModel.ArchiveEnabled && securityGroupUserArchive == null)
+                        {
+                            var newSecurityGroupUser = new SecurityGroupUser
+                            {
+                                EformUserId = user!.Id,
+                                SecurityGroupId = baseDbContext.SecurityGroups
+                                    .Where(x => x.Name == "Kun arkiv")
+                                    .Select(x => x.Id)
+                                    .First()
+                            };
+                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                        }
+
+                        var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                            .Include(x => x.SecurityGroup)
+                            .Where(x => x.EformUserId == user!.Id)
+                            .Where(x => x.SecurityGroup.Name == "Kun tid")
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
                         if (deviceUserModel.TimeRegistrationEnabled == false && timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             var assignmentForDeletes = await timePlanningDbContext.AssignedSites.Where(x =>
@@ -469,11 +557,33 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             {
                                 await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
                             }
+
+                            if (securityGroupUserTime != null)
+                            {
+                                var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
+                                baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                            }
                         }
                         else
                         {
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
+
+
+                                if (securityGroupUserTime == null)
+                                {
+                                    var newSecurityGroupUser = new SecurityGroupUser
+                                    {
+                                        EformUserId = user!.Id,
+                                        SecurityGroupId = baseDbContext.SecurityGroups
+                                            .Where(x => x.Name == "Kun tid")
+                                            .Select(x => x.Id)
+                                            .First()
+                                    };
+                                    baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                    await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                }
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
                                     x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
