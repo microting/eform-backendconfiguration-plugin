@@ -137,7 +137,7 @@
             <mat-slide-toggle
               color="primary"
               class="mb-2"
-              id="timeRegistrationEnabledToggle"
+              id="resignedToggle"
               formControlName="resigned">
               {{ "Resigned" | translate }}
             </mat-slide-toggle>
@@ -160,6 +160,7 @@
             </mat-form-field>
           </div>
         </div>
+        <br>
         <div class="modal-columns">
           <div class="d-flex flex-column" id="column1">
             <mat-slide-toggle
@@ -170,6 +171,7 @@
               formControlName="timeRegistrationEnabled">
               {{ "Timeregistration" | translate }}
             </mat-slide-toggle>
+            <br>
             <mat-slide-toggle
               *ngIf="authStateService.checkClaim('task_management_enable')"
               color="primary"
@@ -180,6 +182,21 @@
             </mat-slide-toggle>
           </div>
           <div class="d-flex flex-column" id="column2">
+            <mat-slide-toggle
+              color="primary"
+              class="mb-2"
+              id="webAccessEnabled"
+              formControlName="webAccessEnabled">
+              {{ "Backend user" | translate }}
+            </mat-slide-toggle>
+            <br>
+            <mat-slide-toggle
+              color="primary"
+              class="mb-2"
+              id="archiveEnabled"
+              formControlName="archiveEnabled">
+              {{ "Archive" | translate }}
+            </mat-slide-toggle>
           </div>
         </div>
         <br>

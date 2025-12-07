@@ -298,4 +298,6 @@ export const elGR = {
   'Show resigned': 'Η εκπομπή παραιτήθηκε',
   'Resigned at date': 'Παραιτήθηκε την ημερομηνία',
   'Show expired task on mobile': 'Εμφάνιση ληγμένης εργασίας σε κινητό',
+  Web: 'Ιστός',
+  Archive: 'Αρχείο',
 };

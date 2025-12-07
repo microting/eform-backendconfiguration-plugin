@@ -298,4 +298,6 @@ export const bgBG = {
   'Show resigned': 'Покажи оставка',
   'Resigned at date': 'Оставка на дата',
   'Show expired task on mobile': 'Показване на изтекла задача на мобилно устройство',
+  Web: 'Уеб',
+  Archive: 'Архив',
 };

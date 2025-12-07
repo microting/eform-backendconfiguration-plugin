@@ -298,4 +298,6 @@ export const ukUA = {
   'Show resigned': 'Показати у відставці',
   'Resigned at date': 'Звільнений у дату',
   'Show expired task on mobile': 'Показувати завдання, термін дії якого минув, на мобільному пристрої',
+  Web: 'Веб',
+  Archive: 'Архів',
 };

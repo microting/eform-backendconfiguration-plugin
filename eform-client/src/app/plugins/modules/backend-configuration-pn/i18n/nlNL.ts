@@ -298,4 +298,6 @@ export const nlNL = {
   'Show resigned': 'Toon ontslag genomen',
   'Resigned at date': 'Afgetreden op datum',
   'Show expired task on mobile': 'Verlopen taak weergeven op mobiel',
+  Web: 'Web',
+  Archive: 'Archief',
 };

@@ -298,4 +298,6 @@ export const roRO = {
   'Show resigned': 'Arătați demisionat',
   'Resigned at date': 'Demisionat la data de',
   'Show expired task on mobile': 'Afișează sarcina expirată pe mobil',
+  Web: 'Web',
+  Archive: 'Arhivă',
 };

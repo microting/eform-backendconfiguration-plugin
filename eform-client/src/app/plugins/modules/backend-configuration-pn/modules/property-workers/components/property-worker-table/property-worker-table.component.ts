@@ -143,6 +143,18 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
       },
       {
+        header: this.translateService.stream('Web'),
+        sortProp: {id: 'WebAccessEnabled'},
+        field: 'webAccessEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Archive'),
+        sortProp: {id: 'ArchiveEnabled'},
+        field: 'archiveEnabled',
+        sortable: true,
+      },
+      {
         header: this.translateService.stream('Language'),
         field: 'language',
         sortable: true,
@@ -250,6 +262,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.resigned = simpleSiteDto.resigned;
     selectedSimpleSite.resignedAtDate = simpleSiteDto.resignedAtDate;
     selectedSimpleSite.tags = simpleSiteDto.tags;
+    selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
+    selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

@@ -27,6 +27,7 @@ using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Services.RebusService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
@@ -60,6 +61,7 @@ public class BackendConfigurationAssignmentWorkerService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     TimePlanningPnDbContext timePlanningDbContext,
     CaseTemplatePnDbContext caseTemplatePnDbContext,
+    BaseDbContext baseDbContext,
     IRebusService rebusService,
     ILogger<BackendConfigurationAssignmentWorkerService> logger)
     : IBackendConfigurationAssignmentWorkerService
@@ -482,7 +484,25 @@ public class BackendConfigurationAssignmentWorkerService(
                     .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == deviceUserModel.SiteId).Select(y => y.SiteId).Any())
                     .CountAsync().ConfigureAwait(false);
 
-                deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
+                if (deviceUserModel.WorkerEmail != null && !deviceUserModel.WorkerEmail.Contains("invalid"))
+                {
+                    var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail!).ConfigureAwait(false);
+                    if (user != null)
+                    {
+                        // deviceUserModel.IsBackendUser = true;
+                        // lookup the security groups based on the user joined with the security group users and security groups
+                        var securityRoles = await (from eformUser in baseDbContext.Users
+                            join securityGroupUser in baseDbContext.SecurityGroupUsers on eformUser.Id equals securityGroupUser.EformUserId
+                            join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
+                            where eformUser.Id == user.Id && securityGroup.WorkflowState != Constants.WorkflowStates.Removed
+                            select securityGroup.Name).ToListAsync().ConfigureAwait(false);
+                        // deviceUserModel.IsBackendUser = securityRoles.Any(x => x.Contains("eForm users"));
+                        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled = securityRoles.Any(x => x.Contains("eForm users"));
+                        deviceUserModel.ArchiveEnabled = securityRoles.Any(x => x.Contains("Kun arkiv"));
+                    }
+                }
+
+                // deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
 
                 deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
 

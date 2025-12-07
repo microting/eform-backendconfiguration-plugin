@@ -298,4 +298,6 @@ export const itIT = {
   'Show resigned': 'Mostra dimissioni',
   'Resigned at date': 'Dimessosi alla data',
   'Show expired task on mobile': 'Mostra attività scaduta sul cellulare',
+  Web: 'Rete',
+  Archive: 'Archivio',
 };

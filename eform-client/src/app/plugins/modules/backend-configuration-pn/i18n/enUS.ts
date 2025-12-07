@@ -315,4 +315,6 @@ export const enUS= {
   'Show resigned': 'Show resigned',
   'Resigned at date': 'Resigned at date',
   'Show expired task on mobile': 'Show expired task on mobile',
+  'Web': 'Web',
+  'Archive': 'Archive',
 };

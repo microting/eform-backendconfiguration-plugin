@@ -171,6 +171,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       tags: [this.selectedDeviceUser.tags || []],
       timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
       taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
+      webAccessEnabled: [this.selectedDeviceUser.webAccessEnabled || false],
+      archiveEnabled: [this.selectedDeviceUser.archiveEnabled || false],
       resigned: [this.selectedDeviceUser.resigned || false],
       resignedAtDate: [
         this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
@@ -199,6 +201,28 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         emailControl?.markAsTouched();
       }
 
+      this.updateEmailValidation();
+    });
+
+    this.form.get('webAccessEnabled')?.valueChanges.subscribe(enabled => {
+      const emailControl = this.form.get('workerEmail');
+      const currentEmail = emailControl?.value || '';
+
+      if (enabled && currentEmail.includes('invalid')) {
+        emailControl?.patchValue('');
+        emailControl?.markAsTouched();
+      }
+      this.updateEmailValidation();
+    });
+
+    this.form.get('archiveEnabled')?.valueChanges.subscribe(enabled => {
+      const emailControl = this.form.get('workerEmail');
+      const currentEmail = emailControl?.value || '';
+
+      if (enabled && currentEmail.includes('invalid')) {
+        emailControl?.patchValue('');
+        emailControl?.markAsTouched();
+      }
       this.updateEmailValidation();
     });
 
@@ -256,6 +280,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   updateSingle() {
+
     if (this.form.invalid) {
       return;
     }
@@ -380,14 +405,19 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   shouldShowGenerateEmailButton(): boolean {
-    return !this.form?.get('timeRegistrationEnabled')?.value;
+    const timeRegistrationEnabled = !this.form?.get('timeRegistrationEnabled')?.value;
+    const webAccessEnabled = !this.form?.get('webAccessEnabled')?.value;
+    const archiveEnabled = !this.form?.get('archiveEnabled')?.value;
+    return timeRegistrationEnabled && webAccessEnabled && archiveEnabled;
   }
 
   private updateEmailValidation(): void {
     const emailControl = this.form.get('workerEmail');
     const timeRegistrationEnabled = this.form.get('timeRegistrationEnabled')?.value;
+    const webAccessEnabled = this.form.get('webAccessEnabled')?.value;
+    const archiveEnabled = this.form.get('archiveEnabled')?.value;
 
-    if (timeRegistrationEnabled) {
+    if (timeRegistrationEnabled || webAccessEnabled || archiveEnabled) {
       emailControl?.setValidators([Validators.required, Validators.email, this.validEmailValidator()]);
     } else {
       emailControl?.setValidators([Validators.required, this.validEmailValidator()]);
@@ -400,8 +430,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     return (control: AbstractControl): ValidationErrors | null => {
       const email = control.value;
       const timeRegistrationEnabled = this.form?.get('timeRegistrationEnabled')?.value;
+      const webAccessEnabled = this.form.get('webAccessEnabled')?.value;
+      const archiveEnabled = this.form.get('archiveEnabled')?.value;
 
-      if (timeRegistrationEnabled && email && email.includes('invalid')) {
+      if ((timeRegistrationEnabled || webAccessEnabled || archiveEnabled) && email && email.includes('invalid')) {
         return {invalidEmail: true};
       }
       return null;

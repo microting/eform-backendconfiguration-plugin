@@ -359,4 +359,6 @@ export const deDE = {
   'Show resigned': 'Show trat zurück',
   'Resigned at date': 'Ausgeschieden am',
   'Show expired task on mobile': 'Abgelaufene Aufgaben auf dem Mobilgerät anzeigen',
+  Web: 'Web',
+  Archive: 'Archiv',
 };

@@ -124,6 +124,8 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.startSunday = simpleSiteDto.startSunday;
     selectedSimpleSite.endSunday = simpleSiteDto.endSunday;
     selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
+    selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
+    selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

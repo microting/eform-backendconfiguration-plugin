@@ -93,6 +93,8 @@ public class DeviceUserModel
     public bool IsLocked { get; set; }
     public bool IsBackendUser { get; set; }
     public bool HasWorkOrdersAssigned { get; set; }
+    public bool ArchiveEnabled { get; set; }
+    public bool WebAccessEnabled { get; set; }
     public string Manufacturer { get; set; }
     public string Model { get; set; }
     public string Os { get; set; }
