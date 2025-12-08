@@ -62,6 +62,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   statuses: { label: string, value: number }[] = [];
   foldersTreeDto: FolderDto[] = [];
   selectedFolderName: string = '';
+  selectedFolderId: number;
   repeatTypeDay: { name: string, id: number }[] = [];
   repeatTypeWeek: { name: string, id: number }[] = [];
   repeatTypeMonth: { name: string, id: number }[] = [];
@@ -102,7 +103,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     return R.equals(this.taskForm.value, this.copyModel);
   }
 
-  
+
   constructor() {
     this.typeahead
       .pipe(
@@ -314,6 +315,12 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
         this.selectedFolderName = findFullNameById(x.id, this.foldersTreeDto);
       });
     }
+  }
+
+  onFolderSelected(folder: FolderDto) {
+    this.taskForm.patchValue({ folderId: folder.id });
+    this.selectedFolderId = folder.id;
+    this.selectedFolderName = findFullNameById(folder.id, this.foldersTreeDto);
   }
 
   update() {

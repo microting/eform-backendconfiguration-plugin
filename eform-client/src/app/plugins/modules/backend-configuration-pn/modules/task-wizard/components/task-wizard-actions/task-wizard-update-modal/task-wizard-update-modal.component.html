@@ -9,11 +9,11 @@
       {{ 'Active' | translate }}
     </mat-slide-toggle>
     <mat-slide-toggle *ngIf="selectCurrentUserIsAdmin$ | async"
-      class="p-2"
-      color="primary"
-      id="complianceEnabledToggle"
-      formControlName="complianceEnabled"
-      (change)="changeComplianceEnabled($event.checked)"
+                      class="p-2"
+                      color="primary"
+                      id="complianceEnabledToggle"
+                      formControlName="complianceEnabled"
+                      (change)="changeComplianceEnabled($event.checked)"
     >
       {{ 'Show expired task on mobile' | translate }}
     </mat-slide-toggle>
@@ -59,29 +59,17 @@
         </button>
       </div>
     </div>
-    <div class="d-flex flex-row">
-      <div style="width: 450px" class="p-2">
-        <button
-          mat-icon-button
-          color="accent"
-          id="updateFolder"
-          (click)="openFoldersModal()"
-          style="margin-left: -10px"
-          [disabled]="
+
+    <app-folder-tree-select
+      id="updateFolder"
+      [nodes]="foldersTreeDto"
+      [selectedNodeId]="taskForm.get('folderId')?.value"
+      (nodeSelected)="onFolderSelected($event)"
+      [disabled]="
             !taskForm.get('propertyId')?.value ||
             taskForm.get('status')?.value === TaskWizardStatusesEnum.Active
           "
-          [matTooltip]="
-            (!taskForm.get('propertyId')?.value
-              ? 'Need to select property'
-              : 'Select folder') | translate
-          "
-        >
-          <mat-icon>folder</mat-icon>
-        </button>
-        <span>{{ selectedFolderName || ('Folder not selected' | translate) }}</span>
-      </div>
-    </div>
+    ></app-folder-tree-select>
 
     <div class="d-flex flex-row">
       <mat-form-field class="p-3">
@@ -164,62 +152,64 @@
         >
       </mat-form-field>-->
     <div formArrayName="translates">
-    <ng-container
-      *ngFor="let translate of taskForm.get('translates')['controls']; let i = index"
-      [formGroupName]="i"
-    >
-      <ng-container *ngIf="i % 2 === 0">
-        <div class="d-flex flex-row">
-          <mat-form-field class="p-2">
-            <mat-label>{{ 'Task description' | translate }}  ({{ getLanguageName(translate.get('languageId')?.value) }})
-            </mat-label>
-            <input
-              type="text"
-              id="updateName{{i}}"
-              matInput
-              formControlName="name"
-              [disabled]="taskForm.get('status')?.value === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
-            >
-          </mat-form-field>
-          <mat-form-field *ngIf="taskForm.get('translates')['controls'][i + 1] as nextTranslate" class="p-2">
-            <mat-label>{{ 'Task description' | translate }}  ({{ getLanguageName(nextTranslate.get('languageId')?.value) }})
-            </mat-label>
-            <input
-              type="text"
-              id="updateName{{i + 1}}"
-              matInput
-              [formControl]="nextTranslate.get('name')"
-              [disabled]="taskForm.get('status')?.value === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
-            >
-          </mat-form-field>
-        </div>
-        <!--    <mat-card-->
-        <!--      [class.mt-2]="!isFirst"-->
-        <!--      [class.mb-2]="isLast">-->
-        <!--      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>-->
-        <!--      <mat-card-content>-->
-        <!--        <mat-form-field>-->
-        <!--          <mat-label>{{'Task description' | translate}}</mat-label>-->
-        <!--          <input-->
-        <!--            type="text"-->
-        <!--            id="updateName{{i}}"-->
-        <!--            matInput-->
-        <!--            [ngModel]="languageModel.name"-->
-        <!--            (ngModelChange)="updateName($event, i)"-->
-        <!--            [disabled]="model.status === TaskWizardStatusesEnum.Active"-->
-        <!--          >-->
-        <!--        </mat-form-field>-->
-        <!--      </mat-card-content>-->
-        <!--    </mat-card>-->
+      <ng-container
+        *ngFor="let translate of taskForm.get('translates')['controls']; let i = index"
+        [formGroupName]="i"
+      >
+        <ng-container *ngIf="i % 2 === 0">
+          <div class="d-flex flex-row">
+            <mat-form-field class="p-2">
+              <mat-label>{{ 'Task description' | translate }}
+                ({{ getLanguageName(translate.get('languageId')?.value) }})
+              </mat-label>
+              <input
+                type="text"
+                id="updateName{{i}}"
+                matInput
+                formControlName="name"
+                [disabled]="taskForm.get('status')?.value === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+              >
+            </mat-form-field>
+            <mat-form-field *ngIf="taskForm.get('translates')['controls'][i + 1] as nextTranslate" class="p-2">
+              <mat-label>{{ 'Task description' | translate }}
+                ({{ getLanguageName(nextTranslate.get('languageId')?.value) }})
+              </mat-label>
+              <input
+                type="text"
+                id="updateName{{i + 1}}"
+                matInput
+                [formControl]="nextTranslate.get('name')"
+                [disabled]="taskForm.get('status')?.value === TaskWizardStatusesEnum.Active || copyModel.status === TaskWizardStatusesEnum.Active"
+              >
+            </mat-form-field>
+          </div>
+          <!--    <mat-card-->
+          <!--      [class.mt-2]="!isFirst"-->
+          <!--      [class.mb-2]="isLast">-->
+          <!--      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>-->
+          <!--      <mat-card-content>-->
+          <!--        <mat-form-field>-->
+          <!--          <mat-label>{{'Task description' | translate}}</mat-label>-->
+          <!--          <input-->
+          <!--            type="text"-->
+          <!--            id="updateName{{i}}"-->
+          <!--            matInput-->
+          <!--            [ngModel]="languageModel.name"-->
+          <!--            (ngModelChange)="updateName($event, i)"-->
+          <!--            [disabled]="model.status === TaskWizardStatusesEnum.Active"-->
+          <!--          >-->
+          <!--        </mat-form-field>-->
+          <!--      </mat-card-content>-->
+          <!--    </mat-card>-->
 
-        <!--<app-eform-translation
-              [class.mt-2]="!isFirst"
-              [class.mb-2]="isLast"
-              [model]="languageModel"
-              (modelChange)="updateLanguageModel($event, i)"
-              [title]="getLanguageName(languageModel.languageId)"/>-->
+          <!--<app-eform-translation
+                [class.mt-2]="!isFirst"
+                [class.mb-2]="isLast"
+                [model]="languageModel"
+                (modelChange)="updateLanguageModel($event, i)"
+                [title]="getLanguageName(languageModel.languageId)"/>-->
+        </ng-container>
       </ng-container>
-    </ng-container>
     </div>
     <div class="d-flex flex-row">
       <mat-form-field class="p-2">
