@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -97,6 +98,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
             catch (Exception e)
             {
+                SentrySdk.CaptureException(e);
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
                 // Log.LogException(e.Message);
@@ -248,6 +250,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
             catch (Exception e)
             {
+                SentrySdk.CaptureException(e);
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
                 return new OperationResult(false,
@@ -488,66 +491,68 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
-                        var securityGroupUserWebAccess = await baseDbContext.SecurityGroupUsers
-                            .Include(x => x.SecurityGroup)
-                            .Where(x => x.EformUserId == user!.Id)
-                            .Where(x => x.SecurityGroup.Name == "eForm users")
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .FirstOrDefaultAsync().ConfigureAwait(false);
-                        if (deviceUserModel.WebAccessEnabled == false && securityGroupUserWebAccess != null)
+                        if (user != null)
                         {
-                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserWebAccess.Id);
-                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
-                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
-
-                        }
-                        if (deviceUserModel.WebAccessEnabled && securityGroupUserWebAccess == null)
-                        {
-                            var newSecurityGroupUser = new SecurityGroupUser
+                            var securityGroupUserWebAccess = await baseDbContext.SecurityGroupUsers
+                                .Include(x => x.SecurityGroup)
+                                .Where(x => x.EformUserId == user!.Id)
+                                .Where(x => x.SecurityGroup.Name == "eForm users")
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .FirstOrDefaultAsync().ConfigureAwait(false);
+                            if (deviceUserModel.WebAccessEnabled == false && securityGroupUserWebAccess != null)
                             {
-                                EformUserId = user!.Id,
-                                SecurityGroupId = baseDbContext.SecurityGroups
-                                    .Where(x => x.Name == "eForm users")
-                                    .Select(x => x.Id)
-                                    .First()
-                            };
-                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
-                        }
+                                var forDelete =
+                                    await baseDbContext.SecurityGroupUsers.FirstAsync(x =>
+                                        x.Id == securityGroupUserWebAccess.Id);
+                                baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
 
-                        var securityGroupUserArchive = await baseDbContext.SecurityGroupUsers
-                            .Include(x => x.SecurityGroup)
-                            .Where(x => x.EformUserId == user!.Id)
-                            .Where(x => x.SecurityGroup.Name == "Kun arkiv")
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .FirstOrDefaultAsync().ConfigureAwait(false);
-                        if (deviceUserModel.ArchiveEnabled == false && securityGroupUserArchive != null)
-                        {
-                            var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserArchive.Id);
-                            baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
-                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                            }
 
-                        }
-                        if (deviceUserModel.ArchiveEnabled && securityGroupUserArchive == null)
-                        {
-                            var newSecurityGroupUser = new SecurityGroupUser
+                            if (deviceUserModel.WebAccessEnabled && securityGroupUserWebAccess == null)
                             {
-                                EformUserId = user!.Id,
-                                SecurityGroupId = baseDbContext.SecurityGroups
-                                    .Where(x => x.Name == "Kun arkiv")
-                                    .Select(x => x.Id)
-                                    .First()
-                            };
-                            baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
-                        }
+                                var newSecurityGroupUser = new SecurityGroupUser
+                                {
+                                    EformUserId = user!.Id,
+                                    SecurityGroupId = baseDbContext.SecurityGroups
+                                        .Where(x => x.Name == "eForm users")
+                                        .Select(x => x.Id)
+                                        .First()
+                                };
+                                baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                            }
 
-                        var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                            .Include(x => x.SecurityGroup)
-                            .Where(x => x.EformUserId == user!.Id)
-                            .Where(x => x.SecurityGroup.Name == "Kun tid")
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                            var securityGroupUserArchive = await baseDbContext.SecurityGroupUsers
+                                .Include(x => x.SecurityGroup)
+                                .Where(x => x.EformUserId == user!.Id)
+                                .Where(x => x.SecurityGroup.Name == "Kun arkiv")
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .FirstOrDefaultAsync().ConfigureAwait(false);
+                            if (deviceUserModel.ArchiveEnabled == false && securityGroupUserArchive != null)
+                            {
+                                var forDelete =
+                                    await baseDbContext.SecurityGroupUsers.FirstAsync(x =>
+                                        x.Id == securityGroupUserArchive.Id);
+                                baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                            }
+
+                            if (deviceUserModel.ArchiveEnabled && securityGroupUserArchive == null)
+                            {
+                                var newSecurityGroupUser = new SecurityGroupUser
+                                {
+                                    EformUserId = user!.Id,
+                                    SecurityGroupId = baseDbContext.SecurityGroups
+                                        .Where(x => x.Name == "Kun arkiv")
+                                        .Select(x => x.Id)
+                                        .First()
+                                };
+                                baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                            }
+                        }
                         if (deviceUserModel.TimeRegistrationEnabled == false && timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             var assignmentForDeletes = await timePlanningDbContext.AssignedSites.Where(x =>
@@ -557,6 +562,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             {
                                 await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
                             }
+
+                            var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                .Include(x => x.SecurityGroup)
+                                .Where(x => x.EformUserId == user!.Id)
+                                .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .FirstOrDefaultAsync().ConfigureAwait(false);
 
                             if (securityGroupUserTime != null)
                             {
@@ -570,6 +582,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
 
+                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                    .Include(x => x.SecurityGroup)
+                                    .Where(x => x.EformUserId == user!.Id)
+                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                                 if (securityGroupUserTime == null)
                                 {
@@ -625,6 +643,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             }
             catch (Exception ex)
             {
+                SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
                 return new OperationResult(false, "DeviceUserCouldNotBeUpdated");
             }
@@ -812,6 +831,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 return new OperationDataResult<int>(true, site.Id);
             } catch (Exception ex)
             {
+                SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
                 return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
             }
