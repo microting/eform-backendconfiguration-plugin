@@ -90,7 +90,10 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
-    cy.get('#createFolder').click({force: true});
+    // cy.get('#createFolder').click({force: true});
+    cy.get('#createFolder mat-select .mat-mdc-select-trigger')
+      .should('exist')
+      .click({ force: true });
     cy.wait(500);
     cy.get('mat-tree-node > button').click();
     cy.wait(500);
@@ -210,7 +213,10 @@ describe('Area rules type 1', () => {
     // selectValueInNgSelectorNoSelector(`${property2.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
-    cy.get('app-task-wizard-update-modal button#updateFolder').click();
+    // cy.get('app-task-wizard-update-modal button#updateFolder').click();
+    cy.get('#updateFolder mat-select .mat-mdc-select-trigger')
+      .should('exist')
+      .click({ force: true });
     cy.wait(1000);
     cy.get('mat-tree-node > button').click();
     cy.wait(500);

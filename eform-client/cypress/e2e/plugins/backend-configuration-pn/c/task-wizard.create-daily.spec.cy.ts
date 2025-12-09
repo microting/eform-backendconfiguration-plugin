@@ -74,7 +74,10 @@ describe('Area rules type 1', () => {
       //cy.get(`#createName${i}`).click().type(task.translations[i]);
     }
     cy.wait(500);
-    cy.get('#createFolder').click({force: true});
+    // cy.get('#createFolder').click({force: true});
+    cy.get('#createFolder mat-select .mat-mdc-select-trigger')
+      .should('exist')
+      .click({ force: true });
     cy.wait(500);
     cy.get('mat-tree-node > button').click();
     cy.wait(500);

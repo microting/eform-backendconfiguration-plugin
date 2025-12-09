@@ -1,14 +1,4 @@
 <eform-new-subheader>
-<!--  <button-->
-<!--    mat-icon-button-->
-<!--    color="primary"-->
-<!--    id="planningManageTagsBtn"-->
-<!--    (click)="openTagsModal()"-->
-<!--    matTooltip="{{ 'Manage tags' | translate }}"-->
-<!--    *ngIf="authStateService.isAdmin"-->
-<!--  >-->
-<!--    <mat-icon>discount</mat-icon>-->
-<!--  </button>-->
   <button
     class="btn-primary btn-primary--icon-left"
     [matTooltip]="'Create new task' | translate"
@@ -37,7 +27,7 @@
 />
 <button
   *ngIf="selectAuthIsAdmin$ | async;"
-  class="btn-warning mb-4"
+  class="btn-warning mb-4 ml-3"
   [disabled]="
     !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
   "
