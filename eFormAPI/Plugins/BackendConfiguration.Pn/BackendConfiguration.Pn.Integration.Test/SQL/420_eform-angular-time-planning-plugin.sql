@@ -183,6 +183,7 @@ CREATE TABLE `AssignedSiteVersions` (
   `DaysBackInTimeAllowedEditing` int(11) NOT NULL DEFAULT 0,
   `DaysBackInTimeAllowedEditingEnabled` tinyint(1) NOT NULL DEFAULT 0,
   `ResignedAtDate` datetime(6) NOT NULL DEFAULT '0001-01-01 00:00:00.000000',
+  `EnableMobileAccess` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -354,6 +355,7 @@ CREATE TABLE `AssignedSites` (
   `DaysBackInTimeAllowedEditing` int(11) NOT NULL DEFAULT 0,
   `DaysBackInTimeAllowedEditingEnabled` tinyint(1) NOT NULL DEFAULT 0,
   `ResignedAtDate` datetime(6) NOT NULL DEFAULT '0001-01-01 00:00:00.000000',
+  `EnableMobileAccess` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
