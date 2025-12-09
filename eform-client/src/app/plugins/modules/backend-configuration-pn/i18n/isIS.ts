@@ -297,4 +297,7 @@ export const isIS = {
   Resigned: 'Sagði upp',
   'Show resigned': 'Sýna sagði upp',
   'Resigned at date': 'Sagði af sér þann dag',
+  'Show expired task on mobile': 'Sýna útrunnið verkefni í farsíma',
+  Web: 'Vefur',
+  Archive: 'Skjalasafn',
 };

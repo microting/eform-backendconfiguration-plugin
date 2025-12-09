@@ -257,17 +257,17 @@ public class BackendConfigurationReportService(
                             reportModel.ItemHeaders.Add(kvp);
                         }
                     }
+                    var templateCaseIds = groupedCase.cases.Select(x => x.MicrotingSdkCaseId).ToList();
 
-                    // images
-                    var templateCaseIds = groupedCase.cases.Select(x => (int?)x.MicrotingSdkCaseId).ToArray();
                     var imagesForEform = await sdkDbContext.FieldValues
                         .Include(x => x.UploadedData)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.Field.FieldTypeId == 5)
-                        .Where(x => templateCaseIds.Contains(x.CaseId))
-                        .Where(x => x.UploadedDataId != null)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                    && x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed
+                                    && x.Field.FieldTypeId == 5 // magic number 5 - it is FieldTypes.Picture
+                                    && x.CaseId.HasValue && templateCaseIds.Contains(x.CaseId.Value)
+                                    && x.UploadedDataId != null)
                         .OrderBy(x => x.CaseId)
+                        .AsNoTracking()
                         .ToListAsync();
 
                     foreach (var imageField in imagesForEform)

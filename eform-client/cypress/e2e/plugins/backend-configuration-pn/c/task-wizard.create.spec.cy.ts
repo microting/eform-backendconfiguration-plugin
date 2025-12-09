@@ -50,10 +50,10 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
-    const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
+    // const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
     const bindArea = '00. Logbøger';
-    propertyEl.goToAreas();
-    propertyEl.bindAreasByName([bindArea]);
+    // propertyEl.goToAreas();
+    // propertyEl.bindAreasByName([bindArea]);
     cy.intercept('GET', '**/api/backend-configuration-pn/task-wizard/properties?**').as('getProperties');
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait('@getProperties', { timeout: 60000 });
@@ -66,7 +66,10 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(500);
-    cy.get('#createFolder').click({force: true});
+    // cy.get('#createFolder').click({force: true});
+    cy.get('#createFolder mat-select .mat-mdc-select-trigger')
+      .should('exist')
+      .click({ force: true });
     cy.wait(500);
     cy.get('mat-tree-node > button').click();
     cy.wait(500);

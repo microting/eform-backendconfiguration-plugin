@@ -297,4 +297,7 @@ export const csCZ = {
   Resigned: 'Rezignoval',
   'Show resigned': 'Zobrazit rezignaci',
   'Resigned at date': 'Rezignoval/a k datu',
+  'Show expired task on mobile': 'Zobrazit vypršelou úlohu na mobilu',
+  Web: 'Web',
+  Archive: 'Archiv',
 };

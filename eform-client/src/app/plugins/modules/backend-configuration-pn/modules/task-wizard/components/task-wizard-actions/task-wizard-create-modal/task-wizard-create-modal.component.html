@@ -8,7 +8,7 @@
       formControlName="taskStatus"
       (change)="changeStatus($event.checked)"
     >
-      {{ 'Status' | translate }}
+      {{ 'Active' | translate }}
     </mat-slide-toggle>
     <mat-slide-toggle *ngIf="selectCurrentUserIsAdmin$ | async"
                       class="p-2"
@@ -17,7 +17,7 @@
                       formControlName="complianceEnabled"
                       (change)="changeComplianceEnabled($event.checked)"
     >
-      {{ 'Compliance' | translate }}
+      {{ 'Show expired task on mobile' | translate }}
     </mat-slide-toggle>
 
     <div class="d-flex flex-row">
@@ -60,7 +60,7 @@
     </div>
 
     <app-folder-tree-select
-      id="createFolder"
+      [id]="'createFolder'"
       [nodes]="foldersTreeDto"
       [selectedNodeId]="taskForm.get('folderId')?.value"
       (nodeSelected)="onFolderSelected($event)"

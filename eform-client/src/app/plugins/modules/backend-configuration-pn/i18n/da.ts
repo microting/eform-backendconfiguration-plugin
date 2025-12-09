@@ -299,4 +299,7 @@ export const da = {
   Resigned: 'Fratrådt',
   'Show resigned': 'Vis fratrådte',
   'Resigned at date': 'Fratrådte d.',
+  'Show expired task on mobile': 'Vis overskredet opgave på mobil',
+  Web: 'Web',
+  Archive: 'Arkiv',
 };

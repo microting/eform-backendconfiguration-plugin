@@ -20,6 +20,8 @@ export class DeviceUserModel {
   hasWorkOrdersAssigned: boolean;
   timeRegistrationEnabled: boolean;
   taskManagementEnabled: boolean;
+  archiveEnabled: boolean;
+  webAccessEnabled: boolean;
   manufacturer: string;
   model: string;
   osVersion: string;
@@ -51,4 +53,5 @@ export class DeviceUserModel {
   phoneNumber: string;
   resigned: boolean;
   resignedAtDate: Date;
+  tags: number[];
 }

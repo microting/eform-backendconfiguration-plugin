@@ -1,5 +1,6 @@
-import {Component, OnDestroy, OnInit,
-  inject
+import {
+  Component, OnDestroy, OnInit,
+  inject, ViewChild
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -28,6 +29,8 @@ import {Store} from '@ngrx/store';
 import {
   selectPropertyWorkersFilters
 } from '../../../../state/property-workers/property-workers.selector';
+import {EformTagService} from 'src/app/common/services';
+import {EformsTagsComponent} from "src/app/common/modules/eform-shared-tags/components";
 
 @AutoUnsubscribe()
 @Component({
@@ -41,10 +44,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private eFormTagService = inject(EformTagService);
+  @ViewChild('modalTags', {static: true}) modalSiteTags: EformsTagsComponent;
 
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
+  alreadyUsedEmails: string[] = [];
 
   getSites$: Subscription;
   getPropertiesDictionary$: Subscription;
@@ -53,10 +59,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   showResigned: boolean = false;
+  availableTags: Array<CommonDictionaryModel> = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
-  
+
 
   ngOnInit() {
     let propertyIds: number[] = [];
@@ -80,6 +87,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe();
+    this.loadAllTags();
     //this.getWorkerPropertiesAssignments();
   }
 
@@ -116,6 +124,8 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.startSunday = simpleSiteDto.startSunday;
     selectedSimpleSite.endSunday = simpleSiteDto.endSunday;
     selectedSimpleSite.breakSunday = simpleSiteDto.breakSunday;
+    selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
+    selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
@@ -139,9 +149,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           deviceUser: {},
           assignments: [],
           availableProperties: this.availableProperties,
+          availableTags: this.availableTags,
+          alreadyUsedEmails: this.alreadyUsedEmails,
         }), minWidth: 1024
       })
       .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
+  }
+
+  openEditTagsModal() {
+    this.modalSiteTags.show();
   }
 
   getPropertiesDictionary() {
@@ -188,6 +204,14 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       '--';
   }
 
+  loadAllTags() {
+    this.eFormTagService.getAvailableTags().subscribe((data) => {
+      if (data && data.success) {
+        this.availableTags = data.model;
+      }
+    });
+  }
+
   onSearchChanged(name: string) {
     this.propertyWorkersStateService.updateNameFilter(name);
     this.getDeviceUsersFiltered();
@@ -205,6 +229,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.model) {
           data.model.forEach(site => {
+            // add the site.workerEmail to alreadyUsedEmails to prevent from creating new worker with the same email
+            if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
+              this.alreadyUsedEmails.push(site.workerEmail);
+            }
             if (site.resigned) {
               anyIsResigned = true;
             }

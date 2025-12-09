@@ -27,6 +27,7 @@ using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Services.RebusService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
@@ -60,6 +61,7 @@ public class BackendConfigurationAssignmentWorkerService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     TimePlanningPnDbContext timePlanningDbContext,
     CaseTemplatePnDbContext caseTemplatePnDbContext,
+    BaseDbContext baseDbContext,
     IRebusService rebusService,
     ILogger<BackendConfigurationAssignmentWorkerService> logger)
     : IBackendConfigurationAssignmentWorkerService
@@ -370,7 +372,12 @@ public class BackendConfigurationAssignmentWorkerService(
                     site.CreatedAt,
                     site.UpdatedAt,
                     worker.Resigned,
-                    worker.ResignedAtDate
+                    worker.ResignedAtDate,
+                    SiteTags = site.SiteTags
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(y => y.Tag.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(t => (int)t.TagId)
+                        .ToList()
 
                 };
             sitesQuery = sitesQuery
@@ -396,7 +403,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked,
                     Resigned = x.Resigned,
-                    ResignedAtDate = x.ResignedAtDate
+                    ResignedAtDate = x.ResignedAtDate,
+                    Tags = x.SiteTags
                 })
                 .ToListAsync().ConfigureAwait(false);
 
@@ -476,7 +484,25 @@ public class BackendConfigurationAssignmentWorkerService(
                     .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == deviceUserModel.SiteId).Select(y => y.SiteId).Any())
                     .CountAsync().ConfigureAwait(false);
 
-                deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
+                if (deviceUserModel.WorkerEmail != null && !deviceUserModel.WorkerEmail.Contains("invalid"))
+                {
+                    var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail!).ConfigureAwait(false);
+                    if (user != null)
+                    {
+                        // deviceUserModel.IsBackendUser = true;
+                        // lookup the security groups based on the user joined with the security group users and security groups
+                        var securityRoles = await (from eformUser in baseDbContext.Users
+                            join securityGroupUser in baseDbContext.SecurityGroupUsers on eformUser.Id equals securityGroupUser.EformUserId
+                            join securityGroup in baseDbContext.SecurityGroups on securityGroupUser.SecurityGroupId equals securityGroup.Id
+                            where eformUser.Id == user.Id && securityGroup.WorkflowState != Constants.WorkflowStates.Removed
+                            select securityGroup.Name).ToListAsync().ConfigureAwait(false);
+                        // deviceUserModel.IsBackendUser = securityRoles.Any(x => x.Contains("eForm users"));
+                        deviceUserModel.IsBackendUser = deviceUserModel.WebAccessEnabled = securityRoles.Any(x => x.Contains("eForm users"));
+                        deviceUserModel.ArchiveEnabled = securityRoles.Any(x => x.Contains("Kun arkiv"));
+                    }
+                }
+
+                // deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
 
                 deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
 
@@ -533,7 +559,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
-            timePlanningDbContext, logger, itemsPlanningPnDbContext);
+            timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
@@ -543,7 +569,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core,
             userService.UserId,
-            timePlanningDbContext);
+            timePlanningDbContext, baseDbContext, userService, userManager);
 
         return new OperationDataResult<int>(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message), result.Model);

@@ -22,6 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microsoft.AspNetCore.Identity;
+using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using NSubstitute;
+
 namespace BackendConfiguration.Pn.Integration.Test;
 
 using System.Globalization;
@@ -77,8 +83,17 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			UserLastName = Guid.NewGuid().ToString(),
 			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
+
+		// Act
+		var userService = Substitute.For<IUserService>();
+		userService.UserId.Returns(1);
+		var userManager = Substitute.For<UserManager<EformUser>>(
+			Substitute.For<IUserStore<EformUser>>(),
+			null, null, null, null, null, null, null, null);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext);
+			TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
 		// create planning
@@ -95,6 +110,23 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			DayOfMonth = timeNow.Day,
 			RepeatUntil = timeNow.AddMonths(6),
 		};
+
+		var securityGroup = new SecurityGroup()
+		{
+			Name = "Kun tid"
+		};
+		BaseDbContext.SecurityGroups.Add(securityGroup);
+		var securityGroup2 = new SecurityGroup()
+		{
+			Name = "Kun arkiv"
+		};
+		BaseDbContext.SecurityGroups.Add(securityGroup2);
+		var securityGroup3 = new SecurityGroup()
+		{
+			Name = "eForm users"
+		};
+		BaseDbContext.SecurityGroups.Add(securityGroup3);
+		await BaseDbContext.SaveChangesAsync();
 
 		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -207,8 +239,15 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			UserLastName = Guid.NewGuid().ToString(),
 			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext);
+			TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
 		// create planning
@@ -337,8 +376,15 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			UserLastName = Guid.NewGuid().ToString(),
 			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext);
+			TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
 		// create planning
@@ -467,8 +513,15 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			UserLastName = Guid.NewGuid().ToString(),
 			WorkerEmail = Guid.NewGuid().ToString() + "@test.com"
 		};
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext);
+			TimePlanningPnDbContext, BaseDbContext,
+        userService,
+        userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
 		// create planning

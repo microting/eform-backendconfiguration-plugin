@@ -297,4 +297,7 @@ export const ltLT = {
   Resigned: 'Atsistatydino',
   'Show resigned': 'Rodyti atsistatydino',
   'Resigned at date': 'Atsistatydino nuo datos',
+  'Show expired task on mobile': 'Rodyti pasibaigusią užduotį mobiliajame telefone',
+  Web: 'Žiniatinklis',
+  Archive: 'Archyvas',
 };

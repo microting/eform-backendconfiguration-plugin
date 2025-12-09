@@ -93,6 +93,8 @@ public class DeviceUserModel
     public bool IsLocked { get; set; }
     public bool IsBackendUser { get; set; }
     public bool HasWorkOrdersAssigned { get; set; }
+    public bool ArchiveEnabled { get; set; }
+    public bool WebAccessEnabled { get; set; }
     public string Manufacturer { get; set; }
     public string Model { get; set; }
     public string Os { get; set; }
@@ -110,6 +112,9 @@ public class DeviceUserModel
     public DateTime? UpdatedAt { get; set; }
     public bool Resigned { get; set; }
     public DateTime ResignedAtDate { get; set; }
+
+    public List<int> Tags { get; set; }
+        = new List<int>();
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {

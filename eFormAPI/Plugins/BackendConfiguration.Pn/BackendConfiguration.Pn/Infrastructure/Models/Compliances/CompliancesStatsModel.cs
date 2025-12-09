@@ -21,4 +21,5 @@ public class CompliancesStatsModel
     public DateTime? DateOfOldestEnvironmentInspectionTagPlannedTask { get; set; }
     public int NumberOfAdHocTasks { get; set; }
     public DateTime? DateOfOldestAdHocTask { get; set; }
+    public int NumberOfCompletedEnvironmentInspectionTagPlanningsLast30Days { get; set; }
 }

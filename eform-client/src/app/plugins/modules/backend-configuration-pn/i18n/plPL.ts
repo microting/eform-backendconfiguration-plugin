@@ -297,4 +297,7 @@ export const plPL = {
   Resigned: 'Zrezygnowany',
   'Show resigned': 'Pokaż zrezygnowany',
   'Resigned at date': 'Zrezygnował w dniu',
+  'Show expired task on mobile': 'Pokaż wygasłe zadanie na urządzeniu mobilnym',
+  Web: 'Sieć',
+  Archive: 'Archiwum',
 };

@@ -202,6 +202,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
 
         var backendConfigurationPnDbContext = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
         var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
+        var timePlanningPnDbContext = serviceProvider.GetRequiredService<TimePlanningPnDbContext>();
         // var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();
         // seed eforms
         var assembly = Assembly.GetExecutingAssembly();
@@ -340,134 +341,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             }
         }
 
-        // TODO remove this code when sure that the fields are fixed on all installations
-        // var priorityFieldsToFix = await sdkDbContext.Fields.Where(x => x.OriginalId == "376935").ToListAsync();
-        // foreach (var priorityFieldToFix in priorityFieldsToFix)
-        // {
-        //     if (priorityFieldToFix.Mandatory == 0)
-        //     {
-        //         priorityFieldToFix.Mandatory = 1;
-        //         await priorityFieldToFix.Update(sdkDbContext);
-        //         SentrySdk.CaptureMessage("Field 376935 was fixed!");
-        //     }
-        // }
-        //
-        // var fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375727");
-        // if (fieldToFix is { Mandatory: 0 })
-        // {
-        //     fieldToFix.Mandatory = 1;
-        //     await fieldToFix.Update(sdkDbContext);
-        //     SentrySdk.CaptureMessage("Field 375727 was fixed!");
-        //     var localizationService = serviceProvider.GetRequiredService<IBackendConfigurationLocalizationService>();
-        //
-        //     // find all propertyworkers where TaskManagementEnabled is true and retract the eform and deploy it again. Do the same for all tasks assigned to the propertyworker
-        //     var propertiesWithWorkOrderEnabled = await backendConfigurationPnDbContext.Properties
-        //         .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-        //         .Where(x => x.WorkorderEnable == true)
-        //         .Include(property => property.PropertyWorkers)
-        //         .ToListAsync();
-        //
-        //     var eformId = await sdkDbContext.CheckLists
-        //         .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-        //         .Where(x => x.OriginalId == "142663new2")
-        //         .Select(x => x.Id)
-        //         .FirstAsync().ConfigureAwait(false);
-        //     foreach (var property in propertiesWithWorkOrderEnabled)
-        //     {
-        //         Console.WriteLine($"Handling property {property.Name}");
-        //         var propertyWorkers = property.PropertyWorkers
-        //             .Where(x => x.TaskManagementEnabled == true)
-        //             .Where(x => x.WorkflowState !=
-        //                         Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-        //             .ToList();
-        //         await WorkOrderHelper
-        //             .RetractEform(propertyWorkers, true, core,null, backendConfigurationPnDbContext)
-        //             .ConfigureAwait(false);
-        //
-        //         foreach (var propertyWorker in propertyWorkers)
-        //         {
-        //             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
-        //             Console.WriteLine($"Handling property {property.Name} and propertyWorker {propertyWorker.WorkerId} with the site.name {site.Name}");
-        //             var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
-        //             var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
-        //
-        //             var deviceUsersGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListDeviceUsers)
-        //                 .ConfigureAwait(false);
-        //
-        //             var areasGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListAreas)
-        //                 .ConfigureAwait(false);
-        //
-        //             //if (localizationService != null)
-        //             //{
-        //             // get the localization service
-        //             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
-        //             string description = "<strong>"+localizationService.GetString("Location") + "</strong>: " + property.Name;
-        //             string newTask = localizationService.GetString("NewTask");
-        //             //}
-        //
-        //             mainElement.Repeated = 0;
-        //             mainElement.ElementList[0].QuickSyncEnabled = true;
-        //             mainElement.ElementList[0].Description.InderValue = description;
-        //             mainElement.ElementList[0].Label = newTask;
-        //             mainElement.Label = newTask;
-        //             mainElement.EnableQuickSync = true;
-        //             if (property.FolderIdForNewTasks != null)
-        //             {
-        //                 mainElement.CheckListFolderName = await sdkDbContext.Folders
-        //                     .Where(x => x.Id == property.FolderIdForNewTasks)
-        //                     .Select(x => x.MicrotingUid.ToString())
-        //                     .FirstOrDefaultAsync().ConfigureAwait(false);
-        //             }
-        //
-        //             if (!string.IsNullOrEmpty(description))
-        //             {
-        //                 ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
-        //                 ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
-        //             }
-        //
-        //             //if (areasGroupUid != null && deviceUsersGroupId != null)
-        //             //{
-        //                 ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[2]).Source = int.Parse(areasGroup.MicrotingUid);
-        //                 ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Source =
-        //                     int.Parse(deviceUsersGroup.MicrotingUid);
-        //             //}
-        //             // else if (areasGroupUid == null && deviceUsersGroupId != null)
-        //             // {
-        //             //     ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-        //             //         (int)deviceUsersGroupId;
-        //             // }
-        //
-        //             mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-        //             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        //             var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
-        //             await new WorkorderCase
-        //             {
-        //                 CaseId = (int)caseId,
-        //                 PropertyWorkerId = propertyWorker.Id,
-        //                 CaseStatusesEnum = CaseStatusesEnum.NewTask,
-        //                 CreatedByUserId = 1,
-        //                 UpdatedByUserId = 1,
-        //             }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
-        //         }
-        //     }
-        // }
-        //
-        // fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375733");
-        // if (fieldToFix is { Mandatory: 0 })
-        // {
-        //     fieldToFix.Mandatory = 1;
-        //     await fieldToFix.Update(sdkDbContext);
-        //     SentrySdk.CaptureMessage("Field 375733 was fixed!");
-        // }
-        //
-        // fieldToFix = await sdkDbContext.Fields.OrderBy(x => x.Id).LastOrDefaultAsync(x => x.OriginalId == "375734");
-        // if (fieldToFix is { Mandatory: 0 })
-        // {
-        //     fieldToFix.Mandatory = 1;
-        //     await fieldToFix.Update(sdkDbContext);
-        //     SentrySdk.CaptureMessage("Field 375734 was fixed!");
-        // }
-
+        // seed "Exceeded tasks" folder translations
         var translations = new List<KeyValuePair<string, string>> {
             new("da", "00. Overskredne opgaver"),
             new("en-US", "00. Overdue tasks"),
@@ -702,6 +576,33 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         {
             brokenWorkorderCase.CaseStatusesEnum = CaseStatusesEnum.Awaiting;
             await brokenWorkorderCase.Update(backendConfigurationPnDbContext);
+        }
+
+        var timeRegistrationAssignedSites = await timePlanningPnDbContext.AssignedSites
+            .Where(x => x.WorkflowState !=
+                        Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        foreach (var timeRegistrationAssignedSite in timeRegistrationAssignedSites)
+        {
+            var sdkWorker = await sdkDbContext.Sites
+                .Join(sdkDbContext.SiteWorkers,
+                    site => site.Id,
+                    siteWorker => siteWorker.SiteId,
+                    (site, siteWorker) => new {site, siteWorker})
+                .Join(sdkDbContext.Workers,
+                    combined => combined.siteWorker.WorkerId,
+                    worker => worker.Id,
+                    (combined, worker) => new {combined.site, combined.siteWorker, worker})
+                .Where(x => x.site.MicrotingUid == timeRegistrationAssignedSite.SiteId)
+                .Select(x => x.worker)
+                .FirstOrDefaultAsync();
+            if (sdkWorker != null)
+            {
+                var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == sdkWorker.Id).ConfigureAwait(false);
+                worker.Resigned = timeRegistrationAssignedSite.Resigned;
+                worker.ResignedAtDate = timeRegistrationAssignedSite.ResignedAtDate;
+                await worker.Update(sdkDbContext).ConfigureAwait(false);
+            }
         }
     }
 

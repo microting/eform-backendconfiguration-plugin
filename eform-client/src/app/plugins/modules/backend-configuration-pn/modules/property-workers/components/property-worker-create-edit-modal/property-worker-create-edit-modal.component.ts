@@ -16,7 +16,15 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import validator from 'validator';
 
 @AutoUnsubscribe()
@@ -34,10 +42,12 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
   private appSettingsStateService = inject(AppSettingsStateService);
   private model = inject<{
-      deviceUser: DeviceUserModel,
-      assignments: PropertyAssignmentWorkerModel[],
-      availableProperties: CommonDictionaryModel[],
-    }>(MAT_DIALOG_DATA);
+    deviceUser: DeviceUserModel,
+    assignments: PropertyAssignmentWorkerModel[],
+    availableProperties: CommonDictionaryModel[],
+    availableTags: CommonDictionaryModel[],
+    alreadyUsedEmails: string[];
+  }>(MAT_DIALOG_DATA);
 
   availableProperties: CommonDictionaryModel[] = [];
   edit: boolean = false;
@@ -47,6 +57,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   assignmentsCopy: PropertyAssignmentWorkerModel[] = [];
   taskManagementEnabled: boolean = false;
   timeRegistrationEnabled: boolean = false;
+  availableTags: CommonDictionaryModel[] = [];
+  alreadyUsedEmails: string[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
@@ -72,16 +84,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   activeLanguages: Array<any> = [];
   form: FormGroup;
 
-  
 
   private updateDisabledFieldsBasedOnResigned() {
     const isResigned = this.form.get('resigned')?.value;
     Object.keys(this.form.controls).forEach(key => {
       if (key !== 'resigned' && key !== 'resignedAtDate') {
         if (isResigned) {
-          this.form.get(key)?.disable({ emitEvent: false });
+          this.form.get(key)?.disable({emitEvent: false});
         } else {
-          this.form.get(key)?.enable({ emitEvent: false });
+          this.form.get(key)?.enable({emitEvent: false});
         }
       }
     });
@@ -135,6 +146,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.assignmentsCopy = [...this.model.assignments];
     this.taskManagementEnabled = this.selectedDeviceUserCopy.taskManagementEnabled;
     this.timeRegistrationEnabled = this.selectedDeviceUserCopy.timeRegistrationEnabled;
+    this.availableTags = [...this.model.availableTags];
+    this.alreadyUsedEmails = [...this.model.alreadyUsedEmails];
 
     this.form = this.fb.group({
       userFirstName: [this.selectedDeviceUser.userFirstName || '', Validators.required],
@@ -155,8 +168,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       pinCode: [this.selectedDeviceUser.pinCode || ''],
       employeeNo: [this.selectedDeviceUser.employeeNo || ''],
       languageCode: [this.selectedDeviceUser.languageCode || ''],
+      tags: [this.selectedDeviceUser.tags || []],
       timeRegistrationEnabled: [this.selectedDeviceUser.timeRegistrationEnabled || false],
       taskManagementEnabled: [this.selectedDeviceUser.taskManagementEnabled || false],
+      webAccessEnabled: [this.selectedDeviceUser.webAccessEnabled || false],
+      archiveEnabled: [this.selectedDeviceUser.archiveEnabled || false],
       resigned: [this.selectedDeviceUser.resigned || false],
       resignedAtDate: [
         this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
@@ -175,6 +191,42 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.form.valueChanges.subscribe(formValue => {
       Object.assign(this.selectedDeviceUser, formValue);
     });
+
+    this.form.get('timeRegistrationEnabled')?.valueChanges.subscribe(enabled => {
+      const emailControl = this.form.get('workerEmail');
+      const currentEmail = emailControl?.value || '';
+
+      if (enabled && currentEmail.includes('invalid')) {
+        emailControl?.patchValue('');
+        emailControl?.markAsTouched();
+      }
+
+      this.updateEmailValidation();
+    });
+
+    this.form.get('webAccessEnabled')?.valueChanges.subscribe(enabled => {
+      const emailControl = this.form.get('workerEmail');
+      const currentEmail = emailControl?.value || '';
+
+      if (enabled && currentEmail.includes('invalid')) {
+        emailControl?.patchValue('');
+        emailControl?.markAsTouched();
+      }
+      this.updateEmailValidation();
+    });
+
+    this.form.get('archiveEnabled')?.valueChanges.subscribe(enabled => {
+      const emailControl = this.form.get('workerEmail');
+      const currentEmail = emailControl?.value || '';
+
+      if (enabled && currentEmail.includes('invalid')) {
+        emailControl?.patchValue('');
+        emailControl?.markAsTouched();
+      }
+      this.updateEmailValidation();
+    });
+
+    this.updateEmailValidation();
 
     this.updateDisabledFieldsBasedOnResigned();
 
@@ -228,6 +280,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   updateSingle() {
+
     if (this.form.invalid) {
       return;
     }
@@ -333,5 +386,57 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         }
       }))
       .subscribe();
+  }
+
+  generateRandomEmail(): void {
+    const firstName = this.form.get('userFirstName')?.value?.toLowerCase().trim() || 'user';
+    const lastName = this.form.get('userLastName')?.value?.toLowerCase().trim() || 'name';
+    let email: string;
+    let randomNumber: number;
+
+    do {
+      randomNumber = Math.floor(Math.random() * (100000 - 1000 + 1)) + 1000;
+      email = `${firstName}_${lastName}_${randomNumber}_invalid@microting.com`;
+    } while (this.alreadyUsedEmails.includes(email));
+
+    this.form.patchValue({
+      workerEmail: email
+    });
+  }
+
+  shouldShowGenerateEmailButton(): boolean {
+    const timeRegistrationEnabled = !this.form?.get('timeRegistrationEnabled')?.value;
+    const webAccessEnabled = !this.form?.get('webAccessEnabled')?.value;
+    const archiveEnabled = !this.form?.get('archiveEnabled')?.value;
+    return timeRegistrationEnabled && webAccessEnabled && archiveEnabled;
+  }
+
+  private updateEmailValidation(): void {
+    const emailControl = this.form.get('workerEmail');
+    const timeRegistrationEnabled = this.form.get('timeRegistrationEnabled')?.value;
+    const webAccessEnabled = this.form.get('webAccessEnabled')?.value;
+    const archiveEnabled = this.form.get('archiveEnabled')?.value;
+
+    if (timeRegistrationEnabled || webAccessEnabled || archiveEnabled) {
+      emailControl?.setValidators([Validators.required, Validators.email, this.validEmailValidator()]);
+    } else {
+      emailControl?.setValidators([Validators.required, this.validEmailValidator()]);
+    }
+
+    emailControl?.updateValueAndValidity();
+  }
+
+  private validEmailValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const email = control.value;
+      const timeRegistrationEnabled = this.form?.get('timeRegistrationEnabled')?.value;
+      const webAccessEnabled = this.form.get('webAccessEnabled')?.value;
+      const archiveEnabled = this.form.get('archiveEnabled')?.value;
+
+      if ((timeRegistrationEnabled || webAccessEnabled || archiveEnabled) && email && email.includes('invalid')) {
+        return {invalidEmail: true};
+      }
+      return null;
+    };
   }
 }

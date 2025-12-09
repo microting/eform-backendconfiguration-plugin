@@ -1,5 +1,13 @@
 <eform-new-subheader>
   <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    id="sitesManageTagsBtn"
+    (click)="openEditTagsModal()"
+    matTooltip="{{ 'Manage tags' | translate }}"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+  <button
     class="btn-primary btn-primary--icon-left"
     id="newDeviceUserBtn"
     *ngIf="selectCurrentUserClaimsDeviceUsersCreate$ | async"
@@ -22,5 +30,14 @@
   [workersAssignments]="workersAssignments"
   [sitesDto]="sitesDto"
   [showResigned]="showResigned"
+  [availableTags]="availableTags"
+  [alreadyUsedEmails]="alreadyUsedEmails"
 >
 </app-property-worker-table>
+
+<app-eforms-tags
+  #modalTags
+  [availableTags]="availableTags"
+  (tagsChanged)="loadAllTags()"
+>
+</app-eforms-tags>

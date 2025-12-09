@@ -10,7 +10,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {Subject, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {CommonDictionaryModel} from 'src/app/common/models';
+import {CommonDictionaryModel, SiteNameDto} from 'src/app/common/models';
 import {Sort} from '@angular/material/sort';
 import {debounceTime} from 'rxjs/operators';
 import {
@@ -33,7 +33,7 @@ import {
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
 import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from "src/app/common/const";
-import {MatIconRegistry} from "@angular/material/icon";
+import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from "@angular/platform-browser";
 
 @AutoUnsubscribe()
@@ -59,6 +59,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() availableProperties: CommonDictionaryModel[] = [];
   @Input() workersAssignments: PropertyAssignWorkersModel[] = [];
   @Input() showResigned: boolean = false;
+  @Input() availableTags: CommonDictionaryModel[] = [];
+  @Input() alreadyUsedEmails: string[] = [];
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
@@ -141,6 +143,18 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
       },
       {
+        header: this.translateService.stream('Web'),
+        sortProp: {id: 'WebAccessEnabled'},
+        field: 'webAccessEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Archive'),
+        sortProp: {id: 'ArchiveEnabled'},
+        field: 'archiveEnabled',
+        sortable: true,
+      },
+      {
         header: this.translateService.stream('Language'),
         field: 'language',
         sortable: true,
@@ -162,6 +176,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
         sortProp: {id: 'Version'},
       },
+      {header: this.translateService.stream('Tags'), field: 'tags',},
       {
         header: this.translateService.stream('Actions'),
         field: 'actions',
@@ -246,6 +261,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.phoneNumber = simpleSiteDto.phoneNumber;
     selectedSimpleSite.resigned = simpleSiteDto.resigned;
     selectedSimpleSite.resignedAtDate = simpleSiteDto.resignedAtDate;
+    selectedSimpleSite.tags = simpleSiteDto.tags;
+    selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
+    selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
@@ -258,6 +276,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
           assignments: workersAssignments ? workersAssignments.assignments : [],
           //assignments: [],
           availableProperties: this.availableProperties,
+          availableTags: this.availableTags,
+          alreadyUsedEmails: this.alreadyUsedEmails
         }), minWidth: 1024
       })
 
@@ -269,6 +289,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     this.propertyWorkerOtpModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerDeleteModalComponent,
       {...dialogConfigHelper(this.overlay, simpleSiteDto)})
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+  }
+
+  getTagsBySiteDto(site: SiteNameDto): CommonDictionaryModel[] {
+    return this.availableTags.filter(x => site.tags.some(y => y === x.id));
   }
 
   // getDeviceUsersFiltered() {

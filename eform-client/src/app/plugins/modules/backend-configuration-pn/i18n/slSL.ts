@@ -297,4 +297,7 @@ export const slSL = {
   Resigned: 'Odstopil',
   'Show resigned': 'Pokaži odstopil',
   'Resigned at date': 'Odstopil dne',
+  'Show expired task on mobile': 'Prikaži potečeno opravilo na mobilni napravi',
+  Web: 'Splet',
+  Archive: 'Arhiv',
 };

@@ -297,4 +297,7 @@ export const esES = {
   Resigned: 'Resignado',
   'Show resigned': 'Mostrar resignado',
   'Resigned at date': 'Dimitió en la fecha',
+  'Show expired task on mobile': 'Mostrar tarea expirada en el móvil',
+  Web: 'Web',
+  Archive: 'Archivo',
 };

@@ -10,9 +10,12 @@
     language: languageTpl,
     customerOtp: customerOtpTpl,
     manufacturer: manufacturerTpl,
+    tags: tagsTpl,
     actions: actionsTpl,
     taskManagementEnabled: taskManagementEnabledTpl,
     timeRegistrationEnabled: timeRegistrationEnabledTpl,
+    webAccessEnabled: webAccessEnabledTpl,
+    archiveEnabled: archiveEnabledTpl
     }"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -202,4 +205,33 @@
     <span
       title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate }}</span>
   </mat-chip>
+</ng-template>
+
+<ng-template #webAccessEnabledTpl let-row>
+  <mat-chip
+    [ngClass]="{
+      'status-active': TaskWizardStatusesEnum[row.webAccessEnabled ? 1 : 2] === 'Active',
+      'status-inactive': TaskWizardStatusesEnum[row.webAccessEnabled ? 1 : 2] !== 'Active'
+    }"
+  >
+    <span
+      title="{{TaskWizardStatusesEnum[row.webAccessEnabled === true ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.webAccessEnabled === true ? 1 : 2] | translate }}</span>
+  </mat-chip>
+</ng-template>
+
+<ng-template #archiveEnabledTpl let-row>
+  <mat-chip
+    [ngClass]="{
+      'status-active': TaskWizardStatusesEnum[row.archiveEnabled ? 1 : 2] === 'Active',
+      'status-inactive': TaskWizardStatusesEnum[row.archiveEnabled ? 1 : 2] !== 'Active'
+    }"
+  >
+    <span
+      title="{{TaskWizardStatusesEnum[row.archiveEnabled === true ? 1 : 2] | translate}}">{{ TaskWizardStatusesEnum[row.archiveEnabled === true ? 1 : 2] | translate }}</span>
+  </mat-chip>
+</ng-template>
+<ng-template #tagsTpl let-row>
+  <div id="tags">
+    <app-eform-tag [tags]="getTagsBySiteDto(row)"/>
+  </div>
 </ng-template>

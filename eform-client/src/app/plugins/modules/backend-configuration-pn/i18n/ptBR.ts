@@ -297,4 +297,7 @@ export const ptBR = {
   Resigned: 'Resignado',
   'Show resigned': 'Mostrar demissão',
   'Resigned at date': 'Demitiu-se em [data]',
+  'Show expired task on mobile': 'Exibir tarefas expiradas no celular',
+  Web: 'Web',
+  Archive: 'Arquivo',
 };

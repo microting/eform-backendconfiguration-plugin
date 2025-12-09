@@ -297,4 +297,7 @@ export const skSK = {
   Resigned: 'Rezignoval/a',
   'Show resigned': 'Zobraziť rezignáciu',
   'Resigned at date': 'Dátum rezignácie',
+  'Show expired task on mobile': 'Zobraziť úlohu s vypršanou platnosťou na mobile',
+  Web: 'Web',
+  Archive: 'Archív',
 };

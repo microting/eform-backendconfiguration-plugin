@@ -297,4 +297,7 @@ export const fiFI = {
   Resigned: 'Erosi',
   'Show resigned': 'Näytä erosi',
   'Resigned at date': 'Erosi päivämääränä',
+  'Show expired task on mobile': 'Näytä vanhentunut tehtävä mobiililaitteella',
+  Web: 'Verkko',
+  Archive: 'Arkisto',
 };
