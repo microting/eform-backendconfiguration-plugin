@@ -60,7 +60,7 @@
     </div>
 
     <app-folder-tree-select
-      id="createFolder"
+      [id]="'createFolder'"
       [nodes]="foldersTreeDto"
       [selectedNodeId]="taskForm.get('folderId')?.value"
       (nodeSelected)="onFolderSelected($event)"

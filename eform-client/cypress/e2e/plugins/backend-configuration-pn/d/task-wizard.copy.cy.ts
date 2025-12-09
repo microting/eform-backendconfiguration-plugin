@@ -90,7 +90,10 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
-    cy.get('#createFolder').click({force: true});
+    // cy.get('#createFolder').click({force: true});
+    cy.get('#createFolder mat-select .mat-mdc-select-trigger')
+      .should('exist')
+      .click({ force: true });
     cy.wait(1000);
     cy.get('mat-tree-node > button').click();
     cy.wait(500);
