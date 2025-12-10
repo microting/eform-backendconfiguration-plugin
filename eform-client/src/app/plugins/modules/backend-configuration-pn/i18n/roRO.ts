@@ -300,4 +300,5 @@ export const roRO = {
   'Show expired task on mobile': 'Afișează sarcina expirată pe mobil',
   Web: 'Web',
   Archive: 'Arhivă',
+  'Mobile timeregistration': 'Înregistrare de timp mobilă',
 };

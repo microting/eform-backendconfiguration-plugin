@@ -300,4 +300,5 @@ export const frFR = {
   'Show expired task on mobile': 'Afficher les tâches expirées sur mobile',
   Web: 'Web',
   Archive: 'Archive',
+  'Mobile timeregistration': 'Enregistrement mobile',
 };

@@ -300,4 +300,5 @@ export const itIT = {
   'Show expired task on mobile': 'Mostra attività scaduta sul cellulare',
   Web: 'Rete',
   Archive: 'Archivio',
+  'Mobile timeregistration': 'Registrazione del tempo mobile',
 };

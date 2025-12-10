@@ -300,4 +300,5 @@ export const csCZ = {
   'Show expired task on mobile': 'Zobrazit vypršelou úlohu na mobilu',
   Web: 'Web',
   Archive: 'Archiv',
+  'Mobile timeregistration': 'Mobilní registrace času',
 };

@@ -608,6 +608,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 if (assignments.Count != 0)
                                 {
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
+                                    assignments.First().EnableMobileAccess = deviceUserModel.EnableMobileAccess;
+                                    await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -617,7 +619,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     {
                                         SiteId = siteDto.SiteId,
                                         CreatedByUserId = userId,
-                                        UpdatedByUserId = userId
+                                        UpdatedByUserId = userId,
+                                        EnableMobileAccess = deviceUserModel.EnableMobileAccess
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);

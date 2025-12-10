@@ -32,9 +32,9 @@ import {
 } from '../../../../state';
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
-import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from "src/app/common/const";
+import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from 'src/app/common/const';
 import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from "@angular/platform-browser";
+import {DomSanitizer} from '@angular/platform-browser';
 
 @AutoUnsubscribe()
 @Component({
@@ -264,6 +264,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.tags = simpleSiteDto.tags;
     selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
     selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
+    selectedSimpleSite.enableMobileAccess = simpleSiteDto.enableMobileAccess;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

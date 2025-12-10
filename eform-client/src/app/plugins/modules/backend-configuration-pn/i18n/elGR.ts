@@ -300,4 +300,5 @@ export const elGR = {
   'Show expired task on mobile': 'Εμφάνιση ληγμένης εργασίας σε κινητό',
   Web: 'Ιστός',
   Archive: 'Αρχείο',
+  'Mobile timeregistration': 'Εγγραφή χρόνου για κινητά',
 };

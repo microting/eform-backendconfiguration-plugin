@@ -300,4 +300,5 @@ export const fiFI = {
   'Show expired task on mobile': 'Näytä vanhentunut tehtävä mobiililaitteella',
   Web: 'Verkko',
   Archive: 'Arkisto',
+  'Mobile timeregistration': 'Mobiiliajan rekisteröinti',
 };

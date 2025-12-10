@@ -317,4 +317,5 @@ export const enUS= {
   'Show expired task on mobile': 'Show expired task on mobile',
   'Web': 'Web',
   'Archive': 'Archive',
+  'Mobile timeregistration': 'Mobile timeregistration',
 };

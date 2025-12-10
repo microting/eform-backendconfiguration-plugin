@@ -455,6 +455,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.StartSunday = assignedSite.StartSunday;
                     deviceUserModel.EndSunday = assignedSite.EndSunday;
                     deviceUserModel.BreakSunday = assignedSite.BreakSunday;
+                    deviceUserModel.EnableMobileAccess = assignedSite.EnableMobileAccess;
                 }
 
                 deviceUserModel.TaskManagementEnabled = backendConfigurationPnDbContext.PropertyWorkers.Any(x =>

@@ -300,4 +300,5 @@ export const skSK = {
   'Show expired task on mobile': 'Zobraziť úlohu s vypršanou platnosťou na mobile',
   Web: 'Web',
   Archive: 'Archív',
+  'Mobile timeregistration': 'Mobilná registrácia času',
 };

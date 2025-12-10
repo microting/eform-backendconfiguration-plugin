@@ -300,4 +300,5 @@ export const bgBG = {
   'Show expired task on mobile': 'Показване на изтекла задача на мобилно устройство',
   Web: 'Уеб',
   Archive: 'Архив',
+  'Mobile timeregistration': 'Мобилна регистрация на време',
 };

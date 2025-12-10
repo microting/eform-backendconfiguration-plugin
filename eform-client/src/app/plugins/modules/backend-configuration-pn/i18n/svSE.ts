@@ -300,4 +300,5 @@ export const svSE = {
   'Show expired task on mobile': 'Visa utgången uppgift på mobilen',
   Web: 'Web',
   Archive: 'Arkiv',
+  'Mobile timeregistration': 'Mobil tidregistrering',
 };

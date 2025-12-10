@@ -300,4 +300,5 @@ export const plPL = {
   'Show expired task on mobile': 'Pokaż wygasłe zadanie na urządzeniu mobilnym',
   Web: 'Sieć',
   Archive: 'Archiwum',
+  'Mobile timeregistration': 'Mobilna rejestracja czasu',
 };

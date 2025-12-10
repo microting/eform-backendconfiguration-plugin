@@ -19,6 +19,7 @@ export class DeviceUserModel {
   isBackendUser: boolean;
   hasWorkOrdersAssigned: boolean;
   timeRegistrationEnabled: boolean;
+  enableMobileAccess: boolean;
   taskManagementEnabled: boolean;
   archiveEnabled: boolean;
   webAccessEnabled: boolean;

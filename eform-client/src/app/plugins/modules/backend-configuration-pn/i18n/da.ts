@@ -302,4 +302,5 @@ export const da = {
   'Show expired task on mobile': 'Vis overskredet opgave på mobil',
   Web: 'Web',
   Archive: 'Arkiv',
+  'Mobile timeregistration': 'Mobil tidsregistrering',
 };

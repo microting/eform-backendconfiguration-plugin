@@ -42,7 +42,7 @@ public class DeviceUserModel
     public string Language { get; set; }
     public string LanguageCode { get; set; }
     public bool? TimeRegistrationEnabled { get; set; }
-
+    public bool EnableMobileAccess { get; set; }
     // minutes from midnight for the start of the shift (0-1440) monday
     public int? StartMonday { get; set; }
     // minutes from midnight for the end of the shift (0-1440) monday
