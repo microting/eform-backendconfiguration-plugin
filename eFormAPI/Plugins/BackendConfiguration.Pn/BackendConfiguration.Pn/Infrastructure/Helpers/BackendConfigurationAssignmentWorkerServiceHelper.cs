@@ -581,14 +581,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         {
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
+                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                    .Include(x => x.SecurityGroup)
+                                    .Where(x => x.EformUserId == user!.Id)
+                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .FirstOrDefaultAsync().ConfigureAwait(false);
                                 if (deviceUserModel.EnableMobileAccess)
                                 {
-                                    var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                                        .Include(x => x.SecurityGroup)
-                                        .Where(x => x.EformUserId == user!.Id)
-                                        .Where(x => x.SecurityGroup.Name == "Kun tid")
-                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+
 
                                     if (securityGroupUserTime == null)
                                     {
@@ -601,6 +602,15 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                                 .First()
                                         };
                                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                    }
+                                }
+                                else
+                                {
+                                    if (securityGroupUserTime != null)
+                                    {
+                                        var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
+                                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
                                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
                                     }
                                 }
