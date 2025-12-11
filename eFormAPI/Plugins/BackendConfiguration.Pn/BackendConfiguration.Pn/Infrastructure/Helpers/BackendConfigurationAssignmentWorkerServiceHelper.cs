@@ -581,26 +581,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         {
                             if (deviceUserModel.TimeRegistrationEnabled == true)
                             {
-
-                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                                    .Include(x => x.SecurityGroup)
-                                    .Where(x => x.EformUserId == user!.Id)
-                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .FirstOrDefaultAsync().ConfigureAwait(false);
-
-                                if (securityGroupUserTime == null)
+                                if (deviceUserModel.EnableMobileAccess)
                                 {
-                                    var newSecurityGroupUser = new SecurityGroupUser
+                                    var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                        .Include(x => x.SecurityGroup)
+                                        .Where(x => x.EformUserId == user!.Id)
+                                        .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .FirstOrDefaultAsync().ConfigureAwait(false);
+
+                                    if (securityGroupUserTime == null)
                                     {
-                                        EformUserId = user!.Id,
-                                        SecurityGroupId = baseDbContext.SecurityGroups
-                                            .Where(x => x.Name == "Kun tid")
-                                            .Select(x => x.Id)
-                                            .First()
-                                    };
-                                    baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
-                                    await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                        var newSecurityGroupUser = new SecurityGroupUser
+                                        {
+                                            EformUserId = user!.Id,
+                                            SecurityGroupId = baseDbContext.SecurityGroups
+                                                .Where(x => x.Name == "Kun tid")
+                                                .Select(x => x.Id)
+                                                .First()
+                                        };
+                                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                    }
                                 }
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
                                     x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
