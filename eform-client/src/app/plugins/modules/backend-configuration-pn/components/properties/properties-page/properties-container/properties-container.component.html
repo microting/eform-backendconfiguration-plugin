@@ -1,15 +1,31 @@
 <eform-new-subheader>
-  <button
-    *ngIf="authStateService.checkClaim('properties_create')"
-    class="btn-primary btn-primary--icon-left"
-    id="propertyCreateBtn"
-    matTooltip="{{ 'Create Property' | translate }}"
-    (click)="showPropertyCreateModal()"
-    [matTooltipPosition]="'left'"
-  >
-    <mat-icon>add</mat-icon>
-    <span>{{'New property' | translate}}</span>
-  </button>
+  <div class="d-flex flex-row align-items-center gap-12">
+    <div class="text-field--rounded mt-4">
+      <mat-form-field>
+        <mat-label>{{ 'Search' | translate }}</mat-label>
+        <input
+          matInput
+          type="text"
+          (ngModelChange)="onNameFilterChanged($event)"
+          [ngModel]="selectPropertiesNameFilters$ | async"
+          id="nameInput"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div class="line-vert"></div>
+    <button
+      *ngIf="authStateService.checkClaim('properties_create')"
+      class="btn-primary btn-primary--icon-left"
+      id="propertyCreateBtn"
+      matTooltip="{{ 'Create Property' | translate }}"
+      (click)="showPropertyCreateModal()"
+      [matTooltipPosition]="'left'"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'New property' | translate }}</span>
+    </button>
+  </div>
 </eform-new-subheader>
 
 <app-properties-table

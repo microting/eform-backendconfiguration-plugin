@@ -1,5 +1,5 @@
 <form [formGroup]="generateForm">
-  <div class="d-flex flex-row need-wrapper align-items-start gap-12">
+  <div class="d-flex flex-row need-wrapper align-items-start justify-content-between gap-12 px-3" style="max-width: 81vw; width: 100%">
     <mat-form-field>
       <mat-label>{{'Select filter' | translate}}</mat-label>
       <mtx-select
@@ -26,7 +26,7 @@
       </mat-date-range-input>
       <mat-date-range-picker #picker></mat-date-range-picker>
     </mat-form-field>
-    <div class="d-flex flex-row align-items-center gap-12 pr-4">
+    <div class="d-flex flex-row align-items-center gap-12 mt-1">
       <button
         class="btn-primary btn-primary--icon-left"
         [disabled]="generateForm.invalid"

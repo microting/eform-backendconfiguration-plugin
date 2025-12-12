@@ -26,11 +26,10 @@
     class="mb-2 w-100"
   />
   <app-task-management-filters/>
-  <div class="d-flex flex-row align-items-center">
+  <div class="d-flex flex-row align-items-center pl-3">
     <button
-      mat-raised-button
+      class="btn-primary btn-primary--icon-left"
       id="showReportBtn"
-      color="accent"
       [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="updateTable()"
     >

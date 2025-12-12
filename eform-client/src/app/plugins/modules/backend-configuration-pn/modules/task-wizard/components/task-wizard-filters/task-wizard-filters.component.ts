@@ -60,7 +60,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
   currentFilters: TaskWizardFiltrationModel;
 
-  
+
   constructor() {
     this.selectTaskWizardFilters$.subscribe(x => this.currentFilters = x);
     this.route.queryParams.subscribe(x => {

@@ -1,23 +1,40 @@
 <eform-new-subheader>
-  <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    id="sitesManageTagsBtn"
-    (click)="openEditTagsModal()"
-    matTooltip="{{ 'Manage tags' | translate }}"
-  >
-    <mat-icon>discount</mat-icon>
-  </button>
-  <button
-    class="btn-primary btn-primary--icon-left"
-    id="newDeviceUserBtn"
-    *ngIf="selectCurrentUserClaimsDeviceUsersCreate$ | async"
-    matTooltip="{{ 'Create new employee' | translate }}"
-    (click)="openCreateModal()"
-    [matTooltipPosition]="'left'"
-  >
-    <mat-icon>add</mat-icon>
-    <span>{{ 'Create new employee' | translate }}</span>
-  </button>
+  <div class="d-flex flex-row align-items-center gap-12">
+    <div class="text-field--rounded mt-4">
+      <mat-form-field>
+        <mat-label>{{ 'Search' | translate }}</mat-label>
+        <input
+          matInput
+          type="text"
+          (ngModelChange)="onSearchChanged($event)"
+          [ngModel]="selectPropertyWorkersNameFilters$ | async"
+          id="labelInput"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div class="line-vert"></div>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      id="sitesManageTagsBtn"
+      (click)="openEditTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+    <div class="line-vert"></div>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="newDeviceUserBtn"
+      *ngIf="selectCurrentUserClaimsDeviceUsersCreate$ | async"
+      matTooltip="{{ 'Create new employee' | translate }}"
+      (click)="openCreateModal()"
+      [matTooltipPosition]="'left'"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'Create new employee' | translate }}</span>
+    </button>
+  </div>
 </eform-new-subheader>
 
 <app-property-worker-filters

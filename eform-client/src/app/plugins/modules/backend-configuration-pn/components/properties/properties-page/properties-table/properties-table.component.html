@@ -1,20 +1,3 @@
-<ng-template #toolbarTpl>
-  <div class="d-flex flex-row justify-content-start flex-nowrap">
-    <div class="d-flex flex-column mr-2 ml-2">
-      <mat-form-field>
-        <mat-label>{{ 'Search' | translate }}</mat-label>
-        <input
-          matInput
-          type="text"
-          (ngModelChange)="onNameFilterChanged($event)"
-          [ngModel]="selectPropertiesNameFilters$ | async"
-          id="nameInput"
-        />
-      </mat-form-field>
-    </div>
-  </div>
-</ng-template>
-
 <mtx-grid
   [data]="propertiesModel.entities"
   [columns]="(selectAuthIsAdmin$ | async) ?  adminTableHeaders : tableHeaders"
@@ -22,9 +5,8 @@
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
-  [showToolbar]="true"
+  [showToolbar]="false"
   [showColumnMenuButton]="false"
-  [toolbarTemplate]="toolbarTpl"
   [sortActive]="selectPropertiesPaginationSort$ | async"
   [sortDirection]="selectPropertiesPaginationIsSortDsc$ | async"
   (sortChange)="sortTable($event)">

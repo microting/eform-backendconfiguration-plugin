@@ -23,7 +23,7 @@
     [properties]="properties"
     [tags]="tags"
   />
-  <div class="d-flex flex-row justify-content-start mb-2">
+  <div class="d-flex flex-row justify-content-start mb-4 px-3">
 <!--    <button-->
 <!--      mat-raised-button-->
 <!--      id="changeColumnsBtn"-->
@@ -33,12 +33,12 @@
 <!--    </button>-->
 
     <button
-      mat-icon-button
+      class="btn-secondary btn-secondary--icon-rounded-border"
       id="excelReportBtn"
       (click)="onDownloadExcelReport()"
       matTooltip="{{ 'Excel report' | translate }}"
     >
-      <mat-icon svgIcon="file-excel"></mat-icon>
+      <app-icon name="xmlFile" size="20"></app-icon>
     </button>
   </div>
   <app-task-tracker-table
