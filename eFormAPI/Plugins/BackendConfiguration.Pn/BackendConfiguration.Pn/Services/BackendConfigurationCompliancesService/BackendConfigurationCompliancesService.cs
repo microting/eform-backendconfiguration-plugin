@@ -394,13 +394,16 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         var complianceList = _backendConfigurationPnDbContext.Compliances;
         var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
         var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
-        var numberOfPlannedEnvironmentInspectionTagTasks = complianceList.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList().Where(x =>
-        {
-            var planningTags = _itemsPlanningPnDbContext.PlanningsTags
-                .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
-                .ToList();
-            return planningTags.Any();
-        }).Count();
+
+        var numberOfPlannedEnvironmentInspectionTagTasks = await _backendConfigurationPnDbContext.AreaRulePlannings.Join(_backendConfigurationPnDbContext.AreaRulePlanningTags,
+            planning => planning.Id,
+            planningTag => planningTag.AreaRulePlanningId,
+            (planning, planningTag) => new { Planning = planning, PlanningTag = planningTag })
+            .Where(x => x.Planning.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.Planning.Status)
+            .Where(x => x.PlanningTag.ItemPlanningTagId == envTag.Id)
+            .CountAsync();
+
         var todayComplianceCountEnvironmentInspectionTag = await complianceList.Where(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
         var todayCountEnvironmentInspectionTag = todayComplianceCountEnvironmentInspectionTag.Where(x =>
         {
