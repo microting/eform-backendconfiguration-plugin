@@ -22,4 +22,7 @@ public class CompliancesStatsModel
     public int NumberOfAdHocTasks { get; set; }
     public DateTime? DateOfOldestAdHocTask { get; set; }
     public int NumberOfCompletedEnvironmentInspectionTagPlanningsLast30Days { get; set; }
+    public int NumberOfPlannedEnvironmentInspectionTagPlanningsLast30Days { get; set; }
+    public int NumberOfWorkersWithTimeRegistrationEnabled { get; set; }
+    public int NumberOfFullDayTimeRegistrationsLastWeek { get; set; }
 }
