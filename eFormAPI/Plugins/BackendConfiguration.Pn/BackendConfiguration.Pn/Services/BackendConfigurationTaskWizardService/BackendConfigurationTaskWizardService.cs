@@ -188,6 +188,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var siteNamesQuery = await sdkDbContext.Sites
                 .Where(x => siteIds.Contains(x.Id))
                 .Select(x => new { x.Id, x.Name })
+                .OrderBy(x => x.Name)
                 .ToListAsync();
 
             var fulfilledQuery = areaRulePlannings
@@ -202,7 +203,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     TaskName = areaRule.TaskName,
                     Id = areaRule.Id,
                     Property = areaRule.PropertyName,
-                    Tags = areaRule.Tags.ToList(),
+                    Tags = areaRule.Tags.OrderBy(y => y.Name).ToList(),
                     TagReport = areaRule.TagReport,
                     AssignedTo = siteNamesQuery.Where(x => areaRule.PlanningSites.Contains(x.Id)).Select(x => x.Name)
                         .ToList(),
