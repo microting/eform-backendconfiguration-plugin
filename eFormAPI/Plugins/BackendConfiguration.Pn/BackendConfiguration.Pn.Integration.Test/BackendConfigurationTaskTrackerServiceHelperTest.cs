@@ -94,7 +94,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			TimePlanningPnDbContext, BaseDbContext,
         userService,
         userManager);
-		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+		var sites = await MicrotingDbContext!.Sites.AsNoTracking().OrderBy(x => x.Name).ToListAsync();
 
 		// create planning
 		var timeNow = DateTime.Now;
