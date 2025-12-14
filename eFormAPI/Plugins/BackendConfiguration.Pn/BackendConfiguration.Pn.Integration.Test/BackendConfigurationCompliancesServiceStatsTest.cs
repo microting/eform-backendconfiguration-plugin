@@ -48,8 +48,17 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var userService = Substitute.For<IUserService>();
         var connectionString = MicrotingDbContext!.Database.GetConnectionString();
         
+        // Create required planning tag "Miljøtilsyn"
+        var envTag = new PlanningTag
+        {
+            Name = "Miljøtilsyn",
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        
         var compliancesService = new BackendConfigurationCompliancesService(
-            ItemsPlanningPnDbContext!,
+            ItemsPlanningPnDbContext,
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
