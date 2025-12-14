@@ -612,7 +612,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
-    private async Task CreateAreaRulePlanning(bool status)
+    private async Task CreateAreaRulePlanning(bool status, int? itemPlanningTagId = null)
     {
         // Create Property first (required by AreaRule)
         var property = new Property
@@ -621,7 +621,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
             UpdatedByUserId = 1,
-            ItemPlanningTagId = 0  // AreaRulePlannings don't need environment tag association
+            ItemPlanningTagId = 0  // AreaRulePlannings don't need environment tag association on Property
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
@@ -656,6 +656,22 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+        
+        // Create AreaRulePlanningTag if itemPlanningTagId is provided
+        if (itemPlanningTagId.HasValue)
+        {
+            var areaRulePlanningTag = new AreaRulePlanningTag
+            {
+                AreaRulePlanningId = areaRulePlanning.Id,
+                ItemPlanningTagId = itemPlanningTagId.Value,
+                WorkflowState = Constants.WorkflowStates.Created,
+                CreatedByUserId = 1,
+                UpdatedByUserId = 1
+            };
+            
+            await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(areaRulePlanningTag);
+            await BackendConfigurationPnDbContext.SaveChangesAsync();
+        }
     }
 
     private async Task CreatePlanningCase(int planningId, int status, DateTime updatedAt)
