@@ -48,7 +48,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var localizationService = new BackendConfigurationLocalizationService();
         var userService = Substitute.For<IUserService>();
         var connectionString = MicrotingDbContext!.Database.GetConnectionString();
-        
+
         // Create required planning tag "Miljøtilsyn"
         var envTag = new PlanningTag
         {
@@ -59,7 +59,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
-        
+
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
             BackendConfigurationPnDbContext!,
@@ -113,29 +113,29 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
         // 1 compliance one week in the future
         await CreateCompliance(now.AddDays(5));
-        
+
         // 2 compliances today or past
         await CreateCompliance(now);
         await CreateCompliance(now.AddDays(-1));
-        
+
         // 1 compliance one week ago
         await CreateCompliance(now.AddDays(-5));
-        
+
         // 1 compliance two weeks ago
         await CreateCompliance(now.AddDays(-10));
-        
+
         // 1 compliance one month ago
         await CreateCompliance(now.AddDays(-20));
-        
+
         // 1 compliance two months ago
         await CreateCompliance(now.AddDays(-45));
-        
+
         // 1 compliance three months ago
         await CreateCompliance(now.AddDays(-75));
-        
+
         // 1 compliance six months ago
         await CreateCompliance(now.AddDays(-120));
-        
+
         // 1 compliance more than six months ago
         await CreateCompliance(now.AddDays(-200));
 
@@ -212,13 +212,69 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext.PlanningsTags.AddAsync(planningTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+        var property = new Property
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var area = new Area
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+
+        await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+            PropertyId = property.Id,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRulePlanning = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            ItemPlanningId = planning.Id,
+            ItemPlanningTagId = envTag.Id,
+            PropertyId = property.Id,
+            Status = true,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRulePlanningTag = new AreaRulePlanningTag
+        {
+            AreaRulePlanningId = areaRulePlanning.Id,
+            ItemPlanningTagId = envTag.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+
+        await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(areaRulePlanningTag);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         var now = DateTime.UtcNow;
-        
+
         // Create 3 compliances with environment tag - 2 today/past, 1 in future
         // Ensure planning.Id is valid before creating compliances
         Assert.That(planning.Id, Is.GreaterThan(0), "Planning ID should be greater than 0");
         Assert.That(envTag.Id, Is.GreaterThan(0), "EnvTag ID should be greater than 0");
-        
+
         await CreateCompliance(now.AddDays(-2), planning.Id, envTag.Id);
         await CreateCompliance(now.AddDays(-10), planning.Id, envTag.Id); // Oldest
         await CreateCompliance(now.AddDays(5), planning.Id, envTag.Id);
@@ -236,30 +292,30 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var createdPlanningsTags = await ItemsPlanningPnDbContext.PlanningsTags.ToListAsync();
         var createdPlannings = await ItemsPlanningPnDbContext.Plannings.ToListAsync();
         var createdPlanningTags = await ItemsPlanningPnDbContext.PlanningTags.ToListAsync();
-        
+
         Assert.That(createdCompliances.Count, Is.EqualTo(5), "Should have 5 compliances");
         Assert.That(createdPlanningsTags.Count, Is.EqualTo(1), "Should have 1 PlanningsTags entry");
         Assert.That(createdPlannings.Count, Is.EqualTo(1), "Should have 1 Planning");
         Assert.That(createdPlanningTags.Count, Is.EqualTo(1), "Should have 1 PlanningTag");
-        Assert.That(createdPlanningTags[0].Name, Is.EqualTo("Miljøtilsyn"), 
+        Assert.That(createdPlanningTags[0].Name, Is.EqualTo("Miljøtilsyn"),
             $"PlanningTag name should be 'Miljøtilsyn', but was '{createdPlanningTags[0].Name}'");
-        Assert.That(createdCompliances.Count(c => c.PlanningId == planning.Id), Is.EqualTo(3), 
+        Assert.That(createdCompliances.Count(c => c.PlanningId == planning.Id), Is.EqualTo(3),
             $"Should have 3 compliances with PlanningId={planning.Id}");
-        Assert.That(createdPlanningsTags[0].PlanningId, Is.EqualTo(planning.Id), 
+        Assert.That(createdPlanningsTags[0].PlanningId, Is.EqualTo(planning.Id),
             $"PlanningsTags.PlanningId should match planning.Id");
-        Assert.That(createdPlanningsTags[0].PlanningTagId, Is.EqualTo(envTag.Id), 
+        Assert.That(createdPlanningsTags[0].PlanningTagId, Is.EqualTo(envTag.Id),
             $"PlanningsTags.PlanningTagId should match envTag.Id");
-        
+
         // Verify the Stats method can find the tag
         var foundTag = await ItemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstOrDefaultAsync();
         Assert.That(foundTag, Is.Not.Null, "Stats method should be able to find the 'Miljøtilsyn' tag");
         Assert.That(foundTag.Id, Is.EqualTo(envTag.Id), "Found tag ID should match envTag.Id");
-        
+
         // Test the exact query logic that Stats uses
         var testComplianceList = BackendConfigurationPnDbContext.Compliances;
         var testFiltered = testComplianceList.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
         Assert.That(testFiltered.Count, Is.EqualTo(5), $"Should have 5 non-removed compliances, found {testFiltered.Count}");
-        
+
         var testMatchingCompliances = testFiltered.Where(x =>
         {
             var planningTags = ItemsPlanningPnDbContext.PlanningsTags
@@ -267,8 +323,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
                 .ToList();
             return planningTags.Any();
         }).ToList();
-        
-        Assert.That(testMatchingCompliances.Count, Is.EqualTo(3), 
+
+        Assert.That(testMatchingCompliances.Count, Is.EqualTo(3),
             $"Test query should find 3 matching compliances. Found {testMatchingCompliances.Count}. " +
             $"Compliances with PlanningId: {string.Join(", ", testFiltered.Select(c => $"Id={c.Id},PlanningId={c.PlanningId}"))}");
 
@@ -289,12 +345,12 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.Not.Null);
         Assert.That(result.Model.TotalCount, Is.EqualTo(5));
-        Assert.That(result.Model.NumberOfPlannedEnvironmentInspectionTagTasks, Is.EqualTo(3));
+        Assert.That(result.Model.NumberOfPlannedEnvironmentInspectionTagTasks, Is.EqualTo(1));
         Assert.That(result.Model.TodayCountEnvironmentInspectionTag, Is.EqualTo(2));
         Assert.That(result.Model.DateOfOldestEnvironmentInspectionTagPlannedTask, Is.Not.Null);
         // The oldest should be 10 days ago
         var expectedOldest = now.AddDays(-10).Date;
-        Assert.That(result.Model.DateOfOldestEnvironmentInspectionTagPlannedTask!.Value.Date, 
+        Assert.That(result.Model.DateOfOldestEnvironmentInspectionTagPlannedTask!.Value.Date,
             Is.EqualTo(expectedOldest));
     }
 
@@ -318,7 +374,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         var now = DateTime.UtcNow;
-        
+
         // Create workorder cases
         await CreateWorkorderCase(CaseStatusesEnum.Ongoing, true, now.AddDays(-5));
         await CreateWorkorderCase(CaseStatusesEnum.Awaiting, true, now.AddDays(-10)); // Oldest non-completed
@@ -444,7 +500,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         var now = DateTime.UtcNow;
-        
+
         // Create completed planning cases - 2 within last 30 days, 1 older
         await CreatePlanningCase(planning.Id, 100, now.AddDays(-10));
         await CreatePlanningCase(planning.Id, 100, now.AddDays(-25));
@@ -526,11 +582,11 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.Not.Null);
-        
+
         // Total count should match what we created
         var actualComplianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
         Assert.That(result.Model.TotalCount, Is.EqualTo(actualComplianceCount));
-        
+
         // Ad hoc tasks should match active workorder cases
         var actualWorkorderCount = await BackendConfigurationPnDbContext.WorkorderCases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -554,7 +610,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
-        
+
         var compliance = new Compliance
         {
             Deadline = deadline,
@@ -656,7 +712,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
-        
+
         // Create AreaRulePlanningTag if itemPlanningTagId is provided
         if (itemPlanningTagId.HasValue)
         {
@@ -668,7 +724,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
                 CreatedByUserId = 1,
                 UpdatedByUserId = 1
             };
-            
+
             await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(areaRulePlanningTag);
             await BackendConfigurationPnDbContext.SaveChangesAsync();
         }
