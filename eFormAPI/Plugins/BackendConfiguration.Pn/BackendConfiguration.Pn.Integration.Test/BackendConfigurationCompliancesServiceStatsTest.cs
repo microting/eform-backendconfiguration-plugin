@@ -62,7 +62,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(connectionString!)
+            new EFormCoreService(connectionString!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -138,7 +139,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -212,7 +214,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -265,7 +268,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -312,7 +316,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -377,7 +382,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
@@ -431,7 +437,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             BackendConfigurationPnDbContext!,
             userService,
             localizationService,
-            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!)
+            new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
+            TimePlanningPnDbContext!
         );
 
         // Act
