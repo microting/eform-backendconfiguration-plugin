@@ -219,9 +219,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(planning.Id, Is.GreaterThan(0), "Planning ID should be greater than 0");
         Assert.That(envTag.Id, Is.GreaterThan(0), "EnvTag ID should be greater than 0");
         
-        await CreateCompliance(now.AddDays(-2), planning.Id);
-        await CreateCompliance(now.AddDays(-10), planning.Id); // Oldest
-        await CreateCompliance(now.AddDays(5), planning.Id);
+        await CreateCompliance(now.AddDays(-2), planning.Id, envTag.Id);
+        await CreateCompliance(now.AddDays(-10), planning.Id, envTag.Id); // Oldest
+        await CreateCompliance(now.AddDays(5), planning.Id, envTag.Id);
 
         // Create 2 compliances without environment tag
         await CreateCompliance(now.AddDays(-1));
@@ -541,23 +541,35 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
     }
 
     // Helper methods
-    private async Task CreateCompliance(DateTime deadline, int? planningId = null)
+    private async Task CreateCompliance(DateTime deadline, int? planningId = null, int? itemPlanningTagId = null)
     {
+        // Create Property for this compliance with the appropriate ItemPlanningTagId
+        var property = new Property
+        {
+            Name = Guid.NewGuid().ToString(),
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            ItemPlanningTagId = itemPlanningTagId ?? 0
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        
         var compliance = new Compliance
         {
             Deadline = deadline,
             PlanningId = planningId ?? 0,
-            PropertyId = 1,
+            PropertyId = property.Id,
             StartDate = deadline.AddDays(-7),
             WorkflowState = Constants.WorkflowStates.Created,
             AreaId = 1
         };
 
-        await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
-    private async Task CreateWorkorderCase(CaseStatusesEnum status, bool leadingCase, DateTime createdAt)
+    private async Task CreateWorkorderCase(CaseStatusesEnum status, bool leadingCase, DateTime createdAt, int? itemPlanningTagId = null)
     {
         // Create Property first (required by PropertyWorker)
         var property = new Property
@@ -566,7 +578,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
             UpdatedByUserId = 1,
-            ItemPlanningTagId = 0
+            ItemPlanningTagId = itemPlanningTagId ?? 0
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
@@ -609,7 +621,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
             UpdatedByUserId = 1,
-            ItemPlanningTagId = 0
+            ItemPlanningTagId = 0  // AreaRulePlannings don't need environment tag association
         };
         await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
