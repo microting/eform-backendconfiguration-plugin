@@ -231,6 +231,30 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         ItemsPlanningPnDbContext.ChangeTracker.Clear();
         BackendConfigurationPnDbContext!.ChangeTracker.Clear();
 
+        // Diagnostic: Verify the data was created correctly
+        var createdCompliances = await BackendConfigurationPnDbContext.Compliances.ToListAsync();
+        var createdPlanningsTags = await ItemsPlanningPnDbContext.PlanningsTags.ToListAsync();
+        var createdPlannings = await ItemsPlanningPnDbContext.Plannings.ToListAsync();
+        var createdPlanningTags = await ItemsPlanningPnDbContext.PlanningTags.ToListAsync();
+        
+        Assert.That(createdCompliances.Count, Is.EqualTo(5), "Should have 5 compliances");
+        Assert.That(createdPlanningsTags.Count, Is.EqualTo(1), "Should have 1 PlanningsTags entry");
+        Assert.That(createdPlannings.Count, Is.EqualTo(1), "Should have 1 Planning");
+        Assert.That(createdPlanningTags.Count, Is.EqualTo(1), "Should have 1 PlanningTag");
+        Assert.That(createdPlanningTags[0].Name, Is.EqualTo("Miljøtilsyn"), 
+            $"PlanningTag name should be 'Miljøtilsyn', but was '{createdPlanningTags[0].Name}'");
+        Assert.That(createdCompliances.Count(c => c.PlanningId == planning.Id), Is.EqualTo(3), 
+            $"Should have 3 compliances with PlanningId={planning.Id}");
+        Assert.That(createdPlanningsTags[0].PlanningId, Is.EqualTo(planning.Id), 
+            $"PlanningsTags.PlanningId should match planning.Id");
+        Assert.That(createdPlanningsTags[0].PlanningTagId, Is.EqualTo(envTag.Id), 
+            $"PlanningsTags.PlanningTagId should match envTag.Id");
+        
+        // Verify the Stats method can find the tag
+        var foundTag = await ItemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstOrDefaultAsync();
+        Assert.That(foundTag, Is.Not.Null, "Stats method should be able to find the 'Miljøtilsyn' tag");
+        Assert.That(foundTag.Id, Is.EqualTo(envTag.Id), "Found tag ID should match envTag.Id");
+
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
             BackendConfigurationPnDbContext,
