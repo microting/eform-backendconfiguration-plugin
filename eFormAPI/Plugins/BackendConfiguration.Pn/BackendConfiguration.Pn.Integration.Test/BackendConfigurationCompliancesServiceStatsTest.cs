@@ -223,9 +223,13 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await CreateCompliance(now.AddDays(-1));
         await CreateCompliance(now.AddDays(3));
 
+        // Clear change tracker to ensure fresh data from database
+        ItemsPlanningPnDbContext.ChangeTracker.Clear();
+        BackendConfigurationPnDbContext!.ChangeTracker.Clear();
+
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
-            BackendConfigurationPnDbContext!,
+            BackendConfigurationPnDbContext,
             userService,
             localizationService,
             new EFormCoreService(MicrotingDbContext!.Database.GetConnectionString()!),
