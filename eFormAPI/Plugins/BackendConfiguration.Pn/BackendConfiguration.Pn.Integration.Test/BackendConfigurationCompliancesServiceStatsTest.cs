@@ -53,7 +53,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -98,7 +100,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -175,7 +179,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -255,7 +261,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -307,7 +315,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -351,7 +361,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -423,7 +435,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var envTag = new PlanningTag
         {
             Name = "Miljøtilsyn",
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
