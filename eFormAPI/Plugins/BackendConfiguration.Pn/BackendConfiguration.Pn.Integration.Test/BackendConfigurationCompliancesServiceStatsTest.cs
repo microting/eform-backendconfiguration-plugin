@@ -215,6 +215,10 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var now = DateTime.UtcNow;
         
         // Create 3 compliances with environment tag - 2 today/past, 1 in future
+        // Ensure planning.Id is valid before creating compliances
+        Assert.That(planning.Id, Is.GreaterThan(0), "Planning ID should be greater than 0");
+        Assert.That(envTag.Id, Is.GreaterThan(0), "EnvTag ID should be greater than 0");
+        
         await CreateCompliance(now.AddDays(-2), planning.Id);
         await CreateCompliance(now.AddDays(-10), planning.Id); // Oldest
         await CreateCompliance(now.AddDays(5), planning.Id);
