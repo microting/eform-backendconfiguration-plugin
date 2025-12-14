@@ -409,7 +409,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             .CountAsync();
 
         var numberOfPlannedEnvironmentInspectionTagPlanningsLast30Days = complianceList
-            .Where(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(30)).ToList()
+            .Where(x => x.Deadline >= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-30)).ToList()
             .Where(x =>
             {
                 var planningTags = _itemsPlanningPnDbContext.PlanningsTags
