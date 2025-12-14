@@ -495,20 +495,32 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
     private async Task CreateAreaRulePlanning(bool status)
     {
-        // Create Area first
+        // Create Property first (required by AreaRule)
+        var property = new Property
+        {
+            Name = Guid.NewGuid().ToString(),
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            ItemPlanningTagId = 0
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Create Area
         var area = new Area
         {
             WorkflowState = Constants.WorkflowStates.Created
         };
-        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.Areas.AddAsync(area);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        // Create AreaRule that references the Area
+        // Create AreaRule that references both Property and Area
         var areaRule = new AreaRule
         {
             AreaId = area.Id,
             WorkflowState = Constants.WorkflowStates.Created,
-            PropertyId = 1
+            PropertyId = property.Id
         };
         await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
