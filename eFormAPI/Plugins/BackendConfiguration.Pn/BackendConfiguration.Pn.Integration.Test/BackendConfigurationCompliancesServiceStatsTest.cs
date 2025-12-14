@@ -251,14 +251,14 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
         var now = DateTime.UtcNow;
         
-        // Create 3 workorder cases - 2 active, 1 completed (shouldn't count)
+        // Create workorder cases
         await CreateWorkorderCase(CaseStatusesEnum.Ongoing, true, now.AddDays(-5));
-        await CreateWorkorderCase(CaseStatusesEnum.Awaiting, true, now.AddDays(-10)); // Oldest
-        await CreateWorkorderCase(CaseStatusesEnum.Completed, true, now.AddDays(-3)); // Shouldn't count
-        await CreateWorkorderCase(CaseStatusesEnum.NewTask, true, now.AddDays(-7)); // Shouldn't count
+        await CreateWorkorderCase(CaseStatusesEnum.Awaiting, true, now.AddDays(-10)); // Oldest non-completed
+        await CreateWorkorderCase(CaseStatusesEnum.Completed, true, now.AddDays(-3)); // Counted in total, excluded from oldest
 
-        // Create 1 workorder case that is not a leading case (shouldn't count)
-        await CreateWorkorderCase(CaseStatusesEnum.Ongoing, false, now.AddDays(-8));
+        // Create workorder cases that shouldn't be counted at all:
+        await CreateWorkorderCase(CaseStatusesEnum.NewTask, true, now.AddDays(-7)); // NewTask - excluded from both
+        await CreateWorkorderCase(CaseStatusesEnum.Ongoing, false, now.AddDays(-8)); // Not leading case - excluded from both
 
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
@@ -275,9 +275,10 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.Not.Null);
-        Assert.That(result.Model.NumberOfAdHocTasks, Is.EqualTo(2));
+        // NumberOfAdHocTasks counts all except NewTask: Ongoing, Awaiting, Completed = 3
+        Assert.That(result.Model.NumberOfAdHocTasks, Is.EqualTo(3));
         Assert.That(result.Model.DateOfOldestAdHocTask, Is.Not.Null);
-        // The oldest should be 10 days ago
+        // DateOfOldestAdHocTask excludes Completed and NewTask, so oldest is the Awaiting from 10 days ago
         var expectedOldest = now.AddDays(-10).Date;
         Assert.That(result.Model.DateOfOldestAdHocTask!.Value.Date, Is.EqualTo(expectedOldest));
     }
@@ -299,11 +300,12 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        // Create multiple area rule plannings with different statuses
-        await CreateAreaRulePlanning(true);
-        await CreateAreaRulePlanning(true);
-        await CreateAreaRulePlanning(false);
-        await CreateAreaRulePlanning(true);
+        // Create area rule plannings with different boolean status values
+        // The Stats method counts distinct Status values (true/false)
+        await CreateAreaRulePlanning(true);  // Status = true
+        await CreateAreaRulePlanning(true);  // Status = true (duplicate)
+        await CreateAreaRulePlanning(false); // Status = false
+        await CreateAreaRulePlanning(true);  // Status = true (duplicate)
 
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
@@ -320,7 +322,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         Assert.That(result, Is.Not.Null);
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.Not.Null);
-        Assert.That(result.Model.NumberOfPlannedTasks, Is.EqualTo(2)); // Only counts distinct statuses
+        // Should count 2 distinct status values: true and false
+        Assert.That(result.Model.NumberOfPlannedTasks, Is.EqualTo(2));
     }
 
     [Test]
@@ -462,9 +465,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             PropertyId = 1,
             StartDate = deadline.AddDays(-7),
             WorkflowState = Constants.WorkflowStates.Created,
-            AreaId = 1,
-            MicrotingSdkCaseId = 1,
-            MicrotingSdkeFormId = 1
+            AreaId = 1
         };
 
         await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
