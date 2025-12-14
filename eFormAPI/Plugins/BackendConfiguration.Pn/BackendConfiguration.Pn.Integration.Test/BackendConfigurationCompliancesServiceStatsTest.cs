@@ -29,6 +29,7 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationLocalizationService;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -179,11 +180,16 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        // Create planning
+        // Create planning with all required fields
         var planning = new Planning
         {
             WorkflowState = Constants.WorkflowStates.Created,
-            Enabled = true
+            Enabled = true,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Day,
+            RelatedEFormId = 0
         };
         await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -193,7 +199,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         {
             PlanningId = planning.Id,
             PlanningTagId = envTag.Id,
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext.PlanningsTags.AddAsync(planningTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -348,11 +356,16 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         await ItemsPlanningPnDbContext!.PlanningTags.AddAsync(envTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        // Create planning
+        // Create planning with all required fields
         var planning = new Planning
         {
             WorkflowState = Constants.WorkflowStates.Created,
-            Enabled = true
+            Enabled = true,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Day,
+            RelatedEFormId = 0
         };
         await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
@@ -362,7 +375,9 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         {
             PlanningId = planning.Id,
             PlanningTagId = envTag.Id,
-            WorkflowState = Constants.WorkflowStates.Created
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext.PlanningsTags.AddAsync(planningTag);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
