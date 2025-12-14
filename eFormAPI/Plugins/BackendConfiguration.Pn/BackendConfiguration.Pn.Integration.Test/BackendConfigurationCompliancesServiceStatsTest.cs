@@ -481,15 +481,44 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 
     private async Task CreateWorkorderCase(CaseStatusesEnum status, bool leadingCase, DateTime createdAt)
     {
+        // Create Property first (required by PropertyWorker)
+        var property = new Property
+        {
+            Name = Guid.NewGuid().ToString(),
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+            ItemPlanningTagId = 0
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Create PropertyWorker (required by WorkorderCase)
+        var propertyWorker = new PropertyWorker
+        {
+            PropertyId = property.Id,
+            WorkerId = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.PropertyWorkers.AddAsync(propertyWorker);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Create WorkorderCase
         var workorderCase = new WorkorderCase
         {
+            PropertyWorkerId = propertyWorker.Id,
             CaseStatusesEnum = status,
             LeadingCase = leadingCase,
             WorkflowState = Constants.WorkflowStates.Created,
-            CreatedAt = createdAt
+            CreatedAt = createdAt,
+            CaseId = 0,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
         };
 
-        await BackendConfigurationPnDbContext!.WorkorderCases.AddAsync(workorderCase);
+        await BackendConfigurationPnDbContext.WorkorderCases.AddAsync(workorderCase);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
