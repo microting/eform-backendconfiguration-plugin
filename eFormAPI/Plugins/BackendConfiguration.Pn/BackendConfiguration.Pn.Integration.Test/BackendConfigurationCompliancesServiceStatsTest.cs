@@ -254,6 +254,23 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
         var foundTag = await ItemsPlanningPnDbContext.PlanningTags.Where(x => x.Name == "Miljøtilsyn").FirstOrDefaultAsync();
         Assert.That(foundTag, Is.Not.Null, "Stats method should be able to find the 'Miljøtilsyn' tag");
         Assert.That(foundTag.Id, Is.EqualTo(envTag.Id), "Found tag ID should match envTag.Id");
+        
+        // Test the exact query logic that Stats uses
+        var testComplianceList = BackendConfigurationPnDbContext.Compliances;
+        var testFiltered = testComplianceList.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+        Assert.That(testFiltered.Count, Is.EqualTo(5), $"Should have 5 non-removed compliances, found {testFiltered.Count}");
+        
+        var testMatchingCompliances = testFiltered.Where(x =>
+        {
+            var planningTags = ItemsPlanningPnDbContext.PlanningsTags
+                .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == foundTag.Id)
+                .ToList();
+            return planningTags.Any();
+        }).ToList();
+        
+        Assert.That(testMatchingCompliances.Count, Is.EqualTo(3), 
+            $"Test query should find 3 matching compliances. Found {testMatchingCompliances.Count}. " +
+            $"Compliances with PlanningId: {string.Join(", ", testFiltered.Select(c => $"Id={c.Id},PlanningId={c.PlanningId}"))}");
 
         var compliancesService = new BackendConfigurationCompliancesService(
             ItemsPlanningPnDbContext,
