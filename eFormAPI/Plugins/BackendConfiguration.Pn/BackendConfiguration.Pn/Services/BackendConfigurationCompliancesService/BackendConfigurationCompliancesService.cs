@@ -409,7 +409,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             .CountAsync();
 
         var numberOfPlannedEnvironmentInspectionTagPlanningsLast30Days = complianceList
-            .Where(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(30)).ToList()
+            .Where(x => x.Deadline >= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-30)).ToList()
             .Where(x =>
             {
                 var planningTags = _itemsPlanningPnDbContext.PlanningsTags
@@ -467,7 +467,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
         var numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = _itemsPlanningPnDbContext.PlanningCases
             .Where(x => x.Status == 100)
-            .Where(x => x.UpdatedAt >= DateTime.UtcNow.AddDays(-30))
+            .Where(x => x.MicrotingSdkCaseDoneAt >= DateTime.UtcNow.AddDays(-30))
             .ToList()
             .Where(x =>
             {

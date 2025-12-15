@@ -737,7 +737,7 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             PlanningId = planningId,
             Status = status,
             WorkflowState = Constants.WorkflowStates.Created,
-            UpdatedAt = updatedAt
+            MicrotingSdkCaseDoneAt = updatedAt
         };
 
         await ItemsPlanningPnDbContext!.PlanningCases.AddAsync(planningCase);
