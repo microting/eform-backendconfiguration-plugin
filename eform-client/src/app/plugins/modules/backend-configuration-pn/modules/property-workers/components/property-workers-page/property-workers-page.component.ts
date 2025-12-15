@@ -27,7 +27,7 @@ import {
 } from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
-  selectPropertyWorkersFilters
+  selectPropertyWorkersFilters, selectPropertyWorkersNameFilters
 } from '../../../../state/property-workers/property-workers.selector';
 import {EformTagService} from 'src/app/common/services';
 import {EformsTagsComponent} from "src/app/common/modules/eform-shared-tags/components";
@@ -62,6 +62,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   availableTags: Array<CommonDictionaryModel> = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
+  public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
 
 
 

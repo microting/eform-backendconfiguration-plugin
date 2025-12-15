@@ -29,6 +29,7 @@ import {StatisticsModule} from '../statistics/statistics.module';
 import {MatChipsModule} from '@angular/material/chips';
 import {NgSelectModule} from "@ng-select/ng-select";
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {AppIconComponent} from "src/app/components/icons/app-icon/app-icon.component";
 
 @NgModule({
   declarations: [
@@ -39,34 +40,35 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     TaskTrackerShownColumnsComponent,
     TaskTrackerSelectWorkerModalComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    TaskTrackerRouting,
-    EformSharedModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatTableModule,
-    PlanningsModule,
-    StatisticsModule,
-    MatChipsModule,
-    NgSelectModule,
-    MatMenuTrigger,
-    MatMenu,
-    MatMenuItem,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        TaskTrackerRouting,
+        EformSharedModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatTableModule,
+        PlanningsModule,
+        StatisticsModule,
+        MatChipsModule,
+        NgSelectModule,
+        MatMenuTrigger,
+        MatMenu,
+        MatMenuItem,
+        AppIconComponent,
+    ],
   providers: [],
 })
 export class TaskTrackerModule {

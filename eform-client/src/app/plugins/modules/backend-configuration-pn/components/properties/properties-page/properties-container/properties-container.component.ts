@@ -26,6 +26,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {selectPropertiesNameFilters} from "src/app/plugins/modules/backend-configuration-pn/state";
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -35,6 +37,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
     standalone: false
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   public propertiesStateService = inject(PropertiesStateService);
   public authStateService = inject(AuthStateService);
@@ -42,6 +45,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  public selectPropertiesNameFilters$ = this.store.select(selectPropertiesNameFilters);
 
   isFarms: boolean = false;
   tableHeaders: MtxGridColumn[] = [
@@ -137,7 +141,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   updateEntitySelectableGroupSub$: Subscription;
   nameSearchSubjectSub$: Subscription;
 
-  
+
 
   // get backendConfigurationPnClaims() {
   //   return BackendConfigurationPnClaims;

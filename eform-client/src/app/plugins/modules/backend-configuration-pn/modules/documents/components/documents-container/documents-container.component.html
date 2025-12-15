@@ -1,23 +1,25 @@
 <eform-new-subheader>
   <ng-container *ngIf="folders !== undefined">
-    <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      id="manageFoldersBtn"
-      matTooltip="{{ 'Manage folders' | translate }}"
-      (click)="openManageFoldersModal()"
-    >
-      <mat-icon class="icon-secondary">folder</mat-icon>
-      <span>{{ 'Manage folders' | translate }}</span>
-    </button>
-    <button *ngIf="folders.length > 0"
-            class="btn-primary btn-primary--icon-left"
-            id="createNewDocumentBtn"
-            matTooltip="{{ 'Create new document' | translate }}"
-            (click)="openCreateModal()"
-    >
-      <mat-icon>add</mat-icon>
-      <span>{{ 'Create new document' | translate }}</span>
-    </button>
+    <div class="d-flex flex-row align-items-center gap-12">
+      <button
+        class="btn-secondary btn-secondary--icon-rounded-border"
+        id="manageFoldersBtn"
+        matTooltip="{{ 'Manage folders' | translate }}"
+        (click)="openManageFoldersModal()"
+      >
+        <mat-icon class="icon-secondary">folder</mat-icon>
+        <span>{{ 'Manage folders' | translate }}</span>
+      </button>
+      <button *ngIf="folders.length > 0"
+              class="btn-primary btn-primary--icon-left"
+              id="createNewDocumentBtn"
+              matTooltip="{{ 'Create new document' | translate }}"
+              (click)="openCreateModal()"
+      >
+        <mat-icon>add</mat-icon>
+        <span>{{ 'Create new document' | translate }}</span>
+      </button>
+    </div>
   </ng-container>
 </eform-new-subheader>
 

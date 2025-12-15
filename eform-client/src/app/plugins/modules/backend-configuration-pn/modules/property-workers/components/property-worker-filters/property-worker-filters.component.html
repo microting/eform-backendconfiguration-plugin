@@ -1,5 +1,5 @@
-<div class="d-flex flex-column" [formGroup]="filtersForm">
-  <div class="d-flex need-wrapper">
+<div class="d-flex flex-row gap-12 px-3" [formGroup]="filtersForm">
+<!--  <div class="d-flex need-wrapper">-->
     <mat-form-field>
       <mat-label>{{'Location' | translate}}</mat-label>
       <mtx-select
@@ -14,7 +14,7 @@
     <mat-slide-toggle
       formControlName="showResigned"
       color="primary"
-      class="mb-2"
+      class="mt-2"
       id="showCalculationsAsNumberToggle"
     >
       {{ 'Show resigned' | translate }}
@@ -30,5 +30,5 @@
 <!--      >-->
 <!--      </mtx-select>-->
 <!--    </mat-form-field>-->
-  </div>
+<!--  </div>-->
 </div>

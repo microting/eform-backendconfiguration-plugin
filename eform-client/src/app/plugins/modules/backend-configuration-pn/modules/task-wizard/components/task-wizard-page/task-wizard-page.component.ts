@@ -103,7 +103,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
 
-  
+
   constructor() {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
