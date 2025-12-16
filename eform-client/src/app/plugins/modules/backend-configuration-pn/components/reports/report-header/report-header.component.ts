@@ -27,8 +27,6 @@ import {format, parse} from 'date-fns';
 })
 export class ReportHeaderComponent implements OnInit, OnDestroy {
   private reportStateService = inject(ReportStateService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
 
   @Output()
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
@@ -42,12 +40,9 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
 
   valueChangesSub$: Subscription;
 
-  
+
 
   ngOnInit() {
-    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
-    this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
-    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
 
     const reportPnGenerateModel = this.reportStateService.extractData();
     this.generateForm = new FormGroup(

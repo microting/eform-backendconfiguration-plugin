@@ -34,8 +34,6 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private templateFilesService = inject(TemplateFilesService);
   private translateService = inject(TranslateService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
   public documentsStateService = inject(DocumentsStateService);
 
   tableHeaders: MtxGridColumn[] = [
@@ -90,10 +88,8 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   public selectDocumentsPaginationSort$ = this.store.select(selectDocumentsPaginationSort);
   public selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
 
-  
+
   constructor() {
-    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
-    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
 
 
