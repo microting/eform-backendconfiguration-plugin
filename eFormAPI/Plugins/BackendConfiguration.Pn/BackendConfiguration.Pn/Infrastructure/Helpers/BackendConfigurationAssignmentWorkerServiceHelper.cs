@@ -331,7 +331,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
                         var oldEmail = worker.Email;
-                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
+                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             // this email is already in use
                             return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
