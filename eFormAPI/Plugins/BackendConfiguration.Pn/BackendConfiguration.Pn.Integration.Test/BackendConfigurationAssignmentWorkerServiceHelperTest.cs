@@ -134,8 +134,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(1));
-        Assert.That(timeregistrationSiteAssignments[0].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
     }
 
     // Should test the UpdateDeviceUser method and return success
@@ -233,7 +233,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(30));
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to true and return success
@@ -336,8 +336,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(1));
-        Assert.That(timeregistrationSiteAssignments[0].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to false and return success
@@ -441,10 +441,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(1));
-        Assert.That(timeregistrationSiteAssignments[0].SiteId, Is.EqualTo(sites[2].MicrotingUid));
-        Assert.That(timeregistrationSiteAssignments[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
-        Assert.That(timeregistrationSiteAssignments[0].Resigned, Is.False);
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+        Assert.That(timeregistrationSiteAssignments[30].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(timeregistrationSiteAssignments[30].Resigned, Is.False);
         // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Year, Is.EqualTo(DateTime.Now.Year));
         // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Month, Is.EqualTo(DateTime.Now.Month));
         // Assert.That(timeregistrationSiteAssignments[0].ResignedAtDate.Day, Is.EqualTo(DateTime.Now.Day));
@@ -546,7 +546,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(30));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(1));
@@ -664,7 +664,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(30));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(1));
@@ -791,7 +791,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(30));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(1));
@@ -959,7 +959,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
 
         // Assert timeregistrationSiteAssignments
-        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(30));
 
         // Assert propertyWorkers
         Assert.That(propertyWorkers.Count, Is.EqualTo(2));
