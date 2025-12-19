@@ -182,7 +182,7 @@
             </mat-slide-toggle>
             <br>
             <mat-slide-toggle
-              *ngIf="authStateService.checkClaim('task_management_enable')"
+              *ngIf="authStateService.checkClaim('task_management_enable') && assignmentsCopy.length > 0"
               color="primary"
               class="mb-2"
               id="taskManagementEnabledToggle"
