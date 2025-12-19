@@ -373,6 +373,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     site.UpdatedAt,
                     worker.Resigned,
                     worker.ResignedAtDate,
+                    worker.PinCode,
                     SiteTags = site.SiteTags
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(y => y.Tag.WorkflowState != Constants.WorkflowStates.Removed)
@@ -427,7 +428,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.UnitId = unit.MicrotingUid;
                 }
 
-                deviceUserModel.PinCode = "****";
+                deviceUserModel.PinCode = deviceUserModel.PinCode;
                 deviceUserModel.TimeRegistrationEnabled =
                     timeRegistrationEnabledSites.Any(x => x.SiteId == deviceUserModel.SiteUid);
                 if (deviceUserModel.TimeRegistrationEnabled != false)
