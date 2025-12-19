@@ -225,10 +225,6 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await value.click();
         await browser.pause(500);
       }
-      if(propertyWorker.workOrderFlow === true){
-        await (await this.TaskManagementEnableToggleInput()).click();
-        await browser.pause(500);
-      }
       if (propertyWorker.properties) {
         await (await $('#propertiesTab')).click();
         await browser.pause(500);
@@ -242,7 +238,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
           ).click();
           await browser.pause(500);
         }
+        await (await $('#generalTab')).click();
       }
+      if(propertyWorker.workOrderFlow === true){
+        await (await this.TaskManagementEnableToggleInput()).click();
+        await browser.pause(500);
+      }
+
     }
   }
 
