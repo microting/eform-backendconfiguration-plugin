@@ -78,9 +78,9 @@ describe('Backend Configuration Task Manager Create Task', function () {
     expect(taskRowObject.description).eq(description);
   });
   after(async () => {
-    await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
-    await backendConfigurationPropertyWorkersPage.clearTable();
     await backendConfigurationPropertiesPage.goToProperties();
     await backendConfigurationPropertiesPage.clearTable();
+    await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    await backendConfigurationPropertyWorkersPage.clearTable();
   });
 });
