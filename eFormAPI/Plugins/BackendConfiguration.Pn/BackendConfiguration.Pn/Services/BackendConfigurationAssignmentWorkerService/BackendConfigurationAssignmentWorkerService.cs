@@ -405,7 +405,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     IsLocked = x.IsLocked,
                     Resigned = x.Resigned,
                     ResignedAtDate = x.ResignedAtDate,
-                    Tags = x.SiteTags
+                    Tags = x.SiteTags,
+                    PinCode = x.PinCode
                 })
                 .ToListAsync().ConfigureAwait(false);
 
@@ -428,7 +429,6 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.UnitId = unit.MicrotingUid;
                 }
 
-                deviceUserModel.PinCode = deviceUserModel.PinCode;
                 deviceUserModel.TimeRegistrationEnabled =
                     timeRegistrationEnabledSites.Any(x => x.SiteId == deviceUserModel.SiteUid);
                 if (deviceUserModel.TimeRegistrationEnabled != false)
