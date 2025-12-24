@@ -8,7 +8,7 @@ import {
   AdHocTaskPrioritiesModel,
   DocumentUpdatedDaysModel,
   PlannedTaskWorkers,
-  AdHocTaskWorkers,
+  AdHocTaskWorkers, PlannedTaskDaysRequestModel,
 } from '../models';
 
 export let BackendConfigurationPnStatisticsMethods = {
@@ -29,6 +29,32 @@ export class BackendConfigurationPnStatisticsService {
   getPlannedTaskDays(model: StatisticsRequestModel): Observable<OperationDataResult<PlannedTaskDaysModel>> {
     return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.PlannedTaskDays, model);
   }
+
+  getPlannedTaskDaysByFilters(
+    model: PlannedTaskDaysRequestModel
+  ): Observable<OperationDataResult<PlannedTaskDaysModel>> {
+
+    const params: any = {};
+
+    if (model.propertyIds?.length) {
+      params.propertyIds = model.propertyIds;
+    }
+    if (model.tagIds?.length) {
+      params.tagIds = model.tagIds;
+    }
+    if (model.workerIds?.length) {
+      params.workerIds = model.workerIds;
+    }
+    if (model.statuses?.length) {
+      params.statuses = model.statuses;
+    }
+
+    return this.apiBaseService.get(
+      BackendConfigurationPnStatisticsMethods.PlannedTaskDays,
+      params
+    );
+  }
+
 
   getAdHocTaskPriorities(model: StatisticsRequestModel): Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
     return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.AdHocTaskPriorities, model);

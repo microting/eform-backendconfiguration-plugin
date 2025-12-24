@@ -34,6 +34,43 @@ export class StatisticsStateService {
       priority: null, status: null, siteId: null, statuses: null});
   }
 
+  // getPlannedTaskDaysByFilters(filters: {
+  //   propertyIds: number[];
+  //   tagIds: number[];
+  //   workerIds: number[];
+  // }): Observable<OperationDataResult<PlannedTaskDaysModel>> {
+  //
+  //   return this.service.getPlannedTaskDays({
+  //     propertyId: filters.propertyIds?.length
+  //       ? filters.propertyIds[0]
+  //       : null,
+  //
+  //     siteId: filters.workerIds?.length
+  //       ? filters.workerIds[0]
+  //       : null,
+  //
+  //     statuses: filters.tagIds?.length
+  //       ? filters.tagIds
+  //       : null,
+  //
+  //     priority: null,
+  //     status: null,
+  //   });
+  // }
+
+  getPlannedTaskDaysByFilters(filters: {
+    propertyIds: number[];
+    tagIds: number[];
+    workerIds: number[];
+  }) {
+    return this.service.getPlannedTaskDaysByFilters({
+      propertyIds: filters.propertyIds ?? [],
+      tagIds: filters.tagIds ?? [],
+      workerIds: filters.workerIds ?? [],
+    });
+  }
+
+
   getAdHocTaskPriorities(propertyId: number | null = undefined, priority: number | null = undefined, status: number | null = undefined, siteId: number | null = undefined, statuses: number[] | null = undefined):
     Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
     return this.service.getAdHocTaskPriorities({

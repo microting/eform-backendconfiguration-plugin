@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Stats;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
@@ -6,7 +7,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
 
 public interface IBackendConfigurationStatsService
 {
-    Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(int? propertyId);
+    Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
+        List<int> propertyIds,
+        List<int> tagIds,
+        List<int> workerIds
+    );
 
     Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status);
 

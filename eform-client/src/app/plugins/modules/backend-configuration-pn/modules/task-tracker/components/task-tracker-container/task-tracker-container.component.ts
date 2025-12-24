@@ -133,10 +133,11 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     }
     return '';
   }
+  // private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
   private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  
+
 
   ngOnInit() {
     this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
@@ -150,22 +151,41 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
           }
         });
         // this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
-        this.getPlannedTaskDays();
+        // this.getPlannedTaskDays();
+        this.getPlannedTaskDaysByFilters({propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []});
       } else {
         this.showDiagram = false;
       }
     });
+    // this.getPropertyIdAsyncSub$ = this.selectTaskTrackerFilters$
+    //   .pipe(skip(1))
+    //   .subscribe(filters => {
+    //     if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
+    //       this.selectedPropertyId = filters.propertyIds[0];
+    //       // this.getPlannedTaskDays();
+    //       this.getPlannedTaskDaysByFilters(filters);
+    //     } else if (!filters.propertyIds[0] && this.showDiagram) {
+    //       this.selectedPropertyId = null;
+    //       // this.getPlannedTaskDays();
+    //       this.getPlannedTaskDaysByFilters(filters);
+    //     }
+    //   });
+
+
     this.getPropertyIdAsyncSub$ = this.selectTaskTrackerFilters$
       .pipe(skip(1))
       .subscribe(filters => {
-        if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
-          this.selectedPropertyId = filters.propertyIds[0];
-          this.getPlannedTaskDays();
-        } else if (!filters.propertyIds[0] && this.showDiagram) {
-          this.selectedPropertyId = null;
-          this.getPlannedTaskDays();
+        if (!this.showDiagram) {
+          return;
         }
+
+        // keep property name in sync for the diagram title
+        this.selectedPropertyId = filters.propertyIds?.[0] ?? null;
+
+        // 🔥 reload diagram on ANY filter change
+        this.getPlannedTaskDaysByFilters(filters);
       });
+
 
     this.updateTable();
     this.getColumns();
@@ -173,6 +193,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.getEnabledLanguages();
     this.getTags();
     // this.getPlannedTaskDays();
+    this.getPlannedTaskDaysByFilters({propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []});
   }
 
   ngOnDestroy(): void {
@@ -446,4 +467,24 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
       }))
       .subscribe();
   }
+  getPlannedTaskDaysByFilters(filters: {
+    propertyIds: number[];
+    tagIds: number[];
+    workerIds: number[];
+  }) {
+    this.getPlannedTaskDaysSub$ =
+      this.statisticsStateService
+        .getPlannedTaskDaysByFilters(filters)
+        .pipe(tap(model => {
+          if (model && model.success && model.model) {
+            this.plannedTaskDays = model.model;
+          }
+        }))
+        .subscribe(result => {
+          if (result?.success) {
+            this.plannedTaskDays = result.model;
+          }
+        });
+  }
+
 }

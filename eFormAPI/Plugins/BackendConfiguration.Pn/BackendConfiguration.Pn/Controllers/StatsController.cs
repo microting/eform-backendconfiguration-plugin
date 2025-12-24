@@ -1,4 +1,7 @@
-﻿namespace BackendConfiguration.Pn.Controllers;
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace BackendConfiguration.Pn.Controllers;
 
 using Infrastructure.Models.Stats;
 using JetBrains.Annotations;
@@ -18,12 +21,38 @@ public class StatsController : Controller
     {
         _statsService = statsService;
     }
+    
+    private static List<int> ResolveIds(int? singleId, List<int>? multipleIds)
+    {
+        if (multipleIds != null && multipleIds.Any())
+        {
+            return multipleIds;
+        }
+
+        if (singleId.HasValue)
+        {
+            return new List<int> { singleId.Value };
+        }
+
+        return new List<int>();
+    }
+
 
     [HttpGet]
     [Route("planned-task-days")]
-    public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays([FromQuery] int? propertyId)
+    public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
+        [FromQuery] int? propertyId, 
+        [FromQuery] List<int>? propertyIds,
+        [FromQuery] List<int>? tagIds,
+        [FromQuery] List<int>? workerIds)
     {
-        return await _statsService.GetPlannedTaskDays(propertyId);
+        var resolvedPropertyIds = ResolveIds(propertyId, propertyIds);
+
+        return await _statsService.GetPlannedTaskDays(
+            resolvedPropertyIds,
+            tagIds ?? new List<int>(),
+            workerIds ?? new List<int>()
+        );
     }
 
     [HttpGet]
