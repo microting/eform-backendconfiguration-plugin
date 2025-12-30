@@ -14,7 +14,7 @@ import {
 } from '../../../../services';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {CommonDictionaryModel, EntityItemModel} from 'src/app/common/models';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
@@ -95,7 +95,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  
+
 
   ngOnInit() {
     this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
@@ -268,10 +268,38 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   getStats() {
+
+    let filters: any;
+
+    this.selectTaskManagementFilters$
+      .pipe(take(1))
+      .subscribe(f => filters = f);
+
+
+
     if (this.diagramForShow === 'ad-hoc-task-priorities') {
       this.getAdHocTaskPriorities();
     } else if (this.diagramForShow === 'ad-hoc-task-workers') {
-      this.getAdHocTaskWorkers();
+      // this.getAdHocTaskWorkers();
+
+      if (!filters) {return;}
+
+      this.statisticsStateService
+        .getAdHocTaskWorkersByFilters({
+          propertyId: filters.propertyId ? [filters.propertyId] : [],
+          areaName: filters.areaName ? [filters.areaName] : [],
+          createdBy: [],
+          lastAssignedTo: filters.lastAssignedTo ? [filters.lastAssignedTo] : [],
+          statuses: filters.statuses ?? [],
+          priority: [],
+          dateFrom: filters.dateFrom ? [filters.dateFrom] : [],
+          dateTo: filters.dateTo ? [filters.dateTo] : [],
+        })
+        .subscribe(res => {
+          if (res?.success) {
+            this.adHocTaskWorkers = res.model;
+          }
+        });
     }
   }
 

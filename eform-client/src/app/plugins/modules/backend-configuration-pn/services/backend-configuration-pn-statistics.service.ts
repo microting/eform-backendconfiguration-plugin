@@ -30,24 +30,19 @@ export class BackendConfigurationPnStatisticsService {
     return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.PlannedTaskDays, model);
   }
 
+  buildParams<T extends Record<string, any>>(model: T): Partial<T> {
+    return Object.fromEntries(
+      Object.entries(model).filter(
+        ([_, v]) => Array.isArray(v) ? v.length > 0 : v != null
+      )
+    ) as Partial<T>;
+  }
+
   getPlannedTaskDaysByFilters(
     model: PlannedTaskDaysRequestModel
   ): Observable<OperationDataResult<PlannedTaskDaysModel>> {
 
-    const params: any = {};
-
-    if (model.propertyIds?.length) {
-      params.propertyIds = model.propertyIds;
-    }
-    if (model.tagIds?.length) {
-      params.tagIds = model.tagIds;
-    }
-    if (model.workerIds?.length) {
-      params.workerIds = model.workerIds;
-    }
-    if (model.statuses?.length) {
-      params.statuses = model.statuses;
-    }
+    const params = this.buildParams(model);
 
     return this.apiBaseService.get(
       BackendConfigurationPnStatisticsMethods.PlannedTaskDays,
@@ -55,9 +50,42 @@ export class BackendConfigurationPnStatisticsService {
     );
   }
 
+  getPlannedTaskWorkersByFilters(model: {
+    propertyIds: number[];
+    status: number[];
+    folderIds: number[];
+    tagIds: number[];
+    assignToIds: number[];
+  }): Observable<OperationDataResult<PlannedTaskWorkers>> {
+    const params = this.buildParams(model);
+
+    return this.apiBaseService.get(
+      BackendConfigurationPnStatisticsMethods.PlannedTaskWorkers,
+      params
+    );
+  }
+
 
   getAdHocTaskPriorities(model: StatisticsRequestModel): Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
     return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.AdHocTaskPriorities, model);
+  }
+
+  getAdHocTaskWorkersByFilters(model: {
+    propertyId: number[];
+    areaName: number[];
+    createdBy: number[];
+    lastAssignedTo: number[];
+    statuses: number[];
+    priority: number[];
+    dateFrom: number[];
+    dateTo: number[];
+  }): Observable<OperationDataResult<PlannedTaskWorkers>> {
+    const params = this.buildParams(model);
+
+    return this.apiBaseService.get(
+      BackendConfigurationPnStatisticsMethods.AdHocTaskWorkers,
+      params
+    );
   }
 
   getDocumentUpdatedDays(model: StatisticsRequestModel): Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
