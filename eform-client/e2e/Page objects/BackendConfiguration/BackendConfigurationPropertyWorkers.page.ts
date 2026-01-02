@@ -407,7 +407,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveEditBtn()
       ).click();
     }
-    await browser.pause(500);
+    await browser.pause(1000);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForDisplayed();
