@@ -9,11 +9,11 @@ using System.Collections.Generic;
 public class TaskWizardModel
 {
     public int Id { get; set; }
-    public string Property { get; set; }
-    public string Folder { get; set; }
+    public required string Property { get; set; }
+    public required string Folder { get; set; }
     public List<CommonTagModel> Tags { get; set; } = [];
-    public string TaskName { get; set; }
-    public string Eform { get; set; }
+    public required string TaskName { get; set; }
+    public required string Eform { get; set; }
     public DateTime StartDate { get; set; }
     public RepeatType RepeatType { get; set; }
     public int RepeatEvery { get; set; }
