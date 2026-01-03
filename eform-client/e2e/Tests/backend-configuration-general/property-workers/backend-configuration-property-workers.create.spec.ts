@@ -48,6 +48,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
   });
   it('should edit worker and unpair from property', async () => {
     const worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
+    await backendConfigurationPropertyWorkersPage.Navbar.takeScreenshot();
     await worker.edit({ properties: [0] });
     await browser.pause(500);
     const properties = await worker.getAssignedProperties();

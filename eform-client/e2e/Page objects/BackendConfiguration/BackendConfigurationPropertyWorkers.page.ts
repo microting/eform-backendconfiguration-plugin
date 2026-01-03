@@ -1,11 +1,15 @@
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
 import Page from '../Page';
 import { $ } from '@wdio/globals';
+import {Navbar} from '../Navbar.page';
 
 class BackendConfigurationPropertyWorkersPage extends Page {
   constructor() {
     super();
+    this.Navbar = new Navbar();
   }
+
+  Navbar: Navbar;
 
   public async backendConfigurationPnPropertyWorkers() {
     const ele = await $('#backend-configuration-pn-property-workers');
