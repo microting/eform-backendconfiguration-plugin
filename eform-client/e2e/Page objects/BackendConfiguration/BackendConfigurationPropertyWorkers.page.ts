@@ -187,7 +187,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   async openCreateModal(propertyWorker?: PropertyWorker) {
-    await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 40000 });
+    await (await this.newDeviceUserBtn()).waitForDisplayed({ timeout: 40000 });
     await (await this.newDeviceUserBtn()).click();
     await browser.pause(500);
     await (
@@ -339,7 +339,7 @@ export class PropertyWorkerRowObject {
   }
 
   async openEditModal(propertyWorker?: PropertyWorker) {
-    await this.editBtn.waitForClickable({ timeout: 40000 });
+    await this.editBtn.waitForDisplayed({ timeout: 40000 });
     await this.editBtn.click();
     await browser.pause(500);
     await (
