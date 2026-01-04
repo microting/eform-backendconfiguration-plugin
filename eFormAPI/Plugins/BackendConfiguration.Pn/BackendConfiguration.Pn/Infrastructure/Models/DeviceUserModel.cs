@@ -113,8 +113,7 @@ public class DeviceUserModel
     public bool Resigned { get; set; }
     public DateTime ResignedAtDate { get; set; }
 
-    public List<int> Tags { get; set; }
-        = new List<int>();
+    public List<int> Tags { get; set; } = [];
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
