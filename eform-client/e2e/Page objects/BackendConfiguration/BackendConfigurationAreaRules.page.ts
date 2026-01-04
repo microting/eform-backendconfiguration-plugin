@@ -174,7 +174,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
     await actionMenu.waitForClickable({ timeout: 40000 });
     await actionMenu.click();
     await browser.pause(1000);
-    
+
     const ele = await $(`.updateEntityList`);
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
@@ -296,6 +296,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: false
     }).replace(/[ ]/g, '--').replace(':', '-');
 

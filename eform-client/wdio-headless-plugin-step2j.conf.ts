@@ -247,14 +247,15 @@ export const config: Options.Testrunner = {
        * const date = (new Date()).toString().replace(/\s/g, '-').replace(/-\(\w+\)/, '');
        */
       //const { browserName } = browser.desiredCapabilities;
-      const timestamp = new Date().toLocaleString('iso', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      }).replace(/[ ]/g, '--').replace(':', '-');
+    const timestamp = new Date().toLocaleString('iso', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(/[ ]/g, '--').replace(':', '-');
 
       // get current test title and clean it, to use it as file name
       const filename = encodeURIComponent(
