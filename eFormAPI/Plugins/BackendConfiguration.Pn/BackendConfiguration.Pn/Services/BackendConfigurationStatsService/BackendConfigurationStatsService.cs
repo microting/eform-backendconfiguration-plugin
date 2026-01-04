@@ -17,6 +17,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormApi.BasePn.Abstractions;
 
+#pragma warning disable CS9113 // Parameter is unread
 public class BackendConfigurationStatsService(
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
     ILogger<BackendConfigurationStatsService> logger,
@@ -25,6 +26,7 @@ public class BackendConfigurationStatsService(
     CaseTemplatePnDbContext caseTemplatePnDbContext,
     IEFormCoreService coreHelper)
     : IBackendConfigurationStatsService
+#pragma warning restore CS9113 // Parameter is unread
 {
     /// <inheritdoc />
     public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(int? propertyId)
