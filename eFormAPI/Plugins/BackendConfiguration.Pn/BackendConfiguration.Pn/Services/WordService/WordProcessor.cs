@@ -59,7 +59,7 @@ public class WordProcessor : IDisposable
         }
 
         var converter = new HtmlConverter(mainPart);
-        converter.ParseHtml(html);
+        converter.ParseBody(html);
         if (margin != null)
         {
             SectionProperties sectionProps = new SectionProperties();

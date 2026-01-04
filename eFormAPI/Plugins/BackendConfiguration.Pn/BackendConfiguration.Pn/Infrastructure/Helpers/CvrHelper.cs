@@ -47,41 +47,44 @@ public class CvrHelper
 
         try
         {
-            if (res.Industrycode.Length == 5)
+            if (res?.Industrycode?.Length == 5)
             {
                 res.Industrycode = "0" + res.Industrycode;
             }
         } catch (Exception)
         {
-            res.Industrycode = "0";
+            if (res != null)
+            {
+                res.Industrycode = "0";
+            }
         }
 
-        return res;
+        return res ?? new Result { Industrycode = "0" };
     }
 }
 
 public class Owner
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class PoductionUnit
 {
     public int Pno { get; set; }
-    public string Name { get; set; }
-    public string Address { get; set; }
-    public string Zipcode { get; set; }
-    public string City { get; set; }
+    public string Name { get; set; } = null!;
+    public string Address { get; set; } = null!;
+    public string Zipcode { get; set; } = null!;
+    public string City { get; set; } = null!;
     public bool @protected { get; set; }
-    public string Phone { get; set; }
+    public string Phone { get; set; } = null!;
     public string? Email { get; set; }
     public string? Fax { get; set; }
-    public string Startdate { get; set; }
+    public string Startdate { get; set; } = null!;
     public string? Enddate { get; set; }
-    public string Employees { get; set; }
+    public string Employees { get; set; } = null!;
     public string? Addressco { get; set; }
     public int Industrycode { get; set; }
-    public string Industrydesc { get; set; }
+    public string Industrydesc { get; set; } = null!;
     public int Companycode { get; set; }
     public string? Companydesc { get; set; }
     public string? Creditstartdate { get; set; }
@@ -92,27 +95,27 @@ public class PoductionUnit
 public class Result
 {
     public int Vat { get; set; }
-    public string Name { get; set; }
-    public string Address { get; set; }
-    public string Zipcode { get; set; }
-    public string City { get; set; }
+    public string Name { get; set; } = null!;
+    public string Address { get; set; } = null!;
+    public string Zipcode { get; set; } = null!;
+    public string City { get; set; } = null!;
     // public bool @protected { get; set; }
-    public string Phone { get; set; }
+    public string Phone { get; set; } = null!;
     public string? Email { get; set; }
     public string?  Fax { get; set; }
-    public string Startdate { get; set; }
+    public string Startdate { get; set; } = null!;
     public string? Enddate { get; set; }
     public int? Employees { get; set; }
-    public string Addressco { get; set; }
+    public string Addressco { get; set; } = null!;
     public string? Industrycode { get; set; }
-    public string Industrydesc { get; set; }
+    public string Industrydesc { get; set; } = null!;
     public int Companycode { get; set; }
-    public string Companydesc { get; set; }
+    public string Companydesc { get; set; } = null!;
     public string? Creditstartdate { get; set; }
     public int? Creditstatus { get; set; }
     public bool? Creditbankrupt { get; set; }
-    public ICollection<Owner> Owners { get; set; }
-    public ICollection<PoductionUnit> Productionunits { get; set; }
+    public ICollection<Owner> Owners { get; set; } = [];
+    public ICollection<PoductionUnit> Productionunits { get; set; } = [];
     public int T { get; set; }
     public int Version { get; set; }
     public string? Error { get; set; }
@@ -131,7 +134,7 @@ public class StringConverter : System.Text.Json.Serialization.JsonConverter<stri
         }
         else if (reader.TokenType == JsonTokenType.String)
         {
-            return reader.GetString();
+            return reader.GetString() ?? string.Empty;
         }
 
         throw new System.Text.Json.JsonException();

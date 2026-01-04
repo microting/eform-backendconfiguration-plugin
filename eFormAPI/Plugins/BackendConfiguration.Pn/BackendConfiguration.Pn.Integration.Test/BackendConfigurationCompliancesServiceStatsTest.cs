@@ -218,8 +218,8 @@ public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
             CreatedByUserId = 1,
             UpdatedByUserId = 1
         };
-        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
-        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
 
         var area = new Area
         {

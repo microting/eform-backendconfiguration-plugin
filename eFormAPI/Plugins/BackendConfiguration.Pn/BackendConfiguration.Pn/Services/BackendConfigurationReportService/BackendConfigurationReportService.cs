@@ -115,10 +115,12 @@ public class BackendConfigurationReportService(
 
             if (groupedCaseCheckListIds.Count > 0)
             {
+#pragma warning disable EF1003 // Possible SQL injection vulnerability - IDs are integers, safe to concatenate
                 checkLists = await sdkDbContext.CheckLists
                     .FromSqlRaw("SELECT * FROM CheckLists WHERE" +
                                 $" Id IN ({string.Join(",", groupedCaseCheckListIds)})" +
                                 "  ORDER BY ReportH1, ReportH2, ReportH3, ReportH4").AsNoTracking().ToListAsync();
+#pragma warning restore EF1003
             }
 
             var itemCases = await planningCasesQuery

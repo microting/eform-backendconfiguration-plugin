@@ -31,7 +31,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var core = await GetCore();
 
         // Act
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();
@@ -150,7 +150,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1,1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1,1);
 
         var propertyCreateModel2 = new PropertyCreateModel
         {
@@ -166,7 +166,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel2, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2,2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2,2);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
 
@@ -195,7 +195,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -212,7 +212,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2, 2);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -241,7 +241,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -258,7 +258,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2, 2);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -286,7 +286,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -303,7 +303,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2, 2);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -331,7 +331,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -348,7 +348,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2, 1);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -377,7 +377,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -394,7 +394,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 2);
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -423,7 +423,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.AsNoTracking().ToListAsync();
 
@@ -443,7 +443,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, userService,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null, Bus!);
 
         properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();
