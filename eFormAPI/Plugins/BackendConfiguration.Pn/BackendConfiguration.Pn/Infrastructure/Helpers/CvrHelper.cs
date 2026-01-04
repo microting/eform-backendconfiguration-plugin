@@ -59,7 +59,7 @@ public class CvrHelper
             }
         }
 
-        return res;
+        return res ?? new Result { Industrycode = "0" };
     }
 }
 
@@ -134,7 +134,7 @@ public class StringConverter : System.Text.Json.Serialization.JsonConverter<stri
         }
         else if (reader.TokenType == JsonTokenType.String)
         {
-            return reader.GetString();
+            return reader.GetString() ?? string.Empty;
         }
 
         throw new System.Text.Json.JsonException();

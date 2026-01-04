@@ -715,7 +715,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod,
                                                     localizationService).ConfigureAwait(false);
                                                 areaRule.AreaRulesPlannings[0].DayOfMonth =
-                                                    (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == null || (int)areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
                                                         ? 1
                                                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 areaRule.AreaRulesPlannings[0].ItemPlanningId =
@@ -764,14 +764,16 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 }
                                             }
 
-                                            var planning = await CreateItemPlanningObject((int)areaRule.EformId,
-                                                areaRule.EformName, areaRule.FolderId, areaRulePlanningModel,
-                                                areaRule, userId, backendConfigurationPnDbContext,
-                                                itemsPlanningPnDbContext).ConfigureAwait(false);
-                                            planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
-                                                areaRuleAreaRuleTranslation => new PlanningNameTranslation
-                                                {
-                                                    LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                                            if (areaRule.EformId.HasValue)
+                                            {
+                                                var planning = await CreateItemPlanningObject((int)areaRule.EformId,
+                                                    areaRule.EformName, areaRule.FolderId, areaRulePlanningModel,
+                                                    areaRule, userId, backendConfigurationPnDbContext,
+                                                    itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
+                                                    areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                                                    {
+                                                        LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                                                     Name = areaRuleAreaRuleTranslation.Name
                                                 }).ToList();
                                             if (planning.NameTranslations.Any(x => x.Name == "01. Registrer halebid"))
@@ -846,6 +848,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             rulePlanning.ItemPlanningId = planning.Id;
                                             await rulePlanning.Update(backendConfigurationPnDbContext)
                                                 .ConfigureAwait(false);
+                                            }
                                             break;
                                         }
                                     }
@@ -927,11 +930,11 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                         planning.PushMessageOnDeployment = areaRulePlanningModel.SendNotifications;
                                         planning.StartDate = new DateTime(areaRulePlanningModel.StartDate.Year, areaRulePlanningModel.StartDate.Month, areaRulePlanningModel.StartDate.Day, 0, 0, 0);
                                         planning.DayOfMonth =
-                                            (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                            areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == null || (int)areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
                                                 ? 1
                                                 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                         planning.DayOfWeek =
-                                            (DayOfWeek)areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                            areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == null || (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
                                                 ? DayOfWeek.Friday
                                                 : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                         foreach (var planningSite in planning.PlanningSites
@@ -1004,7 +1007,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     sitesForCreate.Select(x => x.SiteId).ToList(),
                                                     planning.RelatedEFormId,
                                                     planning.Id,
-                                                    (int)planning.SdkFolderId, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService)
+                                                    planning.SdkFolderId.HasValue ? (int)planning.SdkFolderId : 0, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService)
                                                 .ConfigureAwait(false);
                                         }
 
@@ -1785,6 +1788,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             foreach (var siteId in sites)
             {
                 var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId).ConfigureAwait(false);
+                if (site == null) continue;
+                
                 var language =
                     await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId)
                         .ConfigureAwait(false);

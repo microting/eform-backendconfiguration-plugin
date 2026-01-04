@@ -294,7 +294,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.TagId != null)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => (int)x.TagId)
+                        .Select(x => x.TagId!.Value)
                         .ToList();
 
                     var forRemove = siteTagIds
