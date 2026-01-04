@@ -310,7 +310,6 @@ export class PropertyWorkerRowObject {
   }
 
   async openDeleteModal() {
-    this.deleteBtn.waitForClickable({ timeout: 40000 });
     this.deleteBtn.click();
     await (
       await backendConfigurationPropertyWorkersPage.saveDeleteBtn()
@@ -343,7 +342,6 @@ export class PropertyWorkerRowObject {
   }
 
   async openEditModal(propertyWorker?: PropertyWorker) {
-    await this.editBtn.waitForDisplayed({ timeout: 40000 });
     await this.editBtn.click();
     await browser.pause(500);
     await (
