@@ -40,7 +40,7 @@ public class TaskManagementFiltersModel
 
     public int? LastAssignedTo { get; set; }
 
-    public List<int> Statuses { get; set; }
+    public List<int> Statuses { get; set; } = [];
 
     public DateTime? DateFrom { get; set; }
 

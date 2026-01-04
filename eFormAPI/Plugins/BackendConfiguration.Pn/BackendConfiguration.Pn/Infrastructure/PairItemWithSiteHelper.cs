@@ -344,7 +344,10 @@ public static class PairItemWithSiteHelper
                 if (planningCaseSite.MicrotingSdkCaseId < 1 && planning.StartDate <= DateTime.Now)
                 {
                     var body = "";
-                    folder = await GetTopFolder((int)planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
+                    if (planning.SdkFolderId.HasValue)
+                    {
+                        folder = await GetTopFolder((int)planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
+                    }
                     if (folder != null)
                     {
                         //planningPnModel.SdkFolderId = sdkDbContext.Folders
@@ -354,7 +357,10 @@ public static class PairItemWithSiteHelper
                             await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
                                     x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId)
                                 .ConfigureAwait(false);
-                        body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
+                        if (folderTranslation != null)
+                        {
+                            body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
+                        }
                     }
 
                     var planningNameTranslation =
@@ -368,22 +374,25 @@ public static class PairItemWithSiteHelper
                         mainElement.Repeated = 0;
                     }
 
-                    var caseId = await sdkCore.CaseCreate(mainElement, "", (int)sdkSite.MicrotingUid, null)
-                        .ConfigureAwait(false);
-                    if (caseId != null)
+                    if (sdkSite.MicrotingUid.HasValue)
                     {
-                        if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int)sdkSite.MicrotingUid, null)
+                            .ConfigureAwait(false);
+                        if (caseId != null)
                         {
-                            planningCaseSite.MicrotingSdkCaseId =
-                                sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
-                        }
-                        else
-                        {
-                            planningCaseSite.MicrotingCheckListSitId =
-                                sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId).Id;
-                        }
+                            if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                            {
+                                planningCaseSite.MicrotingSdkCaseId =
+                                    sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
+                            }
+                            else
+                            {
+                                planningCaseSite.MicrotingCheckListSitId =
+                                    sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId).Id;
+                            }
 
-                        await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
                     }
 
                     dbPlanning.ShowExpireDate = true;
