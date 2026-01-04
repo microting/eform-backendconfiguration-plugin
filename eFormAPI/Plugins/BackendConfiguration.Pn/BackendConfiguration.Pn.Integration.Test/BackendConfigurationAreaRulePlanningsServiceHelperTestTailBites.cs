@@ -38,7 +38,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -56,10 +56,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -80,7 +80,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;
@@ -99,7 +99,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -132,7 +132,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -396,13 +396,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
         var deviceUserModel = new DeviceUserModel
         {
             CustomerNo = 0,
@@ -417,7 +417,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -438,7 +438,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;
@@ -457,7 +457,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -488,7 +488,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Act
 
@@ -521,7 +521,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -779,7 +779,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -797,10 +797,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -821,7 +821,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;
@@ -840,7 +840,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -871,7 +871,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
         var areaRulePlanningModel2 = new AreaRulePlanningModel
@@ -902,7 +902,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Act
         var areaRulePlanningModel3 = new AreaRulePlanningModel
@@ -933,7 +933,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

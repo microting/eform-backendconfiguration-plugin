@@ -29,7 +29,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var core = await GetCore();
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var property = await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -48,7 +48,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
         };
 
         // Act
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         // Assert
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == property.Id).ToListAsync();

@@ -2119,6 +2119,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         {
             var siteId = sites.First();
             var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId).ConfigureAwait(false);
+            if (site == null) return;
+            
             var language =
                 await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
             var property = await backendConfigurationPnDbContext.Properties
@@ -2373,10 +2375,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
             foreach (var poolHour in poolHours)
             {
+                if (subfolder == null) continue;
+                
                 var clId = sdkDbContext.CheckListTranslations
                     .Where(x => x.Text == $"02. Fækale uheld - {property.Name}").Select(x => x.CheckListId)
                     .FirstOrDefault();
-                var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString().Substring(0, 3)}";
+                var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString()[..3]}";
                 var poolDayFolder = await sdkDbContext.Folders
                     .Include(x => x.FolderTranslations)
                     .Where(x => x.ParentId == subfolder.Id)

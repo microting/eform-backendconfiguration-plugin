@@ -90,7 +90,7 @@ public static class IdentityTestUtils
             passwordValidators,
             keyNormalizer,
             errors,
-            services,
+            services!,
             logger
         );
     }

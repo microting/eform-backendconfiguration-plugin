@@ -12,7 +12,7 @@ using Testcontainers.MariaDb;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-public class TestBaseSetup
+public abstract class TestBaseSetup
 {
     private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder()
         .WithDatabase(
