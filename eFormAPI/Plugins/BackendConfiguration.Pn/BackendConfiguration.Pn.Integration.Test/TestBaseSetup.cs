@@ -14,7 +14,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 
 public abstract class TestBaseSetup
 {
-    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder()
+    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder("mariadb:10.8")
         .WithDatabase(
             "myDb").WithUsername("bla").WithPassword("secretpassword")
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
