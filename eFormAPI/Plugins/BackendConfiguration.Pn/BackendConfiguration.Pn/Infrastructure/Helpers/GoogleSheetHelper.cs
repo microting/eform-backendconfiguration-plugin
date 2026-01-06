@@ -54,8 +54,10 @@ public class GoogleSheetHelper
         }}";
 
         // Authenticate using the dynamically constructed JSON
+#pragma warning disable CS0618 // Type or member is obsolete
         var credential = GoogleCredential.FromJson(serviceAccountJson)
             .CreateScoped(SheetsService.Scope.Spreadsheets);
+#pragma warning restore CS0618 // Type or member is obsolete
 
         var service = new SheetsService(new BaseClientService.Initializer
         {

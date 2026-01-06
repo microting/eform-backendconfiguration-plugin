@@ -100,8 +100,11 @@ public static class WorkOrderHelper
                 var entityItem = await sdkDbContext.EntityItems
                     .Where(x => x.Id == propertyWorker.EntityItemId)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
-                await core.EntityItemUpdate(entityItem.Id, site.Name, entityItem.Description,
-                    entityItem.EntityItemUid, nextItemUid).ConfigureAwait(false);
+                if (entityItem != null)
+                {
+                    await core.EntityItemUpdate(entityItem.Id, site.Name, entityItem.Description,
+                        entityItem.EntityItemUid, nextItemUid).ConfigureAwait(false);
+                }
             } else
             {
                 if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
@@ -252,15 +255,18 @@ public static class WorkOrderHelper
 
         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
         mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
-        await new WorkorderCase
+        if (site.MicrotingUid.HasValue)
         {
-            CaseId = (int)caseId,
-            PropertyWorkerId = propertyWorker.Id,
-            CaseStatusesEnum = CaseStatusesEnum.NewTask,
-            CreatedByUserId = userService.UserId,
-            UpdatedByUserId = userService.UserId,
-        }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+            var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
+            await new WorkorderCase
+            {
+                CaseId = (int)caseId,
+                PropertyWorkerId = propertyWorker.Id,
+                CaseStatusesEnum = CaseStatusesEnum.NewTask,
+                CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId,
+            }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
     }
 
     public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int? userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext)

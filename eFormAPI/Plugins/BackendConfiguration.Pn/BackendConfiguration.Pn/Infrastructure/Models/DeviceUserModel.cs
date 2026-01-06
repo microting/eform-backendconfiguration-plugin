@@ -33,14 +33,14 @@ public class DeviceUserModel
     public int SiteMicrotingUid { get; set; }
     public int SiteId { get; set; }
     public int? SiteUid { get; set; }
-    public string SiteName { get; set; }
-    public string PropertyNames { get; set; }
-    public List<int> PropertyIds { get; set; }
-    public string UserFirstName { get; set; }
-    public string UserLastName { get; set; }
+    public string SiteName { get; set; } = null!;
+    public string PropertyNames { get; set; } = "";
+    public List<int> PropertyIds { get; set; } = [];
+    public string UserFirstName { get; set; } = null!;
+    public string UserLastName { get; set; } = null!;
     public int LanguageId { get; set; }
-    public string Language { get; set; }
-    public string LanguageCode { get; set; }
+    public string Language { get; set; } = null!;
+    public string LanguageCode { get; set; } = null!;
     public bool? TimeRegistrationEnabled { get; set; }
     public bool EnableMobileAccess { get; set; }
     // minutes from midnight for the start of the shift (0-1440) monday
@@ -95,16 +95,16 @@ public class DeviceUserModel
     public bool HasWorkOrdersAssigned { get; set; }
     public bool ArchiveEnabled { get; set; }
     public bool WebAccessEnabled { get; set; }
-    public string Manufacturer { get; set; }
-    public string Model { get; set; }
-    public string Os { get; set; }
-    public string OsVersion { get; set; }
+    public string Manufacturer { get; set; } = "";
+    public string Model { get; set; } = "";
+    public string Os { get; set; } = "";
+    public string OsVersion { get; set; } = "";
 
-    public string Version { get; set; }
+    public string Version { get; set; } = "";
 
-    public string PinCode { get; set; }
+    public string PinCode { get; set; } = null!;
 
-    public string EmployeeNo { get; set; }
+    public string EmployeeNo { get; set; } = null!;
 
     public string? WorkerEmail { get; set; }
     public string? PhoneNumber { get; set; }
@@ -113,8 +113,7 @@ public class DeviceUserModel
     public bool Resigned { get; set; }
     public DateTime ResignedAtDate { get; set; }
 
-    public List<int> Tags { get; set; }
-        = new List<int>();
+    public List<int> Tags { get; set; } = [];
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {

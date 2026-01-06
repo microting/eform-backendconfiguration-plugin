@@ -42,10 +42,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -99,11 +99,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -160,7 +160,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1,1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1,1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -178,10 +178,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -203,8 +203,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
             userService, userManager,
-            BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, BaseDbContext, logger, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -259,7 +259,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -279,10 +279,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -306,8 +306,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             1,
             userService,
             userManager,
-            BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, BaseDbContext, logger, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -363,7 +363,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -383,10 +383,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -410,8 +410,8 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             1,
             userService,
             userManager,
-            BackendConfigurationPnDbContext,
-            TimePlanningPnDbContext, BaseDbContext, logger, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
 
         // Assert
         var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -474,7 +474,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -494,10 +494,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -517,7 +517,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             SiteId = sites[2].Id
         };
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+             BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -575,7 +575,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -592,10 +592,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -615,7 +615,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             SiteId = sites[2].Id
         };
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -635,7 +635,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // var userService = Substitute.For<IUserService>();
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -693,7 +693,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -711,10 +711,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -737,7 +737,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -759,7 +759,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // var userService = Substitute.For<IUserService>();
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -833,7 +833,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         // create another propertycreateModel
         var propertyCreateModel2 = new PropertyCreateModel
@@ -850,12 +850,12 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel2, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 2, 2);
 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -872,7 +872,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -895,7 +895,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
         Assert.That(workOrders.Count, Is.EqualTo(1)); // TODO: fix this
@@ -926,7 +926,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
             userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();

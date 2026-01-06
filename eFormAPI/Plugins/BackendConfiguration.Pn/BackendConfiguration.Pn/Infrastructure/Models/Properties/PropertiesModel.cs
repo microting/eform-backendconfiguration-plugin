@@ -34,17 +34,17 @@ public class PropertiesModel
 {
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public string Chr { get; set; }
+    public string Chr { get; set; } = null!;
 
-    public string Address { get; set; }
+    public string Address { get; set; } = null!;
 
-    public List<CommonDictionaryModel> Languages { get; set; }
+    public List<CommonDictionaryModel> Languages { get; set; } = [];
 
     public bool IsWorkersAssigned { get; set; }
 
-    public string Cvr { get; set; }
+    public string Cvr { get; set; } = null!;
 
     public int ComplianceStatus { get; set; }
 
@@ -58,5 +58,5 @@ public class PropertiesModel
 
     public bool IsFarm { get; set; }
 
-    public string MainMailAddress { get; set; }
+    public string MainMailAddress { get; set; } = null!;
 }

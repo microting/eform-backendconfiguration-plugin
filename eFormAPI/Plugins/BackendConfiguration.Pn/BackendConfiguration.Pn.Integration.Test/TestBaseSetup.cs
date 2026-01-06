@@ -12,9 +12,9 @@ using Testcontainers.MariaDb;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-public class TestBaseSetup
+public abstract class TestBaseSetup
 {
-    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder()
+    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder("mariadb:11.2")
         .WithDatabase(
             "myDb").WithUsername("bla").WithPassword("secretpassword")
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
