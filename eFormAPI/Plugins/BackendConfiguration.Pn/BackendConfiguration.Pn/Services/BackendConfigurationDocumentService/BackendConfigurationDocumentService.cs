@@ -335,22 +335,19 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentSite.Delete(_caseTemplatePnDbContext);
         }
 
-        if (model.DocumentProperties != null)
+        foreach (var property in model.DocumentProperties)
         {
-            foreach (var property in model.DocumentProperties)
+            var documentProperty = document.DocumentProperties
+                .FirstOrDefault(x => x.PropertyId == property.PropertyId);
+            if (documentProperty == null)
             {
-                var documentProperty = document.DocumentProperties
-                    .FirstOrDefault(x => x.Id == property.Id);
-                if (documentProperty == null)
+                documentProperty = new DocumentProperty
                 {
-                    documentProperty = new DocumentProperty
-                    {
-                        DocumentId = document.Id,
-                        PropertyId = property.PropertyId
-                    };
+                    DocumentId = document.Id,
+                    PropertyId = property.PropertyId
+                };
 
-                    await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
-                }
+                await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
         }
 
