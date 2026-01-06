@@ -1,4 +1,5 @@
-﻿using Sentry;
+﻿using System.Collections.Generic;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
 
@@ -27,72 +28,120 @@ public class BackendConfigurationStatsService(
     : IBackendConfigurationStatsService
 {
     /// <inheritdoc />
-    public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(int? propertyId)
-    {
-        try
-        {
-            var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            var currentEndDateTime = currentDateTime.AddDays(1);
-            var query = backendConfigurationPnDbContext.Compliances
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PlanningId != 0)
-                .Where(x => x.StartDate <= currentDateTime)
-                .OrderBy(x => x.Deadline)
-                //.Where(x => x.Deadline > currentEndDateTime)
-                .AsQueryable();
-            var result = new PlannedTaskDays();
 
-            if (propertyId.HasValue)
+public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
+    List<int> propertyIds,
+    List<int> tagIds,
+    List<int> workerIds)
+{
+    try
+    {
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
+        
+        var compliancesQuery = backendConfigurationPnDbContext.Compliances
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.PlanningId != 0);
+
+        if (propertyIds.Any())
+        {
+            compliancesQuery =
+                compliancesQuery.Where(x => propertyIds.Contains(x.PropertyId));
+        }
+
+        var compliances = await compliancesQuery
+            .Select(x => new
             {
-                query = query
-                    .Where(x => x.PropertyId == propertyId.Value)
-                    .AsQueryable();
+                x.Id,
+                x.Deadline,
+                x.PlanningId
+            })
+            .ToListAsync();
+
+        if (!compliances.Any())
+        {
+            return new OperationDataResult<PlannedTaskDays>(true, new PlannedTaskDays());
+        }
+        
+        var planningIds = compliances
+            .Select(x => x.PlanningId)
+            .Distinct()
+            .ToList();
+
+        var plannings = await itemsPlanningPnDbContext.Plannings
+            .Where(x => planningIds.Contains(x.Id))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Include(x => x.PlanningsTags)
+            .ToListAsync();
+        
+        var planningSites = await itemsPlanningPnDbContext.PlanningSites
+            .Where(x => planningIds.Contains(x.PlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        
+        var filteredCompliances = compliances.Where(c =>
+        {
+            var planning = plannings.FirstOrDefault(p => p.Id == c.PlanningId);
+            if (planning == null)
+                return false;
+
+            if (tagIds.Any() &&
+                !planning.PlanningsTags.Any(t => tagIds.Contains(t.PlanningTagId)))
+            {
+                return false;
+            }
+            
+            if (workerIds.Any())
+            {
+                var siteIdsForPlanning = planningSites
+                    .Where(s => s.PlanningId == c.PlanningId)
+                    .Select(s => s.SiteId)
+                    .ToList();
+
+                if (!siteIdsForPlanning.Any(siteId => workerIds.Contains(siteId)))
+                {
+                    return false;
+                }
             }
 
-            // get exceeded tasks
-            result.Exceeded = await query
-                .Where(x => x.Deadline < currentEndDateTime)
-                .Select(x => x.Id)
-                .CountAsync();
-
-            // get today tasks
-            result.Today = await query
-                .Where(x => x.Deadline > currentDateTime)
-                .Where(x => x.Deadline <= currentEndDateTime)
-                .Select(x => x.Id)
-                .CountAsync();
-
-            // get 1-7
-            result.FromFirstToSeventhDays = await query
-                .Where(x => x.Deadline > currentDateTime.AddDays(1))
-                .Where(x => x.Deadline < currentEndDateTime.AddDays(7))
-                .Select(x => x.Id)
-                .CountAsync();
-
-            // get 8-30
-            result.FromEighthToThirtiethDays = await query
-                .Where(x => x.Deadline > currentDateTime.AddDays(8))
-                .Where(x => x.Deadline < currentEndDateTime.AddDays(30))
-                .Select(x => x.Id)
-                .CountAsync();
-
-            // get over 30
-            result.OverThirtiethDays = await query
-                .Where(x => x.Deadline >= currentEndDateTime.AddDays(30))
-                .Select(x => x.Id)
-                .CountAsync();
-
-            return new OperationDataResult<PlannedTaskDays>(true, result);
-        }
-        catch (Exception e)
+            return true;
+        }).ToList();
+        
+        var result = new PlannedTaskDays
         {
-            SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
-            logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<PlannedTaskDays>(false,
-                localizationService.GetString("ErrorWhileGetPlannedTaskDaysStat"));
-        }
+            Exceeded = filteredCompliances.Count(x =>
+                x.Deadline.AddDays(-1) < today),
+
+            Today = filteredCompliances.Count(x =>
+                x.Deadline.AddDays(-1) >= today &&
+                x.Deadline.AddDays(-1) < tomorrow),
+
+            FromFirstToSeventhDays = filteredCompliances.Count(x =>
+                x.Deadline.AddDays(-1) >= tomorrow &&
+                x.Deadline.AddDays(-1) < tomorrow.AddDays(7)),
+
+            FromEighthToThirtiethDays = filteredCompliances.Count(x =>
+                x.Deadline.AddDays(-1) >= tomorrow.AddDays(7) &&
+                x.Deadline.AddDays(-1) < tomorrow.AddDays(30)),
+
+            OverThirtiethDays = filteredCompliances.Count(x =>
+                x.Deadline.AddDays(-1) >= tomorrow.AddDays(30))
+        };
+
+
+        return new OperationDataResult<PlannedTaskDays>(true, result);
     }
+    catch (Exception e)
+    {
+        SentrySdk.CaptureException(e);
+        logger.LogError(e, e.Message);
+        return new OperationDataResult<PlannedTaskDays>(
+            false,
+            localizationService.GetString("ErrorWhileGetPlannedTaskDaysStat"));
+    }
+}
+
+
 
     /// <inheritdoc />
     public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status)
@@ -351,4 +400,86 @@ public class BackendConfigurationStatsService(
                 localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
         }
     }
+    
+    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkersByFilters(
+        int? siteId,
+        List<int> propertyId,
+        List<int> areaIds,
+        List<int> createdByIds,
+        List<int> assignedToIds,
+        List<int> statuses,
+        List<int> priorities,
+        DateTime? dateFrom,
+        DateTime? dateTo)
+{
+    try
+    {
+        var core = await coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var query = backendConfigurationPnDbContext.WorkorderCases
+            .Include(x => x.PropertyWorker)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.LeadingCase)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+
+        if (propertyId.Any())
+            query = query.Where(x => propertyId.Contains(x.PropertyWorker.PropertyId));
+
+        if (statuses.Any())
+            query = query.Where(x => statuses.Contains((int)x.CaseStatusesEnum));
+
+        if (priorities.Any())
+            query = query.Where(x => priorities.Contains(int.Parse(x.Priority)));
+
+        if (assignedToIds.Any())
+        {
+            var siteNames = await sdkDbContext.Sites
+                .Where(x => assignedToIds.Contains(x.Id))
+                .Select(x => x.Name)
+                .ToListAsync();
+
+            query = query.Where(x => siteNames.Contains(x.LastAssignedToName));
+        }
+        
+        if (dateFrom.HasValue)
+            query = query.Where(x => x.CreatedAt >= dateFrom.Value);
+
+        if (dateTo.HasValue)
+            query = query.Where(x => x.CreatedAt <= dateTo.Value);
+
+        var grouped = await query
+            .GroupBy(x => x.LastAssignedToName)
+            .Select(x => new
+            {
+                WorkerName = x.Key,
+                Count = x.Count()
+            })
+            .ToListAsync();
+
+        var siteIds = await sdkDbContext.Sites
+            .Where(x => grouped.Select(g => g.WorkerName).Contains(x.Name))
+            .ToDictionaryAsync(x => x.Name, x => x.Id);
+
+        return new OperationDataResult<AdHocTaskWorkers>(true, new AdHocTaskWorkers
+        {
+            TaskWorkers = grouped.Select(x => new AdHocTaskWorker
+            {
+                WorkerName = x.WorkerName,
+                WorkerId = siteIds.GetValueOrDefault(x.WorkerName),
+                StatValue = x.Count
+            }).ToList()
+        });
+    }
+    catch (Exception e)
+    {
+        logger.LogError(e, e.Message);
+        SentrySdk.CaptureException(e);
+        return new OperationDataResult<AdHocTaskWorkers>(
+            false,
+            localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
+    }
+}
+
 }

@@ -130,7 +130,7 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
   private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
-  
+
   constructor() {
     this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
