@@ -84,9 +84,9 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     expect(rowNum - 1).eq(await backendConfigurationTaskManagementPage.rowNum());
   });
   after(async () => {
-    await backendConfigurationPropertiesPage.goToProperties();
-    await backendConfigurationPropertiesPage.clearTable();
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.clearTable();
+    await backendConfigurationPropertiesPage.goToProperties();
+    await backendConfigurationPropertiesPage.clearTable();
   });
 });

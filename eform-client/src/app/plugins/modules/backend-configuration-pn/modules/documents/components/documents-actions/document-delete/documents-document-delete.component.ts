@@ -21,8 +21,6 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
   private backendConfigurationPnDocumentsService = inject(BackendConfigurationPnDocumentsService);
   public dialogRef = inject(MatDialogRef<DocumentsDocumentDeleteComponent>);
   private documentModel = inject<DocumentModel>(MAT_DIALOG_DATA);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
 
   documentDeleted: EventEmitter<void> = new EventEmitter<void>();
   newDocumentModel: DocumentModel = new DocumentModel();
@@ -52,9 +50,8 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
     }
   }
 
-  
+
   constructor() {
-    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
     this.getDocument(this.documentModel.id);
   }
 

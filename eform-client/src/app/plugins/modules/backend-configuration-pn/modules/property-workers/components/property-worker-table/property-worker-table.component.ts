@@ -32,9 +32,9 @@ import {
 } from '../../../../state';
 import {format} from 'date-fns';
 import {AuthStateService} from 'src/app/common/store';
-import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from "src/app/common/const";
+import {AndroidIcon, iOSIcon, PasswordValidationIcon, PdfIcon} from 'src/app/common/const';
 import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from "@angular/platform-browser";
+import {DomSanitizer} from '@angular/platform-browser';
 
 @AutoUnsubscribe()
 @Component({
@@ -50,8 +50,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
 
   //@Input() propertyWorkers: any[] = [];
   @Input() sitesDto: any[] = [];
@@ -264,6 +262,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     selectedSimpleSite.tags = simpleSiteDto.tags;
     selectedSimpleSite.webAccessEnabled = simpleSiteDto.webAccessEnabled;
     selectedSimpleSite.archiveEnabled = simpleSiteDto.archiveEnabled;
+    selectedSimpleSite.enableMobileAccess = simpleSiteDto.enableMobileAccess;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
@@ -351,9 +350,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
 
 
   ngOnInit() {
-    this.iconRegistry.addSvgIconLiteral('password-validation', this.sanitizer.bypassSecurityTrustHtml(PasswordValidationIcon));
-    this.iconRegistry.addSvgIconLiteral('android-icon', this.sanitizer.bypassSecurityTrustHtml(AndroidIcon));
-    this.iconRegistry.addSvgIconLiteral('ios-icon', this.sanitizer.bypassSecurityTrustHtml(iOSIcon));
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertyWorkersStateService.updateNameFilter(val);
     });

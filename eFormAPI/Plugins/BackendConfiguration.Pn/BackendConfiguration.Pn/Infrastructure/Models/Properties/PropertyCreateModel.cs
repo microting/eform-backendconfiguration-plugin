@@ -31,15 +31,15 @@ using System.Collections.Generic;
 
 public class PropertyCreateModel
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public string Chr { get; set; }
+    public string Chr { get; set; } = null!;
 
-    public string Address { get; set; }
+    public string Address { get; set; } = null!;
 
-    public List<int> LanguagesIds { get; set; }
+    public List<int> LanguagesIds { get; set; } = [];
 
-    public string Cvr { get; set; }
+    public string Cvr { get; set; } = null!;
 
     public bool WorkorderEnable { get; set; }
 
@@ -47,7 +47,7 @@ public class PropertyCreateModel
 
     public bool IsFarm { get; set; }
 
-    public string MainMailAddress { get; set; }
+    public string MainMailAddress { get; set; } = null!;
 
     public string FullName()
     {

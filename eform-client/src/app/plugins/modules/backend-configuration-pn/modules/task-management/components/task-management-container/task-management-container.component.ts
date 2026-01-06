@@ -51,8 +51,6 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   public taskManagementService = inject(BackendConfigurationPnTaskManagementService);
   private toasterService = inject(ToastrService);
   private propertyService = inject(BackendConfigurationPnPropertiesService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
   public dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private statisticsStateService = inject(StatisticsStateService);
@@ -98,8 +96,6 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
-    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
-    this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;

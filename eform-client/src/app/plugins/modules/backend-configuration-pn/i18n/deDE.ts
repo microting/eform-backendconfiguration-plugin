@@ -361,4 +361,5 @@ export const deDE = {
   'Show expired task on mobile': 'Abgelaufene Aufgaben auf dem Mobilgerät anzeigen',
   Web: 'Web',
   Archive: 'Archiv',
+  'Mobile timeregistration': 'Mobile Zeiterfassung',
 };

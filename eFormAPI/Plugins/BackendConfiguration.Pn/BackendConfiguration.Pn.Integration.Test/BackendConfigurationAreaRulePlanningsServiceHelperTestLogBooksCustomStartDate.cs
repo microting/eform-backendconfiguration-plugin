@@ -47,7 +47,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -65,10 +65,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -89,7 +89,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -108,7 +108,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -150,7 +150,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
 
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
@@ -186,7 +186,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -459,7 +459,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -477,10 +477,10 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -501,7 +501,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -520,7 +520,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -562,7 +562,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
 
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
@@ -598,7 +598,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -884,7 +884,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -902,10 +902,10 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -926,7 +926,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -945,7 +945,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -987,7 +987,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
 
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
@@ -1023,7 +1023,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1299,7 +1299,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -1317,10 +1317,10 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -1341,7 +1341,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1360,7 +1360,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -1402,7 +1402,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
 
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
@@ -1438,7 +1438,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1702,7 +1702,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -1720,10 +1720,10 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -1744,7 +1744,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1763,7 +1763,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -1805,7 +1805,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
 
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
@@ -1840,7 +1840,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -1856,7 +1856,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel2, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -1865,7 +1865,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         var itemPlanningCase = await ItemsPlanningPnDbContext!.PlanningCases.FirstAsync();
 
         itemPlanningCase.Status = 100;
-        await itemPlanningCase.Update(ItemsPlanningPnDbContext);
+        await itemPlanningCase.Update(ItemsPlanningPnDbContext!);
 
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
@@ -1905,7 +1905,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -2188,7 +2188,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
 
 
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -2206,10 +2206,10 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            TimePlanningPnDbContext, BaseDbContext,
+            TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 
@@ -2230,7 +2230,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -2249,7 +2249,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         //     PropertyId = properties[0].Id
         // };
         //
-        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        // var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1);
 
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
 
@@ -2291,7 +2291,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
             PropertyAreaId = properties[0].Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext!, danishLanguage);
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -2325,7 +2325,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -2359,7 +2359,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
@@ -2392,7 +2392,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+            core, 1, BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

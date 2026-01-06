@@ -300,4 +300,5 @@ export const nlNL = {
   'Show expired task on mobile': 'Verlopen taak weergeven op mobiel',
   Web: 'Web',
   Archive: 'Archief',
+  'Mobile timeregistration': 'Mobiele tijdregistratie',
 };

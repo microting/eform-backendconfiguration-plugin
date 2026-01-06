@@ -300,4 +300,5 @@ export const etET = {
   'Show expired task on mobile': 'Kuva aegunud ülesanne mobiilis',
   Web: 'Veeb',
   Archive: 'Arhiiv',
+  'Mobile timeregistration': 'Mobiilne ajaregistreerimine',
 };

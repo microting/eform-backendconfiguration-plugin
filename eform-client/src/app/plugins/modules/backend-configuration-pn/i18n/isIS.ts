@@ -300,4 +300,5 @@ export const isIS = {
   'Show expired task on mobile': 'Sýna útrunnið verkefni í farsíma',
   Web: 'Vefur',
   Archive: 'Skjalasafn',
+  'Mobile timeregistration': 'Tímaskráning í farsíma',
 };

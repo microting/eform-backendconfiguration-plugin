@@ -25,6 +25,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Controllers;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.TimePlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 
@@ -56,13 +57,15 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
     private readonly IUserService _userService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+    private readonly TimePlanningPnDbContext _timePlanningPnDbContext;
 
     public BackendConfigurationCompliancesService(
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         IUserService userService,
         IBackendConfigurationLocalizationService localizationService,
-        IEFormCoreService coreHelper
+        IEFormCoreService coreHelper,
+        TimePlanningPnDbContext timePlanningPnDbContext
     )
     {
         _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
@@ -70,6 +73,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         _userService = userService;
         _localizationService = localizationService;
         _coreHelper = coreHelper;
+        _timePlanningPnDbContext = timePlanningPnDbContext;
     }
 
     public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
@@ -394,13 +398,27 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         var complianceList = _backendConfigurationPnDbContext.Compliances;
         var oneWeekInTheFutureCount = await complianceList.CountAsync(x => x.Deadline >= DateTime.UtcNow && x.Deadline <= DateTime.UtcNow.AddDays(7));
         var todayCount = await complianceList.CountAsync(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed);
-        var numberOfPlannedEnvironmentInspectionTagTasks = complianceList.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList().Where(x =>
-        {
-            var planningTags = _itemsPlanningPnDbContext.PlanningsTags
-                .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
-                .ToList();
-            return planningTags.Any();
-        }).Count();
+
+        var numberOfPlannedEnvironmentInspectionTagTasks = await _backendConfigurationPnDbContext.AreaRulePlannings.Join(_backendConfigurationPnDbContext.AreaRulePlanningTags,
+            planning => planning.Id,
+            planningTag => planningTag.AreaRulePlanningId,
+            (planning, planningTag) => new { Planning = planning, PlanningTag = planningTag })
+            .Where(x => x.Planning.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.Planning.Status)
+            .Where(x => x.PlanningTag.ItemPlanningTagId == envTag.Id)
+            .CountAsync();
+
+        var numberOfPlannedEnvironmentInspectionTagPlanningsLast30Days = complianceList
+            .Where(x => x.Deadline >= DateTime.UtcNow && x.Deadline >= DateTime.UtcNow.AddDays(-30)).ToList()
+            .Where(x =>
+            {
+                var planningTags = _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(y => y.PlanningId == x.PlanningId && y.PlanningTagId == envTag.Id)
+                    .ToList();
+                return planningTags.Any();
+            })
+            .Count();
+
         var todayComplianceCountEnvironmentInspectionTag = await complianceList.Where(x => x.Deadline.Date <= DateTime.UtcNow.Date && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
         var todayCountEnvironmentInspectionTag = todayComplianceCountEnvironmentInspectionTag.Where(x =>
         {
@@ -449,7 +467,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
         var numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = _itemsPlanningPnDbContext.PlanningCases
             .Where(x => x.Status == 100)
-            .Where(x => x.UpdatedAt >= DateTime.UtcNow.AddDays(-30))
+            .Where(x => x.MicrotingSdkCaseDoneAt >= DateTime.UtcNow.AddDays(-30))
             .ToList()
             .Where(x =>
             {
@@ -459,6 +477,16 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 return planningTags.Any();
             })
             .Count();
+
+        var numberOfWorkersWithTimeRegistrationEnabled = await _timePlanningPnDbContext.AssignedSites
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Distinct().CountAsync();
+
+        var numberOfFullDayPlanRegistrationsLastWeek = await _timePlanningPnDbContext.PlanRegistrations
+            .Where(x => x.Start1StartedAt != null && x.Stop1StoppedAt != null)
+            .Where(x => x.Date >= DateTime.UtcNow.AddDays(-7))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .CountAsync();
 
         var totalCount = complianceList.Count();
 
@@ -480,7 +508,10 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
             DateOfOldestAdHocTask = oldestWorkorderTask?.CreatedAt,
             NumberOfPlannedEnvironmentInspectionTagTasks = numberOfPlannedEnvironmentInspectionTagTasks,
             NumberOfPlannedTasks = numberOfActiveAreaRulePlannings,
-            NumberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days
+            NumberOfCompletedEnvironmentInspectionTagPlanningsLast30Days = numberOfCompletedEnvironmentInspectionTagPlanningsLast30Days,
+            NumberOfPlannedEnvironmentInspectionTagPlanningsLast30Days = numberOfPlannedEnvironmentInspectionTagPlanningsLast30Days,
+            NumberOfWorkersWithTimeRegistrationEnabled = numberOfWorkersWithTimeRegistrationEnabled,
+            NumberOfFullDayTimeRegistrationsLastWeek = numberOfFullDayPlanRegistrationsLastWeek
         };
 
         return new OperationDataResult<CompliancesStatsModel>(true, statsModel);

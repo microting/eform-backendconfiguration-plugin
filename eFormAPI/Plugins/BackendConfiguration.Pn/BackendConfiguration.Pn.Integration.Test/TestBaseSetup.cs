@@ -12,9 +12,9 @@ using Testcontainers.MariaDb;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-public class TestBaseSetup
+public abstract class TestBaseSetup
 {
-    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder()
+    private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder("mariadb:11.2")
         .WithDatabase(
             "myDb").WithUsername("bla").WithPassword("secretpassword")
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
@@ -40,7 +40,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
 
         var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
@@ -71,7 +70,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
 
         var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
@@ -94,7 +92,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
 
         var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
@@ -117,7 +114,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
 
         var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
@@ -139,7 +135,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
         var microtingDbContext = new MicrotingDbContext(dbContextOptionsBuilder.Options);
         var file = Path.Combine("SQL", "420_SDK.sql");
@@ -160,7 +155,6 @@ public class TestBaseSetup
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
-                builder.TranslateParameterizedCollectionsToConstants();
             });
         var baseDbContext = new BaseDbContext(optionsBuilder.Options);
         // var file = Path.Combine("SQL", "420_SDK.sql");

@@ -300,4 +300,5 @@ export const ukUA = {
   'Show expired task on mobile': 'Показувати завдання, термін дії якого минув, на мобільному пристрої',
   Web: 'Веб',
   Archive: 'Архів',
+  'Mobile timeregistration': 'Мобільна реєстрація часу',
 };

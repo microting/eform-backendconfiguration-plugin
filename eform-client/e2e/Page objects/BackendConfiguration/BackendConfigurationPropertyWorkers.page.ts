@@ -1,11 +1,15 @@
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
 import Page from '../Page';
 import { $ } from '@wdio/globals';
+import {Navbar} from '../Navbar.page';
 
 class BackendConfigurationPropertyWorkersPage extends Page {
   constructor() {
     super();
+    this.Navbar = new Navbar();
   }
+
+  Navbar: Navbar;
 
   public async backendConfigurationPnPropertyWorkers() {
     const ele = await $('#backend-configuration-pn-property-workers');
@@ -187,7 +191,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   async openCreateModal(propertyWorker?: PropertyWorker) {
-    await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 40000 });
+    await (await this.newDeviceUserBtn()).waitForDisplayed({ timeout: 40000 });
     await (await this.newDeviceUserBtn()).click();
     await browser.pause(500);
     await (
@@ -225,10 +229,6 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await value.click();
         await browser.pause(500);
       }
-      if(propertyWorker.workOrderFlow === true){
-        await (await this.TaskManagementEnableToggleInput()).click();
-        await browser.pause(500);
-      }
       if (propertyWorker.properties) {
         await (await $('#propertiesTab')).click();
         await browser.pause(500);
@@ -242,7 +242,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
           ).click();
           await browser.pause(500);
         }
+        await (await $('#generalTab')).click();
+
+        if(propertyWorker.workOrderFlow === true){
+          await (await this.TaskManagementEnableToggleInput()).click();
+          await browser.pause(500);
+        }
       }
+
     }
   }
 
@@ -303,7 +310,6 @@ export class PropertyWorkerRowObject {
   }
 
   async openDeleteModal() {
-    this.deleteBtn.waitForClickable({ timeout: 40000 });
     this.deleteBtn.click();
     await (
       await backendConfigurationPropertyWorkersPage.saveDeleteBtn()
@@ -336,7 +342,6 @@ export class PropertyWorkerRowObject {
   }
 
   async openEditModal(propertyWorker?: PropertyWorker) {
-    await this.editBtn.waitForClickable({ timeout: 40000 });
     await this.editBtn.click();
     await browser.pause(500);
     await (
@@ -404,7 +409,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveEditBtn()
       ).click();
     }
-    await browser.pause(500);
+    await browser.pause(1000);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForDisplayed();

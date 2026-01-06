@@ -300,4 +300,5 @@ export const ltLT = {
   'Show expired task on mobile': 'Rodyti pasibaigusią užduotį mobiliajame telefone',
   Web: 'Žiniatinklis',
   Archive: 'Archyvas',
+  'Mobile timeregistration': 'Mobilioji laiko registracija',
 };

@@ -300,4 +300,5 @@ export const ptBR = {
   'Show expired task on mobile': 'Exibir tarefas expiradas no celular',
   Web: 'Web',
   Archive: 'Arquivo',
+  'Mobile timeregistration': 'Registro de tempo móvel',
 };

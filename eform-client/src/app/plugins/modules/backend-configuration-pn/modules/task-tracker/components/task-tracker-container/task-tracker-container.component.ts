@@ -71,8 +71,6 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   public dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private areasService = inject(BackendConfigurationPnAreasService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
   private backendConfigurationPnTaskWizardService = inject(BackendConfigurationPnTaskWizardService);
   private appSettingsStateService = inject(AppSettingsStateService);
   private itemsPlanningPnTagsService = inject(ItemsPlanningPnTagsService);
@@ -140,7 +138,6 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
-    this.iconRegistry.addSvgIconLiteral('file-excel', this.sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;

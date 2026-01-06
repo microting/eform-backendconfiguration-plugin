@@ -300,4 +300,5 @@ export const esES = {
   'Show expired task on mobile': 'Mostrar tarea expirada en el móvil',
   Web: 'Web',
   Archive: 'Archivo',
+  'Mobile timeregistration': 'Registro de tiempo móvil',
 };

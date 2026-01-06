@@ -294,7 +294,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.TagId != null)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => (int)x.TagId)
+                        .Select(x => x.TagId!.Value)
                         .ToList();
 
                     var forRemove = siteTagIds
@@ -331,7 +331,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     {
                         var oldEmail = worker.Email;
-                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid))
+                        if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             // this email is already in use
                             return new OperationDataResult<int>(false, "EmailIsAlreadyInUse");
@@ -563,25 +563,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
                             }
 
-                            var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
-                                .Include(x => x.SecurityGroup)
-                                .Where(x => x.EformUserId == user!.Id)
-                                .Where(x => x.SecurityGroup.Name == "Kun tid")
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .FirstOrDefaultAsync().ConfigureAwait(false);
-
-                            if (securityGroupUserTime != null)
+                            if (user != null)
                             {
-                                var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
-                                baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
-                                await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
-                            }
-                        }
-                        else
-                        {
-                            if (deviceUserModel.TimeRegistrationEnabled == true)
-                            {
-
                                 var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
                                     .Include(x => x.SecurityGroup)
                                     .Where(x => x.EformUserId == user!.Id)
@@ -589,18 +572,52 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
-                                if (securityGroupUserTime == null)
+                                if (securityGroupUserTime != null)
                                 {
-                                    var newSecurityGroupUser = new SecurityGroupUser
-                                    {
-                                        EformUserId = user!.Id,
-                                        SecurityGroupId = baseDbContext.SecurityGroups
-                                            .Where(x => x.Name == "Kun tid")
-                                            .Select(x => x.Id)
-                                            .First()
-                                    };
-                                    baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                    var forDelete =
+                                        await baseDbContext.SecurityGroupUsers.FirstAsync(x =>
+                                            x.Id == securityGroupUserTime.Id);
+                                    baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
                                     await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (deviceUserModel.TimeRegistrationEnabled == true)
+                            {
+                                var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
+                                    .Include(x => x.SecurityGroup)
+                                    .Where(x => x.EformUserId == user!.Id)
+                                    .Where(x => x.SecurityGroup.Name == "Kun tid")
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                                if (deviceUserModel.EnableMobileAccess)
+                                {
+
+
+                                    if (securityGroupUserTime == null)
+                                    {
+                                        var newSecurityGroupUser = new SecurityGroupUser
+                                        {
+                                            EformUserId = user!.Id,
+                                            SecurityGroupId = baseDbContext.SecurityGroups
+                                                .Where(x => x.Name == "Kun tid")
+                                                .Select(x => x.Id)
+                                                .First()
+                                        };
+                                        baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
+                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                    }
+                                }
+                                else
+                                {
+                                    if (securityGroupUserTime != null)
+                                    {
+                                        var forDelete = await baseDbContext.SecurityGroupUsers.FirstAsync(x => x.Id == securityGroupUserTime.Id);
+                                        baseDbContext.SecurityGroupUsers.RemoveRange(forDelete);
+                                        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                                    }
                                 }
                                 var assignments = await timePlanningDbContext.AssignedSites.Where(x =>
                                     x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
@@ -608,6 +625,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 if (assignments.Count != 0)
                                 {
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
+                                    assignments.First().EnableMobileAccess = deviceUserModel.EnableMobileAccess;
+                                    await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
 
@@ -617,7 +636,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     {
                                         SiteId = siteDto.SiteId,
                                         CreatedByUserId = userId,
-                                        UpdatedByUserId = userId
+                                        UpdatedByUserId = userId,
+                                        EnableMobileAccess = deviceUserModel.EnableMobileAccess
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);

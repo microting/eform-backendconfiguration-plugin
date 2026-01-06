@@ -300,4 +300,5 @@ export const hrHR = {
   'Show expired task on mobile': 'Prikaži istekli zadatak na mobilnom uređaju',
   Web: 'Web',
   Archive: 'Arhiva',
+  'Mobile timeregistration': 'Mobilna registracija vremena',
 };

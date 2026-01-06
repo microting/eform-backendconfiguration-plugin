@@ -373,6 +373,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     site.UpdatedAt,
                     worker.Resigned,
                     worker.ResignedAtDate,
+                    worker.PinCode,
                     SiteTags = site.SiteTags
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(y => y.Tag.WorkflowState != Constants.WorkflowStates.Removed)
@@ -404,7 +405,8 @@ public class BackendConfigurationAssignmentWorkerService(
                     IsLocked = x.IsLocked,
                     Resigned = x.Resigned,
                     ResignedAtDate = x.ResignedAtDate,
-                    Tags = x.SiteTags
+                    Tags = x.SiteTags,
+                    PinCode = x.PinCode
                 })
                 .ToListAsync().ConfigureAwait(false);
 
@@ -427,7 +429,6 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.UnitId = unit.MicrotingUid;
                 }
 
-                deviceUserModel.PinCode = "****";
                 deviceUserModel.TimeRegistrationEnabled =
                     timeRegistrationEnabledSites.Any(x => x.SiteId == deviceUserModel.SiteUid);
                 if (deviceUserModel.TimeRegistrationEnabled != false)
@@ -455,6 +456,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.StartSunday = assignedSite.StartSunday;
                     deviceUserModel.EndSunday = assignedSite.EndSunday;
                     deviceUserModel.BreakSunday = assignedSite.BreakSunday;
+                    deviceUserModel.EnableMobileAccess = assignedSite.EnableMobileAccess;
                 }
 
                 deviceUserModel.TaskManagementEnabled = backendConfigurationPnDbContext.PropertyWorkers.Any(x =>

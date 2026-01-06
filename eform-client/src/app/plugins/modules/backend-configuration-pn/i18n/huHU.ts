@@ -300,4 +300,5 @@ export const huHU = {
   'Show expired task on mobile': 'Lejárt feladat megjelenítése mobilon',
   Web: 'Web',
   Archive: 'Archívum',
+  'Mobile timeregistration': 'Mobil időregisztráció',
 };

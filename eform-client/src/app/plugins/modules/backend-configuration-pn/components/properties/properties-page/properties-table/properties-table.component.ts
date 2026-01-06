@@ -34,8 +34,6 @@ export class PropertiesTableComponent implements OnInit {
   public propertiesStateService = inject(PropertiesStateService);
   private entitySelectService = inject(EntitySelectService);
   public authStateService = inject(AuthStateService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
 
   @Input() nameSearchSubject = new Subject();
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
@@ -67,9 +65,8 @@ export class PropertiesTableComponent implements OnInit {
     return PropertyCompliancesColorBadgesEnum;
   }
 
-  
+
   constructor() {
-    this.iconRegistry.addSvgIconLiteral('file-word', this.sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
 
 

@@ -66,7 +66,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -91,10 +91,10 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			Substitute.For<IUserStore<EformUser>>(),
 			null, null, null, null, null, null, null, null);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext, BaseDbContext,
+			TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
-		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+		var sites = await MicrotingDbContext!.Sites.AsNoTracking().OrderBy(x => x.Name).ToListAsync();
 
 		// create planning
 		var timeNow = DateTime.Now;
@@ -184,7 +184,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -222,7 +222,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -243,9 +243,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext, BaseDbContext,
+			TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -321,7 +321,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -359,7 +359,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -380,9 +380,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext, BaseDbContext,
+			TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -458,7 +458,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);
@@ -496,7 +496,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -517,9 +517,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
 		await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-			TimePlanningPnDbContext, BaseDbContext,
+			TimePlanningPnDbContext!, BaseDbContext!,
         userService,
         userManager);
 		var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
@@ -595,7 +595,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
 
 		// Assert result
 		Assert.That(result, Is.Not.Null);

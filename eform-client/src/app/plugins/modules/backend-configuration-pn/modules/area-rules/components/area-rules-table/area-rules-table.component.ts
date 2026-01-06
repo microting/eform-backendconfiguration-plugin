@@ -45,8 +45,6 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   private templateFilesService = inject(TemplateFilesService);
   private translateService = inject(TranslateService);
   public areaRulesStateService = inject(AreaRulesStateService);
-  private iconRegistry = inject(MatIconRegistry);
-  private sanitizer = inject(DomSanitizer);
 
   @Input() areaRules: AreaRuleSimpleModel[] = [];
   @Input() chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
@@ -466,9 +464,8 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   public selectAreaRulesPaginationSort$ = this.store.select(selectAreaRulesPaginationSort);
   public selectAreaRulesPaginationIsSortDsc$ = this.store.select(selectAreaRulesPaginationIsSortDsc);
 
-  
+
   constructor() {
-    this.iconRegistry.addSvgIconLiteral('file-pdf', this.sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
 
 

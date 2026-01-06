@@ -300,4 +300,5 @@ export const slSL = {
   'Show expired task on mobile': 'Prikaži potečeno opravilo na mobilni napravi',
   Web: 'Splet',
   Archive: 'Arhiv',
+  'Mobile timeregistration': 'Mobilna registracija časa',
 };

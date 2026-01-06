@@ -300,4 +300,5 @@ export const lvLV = {
   'Show expired task on mobile': 'Rādīt beidzies uzdevumu mobilajā ierīcē',
   Web: 'Tīmeklis',
   Archive: 'Arhīvs',
+  'Mobile timeregistration': 'Mobilā laika reģistrācija',
 };

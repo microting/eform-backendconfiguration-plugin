@@ -173,7 +173,16 @@
             </mat-slide-toggle>
             <br>
             <mat-slide-toggle
-              *ngIf="authStateService.checkClaim('task_management_enable')"
+              *ngIf="authStateService.checkClaim('time_registration_enable') && selectedDeviceUser.timeRegistrationEnabled"
+              color="primary"
+              class="mb-2"
+              id="enableMobileAccessToggle"
+              formControlName="enableMobileAccess">
+              {{ "Mobile timeregistration" | translate }}
+            </mat-slide-toggle>
+            <br>
+            <mat-slide-toggle
+              *ngIf="authStateService.checkClaim('task_management_enable') && assignments.length > 0"
               color="primary"
               class="mb-2"
               id="taskManagementEnabledToggle"
