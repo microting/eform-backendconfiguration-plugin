@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace BackendConfiguration.Pn.Controllers;
@@ -78,8 +79,30 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("ad-hoc-task-workers")]
-    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers([FromQuery] int? propertyId, [FromQuery] int? siteId)
+    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers(
+        [FromQuery] int? siteId,
+        [FromQuery] List<int>? propertyId,
+        [FromQuery] List<int>? areaName,
+        [FromQuery] List<int>? createdBy,
+        [FromQuery] List<int>? lastAssignedTo,
+        [FromQuery] List<int>? statuses,
+        [FromQuery] List<int>? priority,
+        [FromQuery] List<DateTime>? dateFrom,
+        [FromQuery] List<DateTime>? dateTo
+        
+        )
     {
-        return await _statsService.GetAdHocTaskWorkers(propertyId, siteId);
+       //return await _statsService.GetAdHocTaskWorkers(propertyId, siteId);
+        return await _statsService.GetAdHocTaskWorkersByFilters(
+            siteId,
+            propertyId ?? [],
+            areaName ?? [],
+            createdBy ?? [],
+            lastAssignedTo ?? [],
+            statuses ?? [],
+            priority ?? [],
+            dateFrom?.FirstOrDefault(),
+            dateTo?.FirstOrDefault()
+        );
     }
 }

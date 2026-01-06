@@ -400,4 +400,86 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
                 localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
         }
     }
+    
+    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkersByFilters(
+        int? siteId,
+        List<int> propertyId,
+        List<int> areaIds,
+        List<int> createdByIds,
+        List<int> assignedToIds,
+        List<int> statuses,
+        List<int> priorities,
+        DateTime? dateFrom,
+        DateTime? dateTo)
+{
+    try
+    {
+        var core = await coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var query = backendConfigurationPnDbContext.WorkorderCases
+            .Include(x => x.PropertyWorker)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.LeadingCase)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+
+        if (propertyId.Any())
+            query = query.Where(x => propertyId.Contains(x.PropertyWorker.PropertyId));
+
+        if (statuses.Any())
+            query = query.Where(x => statuses.Contains((int)x.CaseStatusesEnum));
+
+        if (priorities.Any())
+            query = query.Where(x => priorities.Contains(int.Parse(x.Priority)));
+
+        if (assignedToIds.Any())
+        {
+            var siteNames = await sdkDbContext.Sites
+                .Where(x => assignedToIds.Contains(x.Id))
+                .Select(x => x.Name)
+                .ToListAsync();
+
+            query = query.Where(x => siteNames.Contains(x.LastAssignedToName));
+        }
+        
+        if (dateFrom.HasValue)
+            query = query.Where(x => x.CreatedAt >= dateFrom.Value);
+
+        if (dateTo.HasValue)
+            query = query.Where(x => x.CreatedAt <= dateTo.Value);
+
+        var grouped = await query
+            .GroupBy(x => x.LastAssignedToName)
+            .Select(x => new
+            {
+                WorkerName = x.Key,
+                Count = x.Count()
+            })
+            .ToListAsync();
+
+        var siteIds = await sdkDbContext.Sites
+            .Where(x => grouped.Select(g => g.WorkerName).Contains(x.Name))
+            .ToDictionaryAsync(x => x.Name, x => x.Id);
+
+        return new OperationDataResult<AdHocTaskWorkers>(true, new AdHocTaskWorkers
+        {
+            TaskWorkers = grouped.Select(x => new AdHocTaskWorker
+            {
+                WorkerName = x.WorkerName,
+                WorkerId = siteIds.GetValueOrDefault(x.WorkerName),
+                StatValue = x.Count
+            }).ToList()
+        });
+    }
+    catch (Exception e)
+    {
+        logger.LogError(e, e.Message);
+        SentrySdk.CaptureException(e);
+        return new OperationDataResult<AdHocTaskWorkers>(
+            false,
+            localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
+    }
+}
+
 }

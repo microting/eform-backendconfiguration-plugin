@@ -132,16 +132,6 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.getSites();
           }
         },),
-        // tap(_ => {
-        //   if (this.showDiagram) {
-        //     this.selectedPropertyId = _[0] || null;
-        //     this.selectTaskWizardFilters$.subscribe(filters => {
-        //       this.selectedWorkerId = filters.assignToIds[0] || null;
-        //       this.selectedStatus = filters.status || null;
-        //     });
-        //     this.getPlannedTaskWorkers();
-        //   }
-        // })
       )
       .subscribe();
 

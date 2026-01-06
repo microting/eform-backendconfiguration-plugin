@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Stats;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -20,4 +21,16 @@ public interface IBackendConfigurationStatsService
     Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(int? propertyId, int? siteId);
 
     Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers(int? propertyId, int? siteId);
+    
+    Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkersByFilters(
+        int? siteId,
+        List<int> propertyId,
+        List<int> areaIds,
+        List<int> createdByIds,
+        List<int> assignedToIds,
+        List<int> statuses,
+        List<int> priorities,
+        DateTime? dateFrom,
+        DateTime? dateTo
+    );
 }
