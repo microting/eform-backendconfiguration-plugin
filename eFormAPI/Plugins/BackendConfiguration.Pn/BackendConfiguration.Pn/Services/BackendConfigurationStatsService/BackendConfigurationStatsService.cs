@@ -23,7 +23,8 @@ public class BackendConfigurationStatsService(
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
     ILogger<BackendConfigurationStatsService> logger,
     IBackendConfigurationLocalizationService localizationService,
-    ItemsPlanningPnDbContext _,  // Unused parameter kept for backwards compatibility
+   // ItemsPlanningPnDbContext _,  // Unused parameter kept for backwards compatibility
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     CaseTemplatePnDbContext caseTemplatePnDbContext,
     IEFormCoreService coreHelper)
     : IBackendConfigurationStatsService
