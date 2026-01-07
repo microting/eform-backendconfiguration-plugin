@@ -4,7 +4,7 @@
   [cellTemplate]="{tags: tagsTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
-  [rowStriped]="true"
+  [rowStriped]="false"
   [showToolbar]="false"
   [rowClassFormatter]="rowClassFormatter"
   [showColumnMenuButton]="false"
@@ -14,7 +14,7 @@
 
 </mtx-grid>
 <ng-template #tagsTpl let-row>
-  <div class="d-flex flex-wrap align-items-center">
+  <div class="d-flex flex-wrap align-items-center gap-2">
     <mat-chip-list>
       <mat-chip *ngFor="let tag of row.tags" color="primary">
         <span>{{ tag.name }}</span>

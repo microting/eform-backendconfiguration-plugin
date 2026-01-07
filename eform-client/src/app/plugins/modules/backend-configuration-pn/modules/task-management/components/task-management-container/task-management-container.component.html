@@ -26,7 +26,7 @@
     class="mb-2 w-100"
   />
   <app-task-management-filters/>
-  <div class="d-flex flex-row align-items-center pl-3">
+  <div class="d-flex flex-row align-items-center pl-3 gap-12">
     <button
       class="btn-primary btn-primary--icon-left"
       id="showReportBtn"
@@ -37,7 +37,7 @@
     </button>
     <button
       *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
-      mat-icon-button
+      class="btn-secondary btn-secondary--icon-rounded-border"
       id="wordBtn"
       (click)="onDownloadWordReport()"
       matTooltip="{{ 'Word report' | translate }}"
@@ -46,7 +46,7 @@
     </button>
     <button
       *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
-      mat-icon-button
+      class="btn-secondary btn-secondary--icon-rounded-border"
       id="excelBtn"
       [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="onDownloadExcelReport()"

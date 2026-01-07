@@ -3,7 +3,7 @@ import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
-import {filter, tap} from 'rxjs/operators';
+import {distinctUntilChanged, filter, tap} from 'rxjs/operators';
 import {Subscription, zip} from 'rxjs';
 import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
@@ -132,15 +132,36 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.getSites();
           }
         },),
-        tap(_ => {
-          if (this.showDiagram) {
-            this.selectedPropertyId = _[0] || null;
-            this.selectTaskWizardFilters$.subscribe(filters => {
-              this.selectedWorkerId = filters.assignToIds[0] || null;
-              this.selectedStatus = filters.status || null;
+      )
+      .subscribe();
+
+    this.getFiltersAsyncSub$ = this.selectTaskWizardFilters$
+      .pipe(
+        filter(() => this.showDiagram),
+        distinctUntilChanged((prev, curr) =>
+          R.equals(prev.propertyIds, curr.propertyIds) &&
+          R.equals(prev.folderIds, curr.folderIds) &&
+          R.equals(prev.tagIds, curr.tagIds) &&
+          R.equals(prev.assignToIds, curr.assignToIds) &&
+          prev.status === curr.status
+        ),
+
+        tap(filters => {
+          this.selectedPropertyId = filters.propertyIds?.[0] ?? null;
+
+          this.statisticsStateService
+            .getPlannedTaskWorkersByFilters({
+              propertyIds: filters.propertyIds ?? [],
+              folderIds: filters.folderIds ?? [],
+              tagIds: filters.tagIds ?? [],
+              assignToIds: filters.assignToIds ?? [],
+              status: filters.status ? [filters.status] : [],
+            })
+            .subscribe(result => {
+              if (result?.success) {
+                this.plannedTaskWorkers = result.model;
+              }
             });
-            this.getPlannedTaskWorkers();
-          }
         })
       )
       .subscribe();

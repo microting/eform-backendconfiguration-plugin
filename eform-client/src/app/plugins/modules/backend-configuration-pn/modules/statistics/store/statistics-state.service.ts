@@ -31,35 +31,96 @@ export class StatisticsStateService {
     Observable<OperationDataResult<PlannedTaskDaysModel>> {
     return this.service.getPlannedTaskDays({
       propertyId: propertyId === undefined ? this.getPropertyId() : propertyId,
-      priority: null, status: null, siteId: null, statuses: null});
+      priority: null, status: null, siteId: null, statuses: null
+    });
   }
 
-  getAdHocTaskPriorities(propertyId: number | null = undefined, priority: number | null = undefined, status: number | null = undefined, siteId: number | null = undefined, statuses: number[] | null = undefined):
+  getPlannedTaskDaysByFilters(filters: {
+    propertyIds: number[];
+    tagIds: number[];
+    workerIds: number[];
+  }) {
+    return this.service.getPlannedTaskDaysByFilters({
+      propertyIds: filters.propertyIds ?? [],
+      tagIds: filters.tagIds ?? [],
+      workerIds: filters.workerIds ?? [],
+    });
+  }
+
+  getAdHocTaskPriorities(
+    propertyId: number | null = undefined,
+    priority: number | null = undefined,
+    status: number | null = undefined,
+    siteId: number | null = undefined,
+    statuses: number[] | null = undefined):
     Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
     return this.service.getAdHocTaskPriorities({
       propertyId: propertyId === undefined ? this.getPropertyId() : propertyId,
-      priority: priority, status: status, siteId: null, statuses: null});
+      priority: priority, status: status, siteId: null, statuses: null
+    });
   }
 
   getDocumentUpdatedDays(propertyId: number | null = undefined):
     Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
     return this.service.getDocumentUpdatedDays({
       propertyId: propertyId === undefined ? this.getPropertyId() : propertyId,
-      priority: null, status: null, siteId: null, statuses: null});
+      priority: null, status: null, siteId: null, statuses: null
+    });
   }
 
   getPlannedTaskWorkers(propertyId: number | null = undefined, status: number | null = undefined, siteId: number | null = undefined):
     Observable<OperationDataResult<PlannedTaskWorkers>> {
     return this.service.getPlannedTaskWorkers({
       propertyId: propertyId === undefined ? this.getPropertyId() : propertyId,
-      priority: null, status: status, siteId: siteId, statuses: null});
+      priority: null, status: status, siteId: siteId, statuses: null
+    });
   }
+
+  getPlannedTaskWorkersByFilters(filters: {
+    propertyIds: number[];
+    status: number[];
+    folderIds: number[];
+    tagIds: number[];
+    assignToIds: number[];
+  }) {
+    return this.service.getPlannedTaskWorkersByFilters({
+      propertyIds: filters.propertyIds ?? [],
+      status: filters.status ?? [],
+      folderIds: filters.folderIds ?? [],
+      tagIds: filters.tagIds ?? [],
+      assignToIds: filters.assignToIds ?? [],
+    });
+  }
+
 
   getAdHocTaskWorkers(propertyId: number | null = undefined, siteId: number | null = undefined):
     Observable<OperationDataResult<AdHocTaskWorkers>> {
     return this.service.getAdHocTaskWorkers({
       propertyId: propertyId === undefined ? this.getPropertyId() : propertyId,
-      priority: null, status: null, siteId: siteId, statuses: null});
+      priority: null, status: null, siteId: siteId, statuses: null
+    });
+  }
+
+  getAdHocTaskWorkersByFilters(filters: {
+    propertyId: number[];
+    areaName: number[];
+    createdBy: number[];
+    lastAssignedTo: number[];
+    statuses: number[];
+    priority: number[];
+    dateFrom: number[];
+    dateTo: number[];
+  }) {
+    return this.service.getAdHocTaskWorkersByFilters({
+      propertyId: filters.propertyId ?? [],
+      areaName: filters.areaName ?? [],
+      createdBy: filters.createdBy ?? [],
+      lastAssignedTo: filters.lastAssignedTo ?? [],
+      statuses: filters.statuses ?? [],
+      priority: filters.priority ?? [],
+      dateFrom: filters.dateFrom ?? [],
+      dateTo: filters.dateTo ?? [],
+    });
   }
 
   getPropertyId(): number | null {
