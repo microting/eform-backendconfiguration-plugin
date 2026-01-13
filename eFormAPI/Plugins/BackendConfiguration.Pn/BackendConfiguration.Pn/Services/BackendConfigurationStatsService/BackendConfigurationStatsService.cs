@@ -439,6 +439,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         if (assignedToIds.Any())
         {
             var siteNames = await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => assignedToIds.Contains(x.Id))
                 .Select(x => x.Name)
                 .ToListAsync();
@@ -462,6 +463,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
             .ToListAsync();
 
         var siteIds = await sdkDbContext.Sites
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => grouped.Select(g => g.WorkerName).Contains(x.Name))
             .ToDictionaryAsync(x => x.Name, x => x.Id);
 
