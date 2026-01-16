@@ -2,9 +2,7 @@
 <div mat-dialog-content>
   <div  class="d-flex flex-column">
   <button
-    mat-raised-button
-    color="accent"
-    class="mb-2 align-self-start"
+    class="mb-2 align-self-start btn-primary btn-primary--icon-left"
     id="taskManagementCreateShowSaveBtn"
     (click)="showCreateTagModal()">
     {{'Add new' | translate}}
@@ -18,8 +16,7 @@
       <div class="spacer"></div>
       <div>
         <button
-          color="accent"
-          mat-icon-button
+          class="btn-primary btn-primary--icon-left"
           (click)="showEditFolderModal(folder)"
           id="editTagBtn"
           matTooltip="{{'Edit folder' | translate}}"
@@ -28,8 +25,7 @@
         </button>
         <button
           [disabled]="!folder.isDeletable"
-          color="warn"
-          mat-icon-button
+          class="btn-warning"
           (click)="showDeleteFolderModal(folder)"
           id="deleteFolderBtn"
           matTooltip="{{'Delete folder' | translate}}"
@@ -43,7 +39,7 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
+   class="btn-cancel"
     (click)="hide()"
     id="taskManagementCreateShowSaveCancelBtn"
   >
