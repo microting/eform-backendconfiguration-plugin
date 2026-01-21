@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using BackendConfiguration.Pn.Infrastructure.Enums;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationStatsService;
@@ -270,74 +271,104 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
     }
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(int? propertyId, int? siteId)
+    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(
+    int? propertyId,
+    int? siteId,
+    List<int> propertyIds,
+    List<int> status,
+    List<int> tagIds,
+    List<int> folderIds,
+    List<int> assignToIds)
+{
+    try
     {
-        try
+        var core = await coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var query = backendConfigurationPnDbContext.AreaRulePlannings
+            .Include(x => x.PlanningSites)
+            .Include(x => x.AreaRulePlanningTags)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.AreaRule.CreatedInGuide)
+            .Where(x => x.ItemPlanningId != 0)
+            .AsNoTracking();
+        
+        if (propertyId.HasValue)
+            query = query.Where(x => x.PropertyId == propertyId.Value);
+
+        if (propertyIds.Any())
+            query = query.Where(x => propertyIds.Contains(x.PropertyId));
+
+        if (status.Any())
         {
-            var core = await coreHelper.GetCore();
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var result = new PlannedTaskWorkers();
-            var query = backendConfigurationPnDbContext.PlanningSites
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Include(x => x.AreaRulePlanning)
-                .Where(x => x.AreaRulePlanning.RepeatEvery > 0)
-                .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
-                .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0)
-                .AsNoTracking();
+            var includeActive = status.Contains((int)TaskWizardStatuses.Active);
+            var includeNotActive = status.Contains((int)TaskWizardStatuses.NotActive);
 
-            if (propertyId.HasValue)
-            {
-                query = query
-                    .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value
-                                );
-            }
-
-            if (siteId.HasValue)
-            {
-                query = query
-                    .Where(x => x.SiteId == siteId.Value);
-            }
-
-            var groupedData = await query
-                .GroupBy(x => x.SiteId)
-                .Select(x => new
-                {
-                    SiteId = x.Key,
-                    Count = x.Count()
-                })
-                .ToListAsync();
-
-            var siteIds = groupedData
-                .Select(x => x.SiteId)
-                .ToList();
-
-            var siteNames = await sdkDbContext.Sites
-                .Where(x => siteIds.Contains(x.Id))
-                .ToDictionaryAsync(x => x.Name, x => x.Id);
-
-            result.TaskWorkers = groupedData
-                .Select(x => new PlannedTaskWorker
-                {
-                    StatValue = x.Count,
-                    WorkerName = siteNames
-                        .Where(y => y.Value == x.SiteId)
-                        .Select(y => y.Key)
-                        .FirstOrDefault(),
-                    WorkerId = x.SiteId
-                })
-                .ToList();
-
-            return new OperationDataResult<PlannedTaskWorkers>(true, result);
+            query = query.Where(x =>
+                (includeActive && x.Status) ||
+                (includeNotActive && !x.Status));
         }
-        catch (Exception e)
+
+        if (folderIds.Any())
+            query = query.Where(x => folderIds.Contains(x.FolderId));
+
+        if (assignToIds.Any())
         {
-            SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
-            logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<PlannedTaskWorkers>(false,
-                localizationService.GetString("ErrorWhileGetPlannedTaskWorkersStat"));
+            query = query.Where(x =>
+                x.PlanningSites.Any(ps =>
+                    ps.WorkflowState != Constants.WorkflowStates.Removed &&
+                    assignToIds.Contains(ps.SiteId)));
         }
+
+        if (tagIds.Any())
+        {
+            query = query.Where(x =>
+                x.AreaRulePlanningTags.Any(t =>
+                    t.WorkflowState != Constants.WorkflowStates.Removed &&
+                    tagIds.Contains(t.ItemPlanningTagId))
+                ||
+                (x.ItemPlanningTagId.HasValue &&
+                 tagIds.Contains(x.ItemPlanningTagId.Value)));
+        }
+
+        var grouped = await query
+            .SelectMany(x => x.PlanningSites
+                .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed))
+            .GroupBy(ps => ps.SiteId)
+            .Select(g => new
+            {
+                SiteId = g.Key,
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        var siteIds = grouped.Select(x => x.SiteId).ToList();
+
+        var siteNames = await sdkDbContext.Sites
+            .Where(x => siteIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+        return new OperationDataResult<PlannedTaskWorkers>(true,
+            new PlannedTaskWorkers
+            {
+                TaskWorkers = grouped.Select(x => new PlannedTaskWorker
+                {
+                    WorkerId = x.SiteId,
+                    WorkerName = siteNames.GetValueOrDefault(x.SiteId),
+                    StatValue = x.Count
+                }).ToList()
+            });
     }
+    catch (Exception e)
+    {
+        SentrySdk.CaptureException(e);
+        logger.LogError(e, e.Message);
+        return new OperationDataResult<PlannedTaskWorkers>(
+            false,
+            localizationService.GetString("ErrorWhileGetPlannedTaskWorkersStat"));
+    }
+}
+
 
     /// <inheritdoc />
     public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers(int? propertyId, int? siteId)

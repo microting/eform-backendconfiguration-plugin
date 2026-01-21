@@ -72,9 +72,25 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("planned-task-workers")]
-    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers([FromQuery] int? propertyId, [FromQuery] int? siteId)
+    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(
+        [FromQuery] int? propertyId, 
+        [FromQuery] int? siteId,
+        [FromQuery] List<int>? propertyIds,
+        [FromQuery] List<int>? status,
+        [FromQuery] List<int>? tagIds,
+        [FromQuery] List<int>? folderIds,
+        [FromQuery] List<int>? assignToIds
+        )
     {
-        return await _statsService.GetPlannedTaskWorkers(propertyId, siteId);
+        return await _statsService.GetPlannedTaskWorkers(
+            propertyId, 
+            siteId, 
+            propertyIds ?? [],
+            status ?? [],
+            tagIds ?? [],
+            folderIds ?? [],
+            assignToIds ?? []
+        );
     }
 
     [HttpGet]
@@ -95,7 +111,7 @@ public class StatsController : Controller
        //return await _statsService.GetAdHocTaskWorkers(propertyId, siteId);
         return await _statsService.GetAdHocTaskWorkersByFilters(
             siteId,
-            propertyId ?? [],
+            propertyId, 
             areaName ?? [],
             createdBy ?? [],
             lastAssignedTo ?? [],
