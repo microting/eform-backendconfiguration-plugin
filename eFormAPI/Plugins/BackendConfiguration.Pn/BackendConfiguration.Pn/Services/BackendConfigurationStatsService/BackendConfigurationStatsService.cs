@@ -148,7 +148,16 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
 
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status)
+    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(
+        int? propertyId,
+        int? priority,
+        int? status,
+        List<int>? propertyIds,
+        List<int>? statuses,
+        int? lastAssignedTo,
+        DateTime? dateFrom,
+        DateTime? dateTo
+    )
     {
         try
         {
@@ -163,67 +172,78 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
 
             if (propertyId.HasValue && propertyId != -1)
             {
-                query = query
-                    .Where(x => x.PropertyWorker.PropertyId == propertyId);
+                query = query.Where(x => x.PropertyWorker.PropertyId == propertyId.Value);
+            }
+
+            if (propertyIds != null && propertyIds.Any())
+            {
+                query = query.Where(x => propertyIds.Contains(x.PropertyWorker.PropertyId));
+            }
+
+            if (statuses != null && statuses.Any())
+            {
+                query = query.Where(x => statuses.Contains((int)x.CaseStatusesEnum));
+            }
+            else if (status.HasValue && status != -1)
+            {
+                query = query.Where(x => x.CaseStatusesEnum == (CaseStatusesEnum)status.Value);
+            }
+            else
+            {
+                query = query.Where(x =>
+                    x.CaseStatusesEnum != CaseStatusesEnum.Completed &&
+                    x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
             }
 
             if (priority.HasValue && priority != -1)
             {
-                query = query
-                    .Where(x => x.Priority == priority.ToString());
+                query = query.Where(x => x.Priority == priority.Value.ToString());
             }
+            
+            if (lastAssignedTo.HasValue)
+            {
+                var core = await coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            if (status.HasValue && status != -1)
-            {
-                query = query
-                    .Where(x => x.CaseStatusesEnum == (CaseStatusesEnum)status);
-            }
-            else
-            {
-                if (status == -1)
+                var siteName = await sdkDbContext.Sites
+                    .Where(x => x.Id == lastAssignedTo.Value)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrEmpty(siteName))
                 {
-                    query = query
-                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
-                }
-                else
-                {
-                    query = query
-                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+                    query = query.Where(x => x.LastAssignedToName == siteName);
                 }
             }
 
-            result.Urgent = await query
-                .Where(x => x.Priority == 1.ToString())
-                .Select(x => x.Id)
-                .CountAsync();
+            if (dateFrom.HasValue)
+            {
+                query = query.Where(x => x.CreatedAt >= dateFrom.Value);
+            }
 
-            result.High = await query
-                .Where(x => x.Priority == 2.ToString())
-                .Select(x => x.Id)
-                .CountAsync();
+            if (dateTo.HasValue)
+            {
+                query = query.Where(x => x.CreatedAt <= dateTo.Value);
+            }
 
-            result.Middle = await query
-                .Where(x => x.Priority == 3.ToString())
-                .Select(x => x.Id)
-                .CountAsync();
-
-            result.Low = await query
-                .Where(x => x.Priority == 4.ToString())
-                .Select(x => x.Id)
-                .CountAsync();
+            result.Urgent = await query.CountAsync(x => x.Priority == "1");
+            result.High   = await query.CountAsync(x => x.Priority == "2");
+            result.Middle = await query.CountAsync(x => x.Priority == "3");
+            result.Low    = await query.CountAsync(x => x.Priority == "4");
 
             return new OperationDataResult<AdHocTaskPriorities>(true, result);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
-            logger.LogError(e.Message);
-            logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<AdHocTaskPriorities>(false,
+            logger.LogError(e, e.Message);
+
+            return new OperationDataResult<AdHocTaskPriorities>(
+                false,
                 localizationService.GetString("ErrorWhileGetAdHocTaskPrioritiesStat"));
         }
     }
+
 
     /// <inheritdoc />
     public async Task<OperationDataResult<DocumentUpdatedDays>> GetDocumentUpdatedDays(int? propertyId)

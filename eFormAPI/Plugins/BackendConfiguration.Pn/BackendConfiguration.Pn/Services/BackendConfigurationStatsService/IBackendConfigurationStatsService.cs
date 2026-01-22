@@ -14,7 +14,16 @@ public interface IBackendConfigurationStatsService
         List<int> workerIds
     );
 
-    Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status);
+    Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(
+           int? propertyId, 
+           int? priority, 
+           int? status,
+           List<int>? propertyIds,
+           List<int>? statuses,
+           int? lastAssignedTo,
+           DateTime? dateFrom,
+           DateTime? dateTo
+        );
 
     Task<OperationDataResult<DocumentUpdatedDays>> GetDocumentUpdatedDays(int? propertyId);
 

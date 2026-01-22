@@ -70,6 +70,18 @@ export class BackendConfigurationPnStatisticsService {
     return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.AdHocTaskPriorities, model);
   }
 
+  getAdHocTaskPrioritiesByFilters(model: {
+    propertyId?: number | null;
+    propertyIds?: number[];
+    statuses?: number[];
+    priority?: number | null;
+    lastAssignedTo?: number | null;
+    dateFrom?: string | Date | null;
+    dateTo?: string | Date | null;
+  }) : Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
+    return this.apiBaseService.get(BackendConfigurationPnStatisticsMethods.AdHocTaskPriorities, model);
+  }
+
   getAdHocTaskWorkersByFilters(model: {
     propertyId: number[];
     areaName: number[];

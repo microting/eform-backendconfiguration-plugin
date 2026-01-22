@@ -58,9 +58,27 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("ad-hoc-task-priorities")]
-    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities([FromQuery] int? propertyId, [FromQuery] int? priority, [FromQuery] int? status)
+    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(
+        [FromQuery] int? propertyId, 
+        [FromQuery] int? priority, 
+        [FromQuery] int? status,
+        [FromQuery] List<int>? propertyIds,
+        [FromQuery] List<int>? statuses,
+        [FromQuery] int? lastAssignedTo,
+        [FromQuery] DateTime? dateFrom,
+        [FromQuery] DateTime? dateTo
+        )
     {
-        return await _statsService.GetAdHocTaskPriorities(propertyId, priority, status);
+        return await _statsService.GetAdHocTaskPriorities(
+            propertyId, 
+            priority, 
+            status,
+            propertyIds ?? new List<int>(),
+            statuses ?? new List<int>(),
+            lastAssignedTo,
+            dateFrom,
+            dateTo
+            );
     }
 
     [HttpGet]
