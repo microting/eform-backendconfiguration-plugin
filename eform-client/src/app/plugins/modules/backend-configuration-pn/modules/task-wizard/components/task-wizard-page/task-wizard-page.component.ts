@@ -385,7 +385,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCreateTask() {
-    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
+    this.createModal =
+      this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
     this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;

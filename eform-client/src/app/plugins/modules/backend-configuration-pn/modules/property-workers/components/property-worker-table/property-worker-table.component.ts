@@ -209,7 +209,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     if (!siteDto.unitId) {
       return;
     }
-    this.propertyWorkerOtpModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerOtpModalComponent,
+    this.propertyWorkerOtpModalComponentAfterClosedSub$ =
+      this.dialog.open(PropertyWorkerOtpModalComponent,
       {...dialogConfigHelper(this.overlay, siteDto)})
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
   }
@@ -268,7 +269,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       (x) => x.siteId === simpleSiteDto.siteId
     );
 
-    this.propertyWorkerEditModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerCreateEditModalComponent,
+    this.propertyWorkerEditModalComponentAfterClosedSub$ =
+      this.dialog.open(PropertyWorkerCreateEditModalComponent,
       {
         ...dialogConfigHelper(this.overlay, {
           deviceUser: selectedSimpleSite,
@@ -285,7 +287,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   }
 
   openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {
-    this.propertyWorkerOtpModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerDeleteModalComponent,
+    this.propertyWorkerOtpModalComponentAfterClosedSub$ =
+      this.dialog.open(PropertyWorkerDeleteModalComponent,
       {...dialogConfigHelper(this.overlay, simpleSiteDto)})
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
   }

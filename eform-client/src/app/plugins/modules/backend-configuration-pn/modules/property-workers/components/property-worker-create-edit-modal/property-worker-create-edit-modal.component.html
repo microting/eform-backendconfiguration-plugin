@@ -1,5 +1,6 @@
-<h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate }}</h3>
+
 <form [formGroup]="form">
+  <h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate }}</h3>
   <div mat-dialog-content>
     <mat-tab-group
       dynamicHeight="false"
@@ -241,23 +242,23 @@
 
       </mat-tab>
     </mat-tab-group>
-    <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-      <button
-        class="btn-cancel"
-        id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
-        (click)="hide()"
-      >
-        {{ 'Cancel' | translate }}
-      </button>
-      <button
-        tabindex="9"
-        class="btn-primary btn-primary--icon-left"
-        (click)="edit ? updateSingle() : createDeviceUser()"
-        [disabled]="form.invalid"
-        id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
-      >
-        <span>{{ (edit ? 'Save' : 'Create') | translate }}</span>
-      </button>
-    </div>
+  </div>
+  <div mat-dialog-actions class="d-flex flex-row justify-content-end">
+    <button
+      class="btn-cancel"
+      id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
+      (click)="hide()"
+    >
+      {{ 'Cancel' | translate }}
+    </button>
+    <button
+      tabindex="9"
+      class="btn-primary btn-primary--icon-left"
+      (click)="edit ? updateSingle() : createDeviceUser()"
+      [disabled]="form.invalid"
+      id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
+    >
+      <span>{{ (edit ? 'Save' : 'Create') | translate }}</span>
+    </button>
   </div>
 </form>
