@@ -58,9 +58,27 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("ad-hoc-task-priorities")]
-    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities([FromQuery] int? propertyId, [FromQuery] int? priority, [FromQuery] int? status)
+    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(
+        [FromQuery] int? propertyId, 
+        [FromQuery] int? priority, 
+        [FromQuery] int? status,
+        [FromQuery] List<int>? propertyIds,
+        [FromQuery] List<int>? statuses,
+        [FromQuery] int? lastAssignedTo,
+        [FromQuery] DateTime? dateFrom,
+        [FromQuery] DateTime? dateTo
+        )
     {
-        return await _statsService.GetAdHocTaskPriorities(propertyId, priority, status);
+        return await _statsService.GetAdHocTaskPriorities(
+            propertyId, 
+            priority, 
+            status,
+            propertyIds ?? new List<int>(),
+            statuses ?? new List<int>(),
+            lastAssignedTo,
+            dateFrom,
+            dateTo
+            );
     }
 
     [HttpGet]
@@ -72,9 +90,25 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("planned-task-workers")]
-    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers([FromQuery] int? propertyId, [FromQuery] int? siteId)
+    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(
+        [FromQuery] int? propertyId, 
+        [FromQuery] int? siteId,
+        [FromQuery] List<int>? propertyIds,
+        [FromQuery] List<int>? status,
+        [FromQuery] List<int>? tagIds,
+        [FromQuery] List<int>? folderIds,
+        [FromQuery] List<int>? assignToIds
+        )
     {
-        return await _statsService.GetPlannedTaskWorkers(propertyId, siteId);
+        return await _statsService.GetPlannedTaskWorkers(
+            propertyId, 
+            siteId, 
+            propertyIds ?? [],
+            status ?? [],
+            tagIds ?? [],
+            folderIds ?? [],
+            assignToIds ?? []
+        );
     }
 
     [HttpGet]
@@ -95,7 +129,7 @@ public class StatsController : Controller
        //return await _statsService.GetAdHocTaskWorkers(propertyId, siteId);
         return await _statsService.GetAdHocTaskWorkersByFilters(
             siteId,
-            propertyId ?? [],
+            propertyId, 
             areaName ?? [],
             createdBy ?? [],
             lastAssignedTo ?? [],

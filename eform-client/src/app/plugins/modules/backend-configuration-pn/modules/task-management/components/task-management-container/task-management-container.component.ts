@@ -1,4 +1,5 @@
-import {Component, OnDestroy, OnInit,
+import {
+  Component, OnDestroy, OnInit,
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -39,10 +40,10 @@ import {
 
 @AutoUnsubscribe()
 @Component({
-    selector: 'app-task-management-container',
-    templateUrl: './task-management-container.component.html',
-    styleUrls: ['./task-management-container.component.scss'],
-    standalone: false
+  selector: 'app-task-management-container',
+  templateUrl: './task-management-container.component.html',
+  styleUrls: ['./task-management-container.component.scss'],
+  standalone: false
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);
@@ -88,11 +89,11 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     }
     return '';
   }
+
   public selectTaskManagementPropertyIdIsNullOrUndefined$ = this.store.select(selectTaskManagementPropertyIdIsNullOrUndefined);
   public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
-
 
 
   ngOnInit() {
@@ -124,9 +125,9 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .subscribe(filters => {
         // if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
         //   this.selectedPropertyId = filters.propertyId;
-          if (this.diagramForShow) {
-            this.getStats();
-          }
+        if (this.diagramForShow) {
+          this.getStats();
+        }
         // } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
         //   this.selectedPropertyId = null;
         //   if (this.diagramForShow) {
@@ -203,11 +204,12 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.downloadWordReportSub$ = this.taskManagementStateService
       .downloadWordReport()
       .pipe(
-        tap((data) => {if (currentFilters.propertyId === -1 || currentFilters.propertyId === null) {
-          saveAs(data, `report.docx`);
-        } else {
-          saveAs(data, `${this.properties.find(x =>
-          x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.docx`);
+        tap((data) => {
+          if (currentFilters.propertyId === -1 || currentFilters.propertyId === null) {
+            saveAs(data, `report.docx`);
+          } else {
+            saveAs(data, `${this.properties.find(x =>
+              x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.docx`);
           }
         }),
         catchError((err, caught) => {
@@ -231,8 +233,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
             saveAs(data, `report.xlsx`);
           } else {
             saveAs(data, `${this.properties.find(x =>
-            x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.xlsx`);
-            }
+              x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.xlsx`);
+          }
         }),
         catchError((_, caught) => {
           this.toasterService.error('Error downloading report');
@@ -272,13 +274,27 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .subscribe(f => filters = f);
 
 
-
     if (this.diagramForShow === 'ad-hoc-task-priorities') {
-      this.getAdHocTaskPriorities();
+      // this.getAdHocTaskPriorities();
+      this.statisticsStateService.getAdHocTaskPrioritiesByFilters({
+        propertyId: filters.propertyId,
+        statuses: filters.statuses,
+        priority: filters.priority,
+        lastAssignedTo: filters.lastAssignedTo,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+      })
+        .subscribe(res => {
+          if (res?.success) {
+            this.adHocTaskPrioritiesModel = res.model;
+          }
+        });
     } else if (this.diagramForShow === 'ad-hoc-task-workers') {
       // this.getAdHocTaskWorkers();
 
-      if (!filters) {return;}
+      if (!filters) {
+        return;
+      }
 
       this.statisticsStateService
         .getAdHocTaskWorkersByFilters({

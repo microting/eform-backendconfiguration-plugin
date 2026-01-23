@@ -88,7 +88,6 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   public selectSideMenuOpened$ = this.store.select(selectSideMenuOpened);
   public selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
-  
   constructor() {
     this.getPropertyIdAsyncSub$ = this.selectStatisticsPropertyId$
       .subscribe(propertyId => this.selectedPropertyId = propertyId);

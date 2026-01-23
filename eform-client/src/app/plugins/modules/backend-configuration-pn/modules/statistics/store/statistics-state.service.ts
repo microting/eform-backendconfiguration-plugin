@@ -60,6 +60,27 @@ export class StatisticsStateService {
     });
   }
 
+  getAdHocTaskPrioritiesByFilters(model: {
+    propertyId?: number | null;
+    propertyIds?: number[];
+    statuses?: number[];
+    priority?: number | null;
+    lastAssignedTo?: number | null;
+    dateFrom?: string | Date | null;
+    dateTo?: string | Date | null;
+  }) {
+    return this.service.getAdHocTaskPrioritiesByFilters({
+      propertyId: model.propertyId ?? null,
+      propertyIds: model.propertyIds ?? [],
+      statuses: model.statuses ?? [],
+      priority: model.priority ?? null,
+      lastAssignedTo: model.lastAssignedTo ?? null,
+      dateFrom: model.dateFrom ?? null,
+      dateTo: model.dateTo ?? null,
+    });
+  }
+
+
   getDocumentUpdatedDays(propertyId: number | null = undefined):
     Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
     return this.service.getDocumentUpdatedDays({
