@@ -42,7 +42,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
     {
         var today = DateTime.UtcNow.Date;
         var tomorrow = today.AddDays(1);
-        
+
         var compliancesQuery = backendConfigurationPnDbContext.Compliances
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => x.PlanningId != 0);
@@ -66,7 +66,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         {
             return new OperationDataResult<PlannedTaskDays>(true, new PlannedTaskDays());
         }
-        
+
         var planningIds = compliances
             .Select(x => x.PlanningId)
             .Distinct()
@@ -77,12 +77,12 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Include(x => x.PlanningsTags)
             .ToListAsync();
-        
+
         var planningSites = await itemsPlanningPnDbContext.PlanningSites
             .Where(x => planningIds.Contains(x.PlanningId))
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
-        
+
         var filteredCompliances = compliances.Where(c =>
         {
             var planning = plannings.FirstOrDefault(p => p.Id == c.PlanningId);
@@ -94,7 +94,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
             {
                 return false;
             }
-            
+
             if (workerIds.Any())
             {
                 var siteIdsForPlanning = planningSites
@@ -110,7 +110,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
 
             return true;
         }).ToList();
-        
+
         var result = new PlannedTaskDays
         {
             Exceeded = filteredCompliances.Count(x =>
@@ -454,7 +454,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
                 localizationService.GetString("ErrorWhileGetAdHocTaskWorkersStat"));
         }
     }
-    
+
     public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkersByFilters(
         int? siteId,
         List<int> propertyId,
@@ -490,17 +490,18 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
         if (assignedToIds.Any())
         {
             var siteNames = await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => assignedToIds.Contains(x.Id))
                 .Select(x => x.Name)
                 .ToListAsync();
 
             query = query.Where(x => siteNames.Contains(x.LastAssignedToName));
         }
-        
-        if (dateFrom.HasValue)
+
+        if (dateFrom.HasValue && dateFrom.Value != DateTime.MinValue)
             query = query.Where(x => x.CreatedAt >= dateFrom.Value);
 
-        if (dateTo.HasValue)
+        if (dateTo.HasValue && dateTo.Value != DateTime.MinValue)
             query = query.Where(x => x.CreatedAt <= dateTo.Value);
 
         var grouped = await query
@@ -513,6 +514,7 @@ public async Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(
             .ToListAsync();
 
         var siteIds = await sdkDbContext.Sites
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Where(x => grouped.Select(g => g.WorkerName).Contains(x.Name))
             .ToDictionaryAsync(x => x.Name, x => x.Id);
 
