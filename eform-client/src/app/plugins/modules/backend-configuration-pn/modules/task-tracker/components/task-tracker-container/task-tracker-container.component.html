@@ -1,13 +1,24 @@
 <eform-new-subheader>
-  <button
-    class="btn-primary btn-primary--icon-left"
-    id="createNewTaskBtn"
-    matTooltip="{{ 'Create new task' | translate }}"
-    (click)="openCreateTaskModal()"
-  >
-    <mat-icon>add</mat-icon>
-    <span>{{ 'Create new task' | translate }}</span>
-  </button>
+  <div class="d-flex flex-row align-items-center gap-24">
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      id="excelReportBtn"
+      (click)="onDownloadExcelReport()"
+      matTooltip="{{ 'Excel report' | translate }}"
+    >
+      <app-icon name="xmlFile" size="20"></app-icon>
+    </button>
+    <div class="line-vert"></div>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="createNewTaskBtn"
+      matTooltip="{{ 'Create new task' | translate }}"
+      (click)="openCreateTaskModal()"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'Create new task' | translate }}</span>
+    </button>
+  </div>
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
@@ -26,24 +37,15 @@
     [properties]="properties"
     [tags]="tags"
   />
-  <div class="d-flex flex-row justify-content-start mb-4 px-3">
-<!--    <button-->
-<!--      mat-raised-button-->
-<!--      id="changeColumnsBtn"-->
-<!--      (click)="openColumnsModal()"-->
-<!--      color="primary">-->
-<!--      {{'Show/hide columns' | translate}}-->
-<!--    </button>-->
-
-    <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
-      id="excelReportBtn"
-      (click)="onDownloadExcelReport()"
-      matTooltip="{{ 'Excel report' | translate }}"
-    >
-      <app-icon name="xmlFile" size="20"></app-icon>
-    </button>
-  </div>
+  <!--  <div class="d-flex flex-row justify-content-start mb-4 px-3">-->
+  <!--    <button-->
+  <!--      mat-raised-button-->
+  <!--      id="changeColumnsBtn"-->
+  <!--      (click)="openColumnsModal()"-->
+  <!--      color="primary">-->
+  <!--      {{'Show/hide columns' | translate}}-->
+  <!--    </button>-->
+  <!--  </div>-->
   <app-task-tracker-table
     [columnsFromDb]="columns"
     [tasks]="tasks"
