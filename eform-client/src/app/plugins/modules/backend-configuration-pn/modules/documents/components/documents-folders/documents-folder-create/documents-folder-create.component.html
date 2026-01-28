@@ -45,17 +45,16 @@
   </ng-container>
 </div>
 </div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-24">
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-primary btn-primary--icon-left"
     id="folderSaveBtn"
     (click)="createFolder()"
   >
     {{ 'Create' | translate }}
   </button>
   <button
-    mat-raised-button
+    class="btn-cancel"
     id="cancelCreateBtn"
     (click)="hide()"
   >

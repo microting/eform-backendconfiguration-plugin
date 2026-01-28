@@ -1,9 +1,9 @@
 <eform-new-subheader/>
 
-<mat-card>
+<mat-card class="card--no-border px-3">
   <mat-card-content class="d-flex flex-column">
     <mat-form-field>
-      <mat-label>{{'Select property' | translate}}</mat-label>
+      <mat-label>{{ 'Select property' | translate }}</mat-label>
       <mtx-select
         [multiple]="false"
         [items]="properties"
@@ -14,43 +14,43 @@
         [clearable]="true"
       />
     </mat-form-field>
-<div class="d-flex flex-column gap-12">
-  <div class="d-flex flex-row flex-wrap gap-24">
-<!--    <div class="d-flex flex-row flex-wrap row-container">-->
-      <app-planned-task-days
-        [plannedTaskDaysModel]="plannedTaskDays"
-        [selectedPropertyName]="propertyName"
-        [view]="viewTopLine"
-        (clickOnDiagram)="clickOnPlannedTaskDays()"
-        class="half-width"
-      />
-      <app-ad-hoc-task-priorities
-        [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
-        [selectedPropertyName]="propertyName"
-        [view]="viewTopLine"
-        (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
-        class="half-width"
-      />
-<!--    </div>-->
-  </div>
-  <div class="d-flex flex-row flex-wrap gap-24">
-<!--    <div class="d-flex flex-row flex-wrap row-container">-->
-      <app-planned-task-workers
-        [plannedTaskWorkers]="plannedTaskWorkers"
-        [selectedPropertyName]="propertyName"
-        [view]="viewBottomLine"
-        (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
-        class="half-width"
-      />
-      <app-ad-hoc-task-workers
-        [adHocTaskWorkers]="adHocTaskWorkers"
-        [selectedPropertyName]="propertyName"
-        [view]="viewBottomLine"
-        (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
-        class="half-width"
-      />
-<!--    </div>-->
-  </div>
-</div>
+    <div class="d-flex flex-column gap-12">
+      <div class="d-flex flex-row flex-wrap gap-24">
+        <!--    <div class="d-flex flex-row flex-wrap row-container">-->
+        <app-planned-task-days
+          [plannedTaskDaysModel]="plannedTaskDays"
+          [selectedPropertyName]="propertyName"
+          [view]="viewTopLine"
+          (clickOnDiagram)="clickOnPlannedTaskDays()"
+          class="half-width"
+        />
+        <app-ad-hoc-task-priorities
+          [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+          [selectedPropertyName]="propertyName"
+          [view]="viewTopLine"
+          (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
+          class="half-width"
+        />
+        <!--    </div>-->
+      </div>
+      <div class="d-flex flex-row flex-wrap gap-24">
+        <!--    <div class="d-flex flex-row flex-wrap row-container">-->
+        <app-planned-task-workers
+          [plannedTaskWorkers]="plannedTaskWorkers"
+          [selectedPropertyName]="propertyName"
+          [view]="viewBottomLine"
+          (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
+          class="half-width"
+        />
+        <app-ad-hoc-task-workers
+          [adHocTaskWorkers]="adHocTaskWorkers"
+          [selectedPropertyName]="propertyName"
+          [view]="viewBottomLine"
+          (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
+          class="half-width"
+        />
+        <!--    </div>-->
+      </div>
+    </div>
   </mat-card-content>
 </mat-card>

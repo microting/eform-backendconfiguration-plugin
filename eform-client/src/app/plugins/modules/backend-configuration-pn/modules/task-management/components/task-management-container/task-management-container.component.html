@@ -35,6 +35,7 @@
     >
       {{ 'Show' | translate }}
     </button>
+    <div *ngIf="(selectTaskManagementPropertyId$ | async) !== null" class="line-vert"></div>
     <button
       *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
       class="btn-secondary btn-secondary--icon-rounded-border"
