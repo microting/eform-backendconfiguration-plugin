@@ -130,7 +130,7 @@
       </button>
       <button
         mat-menu-item
-        color="warn"
+        class="btn-delete-menu"
         *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked && !row.resigned"
         id="deleteDeviceUserBtn-{{i}}"
         (click)="openDeleteDeviceUserModal(row)"
