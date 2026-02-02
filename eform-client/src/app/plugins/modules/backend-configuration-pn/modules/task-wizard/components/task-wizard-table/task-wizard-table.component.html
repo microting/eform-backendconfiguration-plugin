@@ -114,6 +114,7 @@
         *ngIf="row.createdInGuide"
         mat-menu-item
         id="deleteTaskBtn-{{i}}"
+        class="btn-delete-menu"
         (click)="deleteTask.emit(row)"
       >
         <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>

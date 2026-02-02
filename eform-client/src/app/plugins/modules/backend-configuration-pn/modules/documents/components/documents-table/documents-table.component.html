@@ -80,6 +80,7 @@
         *ngIf="row.isLocked === false"
         mat-menu-item
         id="deleteDocumentBtn-{{i}}"
+        class="btn-delete-menu"
         (click)="onOpenDeleteModal(row)"
       >
         <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
