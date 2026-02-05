@@ -2,14 +2,14 @@
 
 <!--</eform-subheader>-->
 
-<div class="d-grid justify-content-between" style="grid-template-columns: 5fr 2fr;">
+<div class="d-grid justify-content-between p-4" style="grid-template-columns: 5fr 2fr;">
   <div class="mr-4 d-flex flex-column">
     <!-- Done at user editable -->
-    <mat-card *ngIf="currentTemplate.isDoneAtEditable" class="mb-4">
-      <mat-card-title>
+    <mat-card *ngIf="currentTemplate.isDoneAtEditable" class="mb-4 px-4 pt-4">
+      <mat-card-title class="mb-3">
         {{ 'Submitted date' | translate }}
       </mat-card-title>
-      <mat-card-content>
+      <mat-card-content style="padding: 0">
         <mat-form-field>
           <mat-label>{{ 'Select date' | translate }}</mat-label>
           <mat-datepicker-toggle matSuffix [for]="pickerDoneAt"></mat-datepicker-toggle>
@@ -39,38 +39,41 @@
 
   <!-- Right section with navigation -->
   <div>
-    <mat-card style=" position: sticky; top: 0;">
-      <mat-card-title>
+    <mat-card style=" position: sticky; top: 0;" class="p-4">
+      <mat-card-title class="mb-3">
         {{ replyElement.label }}
       </mat-card-title>
-      <mat-card-content>
-        <div
-          *ngFor="let element of replyElement.elementList"
-          style="cursor: pointer"
-          routerLinkActive="active"
-        >
-          <a
-            mat-button
-            (click)="goToSection('#section' + element.id)"
-            class="d-flex w-100"
+      <mat-card-content style="padding: 0">
+        <div class="d-flex flex-row justify-content-start align-items-center gap-12">
+          <div
+            *ngFor="let element of replyElement.elementList"
+            style="cursor: pointer"
+            routerLinkActive="active"
           >
-            {{ element.label }}
-          </a>
-          <ng-container *ngIf="element.elementList">
-            <app-case-edit-nav [element]="element"></app-case-edit-nav>
-          </ng-container>
+            <a
+              style="padding: 24px"
+              mat-button
+              (click)="goToSection('#section' + element.id)"
+              class="btn-primary btn-primary--icon-left py-6"
+            >
+              {{ element.label }}
+            </a>
+            <ng-container *ngIf="element.elementList">
+              <app-case-edit-nav [element]="element"></app-case-edit-nav>
+            </ng-container>
+          </div>
+          <button
+            class="w-100 btn-primary btn-primary--icon-left"
+            (click)="saveCase();"
+            id="submit_form"
+          >
+            {{ 'Save' | translate }}
+          </button>
         </div>
       </mat-card-content>
-      <mat-card-footer class="d-flex justify-content-center align-items-center mt-2 mb-2">
-        <button
-          mat-raised-button
-          color="accent"
-          (click)="saveCase();"
-          id="submit_form"
-        >
-          {{ 'Save' | translate }}
-        </button>
-      </mat-card-footer>
+<!--      <mat-card-footer class="d-flex justify-content-center align-items-center mt-2 mb-2">-->
+<!--        -->
+<!--      </mat-card-footer>-->
     </mat-card>
   </div>
 </div>

@@ -49,7 +49,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   maxDate: Date;
   initialDate: Date;
 
-  
+
 
   ngOnInit() {
     this.activateRoute.params.subscribe((params) => {
@@ -110,8 +110,12 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
+          // this.router
+          //   .navigate([this.reverseRoute])
+          //   .then();
+
           this.router
-            .navigate([this.reverseRoute])
+            .navigate([this.reverseRoute], { queryParams: { highlightId: this.id } })
             .then();
         }
       });

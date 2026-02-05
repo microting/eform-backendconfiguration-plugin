@@ -24,6 +24,8 @@ import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
 import {ReportStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
+import { AfterViewInit, AfterViewChecked, NgZone } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
@@ -32,7 +34,7 @@ import {TranslateService} from '@ngx-translate/core';
     styleUrls: ['./report-container.component.scss'],
     standalone: false
 })
-export class ReportContainerComponent implements OnInit, OnDestroy {
+export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
   private translateService = inject(TranslateService);
   private store = inject(Store);
   private reportService = inject(BackendConfigurationPnReportService);
@@ -44,6 +46,11 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   private imageService = inject(TemplateFilesService);
   private viewportScroller = inject(ViewportScroller);
   private reportStateService = inject(ReportStateService);
+
+  private route = inject(ActivatedRoute);
+  private ngZone = inject(NgZone);
+  private didScrollAndHighlight = false;
+
 
   reportsModel: NewReportEformPnModel[] = [];
   availableTags: SharedTagModel[] = [];
@@ -59,7 +66,36 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   downloadReportSub$: Subscription;
   imageSub$: Subscription[] = [];
 
-  
+  highlightIdFromRoute?: number;
+
+  // ngAfterViewInit() {
+  //   this.route.queryParamMap.subscribe(params => {
+  //     const id = params.get('highlightId');
+  //     this.highlightIdFromRoute = id ? +id : undefined;
+  //   });
+  // }
+  ngAfterViewInit() {
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('highlightId');
+      this.highlightIdFromRoute = id ? +id : undefined;
+      // Reset flag to allow scroll/highlight on new navigation
+      this.didScrollAndHighlight = false;
+    });
+  }
+
+  ngAfterViewChecked() {
+    // Only perform if id is set and we've not already scrolled/highlighted
+    if (this.highlightIdFromRoute && !this.didScrollAndHighlight) {
+      const el = document.querySelector('.highlighted') as HTMLElement;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlighted');
+        setTimeout(() => el.classList.remove('highlighted'), 2000);
+        this.didScrollAndHighlight = true;
+      }
+    }
+  }
+
 
   ngOnInit() {
     this.selectReportsV2ScrollPosition$

@@ -60,7 +60,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   generateReportSub$: Subscription;
   downloadReportSub$: Subscription;
 
-  
+
 
   ngOnInit() {
     this.selectReportsV1ScrollPosition$
