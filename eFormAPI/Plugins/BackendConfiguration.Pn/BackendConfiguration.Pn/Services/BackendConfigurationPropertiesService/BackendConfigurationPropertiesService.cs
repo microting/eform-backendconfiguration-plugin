@@ -74,7 +74,15 @@ public class BackendConfigurationPropertiesService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             var nameFields = new List<string> { "Name", "CHR", "Address", "CVR" };
+            
+            var safeSortFields = new List<string> { "Id", "Name", "Address", "CHR", "CVR" };
+
+            if (!safeSortFields.Contains(request.Sort))
+                request.Sort = "Id";
+            
             query = QueryHelper.AddFilterAndSortToQuery(query, request, nameFields);
+            
+            // query = QueryHelper.AddFilterAndSortToQuery(query, request, nameFields);
 
             // get total
             var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
