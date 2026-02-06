@@ -172,7 +172,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .getWorkOrderCase(workOrderCaseId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
-          const updateModal = this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay, data.model)});
+          const updateModal =
+            this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay, data.model), minWidth: 1024});
           this.taskUpdatedSub$ = updateModal.componentInstance.taskCreated.subscribe(() => this.updateTable(true));
         }
       });
@@ -226,7 +227,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
 
 
   openCreateModal() {
-    const createModal = this.dialog.open(TaskManagementCreateShowModalComponent, dialogConfigHelper(this.overlay));
+    const createModal =
+      this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
     this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable(false));
   }
 

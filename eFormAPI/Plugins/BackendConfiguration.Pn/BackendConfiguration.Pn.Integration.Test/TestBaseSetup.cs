@@ -72,14 +72,14 @@ public abstract class TestBaseSetup
                 builder.EnableRetryOnFailure();
             });
 
-        var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
+        var itemsPlanningPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        itemsPlanningPnDbContext.Database.EnsureCreated();
+        itemsPlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
-        return backendConfigurationPnDbContext;
+        return itemsPlanningPnDbContext;
     }
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
@@ -87,21 +87,21 @@ public abstract class TestBaseSetup
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(
-            connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
+            connectionStr.Replace("myDb", "420_eform-angular-time-planning-plugin").Replace("bla", "root"),
             new MariaDbServerVersion(
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
             });
 
-        var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
+        var timePlanningPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        timePlanningPnDbContext.Database.EnsureCreated();
+        timePlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
-        return backendConfigurationPnDbContext;
+        return timePlanningPnDbContext;
     }
 
     private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
@@ -116,14 +116,14 @@ public abstract class TestBaseSetup
                 builder.EnableRetryOnFailure();
             });
 
-        var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
+        var caseTemplatePnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        caseTemplatePnDbContext.Database.EnsureCreated();
+        caseTemplatePnDbContext.Database.ExecuteSqlRaw(rawSql);
 
-        return backendConfigurationPnDbContext;
+        return caseTemplatePnDbContext;
     }
 
     private MicrotingDbContext GetContext(string connectionStr)
@@ -157,11 +157,8 @@ public abstract class TestBaseSetup
                 builder.EnableRetryOnFailure();
             });
         var baseDbContext = new BaseDbContext(optionsBuilder.Options);
-        // var file = Path.Combine("SQL", "420_SDK.sql");
-        // var rawSql = File.ReadAllText(file);
 
         baseDbContext.Database.EnsureCreated();
-        // baseDbContext.Database.Migrate();
 
         return baseDbContext;
     }
