@@ -61,6 +61,8 @@
   [workOrderCases]="workOrderCases"
   (openViewModal)="openViewModal($event)"
   (updateTable)="(selectTaskManagementPropertyIdIsNullOrUndefined$ ? updateTable() : undefined)"
-  (openDeleteModal)="openDeleteModal($event)">
+  (openDeleteModal)="openDeleteModal($event)"
+  (viewPictures)="onViewPictures($event)"
+  >
   </app-task-management-table>
 </div>

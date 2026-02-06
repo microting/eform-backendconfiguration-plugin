@@ -56,6 +56,20 @@ export class TaskManagementTableComponent implements OnInit {
       class: 'description',
     },
     {
+      header: this.translateService.stream('Photo'),
+      field: 'photo',
+      type: 'button',
+      buttons: [
+        {
+          tooltip: this.translateService.stream('View images'),
+          type: 'icon',
+          icon: 'image',
+          click: (record: WorkOrderCaseModel) =>
+            this.onViewPictures(record.id),
+        },
+      ],
+    },
+    {
       header: this.translateService.stream('Last update date'),
       field: 'lastUpdateDate',
       sortProp: {id: 'UpdatedAt'},
@@ -93,10 +107,10 @@ export class TaskManagementTableComponent implements OnInit {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<WorkOrderCaseModel> = new EventEmitter<WorkOrderCaseModel>();
+  @Output() viewPictures = new EventEmitter<number>();
+
   public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
   public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
-
-  
 
   ngOnInit(): void {
   }
@@ -108,6 +122,10 @@ export class TaskManagementTableComponent implements OnInit {
 
   onOpenViewModal(id: number) {
     this.openViewModal.emit(id);
+  }
+
+  onViewPictures(caseId: number) {
+    this.viewPictures.emit(caseId);
   }
 
   onOpenDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {

@@ -38,6 +38,13 @@ import {
   selectStatisticsPropertyId
 } from '../../../../state/statistics/statistics.selector';
 
+import { forkJoin } from 'rxjs';
+import { Gallery, GalleryItem, ImageItem } from 'ng-gallery';
+import { Lightbox } from 'ng-gallery/lightbox';
+import { TemplateFilesService } from 'src/app/common/services';
+
+
+
 @AutoUnsubscribe()
 @Component({
   selector: 'app-task-management-container',
@@ -56,6 +63,9 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private overlay = inject(Overlay);
   private statisticsStateService = inject(StatisticsStateService);
   private route = inject(ActivatedRoute);
+  public gallery = inject(Gallery);
+  public lightbox = inject(Lightbox);
+  private imageService = inject(TemplateFilesService);
 
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -79,6 +89,9 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   getAdHocTaskPrioritiesSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
   getAdHocTaskWorkersSub$: Subscription;
+
+  images: { src: string; thumbnail: string; fileName: string }[] = [];
+  galleryImages: GalleryItem[] = [];
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -164,6 +177,53 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
         }
       });
   }
+
+  openPicture(index: number) {
+    if (!this.galleryImages.length) return;
+
+    this.gallery.ref('lightbox', {
+      counter: this.galleryImages.length > 1,
+      counterPosition: 'bottom'
+    }).load(this.galleryImages);
+
+    this.lightbox.open(index);
+  }
+
+  onViewPictures(caseId: number) {
+    this.taskManagementService.getWorkOrderCase(caseId)
+      .subscribe(res => {
+        if (!res?.success || !res.model?.pictureNames?.length) return;
+
+        const names = res.model.pictureNames as string[];
+
+        const observables = names.map(name =>
+          this.imageService.getImage(name)
+        );
+
+        forkJoin(observables).subscribe((blobs: Blob[]) => {
+
+          this.images = blobs.map((blob, i) => {
+            const url = URL.createObjectURL(blob);
+
+            return {
+              src: url,
+              thumbnail: url,
+              fileName: names[i],
+            };
+          });
+
+          this.galleryImages = this.images.map(img =>
+            new ImageItem({
+              src: img.src,
+              thumb: img.thumbnail
+            })
+          );
+
+          this.openPicture(0);
+        });
+      });
+  }
+
 
   openCreateModal() {
     const createModal = this.dialog.open(TaskManagementCreateShowModalComponent, dialogConfigHelper(this.overlay));
