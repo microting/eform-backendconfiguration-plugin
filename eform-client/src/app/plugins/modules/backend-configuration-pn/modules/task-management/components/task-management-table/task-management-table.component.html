@@ -2,7 +2,7 @@
   <mtx-grid
     [data]="workOrderCases"
     [columns]="tableHeaders"
-    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl, actions: actionsTpl}"
+    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, Photo: photosTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl, actions: actionsTpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="true"
@@ -18,6 +18,15 @@
 
 </div>
 
+<ng-template #photosTpl let-row>
+  <button
+    mat-icon-button
+    matTooltip="{{ 'View images' | translate }}"
+    (click)="viewPictures.emit(row.id)"
+  >
+    <mat-icon>image</mat-icon>
+  </button>
+</ng-template>
 
 
 <ng-template #propertyNameTpl let-row>

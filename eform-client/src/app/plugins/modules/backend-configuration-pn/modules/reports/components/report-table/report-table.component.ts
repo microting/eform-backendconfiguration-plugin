@@ -41,6 +41,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() reportIndex: number;
   @Input() itemHeaders: { key: string; value: string }[] = [];
   @Input() newPostModal: any;
+  @Input() highlightId?: number;
+
   @Output() planningCaseDeleted: EventEmitter<void> = new EventEmitter<void>();
   @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }>
     = new EventEmitter<{ reportIndex: number, caseId: number }>();
@@ -85,12 +87,18 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   ];
   mergedTableHeaders: MtxGridColumn[] = [];
 
+  rowClassFormatter = {
+    highlighted: (row: ReportEformItemModel) =>
+      !!this.highlightId && row.microtingSdkCaseId === this.highlightId,
+  };
+
+
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
   private selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
-  
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (/*!changes.itemHeaders.isFirstChange() && */changes.itemHeaders) {
@@ -134,7 +142,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           field: 'actions',
           width: '160px',
           pinned: 'right',
-        },
+        }
       ];
     }
   }

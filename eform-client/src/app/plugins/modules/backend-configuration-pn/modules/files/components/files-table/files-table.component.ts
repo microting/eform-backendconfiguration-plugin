@@ -35,6 +35,16 @@ export class FilesTableComponent implements OnInit {
   _files: Paged<FilesModel> = new Paged<FilesModel>();
   @Input()
   set files(files: Paged<FilesModel>) {
+    if (files?.entities?.length) {
+      files.entities = files.entities.map(file => ({
+        ...file,
+        tags: file.tags
+          ? [...file.tags].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+          )
+          : []
+      }));
+    }
     this._files = files;
     this.selectedFiles = [];
     this.allFileSelected = false;
@@ -89,7 +99,7 @@ export class FilesTableComponent implements OnInit {
   public selectFilesPaginationIsSortDsc$ = this.store.select(selectFilesPaginationIsSortDsc);
   public selectFilesNameFilters$ = this.store.select(selectFilesNameFilters);
 
-  
+
 
   ngOnInit(): void {
   }

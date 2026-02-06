@@ -1,15 +1,14 @@
 <h3 mat-dialog-title>{{'Are you sure you want to permanently delete this case' | translate}}?</h3>
 
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-24">
   <button
-    mat-raised-button
-    color="warn"
+    class="btn-delete"
     id="planningDeleteDeleteBtn"
     (click)="deleteCompliance()">
     {{'Delete' | translate}}
   </button>
   <button
-    mat-raised-button
+    class="btn-cancel"
     id="planningDeleteCancelBtn"
     (click)="hide()">
     {{'Close' | translate}}

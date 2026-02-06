@@ -38,16 +38,15 @@
     </div>
   </div>
 </div>
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-24">
   <button
-    mat-raised-button
-    color="warn"
+    class="btn-delete"
     id="planningDeleteDeleteBtn"
     (click)="deletePlanning()">
     {{'Delete' | translate}}
   </button>
   <button
-    mat-raised-button
+    class="btn-cancel"
     id="planningDeleteCancelBtn"
     (click)="hide()">
     {{'Close' | translate}}
