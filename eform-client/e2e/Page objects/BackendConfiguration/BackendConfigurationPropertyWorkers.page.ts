@@ -250,6 +250,45 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         }
       }
 
+      // Handle time registration toggle
+      if (propertyWorker.timeRegistrationEnabled === true) {
+        const timeRegistrationToggle = await $(`[for='timeRegistrationEnabledToggle-button']`);
+        await timeRegistrationToggle.waitForDisplayed({ timeout: 40000 });
+        await timeRegistrationToggle.click();
+        await browser.pause(500);
+
+        // If time settings are provided, fill them in
+        if (propertyWorker.timeSettings) {
+          await (await $('#timeregistrationTab')).click();
+          await browser.pause(500);
+
+          const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+          for (const day of days) {
+            if (propertyWorker.timeSettings[day]) {
+              const dayCapitalized = day.charAt(0).toUpperCase() + day.slice(1);
+              
+              if (propertyWorker.timeSettings[day].start) {
+                const startInput = await $(`#start${dayCapitalized}`);
+                await startInput.setValue(propertyWorker.timeSettings[day].start);
+              }
+              
+              if (propertyWorker.timeSettings[day].end) {
+                const endInput = await $(`#end${dayCapitalized}`);
+                await endInput.setValue(propertyWorker.timeSettings[day].end);
+              }
+              
+              if (propertyWorker.timeSettings[day].break !== undefined) {
+                const breakInput = await $(`#break${dayCapitalized}`);
+                await breakInput.setValue(propertyWorker.timeSettings[day].break.toString());
+              }
+            }
+          }
+          
+          await (await $('#generalTab')).click();
+          await browser.pause(500);
+        }
+      }
+
     }
   }
 
@@ -460,4 +499,14 @@ export class PropertyWorker {
   properties?: number[];
   workOrderFlow?: boolean;
   workerEmail?: string;
+  timeRegistrationEnabled?: boolean;
+  timeSettings?: {
+    monday?: { start?: string; end?: string; break?: number };
+    tuesday?: { start?: string; end?: string; break?: number };
+    wednesday?: { start?: string; end?: string; break?: number };
+    thursday?: { start?: string; end?: string; break?: number };
+    friday?: { start?: string; end?: string; break?: number };
+    saturday?: { start?: string; end?: string; break?: number };
+    sunday?: { start?: string; end?: string; break?: number };
+  };
 }
