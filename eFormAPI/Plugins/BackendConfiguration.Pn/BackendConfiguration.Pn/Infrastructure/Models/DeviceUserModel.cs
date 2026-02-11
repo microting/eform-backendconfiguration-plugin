@@ -115,6 +115,23 @@ public class DeviceUserModel
 
     public List<int> Tags { get; set; } = [];
 
+    // Time registration specific settings
+    public bool? UseGoogleSheetAsDefault { get; set; }
+    public bool? UseOnlyPlanHours { get; set; }
+    public bool? AutoBreakCalculationActive { get; set; }
+    public bool? AllowPersonalTimeRegistration { get; set; }
+    public bool? AllowEditOfRegistrations { get; set; }
+    public bool? UsePunchClock { get; set; }
+    public bool? UsePunchClockWithAllowRegisteringInHistory { get; set; }
+    public bool? AllowAcceptOfPlannedHours { get; set; }
+    public bool? DaysBackInTimeAllowedEditingEnabled { get; set; }
+    public int? DaysBackInTimeAllowedEditing { get; set; }
+    public bool? ThirdShiftActive { get; set; }
+    public bool? FourthShiftActive { get; set; }
+    public bool? FifthShiftActive { get; set; }
+    public bool? IsManager { get; set; }
+    public List<int> ManagingTagIds { get; set; } = [];
+
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
         return new DeviceUserModel

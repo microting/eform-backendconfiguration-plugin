@@ -647,6 +647,22 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     assignments.First().StartSunday = deviceUserModel.StartSunday;
                                     assignments.First().EndSunday = deviceUserModel.EndSunday;
                                     assignments.First().BreakSunday = deviceUserModel.BreakSunday;
+                                    // Time registration specific settings
+                                    assignments.First().UseGoogleSheetAsDefault = deviceUserModel.UseGoogleSheetAsDefault ?? false;
+                                    assignments.First().UseOnlyPlanHours = deviceUserModel.UseOnlyPlanHours ?? false;
+                                    assignments.First().AutoBreakCalculationActive = deviceUserModel.AutoBreakCalculationActive ?? false;
+                                    assignments.First().AllowPersonalTimeRegistration = deviceUserModel.AllowPersonalTimeRegistration ?? false;
+                                    assignments.First().AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false;
+                                    assignments.First().UsePunchClock = deviceUserModel.UsePunchClock ?? false;
+                                    assignments.First().UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false;
+                                    assignments.First().AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false;
+                                    assignments.First().DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false;
+                                    assignments.First().DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2;
+                                    assignments.First().ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false;
+                                    assignments.First().FourthShiftActive = deviceUserModel.FourthShiftActive ?? false;
+                                    assignments.First().FifthShiftActive = deviceUserModel.FifthShiftActive ?? false;
+                                    assignments.First().IsManager = deviceUserModel.IsManager ?? false;
+                                    // assignments.First().// ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately; // TODO: Handle ManagingTagIds separately
                                     await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
@@ -679,7 +695,23 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         BreakSaturday = deviceUserModel.BreakSaturday,
                                         StartSunday = deviceUserModel.StartSunday,
                                         EndSunday = deviceUserModel.EndSunday,
-                                        BreakSunday = deviceUserModel.BreakSunday
+                                        BreakSunday = deviceUserModel.BreakSunday,
+                                        // Time registration specific settings
+                                        UseGoogleSheetAsDefault = deviceUserModel.UseGoogleSheetAsDefault ?? false,
+                                        UseOnlyPlanHours = deviceUserModel.UseOnlyPlanHours ?? false,
+                                        AutoBreakCalculationActive = deviceUserModel.AutoBreakCalculationActive ?? false,
+                                        AllowPersonalTimeRegistration = deviceUserModel.AllowPersonalTimeRegistration ?? false,
+                                        AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false,
+                                        UsePunchClock = deviceUserModel.UsePunchClock ?? false,
+                                        UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false,
+                                        AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false,
+                                        DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false,
+                                        DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2,
+                                        ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false,
+                                        FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
+                                        FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
+                                        IsManager = deviceUserModel.IsManager ?? false,
+                                        // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
@@ -887,7 +919,23 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             StartSunday = deviceUserModel.StartSunday,
                             EndSunday = deviceUserModel.EndSunday,
                             BreakSunday = deviceUserModel.BreakSunday,
-                            EnableMobileAccess = deviceUserModel.EnableMobileAccess
+                            EnableMobileAccess = deviceUserModel.EnableMobileAccess,
+                            // Time registration specific settings
+                            UseGoogleSheetAsDefault = deviceUserModel.UseGoogleSheetAsDefault ?? false,
+                            UseOnlyPlanHours = deviceUserModel.UseOnlyPlanHours ?? false,
+                            AutoBreakCalculationActive = deviceUserModel.AutoBreakCalculationActive ?? false,
+                            AllowPersonalTimeRegistration = deviceUserModel.AllowPersonalTimeRegistration ?? false,
+                            AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false,
+                            UsePunchClock = deviceUserModel.UsePunchClock ?? false,
+                            UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false,
+                            AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false,
+                            DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false,
+                            DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2,
+                            ThirdShiftActive = deviceUserModel.ThirdShiftActive ?? false,
+                            FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
+                            FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
+                            IsManager = deviceUserModel.IsManager ?? false,
+                            // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
                         await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
 

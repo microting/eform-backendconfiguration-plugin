@@ -201,6 +201,22 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       startSunday: [this.selectedDeviceUser.startSunday || null],
       endSunday: [this.selectedDeviceUser.endSunday || null],
       breakSunday: [this.selectedDeviceUser.breakSunday || null],
+      // Time registration specific settings
+      useGoogleSheetAsDefault: [this.selectedDeviceUser.useGoogleSheetAsDefault || false],
+      useOnlyPlanHours: [this.selectedDeviceUser.useOnlyPlanHours || false],
+      autoBreakCalculationActive: [this.selectedDeviceUser.autoBreakCalculationActive || false],
+      allowPersonalTimeRegistration: [this.selectedDeviceUser.allowPersonalTimeRegistration || false],
+      allowEditOfRegistrations: [this.selectedDeviceUser.allowEditOfRegistrations || false],
+      usePunchClock: [this.selectedDeviceUser.usePunchClock || false],
+      usePunchClockWithAllowRegisteringInHistory: [this.selectedDeviceUser.usePunchClockWithAllowRegisteringInHistory || false],
+      allowAcceptOfPlannedHours: [this.selectedDeviceUser.allowAcceptOfPlannedHours || false],
+      daysBackInTimeAllowedEditingEnabled: [this.selectedDeviceUser.daysBackInTimeAllowedEditingEnabled || false],
+      daysBackInTimeAllowedEditing: [this.selectedDeviceUser.daysBackInTimeAllowedEditing || 2],
+      thirdShiftActive: [this.selectedDeviceUser.thirdShiftActive || false],
+      fourthShiftActive: [this.selectedDeviceUser.fourthShiftActive || false],
+      fifthShiftActive: [this.selectedDeviceUser.fifthShiftActive || false],
+      isManager: [this.selectedDeviceUser.isManager || false],
+      managingTagIds: [this.selectedDeviceUser.managingTagIds || []],
     });
 
     if (this.selectedDeviceUser.resigned) {
