@@ -353,6 +353,7 @@ public class BackendConfigurationAssignmentWorkerService(
             var core = await coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var sitesQuery = from site in sdkDbContext.Sites
+                join siteTag in sdkDbContext.SiteTags on site.Id equals siteTag.SiteId into siteTags
                 join siteWorker in sdkDbContext.SiteWorkers on site.Id equals siteWorker.SiteId
                 join worker in sdkDbContext.Workers on siteWorker.WorkerId equals worker.Id
                 select new
@@ -384,6 +385,12 @@ public class BackendConfigurationAssignmentWorkerService(
             sitesQuery = sitesQuery
                 .Where(x => x.Resigned == requestModel.ShowResigned)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (requestModel.TagIds != null && requestModel.TagIds.Count > 0)
+            {
+                sitesQuery = sitesQuery
+                    .Where(x => x.SiteTags.Any(y => requestModel.TagIds.Contains(y)));
+            }
 
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel

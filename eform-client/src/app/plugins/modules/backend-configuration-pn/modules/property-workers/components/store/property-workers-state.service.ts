@@ -35,6 +35,7 @@ export class PropertyWorkersStateService {
       sort: this.currentPagination.sort,
       isSortDsc: this.currentPagination.isSortDsc,
       showResigned: this.currentFilters.showResigned,
+      tagIds: this.currentFilters.tagIds,
     });
   }
 
@@ -45,6 +46,13 @@ export class PropertyWorkersStateService {
         nameFilter: nameFilter,
       }));
     }
+  }
+
+  updateTagIds(tagIds: number[]) {
+    this.store.dispatch(propertyWorkersUpdateFilters({
+      ...this.currentFilters,
+      tagIds: tagIds,
+    }));
   }
 
   updatePropertyIds(propertyIds: number[]) {

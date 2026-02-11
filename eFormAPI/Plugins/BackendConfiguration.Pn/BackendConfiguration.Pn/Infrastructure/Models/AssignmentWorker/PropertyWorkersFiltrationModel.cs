@@ -7,4 +7,5 @@ public class PropertyWorkersFiltrationModel : FilterAndSortModel
 {
     public List<int> PropertyIds { get; set; }
     public bool ShowResigned { get; set; }
+    public List<int> TagIds { get; set; }
 }

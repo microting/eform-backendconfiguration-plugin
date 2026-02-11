@@ -15,3 +15,4 @@ export * from './files';
 export * from './task-tracker';
 export * from './task-wizard';
 export * from './statistics';
+export * from './common-tag.model';
