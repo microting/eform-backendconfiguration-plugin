@@ -464,6 +464,22 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.EndSunday = assignedSite.EndSunday;
                     deviceUserModel.BreakSunday = assignedSite.BreakSunday;
                     deviceUserModel.EnableMobileAccess = assignedSite.EnableMobileAccess;
+                    // Time registration specific settings
+                    deviceUserModel.UseGoogleSheetAsDefault = assignedSite.UseGoogleSheetAsDefault;
+                    deviceUserModel.UseOnlyPlanHours = assignedSite.UseOnlyPlanHours;
+                    deviceUserModel.AutoBreakCalculationActive = assignedSite.AutoBreakCalculationActive;
+                    deviceUserModel.AllowPersonalTimeRegistration = assignedSite.AllowPersonalTimeRegistration;
+                    deviceUserModel.AllowEditOfRegistrations = assignedSite.AllowEditOfRegistrations;
+                    deviceUserModel.UsePunchClock = assignedSite.UsePunchClock;
+                    deviceUserModel.UsePunchClockWithAllowRegisteringInHistory = assignedSite.UsePunchClockWithAllowRegisteringInHistory;
+                    deviceUserModel.AllowAcceptOfPlannedHours = assignedSite.AllowAcceptOfPlannedHours;
+                    deviceUserModel.DaysBackInTimeAllowedEditingEnabled = assignedSite.DaysBackInTimeAllowedEditingEnabled;
+                    deviceUserModel.DaysBackInTimeAllowedEditing = assignedSite.DaysBackInTimeAllowedEditing;
+                    deviceUserModel.ThirdShiftActive = assignedSite.ThirdShiftActive;
+                    deviceUserModel.FourthShiftActive = assignedSite.FourthShiftActive;
+                    deviceUserModel.FifthShiftActive = assignedSite.FifthShiftActive;
+                    deviceUserModel.IsManager = assignedSite.IsManager;
+                    // deviceUserModel.ManagingTagIds = assignedSite.ManagingTagIds ?? []; // TODO: Handle ManagingTagIds separately
                 }
 
                 deviceUserModel.TaskManagementEnabled = backendConfigurationPnDbContext.PropertyWorkers.Any(x =>

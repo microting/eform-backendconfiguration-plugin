@@ -179,6 +179,44 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         this.selectedDeviceUser.resigned ? new Date(this.selectedDeviceUser.resignedAtDate) : new Date(),
         this.selectedDeviceUser.resigned ? Validators.required : null
       ],
+      // Time registration fields for each day of the week
+      startMonday: [this.selectedDeviceUser.startMonday || null],
+      endMonday: [this.selectedDeviceUser.endMonday || null],
+      breakMonday: [this.selectedDeviceUser.breakMonday || null],
+      startTuesday: [this.selectedDeviceUser.startTuesday || null],
+      endTuesday: [this.selectedDeviceUser.endTuesday || null],
+      breakTuesday: [this.selectedDeviceUser.breakTuesday || null],
+      startWednesday: [this.selectedDeviceUser.startWednesday || null],
+      endWednesday: [this.selectedDeviceUser.endWednesday || null],
+      breakWednesday: [this.selectedDeviceUser.breakWednesday || null],
+      startThursday: [this.selectedDeviceUser.startThursday || null],
+      endThursday: [this.selectedDeviceUser.endThursday || null],
+      breakThursday: [this.selectedDeviceUser.breakThursday || null],
+      startFriday: [this.selectedDeviceUser.startFriday || null],
+      endFriday: [this.selectedDeviceUser.endFriday || null],
+      breakFriday: [this.selectedDeviceUser.breakFriday || null],
+      startSaturday: [this.selectedDeviceUser.startSaturday || null],
+      endSaturday: [this.selectedDeviceUser.endSaturday || null],
+      breakSaturday: [this.selectedDeviceUser.breakSaturday || null],
+      startSunday: [this.selectedDeviceUser.startSunday || null],
+      endSunday: [this.selectedDeviceUser.endSunday || null],
+      breakSunday: [this.selectedDeviceUser.breakSunday || null],
+      // Time registration specific settings
+      useGoogleSheetAsDefault: [this.selectedDeviceUser.useGoogleSheetAsDefault || false],
+      useOnlyPlanHours: [this.selectedDeviceUser.useOnlyPlanHours || false],
+      autoBreakCalculationActive: [this.selectedDeviceUser.autoBreakCalculationActive || false],
+      allowPersonalTimeRegistration: [this.selectedDeviceUser.allowPersonalTimeRegistration || false],
+      allowEditOfRegistrations: [this.selectedDeviceUser.allowEditOfRegistrations || false],
+      usePunchClock: [this.selectedDeviceUser.usePunchClock || false],
+      usePunchClockWithAllowRegisteringInHistory: [this.selectedDeviceUser.usePunchClockWithAllowRegisteringInHistory || false],
+      allowAcceptOfPlannedHours: [this.selectedDeviceUser.allowAcceptOfPlannedHours || false],
+      daysBackInTimeAllowedEditingEnabled: [this.selectedDeviceUser.daysBackInTimeAllowedEditingEnabled || false],
+      daysBackInTimeAllowedEditing: [this.selectedDeviceUser.daysBackInTimeAllowedEditing || 2],
+      thirdShiftActive: [this.selectedDeviceUser.thirdShiftActive || false],
+      fourthShiftActive: [this.selectedDeviceUser.fourthShiftActive || false],
+      fifthShiftActive: [this.selectedDeviceUser.fifthShiftActive || false],
+      isManager: [this.selectedDeviceUser.isManager || false],
+      managingTagIds: [this.selectedDeviceUser.managingTagIds || []],
     });
 
     if (this.selectedDeviceUser.resigned) {
@@ -439,5 +477,24 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       }
       return null;
     };
+  }
+
+  // Helper methods for time registration - convert minutes from midnight to HH:mm format
+  minutesToTime(minutes: number | null): string {
+    if (minutes === null || minutes === undefined) {
+      return '';
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  }
+
+  // Convert HH:mm format to minutes from midnight
+  timeToMinutes(time: string): number | null {
+    if (!time) {
+      return null;
+    }
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 }

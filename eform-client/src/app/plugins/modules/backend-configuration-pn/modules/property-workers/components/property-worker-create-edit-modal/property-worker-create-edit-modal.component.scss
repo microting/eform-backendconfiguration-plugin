@@ -8,3 +8,33 @@
   flex: 1 1 0;
   min-width: 0;
 }
+
+/* Time registration tab styles */
+#timeRegistrationColumn {
+  width: 100%;
+  padding: 16px;
+}
+
+.day-row {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.day-row h5 {
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.time-inputs {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.time-inputs mat-form-field {
+  flex: 1;
+  min-width: 150px;
+}
+
