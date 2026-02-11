@@ -241,6 +241,193 @@
         </div>
 
       </mat-tab>
+      <mat-tab
+        *ngIf="selectedDeviceUser.timeRegistrationEnabled"
+        label="{{'Timeregistration' | translate }}"
+        id="timeregistrationTab">
+        <br>
+        <div class="modal-columns">
+          <div class="d-flex flex-column" id="timeRegistrationColumn">
+            <h4>{{ 'Working Hours Configuration' | translate }}</h4>
+            <p class="text-muted">{{ 'Configure the start time, end time, and break duration for each day of the week. Times are in minutes from midnight (0-1440).' | translate }}</p>
+            
+            <!-- Monday -->
+            <div class="day-row">
+              <h5>{{ 'Monday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time" 
+                    [value]="minutesToTime(form.get('startMonday')?.value)"
+                    (change)="form.patchValue({startMonday: timeToMinutes($any($event.target).value)})"
+                    id="startMonday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endMonday')?.value)"
+                    (change)="form.patchValue({endMonday: timeToMinutes($any($event.target).value)})"
+                    id="endMonday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakMonday" id="breakMonday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-row">
+              <h5>{{ 'Tuesday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startTuesday')?.value)"
+                    (change)="form.patchValue({startTuesday: timeToMinutes($any($event.target).value)})"
+                    id="startTuesday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endTuesday')?.value)"
+                    (change)="form.patchValue({endTuesday: timeToMinutes($any($event.target).value)})"
+                    id="endTuesday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakTuesday" id="breakTuesday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div class="day-row">
+              <h5>{{ 'Wednesday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startWednesday')?.value)"
+                    (change)="form.patchValue({startWednesday: timeToMinutes($any($event.target).value)})"
+                    id="startWednesday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endWednesday')?.value)"
+                    (change)="form.patchValue({endWednesday: timeToMinutes($any($event.target).value)})"
+                    id="endWednesday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakWednesday" id="breakWednesday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-row">
+              <h5>{{ 'Thursday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startThursday')?.value)"
+                    (change)="form.patchValue({startThursday: timeToMinutes($any($event.target).value)})"
+                    id="startThursday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endThursday')?.value)"
+                    (change)="form.patchValue({endThursday: timeToMinutes($any($event.target).value)})"
+                    id="endThursday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakThursday" id="breakThursday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-row">
+              <h5>{{ 'Friday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startFriday')?.value)"
+                    (change)="form.patchValue({startFriday: timeToMinutes($any($event.target).value)})"
+                    id="startFriday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endFriday')?.value)"
+                    (change)="form.patchValue({endFriday: timeToMinutes($any($event.target).value)})"
+                    id="endFriday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakFriday" id="breakFriday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Saturday -->
+            <div class="day-row">
+              <h5>{{ 'Saturday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startSaturday')?.value)"
+                    (change)="form.patchValue({startSaturday: timeToMinutes($any($event.target).value)})"
+                    id="startSaturday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endSaturday')?.value)"
+                    (change)="form.patchValue({endSaturday: timeToMinutes($any($event.target).value)})"
+                    id="endSaturday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakSaturday" id="breakSaturday">
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Sunday -->
+            <div class="day-row">
+              <h5>{{ 'Sunday' | translate }}</h5>
+              <div class="time-inputs">
+                <mat-form-field>
+                  <mat-label>{{ 'Start time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('startSunday')?.value)"
+                    (change)="form.patchValue({startSunday: timeToMinutes($any($event.target).value)})"
+                    id="startSunday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'End time' | translate }}</mat-label>
+                  <input matInput type="time"
+                    [value]="minutesToTime(form.get('endSunday')?.value)"
+                    (change)="form.patchValue({endSunday: timeToMinutes($any($event.target).value)})"
+                    id="endSunday">
+                </mat-form-field>
+                <mat-form-field>
+                  <mat-label>{{ 'Break (minutes)' | translate }}</mat-label>
+                  <input matInput type="number" formControlName="breakSunday" id="breakSunday">
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
     </mat-tab-group>
   </div>
   <div mat-dialog-actions class="d-flex flex-row justify-content-end">

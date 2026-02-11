@@ -626,6 +626,27 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 {
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
                                     assignments.First().EnableMobileAccess = deviceUserModel.EnableMobileAccess;
+                                    assignments.First().StartMonday = deviceUserModel.StartMonday;
+                                    assignments.First().EndMonday = deviceUserModel.EndMonday;
+                                    assignments.First().BreakMonday = deviceUserModel.BreakMonday;
+                                    assignments.First().StartTuesday = deviceUserModel.StartTuesday;
+                                    assignments.First().EndTuesday = deviceUserModel.EndTuesday;
+                                    assignments.First().BreakTuesday = deviceUserModel.BreakTuesday;
+                                    assignments.First().StartWednesday = deviceUserModel.StartWednesday;
+                                    assignments.First().EndWednesday = deviceUserModel.EndWednesday;
+                                    assignments.First().BreakWednesday = deviceUserModel.BreakWednesday;
+                                    assignments.First().StartThursday = deviceUserModel.StartThursday;
+                                    assignments.First().EndThursday = deviceUserModel.EndThursday;
+                                    assignments.First().BreakThursday = deviceUserModel.BreakThursday;
+                                    assignments.First().StartFriday = deviceUserModel.StartFriday;
+                                    assignments.First().EndFriday = deviceUserModel.EndFriday;
+                                    assignments.First().BreakFriday = deviceUserModel.BreakFriday;
+                                    assignments.First().StartSaturday = deviceUserModel.StartSaturday;
+                                    assignments.First().EndSaturday = deviceUserModel.EndSaturday;
+                                    assignments.First().BreakSaturday = deviceUserModel.BreakSaturday;
+                                    assignments.First().StartSunday = deviceUserModel.StartSunday;
+                                    assignments.First().EndSunday = deviceUserModel.EndSunday;
+                                    assignments.First().BreakSunday = deviceUserModel.BreakSunday;
                                     await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
                                 }
@@ -637,7 +658,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         SiteId = siteDto.SiteId,
                                         CreatedByUserId = userId,
                                         UpdatedByUserId = userId,
-                                        EnableMobileAccess = deviceUserModel.EnableMobileAccess
+                                        EnableMobileAccess = deviceUserModel.EnableMobileAccess,
+                                        StartMonday = deviceUserModel.StartMonday,
+                                        EndMonday = deviceUserModel.EndMonday,
+                                        BreakMonday = deviceUserModel.BreakMonday,
+                                        StartTuesday = deviceUserModel.StartTuesday,
+                                        EndTuesday = deviceUserModel.EndTuesday,
+                                        BreakTuesday = deviceUserModel.BreakTuesday,
+                                        StartWednesday = deviceUserModel.StartWednesday,
+                                        EndWednesday = deviceUserModel.EndWednesday,
+                                        BreakWednesday = deviceUserModel.BreakWednesday,
+                                        StartThursday = deviceUserModel.StartThursday,
+                                        EndThursday = deviceUserModel.EndThursday,
+                                        BreakThursday = deviceUserModel.BreakThursday,
+                                        StartFriday = deviceUserModel.StartFriday,
+                                        EndFriday = deviceUserModel.EndFriday,
+                                        BreakFriday = deviceUserModel.BreakFriday,
+                                        StartSaturday = deviceUserModel.StartSaturday,
+                                        EndSaturday = deviceUserModel.EndSaturday,
+                                        BreakSaturday = deviceUserModel.BreakSaturday,
+                                        StartSunday = deviceUserModel.StartSunday,
+                                        EndSunday = deviceUserModel.EndSunday,
+                                        BreakSunday = deviceUserModel.BreakSunday
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                                     await GoogleSheetHelper.PushToGoogleSheet(core, timePlanningDbContext, logger, oldSiteName, fullName).ConfigureAwait(false);
@@ -823,7 +865,29 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         {
                             SiteId = (int)site.MicrotingUid!,
                             CreatedByUserId = userId,
-                            UpdatedByUserId = userId
+                            UpdatedByUserId = userId,
+                            StartMonday = deviceUserModel.StartMonday,
+                            EndMonday = deviceUserModel.EndMonday,
+                            BreakMonday = deviceUserModel.BreakMonday,
+                            StartTuesday = deviceUserModel.StartTuesday,
+                            EndTuesday = deviceUserModel.EndTuesday,
+                            BreakTuesday = deviceUserModel.BreakTuesday,
+                            StartWednesday = deviceUserModel.StartWednesday,
+                            EndWednesday = deviceUserModel.EndWednesday,
+                            BreakWednesday = deviceUserModel.BreakWednesday,
+                            StartThursday = deviceUserModel.StartThursday,
+                            EndThursday = deviceUserModel.EndThursday,
+                            BreakThursday = deviceUserModel.BreakThursday,
+                            StartFriday = deviceUserModel.StartFriday,
+                            EndFriday = deviceUserModel.EndFriday,
+                            BreakFriday = deviceUserModel.BreakFriday,
+                            StartSaturday = deviceUserModel.StartSaturday,
+                            EndSaturday = deviceUserModel.EndSaturday,
+                            BreakSaturday = deviceUserModel.BreakSaturday,
+                            StartSunday = deviceUserModel.StartSunday,
+                            EndSunday = deviceUserModel.EndSunday,
+                            BreakSunday = deviceUserModel.BreakSunday,
+                            EnableMobileAccess = deviceUserModel.EnableMobileAccess
                         };
                         await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
 
