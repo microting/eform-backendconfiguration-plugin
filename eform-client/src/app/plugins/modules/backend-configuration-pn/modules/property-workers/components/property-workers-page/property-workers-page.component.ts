@@ -30,7 +30,8 @@ import {
   selectPropertyWorkersFilters, selectPropertyWorkersNameFilters
 } from '../../../../state/property-workers/property-workers.selector';
 import {EformTagService} from 'src/app/common/services';
-import {EformsTagsComponent} from "src/app/common/modules/eform-shared-tags/components";
+import {EformsTagsComponent} from 'src/app/common/modules/eform-shared-tags/components';
+import {CommonTagModel} from '../../../../models';
 
 @AutoUnsubscribe()
 @Component({
@@ -59,7 +60,8 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   showResigned: boolean = false;
-  availableTags: Array<CommonDictionaryModel> = [];
+  availableTags: CommonTagModel[] = [];
+  selectedTagIds: number[] = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
@@ -262,5 +264,11 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  onTagsChanged($event: number[]) {
+    this.selectedTagIds = $event;
+    this.propertyWorkersStateService.updateTagIds($event);
+    this.updateTable();
   }
 }
