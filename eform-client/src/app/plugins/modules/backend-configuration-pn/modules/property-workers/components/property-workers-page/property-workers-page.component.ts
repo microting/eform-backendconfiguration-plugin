@@ -60,7 +60,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   showResigned: boolean = false;
-  availableTags: CommonTagModel[] = [];
+  availableTags: CommonDictionaryModel[] = [];
   selectedTagIds: number[] = [];
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);

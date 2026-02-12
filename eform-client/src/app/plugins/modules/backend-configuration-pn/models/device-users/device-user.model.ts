@@ -55,20 +55,4 @@ export class DeviceUserModel {
   resigned: boolean;
   resignedAtDate: Date;
   tags: number[];
-  // Time registration specific settings
-  useGoogleSheetAsDefault: boolean;
-  useOnlyPlanHours: boolean;
-  autoBreakCalculationActive: boolean;
-  allowPersonalTimeRegistration: boolean;
-  allowEditOfRegistrations: boolean;
-  usePunchClock: boolean;
-  usePunchClockWithAllowRegisteringInHistory: boolean;
-  allowAcceptOfPlannedHours: boolean;
-  daysBackInTimeAllowedEditingEnabled: boolean;
-  daysBackInTimeAllowedEditing: number;
-  thirdShiftActive: boolean;
-  fourthShiftActive: boolean;
-  fifthShiftActive: boolean;
-  isManager: boolean;
-  managingTagIds: number[];
 }

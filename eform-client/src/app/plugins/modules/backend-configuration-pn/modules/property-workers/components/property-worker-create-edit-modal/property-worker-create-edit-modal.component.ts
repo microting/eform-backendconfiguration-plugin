@@ -16,6 +16,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
+import {TimePlanningPnSettingsService} from 'src/app/plugins/modules/time-planning-pn/services';
 import {
   AbstractControl,
   FormBuilder,
@@ -26,6 +27,9 @@ import {
   Validators
 } from '@angular/forms';
 import validator from 'validator';
+import {AssignedSiteModel} from 'src/app/plugins/modules/time-planning-pn/models';
+import {Store} from '@ngrx/store';
+import {selectAuthIsAdmin, selectCurrentUserIsFirstUser} from 'src/app/state';
 
 @AutoUnsubscribe()
 @Component({
@@ -35,12 +39,14 @@ import validator from 'validator';
     standalone: false
 })
 export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy {
+  private store = inject(Store);
   private fb = inject(FormBuilder);
   public propertiesService = inject(BackendConfigurationPnPropertiesService);
   public authStateService = inject(AuthStateService);
   private translateService = inject(TranslateService);
   public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
   private appSettingsStateService = inject(AppSettingsStateService);
+  private timePlanningPnSettingsService = inject(TimePlanningPnSettingsService);
   private model = inject<{
     deviceUser: DeviceUserModel,
     assignments: PropertyAssignmentWorkerModel[],
@@ -48,10 +54,13 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     availableTags: CommonDictionaryModel[],
     alreadyUsedEmails: string[];
   }>(MAT_DIALOG_DATA);
+  protected selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
+  public selectCurrentUserIsFirstUser$ = this.store.select(selectCurrentUserIsFirstUser);
 
   availableProperties: CommonDictionaryModel[] = [];
   edit: boolean = false;
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
+  selectedAssignedSite: AssignedSiteModel = new AssignedSiteModel();
   selectedDeviceUserCopy: DeviceUserModel = new DeviceUserModel();
   assignments: PropertyAssignmentWorkerModel[] = [];
   assignmentsCopy: PropertyAssignmentWorkerModel[] = [];
@@ -202,22 +211,49 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       endSunday: [this.selectedDeviceUser.endSunday || null],
       breakSunday: [this.selectedDeviceUser.breakSunday || null],
       // Time registration specific settings
-      useGoogleSheetAsDefault: [this.selectedDeviceUser.useGoogleSheetAsDefault || false],
-      useOnlyPlanHours: [this.selectedDeviceUser.useOnlyPlanHours || false],
-      autoBreakCalculationActive: [this.selectedDeviceUser.autoBreakCalculationActive || false],
-      allowPersonalTimeRegistration: [this.selectedDeviceUser.allowPersonalTimeRegistration || false],
-      allowEditOfRegistrations: [this.selectedDeviceUser.allowEditOfRegistrations || false],
-      usePunchClock: [this.selectedDeviceUser.usePunchClock || false],
-      usePunchClockWithAllowRegisteringInHistory: [this.selectedDeviceUser.usePunchClockWithAllowRegisteringInHistory || false],
-      allowAcceptOfPlannedHours: [this.selectedDeviceUser.allowAcceptOfPlannedHours || false],
-      daysBackInTimeAllowedEditingEnabled: [this.selectedDeviceUser.daysBackInTimeAllowedEditingEnabled || false],
-      daysBackInTimeAllowedEditing: [this.selectedDeviceUser.daysBackInTimeAllowedEditing || 2],
-      thirdShiftActive: [this.selectedDeviceUser.thirdShiftActive || false],
-      fourthShiftActive: [this.selectedDeviceUser.fourthShiftActive || false],
-      fifthShiftActive: [this.selectedDeviceUser.fifthShiftActive || false],
-      isManager: [this.selectedDeviceUser.isManager || false],
-      managingTagIds: [this.selectedDeviceUser.managingTagIds || []],
+
+
+
+      useGoogleSheetAsDefault: false,
+      useOnlyPlanHours: false,
+      autoBreakCalculationActive: false,
+      allowPersonalTimeRegistration: false,
+      allowEditOfRegistrations: false,
+      usePunchClock: false,
+      usePunchClockWithAllowRegisteringInHistory: false,
+      allowAcceptOfPlannedHours: false,
+      daysBackInTimeAllowedEditingEnabled: false,
+      daysBackInTimeAllowedEditing: 2,
+      thirdShiftActive: false,
+      fourthShiftActive: false,
+      fifthShiftActive: false,
+      isManager: false,
+      managingTagIds: []
     });
+    this.timeRegistrationEnabled ? this.timePlanningPnSettingsService.getAssignedSite(this.selectedDeviceUser.id).pipe(
+      tap((response) => {
+        if (response && response.success && response.model) {
+          this.selectedAssignedSite = response.model;
+          this.form.patchValue({
+            useGoogleSheetAsDefault: this.selectedAssignedSite.useGoogleSheetAsDefault || false,
+            useOnlyPlanHours: this.selectedAssignedSite.useOnlyPlanHours || false,
+            autoBreakCalculationActive: this.selectedAssignedSite.autoBreakCalculationActive || false,
+            allowPersonalTimeRegistration: this.selectedAssignedSite.allowPersonalTimeRegistration || false,
+            allowEditOfRegistrations: this.selectedAssignedSite.allowEditOfRegistrations || false,
+            usePunchClock: this.selectedAssignedSite.usePunchClock || false,
+            usePunchClockWithAllowRegisteringInHistory: this.selectedAssignedSite.usePunchClockWithAllowRegisteringInHistory || false,
+            allowAcceptOfPlannedHours: this.selectedAssignedSite.allowAcceptOfPlannedHours || false,
+            daysBackInTimeAllowedEditingEnabled: this.selectedAssignedSite.daysBackInTimeAllowedEditingEnabled || false,
+            daysBackInTimeAllowedEditing: this.selectedAssignedSite.daysBackInTimeAllowedEditing || 2,
+            thirdShiftActive: this.selectedAssignedSite.thirdShiftActive || false,
+            fourthShiftActive: this.selectedAssignedSite.fourthShiftActive || false,
+            fifthShiftActive: this.selectedAssignedSite.fifthShiftActive || false,
+            isManager: this.selectedAssignedSite.isManager || false,
+            managingTagIds: this.selectedAssignedSite.managingTagIds || [],
+          });
+        }
+      })
+    ).subscribe() : null;
 
     if (this.selectedDeviceUser.resigned) {
       Object.keys(this.form.controls).forEach(key => {
@@ -319,18 +355,26 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   updateSingle() {
-
     if (this.form.invalid) {
       return;
     }
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
+    Object.assign(this.selectedAssignedSite, formValue);
     this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;
     this.deviceUserCreate$ = this.propertiesService
       .updateSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {
         if (operation && operation.success && this.assignments) {
-          this.assignWorkerToPropertiesUpdate();
+          if (this.timeRegistrationEnabled) {
+            this.timePlanningPnSettingsService.updateAssignedSite(this.selectedAssignedSite).subscribe(result => {
+              if (result && result.success) {
+                this.assignWorkerToPropertiesUpdate();
+              }
+            });
+          } else {
+            this.assignWorkerToPropertiesUpdate();
+          }
         } else {
           this.hide(true);
         }

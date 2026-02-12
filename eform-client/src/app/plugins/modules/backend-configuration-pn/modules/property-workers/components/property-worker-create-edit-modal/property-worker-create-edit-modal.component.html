@@ -242,23 +242,23 @@
 
       </mat-tab>
       <mat-tab
-        *ngIf="selectedDeviceUser.timeRegistrationEnabled"
+        *ngIf="selectedDeviceUser.timeRegistrationEnabled && (selectCurrentUserIsFirstUser$ | async) === true"
         label="{{'Timeregistration' | translate }}"
         id="timeregistrationTab">
         <br>
-        
+
         <!-- Nested tab-group for time registration sub-tabs -->
         <mat-tab-group dynamicHeight="false">
-          
+
           <!-- General Settings Sub-Tab -->
           <mat-tab label="{{'General' | translate }}" id="generalTimeRegistrationTab">
             <br>
             <div class="modal-columns">
               <div class="d-flex flex-column" id="timeRegistrationColumn">
-                
+
                 <!-- Time Registration Settings -->
                 <h4>{{ 'Time Registration Settings' | translate }}</h4>
-                
+
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
                                 id="useGoogleSheetAsDefault"
@@ -408,9 +408,9 @@
               </div>
             </div>
           </mat-tab>
-          
+
           <!-- Auto Break Calculation Settings Sub-Tab -->
-          <mat-tab 
+          <mat-tab
             label="{{ 'Auto break calculation settings' | translate }}"
             *ngIf="form.value.autoBreakCalculationActive"
             id="autoBreakTab">
@@ -419,7 +419,7 @@
               <div class="d-flex flex-column">
                 <h4>{{ 'Auto break calculation settings' | translate }}</h4>
                 <p class="text-muted">{{ 'Configure automatic break calculation settings for each day of the week.' | translate }}</p>
-                
+
                 <ng-container *ngFor="let day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']">
                   <div class="d-flex flex-row align-items-center">
                     <mat-form-field class="p-1">
@@ -464,7 +464,7 @@
           </mat-tab>
 
           <!-- Working Hours (1st Shift) Sub-Tab -->
-          <mat-tab 
+          <mat-tab
             label="{{'1st shift' | translate }}"
             *ngIf="!form.value.useOnlyPlanHours && !form.value.useGoogleSheetAsDefault"
             id="firstShiftTab">
@@ -473,14 +473,14 @@
               <div class="d-flex flex-column" id="workingHoursColumn">
                 <h4>{{ 'Working Hours Configuration' | translate }}</h4>
                 <p class="text-muted">{{ 'Configure the start time, end time, and break duration for each day of the week. Times are in minutes from midnight (0-1440).' | translate }}</p>
-                
+
             <!-- Monday -->
             <div class="day-row">
               <h5>{{ 'Monday' | translate }}</h5>
               <div class="time-inputs">
                 <mat-form-field>
                   <mat-label>{{ 'Start time' | translate }}</mat-label>
-                  <input matInput type="time" 
+                  <input matInput type="time"
                     [value]="minutesToTime(form.get('startMonday')?.value)"
                     (change)="form.patchValue({startMonday: timeToMinutes($any($event.target).value)})"
                     id="startMonday">
@@ -651,7 +651,7 @@
           </div>
         </div>
       </mat-tab>
-        
+
       </mat-tab-group>
     </mat-tab>
   </mat-tab-group>
