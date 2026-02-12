@@ -226,7 +226,7 @@
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.7" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.5" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.7" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="10.0.11" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="10.0.13" />
       <PackageReference Include="QuestPDF" Version="2025.12.3" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
