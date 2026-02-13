@@ -301,4 +301,5 @@ export const skSK = {
   Web: 'Web',
   Archive: 'Archív',
   'Mobile timeregistration': 'Mobilná registrácia času',
+  'Phone number': 'Telefónne číslo',
 };

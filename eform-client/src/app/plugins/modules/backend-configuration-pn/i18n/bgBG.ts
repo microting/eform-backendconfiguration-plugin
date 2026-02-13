@@ -301,4 +301,5 @@ export const bgBG = {
   Web: 'Уеб',
   Archive: 'Архив',
   'Mobile timeregistration': 'Мобилна регистрация на време',
+  'Phone number': 'Телефонен номер',
 };

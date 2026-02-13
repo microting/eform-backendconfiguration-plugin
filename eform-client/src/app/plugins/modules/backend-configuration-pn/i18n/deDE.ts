@@ -362,4 +362,5 @@ export const deDE = {
   Web: 'Web',
   Archive: 'Archiv',
   'Mobile timeregistration': 'Mobile Zeiterfassung',
+  'Phone number': 'Telefonnummer',
 };

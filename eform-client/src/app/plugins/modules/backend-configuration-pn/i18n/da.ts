@@ -303,4 +303,5 @@ export const da = {
   Web: 'Web',
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil tidsregistrering',
+  'Phone number': 'Telefonnummer',
 };

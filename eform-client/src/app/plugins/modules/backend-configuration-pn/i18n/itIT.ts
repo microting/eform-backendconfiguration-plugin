@@ -301,4 +301,5 @@ export const itIT = {
   Web: 'Rete',
   Archive: 'Archivio',
   'Mobile timeregistration': 'Registrazione del tempo mobile',
+  'Phone number': 'Numero di telefono',
 };

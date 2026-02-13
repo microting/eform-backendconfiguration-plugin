@@ -301,4 +301,5 @@ export const frFR = {
   Web: 'Web',
   Archive: 'Archive',
   'Mobile timeregistration': 'Enregistrement mobile',
+  'Phone number': 'Numéro de téléphone',
 };

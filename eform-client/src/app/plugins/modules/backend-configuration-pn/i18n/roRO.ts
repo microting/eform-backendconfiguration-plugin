@@ -301,4 +301,5 @@ export const roRO = {
   Web: 'Web',
   Archive: 'Arhivă',
   'Mobile timeregistration': 'Înregistrare de timp mobilă',
+  'Phone number': 'Număr de telefon',
 };

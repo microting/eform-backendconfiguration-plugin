@@ -301,4 +301,5 @@ export const isIS = {
   Web: 'Vefur',
   Archive: 'Skjalasafn',
   'Mobile timeregistration': 'Tímaskráning í farsíma',
+  'Phone number': 'Símanúmer',
 };

@@ -301,4 +301,5 @@ export const huHU = {
   Web: 'Web',
   Archive: 'Archívum',
   'Mobile timeregistration': 'Mobil időregisztráció',
+  'Phone number': 'Telefonszám',
 };

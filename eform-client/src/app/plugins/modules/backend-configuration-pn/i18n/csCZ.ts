@@ -301,4 +301,5 @@ export const csCZ = {
   Web: 'Web',
   Archive: 'Archiv',
   'Mobile timeregistration': 'Mobilní registrace času',
+  'Phone number': 'Telefonní číslo',
 };

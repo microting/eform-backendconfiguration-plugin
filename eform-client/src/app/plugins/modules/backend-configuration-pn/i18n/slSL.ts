@@ -301,4 +301,5 @@ export const slSL = {
   Web: 'Splet',
   Archive: 'Arhiv',
   'Mobile timeregistration': 'Mobilna registracija časa',
+  'Phone number': 'Telefonska številka',
 };

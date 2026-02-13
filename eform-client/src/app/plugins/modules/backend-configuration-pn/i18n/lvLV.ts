@@ -301,4 +301,5 @@ export const lvLV = {
   Web: 'Tīmeklis',
   Archive: 'Arhīvs',
   'Mobile timeregistration': 'Mobilā laika reģistrācija',
+  'Phone number': 'Tālruņa numurs',
 };

@@ -301,4 +301,5 @@ export const etET = {
   Web: 'Veeb',
   Archive: 'Arhiiv',
   'Mobile timeregistration': 'Mobiilne ajaregistreerimine',
+  'Phone number': 'Telefoninumber',
 };

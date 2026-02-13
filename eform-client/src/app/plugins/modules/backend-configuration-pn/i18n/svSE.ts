@@ -301,4 +301,5 @@ export const svSE = {
   Web: 'Web',
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil tidregistrering',
+  'Phone number': 'Telefonnummer',
 };

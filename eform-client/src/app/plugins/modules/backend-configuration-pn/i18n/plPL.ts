@@ -301,4 +301,5 @@ export const plPL = {
   Web: 'Sieć',
   Archive: 'Archiwum',
   'Mobile timeregistration': 'Mobilna rejestracja czasu',
+  'Phone number': 'Numer telefonu',
 };
