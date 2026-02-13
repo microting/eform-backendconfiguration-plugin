@@ -25,6 +25,7 @@ SOFTWARE.
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models;
 
@@ -93,6 +94,7 @@ public class DeviceUserModel
     public bool IsLocked { get; set; }
     public bool IsBackendUser { get; set; }
     public bool HasWorkOrdersAssigned { get; set; }
+    public List<WorkorderCase> WorkOrderCases { get; set; }
     public bool ArchiveEnabled { get; set; }
     public bool WebAccessEnabled { get; set; }
     public string Manufacturer { get; set; } = "";

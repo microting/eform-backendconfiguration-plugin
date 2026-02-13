@@ -531,15 +531,16 @@ public class BackendConfigurationAssignmentWorkerService(
 
                 deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
 
-                var numberOfWorkOrderCases = await backendConfigurationPnDbContext.WorkorderCases
+                var workOrderCases = await backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
                     .Where(x => x.LeadingCase == true)
                     .Where(x => x.LastAssignedToName == deviceUserModel.SiteName)
-                    .CountAsync();
+                    .ToListAsync();
 
-                deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfWorkOrderCases > 0;
-                deviceUserModel.HasWorkOrdersAssigned = numberOfWorkOrderCases > 0;
+                deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : workOrderCases.Count > 0;
+                deviceUserModel.WorkOrderCases = workOrderCases;
+                deviceUserModel.HasWorkOrdersAssigned = workOrderCases.Count > 0;
             }
 
             if (requestModel.PropertyIds != null)
