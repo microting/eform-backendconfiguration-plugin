@@ -491,7 +491,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
-                        if (user != null)
+                        if (user != null && user.Id != 1)
                         {
                             var securityGroupUserWebAccess = await baseDbContext.SecurityGroupUsers
                                 .Include(x => x.SecurityGroup)
@@ -563,7 +563,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 await assignmentForDelete.Delete(timePlanningDbContext).ConfigureAwait(false);
                             }
 
-                            if (user != null)
+                            if (user != null && user.Id != 1)
                             {
                                 var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
                                     .Include(x => x.SecurityGroup)
@@ -584,7 +584,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         }
                         else
                         {
-                            if (deviceUserModel.TimeRegistrationEnabled == true)
+                            if (deviceUserModel.TimeRegistrationEnabled == true && user != null && user.Id != 1)
                             {
                                 var securityGroupUserTime = await baseDbContext.SecurityGroupUsers
                                     .Include(x => x.SecurityGroup)
@@ -594,8 +594,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     .FirstOrDefaultAsync().ConfigureAwait(false);
                                 if (deviceUserModel.EnableMobileAccess)
                                 {
-
-
                                     if (securityGroupUserTime == null)
                                     {
                                         var newSecurityGroupUser = new SecurityGroupUser

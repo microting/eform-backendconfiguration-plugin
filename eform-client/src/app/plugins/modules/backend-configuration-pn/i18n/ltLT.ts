@@ -301,4 +301,5 @@ export const ltLT = {
   Web: 'Žiniatinklis',
   Archive: 'Archyvas',
   'Mobile timeregistration': 'Mobilioji laiko registracija',
+  'Phone number': 'Telefono numeris',
 };

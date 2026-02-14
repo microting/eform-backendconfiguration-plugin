@@ -318,4 +318,5 @@ export const enUS= {
   'Web': 'Web',
   'Archive': 'Archive',
   'Mobile timeregistration': 'Mobile timeregistration',
+  'Phone number': 'Phone number',
 };

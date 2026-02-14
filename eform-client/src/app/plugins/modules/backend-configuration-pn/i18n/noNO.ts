@@ -301,4 +301,5 @@ export const noNO = {
   Web: 'Nett',
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil timeregistrering',
+  'Phone number': 'Telefonnummer',
 };

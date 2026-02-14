@@ -301,4 +301,5 @@ export const nlNL = {
   Web: 'Web',
   Archive: 'Archief',
   'Mobile timeregistration': 'Mobiele tijdregistratie',
+  'Phone number': 'Telefoonnummer',
 };

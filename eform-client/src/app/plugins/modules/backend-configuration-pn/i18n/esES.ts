@@ -301,4 +301,5 @@ export const esES = {
   Web: 'Web',
   Archive: 'Archivo',
   'Mobile timeregistration': 'Registro de tiempo móvil',
+  'Phone number': 'Número de teléfono',
 };

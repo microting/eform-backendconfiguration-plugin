@@ -301,4 +301,5 @@ export const hrHR = {
   Web: 'Web',
   Archive: 'Arhiva',
   'Mobile timeregistration': 'Mobilna registracija vremena',
+  'Phone number': 'Broj telefona',
 };

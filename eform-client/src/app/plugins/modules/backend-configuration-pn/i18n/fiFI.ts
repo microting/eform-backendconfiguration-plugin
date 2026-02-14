@@ -301,4 +301,5 @@ export const fiFI = {
   Web: 'Verkko',
   Archive: 'Arkisto',
   'Mobile timeregistration': 'Mobiiliajan rekisteröinti',
+  'Phone number': 'Puhelinnumero',
 };

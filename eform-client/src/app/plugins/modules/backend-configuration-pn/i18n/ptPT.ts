@@ -301,4 +301,5 @@ export const ptPT = {
   Web: 'Web',
   Archive: 'Arquivo',
   'Mobile timeregistration': 'Registro de tempo móvel',
+  'Phone number': 'Número de telefone',
 };

@@ -301,4 +301,5 @@ export const elGR = {
   Web: 'Ιστός',
   Archive: 'Αρχείο',
   'Mobile timeregistration': 'Εγγραφή χρόνου για κινητά',
+  'Phone number': 'Αριθμός τηλεφώνου',
 };

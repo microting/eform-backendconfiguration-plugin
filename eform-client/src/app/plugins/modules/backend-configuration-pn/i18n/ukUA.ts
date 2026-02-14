@@ -301,4 +301,5 @@ export const ukUA = {
   Web: 'Веб',
   Archive: 'Архів',
   'Mobile timeregistration': 'Мобільна реєстрація часу',
+  'Phone number': 'Номер телефону',
 };
