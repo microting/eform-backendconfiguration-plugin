@@ -223,7 +223,7 @@
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.9" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.8" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.7" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.8" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.7" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.7" />
       <PackageReference Include="Microting.TimePlanningBase" Version="10.0.13" />
