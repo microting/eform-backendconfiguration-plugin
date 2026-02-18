@@ -11,4 +11,5 @@ export class WorkOrderCaseModel {
   lastUpdatedBy: string;
   status: string;
   priority: number;
+  pictureNames: string[];
 }

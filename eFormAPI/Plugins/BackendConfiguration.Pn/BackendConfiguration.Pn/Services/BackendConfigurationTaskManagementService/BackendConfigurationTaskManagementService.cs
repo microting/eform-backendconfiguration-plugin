@@ -155,9 +155,55 @@ public class BackendConfigurationTaskManagementService(
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
                     Priority = string.IsNullOrEmpty(x.Priority) ? 3 :
-                        int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
+                        int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority),
+                    PictureNames = new List<string>()
                 })
                 .ToListAsync().ConfigureAwait(false);
+
+            var caseIds = workOrderCaseFromDb
+                .Select(x => x.Id)
+                .ToList();
+
+            var parentIds = workOrderCaseFromDb
+                .Where(x => x.ParentWorkorderCaseId.HasValue)
+                .Select(x => x.ParentWorkorderCaseId.Value)
+                .ToList();
+
+            var allIds = caseIds.Concat(parentIds).Distinct().ToList();
+
+            var coreData = await coreHelper.GetCore();
+            var sdkDbContextData = coreData.DbContextHelper.GetDbContext();
+
+            var images = await backendConfigurationPnDbContext.WorkorderCaseImages
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => allIds.Contains(x.WorkorderCaseId))
+                .Select(x => new {
+                    x.WorkorderCaseId,
+                    x.UploadedDataId
+                })
+                .ToListAsync();
+
+            var uploadedIds = images.Select(i => i.UploadedDataId).ToList();
+
+            var uploadedFiles = await sdkDbContextData.UploadedDatas
+                .Where(u => uploadedIds.Contains(u.Id))
+                .Select(u => new { u.Id, u.FileName })
+                .ToListAsync();
+
+            foreach (var c in workOrderCaseFromDb)
+            {
+                var targetId = c.ParentWorkorderCaseId ?? c.Id;
+
+                var fileIdsForCase = images
+                    .Where(i => i.WorkorderCaseId == targetId)
+                    .Select(i => i.UploadedDataId)
+                    .ToList();
+
+                c.PictureNames = uploadedFiles
+                    .Where(f => fileIdsForCase.Contains(f.Id))
+                    .Select(f => f.FileName)
+                    .ToList();
+            }
 
             if (excludeSort.Contains(filtersModel.Pagination.Sort))
             {
