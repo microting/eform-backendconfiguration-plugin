@@ -68,18 +68,22 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
 
   highlightIdFromRoute?: number;
 
-  // ngAfterViewInit() {
-  //   this.route.queryParamMap.subscribe(params => {
-  //     const id = params.get('highlightId');
-  //     this.highlightIdFromRoute = id ? +id : undefined;
-  //   });
-  // }
   ngAfterViewInit() {
     this.route.queryParamMap.subscribe(params => {
       const id = params.get('highlightId');
       this.highlightIdFromRoute = id ? +id : undefined;
       // Reset flag to allow scroll/highlight on new navigation
       this.didScrollAndHighlight = false;
+      if (id) {
+        setTimeout(() => {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { highlightId: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+        }, 2000);
+      }
     });
   }
 
