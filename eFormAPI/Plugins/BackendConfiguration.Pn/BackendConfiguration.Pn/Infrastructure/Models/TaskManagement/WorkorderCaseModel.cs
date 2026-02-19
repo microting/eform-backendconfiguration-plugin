@@ -25,6 +25,8 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 
 using System;
+using System.Collections.Generic;
+
 
 public class WorkorderCaseModel
 {
@@ -53,4 +55,6 @@ public class WorkorderCaseModel
     public int? ParentWorkorderCaseId { get; set; }
 
     public int? Priority { get; set; }
+    
+    public List<string> PictureNames { get; set; }
 }

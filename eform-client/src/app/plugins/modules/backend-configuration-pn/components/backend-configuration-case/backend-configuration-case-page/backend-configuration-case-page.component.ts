@@ -58,7 +58,10 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.eFormId = +params['templateId'];
     });
     this.activateRoute.queryParams.subscribe((queryParams) => {
-      this.reverseRoute = queryParams['reverseRoute'];
+      // this.reverseRoute = queryParams['reverseRoute'];
+      this.reverseRoute =
+        this.activateRoute.snapshot.queryParamMap.get('reverseRoute')
+          ?.split('?')[0];
     })
 
     this.loadTemplateInfo();
@@ -114,9 +117,10 @@ export class BackendConfigurationCasePageComponent implements OnInit {
           //   .navigate([this.reverseRoute])
           //   .then();
 
-          this.router
-            .navigate([this.reverseRoute], { queryParams: { highlightId: this.id } })
-            .then();
+          this.router.navigateByUrl(
+            `${this.reverseRoute}?highlightId=${this.id}`
+          ).then();
+
         }
       });
   }

@@ -57,17 +57,8 @@ export class TaskManagementTableComponent implements OnInit {
     },
     {
       header: this.translateService.stream('Photo'),
-      field: 'photo',
-      type: 'button',
-      buttons: [
-        {
-          tooltip: this.translateService.stream('View images'),
-          type: 'icon',
-          icon: 'image',
-          click: (record: WorkOrderCaseModel) =>
-            this.onViewPictures(record.id),
-        },
-      ],
+      field: 'pictureNames',
+      width: '70px',
     },
     {
       header: this.translateService.stream('Last update date'),
