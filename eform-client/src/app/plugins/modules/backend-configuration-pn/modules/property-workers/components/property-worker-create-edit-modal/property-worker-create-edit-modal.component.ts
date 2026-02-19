@@ -27,7 +27,7 @@ import {
   Validators
 } from '@angular/forms';
 import validator from 'validator';
-import {AssignedSiteModel} from 'src/app/plugins/modules/time-planning-pn/models';
+import {AssignedSiteModel, GlobalAutoBreakSettingsModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {Store} from '@ngrx/store';
 import {selectAuthIsAdmin, selectCurrentUserIsFirstUser} from 'src/app/state';
 
@@ -92,6 +92,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   appLanguages: LanguagesModel = new LanguagesModel();
   activeLanguages: Array<any> = [];
   form: FormGroup;
+  private globalAutoBreakSettings: GlobalAutoBreakSettingsModel;
 
 
   private updateDisabledFieldsBasedOnResigned() {
@@ -230,27 +231,61 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       isManager: false,
       managingTagIds: []
     });
+
+    // Build autoBreakSettings form group
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const autoBreakGroup = days.reduce((acc, day) => {
+      acc[day] = this.fb.group({
+        breakMinutesDivider: new FormControl(null),
+        breakMinutesPrDivider: new FormControl(null),
+        breakMinutesUpperLimit: new FormControl(null),
+      });
+      return acc;
+    }, {} as { [key: string]: FormGroup });
+    this.form.addControl('autoBreakSettings', this.fb.group(autoBreakGroup));
+
+    // Fetch global auto break calculation settings
+    this.timePlanningPnSettingsService.getGlobalAutoBreakCalculationSettings().subscribe(result => {
+      if (result && result.success) {
+        this.globalAutoBreakSettings = result.model;
+      }
+    });
+
     this.timeRegistrationEnabled ? this.timePlanningPnSettingsService.getAssignedSite(this.selectedDeviceUser.id).pipe(
       tap((response) => {
         if (response && response.success && response.model) {
           this.selectedAssignedSite = response.model;
-          this.form.patchValue({
-            useGoogleSheetAsDefault: this.selectedAssignedSite.useGoogleSheetAsDefault || false,
-            useOnlyPlanHours: this.selectedAssignedSite.useOnlyPlanHours || false,
-            autoBreakCalculationActive: this.selectedAssignedSite.autoBreakCalculationActive || false,
-            allowPersonalTimeRegistration: this.selectedAssignedSite.allowPersonalTimeRegistration || false,
-            allowEditOfRegistrations: this.selectedAssignedSite.allowEditOfRegistrations || false,
-            usePunchClock: this.selectedAssignedSite.usePunchClock || false,
-            usePunchClockWithAllowRegisteringInHistory: this.selectedAssignedSite.usePunchClockWithAllowRegisteringInHistory || false,
-            allowAcceptOfPlannedHours: this.selectedAssignedSite.allowAcceptOfPlannedHours || false,
-            daysBackInTimeAllowedEditingEnabled: this.selectedAssignedSite.daysBackInTimeAllowedEditingEnabled || false,
-            daysBackInTimeAllowedEditing: this.selectedAssignedSite.daysBackInTimeAllowedEditing || 2,
-            thirdShiftActive: this.selectedAssignedSite.thirdShiftActive || false,
-            fourthShiftActive: this.selectedAssignedSite.fourthShiftActive || false,
-            fifthShiftActive: this.selectedAssignedSite.fifthShiftActive || false,
-            isManager: this.selectedAssignedSite.isManager || false,
-            managingTagIds: this.selectedAssignedSite.managingTagIds || [],
-          });
+            this.form.patchValue({
+              useGoogleSheetAsDefault: this.selectedAssignedSite.useGoogleSheetAsDefault || false,
+              useOnlyPlanHours: this.selectedAssignedSite.useOnlyPlanHours || false,
+              autoBreakCalculationActive: this.selectedAssignedSite.autoBreakCalculationActive || false,
+              allowPersonalTimeRegistration: this.selectedAssignedSite.allowPersonalTimeRegistration || false,
+              allowEditOfRegistrations: this.selectedAssignedSite.allowEditOfRegistrations || false,
+              usePunchClock: this.selectedAssignedSite.usePunchClock || false,
+              usePunchClockWithAllowRegisteringInHistory: this.selectedAssignedSite.usePunchClockWithAllowRegisteringInHistory || false,
+              allowAcceptOfPlannedHours: this.selectedAssignedSite.allowAcceptOfPlannedHours || false,
+              daysBackInTimeAllowedEditingEnabled: this.selectedAssignedSite.daysBackInTimeAllowedEditingEnabled || false,
+              daysBackInTimeAllowedEditing: this.selectedAssignedSite.daysBackInTimeAllowedEditing || 2,
+              thirdShiftActive: this.selectedAssignedSite.thirdShiftActive || false,
+              fourthShiftActive: this.selectedAssignedSite.fourthShiftActive || false,
+              fifthShiftActive: this.selectedAssignedSite.fifthShiftActive || false,
+              isManager: this.selectedAssignedSite.isManager || false,
+              managingTagIds: this.selectedAssignedSite.managingTagIds || [],
+            });
+
+            // Patch auto break settings from assigned site
+            const autoBreakFg = this.form.get('autoBreakSettings') as FormGroup;
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            days.forEach(day => {
+              const dayGroup = autoBreakFg.get(day) as FormGroup;
+              if (dayGroup) {
+                dayGroup.patchValue({
+                  breakMinutesDivider: this.getConvertedValue(this.selectedAssignedSite[`${day}BreakMinutesDivider`]) ?? null,
+                  breakMinutesPrDivider: this.getConvertedValue(this.selectedAssignedSite[`${day}BreakMinutesPrDivider`]) ?? null,
+                  breakMinutesUpperLimit: this.getConvertedValue(this.selectedAssignedSite[`${day}BreakMinutesUpperLimit`]) ?? null,
+                });
+              }
+            });
         }
       })
     ).subscribe() : null;
@@ -361,6 +396,63 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     const formValue = this.form.value;
     Object.assign(this.selectedDeviceUser, formValue);
     Object.assign(this.selectedAssignedSite, formValue);
+
+    // Map auto break settings from nested form group to flat model properties
+    if (formValue.autoBreakSettings) {
+
+      formValue.autoBreakSettings.monday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.monday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.monday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.monday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.monday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.monday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.tuesday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.tuesday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.tuesday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.tuesday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.tuesday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.tuesday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.wednesday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.wednesday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.wednesday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.wednesday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.wednesday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.wednesday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.thursday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.thursday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.thursday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.thursday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.thursday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.thursday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.friday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.friday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.friday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.friday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.friday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.friday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.saturday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.saturday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.saturday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.saturday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.saturday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.saturday.breakMinutesUpperLimit as string);
+      formValue.autoBreakSettings.sunday.breakMinutesDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesDivider as string);
+      formValue.autoBreakSettings.sunday.breakMinutesPrDivider =
+        this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesPrDivider as string);
+      formValue.autoBreakSettings.sunday.breakMinutesUpperLimit =
+        this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesUpperLimit as string);
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      days.forEach(day => {
+        debugger;
+        const daySettings = formValue.autoBreakSettings[day];
+        if (daySettings) {
+          this.selectedAssignedSite[`${day}BreakMinutesDivider`] = this.timeToMinutes(daySettings.breakMinutesDivider) ?? 0;
+          this.selectedAssignedSite[`${day}BreakMinutesPrDivider`] = this.timeToMinutes(daySettings.breakMinutesPrDivider) ?? 0;
+          this.selectedAssignedSite[`${day}BreakMinutesUpperLimit`] = this.timeToMinutes(daySettings.breakMinutesUpperLimit) ?? 0;
+        }
+      });
+    }
     this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;
     this.deviceUserCreate$ = this.propertiesService
       .updateSingleDeviceUser(this.selectedDeviceUser)
@@ -379,6 +471,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
           this.hide(true);
         }
       });
+  }
+
+  convertStringToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    const result = hours * 60 + minutes;
+    if (isNaN(result)) {
+      return 0;
+    }
+    return result;
   }
 
   createDeviceUser() {
@@ -540,5 +641,46 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
+  }
+
+  getConvertedValue(minutes: number, compareMinutes?: number): string {
+    if (minutes === null || minutes === undefined) {
+      return '';
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    let result = `${this.padZero(hours)}:${this.padZero(mins)}`;
+    if (result === '00:00' && (compareMinutes === 0 || compareMinutes === undefined || compareMinutes === null)) {
+      result = '';
+    }
+    return result;
+  }
+
+  padZero(num: number): string {
+    return num < 10 ? `0${num}` : `${num}`;
+  }
+
+  setAutoBreakValue(day: string, control: string, value: string) {
+    const fg = this.form.get('autoBreakSettings') as FormGroup;
+    fg.get(day)?.get(control)?.setValue(value, {emitEvent: true});
+  }
+
+  getAutoBreakSettingsFormGroup(): FormGroup {
+    return this.form.get('autoBreakSettings') as FormGroup;
+  }
+
+  copyBreakSettings(day: string) {
+    if (!this.globalAutoBreakSettings) {
+      return;
+    }
+
+    const fg = this.form.get('autoBreakSettings') as FormGroup;
+    const dayGroup = fg.get(day) as FormGroup;
+
+    dayGroup.patchValue({
+      breakMinutesDivider: this.getConvertedValue(this.globalAutoBreakSettings[`${day}BreakMinutesDivider`]),
+      breakMinutesPrDivider: this.getConvertedValue(this.globalAutoBreakSettings[`${day}BreakMinutesPrDivider`]),
+      breakMinutesUpperLimit: this.getConvertedValue(this.globalAutoBreakSettings[`${day}BreakMinutesUpperLimit`]),
+    });
   }
 }

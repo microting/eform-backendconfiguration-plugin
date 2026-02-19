@@ -420,45 +420,74 @@
                 <h4>{{ 'Auto break calculation settings' | translate }}</h4>
                 <p class="text-muted">{{ 'Configure automatic break calculation settings for each day of the week.' | translate }}</p>
 
+                <div [formGroupName]="'autoBreakSettings'">
                 <ng-container *ngFor="let day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']">
-                  <div class="d-flex flex-row align-items-center">
+                  <div [formGroupName]="day.toLowerCase()" class="d-flex flex-row align-items-center">
                     <mat-form-field class="p-1">
                       <mat-label>{{ day + ' break time divider in minutes' | translate }}</mat-label>
                       <input
                         matInput
-                        type="time"
+                        [ngxTimepicker]="timePicker"
+                        [format]="24"
                         placeholder="HH:MM"
                         [id]="day.toLowerCase() + 'BreakMinutesDivider'"
-                        [name]="day.toLowerCase() + 'BreakMinutesDivider'">
+                        [name]="day.toLowerCase() + 'BreakMinutesDivider'"
+                        formControlName="breakMinutesDivider"
+                        readonly
+                      >
+                      <ngx-material-timepicker
+                        #timePicker
+                        [format]="24"
+                        (timeSet)="setAutoBreakValue(day.toLowerCase(), 'breakMinutesDivider', $event)"
+                      ></ngx-material-timepicker>
                     </mat-form-field>
                     <mat-form-field class="p-1">
                       <mat-label>{{ day.toLowerCase() + ' break time pr divider in minutes' | translate }}</mat-label>
                       <input
                         matInput
-                        type="time"
+                        [ngxTimepicker]="timePickerPrDivider"
+                        [format]="24"
                         placeholder="HH:MM"
                         [id]="day.toLowerCase() + 'BreakMinutesPrDivider'"
-                        [name]="day.toLowerCase() + 'BreakMinutesPrDivider'">
+                        [name]="day.toLowerCase() + 'BreakMinutesPrDivider'"
+                        formControlName="breakMinutesPrDivider"
+                        readonly>
+                      <ngx-material-timepicker
+                        #timePickerPrDivider
+                        [format]="24"
+                        (timeSet)="setAutoBreakValue(day.toLowerCase(), 'breakMinutesPrDivider', $event)"
+                      ></ngx-material-timepicker>
                     </mat-form-field>
                     <mat-form-field class="p-1">
                       <mat-label>{{ day + ' break upper limit' | translate }}</mat-label>
                       <input
                         matInput
-                        type="time"
+                        [ngxTimepicker]="timePickerUpperLimit"
+                        [format]="24"
                         placeholder="HH:MM"
                         [id]="day.toLowerCase() + 'BreakMinutesUpperLimit'"
-                        [name]="day.toLowerCase() + 'BreakMinutesUpperLimit'">
+                        [name]="day.toLowerCase() + 'BreakMinutesUpperLimit'"
+                        formControlName="breakMinutesUpperLimit"
+                        readonly
+                      >
                     </mat-form-field>
+                    <ngx-material-timepicker
+                      #timePickerUpperLimit
+                      [format]="24"
+                      (timeSet)="setAutoBreakValue(day.toLowerCase(), 'breakMinutesUpperLimit', $event)"
+                    ></ngx-material-timepicker>
                     <div class="pt-2">
                       <button
                         [id]="day.toLowerCase() + 'LoadDefaults'"
                         class="btn-secondary btn-secondary--icon-square-border"
-                        type="button">
+                        type="button"
+                        (click)="copyBreakSettings(day.toLowerCase())">
                         <mat-icon>sync_arrow_down</mat-icon>
                       </button>
                     </div>
                   </div>
                 </ng-container>
+                </div>
               </div>
             </div>
           </mat-tab>

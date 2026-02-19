@@ -27,6 +27,7 @@ import {MatChip} from "@angular/material/chips";
 import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/material/datepicker";
 import {MatTab, MatTabGroup} from "@angular/material/tabs";
 import {EformSharedTagsModule} from "src/app/common/modules/eform-shared-tags/eform-shared-tags.module";
+import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
 
 @NgModule({
   imports: [
@@ -53,6 +54,7 @@ import {EformSharedTagsModule} from "src/app/common/modules/eform-shared-tags/ef
     MatTab,
     MatTabGroup,
     EformSharedTagsModule,
+    NgxMaterialTimepickerModule,
   ],
   declarations: [
     PropertyWorkersPageComponent,
