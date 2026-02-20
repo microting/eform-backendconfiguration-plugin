@@ -442,7 +442,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesPrDivider as string);
       formValue.autoBreakSettings.sunday.breakMinutesUpperLimit =
         this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesUpperLimit as string);
-      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       days.forEach(day => {
         debugger;
         const daySettings = formValue.autoBreakSettings[day];
