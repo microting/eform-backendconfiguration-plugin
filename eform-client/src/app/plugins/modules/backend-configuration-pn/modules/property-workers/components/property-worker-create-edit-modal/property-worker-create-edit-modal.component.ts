@@ -444,7 +444,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         this.convertStringToMinutes(formValue.autoBreakSettings.sunday.breakMinutesUpperLimit as string);
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       days.forEach(day => {
-        debugger;
         const daySettings = formValue.autoBreakSettings[day];
         if (daySettings) {
           this.selectedAssignedSite[`${day}BreakMinutesDivider`] = this.timeToMinutes(daySettings.breakMinutesDivider) ?? 0;
@@ -474,6 +473,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   convertStringToMinutes(time: string): number {
+    if (!time) {
+      return 0;
+    }
     const [hours, minutes] = time.split(':').map(Number);
     const result = hours * 60 + minutes;
     if (isNaN(result)) {
