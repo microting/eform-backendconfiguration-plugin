@@ -21,7 +21,7 @@ import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserFullName} from 'src/app/state';
+import {selectCurrentUserFullName, selectCurrentUserIsAdmin} from 'src/app/state';
 import {
   ComplianceDeleteComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components';
@@ -44,6 +44,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private taskTrackerStateService = inject(TaskTrackerStateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  public selectCurrentUserIsAdmin$ = this.store.select(selectCurrentUserIsAdmin);
 
   @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
@@ -102,7 +103,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
 
-  
+
 
   ngOnInit(): void {
     // this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {

@@ -369,6 +369,30 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
+            
+            try
+            {
+                if (foundCase.MicrotingUid != null)
+                {
+                    await core.CaseDelete((int)foundCase.MicrotingUid).ConfigureAwait(false);
+                }
+                else
+                {
+                    var checkListSite = await sdkDbContext.CheckListSites
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == model.Id)
+                        .ConfigureAwait(false);
+                    if (checkListSite != null)
+                    {
+                        await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex.Message);
+                Log.LogException(ex.StackTrace);
+            }
 
             return new OperationResult(true, _localizationService.GetString("CaseHasBeenUpdated"));
         }
