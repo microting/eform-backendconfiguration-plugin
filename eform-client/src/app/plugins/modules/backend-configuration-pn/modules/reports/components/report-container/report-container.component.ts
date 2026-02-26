@@ -34,7 +34,7 @@ import { ActivatedRoute } from '@angular/router';
     styleUrls: ['./report-container.component.scss'],
     standalone: false
 })
-export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
+export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewInit {
   private translateService = inject(TranslateService);
   private store = inject(Store);
   private reportService = inject(BackendConfigurationPnReportService);
@@ -82,24 +82,23 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
             queryParamsHandling: 'merge',
             replaceUrl: true
           });
-        }, 2000);
+        }, 5000);
       }
     });
   }
 
-  ngAfterViewChecked() {
-    // Only perform if id is set and we've not already scrolled/highlighted
-    if (this.highlightIdFromRoute && !this.didScrollAndHighlight) {
-      const el = document.querySelector('.highlighted') as HTMLElement;
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('highlighted');
-        setTimeout(() => el.classList.remove('highlighted'), 2000);
-        this.didScrollAndHighlight = true;
-      }
-    }
-  }
-
+  // ngAfterViewChecked() {
+  //   // Only perform if id is set and we've not already scrolled/highlighted
+  //   if (this.highlightIdFromRoute && !this.didScrollAndHighlight) {
+  //     const el = document.querySelector('.highlighted') as HTMLElement;
+  //     if (el) {
+  //       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  //       el.classList.add('highlighted');
+  //       setTimeout(() => el.classList.remove('highlighted'), 2000);
+  //       this.didScrollAndHighlight = true;
+  //     }
+  //   }
+  // }
 
   ngOnInit() {
     this.selectReportsV2ScrollPosition$
@@ -136,6 +135,19 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
       .subscribe((data) => {
         if (data && data.success) {
           this.reportsModel = data.model;
+
+          if (this.highlightIdFromRoute) {
+            this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+              const el = document.querySelector('.highlighted') as HTMLElement;
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('highlighted');
+                setTimeout(() => el.classList.remove('highlighted'), 2000);
+                this.didScrollAndHighlight = true;
+              }
+            });
+          }
+
           if (this.startWithParams) {
             asyncScheduler.schedule(() => this.viewportScroller.scrollToPosition(this.scrollPosition), 1000);
             this.startWithParams = false;
