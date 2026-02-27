@@ -1,4 +1,5 @@
-import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,
+import {
+  AfterViewInit, Component, OnDestroy, OnInit, ViewChild,
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -31,13 +32,14 @@ import {
   selectTaskManagementFilters, selectTaskWizardFilters,
   selectTaskWizardPropertyIds
 } from '../../../../state';
+import {RepeatTypeEnum, TaskWizardStatusesEnum} from "src/app/plugins/modules/backend-configuration-pn/enums";
 
 @AutoUnsubscribe()
 @Component({
-    selector: 'app-task-wizard-page',
-    templateUrl: './task-wizard-page.component.html',
-    styleUrls: ['./task-wizard-page.component.scss'],
-    standalone: false
+  selector: 'app-task-wizard-page',
+  templateUrl: './task-wizard-page.component.html',
+  styleUrls: ['./task-wizard-page.component.scss'],
+  standalone: false
 })
 export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit {
   private store = inject(Store);
@@ -100,6 +102,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     }
     return '';
   }
+
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
 
@@ -254,7 +257,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {
+            ...dialogConfigHelper(this.overlay),
+            minWidth: 1024
+          });
           this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,
@@ -326,7 +332,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
+          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {
+            ...dialogConfigHelper(this.overlay),
+            minWidth: 1024
+          });
           if (data.model.repeatType === 1 && data.model.repeatEvery === 0) {
             data.model.repeatType = 0;
             data.model.repeatEvery = 0;
@@ -529,5 +538,91 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
           this.selectedPlanningsCheckboxes = [];
         }
       });
+  }
+
+  private formatDateToDDMMYYYY(date: Date | string): string {
+    const d = new Date(date);
+
+    const day = ('0' + d.getDate()).slice(-2);
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const year = d.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  }
+
+  private escapeCsvValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    const stringValue = String(value);
+
+    if (stringValue.includes(';') || stringValue.includes('"') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+
+    return stringValue;
+  }
+
+  exportCsv(): void {
+    if (!this.tasks || this.tasks.length === 0) {
+      return;
+    }
+
+    const headers = [
+      'Id',
+      'Property',
+      'Folder',
+      'Tags',
+      'Report Tag',
+      'Task name',
+      'eForm',
+      'Start date',
+      'Repeat',
+      'Status',
+      'Assigned to'
+    ];
+
+    const rows = this.tasks.map(task => {
+
+      const formattedDate = this.formatDateToDDMMYYYY(task.startDate);
+
+      const repeat =
+        task.repeatEvery === 0
+          ? RepeatTypeEnum[task.repeatType]
+          : `${task.repeatEvery} ${RepeatTypeEnum[task.repeatType]}`;
+
+      return [
+        task.id,
+        task.property ?? '',
+        task.folder ?? '',
+        task.tags?.map(t => t.name).join(', ') ?? '',
+        task.tagReport?.name ?? '',
+        task.taskName ?? '',
+        task.eform ?? '',
+        formattedDate,
+        repeat,
+        TaskWizardStatusesEnum[task.status],
+        task.assignedTo?.join(', ') ?? ''
+      ];
+    });
+
+    const csvContent =
+      headers.join(';') +
+      '\n' +
+      rows.map(r => r.map(v => this.escapeCsvValue(v)).join(';')).join('\n');
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
+    const fileName = `tasks_${this.formatDateToDDMMYYYY(new Date())}.csv`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(link.href);
   }
 }

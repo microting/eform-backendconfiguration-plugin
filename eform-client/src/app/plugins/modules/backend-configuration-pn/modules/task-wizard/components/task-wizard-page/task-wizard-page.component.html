@@ -25,18 +25,29 @@
   [tags]="tags"
   (updateTable)="updateTable()"
 />
-<button
-  *ngIf="selectAuthIsAdmin$ | async;"
-  class="btn-warning mb-4 ml-3"
-  [disabled]="
+<div class="d-flex flex-row align-items-center gap-12 mb-4 ml-3">
+  <button
+    *ngIf="selectAuthIsAdmin$ | async;"
+    class="btn-warning"
+    [disabled]="
     !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
   "
-  id="deleteMultiplePluginsBtn"
-  matTooltip="{{ 'Deactivate selected' | translate }}"
-  (click)="showDeactivateMultipleTasksModal()"
->
-  {{ 'Deactivate selected' | translate }}
-</button>
+    id="deleteMultiplePluginsBtn"
+    matTooltip="{{ 'Deactivate selected' | translate }}"
+    (click)="showDeactivateMultipleTasksModal()"
+  >
+    {{ 'Deactivate selected' | translate }}
+  </button>
+
+  <button
+    class="btn-primary btn-primary--icon-left ml-2"
+    (click)="exportCsv()"
+    id="exportTasksBtn"
+  >
+    <mat-icon>download</mat-icon>
+    <span>Export CSV</span>
+  </button>
+</div>
 <app-task-wizard-table
   [tasks]="tasks"
   (updateTable)="updateTable()"
