@@ -637,10 +637,14 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   // Convert HH:mm format to minutes from midnight
-  timeToMinutes(time: string): number | null {
+  timeToMinutes(time: any): number | null {
     if (!time) {
       return null;
     }
+    if (!isNaN(Number(time))) {
+      return Number(time);
+    }
+
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
