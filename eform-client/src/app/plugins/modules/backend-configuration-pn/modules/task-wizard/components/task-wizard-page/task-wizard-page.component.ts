@@ -608,11 +608,13 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     });
 
     const csvContent =
+      'sep=;\n' +
       headers.join(';') +
       '\n' +
       rows.map(r => r.map(v => this.escapeCsvValue(v)).join(';')).join('\n');
 
-    const blob = new Blob([csvContent], {
+    const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([BOM, csvContent], {
       type: 'text/csv;charset=utf-8;'
     });
 
