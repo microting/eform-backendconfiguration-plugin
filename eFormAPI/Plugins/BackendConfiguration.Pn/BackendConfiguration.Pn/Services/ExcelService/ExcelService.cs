@@ -719,6 +719,11 @@ public class ExcelService(
                 var workbookPart = spreadsheetDocument.AddWorkbookPart();
                 workbookPart.Workbook = new Workbook();
 
+                // Add stylesheet so that StyleIndex references (e.g. date format) are valid
+                var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+                stylesPart.Stylesheet = CreateStylesheet();
+                stylesPart.Stylesheet.Save();
+
                 var sheets = workbookPart.Workbook.AppendChild(new Sheets());
 
                 var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
