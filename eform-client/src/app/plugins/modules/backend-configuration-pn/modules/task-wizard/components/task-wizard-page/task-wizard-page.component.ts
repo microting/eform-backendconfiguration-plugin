@@ -608,7 +608,6 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     });
 
     const csvContent =
-      'sep=;\n' +
       headers.join(';') +
       '\n' +
       rows.map(r => r.map(v => this.escapeCsvValue(v)).join(';')).join('\n');
