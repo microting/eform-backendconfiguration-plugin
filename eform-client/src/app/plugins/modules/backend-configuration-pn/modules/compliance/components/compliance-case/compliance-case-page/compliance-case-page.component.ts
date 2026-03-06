@@ -51,7 +51,7 @@ export class ComplianceCasePageComponent implements OnInit {
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
 
-  
+
 
   ngOnInit() {
     this.activateRoute.params.subscribe((params) => {
@@ -113,7 +113,10 @@ export class ComplianceCasePageComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
-          this.router.navigate([this.reverseRoute]).then();
+          // this.router.navigate([this.reverseRoute]).then();
+          this.router.navigateByUrl(
+            `${this.reverseRoute}?highlightId=${this.id}`
+          ).then();
         }
       });
   }

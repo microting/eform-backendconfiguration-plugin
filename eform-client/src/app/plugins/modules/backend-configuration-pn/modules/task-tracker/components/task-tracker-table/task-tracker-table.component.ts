@@ -11,7 +11,7 @@ import {
   Columns,
   ColumnsModel,
   ComplianceModel,
-  DateListModel,
+  DateListModel, ReportEformItemModel,
   TaskModel
 } from '../../../../models';
 import {RepeatTypeEnum} from '../../../../enums';
@@ -51,6 +51,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
   @Output() openSelectWorkerModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
+  @Input() highlightId?: number;
 
   days: Date[] = [];
   daysInTable: Date[] = [];
@@ -99,11 +100,12 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     'background-red-light': (data, index) => data.taskIsExpired === true && index % 2 === 0,
     'background-red-dark': (data, index) => data.taskIsExpired === true && index % 2 === 1,
     //'background-yellow': (data, index) => data.taskIsExpired === false,
+
+    highlighted: (row: TaskModel) =>
+      !!this.highlightId && row.sdkCaseId === this.highlightId,
   };
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
-
-
 
   ngOnInit(): void {
     // this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {

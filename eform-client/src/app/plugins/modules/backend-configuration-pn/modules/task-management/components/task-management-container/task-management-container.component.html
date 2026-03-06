@@ -63,6 +63,7 @@
   (updateTable)="(selectTaskManagementPropertyIdIsNullOrUndefined$ ? updateTable() : undefined)"
   (openDeleteModal)="openDeleteModal($event)"
   (viewPictures)="onViewPictures($event)"
+  [highlightId]="highlightIdFromRoute"
   >
   </app-task-management-table>
 </div>
