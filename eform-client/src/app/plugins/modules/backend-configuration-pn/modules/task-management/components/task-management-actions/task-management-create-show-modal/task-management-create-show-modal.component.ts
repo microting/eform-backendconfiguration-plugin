@@ -20,6 +20,7 @@ import {AddPictureDialogComponent} from 'src/app/common/modules/eform-cases/comp
 import {Overlay} from '@angular/cdk/overlay';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
+import {ActivatedRoute, Router} from "@angular/router";
 
 @AutoUnsubscribe()
 @Component({
@@ -40,6 +41,8 @@ export class TaskManagementCreateShowModalComponent
   private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
   public dialogRef = inject(MatDialogRef<TaskManagementCreateShowModalComponent>);
   private workOrderCase = inject<WorkOrderCaseForReadModel | undefined>(MAT_DIALOG_DATA);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   propertyAreas: string[] = [];
@@ -59,7 +62,7 @@ export class TaskManagementCreateShowModalComponent
   getPropertiesAssignmentsSub$: Subscription;
   currentWorkOrderCase: WorkOrderCaseForReadModel;
 
-  
+
   constructor() {
     this.workOrderCaseForm = new FormGroup({
       propertyId: new FormControl({
@@ -287,6 +290,16 @@ export class TaskManagementCreateShowModalComponent
       this.taskManagementService.updateWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {
+
+            const caseId = this.currentWorkOrderCase.id;
+
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { highlightId: caseId },
+              queryParamsHandling: 'merge'
+            });
+
+
             this.taskCreated.emit();
             this.hide();
           }
@@ -304,6 +317,12 @@ export class TaskManagementCreateShowModalComponent
       this.taskManagementService.createWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {
+            // const caseId = data?.id;
+            // this.router.navigate([], {
+            //   relativeTo: this.route,
+            //   queryParams: { highlightId: caseId },
+            //   queryParamsHandling: 'merge'
+            // });
             this.taskCreated.emit();
             this.hide();
           }

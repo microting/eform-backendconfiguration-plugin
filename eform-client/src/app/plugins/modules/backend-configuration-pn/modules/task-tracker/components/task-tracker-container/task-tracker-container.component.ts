@@ -1,5 +1,6 @@
-import {Component, OnDestroy, OnInit, ViewChild,
-  inject
+import {
+  Component, OnDestroy, OnInit, ViewChild,
+  inject, AfterViewInit, NgZone, AfterViewChecked
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
@@ -61,7 +62,7 @@ import {
     styleUrls: ['./task-tracker-container.component.scss'],
     standalone: false
 })
-export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
+export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   private store = inject(Store);
   private loaderService = inject(LoaderService);
   public taskTrackerStateService = inject(TaskTrackerStateService);
@@ -77,6 +78,10 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   public statisticsStateService = inject(StatisticsStateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private ngZone = inject(NgZone);
+  private didScrollAndHighlight = false;
+
+
 
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   tasks: TaskModel[] = [];
@@ -90,6 +95,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     workers: true,
     calendar: true,
   };
+
   properties: CommonDictionaryModel[] = [];
   tags: CommonDictionaryModel[] = [];
   appLanguages: LanguagesModel = new LanguagesModel();
@@ -121,6 +127,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   createTaskInModalSub$: Subscription;
   getPlannedTaskDaysSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
+  highlightIdFromRoute?: number;
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -136,6 +143,55 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
 
+
+  ngAfterViewInit() {
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('highlightId');
+      this.highlightIdFromRoute = id ? +id : undefined;
+      // Reset flag to allow scroll/highlight on new navigation
+      this.didScrollAndHighlight = false;
+      if (id) {
+        setTimeout(() => {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { highlightId: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+        }, 5000);
+      }
+    });
+  }
+
+  ngAfterViewChecked() {
+
+    if (!this.highlightIdFromRoute || this.didScrollAndHighlight) {
+      return;
+    }
+
+    const rows = document.querySelectorAll('.mtx-grid tbody tr');
+
+    rows.forEach((row: any) => {
+      const caseCell = row.children[1]; // CaseId column
+
+      if (caseCell && Number(caseCell.innerText) === this.highlightIdFromRoute) {
+
+        row.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        row.classList.add('highlighted');
+
+        setTimeout(() => {
+          row.classList.remove('highlighted');
+        }, 3000);
+
+        this.didScrollAndHighlight = true;
+      }
+    });
+
+  }
 
   ngOnInit() {
     this.route.queryParams.subscribe(x => {
