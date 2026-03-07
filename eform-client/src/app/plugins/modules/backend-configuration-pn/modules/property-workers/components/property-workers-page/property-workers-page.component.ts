@@ -271,4 +271,92 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.propertyWorkersStateService.updateTagIds($event);
     this.updateTable();
   }
+
+  private escapeCsvValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    const stringValue = String(value);
+
+    if (stringValue.includes(';') || stringValue.includes('"') || stringValue.includes('\n')) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+
+    return stringValue;
+  }
+
+  private formatDate(date: Date | string): string {
+    const d = new Date(date);
+
+    const day = ('0' + d.getDate()).slice(-2);
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const year = d.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  }
+
+
+  exportCsv(): void {
+
+    if (!this.sitesDto || this.sitesDto.length === 0) {
+      return;
+    }
+
+    const headers = [
+      'Id',
+      'Employee No',
+      'Property',
+      'Name',
+      'Email',
+      'Phone number',
+      'Task management',
+      'Time registration',
+      'Web',
+      'Archive',
+      'Language'
+    ];
+
+    const rows = this.sitesDto.map(site => {
+
+      const propertyNames = Array.isArray(site.propertyNames)
+        ? site.propertyNames.join(', ')
+        : site.propertyNames ?? '';
+
+      const name = `${site.userFirstName ?? ''} ${site.userLastName ?? ''}`.trim();
+
+      return [
+        site.siteId,
+        site.employeeNo ?? '',
+        propertyNames,
+        name,
+        site.workerEmail ?? '',
+        site.phoneNumber ?? '',
+        site.taskManagementEnabled ? 'Active' : 'Not active',
+        site.timeRegistrationEnabled ? 'Active' : 'Not active',
+        site.webAccessEnabled ? 'Active' : 'Not active',
+        site.archiveEnabled ? 'Active' : 'Not active',
+        site.language ?? ''
+      ];
+    });
+
+    const csvContent =
+      headers.join(';') +
+      '\n' +
+      rows.map(r => r.map(v => this.escapeCsvValue(v)).join(';')).join('\n');
+
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
+    const fileName = `property_workers_${this.formatDate(new Date())}.csv`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(link.href);
+  }
+
 }

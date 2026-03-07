@@ -6,7 +6,7 @@ import {
   Output,
   inject
 } from '@angular/core';
-import {WorkOrderCaseModel} from '../../../../models';
+import {ReportEformItemModel, WorkOrderCaseModel} from '../../../../models';
 import {
   TaskManagementStateService
 } from '../store';
@@ -32,6 +32,8 @@ export class TaskManagementTableComponent implements OnInit {
   private store = inject(Store);
   public taskManagementStateService = inject(TaskManagementStateService);
   private translateService = inject(TranslateService);
+
+
 
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id', sortProp: {id: 'Id'}, sortable: true, class: 'id'},
@@ -99,6 +101,7 @@ export class TaskManagementTableComponent implements OnInit {
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<WorkOrderCaseModel> = new EventEmitter<WorkOrderCaseModel>();
   @Output() viewPictures = new EventEmitter<number>();
+  @Input() highlightId?: number;
 
   public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
   public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
@@ -122,6 +125,11 @@ export class TaskManagementTableComponent implements OnInit {
   onOpenDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
     this.openDeleteModal.emit(workOrderCaseModel);
   }
+
+  rowClassFormatter = {
+    highlighted: (row: ReportEformItemModel) =>
+      !!this.highlightId && row.microtingSdkCaseId === this.highlightId,
+  };
 
   protected readonly TaskManagementPrioritiesEnum = TaskManagementPrioritiesEnum;
 
