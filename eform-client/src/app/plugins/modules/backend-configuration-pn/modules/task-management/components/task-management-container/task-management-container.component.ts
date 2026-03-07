@@ -1,6 +1,6 @@
 import {
   Component, OnDestroy, OnInit,
-  inject
+  inject, AfterViewInit, AfterViewChecked, NgZone
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, PropertyModel, WorkOrderCaseModel} from '../../../../models';
@@ -26,7 +26,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {EntitySelectService, LoaderService} from 'src/app/common/services';
 import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {Store} from '@ngrx/store';
 import {
@@ -52,7 +52,7 @@ import { TemplateFilesService } from 'src/app/common/services';
   styleUrls: ['./task-management-container.component.scss'],
   standalone: false
 })
-export class TaskManagementContainerComponent implements OnInit, OnDestroy {
+export class TaskManagementContainerComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   private store = inject(Store);
   private loaderService = inject(LoaderService);
   public taskManagementStateService = inject(TaskManagementStateService);
@@ -66,6 +66,9 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   public gallery = inject(Gallery);
   public lightbox = inject(Lightbox);
   private imageService = inject(TemplateFilesService);
+  private router = inject(Router);
+  private ngZone = inject(NgZone);
+  private didScrollAndHighlight = false;
 
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -89,6 +92,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   getAdHocTaskPrioritiesSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
   getAdHocTaskWorkersSub$: Subscription;
+  highlightIdFromRoute?: number;
 
   images: { src: string; thumbnail: string; fileName: string }[] = [];
   galleryImages: GalleryItem[] = [];
@@ -107,6 +111,54 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
   private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
+
+
+  ngAfterViewInit() {
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('highlightId');
+      this.highlightIdFromRoute = id ? +id : undefined;
+      // Reset flag to allow scroll/highlight on new navigation
+      this.didScrollAndHighlight = false;
+      if (id) {
+        setTimeout(() => {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { highlightId: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true
+          });
+        }, 5000);
+      }
+    });
+  }
+
+  ngAfterViewChecked() {
+    if (!this.highlightIdFromRoute || this.didScrollAndHighlight) {
+      return;
+    }
+    const rows = document.querySelectorAll('.mtx-grid tbody tr');
+
+    rows.forEach((row: any) => {
+      const caseCell = row.children[1];
+
+      if (caseCell && Number(caseCell.innerText) === this.highlightIdFromRoute) {
+
+        row.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        row.classList.add('highlighted');
+
+        setTimeout(() => {
+          row.classList.remove('highlighted');
+        }, 3000);
+
+        this.didScrollAndHighlight = true;
+      }
+    });
+
+  }
 
 
   ngOnInit() {
