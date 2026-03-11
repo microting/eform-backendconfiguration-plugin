@@ -1,5 +1,7 @@
 import {
+  AfterViewChecked,
   Component,
+  ElementRef,
   EventEmitter,
   Input, OnChanges,
   OnInit,
@@ -36,7 +38,7 @@ import {Overlay} from '@angular/cdk/overlay';
     styleUrls: ['./task-tracker-table.component.scss'],
     standalone: false
 })
-export class TaskTrackerTableComponent implements OnInit, OnChanges {
+export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewChecked {
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private store = inject(Store);
@@ -44,6 +46,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private taskTrackerStateService = inject(TaskTrackerStateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private el = inject(ElementRef);
   public selectCurrentUserIsAdmin$ = this.store.select(selectCurrentUserIsAdmin);
 
   @Input() columnsFromDb: Columns;
@@ -51,7 +54,15 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
   @Output() openSelectWorkerModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
-  @Input() highlightId?: number;
+  @Input() set highlightId(value: number | undefined) {
+    if (value) {
+      this._highlightId = value;
+      this._needsScroll = true;
+    }
+  }
+
+  _highlightId: number | null = null;
+  private _needsScroll = false;
 
   days: Date[] = [];
   daysInTable: Date[] = [];
@@ -102,7 +113,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     //'background-yellow': (data, index) => data.taskIsExpired === false,
 
     highlighted: (row: TaskModel) =>
-      !!this.highlightId && row.sdkCaseId === this.highlightId,
+      !!this._highlightId && row.sdkCaseId === this._highlightId,
   };
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
@@ -192,6 +203,25 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     }
     if (changes && changes.tasks && !changes.tasks.isFirstChange()) {
       this.initTable();
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this._needsScroll && this._highlightId && this.tasks?.length) {
+      const rowIndex = this.tasks.findIndex(t => t.sdkCaseId === this._highlightId);
+      if (rowIndex >= 0) {
+        this._needsScroll = false;
+        setTimeout(() => {
+          const highlightedRow = this.el.nativeElement.querySelector('tr.highlighted');
+          if (highlightedRow) {
+            highlightedRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+          // Clear highlight after animation
+          setTimeout(() => {
+            this._highlightId = null;
+          }, 3000);
+        }, 300);
+      }
     }
   }
 

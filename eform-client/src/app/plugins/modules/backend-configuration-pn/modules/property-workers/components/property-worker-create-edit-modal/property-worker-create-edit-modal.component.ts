@@ -239,7 +239,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.updateFormControlDisabledStates();
   }
 
-  hide(result = false) {
+  hide(result: boolean | number = false) {
     this.selectedDeviceUser = new DeviceUserModel();
     this.assignments = [];
     this.dialogRef.close(result);
@@ -294,7 +294,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (operation && operation.success && this.assignments) {
           this.assignWorkerToPropertiesUpdate();
         } else {
-          this.hide(true);
+          this.hide(this.selectedDeviceUser.normalId || true);
         }
       });
   }
@@ -347,7 +347,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       })
       .subscribe((operation) => {
         if (operation && operation.success) {
-          this.hide(true);
+          this.hide(this.selectedDeviceUser.normalId);
         }
       });
   }

@@ -79,7 +79,6 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private ngZone = inject(NgZone);
-  private didScrollAndHighlight = false;
 
 
 
@@ -145,11 +144,16 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
 
 
   ngAfterViewInit() {
+  }
+
+  ngAfterViewChecked() {
+  }
+
+  ngOnInit() {
+    // Subscribe to highlightId query param early (before first change detection)
     this.route.queryParamMap.subscribe(params => {
       const id = params.get('highlightId');
       this.highlightIdFromRoute = id ? +id : undefined;
-      // Reset flag to allow scroll/highlight on new navigation
-      this.didScrollAndHighlight = false;
       if (id) {
         setTimeout(() => {
           this.router.navigate([], {
@@ -161,39 +165,7 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
         }, 5000);
       }
     });
-  }
 
-  ngAfterViewChecked() {
-
-    if (!this.highlightIdFromRoute || this.didScrollAndHighlight) {
-      return;
-    }
-
-    const rows = document.querySelectorAll('.mtx-grid tbody tr');
-
-    rows.forEach((row: any) => {
-      const caseCell = row.children[1]; // CaseId column
-
-      if (caseCell && Number(caseCell.innerText) === this.highlightIdFromRoute) {
-
-        row.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-
-        row.classList.add('highlighted');
-
-        setTimeout(() => {
-          row.classList.remove('highlighted');
-        }, 3000);
-
-        this.didScrollAndHighlight = true;
-      }
-    });
-
-  }
-
-  ngOnInit() {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;

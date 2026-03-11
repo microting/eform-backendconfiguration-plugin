@@ -24,6 +24,7 @@
   [showColumnMenuButton]="false"
   [sortActive]="selectPropertyWorkersPaginationSort$ | async"
   [sortDirection]="selectPropertyWorkersPaginationIsSortDsc$ | async"
+  [rowClassFormatter]="rowClassFormatter"
   (sortChange)="onSortTable($event)"
   style="max-height: 80vh;"
   noResultText="{{'No employees found' | translate}}"

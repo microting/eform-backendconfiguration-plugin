@@ -50,12 +50,14 @@
 
 <app-property-worker-table
   (updateTable)="updateTable()"
+  (updateTableWithHighlight)="updateTableWithHighlight($event)"
   [availableProperties]="availableProperties"
   [workersAssignments]="workersAssignments"
   [sitesDto]="sitesDto"
   [showResigned]="showResigned"
   [availableTags]="availableTags"
   [alreadyUsedEmails]="alreadyUsedEmails"
+  [highlightedSiteId]="highlightedSiteId"
 >
 </app-property-worker-table>
 
