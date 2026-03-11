@@ -18,6 +18,7 @@
           (btnViewPicturesClicked)="onClickViewPicture($event)"
           (editCaseClicked)="onClickEditCase($event)"
           [highlightId]="highlightIdFromRoute"
+          (highlightedRowRendered)="onHighlightedRowRendered()"
         />
       </div>
     </ng-container>

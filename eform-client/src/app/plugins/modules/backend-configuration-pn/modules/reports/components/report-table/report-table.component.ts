@@ -1,6 +1,8 @@
 import {
+  AfterViewChecked,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
@@ -31,11 +33,12 @@ import {Store} from '@ngrx/store';
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false
 })
-export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
+export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, AfterViewChecked {
   private store = inject(Store);
   private translateService = inject(TranslateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private elementRef = inject(ElementRef);
 
   @Input() items: ReportEformItemModel[] = [];
   @Input() reportIndex: number;
@@ -47,6 +50,9 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }>
     = new EventEmitter<{ reportIndex: number, caseId: number }>();
   @Output() editCaseClicked: EventEmitter<{ microtingSdkCaseId: number, eFormId: number, id: number }> = new EventEmitter();
+  @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
+
+  private highlightedRowEmitted = false;
 
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
@@ -148,6 +154,16 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.highlightId && !this.highlightedRowEmitted) {
+      const el = this.elementRef.nativeElement.querySelector('.highlighted');
+      if (el) {
+        this.highlightedRowEmitted = true;
+        this.highlightedRowRendered.emit();
+      }
+    }
   }
 
   openCreateModal(

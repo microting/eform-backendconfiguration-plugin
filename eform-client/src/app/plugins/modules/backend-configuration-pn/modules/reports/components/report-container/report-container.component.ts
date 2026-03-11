@@ -24,7 +24,6 @@ import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
 import {ReportStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
-import { AfterViewInit, AfterViewChecked, NgZone } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 @AutoUnsubscribe()
@@ -34,7 +33,7 @@ import { ActivatedRoute } from '@angular/router';
     styleUrls: ['./report-container.component.scss'],
     standalone: false
 })
-export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewInit {
+export class ReportContainerComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);
   private store = inject(Store);
   private reportService = inject(BackendConfigurationPnReportService);
@@ -48,7 +47,6 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
   private reportStateService = inject(ReportStateService);
 
   private route = inject(ActivatedRoute);
-  private ngZone = inject(NgZone);
   private didScrollAndHighlight = false;
 
 
@@ -68,39 +66,13 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
 
   highlightIdFromRoute?: number;
 
-  ngAfterViewInit() {
-    this.route.queryParamMap.subscribe(params => {
-      const id = params.get('highlightId');
-      this.highlightIdFromRoute = id ? +id : undefined;
-      // Reset flag to allow scroll/highlight on new navigation
-      this.didScrollAndHighlight = false;
-      if (id) {
-        setTimeout(() => {
-          this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: { highlightId: null },
-            queryParamsHandling: 'merge',
-            replaceUrl: true
-          });
-        }, 5000);
-      }
-    });
-  }
-
-  // ngAfterViewChecked() {
-  //   // Only perform if id is set and we've not already scrolled/highlighted
-  //   if (this.highlightIdFromRoute && !this.didScrollAndHighlight) {
-  //     const el = document.querySelector('.highlighted') as HTMLElement;
-  //     if (el) {
-  //       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  //       el.classList.add('highlighted');
-  //       setTimeout(() => el.classList.remove('highlighted'), 2000);
-  //       this.didScrollAndHighlight = true;
-  //     }
-  //   }
-  // }
-
   ngOnInit() {
+    // Read highlightId from query params — side effects (URL cleanup, scroll)
+    // are deferred to onHighlightedRowRendered() which fires after the service
+    // call completes and mtx-grid has rendered the highlighted row.
+    const id = this.route.snapshot.queryParamMap.get('highlightId');
+    this.highlightIdFromRoute = id ? +id : undefined;
+
     this.selectReportsV2ScrollPosition$
       .pipe(take(1))
       .subscribe(scrollPosition => this.scrollPosition = scrollPosition);
@@ -136,20 +108,9 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
         if (data && data.success) {
           this.reportsModel = data.model;
 
-          if (this.highlightIdFromRoute) {
-            this.ngZone.onStable.pipe(take(1)).subscribe(() => {
-              const el = document.querySelector('.highlighted') as HTMLElement;
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('highlighted');
-                setTimeout(() => el.classList.remove('highlighted'), 2000);
-                this.didScrollAndHighlight = true;
-              }
-            });
-          }
 
           if (this.startWithParams) {
-            asyncScheduler.schedule(() => this.viewportScroller.scrollToPosition(this.scrollPosition), 1000);
+            asyncScheduler.schedule(() => this.viewportScroller.scrollToPosition(this.scrollPosition), 2000);
             this.startWithParams = false;
           }
         } else {
@@ -244,6 +205,32 @@ export class ReportContainerComponent implements OnInit, OnDestroy, AfterViewIni
     this.router.navigate([`/plugins/backend-configuration-pn/case/`, model.microtingSdkCaseId, model.eFormId, model.id],
       {queryParams: {reverseRoute: this.router.url}})
       .then();
+  }
+
+  /**
+   * Called by the report-table component when it has finished rendering
+   * the highlighted row in the DOM. This guarantees both the service call
+   * and the mtx-grid rendering are complete before we scroll or clean up the URL.
+   */
+  onHighlightedRowRendered(): void {
+    if (this.didScrollAndHighlight) {
+      return;
+    }
+    this.didScrollAndHighlight = true;
+    const el = document.querySelector('.highlighted') as HTMLElement;
+    if (el) {
+      el.scrollIntoView({behavior: 'smooth', block: 'center'});
+      setTimeout(() => {
+        el.classList.remove('highlighted');
+        // Clean up the highlightId query param now that we're done
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {highlightId: null},
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+        });
+      }, 2000);
+    }
   }
 
   ngOnDestroy(): void {
