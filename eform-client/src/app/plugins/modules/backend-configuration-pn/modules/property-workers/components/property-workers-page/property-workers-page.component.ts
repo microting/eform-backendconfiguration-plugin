@@ -62,6 +62,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   showResigned: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
   selectedTagIds: number[] = [];
+  highlightedSiteId: number | null = null;
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
   private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
@@ -261,6 +262,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.getPropertiesDictionary();
     this.getDeviceUsersFiltered(propertyIds);
     this.getWorkerPropertiesAssignments(propertyIds);
+  }
+
+  updateTableWithHighlight(siteId: number) {
+    this.highlightedSiteId = siteId;
+    this.updateTable();
+    // Clear highlight after animation completes
+    setTimeout(() => {
+      this.highlightedSiteId = null;
+    }, 3500);
   }
 
   ngOnDestroy(): void {

@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges,
-  inject
+  inject, ElementRef, AfterViewChecked
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -43,13 +43,14 @@ import {DomSanitizer} from '@angular/platform-browser';
     styleUrls: ['./property-worker-table.component.scss'],
     standalone: false
 })
-export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChanges {
+export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChanges, AfterViewChecked {
   private store = inject(Store);
   private translateService = inject(TranslateService);
   private authStateService = inject(AuthStateService);
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private el = inject(ElementRef);
 
   //@Input() propertyWorkers: any[] = [];
   @Input() sitesDto: any[] = [];
@@ -59,6 +60,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() showResigned: boolean = false;
   @Input() availableTags: CommonDictionaryModel[] = [];
   @Input() alreadyUsedEmails: string[] = [];
+  @Input() highlightedSiteId: number | null = null;
+  private pendingScrollToSiteId: number | null = null;
+  @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
@@ -82,7 +86,41 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     if (changes['showResigned']) {
       this.buildTableHeaders();
     }
+    if (changes['highlightedSiteId'] && this.highlightedSiteId) {
+      this.pendingScrollToSiteId = this.highlightedSiteId;
+    }
+    if (changes['sitesDto'] && this.pendingScrollToSiteId) {
+      // Data has been refreshed, schedule scroll on next view check
+    }
   }
+
+  ngAfterViewChecked(): void {
+    if (this.pendingScrollToSiteId && this.sitesDto?.length) {
+      const siteId = this.pendingScrollToSiteId;
+      const index = this.sitesDto.findIndex(s => s.siteId === siteId);
+      if (index >= 0) {
+        this.pendingScrollToSiteId = null;
+        setTimeout(() => {
+          const row = this.el.nativeElement.querySelector(`#deviceUserId-${index}`);
+          if (row) {
+            const tr = row.closest('tr') || row.closest('mat-row') || row.parentElement;
+            if (tr) {
+              tr.scrollIntoView({behavior: 'smooth', block: 'center'});
+              tr.classList.add('highlight-row');
+              setTimeout(() => tr.classList.remove('highlight-row'), 5000);
+            }
+          }
+        });
+      }
+    }
+  }
+
+  rowClassFormatter = (rowData: any) => {
+    if (this.highlightedSiteId && rowData.siteId === this.highlightedSiteId) {
+      return {'highlight-row': true};
+    }
+    return {};
+  };
 
 
   public tableHeaders: MtxGridColumn[] = [];
@@ -282,8 +320,15 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         }), minWidth: 1024
       })
 
-      .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
-    //.afterClosed().subscribe(data => data ? this.searchSubject.next('') : undefined);
+      .afterClosed().subscribe(data => {
+        if (data) {
+          if (typeof data === 'number') {
+            this.updateTableWithHighlight.emit(data);
+          } else {
+            this.updateTable.emit();
+          }
+        }
+      });
   }
 
   openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {
