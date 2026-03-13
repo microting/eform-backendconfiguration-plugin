@@ -302,4 +302,9 @@ export const elGR = {
   Archive: 'Αρχείο',
   'Mobile timeregistration': 'Εγγραφή χρόνου για κινητά',
   'Phone number': 'Αριθμός τηλεφώνου',
+  'QR Code': 'Κωδικός QR',
+  Close: 'Κοντά',
+  'Copied!': 'Αντιγράφηκε!',
+  'Copy as image': 'Αντιγραφή ως εικόνα',
+  'Download PNG': 'Λήψη PNG',
 };

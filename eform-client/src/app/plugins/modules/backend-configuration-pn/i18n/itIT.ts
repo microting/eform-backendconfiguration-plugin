@@ -302,4 +302,9 @@ export const itIT = {
   Archive: 'Archivio',
   'Mobile timeregistration': 'Registrazione del tempo mobile',
   'Phone number': 'Numero di telefono',
+  'QR Code': 'Codice QR',
+  Close: 'Vicino',
+  'Copied!': 'Copiato!',
+  'Copy as image': 'Copia come immagine',
+  'Download PNG': 'Scarica PNG',
 };

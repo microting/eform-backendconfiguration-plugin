@@ -302,4 +302,9 @@ export const svSE = {
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil tidregistrering',
   'Phone number': 'Telefonnummer',
+  'QR Code': 'QR-kod',
+  Close: 'Nära',
+  'Copied!': 'Kopierad!',
+  'Copy as image': 'Kopiera som bild',
+  'Download PNG': 'Ladda ner PNG',
 };

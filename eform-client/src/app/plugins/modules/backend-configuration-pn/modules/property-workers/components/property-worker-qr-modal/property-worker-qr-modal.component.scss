@@ -1,0 +1,18 @@
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.qr-label {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.qr-canvas {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+

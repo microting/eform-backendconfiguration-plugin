@@ -302,4 +302,9 @@ export const plPL = {
   Archive: 'Archiwum',
   'Mobile timeregistration': 'Mobilna rejestracja czasu',
   'Phone number': 'Numer telefonu',
+  'QR Code': 'Kod QR',
+  Close: 'Zamknąć',
+  'Copied!': 'Skopiowano!',
+  'Copy as image': 'Kopiuj jako obraz',
+  'Download PNG': 'Pobierz PNG',
 };

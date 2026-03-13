@@ -302,4 +302,9 @@ export const ukUA = {
   Archive: 'Архів',
   'Mobile timeregistration': 'Мобільна реєстрація часу',
   'Phone number': 'Номер телефону',
+  'QR Code': 'QR-код',
+  Close: 'Закрити',
+  'Copied!': 'Скопійовано!',
+  'Copy as image': 'Копіювати як зображення',
+  'Download PNG': 'Завантажити PNG',
 };

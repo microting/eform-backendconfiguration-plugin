@@ -304,4 +304,8 @@ export const da = {
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil tidsregistrering',
   'Phone number': 'Telefonnummer',
+  'QR Code': 'QR-kode',
+  'Copied!': 'Kopieret!',
+  'Copy as image': 'Kopiér som billede',
+  'Download PNG': 'Download PNG',
 };

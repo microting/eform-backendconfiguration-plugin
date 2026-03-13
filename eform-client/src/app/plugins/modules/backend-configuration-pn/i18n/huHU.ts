@@ -302,4 +302,9 @@ export const huHU = {
   Archive: 'Archívum',
   'Mobile timeregistration': 'Mobil időregisztráció',
   'Phone number': 'Telefonszám',
+  'QR Code': 'QR-kód',
+  Close: 'Közeli',
+  'Copied!': 'Másolva!',
+  'Copy as image': 'Másolás képként',
+  'Download PNG': 'PNG letöltése',
 };

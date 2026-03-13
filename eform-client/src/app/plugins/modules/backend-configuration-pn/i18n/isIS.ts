@@ -302,4 +302,9 @@ export const isIS = {
   Archive: 'Skjalasafn',
   'Mobile timeregistration': 'Tímaskráning í farsíma',
   'Phone number': 'Símanúmer',
+  'QR Code': 'QR kóði',
+  Close: 'Loka',
+  'Copied!': 'Afritað!',
+  'Copy as image': 'Afrita sem mynd',
+  'Download PNG': 'Sækja PNG',
 };

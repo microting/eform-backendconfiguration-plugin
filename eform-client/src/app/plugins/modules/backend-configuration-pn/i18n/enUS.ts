@@ -319,4 +319,9 @@ export const enUS= {
   'Archive': 'Archive',
   'Mobile timeregistration': 'Mobile timeregistration',
   'Phone number': 'Phone number',
+  'QR Code': 'QR Code',
+  'Close': 'Close',
+  'Copied!': 'Copied!',
+  'Copy as image': 'Copy as image',
+  'Download PNG': 'Download PNG',
 };

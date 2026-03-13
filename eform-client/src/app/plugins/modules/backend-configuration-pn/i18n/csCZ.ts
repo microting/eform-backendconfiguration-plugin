@@ -302,4 +302,9 @@ export const csCZ = {
   Archive: 'Archiv',
   'Mobile timeregistration': 'Mobilní registrace času',
   'Phone number': 'Telefonní číslo',
+  'QR Code': 'QR kód',
+  Close: 'Blízko',
+  'Copied!': 'Zkopírováno!',
+  'Copy as image': 'Kopírovat jako obrázek',
+  'Download PNG': 'Stáhnout PNG',
 };

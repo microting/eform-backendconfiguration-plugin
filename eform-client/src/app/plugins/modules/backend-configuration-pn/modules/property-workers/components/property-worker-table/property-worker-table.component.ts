@@ -16,7 +16,8 @@ import {debounceTime} from 'rxjs/operators';
 import {
   PropertyWorkerCreateEditModalComponent,
   PropertyWorkerDeleteModalComponent,
-  PropertyWorkerOtpModalComponent
+  PropertyWorkerOtpModalComponent,
+  PropertyWorkerQrModalComponent,
 } from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Store} from '@ngrx/store';
@@ -251,6 +252,15 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       this.dialog.open(PropertyWorkerOtpModalComponent,
       {...dialogConfigHelper(this.overlay, siteDto)})
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+  }
+
+  openQrModal(row: DeviceUserModel) {
+    this.dialog.open(PropertyWorkerQrModalComponent, {
+      ...dialogConfigHelper(this.overlay, {
+        customerNo: row.customerNo,
+        otpCode: row.otpCode,
+      }),
+    });
   }
 
   // openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {

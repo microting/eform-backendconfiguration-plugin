@@ -3,3 +3,4 @@ export * from './property-worker-otp-modal/property-worker-otp-modal.component';
 export * from './property-worker-delete-modal/property-worker-delete-modal.component';
 export * from './property-worker-create-edit-modal/property-worker-create-edit-modal.component';
 export * from './property-worker-table/property-worker-table.component';
+export * from './property-worker-qr-modal/property-worker-qr-modal.component';

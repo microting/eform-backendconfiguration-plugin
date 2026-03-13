@@ -302,4 +302,9 @@ export const skSK = {
   Archive: 'Archív',
   'Mobile timeregistration': 'Mobilná registrácia času',
   'Phone number': 'Telefónne číslo',
+  'QR Code': 'QR kód',
+  Close: 'Zatvoriť',
+  'Copied!': 'Skopírované!',
+  'Copy as image': 'Kopírovať ako obrázok',
+  'Download PNG': 'Stiahnuť PNG',
 };
