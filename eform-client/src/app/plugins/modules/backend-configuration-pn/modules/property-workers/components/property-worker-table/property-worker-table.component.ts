@@ -63,7 +63,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   @Input() alreadyUsedEmails: string[] = [];
   @Input() highlightedSiteId: number | null = null;
   private pendingScrollToSiteId: number | null = null;
+  private waitingForFreshData = false;
   @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
+  @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   //availableProperties: CommonDictionaryModel[];
@@ -88,10 +90,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       this.buildTableHeaders();
     }
     if (changes['highlightedSiteId'] && this.highlightedSiteId) {
-      this.pendingScrollToSiteId = this.highlightedSiteId;
+      // Mark that we need to wait for fresh sitesDto before scrolling
+      this.waitingForFreshData = true;
+      this.pendingScrollToSiteId = null;
     }
-    if (changes['sitesDto'] && this.pendingScrollToSiteId) {
-      // Data has been refreshed, schedule scroll on next view check
+    if (changes['sitesDto'] && this.waitingForFreshData && this.highlightedSiteId) {
+      // Fresh data has arrived after highlight was requested — now we can scroll
+      this.waitingForFreshData = false;
+      this.pendingScrollToSiteId = this.highlightedSiteId;
     }
   }
 
@@ -111,6 +117,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
               setTimeout(() => tr.classList.remove('highlight-row'), 5000);
             }
           }
+          this.highlightedRowRendered.emit();
         });
       }
     }

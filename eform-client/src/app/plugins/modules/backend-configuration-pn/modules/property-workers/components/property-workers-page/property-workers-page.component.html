@@ -66,6 +66,7 @@
 <app-property-worker-table
   (updateTable)="updateTable()"
   (updateTableWithHighlight)="updateTableWithHighlight($event)"
+  (highlightedRowRendered)="onHighlightedRowRendered()"
   [availableProperties]="availableProperties"
   [workersAssignments]="workersAssignments"
   [sitesDto]="sitesDto"
