@@ -1,39 +1,60 @@
 import {
+  AfterViewChecked,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
+  OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
   inject
 } from '@angular/core';
-import {ReportEformItemModel, WorkOrderCaseModel} from '../../../../models';
-import {
-  TaskManagementStateService
-} from '../store';
+import {WorkOrderCaseModel} from '../../../../models';
+import {TaskManagementStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
-import {
-  TaskManagementPrioritiesEnum
-} from '../../../../enums';
+import {TaskManagementPrioritiesEnum} from '../../../../enums';
 import {Store} from '@ngrx/store';
 import {
   selectTaskManagementPaginationIsSortDsc,
   selectTaskManagementPaginationSort
 } from '../../../../state/task-management/task-management.selector';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {BackendConfigurationPnTaskManagementService} from '../../../../services';
+import {
+  TaskManagementCreateShowModalComponent,
+  TaskManagementDeleteModalComponent
+} from '../';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Subscription} from 'rxjs';
+import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
+import {Lightbox} from 'ng-gallery/lightbox';
+import {TemplateFilesService} from 'src/app/common/services';
+import {forkJoin} from 'rxjs';
 
+@AutoUnsubscribe()
 @Component({
     selector: 'app-task-management-table',
     templateUrl: './task-management-table.component.html',
     styleUrls: ['./task-management-table.component.scss'],
     standalone: false
 })
-export class TaskManagementTableComponent implements OnInit {
+export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChanges, AfterViewChecked {
   private store = inject(Store);
   public taskManagementStateService = inject(TaskManagementStateService);
   private translateService = inject(TranslateService);
-
-
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
+  private el = inject(ElementRef);
+  private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
+  private imageService = inject(TemplateFilesService);
+  public gallery = inject(Gallery);
+  public lightbox = inject(Lightbox);
 
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id', sortProp: {id: 'Id'}, sortable: true, class: 'id'},
@@ -77,14 +98,12 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'Priority'},
       sortable: true,
       class: 'priority',
-      // formatter: (rowData: WorkOrderCaseModel) => this.translateService.instant(TaskManagementPrioritiesEnum[rowData.priority])
     },
     {
       header: this.translateService.stream('Status'),
       field: 'status',
       sortProp: {id: 'CaseStatusesEnum'},
       sortable: true,
-      // formatter: (rowData: WorkOrderCaseModel) => `<span>${this.translateService.instant(rowData.status)}</span>`,
       class: 'status'
     },
     {
@@ -97,16 +116,52 @@ export class TaskManagementTableComponent implements OnInit {
   ];
 
   @Input() workOrderCases: WorkOrderCaseModel[];
+  @Input() highlightedId: number | null = null;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
-  @Output() openDeleteModal: EventEmitter<WorkOrderCaseModel> = new EventEmitter<WorkOrderCaseModel>();
-  @Output() viewPictures = new EventEmitter<number>();
-  @Input() highlightId?: number;
+  @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
+  @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
 
   public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
   public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
 
+  getWorkOrderCaseSub$: Subscription;
+  viewPicturesSub$: Subscription;
+
+  private pendingScrollIndex: number | null = null;
+  private waitingForFreshData = false;
+
   ngOnInit(): void {
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['highlightedId'] && this.highlightedId !== null && this.highlightedId !== undefined) {
+      this.pendingScrollIndex = null;
+      this.waitingForFreshData = true;
+    }
+    if (changes['workOrderCases'] && this.waitingForFreshData && this.highlightedId !== null && this.highlightedId !== undefined) {
+      this.waitingForFreshData = false;
+      this.pendingScrollIndex = this.highlightedId;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.pendingScrollIndex === null || !this.workOrderCases?.length) return;
+    const index = this.pendingScrollIndex;
+    const cell = this.el.nativeElement.querySelector(`#taskId-${index}`);
+    if (!cell) return;
+    this.pendingScrollIndex = null;
+    setTimeout(() => {
+      const freshCell = this.el.nativeElement.querySelector(`#taskId-${index}`);
+      if (freshCell) {
+        const tr = freshCell.closest('tr') || freshCell.closest('mat-row') || freshCell.parentElement;
+        if (tr) {
+          tr.scrollIntoView({behavior: 'smooth', block: 'center'});
+          tr.classList.add('highlight-row');
+          setTimeout(() => tr.classList.remove('highlight-row'), 5000);
+        }
+      }
+      this.highlightedRowRendered.emit();
+    });
   }
 
   sortTable(sort: Sort) {
@@ -114,22 +169,55 @@ export class TaskManagementTableComponent implements OnInit {
     this.updateTable.emit();
   }
 
-  onOpenViewModal(id: number) {
-    this.openViewModal.emit(id);
+  openViewModal(workOrderCaseId: number) {
+    const rowIndex = this.workOrderCases.findIndex(c => c.id === workOrderCaseId);
+    this.getWorkOrderCaseSub$ = this.taskManagementService
+      .getWorkOrderCase(workOrderCaseId)
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.dialog.open(TaskManagementCreateShowModalComponent, {
+            ...dialogConfigHelper(this.overlay, data.model),
+            panelClass: 'task-management-modal'
+          }).afterClosed().subscribe(result => {
+            if (result) {
+              this.updateTableWithHighlight.emit(rowIndex);
+            }
+          });
+        }
+      });
+  }
+
+  openDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
+    this.dialog.open(TaskManagementDeleteModalComponent, dialogConfigHelper(this.overlay, workOrderCaseModel))
+      .afterClosed().subscribe(result => {
+        if (result) {
+          this.updateTable.emit();
+        }
+      });
   }
 
   onViewPictures(caseId: number) {
-    this.viewPictures.emit(caseId);
+    this.viewPicturesSub$ = this.taskManagementService.getWorkOrderCase(caseId)
+      .subscribe(res => {
+        if (!res?.success || !res.model?.pictureNames?.length) return;
+        const names = res.model.pictureNames as string[];
+        forkJoin(names.map(name => this.imageService.getImage(name)))
+          .subscribe((blobs: Blob[]) => {
+            const galleryImages: GalleryItem[] = blobs.map((blob, i) => {
+              const url = URL.createObjectURL(blob);
+              return new ImageItem({src: url, thumb: url});
+            });
+            const ref = this.gallery.ref('lightbox', {
+              counter: galleryImages.length > 1,
+              counterPosition: 'bottom'
+            });
+            ref.load(galleryImages);
+            this.lightbox.open(0);
+          });
+      });
   }
 
-  onOpenDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
-    this.openDeleteModal.emit(workOrderCaseModel);
-  }
-
-  rowClassFormatter = {
-    highlighted: (row: ReportEformItemModel) =>
-      !!this.highlightId && row.microtingSdkCaseId === this.highlightId,
-  };
+  rowClassFormatter = {};
 
   protected readonly TaskManagementPrioritiesEnum = TaskManagementPrioritiesEnum;
 
@@ -142,5 +230,8 @@ export class TaskManagementTableComponent implements OnInit {
 
   getPriorityClass(priority: number): string {
     return this.priorityClassMap[priority] || '';
+  }
+
+  ngOnDestroy(): void {
   }
 }

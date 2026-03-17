@@ -1,49 +1,29 @@
 import {
   Component, OnDestroy, OnInit,
-  inject, AfterViewInit, AfterViewChecked, NgZone
+  inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, PropertyModel, WorkOrderCaseModel} from '../../../../models';
+import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
-import {
-  TaskManagementCreateShowModalComponent,
-  TaskManagementDeleteModalComponent
-} from '../';
-import {
-  BackendConfigurationPnPropertiesService,
-  BackendConfigurationPnTaskManagementService
-} from '../../../../services';
+import {TaskManagementCreateShowModalComponent} from '../';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {Subscription, take} from 'rxjs';
-import {CommonDictionaryModel, EntityItemModel} from 'src/app/common/models';
-import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from '@angular/platform-browser';
-import {ExcelIcon, WordIcon} from 'src/app/common/const';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {CommonDictionaryModel} from 'src/app/common/models';
+import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {EntitySelectService, LoaderService} from 'src/app/common/services';
+import {LoaderService} from 'src/app/common/services';
 import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
-import {ActivatedRoute, Router} from '@angular/router';
-import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {ActivatedRoute} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {
   selectTaskManagementFilters,
   selectTaskManagementPropertyId,
   selectTaskManagementPropertyIdIsNullOrUndefined
 } from '../../../../state/task-management/task-management.selector';
-import {
-  selectStatisticsPropertyId
-} from '../../../../state/statistics/statistics.selector';
-
-import { forkJoin } from 'rxjs';
-import { Gallery, GalleryItem, ImageItem } from 'ng-gallery';
-import { Lightbox } from 'ng-gallery/lightbox';
-import { TemplateFilesService } from 'src/app/common/services';
-
-
 
 @AutoUnsubscribe()
 @Component({
@@ -52,23 +32,16 @@ import { TemplateFilesService } from 'src/app/common/services';
   styleUrls: ['./task-management-container.component.scss'],
   standalone: false
 })
-export class TaskManagementContainerComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
+export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private loaderService = inject(LoaderService);
   public taskManagementStateService = inject(TaskManagementStateService);
-  public taskManagementService = inject(BackendConfigurationPnTaskManagementService);
   private toasterService = inject(ToastrService);
   private propertyService = inject(BackendConfigurationPnPropertiesService);
   public dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private statisticsStateService = inject(StatisticsStateService);
   private route = inject(ActivatedRoute);
-  public gallery = inject(Gallery);
-  public lightbox = inject(Lightbox);
-  private imageService = inject(TemplateFilesService);
-  private router = inject(Router);
-  private ngZone = inject(NgZone);
-  private didScrollAndHighlight = false;
 
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -80,22 +53,13 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
   selectedWorkerId: number | null = null;
   view = [1000, 300];
   diagramForShow: string = '';
+  highlightedId: number | null = null;
 
   downloadWordReportSub$: Subscription;
   downloadExcelReportSub$: Subscription;
   getAllWorkOrderCasesSub$: Subscription;
-  getWorkOrderCaseSub$: Subscription;
-  deleteWorkOrderCaseSub$: Subscription;
-  workOrderCaseDeleteSub$: Subscription;
   taskCreatedSub$: Subscription;
-  taskUpdatedSub$: Subscription;
-  getAdHocTaskPrioritiesSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
-  getAdHocTaskWorkersSub$: Subscription;
-  highlightIdFromRoute?: number;
-
-  images: { src: string; thumbnail: string; fileName: string }[] = [];
-  galleryImages: GalleryItem[] = [];
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -110,67 +74,11 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
   public selectTaskManagementPropertyIdIsNullOrUndefined$ = this.store.select(selectTaskManagementPropertyIdIsNullOrUndefined);
   public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
-  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
-
-
-  ngAfterViewInit() {
-    this.route.queryParamMap.subscribe(params => {
-      const id = params.get('highlightId');
-      this.highlightIdFromRoute = id ? +id : undefined;
-      // Reset flag to allow scroll/highlight on new navigation
-      this.didScrollAndHighlight = false;
-      if (id) {
-        setTimeout(() => {
-          this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: { highlightId: null },
-            queryParamsHandling: 'merge',
-            replaceUrl: true
-          });
-        }, 5000);
-      }
-    });
-  }
-
-  ngAfterViewChecked() {
-    if (!this.highlightIdFromRoute || this.didScrollAndHighlight) {
-      return;
-    }
-    const rows = document.querySelectorAll('.mtx-grid tbody tr');
-
-    rows.forEach((row: any) => {
-      const caseCell = row.children[1];
-
-      if (caseCell && Number(caseCell.innerText) === this.highlightIdFromRoute) {
-
-        row.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-
-        row.classList.add('highlighted');
-
-        setTimeout(() => {
-          row.classList.remove('highlighted');
-        }, 3000);
-
-        this.didScrollAndHighlight = true;
-      }
-    });
-
-  }
-
 
   ngOnInit() {
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
-        // this.selectTaskManagementPropertyId$.subscribe((propertyId) => {
-        //   debugger;
-        //   if (propertyId) {
-        //     this.selectedPropertyId = propertyId;
-        //   }
-        // });
         this.selectTaskManagementFilters$.subscribe((filters) => {
           if (filters.propertyId) {
             this.selectedPropertyId = filters.propertyId;
@@ -187,18 +95,10 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
     });
     this.getPropertyIdAsyncSub$ = this.selectTaskManagementFilters$
       .pipe(skip(1))
-      .subscribe(filters => {
-        // if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
-        //   this.selectedPropertyId = filters.propertyId;
+      .subscribe(() => {
         if (this.diagramForShow) {
           this.getStats();
         }
-        // } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
-        //   this.selectedPropertyId = null;
-        //   if (this.diagramForShow) {
-        //     this.getStats();
-        //   }
-        // }
         this.updateTable();
       });
 
@@ -209,9 +109,9 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
   ngOnDestroy(): void {
   }
 
-  updateTable(delayed: boolean = false) {
+  updateTable() {
     this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
-      .getAllWorkOrderCases(delayed)
+      .getAllWorkOrderCases(false)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.workOrderCases = data.model;
@@ -219,96 +119,34 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
       });
   }
 
-  openViewModal(workOrderCaseId: number) {
-    this.getWorkOrderCaseSub$ = this.taskManagementService
-      .getWorkOrderCase(workOrderCaseId)
-      .subscribe((data) => {
-        if (data && data.success && data.model) {
-          const updateModal =
-            this.dialog.open(TaskManagementCreateShowModalComponent,
-              {
-                ...dialogConfigHelper(this.overlay, data.model),
-                panelClass: 'task-management-modal'
-              }
-            );
-          this.taskUpdatedSub$ = updateModal.componentInstance.taskCreated.subscribe(() => this.updateTable(true));
-        }
-      });
-  }
-
-  openPicture(index: number) {
-    if (!this.galleryImages.length) return;
-
-    this.gallery.ref('lightbox', {
-      counter: this.galleryImages.length > 1,
-      counterPosition: 'bottom'
-    }).load(this.galleryImages);
-
-    this.lightbox.open(index);
-  }
-
-  onViewPictures(caseId: number) {
-    this.taskManagementService.getWorkOrderCase(caseId)
-      .subscribe(res => {
-        if (!res?.success || !res.model?.pictureNames?.length) return;
-
-        const names = res.model.pictureNames as string[];
-
-        const observables = names.map(name =>
-          this.imageService.getImage(name)
-        );
-
-        forkJoin(observables).subscribe((blobs: Blob[]) => {
-
-          this.images = blobs.map((blob, i) => {
-            const url = URL.createObjectURL(blob);
-
-            return {
-              src: url,
-              thumbnail: url,
-              fileName: names[i],
-            };
-          });
-
-          this.galleryImages = this.images.map(img =>
-            new ImageItem({
-              src: img.src,
-              thumb: img.thumbnail
-            })
-          );
-
-          this.openPicture(0);
+  updateTableWithHighlight(rowIndex: number) {
+    setTimeout(() => {
+      this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
+        .getAllWorkOrderCases(false)
+        .subscribe((data) => {
+          if (data && data.success && data.model) {
+            this.workOrderCases = data.model;
+            this.highlightedId = rowIndex;
+          }
         });
-      });
+    }, 3000);
   }
-
 
   openCreateModal() {
-    const createModal =
-      this.dialog.open(TaskManagementCreateShowModalComponent,
-        {
-          ...dialogConfigHelper(this.overlay),
-          panelClass: 'task-management-modal'
-        }
-      );
-    this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable(false));
+    this.taskCreatedSub$ = this.dialog.open(TaskManagementCreateShowModalComponent, {
+      ...dialogConfigHelper(this.overlay),
+      panelClass: 'task-management-modal'
+    }).afterClosed().subscribe(data => {
+      if (data) {
+        this.updateTable();
+      }
+    });
   }
 
-  openDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
-    const deleteModal = this.dialog.open(TaskManagementDeleteModalComponent, dialogConfigHelper(this.overlay, workOrderCaseModel));
-    this.workOrderCaseDeleteSub$ = deleteModal.componentInstance.workOrderCaseDelete
-      .subscribe(x => this.deleteWorkOrderCaseModel(x, deleteModal));
-  }
-
-  deleteWorkOrderCaseModel(workOrderCaseId: number, deleteModal: MatDialogRef<TaskManagementDeleteModalComponent>) {
-    this.deleteWorkOrderCaseSub$ = this.taskManagementService
-      .deleteWorkOrderCase(workOrderCaseId)
-      .subscribe((data) => {
-        if (data && data.success) {
-          deleteModal.close();
-          this.updateTable();
-        }
-      });
+  onHighlightedRowRendered(): void {
+    setTimeout(() => {
+      this.highlightedId = null;
+    }, 3500);
   }
 
   getProperties() {
@@ -336,7 +174,7 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
               x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.docx`);
           }
         }),
-        catchError((err, caught) => {
+        catchError((_, caught) => {
           this.toasterService.error('Error downloading report');
           return caught;
         })
@@ -368,38 +206,13 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
       .subscribe();
   }
 
-  getAdHocTaskPriorities() {
-    this.getAdHocTaskPrioritiesSub$ = this.statisticsStateService.getAdHocTaskPriorities(
-      this.selectedPropertyId, this.selectedPriority, null, null, this.selectedStatuses)
-      .pipe(tap(model => {
-        if (model && model.success && model.model) {
-          this.adHocTaskPrioritiesModel = model.model;
-        }
-      }))
-      .subscribe();
-  }
-
-  getAdHocTaskWorkers() {
-    this.getAdHocTaskWorkersSub$ = this.statisticsStateService.getAdHocTaskWorkers(this.selectedPropertyId, this.selectedWorkerId)
-      .pipe(tap(model => {
-        if (model && model.success && model.model) {
-          this.adHocTaskWorkers = model.model;
-        }
-      }))
-      .subscribe();
-  }
-
   getStats() {
-
     let filters: any;
-
     this.selectTaskManagementFilters$
       .pipe(take(1))
       .subscribe(f => filters = f);
 
-
     if (this.diagramForShow === 'ad-hoc-task-priorities') {
-      // this.getAdHocTaskPriorities();
       this.statisticsStateService.getAdHocTaskPrioritiesByFilters({
         propertyId: filters.propertyId,
         statuses: filters.statuses,
@@ -414,12 +227,9 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
           }
         });
     } else if (this.diagramForShow === 'ad-hoc-task-workers') {
-      // this.getAdHocTaskWorkers();
-
       if (!filters) {
         return;
       }
-
       this.statisticsStateService
         .getAdHocTaskWorkersByFilters({
           propertyId: filters.propertyId ? [filters.propertyId] : [],
@@ -438,6 +248,4 @@ export class TaskManagementContainerComponent implements OnInit, AfterViewInit, 
         });
     }
   }
-
-
 }
