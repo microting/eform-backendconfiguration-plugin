@@ -302,4 +302,9 @@ export const hrHR = {
   Archive: 'Arhiva',
   'Mobile timeregistration': 'Mobilna registracija vremena',
   'Phone number': 'Broj telefona',
+  'QR Code': 'QR kod',
+  Close: 'Zatvoriti',
+  'Copied!': 'Kopirano!',
+  'Copy as image': 'Kopiraj kao sliku',
+  'Download PNG': 'Preuzmi PNG',
 };

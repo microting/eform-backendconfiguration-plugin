@@ -302,4 +302,9 @@ export const frFR = {
   Archive: 'Archive',
   'Mobile timeregistration': 'Enregistrement mobile',
   'Phone number': 'Numéro de téléphone',
+  'QR Code': 'Code QR',
+  Close: 'Fermer',
+  'Copied!': 'Copié !',
+  'Copy as image': 'Copier comme image',
+  'Download PNG': 'Télécharger le PNG',
 };

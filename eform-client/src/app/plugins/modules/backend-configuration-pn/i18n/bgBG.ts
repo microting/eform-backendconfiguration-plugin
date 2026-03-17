@@ -302,4 +302,9 @@ export const bgBG = {
   Archive: 'Архив',
   'Mobile timeregistration': 'Мобилна регистрация на време',
   'Phone number': 'Телефонен номер',
+  'QR Code': 'QR код',
+  Close: 'Затвори',
+  'Copied!': 'Копирано!',
+  'Copy as image': 'Копиране като изображение',
+  'Download PNG': 'Изтегляне на PNG',
 };

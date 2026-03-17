@@ -302,4 +302,9 @@ export const fiFI = {
   Archive: 'Arkisto',
   'Mobile timeregistration': 'Mobiiliajan rekisteröinti',
   'Phone number': 'Puhelinnumero',
+  'QR Code': 'QR-koodi',
+  Close: 'Lähellä',
+  'Copied!': 'Kopioitu!',
+  'Copy as image': 'Kopioi kuvana',
+  'Download PNG': 'Lataa PNG-tiedosto',
 };

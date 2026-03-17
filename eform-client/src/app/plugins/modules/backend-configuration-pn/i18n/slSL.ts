@@ -302,4 +302,9 @@ export const slSL = {
   Archive: 'Arhiv',
   'Mobile timeregistration': 'Mobilna registracija časa',
   'Phone number': 'Telefonska številka',
+  'QR Code': 'QR koda',
+  Close: 'Zapri',
+  'Copied!': 'Kopirano!',
+  'Copy as image': 'Kopiraj kot sliko',
+  'Download PNG': 'Prenesi PNG',
 };

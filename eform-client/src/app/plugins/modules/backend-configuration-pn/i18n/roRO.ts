@@ -302,4 +302,9 @@ export const roRO = {
   Archive: 'Arhivă',
   'Mobile timeregistration': 'Înregistrare de timp mobilă',
   'Phone number': 'Număr de telefon',
+  'QR Code': 'Cod QR',
+  Close: 'Aproape',
+  'Copied!': 'Copiat!',
+  'Copy as image': 'Copiați ca imagine',
+  'Download PNG': 'Descărcați PNG',
 };

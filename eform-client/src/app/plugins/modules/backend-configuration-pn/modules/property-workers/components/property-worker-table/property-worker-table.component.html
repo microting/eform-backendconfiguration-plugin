@@ -84,6 +84,14 @@
 <ng-template #customerOtpTpl let-row>
   <ng-container *ngIf="row.customerNo && row.otpCode">
     {{ row.customerNo }} / {{ row.otpCode }}
+    <button
+      mat-icon-button
+      matTooltip="{{ 'Show QR Code' | translate }}"
+      (click)="openQrModal(row)"
+      class="qr-icon-btn"
+    >
+      <mat-icon>qr_code_2</mat-icon>
+    </button>
   </ng-container>
   <ng-container *ngIf="row.otpCode == 0">
     <button

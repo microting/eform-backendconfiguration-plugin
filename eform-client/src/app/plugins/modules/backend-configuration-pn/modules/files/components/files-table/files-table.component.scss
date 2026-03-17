@@ -15,3 +15,22 @@ mtx-grid {
     top: 7px;
   }
 }
+
+@keyframes highlightFade {
+  0% {
+    background-color: #b3d3ea;
+  }
+  70% {
+    background-color: #b3d3ea;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+:host ::ng-deep {
+  .highlight-row {
+    animation: highlightFade 10s ease-out;
+  }
+}
+

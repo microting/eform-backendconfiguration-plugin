@@ -6,7 +6,9 @@ import {
   PropertyWorkerCreateEditModalComponent,
   PropertyWorkerDeleteModalComponent,
   PropertyWorkersPageComponent,
-  PropertyWorkerOtpModalComponent, PropertyWorkerTableComponent,
+  PropertyWorkerOtpModalComponent,
+  PropertyWorkerTableComponent,
+  PropertyWorkerQrModalComponent,
 } from './components';
 import {PropertyWorkersRouting} from './property-workers.routing';
 import {TranslateModule} from '@ngx-translate/core';
@@ -62,6 +64,7 @@ import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
     PropertyWorkerDeleteModalComponent,
     PropertyWorkerCreateEditModalComponent,
     PropertyWorkerTableComponent,
+    PropertyWorkerQrModalComponent,
     PropertyWorkerFiltersComponent
   ],
 })

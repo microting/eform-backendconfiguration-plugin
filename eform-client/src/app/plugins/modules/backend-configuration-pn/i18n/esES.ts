@@ -302,4 +302,9 @@ export const esES = {
   Archive: 'Archivo',
   'Mobile timeregistration': 'Registro de tiempo móvil',
   'Phone number': 'Número de teléfono',
+  'QR Code': 'Código QR',
+  Close: 'Cerca',
+  'Copied!': 'Copiado!',
+  'Copy as image': 'Copiar como imagen',
+  'Download PNG': 'Descargar PNG',
 };

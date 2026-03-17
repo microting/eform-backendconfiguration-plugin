@@ -302,4 +302,9 @@ export const ptPT = {
   Archive: 'Arquivo',
   'Mobile timeregistration': 'Registro de tempo móvel',
   'Phone number': 'Número de telefone',
+  'QR Code': 'Código QR',
+  Close: 'Fechar',
+  'Copied!': 'Copiado!',
+  'Copy as image': 'Copiar como imagem',
+  'Download PNG': 'Baixar PNG',
 };

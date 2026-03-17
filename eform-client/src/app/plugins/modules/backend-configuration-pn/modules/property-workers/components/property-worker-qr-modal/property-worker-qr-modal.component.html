@@ -1,0 +1,30 @@
+<h1 mat-dialog-title class="d-flex align-items-center">
+  <mat-icon>qr_code_2</mat-icon>
+  <span class="ms-2">{{ 'QR Code' | translate }}</span>
+</h1>
+<div mat-dialog-content class="qr-content">
+  <p class="qr-label">{{ data.customerNo }} / {{ data.otpCode }}</p>
+  <canvas #qrCanvas class="qr-canvas"></canvas>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-2">
+  <button
+    class="btn-cancel"
+    (click)="close()">
+    {{ 'Close' | translate }}
+  </button>
+  <button
+    tabindex="9"
+    class="btn-primary btn-primary--icon-left"
+    (click)="copyToClipboard()">
+    <mat-icon>{{ copied ? 'check' : 'content_copy' }}</mat-icon>
+    <span>{{ (copied ? 'Copied!' : 'Copy as image') | translate }}</span>
+  </button>
+  <button
+    tabindex="9"
+    class="btn-primary btn-primary--icon-left"
+    (click)="downloadQr()">
+    <mat-icon>download</mat-icon>
+    <span>{{ 'Download PNG' | translate }}</span>
+  </button>
+</div>
+

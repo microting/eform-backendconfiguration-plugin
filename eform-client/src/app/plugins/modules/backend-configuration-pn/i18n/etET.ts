@@ -302,4 +302,9 @@ export const etET = {
   Archive: 'Arhiiv',
   'Mobile timeregistration': 'Mobiilne ajaregistreerimine',
   'Phone number': 'Telefoninumber',
+  'QR Code': 'QR-kood',
+  Close: 'Sule',
+  'Copied!': 'Kopeeritud!',
+  'Copy as image': 'Kopeeri pildina',
+  'Download PNG': 'Laadi alla PNG',
 };

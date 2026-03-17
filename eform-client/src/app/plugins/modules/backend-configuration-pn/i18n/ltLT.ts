@@ -302,4 +302,9 @@ export const ltLT = {
   Archive: 'Archyvas',
   'Mobile timeregistration': 'Mobilioji laiko registracija',
   'Phone number': 'Telefono numeris',
+  'QR Code': 'QR kodas',
+  Close: 'Uždaryti',
+  'Copied!': 'Nukopijuota!',
+  'Copy as image': 'Kopijuoti kaip paveikslėlį',
+  'Download PNG': 'Atsisiųsti PNG',
 };

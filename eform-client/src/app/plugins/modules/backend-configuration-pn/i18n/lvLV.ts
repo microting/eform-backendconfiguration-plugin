@@ -302,4 +302,9 @@ export const lvLV = {
   Archive: 'Arhīvs',
   'Mobile timeregistration': 'Mobilā laika reģistrācija',
   'Phone number': 'Tālruņa numurs',
+  'QR Code': 'QR kods',
+  Close: 'Aizvērt',
+  'Copied!': 'Nokopēts!',
+  'Copy as image': 'Kopēt kā attēlu',
+  'Download PNG': 'Lejupielādēt PNG failu',
 };

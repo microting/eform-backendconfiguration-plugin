@@ -3,7 +3,7 @@ import {
   inject, ViewChild
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
+import {forkJoin, Subscription} from 'rxjs';
 import {
   CommonDictionaryModel,
 } from 'src/app/common/models';
@@ -54,8 +54,6 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   alreadyUsedEmails: string[] = [];
 
   getSites$: Subscription;
-  getPropertiesDictionary$: Subscription;
-  deviceUserAssignments$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
@@ -165,23 +163,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   }
 
   getPropertiesDictionary() {
-    this.getPropertiesDictionary$ = this.propertiesService
-      .getAllPropertiesDictionary()
-      .subscribe((operation) => {
-        if (operation && operation.success) {
-          this.availableProperties = operation.model;
-        }
-      });
+    return this.propertiesService
+      .getAllPropertiesDictionary();
   }
 
   getWorkerPropertiesAssignments(propertyIds?: number[]) {
-    this.deviceUserAssignments$ = this.propertiesService
-      .getPropertiesAssignments(propertyIds)
-      .subscribe((operation) => {
-        if (operation && operation.success) {
-          this.workersAssignments = [...operation.model];
-        }
-      });
+    return this.propertiesService
+      .getPropertiesAssignments(propertyIds);
   }
 
   getWorkerPropertyNames(siteId: number) {
@@ -218,56 +206,71 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   onSearchChanged(name: string) {
     this.propertyWorkersStateService.updateNameFilter(name);
-    this.getDeviceUsersFiltered();
+    this.updateTable();
   }
 
   sortTable(sort: Sort) {
     this.propertyWorkersStateService.onSortTable(sort.active);
-    this.getDeviceUsersFiltered();
+    this.updateTable();
   }
 
   getDeviceUsersFiltered(propertyIds?: number[]) {
+    return this.propertyWorkersStateService
+      .getDeviceUsersFiltered();
+  }
+
+  private applyDeviceUsersData(data: any) {
     let anyIsResigned = false;
-    this.getSites$ = this.propertyWorkersStateService
-      .getDeviceUsersFiltered()
-      .subscribe((data) => {
-        if (data && data.model) {
-          data.model.forEach(site => {
-            // add the site.workerEmail to alreadyUsedEmails to prevent from creating new worker with the same email
-            if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
-              this.alreadyUsedEmails.push(site.workerEmail);
-            }
-            if (site.resigned) {
-              anyIsResigned = true;
-            }
-          });
-          this.showResigned = anyIsResigned;
-          // const result = data.model;
-          this.sitesDto = data.model.map(site => ({
-            ...site,
-            propertyNames: Array.isArray(site.propertyNames)
-              ? site.propertyNames
-              : (typeof site.propertyNames === 'string' && site.propertyNames.length > 0
-                ? site.propertyNames.split(',').map((name: string) => name.trim())
-                : [])
-          }));
-          //this.getWorkerPropertiesAssignments();
+    if (data && data.model) {
+      data.model.forEach(site => {
+        if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
+          this.alreadyUsedEmails.push(site.workerEmail);
+        }
+        if (site.resigned) {
+          anyIsResigned = true;
         }
       });
+      this.showResigned = anyIsResigned;
+      this.sitesDto = data.model.map(site => ({
+        ...site,
+        propertyNames: Array.isArray(site.propertyNames)
+          ? site.propertyNames
+          : (typeof site.propertyNames === 'string' && site.propertyNames.length > 0
+            ? site.propertyNames.split(',').map((name: string) => name.trim())
+            : [])
+      }));
+    }
   }
 
 
 
   updateTable(propertyIds?: number[]) {
-    this.getPropertiesDictionary();
-    this.getDeviceUsersFiltered(propertyIds);
-    this.getWorkerPropertiesAssignments(propertyIds);
+    this.getSites$ = forkJoin([
+      this.getPropertiesDictionary(),
+      this.getDeviceUsersFiltered(propertyIds),
+      this.getWorkerPropertiesAssignments(propertyIds),
+    ]).subscribe(([propertiesResult, devicesResult, assignmentsResult]) => {
+      if (propertiesResult && propertiesResult.success) {
+        this.availableProperties = propertiesResult.model;
+      }
+      this.applyDeviceUsersData(devicesResult);
+      if (assignmentsResult && assignmentsResult.success) {
+        this.workersAssignments = [...assignmentsResult.model];
+      }
+    });
   }
 
   updateTableWithHighlight(siteId: number) {
     this.highlightedSiteId = siteId;
     this.updateTable();
-    // Clear highlight after animation completes
+  }
+
+  /**
+   * Called by the table component when it has finished rendering
+   * the highlighted row in the DOM. This guarantees both the service
+   * calls and the mtx-grid rendering are complete before we clean up.
+   */
+  onHighlightedRowRendered(): void {
     setTimeout(() => {
       this.highlightedSiteId = null;
     }, 3500);

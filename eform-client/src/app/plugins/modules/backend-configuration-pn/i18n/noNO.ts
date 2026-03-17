@@ -302,4 +302,9 @@ export const noNO = {
   Archive: 'Arkiv',
   'Mobile timeregistration': 'Mobil timeregistrering',
   'Phone number': 'Telefonnummer',
+  'QR Code': 'QR-kode',
+  Close: 'Lukke',
+  'Copied!': 'Kopiert!',
+  'Copy as image': 'Kopier som bilde',
+  'Download PNG': 'Last ned PNG',
 };

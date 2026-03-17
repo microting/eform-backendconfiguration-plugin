@@ -363,4 +363,9 @@ export const deDE = {
   Archive: 'Archiv',
   'Mobile timeregistration': 'Mobile Zeiterfassung',
   'Phone number': 'Telefonnummer',
+  'QR Code': 'QR-Code',
+  Close: 'Schließen',
+  'Copied!': 'Kopiert!',
+  'Copy as image': 'Als Bild kopieren',
+  'Download PNG': 'PNG herunterladen',
 };

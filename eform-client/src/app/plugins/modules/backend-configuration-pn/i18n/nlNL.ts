@@ -302,4 +302,9 @@ export const nlNL = {
   Archive: 'Archief',
   'Mobile timeregistration': 'Mobiele tijdregistratie',
   'Phone number': 'Telefoonnummer',
+  'QR Code': 'QR-code',
+  Close: 'Dichtbij',
+  'Copied!': 'Gekopieerd!',
+  'Copy as image': 'Kopieer als afbeelding',
+  'Download PNG': 'Download PNG',
 };
