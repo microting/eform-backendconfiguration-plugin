@@ -65,12 +65,17 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 		{
 			var tags = await _dbContext.FileTags
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.OrderBy(x => x.Name)
 				.Select(x => new CommonTagModel
 				{
 					Id = x.Id,
-					Name = x.Name
-				}).ToListAsync();
+					Name = x.Name,
+					TagCount = _dbContext.FilesTags
+						.Count(ft => ft.FileTagId == x.Id
+						             && ft.WorkflowState != Constants.WorkflowStates.Removed)
+				})
+				.OrderByDescending(x => x.TagCount)
+				.ThenBy(x => x.Name)
+				.ToListAsync();
 
 			return new OperationDataResult<List<CommonTagModel>>(true, tags);
 		}
@@ -194,7 +199,10 @@ public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 				.Select(x => new CommonTagModel
 				{
 					Id = x.Id,
-					Name = x.Name
+					Name = x.Name,
+					TagCount = _dbContext.FilesTags
+						.Count(ft => ft.FileTagId == x.Id
+						             && ft.WorkflowState != Constants.WorkflowStates.Removed)
 				})
 				.FirstOrDefaultAsync(x => x.Id == id);
 

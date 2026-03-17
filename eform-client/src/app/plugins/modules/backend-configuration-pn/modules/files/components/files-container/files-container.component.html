@@ -35,12 +35,14 @@
 </div>
 <app-files-table
   [files]="files"
+  [highlightedFileId]="highlightedFileId"
   (updateTable)="updateTable()"
   (clickTag)="addTagToFilter($event)"
   (openEditNameModal)="showEditModal($event)"
   (openDeleteModal)="showDeleteModal($event)"
   (openEditTagsModal)="showEditTagsModal($event)"
   (changeSelectedFiles)="selectedFileIds = $event"
+  (highlightedRowRendered)="onHighlightedRowRendered()"
 >
 </app-files-table>
 

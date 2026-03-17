@@ -4,7 +4,12 @@ import {
   Input,
   OnInit,
   Output,
-  inject
+  inject,
+  OnChanges,
+  OnDestroy,
+  AfterViewChecked,
+  SimpleChanges,
+  ElementRef
 } from '@angular/core';
 import {FilesModel} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -26,11 +31,12 @@ import {
     styleUrls: ['./files-table.component.scss'],
     standalone: false
 })
-export class FilesTableComponent implements OnInit {
+export class FilesTableComponent implements OnInit, OnChanges, OnDestroy, AfterViewChecked {
   private store = inject(Store);
   public filesStateService = inject(FilesStateService);
   private translateService = inject(TranslateService);
   private filesService = inject(BackendConfigurationPnFilesService);
+  private el = inject(ElementRef);
 
   _files: Paged<FilesModel> = new Paged<FilesModel>();
   @Input()
@@ -58,6 +64,10 @@ export class FilesTableComponent implements OnInit {
   @Output() openEditTagsModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() changeSelectedFiles: EventEmitter<number[]> = new EventEmitter<number[]>();
   @Output() clickTag: EventEmitter<number> = new EventEmitter<number>();
+  @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
+  @Input() highlightedFileId: number | null = null;
+  private pendingScrollToFileId: number | null = null;
+  private waitingForFreshData = false;
 
   selectedFiles: number[] = [];
   allFileSelected: boolean = false;
@@ -103,6 +113,49 @@ export class FilesTableComponent implements OnInit {
 
   ngOnInit(): void {
   }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['highlightedFileId'] && this.highlightedFileId) {
+      this.waitingForFreshData = true;
+      this.pendingScrollToFileId = null;
+    }
+    if (changes['files'] && this.waitingForFreshData && this.highlightedFileId) {
+      this.waitingForFreshData = false;
+      this.pendingScrollToFileId = this.highlightedFileId;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.pendingScrollToFileId && this._files?.entities?.length) {
+      const fileId = this.pendingScrollToFileId;
+      const index = this._files.entities.findIndex(f => f.id === fileId);
+      if (index >= 0) {
+        this.pendingScrollToFileId = null;
+        setTimeout(() => {
+          const row = this.el.nativeElement.querySelector(`#fileId-${index}`);
+          if (row) {
+            const tr = row.closest('tr') || row.closest('mat-row') || row.parentElement;
+            if (tr) {
+              tr.scrollIntoView({behavior: 'smooth', block: 'center'});
+              tr.classList.add('highlight-row');
+              setTimeout(() => tr.classList.remove('highlight-row'), 5000);
+            }
+          }
+          this.highlightedRowRendered.emit();
+        });
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+  }
+
+  rowClassFormatter = (rowData: any) => {
+    if (this.highlightedFileId && rowData.id === this.highlightedFileId) {
+      return {'highlight-row': true};
+    }
+    return {};
+  };
 
   onOpenView(file: FilesModel) {
     this.pdfSub$ = this.filesService.getPdfFile(file.id).subscribe((blob) => {

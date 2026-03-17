@@ -164,26 +164,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   getPropertiesDictionary() {
     return this.propertiesService
-      .getAllPropertiesDictionary()
-      .pipe(
-        tap((operation) => {
-          if (operation && operation.success) {
-            this.availableProperties = operation.model;
-          }
-        })
-      );
+      .getAllPropertiesDictionary();
   }
 
   getWorkerPropertiesAssignments(propertyIds?: number[]) {
     return this.propertiesService
-      .getPropertiesAssignments(propertyIds)
-      .pipe(
-        tap((operation) => {
-          if (operation && operation.success) {
-            this.workersAssignments = [...operation.model];
-          }
-        })
-      );
+      .getPropertiesAssignments(propertyIds);
   }
 
   getWorkerPropertyNames(siteId: number) {
@@ -220,44 +206,40 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   onSearchChanged(name: string) {
     this.propertyWorkersStateService.updateNameFilter(name);
-    this.getSites$ = this.getDeviceUsersFiltered().subscribe();
+    this.updateTable();
   }
 
   sortTable(sort: Sort) {
     this.propertyWorkersStateService.onSortTable(sort.active);
-    this.getSites$ = this.getDeviceUsersFiltered().subscribe();
+    this.updateTable();
   }
 
   getDeviceUsersFiltered(propertyIds?: number[]) {
-    let anyIsResigned = false;
     return this.propertyWorkersStateService
-      .getDeviceUsersFiltered()
-      .pipe(
-        tap((data) => {
-          if (data && data.model) {
-            data.model.forEach(site => {
-              // add the site.workerEmail to alreadyUsedEmails to prevent from creating new worker with the same email
-              if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
-                this.alreadyUsedEmails.push(site.workerEmail);
-              }
-              if (site.resigned) {
-                anyIsResigned = true;
-              }
-            });
-            this.showResigned = anyIsResigned;
-            // const result = data.model;
-            this.sitesDto = data.model.map(site => ({
-              ...site,
-              propertyNames: Array.isArray(site.propertyNames)
-                ? site.propertyNames
-                : (typeof site.propertyNames === 'string' && site.propertyNames.length > 0
-                  ? site.propertyNames.split(',').map((name: string) => name.trim())
-                  : [])
-            }));
-            //this.getWorkerPropertiesAssignments();
-          }
-        })
-      );
+      .getDeviceUsersFiltered();
+  }
+
+  private applyDeviceUsersData(data: any) {
+    let anyIsResigned = false;
+    if (data && data.model) {
+      data.model.forEach(site => {
+        if (!this.alreadyUsedEmails.includes(site.workerEmail)) {
+          this.alreadyUsedEmails.push(site.workerEmail);
+        }
+        if (site.resigned) {
+          anyIsResigned = true;
+        }
+      });
+      this.showResigned = anyIsResigned;
+      this.sitesDto = data.model.map(site => ({
+        ...site,
+        propertyNames: Array.isArray(site.propertyNames)
+          ? site.propertyNames
+          : (typeof site.propertyNames === 'string' && site.propertyNames.length > 0
+            ? site.propertyNames.split(',').map((name: string) => name.trim())
+            : [])
+      }));
+    }
   }
 
 
@@ -267,7 +249,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       this.getPropertiesDictionary(),
       this.getDeviceUsersFiltered(propertyIds),
       this.getWorkerPropertiesAssignments(propertyIds),
-    ]).subscribe();
+    ]).subscribe(([propertiesResult, devicesResult, assignmentsResult]) => {
+      if (propertiesResult && propertiesResult.success) {
+        this.availableProperties = propertiesResult.model;
+      }
+      this.applyDeviceUsersData(devicesResult);
+      if (assignmentsResult && assignmentsResult.success) {
+        this.workersAssignments = [...assignmentsResult.model];
+      }
+    });
   }
 
   updateTableWithHighlight(siteId: number) {

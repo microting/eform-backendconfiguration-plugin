@@ -10,6 +10,7 @@
   [showColumnMenuButton]="false"
   [sortActive]="selectFilesPaginationSort$ | async"
   [sortDirection]="selectFilesPaginationIsSortDsc$ | async"
+  [rowClassFormatter]="rowClassFormatter"
   (sortChange)="onSortTable($event)"
   noResultText="{{'No files found' | translate}}"
 >

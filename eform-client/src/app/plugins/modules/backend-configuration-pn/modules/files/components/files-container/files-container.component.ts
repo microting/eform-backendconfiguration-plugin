@@ -8,7 +8,7 @@ import {
   Paged,
   SharedTagModel
 } from 'src/app/common/models';
-import {Subscription, zip} from 'rxjs';
+import {Subscription, zip, forkJoin} from 'rxjs';
 import {FilesStateService} from '../../store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -40,8 +40,10 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   availableTags: SharedTagModel[] = [];
   files: Paged<FilesModel> = new Paged<FilesModel>();
   selectedFileIds: number[] = [];
+  highlightedFileId: number | null = null;
 
   getTagsSub$: Subscription;
+  getFilesSub$: Subscription;
   filesDeletedSub$: Subscription;
   fileNameUpdatedSub$: Subscription;
   translatesSub$: Subscription;
@@ -49,7 +51,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   downloadFilesSub$: Subscription;
   clickDownloadFilesSub$: Subscription;
 
-  
+
 
   ngOnInit(): void {
     this.getTags();
@@ -65,7 +67,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       if (model && model.success && model.model) {
         const editFileModal = this.dialog.open(FileNameEditComponent, {...dialogConfigHelper(this.overlay, model.model), minWidth: 500});
         this.fileNameUpdatedSub$ = editFileModal.componentInstance.fileNameUpdated.subscribe(() => {
-          this.updateTable();
+          this.updateTableWithHighlight(file.id);
         });
       }
     });
@@ -105,6 +107,22 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     this.getFiles();
   }
 
+  updateTableWithHighlight(fileId: number) {
+    this.highlightedFileId = fileId;
+    this.getFiles();
+  }
+
+  /**
+   * Called by the table component when it has finished rendering
+   * the highlighted row in the DOM. This guarantees both the service
+   * call and the mtx-grid rendering are complete before we clean up.
+   */
+  onHighlightedRowRendered(): void {
+    setTimeout(() => {
+      this.highlightedFileId = null;
+    }, 3500);
+  }
+
   getFiles() {
     this.filesStateService.getFiles()
       .subscribe(model => {
@@ -137,12 +155,13 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   }
 
   showEditTagsModal(model: FilesModel) {
+    const fileId = model.id;
     this.filesService.getFile(model.id).subscribe(model => {
       if (model && model.success && model.model) {
         const editFileTagsModal = this.dialog.open(FileTagsEditComponent,
           {...dialogConfigHelper(this.overlay, {fileModel: model.model, availableTags: this.availableTags}), minWidth: 500});
         this.fileTagsUpdatedSub$ = editFileTagsModal.componentInstance.fileTagsUpdated.subscribe(() => {
-          this.updateTable();
+          this.updateTableWithHighlight(fileId);
         });
       }
     });
