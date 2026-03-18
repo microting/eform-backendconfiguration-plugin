@@ -1,5 +1,5 @@
 <h3 mat-dialog-title>{{ 'Edit document' | translate }}</h3>
-<div [formGroup]="form">
+<div *ngIf="form" [formGroup]="form">
   <div mat-dialog-content>
     <div class="d-flex flex-column">
       <mat-card class="mb-3">

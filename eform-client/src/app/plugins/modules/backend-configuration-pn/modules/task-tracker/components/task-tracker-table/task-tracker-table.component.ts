@@ -53,7 +53,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
-  @Output() openSelectWorkerModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
+  @Output() openSelectWorkerModal: EventEmitter<{task: TaskModel, rowIndex: number}> = new EventEmitter<{task: TaskModel, rowIndex: number}>();
   @Input() set highlightId(value: number | undefined) {
     if (value) {
       this._highlightId = value;
@@ -63,6 +63,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
 
   _highlightId: number | null = null;
   private _needsScroll = false;
+  _scrollToIndex: number | null = null;
+  private _needsIndexScroll = false;
 
   days: Date[] = [];
   daysInTable: Date[] = [];
@@ -112,8 +114,9 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
     'background-red-dark': (data, index) => data.taskIsExpired === true && index % 2 === 1,
     //'background-yellow': (data, index) => data.taskIsExpired === false,
 
-    highlighted: (row: TaskModel) =>
-      !!this._highlightId && row.sdkCaseId === this._highlightId,
+    highlighted: (row: TaskModel, index: number) =>
+      (!!this._highlightId && row.sdkCaseId === this._highlightId) ||
+      (this._scrollToIndex !== null && index === this._scrollToIndex),
   };
   private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
   private currentUserFullName: string;
@@ -173,12 +176,13 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
     }
   }
 
-  redirectToCompliance(task: TaskModel) {
+  redirectToCompliance(task: TaskModel, rowIndex: number = 0) {
     if (task.taskIsExpired) { // When clicking on a task
       // eslint-disable-next-line max-len
       // that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
       if (task.workerIds.length === 1) {
         if (task.workerNames[0] === this.currentUserFullName) {
+          sessionStorage.setItem('taskTrackerScrollIndex', String(Math.max(0, rowIndex - 1)));
           this.router.navigate([
             '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId + '/' + task.workerIds[0],
           ], {
@@ -187,10 +191,10 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
             }
           }).then();
         } else {
-          this.openSelectWorkerModal.emit(task);
+          this.openSelectWorkerModal.emit({task, rowIndex});
         }
       } else {
-        this.openSelectWorkerModal.emit(task);
+        this.openSelectWorkerModal.emit({task, rowIndex});
       }
     } else { // When clicking on a task that is not overdue, the user should be presented with the area rule planning modal for assigning workers
       this.openAreaRulePlanningModal.emit(task);
@@ -201,8 +205,16 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
     if (changes && changes.columnsFromDb && !changes.columnsFromDb.isFirstChange()) {
       this.recalculateColumns();
     }
-    if (changes && changes.tasks && !changes.tasks.isFirstChange()) {
-      this.initTable();
+    if (changes && changes.tasks) {
+      if (!changes.tasks.isFirstChange()) {
+        this.initTable();
+      }
+      const stored = sessionStorage.getItem('taskTrackerScrollIndex');
+      if (stored !== null) {
+        this._scrollToIndex = parseInt(stored, 10);
+        this._needsIndexScroll = true;
+        sessionStorage.removeItem('taskTrackerScrollIndex');
+      }
     }
   }
 
@@ -216,12 +228,24 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges, AfterViewCh
           if (highlightedRow) {
             highlightedRow.scrollIntoView({behavior: 'smooth', block: 'center'});
           }
-          // Clear highlight after animation
           setTimeout(() => {
             this._highlightId = null;
           }, 3000);
         }, 300);
       }
+    }
+
+    if (this._needsIndexScroll && this._scrollToIndex !== null && this.tasks?.length) {
+      this._needsIndexScroll = false;
+      setTimeout(() => {
+        const highlightedRow = this.el.nativeElement.querySelector('tr.highlighted');
+        if (highlightedRow) {
+          highlightedRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+        setTimeout(() => {
+          this._scrollToIndex = null;
+        }, 2000);
+      }, 300);
     }
   }
 
