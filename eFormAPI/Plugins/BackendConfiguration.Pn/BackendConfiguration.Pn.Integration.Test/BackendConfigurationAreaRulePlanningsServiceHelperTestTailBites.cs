@@ -80,7 +80,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;
@@ -438,7 +438,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;
@@ -821,7 +821,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Halebid");
         var areaId = areaTranslation.AreaId;

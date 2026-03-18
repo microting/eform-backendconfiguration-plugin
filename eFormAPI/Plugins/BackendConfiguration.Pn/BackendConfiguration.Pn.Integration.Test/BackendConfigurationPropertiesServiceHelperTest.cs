@@ -443,7 +443,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
         var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, userService,
-            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, null);
 
         properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();

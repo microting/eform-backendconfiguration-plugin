@@ -517,7 +517,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             SiteId = sites[2].Id
         };
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-             BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+             BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -615,7 +615,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             SiteId = sites[2].Id
         };
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -635,7 +635,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // var userService = Substitute.For<IUserService>();
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -737,7 +737,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -759,7 +759,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // var userService = Substitute.For<IUserService>();
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -895,7 +895,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
         Assert.That(workOrders.Count, Is.EqualTo(1)); // TODO: fix this
@@ -926,7 +926,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // userService.UserId.Returns(1);
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
             userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!, ItemsPlanningPnDbContext!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, ItemsPlanningPnDbContext!);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();

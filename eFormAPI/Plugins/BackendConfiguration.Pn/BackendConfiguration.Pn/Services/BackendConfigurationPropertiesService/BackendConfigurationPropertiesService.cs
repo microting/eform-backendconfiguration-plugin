@@ -25,11 +25,9 @@ SOFTWARE.
 #nullable enable
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
-using BackendConfiguration.Pn.Services.RebusService;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
-using Rebus.Bus;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
@@ -58,11 +56,9 @@ public class BackendConfigurationPropertiesService(
     IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IPluginDbOptions<BackendConfigurationBaseSettings> options,
-    IRebusService rebusService,
     ILogger<BackendConfigurationPropertiesService> logger)
     : IBackendConfigurationPropertiesService
 {
-    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request)
     {
@@ -190,7 +186,7 @@ public class BackendConfigurationPropertiesService(
     {
         var result = await BackendConfigurationPropertiesServiceHelper.Update(updateModel,
             await coreHelper.GetCore(), userService, backendConfigurationPnDbContext,
-            itemsPlanningPnDbContext, backendConfigurationLocalizationService, _bus).ConfigureAwait(false);
+            itemsPlanningPnDbContext, backendConfigurationLocalizationService).ConfigureAwait(false);
 
         return new OperationResult(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message));

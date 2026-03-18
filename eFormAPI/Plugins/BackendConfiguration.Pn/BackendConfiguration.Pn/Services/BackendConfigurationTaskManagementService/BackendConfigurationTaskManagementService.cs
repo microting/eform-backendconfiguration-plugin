@@ -23,11 +23,8 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
-using BackendConfiguration.Pn.Messages;
-using BackendConfiguration.Pn.Services.RebusService;
 using ImageMagick;
 using Microsoft.Extensions.Logging;
-using Rebus.Bus;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
@@ -54,11 +51,9 @@ public class BackendConfigurationTaskManagementService(
     IEFormCoreService coreHelper,
     IUserService userService,
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-    IRebusService rebusService,
     ILogger<BackendConfigurationTaskManagementService> logger)
     : IBackendConfigurationTaskManagementService
 {
-    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<List<WorkorderCaseModel>> Index(TaskManagementRequestModel filtersModel)
     {
@@ -666,25 +661,27 @@ public class BackendConfigurationTaskManagementService(
 
             if (newWorkOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
             {
-                await _bus.SendLocal(new WorkOrderCreated(
+                await BackendConfigurationTaskManagementHelper.DeployWorkOrderEformForCreate(
                     propertyWorkerKvpList,
                     eformIdForOngoingTasks,
+                    newWorkOrderCase,
                     (int)property.FolderIdForOngoingTasks!,
+                    (int)property.FolderIdForTasks!,
+                    (int)property.FolderIdForCompletedTasks!,
                     description,
                     createModel.CaseStatusEnum,
-                    newWorkOrderCase.Id,
                     createModel.Description,
                     deviceUsersGroupMicrotingUid,
+                    site,
                     pushMessageBody,
                     pushMessageTitle,
                     createModel.AreaName,
-                    userService.UserId,
-                    picturesOfTasks,
-                    site,
                     property.Name,
-                    (int)property.FolderIdForOngoingTasks!,
-                    (int)property.FolderIdForTasks!,
-                    (int)property.FolderIdForCompletedTasks!, hasImages, picturesOfTasksList)).ConfigureAwait(false);
+                    hasImages,
+                    picturesOfTasksList,
+                    core,
+                    backendConfigurationPnDbContext,
+                    localizationService).ConfigureAwait(false);
             }
 
             return new OperationResult(true, localizationService.GetString("TaskCreatedSuccessful"));

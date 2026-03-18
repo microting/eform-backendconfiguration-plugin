@@ -2,41 +2,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BackendConfiguration.Pn.Infrastructure.Helpers;
-using BackendConfiguration.Pn.Messages;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Entities;
-using Rebus.Handlers;
+using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
-namespace BackendConfiguration.Pn.Handlers;
+namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
-public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
+public static class DocumentHelper
 {
-    private readonly Core _sdkCore;
-    private readonly BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
-    private readonly DocumentDbContextHelper _documentDbContextHelper;
-
-    public DocumentUpdatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, Core sdkCore, DocumentDbContextHelper documentDbContextHelper)
+    public static async Task DeployDocumentAsync(
+        int documentId,
+        Core core,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        CaseTemplatePnDbContext documentDbContext)
     {
-        _backendConfigurationDbContextHelper = backendConfigurationDbContextHelper;
-        _sdkCore = sdkCore;
-        _documentDbContextHelper = documentDbContextHelper;
-    }
-
-    public async Task Handle(DocumentUpdated message)
-    {
-        await using var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
-        await using var documentDbContext = _documentDbContextHelper.GetDbContext();
-        await using var backendConfigurationDbContext = _backendConfigurationDbContextHelper.GetDbContext();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
         var document = await documentDbContext.Documents
             .Include(x => x.DocumentProperties)
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentUploadedDatas)
             //.Include(x => x.DocumentSites)
-            .FirstOrDefaultAsync(x => x.Id == message.DocumentId && x.Status == true);
+            .FirstOrDefaultAsync(x => x.Id == documentId && x.Status == true);
 
         if (document == null)
         {
@@ -47,20 +38,13 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
         foreach (var documentProperty in documentProperties)
         {
-            var propertySites = await backendConfigurationDbContext.PropertyWorkers
+            var propertySites = await backendConfigurationPnDbContext.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == documentProperty.PropertyId)
                 .ToListAsync();
 
             foreach (var propertyWorker in propertySites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
             {
-                // var documentSite = documentDbContext.DocumentSites
-                //     .Where(x => x.DocumentId == document.Id)
-                //     .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                //                          && x.SdkSiteId == propertyWorker.WorkerId);
-                //
-                // if (documentSite == null)
-                // {
                 var documentSite = new DocumentSite
                 {
                     DocumentId = document.Id,
@@ -68,7 +52,6 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                     PropertyId = documentProperty.PropertyId
                 };
                 await documentSite.Create(documentDbContext);
-                //}
 
                 // Old text "00. Info boks"
                 var clt = await sdkDbContext.CheckLists.FirstAsync(x => x.OriginalId == "142657");
@@ -77,9 +60,8 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 int folderId;
                 if (folderProperty == null)
                 {
-                    var propertyFolderId = await backendConfigurationDbContext.Properties.AsNoTracking()
+                    var propertyFolderId = await backendConfigurationPnDbContext.Properties.AsNoTracking()
                         .Where(x => x.Id == documentProperty.PropertyId).Select(x => x.FolderId).FirstAsync();
-                    // var folder = await documentDbContext.Folders.FirstAsync(x => x.Id == document.FolderId);
                     var folderTranslations = await documentDbContext.FolderTranslations
                         .Where(x => x.FolderId == document.FolderId).ToListAsync();
                     var folderTranslationList = new List<CommonTranslationsModel>();
@@ -133,11 +115,11 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                             }
                         };
 
-                        folderId = await _sdkCore.FolderCreate(documentFolderTranslations, propertyFolderId)
+                        folderId = await core.FolderCreate(documentFolderTranslations, propertyFolderId)
                             .ConfigureAwait(false);
                     }
 
-                    folderId = await _sdkCore.FolderCreate(folderTranslationList, folderId).ConfigureAwait(false);
+                    folderId = await core.FolderCreate(folderTranslationList, folderId).ConfigureAwait(false);
                     folderProperty = new FolderProperty
                     {
                         FolderId = document.FolderId,
@@ -153,7 +135,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
                 if (!string.IsNullOrEmpty(document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name) && document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id && x.Extension == "pdf").Hash != null)
                 {
-                    var mainElement = await _sdkCore.ReadeForm(clt.Id, language);
+                    var mainElement = await core.ReadeForm(clt.Id, language);
                     mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
                     mainElement.EndDate = DateTime.Now.AddYears(20).ToUniversalTime();
                     mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
@@ -182,7 +164,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                             document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
                     }
 
-                    var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
+                    var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
 
                     documentSite.SdkCaseId = (int)caseId!;
                     await documentSite.Update(documentDbContext);

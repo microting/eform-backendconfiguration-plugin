@@ -18,7 +18,6 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
-using Rebus.Bus;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
@@ -202,7 +201,7 @@ public static class BackendConfigurationPropertiesServiceHelper
     public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        IBackendConfigurationLocalizationService? localizationService, IBus bus)
+        IBackendConfigurationLocalizationService? localizationService)
     {
         try
         {
@@ -391,7 +390,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                             await WorkOrderHelper.DeployEform(propertyWorker, eformId, property,
                                 localizationService,
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid), core,
-                                userService, backendConfigurationPnDbContext, bus, false).ConfigureAwait(false);
+                                userService, backendConfigurationPnDbContext, false).ConfigureAwait(false);
                         }
 
                         var entityItems = await sdkDbContext.EntityItems

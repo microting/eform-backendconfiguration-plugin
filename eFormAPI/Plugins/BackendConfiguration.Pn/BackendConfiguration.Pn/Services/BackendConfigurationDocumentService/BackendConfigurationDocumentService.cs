@@ -4,10 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
-using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using BackendConfiguration.Pn.Services.RebusService;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -17,7 +16,6 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Entities;
-using Rebus.Bus;
 using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
@@ -30,7 +28,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     private readonly IEFormCoreService _coreHelper;
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    private readonly IBus _bus;
     private readonly IUserService _userService;
 
     public BackendConfigurationDocumentService(
@@ -38,7 +35,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 	    IEFormCoreService coreHelper,
 	    IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
 	    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-	    IRebusService rebusService,
 	    IUserService userService
     )
     {
@@ -47,7 +43,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 	    _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
 	    _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
 	    _userService = userService;
-	    _bus = rebusService.GetBus();
     }
 
     public async Task<OperationDataResult<Paged<BackendConfigurationDocumentModel>>> Index(BackendConfigurationDocumentRequestModel pnRequestModel)
@@ -542,7 +537,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
         if (model.DocumentProperties != null)
         {
-            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+            await DocumentHelper.DeployDocumentAsync(document.Id, core, _backendConfigurationPnDbContext, _caseTemplatePnDbContext).ConfigureAwait(false);
         }
         else
         {
@@ -731,7 +726,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
 
-            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+            await DocumentHelper.DeployDocumentAsync(document.Id, core, _backendConfigurationPnDbContext, _caseTemplatePnDbContext).ConfigureAwait(false);
         }
         else
         {
