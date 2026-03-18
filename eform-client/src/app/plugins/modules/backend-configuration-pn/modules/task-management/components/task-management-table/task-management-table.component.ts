@@ -116,9 +116,9 @@ export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChange
   ];
 
   @Input() workOrderCases: WorkOrderCaseModel[];
-  @Input() highlightedId: number | null = null;
+  @Input() highlightedId: string | null = null;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  @Output() updateTableWithHighlight: EventEmitter<number> = new EventEmitter<number>();
+  @Output() updateTableWithHighlight: EventEmitter<string> = new EventEmitter<string>();
   @Output() highlightedRowRendered: EventEmitter<void> = new EventEmitter<void>();
 
   public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
@@ -127,7 +127,7 @@ export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChange
   getWorkOrderCaseSub$: Subscription;
   viewPicturesSub$: Subscription;
 
-  private pendingScrollIndex: number | null = null;
+  private pendingScrollGroupId: string | null = null;
   private waitingForFreshData = false;
 
   ngOnInit(): void {
@@ -135,23 +135,23 @@ export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChange
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['highlightedId'] && this.highlightedId !== null && this.highlightedId !== undefined) {
-      this.pendingScrollIndex = null;
+      this.pendingScrollGroupId = null;
       this.waitingForFreshData = true;
     }
     if (changes['workOrderCases'] && this.waitingForFreshData && this.highlightedId !== null && this.highlightedId !== undefined) {
       this.waitingForFreshData = false;
-      this.pendingScrollIndex = this.highlightedId;
+      this.pendingScrollGroupId = this.highlightedId;
     }
   }
 
   ngAfterViewChecked(): void {
-    if (this.pendingScrollIndex === null || !this.workOrderCases?.length) return;
-    const index = this.pendingScrollIndex;
-    const cell = this.el.nativeElement.querySelector(`#taskId-${index}`);
+    if (this.pendingScrollGroupId === null || !this.workOrderCases?.length) return;
+    const groupId = this.pendingScrollGroupId;
+    const cell = this.el.nativeElement.querySelector(`#taskId-${groupId}`);
     if (!cell) return;
-    this.pendingScrollIndex = null;
+    this.pendingScrollGroupId = null;
     setTimeout(() => {
-      const freshCell = this.el.nativeElement.querySelector(`#taskId-${index}`);
+      const freshCell = this.el.nativeElement.querySelector(`#taskId-${groupId}`);
       if (freshCell) {
         const tr = freshCell.closest('tr') || freshCell.closest('mat-row') || freshCell.parentElement;
         if (tr) {
@@ -170,7 +170,7 @@ export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChange
   }
 
   openViewModal(workOrderCaseId: number) {
-    const rowIndex = this.workOrderCases.findIndex(c => c.id === workOrderCaseId);
+    const groupId = this.workOrderCases.find(c => c.id === workOrderCaseId)?.groupId;
     this.getWorkOrderCaseSub$ = this.taskManagementService
       .getWorkOrderCase(workOrderCaseId)
       .subscribe((data) => {
@@ -179,8 +179,8 @@ export class TaskManagementTableComponent implements OnInit, OnDestroy, OnChange
             ...dialogConfigHelper(this.overlay, data.model),
             panelClass: 'task-management-modal'
           }).afterClosed().subscribe(result => {
-            if (result) {
-              this.updateTableWithHighlight.emit(rowIndex);
+            if (result && groupId) {
+              this.updateTableWithHighlight.emit(groupId);
             }
           });
         }

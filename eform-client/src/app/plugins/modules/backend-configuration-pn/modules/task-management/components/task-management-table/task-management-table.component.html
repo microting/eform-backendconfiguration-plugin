@@ -19,8 +19,8 @@
 
 </div>
 
-<ng-template #taskIdTpl let-row let-i="index">
-  <span id="taskId-{{i}}">{{row.id}}</span>
+<ng-template #taskIdTpl let-row>
+  <span id="taskId-{{row.groupId}}">{{row.groupId}}</span>
 </ng-template>
 
 <ng-template #photosTpl let-row>

@@ -26,6 +26,7 @@ using System;
 using System.Text.RegularExpressions;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.TaskUpdateCompletionService;
 using Microting.eForm.Dto;
 
 namespace BackendConfiguration.Pn.Services.RebusService;
@@ -50,11 +51,13 @@ public class RebusService : IRebusService
     private ChemicalDbContextHelper _chemicalDbContextHelper;
     private DocumentDbContextHelper _documentDbContextHelper;
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
+    private readonly ITaskUpdateCompletionService _taskUpdateCompletionService;
 
-    public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+    public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ITaskUpdateCompletionService taskUpdateCompletionService)
     {
         _coreHelper = coreHelper;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+        _taskUpdateCompletionService = taskUpdateCompletionService;
         _container = new WindsorContainer();
     }
 
@@ -84,6 +87,7 @@ public class RebusService : IRebusService
         _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
         _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
         _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
+        _container.Register(Component.For<ITaskUpdateCompletionService>().Instance(_taskUpdateCompletionService));
         _container.Install(
             new RebusHandlerInstaller()
             , new RebusInstaller(dbPrefix, connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitmqHost)

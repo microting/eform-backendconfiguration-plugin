@@ -235,6 +235,7 @@ public class WorkOrderUpdatedHandler(
                 PropertyWorkerId = propertyWorker.Key,
                 CaseStatusesEnum = status,
                 ParentWorkorderCaseId = workOrderCase.Id,
+                GroupId = workOrderCase.GroupId,
                 SelectedAreaName = workOrderCase.SelectedAreaName,
                 CreatedByName = workOrderCase.CreatedByName,
                 CreatedByText = workOrderCase.CreatedByText,

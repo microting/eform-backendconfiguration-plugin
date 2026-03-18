@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2022 Microting A/S
@@ -22,41 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
-
 using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
+namespace BackendConfiguration.Pn.Services.TaskUpdateCompletionService;
 
-public class WorkorderCaseModel
+public interface ITaskUpdateCompletionService
 {
-    public int Id { get; set; }
+    /// <summary>
+    /// Registers a pending update for the given user. Must be called before sending the bus message.
+    /// </summary>
+    void Register(int userId);
 
-    public DateTime CaseInitiated { get; set; }
+    /// <summary>
+    /// Signals that the update for the given user has been fully committed to the database.
+    /// </summary>
+    void Complete(int userId);
 
-    public string PropertyName { get; set; }
-
-    public string AreaName { get; set; }
-
-    public string CreatedByName { get; set; }
-
-    public string CreatedByText { get; set; }
-
-    public string LastAssignedTo { get; set; }
-
-    public string Description { get; set; }
-
-    public DateTime? LastUpdateDate { get; set; }
-
-    public string LastUpdatedBy { get; set; }
-
-    public string Status { get; set; }
-
-    public int? ParentWorkorderCaseId { get; set; }
-
-    public Guid? GroupId { get; set; }
-
-    public int? Priority { get; set; }
-    
-    public List<string> PictureNames { get; set; }
+    /// <summary>
+    /// Waits until the pending update for the given user completes, or until the timeout elapses.
+    /// Returns immediately if no pending update is registered for the user.
+    /// </summary>
+    Task WaitForCompletionAsync(int userId, TimeSpan timeout);
 }

@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Threading;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
@@ -63,15 +62,11 @@ public class BackendConfigurationTaskManagementService(
 
     public async Task<List<WorkorderCaseModel>> Index(TaskManagementRequestModel filtersModel)
     {
-        if (filtersModel.Filters.Delayed == true)
-        {
-            Thread.Sleep(3000);
-        }
-
         try
         {
             var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
             var query = backendConfigurationPnDbContext.WorkorderCases
+                .AsNoTracking()
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -154,6 +149,7 @@ public class BackendConfigurationTaskManagementService(
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
+                    GroupId = x.GroupId,
                     Priority = string.IsNullOrEmpty(x.Priority) ? 3 :
                         int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority),
                     PictureNames = new List<string>()
@@ -488,6 +484,7 @@ public class BackendConfigurationTaskManagementService(
             var newWorkOrderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
+                GroupId = Guid.NewGuid(),
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
@@ -706,6 +703,6 @@ public class BackendConfigurationTaskManagementService(
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, localizationService, core,
-            userService, backendConfigurationPnDbContext, _bus, true);
+            userService, backendConfigurationPnDbContext, true);
     }
 }

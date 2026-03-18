@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
-using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -16,7 +19,6 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
-using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -27,7 +29,7 @@ public static class BackendConfigurationTaskManagementHelper
         Core core,
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        IBus bus, bool useGetCurrentUserFullName)
+        bool useGetCurrentUserFullName)
     {
         // var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -57,7 +59,6 @@ public static class BackendConfigurationTaskManagementHelper
             updatedByName = workOrderCase.LastUpdatedByName;
         }
 
-        var picturesOfTasks = new List<string>();
         var picturesOfTasksList = new List<KeyValuePair<string, string>>();
         var hasImages = false;
         var parentCaseImages = await backendConfigurationPnDbContext.WorkorderCaseImages.Where(x => x.WorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
@@ -65,7 +66,6 @@ public static class BackendConfigurationTaskManagementHelper
         foreach (var workorderCaseImage in parentCaseImages)
         {
             var uploadedData = await sdkDbContext.UploadedDatas.FirstAsync(x => x.Id == workorderCaseImage.UploadedDataId);
-            picturesOfTasks.Add($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}");
             picturesOfTasksList.Add(new KeyValuePair<string, string>($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}", uploadedData.Checksum));
             var workOrderCaseImage = new WorkorderCaseImage
             {
@@ -142,24 +142,37 @@ public static class BackendConfigurationTaskManagementHelper
                  $"<strong>{localizationService.GetString("LastUpdatedBy")}:</strong> {updatedByName}<br>" +
                  $"<strong>{localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                  $"<strong>{localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+
         // retract eform
         await RetractEform(workOrderCase, core, backendConfigurationPnDbContext);
-        // deploy eform to ongoing status
 
-        //_bus.Send(new WorkOrderUpdated(propertyWorkers, eformIdForOngoingTasks, property))
-
-        //await DeployWorkOrderEform(propertyWorkers, eformIdForOngoingTasks, property, label,  workOrderCase.CaseStatusesEnum, workOrderCase, updateModel.Description, int.Parse(deviceUsersGroupUid), hash, site.Name, pushMessageBody, pushMessageTitle, updatedByName);
-
+        // deploy eform synchronously so DB is up-to-date before returning
         var propertyWorkerKvpList = new List<KeyValuePair<int, int>>();
-
         foreach (var propertyWorker in propertyWorkers)
         {
-            var kvp = new KeyValuePair<int, int>(propertyWorker.Id, propertyWorker.WorkerId);
-            propertyWorkerKvpList.Add(kvp);
+            propertyWorkerKvpList.Add(new KeyValuePair<int, int>(propertyWorker.Id, propertyWorker.WorkerId));
         }
 
-        await bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
-            updateModel.CaseStatusEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid), site, pushMessageBody, pushMessageTitle, updatedByName, hasImages, picturesOfTasksList, userService.UserId, userService.UserId)).ConfigureAwait(false);
+        await DeployWorkOrderEform(
+            propertyWorkerKvpList,
+            eformIdForOngoingTasks,
+            workOrderCase,
+            property,
+            label,
+            updateModel.CaseStatusEnum,
+            updateModel.Description,
+            int.Parse(deviceUsersGroupUid),
+            site,
+            pushMessageBody,
+            pushMessageTitle,
+            updatedByName,
+            hasImages,
+            picturesOfTasksList,
+            userService.UserId,
+            userService.UserId,
+            core,
+            backendConfigurationPnDbContext,
+            localizationService).ConfigureAwait(false);
 
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }
@@ -181,7 +194,7 @@ public static class BackendConfigurationTaskManagementHelper
                 container.Page(page =>
                 {
                     page.Content()
-                        .Padding(0, Unit.Centimetre)
+                        .Padding(0, QuestPDF.Infrastructure.Unit.Centimetre)
                         .Column(x =>
                         {
                             x.Spacing(20);
@@ -221,6 +234,206 @@ public static class BackendConfigurationTaskManagementHelper
         {
             Console.WriteLine(e);
             throw;
+        }
+    }
+
+    private static async Task DeployWorkOrderEform(
+        List<KeyValuePair<int, int>> propertyWorkers,
+        int eformId,
+        WorkorderCase workOrderCase,
+        Property property,
+        string description,
+        CaseStatusesEnum status,
+        string newDescription,
+        int? deviceUsersGroupId,
+        Site assignedToSite,
+        string pushMessageBody,
+        string pushMessageTitle,
+        string updatedByName,
+        bool hasImages,
+        List<KeyValuePair<string, string>> picturesOfTasks,
+        int createdByUserId,
+        int updatedByUserId,
+        Core core,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        IBackendConfigurationLocalizationService localizationService)
+    {
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        int? folderId = null;
+        var i = 0;
+        DateTime startDate = new DateTime(2022, 12, 5);
+        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalMinutes;
+
+        foreach (var propertyWorker in propertyWorkers)
+        {
+            var priorityText = "";
+
+            var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
+            var unit = await sdkDbContext.Units.FirstAsync(x => x.SiteId == site.Id);
+            var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
+            switch (workOrderCase.Priority)
+            {
+                case "1":
+                    displayOrder = 100_000_000 + displayOrder;
+                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Urgent")}<br>";
+                    break;
+                case "2":
+                    displayOrder = 200_000_000 + displayOrder;
+                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("High")}<br>";
+                    break;
+                case "3":
+                    displayOrder = 300_000_000 + displayOrder;
+                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Medium")}<br>";
+                    break;
+                case "4":
+                    displayOrder = 400_000_000 + displayOrder;
+                    priorityText = $"<strong>{localizationService.GetString("Priority")}:</strong> {localizationService.GetString("Low")}<br>";
+                    break;
+            }
+
+            var textStatus = status switch
+            {
+                CaseStatusesEnum.Ongoing => localizationService.GetString("Ongoing"),
+                CaseStatusesEnum.Completed => localizationService.GetString("Completed"),
+                CaseStatusesEnum.Awaiting => localizationService.GetString("Awaiting"),
+                CaseStatusesEnum.Ordered => localizationService.GetString("Ordered"),
+                _ => ""
+            };
+
+            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{localizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
+
+            var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
+                ? $"<strong>{localizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
+                : "";
+
+            var outerDescription = $"<strong>{localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+                                   areaName +
+                                   $"<strong>{localizationService.GetString("Description")}:</strong> {newDescription}<br>" +
+                                   priorityText +
+                                   $"<strong>{localizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByName}<br>" +
+                                   (!string.IsNullOrEmpty(workOrderCase.CreatedByText)
+                                       ? $"<strong>{localizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
+                                       : "") +
+                                   assignedTo +
+                                   $"<strong>{localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+            var mainElement = await core.ReadeForm(eformId, siteLanguage);
+            mainElement.Label = " ";
+            mainElement.ElementList[0].QuickSyncEnabled = true;
+            mainElement.EnableQuickSync = true;
+            mainElement.ElementList[0].Label = " ";
+            mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
+            mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
+
+            if (site.Name == assignedToSite.Name)
+            {
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? property.FolderIdForOngoingTasks : property.FolderIdForTasks))
+                    .MicrotingUid.ToString();
+                folderId = property.FolderIdForOngoingTasks;
+                mainElement.PushMessageTitle = pushMessageTitle;
+                mainElement.PushMessageBody = pushMessageBody;
+                mainElement.BadgeCountEnabled = true;
+            }
+            else
+            {
+                folderId = property.FolderIdForCompletedTasks;
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == property.FolderIdForCompletedTasks)
+                    .MicrotingUid.ToString();
+            }
+            // TODO uncomment when new app has been released.
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\n", "<br>");
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
+            // ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+
+            List<Microting.eForm.Dto.KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
+            var newKvpList = new List<Microting.eForm.Dto.KeyValuePair>();
+            foreach (var keyValuePair in kvpList)
+            {
+                if (keyValuePair.Key == workOrderCase.Priority)
+                {
+                    keyValuePair.Selected = true;
+                }
+                newKvpList.Add(keyValuePair);
+            }
+            ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList = newKvpList;
+
+            if (deviceUsersGroupId != null)
+            {
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source = (int)deviceUsersGroupId;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
+                ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
+                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Mandatory = true;
+                mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                mainElement.Repeated = 1;
+            }
+            else
+            {
+                mainElement.EndDate = DateTime.Now.AddDays(30).ToUniversalTime();
+                mainElement.ElementList[0].DoneButtonEnabled = false;
+                mainElement.Repeated = 1;
+            }
+
+            mainElement.StartDate = DateTime.Now.ToUniversalTime();
+            ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            // if (hasImages == false)
+            // {
+            //     ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            // }
+            // unit.eFormVersion ??= "1.0.0";
+            // if (int.Parse(unit.eFormVersion.Replace(".","")) > 3212)
+            // {
+            if (hasImages)
+            {
+                // add a new show picture element for each picture in the picturesOfTasks list
+                int j = 0;
+                foreach (var picture in picturesOfTasks)
+                {
+                    var showPicture = new ShowPicture(j, false, false, "", "", "", 0, false, "");
+                    var storageResult = core.GetFileFromS3Storage(picture.Key).GetAwaiter().GetResult();
+
+                    await core.PngUpload(storageResult.ResponseStream, picture.Value, picture.Key);
+                    showPicture.Value = picture.Value;
+                    ((DataElement) mainElement.ElementList[0]).DataItemList.Add(showPicture);
+
+                    j++;
+                }
+            }
+            // }
+            int caseId = 0;
+            if (status != CaseStatusesEnum.Completed)
+            {
+                caseId = (int)await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+            }
+
+            var createdBySite =
+                await sdkDbContext.Sites.FirstOrDefaultAsync(x => x.Id == workOrderCase.CreatedBySdkSiteId);
+            if (createdBySite != null)
+            {
+                workOrderCase.CreatedByName = createdBySite.Name;
+            }
+            await new WorkorderCase
+            {
+                CaseId = caseId,
+                PropertyWorkerId = propertyWorker.Key,
+                CaseStatusesEnum = status,
+                ParentWorkorderCaseId = workOrderCase.Id,
+                GroupId = workOrderCase.GroupId,
+                SelectedAreaName = workOrderCase.SelectedAreaName,
+                CreatedByName = workOrderCase.CreatedByName,
+                CreatedByText = workOrderCase.CreatedByText,
+                Description = newDescription,
+                CaseInitiated = workOrderCase.CaseInitiated,
+                LastAssignedToName = assignedToSite.Name,
+                AssignedToSdkSiteId = assignedToSite.Id,
+                LastUpdatedByName = updatedByName,
+                LeadingCase = i == 0,
+                Priority = workOrderCase.Priority,
+                CreatedByUserId = createdByUserId,
+                UpdatedByUserId = updatedByUserId
+            }.Create(backendConfigurationPnDbContext);
+            i++;
         }
     }
 

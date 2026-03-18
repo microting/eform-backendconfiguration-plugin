@@ -85,7 +85,9 @@ using Services.BackendConfigurationTaskWizardService;
 using Services.ChemicalService;
 using Services.ExcelService;
 using Services.RebusService;
+using Services.TaskUpdateCompletionService;
 using Services.WordService;
+using Services.WorkorderCaseGroupIdBackfillService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -127,6 +129,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
         services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<IRebusService, RebusService>();
+        services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
+        services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddControllers();
@@ -740,6 +744,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         IRebusService rebusService = serviceProvider.GetService<IRebusService>();
         rebusService!.Start(_connectionString).GetAwaiter().GetResult();
         _bus = rebusService.GetBus();
+
+        // Ensure all pending migrations are applied before the backfill queries the schema
+        var contextFactory = new BackendConfigurationPnContextFactory();
+        using var migrationContext = contextFactory.CreateDbContext([_connectionString]);
+        migrationContext.Database.Migrate();
+
+        using var scope = serviceProvider.CreateScope();
+        var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
+        backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
     }
 
     public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)

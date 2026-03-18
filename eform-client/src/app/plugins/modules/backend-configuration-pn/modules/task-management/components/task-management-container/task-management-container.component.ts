@@ -53,7 +53,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   selectedWorkerId: number | null = null;
   view = [1000, 300];
   diagramForShow: string = '';
-  highlightedId: number | null = null;
+  highlightedId: string | null = null;
 
   downloadWordReportSub$: Subscription;
   downloadExcelReportSub$: Subscription;
@@ -119,17 +119,15 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  updateTableWithHighlight(rowIndex: number) {
-    setTimeout(() => {
-      this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
-        .getAllWorkOrderCases(false)
-        .subscribe((data) => {
-          if (data && data.success && data.model) {
-            this.workOrderCases = data.model;
-            this.highlightedId = rowIndex;
-          }
-        });
-    }, 3000);
+  updateTableWithHighlight(groupId: string) {
+    this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
+      .getAllWorkOrderCases(true)
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.workOrderCases = data.model;
+          this.highlightedId = groupId;
+        }
+      });
   }
 
   openCreateModal() {
