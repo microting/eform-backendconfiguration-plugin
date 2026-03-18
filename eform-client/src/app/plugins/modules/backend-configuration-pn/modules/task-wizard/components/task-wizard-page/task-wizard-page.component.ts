@@ -92,6 +92,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   deactivateMultipleTasksSub$: Subscription;
   selectedWorkerId: number | null = null;
   selectedStatus: number | null = null;
+  highlightIdAfterEdit: number | undefined;
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -487,6 +488,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       .subscribe((resultCreate) => {
         if (resultCreate && resultCreate.success) {
           updateModal.close();
+          this.highlightIdAfterEdit = updateModel.id;
           this.updateTable();
         }
       });
