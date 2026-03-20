@@ -1,0 +1,26 @@
+<div class="mini-calendar">
+  <div class="cal-header">
+    <button mat-icon-button (click)="navigateMonth(-1)">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span class="month-label">{{ monthLabel }}</span>
+    <button mat-icon-button (click)="navigateMonth(1)">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <div class="cal-grid">
+    <div class="day-header" *ngFor="let h of dayHeaders">{{ h }}</div>
+
+    <ng-container *ngFor="let week of weeks">
+      <div
+        class="day-cell"
+        *ngFor="let day of week"
+        [class.other-month]="!day.inCurrentMonth"
+        [class.today]="day.isToday"
+        [class.selected]="day.isSelected"
+        (click)="selectDate(day)"
+      >{{ day.dayNum }}</div>
+    </ng-container>
+  </div>
+</div>

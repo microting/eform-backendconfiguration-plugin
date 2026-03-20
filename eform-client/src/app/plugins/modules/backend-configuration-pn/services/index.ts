@@ -12,3 +12,4 @@ export * from './backend-configuration-pn-task-wizard.service';
 export * from './backend-configuration-pn-compliances.service';
 export * from './backend-configuration-pn-task-tracker.service';
 export * from './backend-configuration-pn-task-management.service';
+export * from './backend-configuration-pn-calendar.service';

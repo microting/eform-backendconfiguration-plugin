@@ -2,6 +2,7 @@ import {
   AreaRulesState,
   DocumentsState,
   FilesState,
+  CalendarState,
   PropertiesState,
   PropertyWorkersState,
   ReportStateV1,
@@ -17,6 +18,7 @@ export interface BackendConfigurationState {
   areaRulesState: AreaRulesState,
   documentsState: DocumentsState,
   filesState: FilesState;
+  calendarState: CalendarState;
   propertiesState: PropertiesState;
   propertyWorkersState: PropertyWorkersState
   reportsV1State: ReportStateV1;

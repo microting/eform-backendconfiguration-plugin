@@ -1,0 +1,46 @@
+<div class="calendar-header">
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="toggleSidebar.emit()"
+    [matTooltip]="sidebarOpen ? 'Luk sidebar' : 'Åbn sidebar'"
+  >
+    <mat-icon>{{ sidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
+  </button>
+
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="goToToday.emit()"
+    [matTooltip]="'I dag'"
+  >
+    I dag
+  </button>
+
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="navigate.emit(-1)"
+    [matTooltip]="'Forrige uge'"
+  >
+    <mat-icon color="primary">chevron_left</mat-icon>
+  </button>
+  <button
+    class="btn-secondary btn-secondary--icon-rounded-border"
+    (click)="navigate.emit(1)"
+    [matTooltip]="'Næste uge'"
+  >
+    <mat-icon color="primary">chevron_right</mat-icon>
+  </button>
+
+  <span class="date-range">{{ displayDate }}</span>
+
+  <span class="spacer"></span>
+
+  <div class="text-field--rounded">
+    <mat-form-field>
+      <mat-select [value]="viewMode" (selectionChange)="viewModeChange.emit($event.value)">
+        <mat-option value="week">Uge</mat-option>
+        <mat-option value="day">Dag</mat-option>
+        <mat-option value="schedule">Liste</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+</div>

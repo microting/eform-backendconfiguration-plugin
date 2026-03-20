@@ -1,0 +1,28 @@
+<h2 mat-dialog-title>Ny tavle</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Navn</mat-label>
+      <input matInput formControlName="name" required>
+    </mat-form-field>
+
+    <div class="color-picker">
+      <label>Farve:</label>
+      <div class="colors">
+        <div
+          class="color-swatch"
+          *ngFor="let c of colors"
+          [style.background]="c"
+          [class.selected]="form.value.color === c"
+          (click)="form.patchValue({color: c})"
+        ></div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuller</button>
+  <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="onSave()">Opret</button>
+</mat-dialog-actions>

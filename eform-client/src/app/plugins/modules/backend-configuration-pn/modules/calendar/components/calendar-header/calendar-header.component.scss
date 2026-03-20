@@ -1,0 +1,19 @@
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg, white);
+  z-index: 10;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border, #e0e0e0);
+
+  .date-range {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}

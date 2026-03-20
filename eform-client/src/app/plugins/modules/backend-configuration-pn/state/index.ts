@@ -10,4 +10,5 @@ export * from './task-management';
 export * from './task-tracker';
 export * from './task-wizard';
 export * from './task-worker-assignment';
+export * from './calendar';
 export * from './backend-configuration.state';

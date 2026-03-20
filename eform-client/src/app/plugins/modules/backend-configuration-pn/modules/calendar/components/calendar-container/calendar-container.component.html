@@ -1,0 +1,61 @@
+<div class="calendar-shell" [class.sidebar-closed]="!sidebarOpen">
+  <app-calendar-sidebar
+    [properties]="properties"
+    [boards]="boards"
+    [teams]="teams"
+    [employees]="employees"
+    [tags]="tags"
+    [activeBoardIds]="activeBoardIds"
+    [activeTagNames]="activeTagNames"
+    [selectedPropertyId]="currentPropertyId"
+    (propertySelected)="onPropertySelected($event)"
+    (boardToggled)="onBoardToggled($event)"
+    (tagToggled)="onTagToggled($event)"
+    (createTag)="onCreateTag($event)"
+    (updateTag)="onUpdateTag($event)"
+    (deleteTag)="onDeleteTag($event)"
+  ></app-calendar-sidebar>
+
+  <div class="calendar-main">
+    <app-calendar-header
+      [currentDate]="currentDate"
+      [viewMode]="viewMode"
+      [sidebarOpen]="sidebarOpen"
+      (navigate)="onNavigate($event)"
+      (goToToday)="onGoToToday()"
+      (viewModeChange)="onViewModeChange($event)"
+      (toggleSidebar)="onToggleSidebar()"
+    ></app-calendar-header>
+
+    <ng-container [ngSwitch]="viewMode">
+      <app-calendar-week-grid
+        *ngSwitchCase="'week'"
+        [tasksByDay]="tasksByDay"
+        [currentDate]="currentDate"
+        [boards]="boards"
+        (slotClicked)="openCreateModal($event.date, $event.startHour)"
+        (taskMoved)="onTaskMoved($event)"
+        (tasksReload)="loadTasks()"
+      ></app-calendar-week-grid>
+
+      <app-calendar-week-grid
+        *ngSwitchCase="'day'"
+        [tasksByDay]="tasksByDay"
+        [currentDate]="currentDate"
+        [boards]="boards"
+        [dayViewMode]="true"
+        (slotClicked)="openCreateModal($event.date, $event.startHour)"
+        (taskMoved)="onTaskMoved($event)"
+        (tasksReload)="loadTasks()"
+      ></app-calendar-week-grid>
+
+      <app-calendar-schedule-view
+        *ngSwitchCase="'schedule'"
+        [tasksByDay]="tasksByDay"
+        [currentDate]="currentDate"
+        [boards]="boards"
+        (tasksReload)="loadTasks()"
+      ></app-calendar-schedule-view>
+    </ng-container>
+  </div>
+</div>

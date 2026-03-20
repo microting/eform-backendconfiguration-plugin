@@ -1,0 +1,140 @@
+.week-grid-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.calendar-grid {
+  td.mat-mdc-cell,
+  th.mat-mdc-header-cell {
+    padding: 0 !important;
+    vertical-align: top;
+  }
+
+  .today-col.mat-mdc-header-cell {
+    color: #1a73e8;
+    font-weight: 600;
+    background: rgba(66, 133, 244, 0.06);
+  }
+
+  .today-col.mat-mdc-cell {
+    background: rgba(66, 133, 244, 0.03);
+  }
+
+  .mat-mdc-row:hover .mat-mdc-cell {
+    background: transparent;
+  }
+
+  .mat-column-time-axis {
+    width: 56px;
+    min-width: 56px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: white;
+  }
+}
+
+.time-body {
+  position: relative;
+}
+
+.time-label {
+  position: absolute;
+  right: 4px;
+  font-size: 10px;
+  color: #888;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.day-cell-content {
+  display: block;
+  cursor: pointer;
+  position: relative;
+}
+
+.day-body {
+  position: relative;
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border, #f0f0f0);
+}
+
+.cdk-drag-placeholder {
+  display: none;
+}
+
+// Hide the CDK-transformed dragging element — it follows the cursor using transform and escapes its column.
+// We use the custom drag-ghost-task overlay instead.
+.cdk-drag-dragging {
+  opacity: 0 !important;
+}
+
+// Static faded overlay at the original task position — stays put while dragging, like Google Calendar
+.drag-source-slot {
+  position: absolute;
+  border-radius: 4px;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 1;
+}
+
+// Hide the CDK floating preview (it follows cursor without snapping — we replace it with our ghost)
+.cdk-drag-preview {
+  opacity: 0 !important;
+}
+
+// Ghost task shown at snapped drop position — single overlay inside .week-grid-wrapper
+// top/left/width are set via [style] bindings; width comes from the measured column rect
+.drag-ghost-task {
+  position: absolute;
+  border-radius: 4px;
+  padding: 2px 4px;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 20;
+  color: white;
+  font-size: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+
+  .drag-ghost-title {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .drag-ghost-time {
+    font-size: 10px;
+    opacity: 0.85;
+  }
+}
+
+.now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ea4335;
+  z-index: 10;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ea4335;
+  }
+}

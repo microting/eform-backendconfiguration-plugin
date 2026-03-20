@@ -1,0 +1,110 @@
+<div class="calendar-sidebar">
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Mine ejendomme</mat-panel-title>
+    </mat-expansion-panel-header>
+    <mat-nav-list dense>
+      <mat-list-item
+        *ngFor="let prop of properties"
+        [class.active]="prop.id === selectedPropertyId"
+        (click)="propertySelected.emit(prop.id)"
+      >
+        {{ prop.name }}
+      </mat-list-item>
+    </mat-nav-list>
+    <a class="sidebar-action-link" (click)="createProperty.emit()">+ Opret ejendom</a>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Mine tavler</mat-panel-title>
+    </mat-expansion-panel-header>
+    <div class="board-list">
+      <div
+        class="board-item"
+        *ngFor="let board of boards"
+        (click)="boardToggled.emit(board.id)"
+      >
+        <span class="board-color-dot" [style.background]="board.color"></span>
+        <span class="board-name">{{ board.name }}</span>
+        <mat-icon *ngIf="isBoardActive(board.id)" class="check-icon">check</mat-icon>
+      </div>
+    </div>
+    <a class="sidebar-action-link" (click)="createBoard.emit()">+ Opret tavle</a>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Mine teams</mat-panel-title>
+    </mat-expansion-panel-header>
+    <mat-nav-list dense>
+      <mat-list-item *ngFor="let team of teams">
+        {{ team.name }}
+      </mat-list-item>
+    </mat-nav-list>
+    <a class="sidebar-action-link" (click)="createTeam.emit()">+ Opret team</a>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Mine medarbejdere</mat-panel-title>
+    </mat-expansion-panel-header>
+    <mat-nav-list dense>
+      <mat-list-item *ngFor="let emp of employees">
+        {{ emp.name }}
+      </mat-list-item>
+    </mat-nav-list>
+    <a class="sidebar-action-link" (click)="createEmployee.emit()">+ Opret medarbejder</a>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Mine tags</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="tag-sort" *ngIf="tags.length > 0">
+      <span class="sort-label">Sorter:</span>
+      <a class="sort-link" [class.active]="tagSort === 'popularity'" (click)="tagSort = 'popularity'">Popularitet</a>
+      <a class="sort-link" [class.active]="tagSort === 'alphabetical'" (click)="tagSort = 'alphabetical'">Alfabetisk</a>
+    </div>
+
+    <mat-list dense class="tag-list">
+      <mat-list-item *ngFor="let tag of sortedTags" class="tag-list-item">
+        <ng-container *ngIf="editingTagId !== tag.id">
+          <mat-chip [selected]="isTagActive(tag)" (click)="tagToggled.emit(tag.name)">
+            {{ tag.name }}
+          </mat-chip>
+          <button mat-icon-button class="tag-action-btn" (click)="startEdit(tag)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button class="tag-action-btn" (click)="deleteTag.emit(tag.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </ng-container>
+        <ng-container *ngIf="editingTagId === tag.id">
+          <mat-form-field class="tag-edit-field">
+            <input matInput [(ngModel)]="editingTagName" (keyup.enter)="confirmEdit(tag)">
+          </mat-form-field>
+          <button mat-icon-button class="tag-action-btn" (click)="confirmEdit(tag)">
+            <mat-icon>check</mat-icon>
+          </button>
+          <button mat-icon-button class="tag-action-btn" (click)="editingTagId = null">
+            <mat-icon>close</mat-icon>
+          </button>
+        </ng-container>
+      </mat-list-item>
+    </mat-list>
+
+    <div class="sidebar-create-row">
+      <mat-form-field class="tag-create-field">
+        <input matInput placeholder="Nyt tag..." [(ngModel)]="newTagName" (keyup.enter)="emitCreateTag()">
+      </mat-form-field>
+      <button mat-icon-button (click)="emitCreateTag()">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+
+  </mat-expansion-panel>
+
+</div>

@@ -1,0 +1,11 @@
+<h2 mat-dialog-title>Slet tavle</h2>
+
+<mat-dialog-content>
+  <p>Er du sikker på, at du vil slette tavlen <strong>{{ data.board.name }}</strong>?</p>
+  <p>Alle opgaver tilknyttet denne tavle vil miste deres tavelletilknytning.</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuller</button>
+  <button mat-raised-button color="warn" (click)="onConfirm()">Slet</button>
+</mat-dialog-actions>

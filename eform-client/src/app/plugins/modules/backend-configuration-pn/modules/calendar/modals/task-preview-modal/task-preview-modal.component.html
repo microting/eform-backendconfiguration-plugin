@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>{{ data.task.title }}</h2>
+
+<mat-dialog-content>
+  <p><strong>Dato:</strong> {{ data.task.taskDate }}</p>
+  <p><strong>Tid:</strong> {{ data.task.startText }} – {{ data.task.endText }}</p>
+  <p *ngIf="boardName"><strong>Tavle:</strong> {{ boardName }}</p>
+  <p *ngIf="data.task.tags?.length"><strong>Tags:</strong> {{ data.task.tags.join(', ') }}</p>
+  <p *ngIf="data.task.descriptionHtml">
+    <strong>Beskrivelse:</strong>
+    <span [innerHTML]="data.task.descriptionHtml"></span>
+  </p>
+  <p *ngIf="data.task.driveLink">
+    <strong>Drive:</strong>
+    <a [href]="data.task.driveLink" target="_blank" rel="noopener">Åbn link</a>
+  </p>
+  <p>
+    <strong>Status:</strong>
+    <span [class.completed]="data.task.completed">{{ data.task.completed ? 'Udført' : 'Ikke udført' }}</span>
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button color="warn" (click)="onDelete()">Slet</button>
+  <button mat-button (click)="onClose()">Luk</button>
+  <button mat-raised-button color="primary" (click)="onEdit()">Rediger</button>
+</mat-dialog-actions>

@@ -1,0 +1,297 @@
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  TemplateRef,
+  ViewChild,
+  ViewEncapsulation,
+} from '@angular/core';
+import {CdkDragDrop, CdkDragMove} from '@angular/cdk/drag-drop';
+import {interval, Subject} from 'rxjs';
+import {startWith, takeUntil} from 'rxjs/operators';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {BackendConfigurationPnCalendarService} from '../../../../services';
+import {TaskPreviewModalComponent} from '../../modals/task-preview-modal/task-preview-modal.component';
+import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
+import {MtxGridColumn} from '@ng-matero/extensions/grid';
+
+@Component({
+  standalone: false,
+  selector: 'app-calendar-week-grid',
+  templateUrl: './calendar-week-grid.component.html',
+  styleUrls: ['./calendar-week-grid.component.scss'],
+  encapsulation: ViewEncapsulation.None,
+})
+export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
+  @ViewChild('scrollContainer') scrollContainerRef!: ElementRef<HTMLElement>;
+  @ViewChild('timeAxisTpl', {static: true}) timeAxisTpl!: TemplateRef<any>;
+  @ViewChild('dayColTpl', {static: true}) dayColTpl!: TemplateRef<any>;
+
+  @Input() tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
+  @Input() currentDate: string = '';
+  @Input() boards: CalendarBoardModel[] = [];
+  @Input() dayViewMode = false;
+
+  @Output() slotClicked = new EventEmitter<{date: string; startHour: number}>();
+  @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number}>();
+  @Output() tasksReload = new EventEmitter<void>();
+
+  private destroy$ = new Subject<void>();
+  readonly hourHeight = HOUR_HEIGHT;
+  readonly hours = Array.from({length: 24}, (_, i) => i);
+  nowTopPx = 0;
+  weekDays: Date[] = [];
+  tableColumns: MtxGridColumn[] = [];
+  gridData = [{}];
+  dragIndicatorTopPx: number | null = null;
+  draggingTask: CalendarTaskLayoutModel | null = null;
+  dragIndicatorHour: number | null = null;
+  dragGhostLeft: number | null = null;
+  dragGhostWidth: number = 0;
+  dragSourceLeft: number | null = null;
+  dragSourceTop: number | null = null;
+  dragSourceWidth: number = 0;
+
+  constructor(
+    private dialog: MatDialog,
+    private overlay: Overlay,
+    private calendarService: BackendConfigurationPnCalendarService,
+  ) {}
+
+  ngOnInit() {
+    this.rebuildWeekDays();
+    this.buildColumns();
+    interval(60000).pipe(startWith(0), takeUntil(this.destroy$)).subscribe(() => {
+      this.updateNowLine();
+    });
+  }
+
+  ngAfterViewInit() {
+    this.scrollToNow();
+  }
+
+  ngOnChanges() {
+    this.rebuildWeekDays();
+    this.buildColumns();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private rebuildWeekDays() {
+    if (!this.currentDate) return;
+    const d = new Date(this.currentDate);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    monday.setHours(0, 0, 0, 0);
+
+    if (this.dayViewMode) {
+      this.weekDays = [new Date(monday)];
+    } else {
+      this.weekDays = Array.from({length: 7}, (_, i) => {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        return date;
+      });
+    }
+  }
+
+  get dayDropListIds(): string[] {
+    return this.weekDays.map((_, i) => `cal-day-${i}`);
+  }
+
+  private buildColumns(): void {
+    if (!this.timeAxisTpl || !this.dayColTpl) return;
+    const timeAxisCol: MtxGridColumn = {
+      field: 'time-axis',
+      header: '',
+      width: '56px',
+      cellTemplate: this.timeAxisTpl,
+      sortable: false,
+    };
+    const dayCols: MtxGridColumn[] = this.weekDays.map((date, i) => ({
+      field: `col-${i}`,
+      header: this.getDateLabel(date),
+      cellTemplate: this.dayColTpl,
+      sortable: false,
+      class: this.isToday(date) ? 'today-col' : '',
+    }));
+    this.tableColumns = [timeAxisCol, ...dayCols];
+  }
+
+  private updateNowLine() {
+    const now = new Date();
+    this.nowTopPx = (now.getHours() + now.getMinutes() / 60) * this.hourHeight;
+  }
+
+  private scrollToNow() {
+    setTimeout(() => {
+      const el = this.scrollContainerRef?.nativeElement;
+      if (!el) return;
+      el.scrollTop = Math.max(0, this.nowTopPx - 100);
+    }, 100);
+  }
+
+  isToday(date: Date): boolean {
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  }
+
+  getDateLabel(date: Date): string {
+    if (this.isToday(date)) return 'I dag';
+    const weekday = date.toLocaleDateString('da-DK', {weekday: 'short'});
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${weekday} ${day}/${month}`;
+  }
+
+  getDayIndex(field: string): number {
+    const m = field.match(/^col-(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  getDayDate(field: string): Date {
+    return this.weekDays[this.getDayIndex(field)];
+  }
+
+  onCellClick(event: MouseEvent) {
+    if ((event.target as HTMLElement).closest('app-calendar-task-block')) return;
+    const cell = event.currentTarget as HTMLElement;
+    const dayIndex = parseInt(cell.dataset['day'] ?? '0', 10);
+    const date = this.weekDays[dayIndex];
+    if (!date) return;
+    const rect = cell.getBoundingClientRect();
+    const relY = event.clientY - rect.top;
+    const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+    this.slotClicked.emit({date: this.toLocalDateString(date), startHour});
+  }
+
+  onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {
+    const task: CalendarTaskLayoutModel = event.item.data;
+    const cell = event.container.element.nativeElement;
+    const dayIndex = parseInt(cell.dataset['day'] ?? '0', 10);
+    const date = this.weekDays[dayIndex];
+    const rect = cell.getBoundingClientRect();
+    const relY = event.dropPoint.y - rect.top;
+    const newStartHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+    const newDate = date ? this.toLocalDateString(date) : null;
+    console.log('[DROP] container.id=', event.container.id,
+      '| data-day=', cell.dataset['day'], '→ dayIndex=', dayIndex,
+      '| weekDays.length=', this.weekDays.length,
+      '| date=', newDate,
+      '| dropPoint=', event.dropPoint,
+      '| rect={left:', rect.left, 'top:', rect.top, 'width:', rect.width, '}',
+      '| relY=', relY, '→ newStartHour=', newStartHour,
+      '| taskId=', task.id, 'taskDate=', task.taskDate);
+    if (!date || !newDate) return;
+    this.taskMoved.emit({taskId: task.id, newDate, newStartHour});
+  }
+
+  private toLocalDateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  onTaskDragMoved(event: CdkDragMove<CalendarTaskLayoutModel>) {
+    const isNewDrag = !this.draggingTask;
+    this.draggingTask = event.source.data;
+    if (isNewDrag) {
+      this.captureDragSource(this.draggingTask);
+    }
+    const pointerX = event.pointerPosition.x;
+    const pointerY = event.pointerPosition.y;
+    const containerEl = this.scrollContainerRef.nativeElement;
+    const containerRect = containerEl.getBoundingClientRect();
+
+    const columnEls = containerEl.querySelectorAll<HTMLElement>('.day-cell-content');
+    let found = false;
+    for (let j = 0; j < columnEls.length; j++) {
+      const el = columnEls[j];
+      const rect = el.getBoundingClientRect();
+      if (pointerX >= rect.left && pointerX < rect.right && pointerY >= rect.top && pointerY < rect.bottom) {
+        const cellTopAbsolute = rect.top - containerRect.top + containerEl.scrollTop;
+        const relY = pointerY - rect.top;
+        const snappedHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+        this.dragIndicatorHour = snappedHour;
+        this.dragIndicatorTopPx = cellTopAbsolute + snappedHour * this.hourHeight;
+        this.dragGhostLeft = rect.left - containerRect.left + containerEl.scrollLeft;
+        this.dragGhostWidth = rect.width - 4;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      this.dragIndicatorTopPx = null;
+      this.dragGhostLeft = null;
+    }
+  }
+
+  onTaskDragEnded() {
+    this.draggingTask = null;
+    this.dragIndicatorTopPx = null;
+    this.dragIndicatorHour = null;
+    this.dragGhostLeft = null;
+    this.dragSourceLeft = null;
+    this.dragSourceTop = null;
+  }
+
+  private captureDragSource(task: CalendarTaskLayoutModel): void {
+    const containerEl = this.scrollContainerRef.nativeElement;
+    const containerRect = containerEl.getBoundingClientRect();
+    const dayIndex = this.weekDays.findIndex(
+      d => this.toLocalDateString(d) === task.taskDate
+    );
+    if (dayIndex < 0) return;
+    const colEl = containerEl.querySelector<HTMLElement>(`.day-cell-content[data-day="${dayIndex}"]`);
+    if (!colEl) return;
+    const colRect = colEl.getBoundingClientRect();
+    this.dragSourceLeft = colRect.left - containerRect.left + containerEl.scrollLeft;
+    this.dragSourceTop = colRect.top - containerRect.top + containerEl.scrollTop + task.startHour * this.hourHeight;
+    this.dragSourceWidth = colRect.width - 4;
+  }
+
+  formatHour(h: number): string {
+    const totalMinutes = Math.round(h * 60);
+    const hh = Math.floor(totalMinutes / 60) % 24;
+    const mm = totalMinutes % 60;
+    return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
+  }
+
+  onTaskClicked(task: CalendarTaskLayoutModel) {
+    const dialogRef = this.dialog.open(
+      TaskPreviewModalComponent,
+      dialogConfigHelper(this.overlay, {task, boards: this.boards})
+    );
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'reload') this.tasksReload.emit();
+    });
+  }
+
+  onTaskToggleComplete(task: CalendarTaskLayoutModel) {
+    this.calendarService.toggleComplete(task.id, !task.completed).subscribe(res => {
+      if (res && res.success) this.tasksReload.emit();
+    });
+  }
+
+  get timeAxisLabels(): string[] {
+    return Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+  }
+}

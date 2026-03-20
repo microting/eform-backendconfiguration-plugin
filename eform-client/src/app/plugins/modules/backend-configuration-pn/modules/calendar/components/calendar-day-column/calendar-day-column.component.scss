@@ -1,0 +1,64 @@
+.day-column {
+  flex: 1;
+  position: relative;
+  border-left: 1px solid var(--border, #e0e0e0);
+  cursor: pointer;
+
+  &.today {
+    background: rgba(66, 133, 244, 0.03);
+  }
+
+  .day-header {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    border-top: 1px solid var(--border, #e0e0e0);
+    border-bottom: 1px solid var(--border, #e0e0e0);
+    color: var(--tp-text, inherit);
+    position: sticky;
+    top: 0;
+    background: var(--bg, white);
+    z-index: 1;
+
+    &.today {
+      color: #1a73e8;
+      font-weight: 600;
+    }
+  }
+
+  .day-body {
+    position: relative;
+
+    .hour-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #f0f0f0;
+    }
+
+    .now-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #ea4335;
+      z-index: 10;
+      pointer-events: none;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: -4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ea4335;
+      }
+    }
+  }
+}

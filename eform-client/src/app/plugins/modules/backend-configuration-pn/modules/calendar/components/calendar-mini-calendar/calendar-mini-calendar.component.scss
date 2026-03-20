@@ -1,0 +1,60 @@
+.mini-calendar {
+  user-select: none;
+  width: 224px;
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+
+    .month-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+
+    .day-header {
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+      padding: 2px 0;
+    }
+
+    .day-cell {
+      text-align: center;
+      padding: 4px 2px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 12px;
+
+      &:hover {
+        background: #f0f0f0;
+      }
+
+      &.other-month {
+        color: #ccc;
+      }
+
+      &.today {
+        color: #1a73e8;
+        font-weight: 600;
+      }
+
+      &.selected {
+        background: #1a73e8;
+        color: white;
+
+        &:hover {
+          background: #1558b0;
+        }
+      }
+    }
+  }
+}

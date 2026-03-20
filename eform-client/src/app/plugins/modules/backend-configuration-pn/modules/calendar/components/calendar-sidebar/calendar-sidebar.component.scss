@@ -1,0 +1,87 @@
+.calendar-sidebar {
+  padding: 8px 0;
+
+  mat-list-item.active {
+    background: rgba(0, 0, 0, 0.08);
+    font-weight: 500;
+  }
+
+  .board-list {
+    .board-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      .board-color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .board-name {
+        flex: 1;
+        font-size: 0.875rem;
+      }
+
+      .check-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: #4caf50;
+      }
+    }
+  }
+
+  .tag-list {
+    padding: 8px 16px;
+  }
+
+  .sidebar-action-link {
+    display: block;
+    padding: 4px 16px 8px;
+    font-size: 0.875rem;
+    color: #1a73e8;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .tag-sort {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 16px;
+    font-size: 0.75rem;
+    color: #555;
+
+    .sort-label {
+      color: #888;
+    }
+
+    .sort-link {
+      color: #1a73e8;
+      cursor: pointer;
+      text-decoration: none;
+
+      &.active {
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+<div
+  class="task-block"
+  [class.completed]="task.completed"
+  [style.top.px]="topPx"
+  [style.height.px]="heightPx"
+  [style.left.%]="leftPercent"
+  [style.width.%]="widthPercent"
+  [style.background-color]="task.color"
+  (click)="clicked.emit(task)"
+  cdkDrag
+  [cdkDragData]="task"
+  (cdkDragMoved)="dragMoved.emit($event)"
+  (cdkDragEnded)="dragEnded.emit()"
+>
+  <ng-template cdkDragPlaceholder></ng-template>
+
+  <button
+    class="completion-btn"
+    [class.done]="task.completed"
+    (click)="onCompletionClick($event)"
+    [title]="task.completed ? 'Marker som ikke udført' : 'Marker som udført'"
+  >
+    <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+  </button>
+
+  <div class="task-content">
+    <div class="task-title">{{ task.title }}</div>
+    <div class="task-time" *ngIf="task.dur >= 0.5">{{ task.startText }} – {{ task.endText }}</div>
+  </div>
+</div>

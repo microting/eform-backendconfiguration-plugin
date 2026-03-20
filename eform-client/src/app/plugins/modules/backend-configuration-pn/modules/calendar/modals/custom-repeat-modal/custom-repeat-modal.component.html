@@ -1,0 +1,49 @@
+<h2 mat-dialog-title>Tilpasset gentagelse</h2>
+
+<mat-dialog-content>
+  <div class="repeat-row">
+    <span>Gentag hver</span>
+    <mat-form-field appearance="outline" class="step-field">
+      <input matInput type="number" [(ngModel)]="step" min="1" max="99">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-select [(ngModel)]="unit">
+        <mat-option value="day">dag(e)</mat-option>
+        <mat-option value="week">uge(r)</mat-option>
+        <mat-option value="month">måned(er)</mat-option>
+        <mat-option value="year">år</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="weekday-circles" *ngIf="unit === 'week'">
+    <div
+      class="circle"
+      *ngFor="let wd of weekdays"
+      [class.active]="wd.active"
+      (click)="toggleWeekday(wd)"
+    >{{ wd.label }}</div>
+  </div>
+
+  <mat-radio-group [(ngModel)]="endMode" class="end-group">
+    <mat-radio-button value="never">Aldrig</mat-radio-button>
+    <mat-radio-button value="after">
+      Efter
+      <mat-form-field appearance="outline" class="count-field">
+        <input matInput type="number" [(ngModel)]="afterCount" min="1">
+      </mat-form-field>
+      gange
+    </mat-radio-button>
+    <mat-radio-button value="until">
+      Indtil
+      <mat-form-field appearance="outline">
+        <input matInput type="date" [(ngModel)]="untilDate">
+      </mat-form-field>
+    </mat-radio-button>
+  </mat-radio-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuller</button>
+  <button mat-raised-button color="primary" (click)="onConfirm()">Gem</button>
+</mat-dialog-actions>

@@ -1,0 +1,26 @@
+.calendar-shell {
+  display: flex;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+
+  app-calendar-sidebar {
+    width: 240px;
+    min-width: 240px;
+    transition: width 0.2s, min-width 0.2s;
+    overflow-y: auto;
+    border-right: 1px solid #e0e0e0;
+  }
+
+  &.sidebar-closed app-calendar-sidebar {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .calendar-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
