@@ -1,6 +1,6 @@
 <div class="schedule-view">
   <div *ngIf="groups.length === 0" class="no-tasks">
-    Ingen opgaver denne uge.
+    {{ 'No tasks this week' | translate }}.
   </div>
 
   <div class="schedule-group" *ngFor="let group of groups">

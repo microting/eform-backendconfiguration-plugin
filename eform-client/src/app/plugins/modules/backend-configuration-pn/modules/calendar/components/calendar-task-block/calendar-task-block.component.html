@@ -18,7 +18,7 @@
     class="completion-btn"
     [class.done]="task.completed"
     (click)="onCompletionClick($event)"
-    [title]="task.completed ? 'Marker som ikke udført' : 'Marker som udført'"
+    [title]="task.completed ? ('Mark as not completed' | translate) : ('Mark as completed' | translate)"
   >
     <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
   </button>

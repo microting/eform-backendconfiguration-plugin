@@ -1,16 +1,16 @@
-<h2 mat-dialog-title>Slet opgave</h2>
+<h3 mat-dialog-title>{{ 'Delete task' | translate }}</h3>
 
-<mat-dialog-content>
-  <p>Er du sikker på, at du vil slette <strong>{{ data.task.title }}</strong>?</p>
+<div mat-dialog-content>
+  <p>{{ 'Are you sure you want to delete' | translate }} <strong>{{ data.task.title }}</strong>?</p>
 
   <mat-radio-group [(ngModel)]="scope" *ngIf="data.hasSeries" class="scope-group">
-    <mat-radio-button value="this">Kun denne</mat-radio-button>
-    <mat-radio-button value="thisAndFollowing">Denne og efterfølgende</mat-radio-button>
-    <mat-radio-button value="all">Alle i serien</mat-radio-button>
+    <mat-radio-button value="this">{{ 'Only this' | translate }}</mat-radio-button>
+    <mat-radio-button value="thisAndFollowing">{{ 'This and following' | translate }}</mat-radio-button>
+    <mat-radio-button value="all">{{ 'All in series' | translate }}</mat-radio-button>
   </mat-radio-group>
-</mat-dialog-content>
+</div>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuller</button>
-  <button mat-raised-button color="warn" (click)="onConfirm()">Slet</button>
-</mat-dialog-actions>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-danger" (click)="onConfirm()">{{ 'Delete' | translate }}</button>
+</div>

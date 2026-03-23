@@ -1,26 +1,26 @@
-<h2 mat-dialog-title>{{ data.task.title }}</h2>
+<h3 mat-dialog-title>{{ data.task.title }}</h3>
 
-<mat-dialog-content>
-  <p><strong>Dato:</strong> {{ data.task.taskDate }}</p>
-  <p><strong>Tid:</strong> {{ data.task.startText }} – {{ data.task.endText }}</p>
-  <p *ngIf="boardName"><strong>Tavle:</strong> {{ boardName }}</p>
-  <p *ngIf="data.task.tags?.length"><strong>Tags:</strong> {{ data.task.tags.join(', ') }}</p>
+<div mat-dialog-content>
+  <p><strong>{{ 'Date' | translate }}:</strong> {{ data.task.taskDate }}</p>
+  <p><strong>{{ 'Time' | translate }}:</strong> {{ data.task.startText }} – {{ data.task.endText }}</p>
+  <p *ngIf="boardName"><strong>{{ 'Board' | translate }}:</strong> {{ boardName }}</p>
+  <p *ngIf="data.task.tags?.length"><strong>{{ 'Tags' | translate }}:</strong> {{ data.task.tags.join(', ') }}</p>
   <p *ngIf="data.task.descriptionHtml">
-    <strong>Beskrivelse:</strong>
+    <strong>{{ 'Description' | translate }}:</strong>
     <span [innerHTML]="data.task.descriptionHtml"></span>
   </p>
   <p *ngIf="data.task.driveLink">
-    <strong>Drive:</strong>
-    <a [href]="data.task.driveLink" target="_blank" rel="noopener">Åbn link</a>
+    <strong>{{ 'Drive' | translate }}:</strong>
+    <a [href]="data.task.driveLink" target="_blank" rel="noopener">{{ 'Open link' | translate }}</a>
   </p>
   <p>
-    <strong>Status:</strong>
-    <span [class.completed]="data.task.completed">{{ data.task.completed ? 'Udført' : 'Ikke udført' }}</span>
+    <strong>{{ 'Status' | translate }}:</strong>
+    <span [class.completed]="data.task.completed">{{ data.task.completed ? ('Completed' | translate) : ('Not completed' | translate) }}</span>
   </p>
-</mat-dialog-content>
+</div>
 
-<mat-dialog-actions align="end">
-  <button mat-button color="warn" (click)="onDelete()">Slet</button>
-  <button mat-button (click)="onClose()">Luk</button>
-  <button mat-raised-button color="primary" (click)="onEdit()">Rediger</button>
-</mat-dialog-actions>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-danger" (click)="onDelete()">{{ 'Delete' | translate }}</button>
+  <button class="btn-cancel" (click)="onClose()">{{ 'Close' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" (click)="onEdit()">{{ 'Edit' | translate }}</button>
+</div>

@@ -1,14 +1,14 @@
-<h2 mat-dialog-title>Ny tavle</h2>
+<h3 mat-dialog-title>{{ 'New board' | translate }}</h3>
 
-<mat-dialog-content>
+<div mat-dialog-content>
   <form [formGroup]="form">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Navn</mat-label>
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Name' | translate }}</mat-label>
       <input matInput formControlName="name" required>
     </mat-form-field>
 
     <div class="color-picker">
-      <label>Farve:</label>
+      <label>{{ 'Color' | translate }}:</label>
       <div class="colors">
         <div
           class="color-swatch"
@@ -20,9 +20,9 @@
       </div>
     </div>
   </form>
-</mat-dialog-content>
+</div>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuller</button>
-  <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="onSave()">Opret</button>
-</mat-dialog-actions>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">{{ 'Create' | translate }}</button>
+</div>

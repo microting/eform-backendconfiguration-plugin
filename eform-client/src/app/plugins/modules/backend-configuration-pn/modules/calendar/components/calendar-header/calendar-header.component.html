@@ -2,7 +2,7 @@
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="toggleSidebar.emit()"
-    [matTooltip]="sidebarOpen ? 'Luk sidebar' : 'Åbn sidebar'"
+    [matTooltip]="sidebarOpen ? ('Close sidebar' | translate) : ('Open sidebar' | translate)"
   >
     <mat-icon>{{ sidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
   </button>
@@ -10,22 +10,22 @@
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="goToToday.emit()"
-    [matTooltip]="'I dag'"
+    [matTooltip]="'Today' | translate"
   >
-    I dag
+    {{ 'Today' | translate }}
   </button>
 
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="navigate.emit(-1)"
-    [matTooltip]="'Forrige uge'"
+    [matTooltip]="'Previous week' | translate"
   >
     <mat-icon color="primary">chevron_left</mat-icon>
   </button>
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="navigate.emit(1)"
-    [matTooltip]="'Næste uge'"
+    [matTooltip]="'Next week' | translate"
   >
     <mat-icon color="primary">chevron_right</mat-icon>
   </button>
@@ -37,9 +37,9 @@
   <div class="text-field--rounded">
     <mat-form-field>
       <mat-select [value]="viewMode" (selectionChange)="viewModeChange.emit($event.value)">
-        <mat-option value="week">Uge</mat-option>
-        <mat-option value="day">Dag</mat-option>
-        <mat-option value="schedule">Liste</mat-option>
+        <mat-option value="week">{{ 'Week' | translate }}</mat-option>
+        <mat-option value="day">{{ 'Day' | translate }}</mat-option>
+        <mat-option value="schedule">{{ 'List' | translate }}</mat-option>
       </mat-select>
     </mat-form-field>
   </div>

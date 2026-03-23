@@ -1,38 +1,38 @@
-<h2 mat-dialog-title>{{ isEditMode ? 'Rediger opgave' : 'Ny opgave' }}</h2>
+<h3 mat-dialog-title>{{ isEditMode ? ('Edit task' | translate) : ('New task' | translate) }}</h3>
 
-<mat-dialog-content>
+<div mat-dialog-content>
   <form [formGroup]="form" class="task-form">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Titel</mat-label>
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Title' | translate }}</mat-label>
       <input matInput formControlName="title" required>
     </mat-form-field>
 
     <div class="row-fields">
-      <mat-form-field appearance="outline">
-        <mat-label>Dato</mat-label>
+      <mat-form-field>
+        <mat-label>{{ 'Date' | translate }}</mat-label>
         <input matInput type="date" formControlName="taskDate">
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Starttid (time)</mat-label>
+      <mat-form-field>
+        <mat-label>{{ 'Start time (hour)' | translate }}</mat-label>
         <input matInput type="number" formControlName="startHour" min="0" max="23" step="0.25">
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Varighed (timer)</mat-label>
+      <mat-form-field>
+        <mat-label>{{ 'Duration (hours)' | translate }}</mat-label>
         <input matInput type="number" formControlName="dur" min="0.25" step="0.25">
       </mat-form-field>
     </div>
 
-    <mat-form-field appearance="outline" class="full-width" *ngIf="data.boards.length > 0">
-      <mat-label>Tavle</mat-label>
+    <mat-form-field class="full-width" *ngIf="data.boards.length > 0">
+      <mat-label>{{ 'Board' | translate }}</mat-label>
       <mat-select formControlName="boardId">
         <mat-option *ngFor="let board of data.boards" [value]="board.id">{{ board.name }}</mat-option>
       </mat-select>
     </mat-form-field>
 
     <div class="color-picker" *ngIf="!form.value.boardId">
-      <label>Farve:</label>
+      <label>{{ 'Color' | translate }}:</label>
       <div class="colors">
         <div
           class="color-swatch"
@@ -44,38 +44,38 @@
       </div>
     </div>
 
-    <mat-form-field appearance="outline" class="full-width" *ngIf="data.employees.length > 0">
-      <mat-label>Ansvarlig</mat-label>
+    <mat-form-field class="full-width" *ngIf="data.employees.length > 0">
+      <mat-label>{{ 'Responsible' | translate }}</mat-label>
       <mtx-select formControlName="assigneeIds" [multiple]="true" bindValue="id" bindLabel="name" [items]="data.employees"></mtx-select>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width" *ngIf="data.tags.length > 0">
-      <mat-label>Tags</mat-label>
+    <mat-form-field class="full-width" *ngIf="data.tags.length > 0">
+      <mat-label>{{ 'Tags' | translate }}</mat-label>
       <mtx-select formControlName="tags" [multiple]="true" [addTag]="true" [items]="data.tags"></mtx-select>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Gentagelse</mat-label>
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Repeat' | translate }}</mat-label>
       <mat-select formControlName="repeatRule" (selectionChange)="onRepeatChange($event.value)">
         <mat-option *ngFor="let opt of repeatOptions" [value]="opt.value">{{ opt.label }}</mat-option>
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Beskrivelse</mat-label>
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Description' | translate }}</mat-label>
       <textarea matInput formControlName="descriptionHtml" rows="3"></textarea>
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Drive-link</mat-label>
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Drive link' | translate }}</mat-label>
       <input matInput formControlName="driveLink" type="url">
     </mat-form-field>
   </form>
-</mat-dialog-content>
+</div>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuller</button>
-  <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="onSave()">
-    {{ isEditMode ? 'Gem ændringer' : 'Opret opgave' }}
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">
+    {{ isEditMode ? ('Save changes' | translate) : ('Create task' | translate) }}
   </button>
-</mat-dialog-actions>
+</div>

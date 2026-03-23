@@ -2,7 +2,7 @@
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>Mine ejendomme</mat-panel-title>
+      <mat-panel-title>{{ 'My properties' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <mat-nav-list dense>
       <mat-list-item
@@ -13,12 +13,12 @@
         {{ prop.name }}
       </mat-list-item>
     </mat-nav-list>
-    <a class="sidebar-action-link" (click)="createProperty.emit()">+ Opret ejendom</a>
+    <a class="sidebar-action-link" (click)="createProperty.emit()">+ {{ 'Create property' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>Mine tavler</mat-panel-title>
+      <mat-panel-title>{{ 'My boards' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="board-list">
       <div
@@ -31,42 +31,42 @@
         <mat-icon *ngIf="isBoardActive(board.id)" class="check-icon">check</mat-icon>
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="createBoard.emit()">+ Opret tavle</a>
+    <a class="sidebar-action-link" (click)="createBoard.emit()">+ {{ 'Create board' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>Mine teams</mat-panel-title>
+      <mat-panel-title>{{ 'My teams' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <mat-nav-list dense>
       <mat-list-item *ngFor="let team of teams">
         {{ team.name }}
       </mat-list-item>
     </mat-nav-list>
-    <a class="sidebar-action-link" (click)="createTeam.emit()">+ Opret team</a>
+    <a class="sidebar-action-link" (click)="createTeam.emit()">+ {{ 'Create team' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>Mine medarbejdere</mat-panel-title>
+      <mat-panel-title>{{ 'My employees' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <mat-nav-list dense>
       <mat-list-item *ngFor="let emp of employees">
         {{ emp.name }}
       </mat-list-item>
     </mat-nav-list>
-    <a class="sidebar-action-link" (click)="createEmployee.emit()">+ Opret medarbejder</a>
+    <a class="sidebar-action-link" (click)="createEmployee.emit()">+ {{ 'Create employee' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>Mine tags</mat-panel-title>
+      <mat-panel-title>{{ 'My tags' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
 
     <div class="tag-sort" *ngIf="tags.length > 0">
-      <span class="sort-label">Sorter:</span>
-      <a class="sort-link" [class.active]="tagSort === 'popularity'" (click)="tagSort = 'popularity'">Popularitet</a>
-      <a class="sort-link" [class.active]="tagSort === 'alphabetical'" (click)="tagSort = 'alphabetical'">Alfabetisk</a>
+      <span class="sort-label">{{ 'Sort' | translate }}:</span>
+      <a class="sort-link" [class.active]="tagSort === 'popularity'" (click)="tagSort = 'popularity'">{{ 'Popularity' | translate }}</a>
+      <a class="sort-link" [class.active]="tagSort === 'alphabetical'" (click)="tagSort = 'alphabetical'">{{ 'Alphabetical' | translate }}</a>
     </div>
 
     <mat-list dense class="tag-list">
@@ -98,7 +98,7 @@
 
     <div class="sidebar-create-row">
       <mat-form-field class="tag-create-field">
-        <input matInput placeholder="Nyt tag..." [(ngModel)]="newTagName" (keyup.enter)="emitCreateTag()">
+        <input matInput [placeholder]="'New tag...' | translate" [(ngModel)]="newTagName" (keyup.enter)="emitCreateTag()">
       </mat-form-field>
       <button mat-icon-button (click)="emitCreateTag()">
         <mat-icon>add</mat-icon>

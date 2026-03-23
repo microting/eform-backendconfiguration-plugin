@@ -1,11 +1,11 @@
-<h2 mat-dialog-title>Slet tavle</h2>
+<h3 mat-dialog-title>{{ 'Delete board' | translate }}</h3>
 
-<mat-dialog-content>
-  <p>Er du sikker på, at du vil slette tavlen <strong>{{ data.board.name }}</strong>?</p>
-  <p>Alle opgaver tilknyttet denne tavle vil miste deres tavelletilknytning.</p>
-</mat-dialog-content>
+<div mat-dialog-content>
+  <p>{{ 'Are you sure you want to delete the board' | translate }} <strong>{{ data.board.name }}</strong>?</p>
+  <p>{{ 'All tasks associated with this board will lose their board association' | translate }}.</p>
+</div>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuller</button>
-  <button mat-raised-button color="warn" (click)="onConfirm()">Slet</button>
-</mat-dialog-actions>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-danger" (click)="onConfirm()">{{ 'Delete' | translate }}</button>
+</div>
