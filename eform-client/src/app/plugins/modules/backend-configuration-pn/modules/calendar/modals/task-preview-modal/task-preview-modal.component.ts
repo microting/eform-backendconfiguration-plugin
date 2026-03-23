@@ -1,11 +1,10 @@
-import {Component, Inject} from '@angular/core';
+import {Component, EventEmitter, Inject, Optional, Output} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {TaskCreateEditModalComponent} from '../task-create-edit-modal/task-create-edit-modal.component';
 import {TaskDeleteModalComponent} from '../task-delete-modal/task-delete-modal.component';
 
 export interface TaskPreviewModalData {
@@ -20,11 +19,15 @@ export interface TaskPreviewModalData {
   standalone: false,
   selector: 'app-task-preview-modal',
   templateUrl: './task-preview-modal.component.html',
+  styleUrls: ['./task-preview-modal.component.scss'],
 })
 export class TaskPreviewModalComponent {
+  @Output() popoverClose = new EventEmitter<string | null>();
+  usePopoverMode = false;
+
   constructor(
-    private dialogRef: MatDialogRef<TaskPreviewModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: TaskPreviewModalData,
+    @Optional() private dialogRef: MatDialogRef<TaskPreviewModalComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: TaskPreviewModalData,
     private dialog: MatDialog,
     private overlay: Overlay,
     private calendarService: BackendConfigurationPnCalendarService,
@@ -35,23 +38,26 @@ export class TaskPreviewModalComponent {
     return board?.name ?? '';
   }
 
+  get propertyName(): string {
+    const prop = this.data.properties?.find(p => p.id === this.data.task.propertyId);
+    return prop?.name ?? '';
+  }
+
+  get repeatLabel(): string {
+    const rule = this.data.task.repeatRule;
+    const labels: Record<string, string> = {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      weekdays: 'Every weekday',
+      monthly: 'Monthly',
+      yearly: 'Yearly',
+      custom: 'Custom',
+    };
+    return labels[rule] ?? rule;
+  }
+
   onEdit() {
-    const ref = this.dialog.open(
-      TaskCreateEditModalComponent,
-      dialogConfigHelper(this.overlay, {
-        task: this.data.task,
-        date: this.data.task.taskDate,
-        startHour: this.data.task.startHour,
-        boards: this.data.boards,
-        employees: this.data.employees ?? [],
-        tags: this.data.tags ?? this.data.task.tags ?? [],
-        propertyId: this.data.task.propertyId,
-        properties: this.data.properties ?? [],
-      })
-    );
-    ref.afterClosed().subscribe(result => {
-      if (result) this.dialogRef.close('reload');
-    });
+    this.close('edit');
   }
 
   onDelete() {
@@ -63,11 +69,19 @@ export class TaskPreviewModalComponent {
       })
     );
     ref.afterClosed().subscribe(result => {
-      if (result) this.dialogRef.close('reload');
+      if (result) this.close('reload');
     });
   }
 
   onClose() {
-    this.dialogRef.close(null);
+    this.close(null);
+  }
+
+  private close(result: string | null) {
+    if (this.usePopoverMode) {
+      this.popoverClose.emit(result);
+    } else {
+      this.dialogRef.close(result);
+    }
   }
 }

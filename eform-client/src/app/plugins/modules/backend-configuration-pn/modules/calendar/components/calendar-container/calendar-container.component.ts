@@ -20,6 +20,7 @@ import {CalendarStateService} from '../store';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
+import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 
 @Component({
@@ -32,6 +33,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
   private destroy$ = new Subject<void>();
   private createOverlayRef: OverlayRef | null = null;
+  private previewOverlayRef: OverlayRef | null = null;
 
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
@@ -196,21 +198,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.createOverlayRef = null;
     }
 
-    // Decide whether to open to the right or left based on available space
-    const modalWidth = 500;
-    const spaceRight = window.innerWidth - event.cellRight;
-    const openToRight = spaceRight >= modalWidth + 16;
-
-    const anchorX = openToRight ? event.cellRight : event.cellLeft;
-    const positions: ConnectedPosition[] = openToRight
-      ? [
-          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetX: 8},
-          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom'},
-        ]
-      : [
-          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'top', offsetX: -8},
-          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
-        ];
+    const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
+    const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
     const positionStrategy = this.overlay
       .position()
@@ -304,6 +293,151 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       .subscribe(res => {
         if (res && res.success) this.loadTasks();
       });
+  }
+
+  onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
+    this.closePreviewOverlay();
+
+    const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
+    const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
+
+    const positionStrategy = this.overlay
+      .position()
+      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .withPositions(positions)
+      .withPush(true)
+      .withViewportMargin(8);
+
+    this.previewOverlayRef = this.overlay.create({
+      positionStrategy,
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-transparent-backdrop',
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+    });
+
+    const data: TaskPreviewModalData = {
+      task: event.task,
+      boards: this.boards,
+      employees: this.employees,
+      tags: this.tags.map(t => t.name),
+      properties: this.properties,
+    };
+
+    const popoverInjector = Injector.create({
+      parent: this.injector,
+      providers: [
+        {provide: MAT_DIALOG_DATA, useValue: data},
+        {provide: MatDialogRef, useValue: null},
+      ],
+    });
+
+    const portal = new ComponentPortal(TaskPreviewModalComponent, null, popoverInjector);
+    const componentRef = this.previewOverlayRef.attach(portal);
+
+    componentRef.instance.usePopoverMode = true;
+    componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
+      this.closePreviewOverlay();
+      if (result === 'edit') {
+        this.openEditModal(event);
+      } else if (result === 'reload') {
+        this.weekGrid?.clearSelection();
+        this.loadTasks();
+      } else {
+        this.weekGrid?.clearSelection();
+      }
+    });
+
+    this.previewOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.closePreviewOverlay();
+      this.weekGrid?.clearSelection();
+    });
+  }
+
+  private closePreviewOverlay() {
+    this.previewOverlayRef?.dispose();
+    this.previewOverlayRef = null;
+  }
+
+  private openEditModal(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
+    // Close any existing popover
+    if (this.createOverlayRef) {
+      this.createOverlayRef.dispose();
+      this.createOverlayRef = null;
+    }
+
+    const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
+    const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
+
+    const positionStrategy = this.overlay
+      .position()
+      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .withPositions(positions)
+      .withPush(true)
+      .withViewportMargin(8);
+
+    this.createOverlayRef = this.overlay.create({
+      positionStrategy,
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-transparent-backdrop',
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+    });
+
+    const task = event.task;
+    const data: TaskCreateEditModalData = {
+      task,
+      date: task.taskDate,
+      startHour: task.startHour,
+      boards: this.boards,
+      employees: this.employees,
+      tags: this.tags.map(t => t.name),
+      propertyId: task.propertyId,
+      properties: this.properties,
+    };
+
+    const popoverInjector = Injector.create({
+      parent: this.injector,
+      providers: [
+        {provide: MAT_DIALOG_DATA, useValue: data},
+        {provide: MatDialogRef, useValue: null},
+      ],
+    });
+
+    const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
+    const componentRef = this.createOverlayRef.attach(portal);
+
+    componentRef.instance.usePopoverMode = true;
+    componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
+      this.weekGrid?.updateTaskTime(task.id, time.startHour, time.endHour);
+    });
+    componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
+      this.closeCreateOverlay();
+      if (result) this.loadTasks();
+    });
+
+    this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.closeCreateOverlay();
+    });
+  }
+
+  private buildPopoverPositions(cellLeft: number, cellRight: number): ConnectedPosition[] {
+    const modalWidth = 500;
+    const spaceRight = window.innerWidth - cellRight;
+    const openToRight = spaceRight >= modalWidth + 16;
+    return openToRight
+      ? [
+          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetX: 8},
+          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom'},
+        ]
+      : [
+          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'top', offsetX: -8},
+          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
+        ];
+  }
+
+  private pickAnchorX(cellLeft: number, cellRight: number): number {
+    const modalWidth = 500;
+    const spaceRight = window.innerWidth - cellRight;
+    return spaceRight >= modalWidth + 16 ? cellRight : cellLeft;
   }
 
   private getMondayOfWeek(d: Date): Date {

@@ -1,26 +1,71 @@
-<h3 mat-dialog-title>{{ data.task.title }}</h3>
+<div [class.gcal-popover-card]="usePopoverMode">
+  <!-- Action icons row -->
+  <div class="preview-actions-row">
+    <button class="preview-icon-btn" (click)="onEdit()" [title]="'Edit' | translate">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button class="preview-icon-btn" (click)="onDelete()" [title]="'Delete' | translate">
+      <mat-icon>delete</mat-icon>
+    </button>
+    <button class="preview-icon-btn" (click)="onClose()" [title]="'Close' | translate">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<div mat-dialog-content>
-  <p><strong>{{ 'Date' | translate }}:</strong> {{ data.task.taskDate }}</p>
-  <p><strong>{{ 'Time' | translate }}:</strong> {{ data.task.startText }} – {{ data.task.endText }}</p>
-  <p *ngIf="boardName"><strong>{{ 'Board' | translate }}:</strong> {{ boardName }}</p>
-  <p *ngIf="data.task.tags?.length"><strong>{{ 'Tags' | translate }}:</strong> {{ data.task.tags.join(', ') }}</p>
-  <p *ngIf="data.task.descriptionHtml">
-    <strong>{{ 'Description' | translate }}:</strong>
-    <span [innerHTML]="data.task.descriptionHtml"></span>
-  </p>
-  <p *ngIf="data.task.driveLink">
-    <strong>{{ 'Drive' | translate }}:</strong>
-    <a [href]="data.task.driveLink" target="_blank" rel="noopener">{{ 'Open link' | translate }}</a>
-  </p>
-  <p>
-    <strong>{{ 'Status' | translate }}:</strong>
-    <span [class.completed]="data.task.completed">{{ data.task.completed ? ('Completed' | translate) : ('Not completed' | translate) }}</span>
-  </p>
-</div>
+  <!-- Color accent bar -->
+  <div class="preview-accent-bar" [style.background-color]="data.task.color"></div>
 
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-delete" (click)="onDelete()">{{ 'Delete' | translate }}</button>
-  <button class="btn-cancel" (click)="onClose()">{{ 'Close' | translate }}</button>
-  <button class="btn-primary btn-primary--icon-left" (click)="onEdit()">{{ 'Edit' | translate }}</button>
+  <!-- Content -->
+  <div class="preview-body">
+    <!-- Title -->
+    <div class="preview-title">{{ data.task.title }}</div>
+
+    <!-- Date + Time -->
+    <div class="preview-row">
+      <mat-icon class="preview-icon">schedule</mat-icon>
+      <span>{{ data.task.taskDate | date:'d. MMMM yyyy' }}; {{ data.task.startText }} – {{ data.task.endText }}</span>
+    </div>
+
+    <!-- Repeat -->
+    <div class="preview-row" *ngIf="data.task.repeatRule && data.task.repeatRule !== 'none'">
+      <mat-icon class="preview-icon">sync</mat-icon>
+      <span>{{ repeatLabel }}</span>
+    </div>
+
+    <!-- Repeat = none -->
+    <div class="preview-row" *ngIf="!data.task.repeatRule || data.task.repeatRule === 'none'">
+      <mat-icon class="preview-icon">sync</mat-icon>
+      <span>{{ 'Does not repeat' | translate }}</span>
+    </div>
+
+    <!-- Tags -->
+    <div class="preview-row" *ngIf="data.task.tags?.length">
+      <mat-icon class="preview-icon">label</mat-icon>
+      <span>{{ data.task.tags.join(', ') }}</span>
+    </div>
+
+    <!-- Description -->
+    <div class="preview-row" *ngIf="data.task.descriptionHtml">
+      <mat-icon class="preview-icon">notes</mat-icon>
+      <span [innerHTML]="data.task.descriptionHtml"></span>
+    </div>
+
+    <!-- Drive link -->
+    <div class="preview-row" *ngIf="data.task.driveLink">
+      <mat-icon class="preview-icon">add_to_drive</mat-icon>
+      <a [href]="data.task.driveLink" target="_blank" rel="noopener">{{ 'Open link' | translate }}</a>
+    </div>
+
+    <!-- Property -->
+    <div class="preview-row" *ngIf="propertyName">
+      <mat-icon class="preview-icon">business</mat-icon>
+      <span>{{ propertyName }}</span>
+    </div>
+
+    <!-- Board -->
+    <div class="preview-row" *ngIf="boardName">
+      <mat-icon class="preview-icon">calendar_today</mat-icon>
+      <span>{{ boardName }}</span>
+    </div>
+  </div>
 </div>

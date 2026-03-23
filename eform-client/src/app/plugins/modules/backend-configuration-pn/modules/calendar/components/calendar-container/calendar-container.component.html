@@ -37,6 +37,7 @@
         [tags]="tagNames"
         [properties]="properties"
         (slotClicked)="openCreateModal($event)"
+        (taskClicked)="onTaskClickedFromGrid($event)"
         (taskMoved)="onTaskMoved($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>
@@ -48,6 +49,7 @@
         [boards]="boards"
         [dayViewMode]="true"
         (slotClicked)="openCreateModal($event)"
+        (taskClicked)="onTaskClickedFromGrid($event)"
         (taskMoved)="onTaskMoved($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>

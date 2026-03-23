@@ -15,13 +15,9 @@ import {
 import {CdkDragDrop, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
-import {MatDialog} from '@angular/material/dialog';
-import {Overlay} from '@angular/cdk/overlay';
-import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
-import {TaskPreviewModalComponent} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 
@@ -46,6 +42,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Input() properties: CommonDictionaryModel[] = [];
 
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}>();
+  @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number}>();
   @Output() tasksReload = new EventEmitter<void>();
 
@@ -74,8 +71,6 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   private selectionDayIndex: number = -1;
 
   constructor(
-    private dialog: MatDialog,
-    private overlay: Overlay,
     private calendarService: BackendConfigurationPnCalendarService,
   ) {}
 
@@ -319,19 +314,32 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   onTaskClicked(task: CalendarTaskLayoutModel) {
-    const dialogRef = this.dialog.open(
-      TaskPreviewModalComponent,
-      dialogConfigHelper(this.overlay, {
-        task,
-        boards: this.boards,
-        employees: this.employees,
-        tags: this.tags,
-        properties: this.properties,
-      })
-    );
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === 'reload') this.tasksReload.emit();
+    const containerEl = this.scrollContainerRef.nativeElement;
+    const containerRect = containerEl.getBoundingClientRect();
+    const dayIndex = this.weekDays.findIndex(d => this.toLocalDateString(d) === task.taskDate);
+    const colEl = containerEl.querySelector<HTMLElement>(`.day-cell-content[data-day="${dayIndex}"]`);
+    if (!colEl) return;
+    const colRect = colEl.getBoundingClientRect();
+
+    const slotTop = colRect.top + task.startHour * this.hourHeight;
+    this.taskClicked.emit({
+      task,
+      cellLeft: colRect.left,
+      cellRight: colRect.right,
+      slotTop,
     });
+  }
+
+  updateTaskTime(taskId: number, startHour: number, endHour: number) {
+    const dur = Math.max(endHour - startHour, 0.25);
+    for (const dayTasks of this.tasksByDay) {
+      const task = dayTasks.find(t => t.id === taskId);
+      if (task) {
+        task.startHour = startHour;
+        task.dur = dur;
+        break;
+      }
+    }
   }
 
   onTaskToggleComplete(task: CalendarTaskLayoutModel) {
