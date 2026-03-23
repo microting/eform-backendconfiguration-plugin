@@ -7,12 +7,7 @@
       <input matInput type="number" [(ngModel)]="step" min="1" max="99">
     </mat-form-field>
     <mat-form-field>
-      <mat-select [(ngModel)]="unit">
-        <mat-option value="day">{{ 'day(s)' | translate }}</mat-option>
-        <mat-option value="week">{{ 'week(s)' | translate }}</mat-option>
-        <mat-option value="month">{{ 'month(s)' | translate }}</mat-option>
-        <mat-option value="year">{{ 'year(s)' | translate }}</mat-option>
-      </mat-select>
+      <mtx-select [(ngModel)]="unit" [items]="unitOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
     </mat-form-field>
   </div>
 

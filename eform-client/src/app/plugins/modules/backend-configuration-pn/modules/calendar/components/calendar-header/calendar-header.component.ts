@@ -11,6 +11,12 @@ export class CalendarHeaderComponent {
   @Input() viewMode: 'week' | 'day' | 'schedule' = 'week';
   @Input() sidebarOpen = true;
 
+  viewModeOptions = [
+    {value: 'week', label: 'Week'},
+    {value: 'day', label: 'Day'},
+    {value: 'schedule', label: 'List'},
+  ];
+
   @Output() navigate = new EventEmitter<-1 | 1>();
   @Output() goToToday = new EventEmitter<void>();
   @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule'>();

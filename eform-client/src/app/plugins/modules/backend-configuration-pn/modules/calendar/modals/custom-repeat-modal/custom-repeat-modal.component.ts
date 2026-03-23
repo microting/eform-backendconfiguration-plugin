@@ -25,6 +25,13 @@ export class CustomRepeatModalComponent implements OnInit {
   afterCount = 10;
   untilDate: string = '';
 
+  unitOptions = [
+    {value: 'day', label: 'day(s)'},
+    {value: 'week', label: 'week(s)'},
+    {value: 'month', label: 'month(s)'},
+    {value: 'year', label: 'year(s)'},
+  ];
+
   weekdays: WeekdayCircle[] = [
     {label: 'Ma', value: 1, active: false},
     {label: 'Ti', value: 2, active: false},

@@ -36,11 +36,7 @@
 
   <div class="text-field--rounded">
     <mat-form-field>
-      <mat-select [value]="viewMode" (selectionChange)="viewModeChange.emit($event.value)">
-        <mat-option value="week">{{ 'Week' | translate }}</mat-option>
-        <mat-option value="day">{{ 'Day' | translate }}</mat-option>
-        <mat-option value="schedule">{{ 'List' | translate }}</mat-option>
-      </mat-select>
+      <mtx-select [ngModel]="viewMode" (ngModelChange)="viewModeChange.emit($event)" [items]="viewModeOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
     </mat-form-field>
   </div>
 </div>

@@ -62,6 +62,9 @@ export class TaskCreateEditModalComponent implements OnInit {
       repeatRule: [task?.repeatRule ?? 'none'],
       driveLink: [task?.driveLink ?? ''],
     });
+    this.form.get('repeatRule')!.valueChanges.subscribe(value => {
+      this.onRepeatChange(value);
+    });
   }
 
   onRepeatChange(value: string) {

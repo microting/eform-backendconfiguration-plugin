@@ -26,9 +26,7 @@
 
     <mat-form-field class="full-width" *ngIf="data.boards.length > 0">
       <mat-label>{{ 'Board' | translate }}</mat-label>
-      <mat-select formControlName="boardId">
-        <mat-option *ngFor="let board of data.boards" [value]="board.id">{{ board.name }}</mat-option>
-      </mat-select>
+      <mtx-select formControlName="boardId" [items]="data.boards" bindValue="id" bindLabel="name" [clearable]="false"></mtx-select>
     </mat-form-field>
 
     <div class="color-picker" *ngIf="!form.value.boardId">
@@ -56,9 +54,7 @@
 
     <mat-form-field class="full-width">
       <mat-label>{{ 'Repeat' | translate }}</mat-label>
-      <mat-select formControlName="repeatRule" (selectionChange)="onRepeatChange($event.value)">
-        <mat-option *ngFor="let opt of repeatOptions" [value]="opt.value">{{ opt.label }}</mat-option>
-      </mat-select>
+      <mtx-select formControlName="repeatRule" [items]="repeatOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
     </mat-form-field>
 
     <mat-form-field class="full-width">
