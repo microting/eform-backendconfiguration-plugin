@@ -46,7 +46,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   get tagNames(): string[] { return this.tags.map(t => t.name); }
 
   currentPropertyId: number | null = null;
-  currentDate: string = new Date().toISOString().split('T')[0];
+  currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
   activeBoardIds: number[] = [];
   activeTagNames: string[] = [];
@@ -155,8 +155,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const monday = this.getMondayOfWeek(new Date(this.currentDate));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const weekStart = monday.toISOString().split('T')[0];
-    const weekEnd = sunday.toISOString().split('T')[0];
+    const weekStart = this.toLocalDateString(monday);
+    const weekEnd = this.toLocalDateString(sunday);
 
     this.calendarService
       .getTasksForWeek(
@@ -260,12 +260,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onNavigate(direction: -1 | 1) {
     const d = new Date(this.currentDate);
     d.setDate(d.getDate() + direction * 7);
-    this.stateService.updateCurrentDate(d.toISOString().split('T')[0]);
+    this.stateService.updateCurrentDate(this.toLocalDateString(d));
     this.loadTasks();
   }
 
   onGoToToday() {
-    this.stateService.updateCurrentDate(new Date().toISOString().split('T')[0]);
+    this.stateService.updateCurrentDate(this.toLocalDateString(new Date()));
     this.loadTasks();
   }
 
@@ -438,6 +438,13 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const modalWidth = 500;
     const spaceRight = window.innerWidth - cellRight;
     return spaceRight >= modalWidth + 16 ? cellRight : cellLeft;
+  }
+
+  private toLocalDateString(d: Date): string {
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   private getMondayOfWeek(d: Date): Date {

@@ -246,7 +246,12 @@ export class BackendConfigurationPnCalendarService {
     const start = new Date(model.taskDate + 'T00:00:00');
     const dates: string[] = [];
     const MAX = 104;
-    const push = (d: Date) => dates.push(d.toISOString().split('T')[0]);
+    const push = (d: Date) => {
+      const y = d.getFullYear();
+      const m = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      dates.push(`${y}-${m}-${day}`);
+    };
 
     if (model.repeatRule === 'daily') {
       const cur = new Date(start);
