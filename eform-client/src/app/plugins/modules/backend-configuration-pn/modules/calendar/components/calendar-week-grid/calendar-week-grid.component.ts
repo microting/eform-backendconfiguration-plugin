@@ -69,6 +69,9 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   selectionTop: number | null = null;
   selectionLeft: number | null = null;
   selectionWidth: number = 0;
+  selectionHeight: number = 0;
+  private selectionBaseTop: number = 0; // top of the day column in scroll coords
+  private selectionDayIndex: number = -1;
 
   constructor(
     private dialog: MatDialog,
@@ -193,8 +196,11 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     const containerEl = this.scrollContainerRef.nativeElement;
     const containerRect = containerEl.getBoundingClientRect();
     this.selectionLeft = rect.left - containerRect.left + containerEl.scrollLeft;
-    this.selectionTop = rect.top - containerRect.top + containerEl.scrollTop + startHour * this.hourHeight;
+    this.selectionBaseTop = rect.top - containerRect.top + containerEl.scrollTop;
+    this.selectionTop = this.selectionBaseTop + startHour * this.hourHeight;
     this.selectionWidth = rect.width;
+    this.selectionHeight = this.hourHeight;
+    this.selectionDayIndex = dayIndex;
 
     // Pass viewport coordinates for overlay positioning
     const slotTop = rect.top + startHour * this.hourHeight;
@@ -210,6 +216,13 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   clearSelection() {
     this.selectionTop = null;
     this.selectionLeft = null;
+  }
+
+  updateSelectionTime(startHour: number, endHour: number) {
+    if (this.selectionTop === null) return;
+    const duration = Math.max(endHour - startHour, 0.25);
+    this.selectionTop = this.selectionBaseTop + startHour * this.hourHeight;
+    this.selectionHeight = duration * this.hourHeight;
   }
 
   onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {

@@ -29,6 +29,7 @@ export interface TaskCreateEditModalData {
 })
 export class TaskCreateEditModalComponent implements OnInit {
   @Output() popoverClose = new EventEmitter<boolean | null>();
+  @Output() timeChanged = new EventEmitter<{startHour: number; endHour: number}>();
   usePopoverMode = false;
 
   isEditMode = false;
@@ -104,6 +105,10 @@ export class TaskCreateEditModalComponent implements OnInit {
       prevStartH = newStartH;
     });
 
+    // Emit time changes for selection indicator sizing
+    this.startTimeControl.valueChanges.subscribe(() => this.emitTimeChanged());
+    this.endTimeControl.valueChanges.subscribe(() => this.emitTimeChanged());
+
     // When repeat changes, handle custom modal
     this.repeatControl.valueChanges.subscribe(value => {
       if (value === 'custom') {
@@ -131,6 +136,9 @@ export class TaskCreateEditModalComponent implements OnInit {
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date);
       }
     });
+
+    // Emit initial time values
+    this.emitTimeChanged();
   }
 
   get formattedDate(): string {
@@ -165,6 +173,12 @@ export class TaskCreateEditModalComponent implements OnInit {
     const el = event.target as HTMLTextAreaElement;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+  }
+
+  private emitTimeChanged() {
+    const startH = this.timeStrToHour(this.startTimeControl.value!);
+    const endH = this.timeStrToHour(this.endTimeControl.value!);
+    this.timeChanged.emit({startHour: startH, endHour: endH});
   }
 
   private onRepeatChange() {

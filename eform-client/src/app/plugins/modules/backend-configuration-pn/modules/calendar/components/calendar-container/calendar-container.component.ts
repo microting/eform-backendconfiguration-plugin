@@ -249,6 +249,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const componentRef = this.createOverlayRef.attach(portal);
 
     componentRef.instance.usePopoverMode = true;
+    componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
+      this.weekGrid?.updateSelectionTime(time.startHour, time.endHour);
+    });
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
       if (result) this.loadTasks();
