@@ -45,7 +45,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Input() tags: string[] = [];
   @Input() properties: CommonDictionaryModel[] = [];
 
-  @Output() slotClicked = new EventEmitter<{date: string; startHour: number}>();
+  @Output() slotClicked = new EventEmitter<{date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number}>();
   @Output() tasksReload = new EventEmitter<void>();
 
@@ -64,6 +64,11 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   dragSourceLeft: number | null = null;
   dragSourceTop: number | null = null;
   dragSourceWidth: number = 0;
+
+  // Selection indicator (absolute coords within scroll container)
+  selectionTop: number | null = null;
+  selectionLeft: number | null = null;
+  selectionWidth: number = 0;
 
   constructor(
     private dialog: MatDialog,
@@ -183,7 +188,28 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     const rect = cell.getBoundingClientRect();
     const relY = event.clientY - rect.top;
     const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
-    this.slotClicked.emit({date: this.toLocalDateString(date), startHour});
+
+    // Compute selection indicator position (absolute within scroll container)
+    const containerEl = this.scrollContainerRef.nativeElement;
+    const containerRect = containerEl.getBoundingClientRect();
+    this.selectionLeft = rect.left - containerRect.left + containerEl.scrollLeft;
+    this.selectionTop = rect.top - containerRect.top + containerEl.scrollTop + startHour * this.hourHeight;
+    this.selectionWidth = rect.width;
+
+    // Pass viewport coordinates for overlay positioning
+    const slotTop = rect.top + startHour * this.hourHeight;
+    this.slotClicked.emit({
+      date: this.toLocalDateString(date),
+      startHour,
+      cellLeft: rect.left,
+      cellRight: rect.right,
+      slotTop,
+    });
+  }
+
+  clearSelection() {
+    this.selectionTop = null;
+    this.selectionLeft = null;
   }
 
   onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {

@@ -5,6 +5,7 @@ import {RouterModule} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
 import {DragDropModule} from '@angular/cdk/drag-drop';
 import {OverlayModule} from '@angular/cdk/overlay';
+import {PortalModule} from '@angular/cdk/portal';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatCardModule} from '@angular/material/card';
@@ -87,6 +88,7 @@ export {
     CalendarRouting,
     DragDropModule,
     OverlayModule,
+    PortalModule,
     EformSharedModule,
     EformImportedModule,
     MatButtonModule,

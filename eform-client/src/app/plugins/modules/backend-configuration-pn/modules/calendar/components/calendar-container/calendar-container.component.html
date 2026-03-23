@@ -36,7 +36,7 @@
         [employees]="employees"
         [tags]="tagNames"
         [properties]="properties"
-        (slotClicked)="openCreateModal($event.date, $event.startHour)"
+        (slotClicked)="openCreateModal($event)"
         (taskMoved)="onTaskMoved($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>
@@ -47,7 +47,7 @@
         [currentDate]="currentDate"
         [boards]="boards"
         [dayViewMode]="true"
-        (slotClicked)="openCreateModal($event.date, $event.startHour)"
+        (slotClicked)="openCreateModal($event)"
         (taskMoved)="onTaskMoved($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>

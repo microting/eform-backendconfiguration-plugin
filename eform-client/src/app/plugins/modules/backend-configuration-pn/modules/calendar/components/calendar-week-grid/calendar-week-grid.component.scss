@@ -118,6 +118,18 @@
   }
 }
 
+// Selection indicator — blue outline on clicked slot
+.selection-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 2px solid #1a73e8;
+  border-radius: 4px;
+  background: rgba(26, 115, 232, 0.08);
+  z-index: 5;
+  pointer-events: none;
+}
+
 .now-line {
   position: absolute;
   left: 0;

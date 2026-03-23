@@ -1,13 +1,30 @@
+// Popover card wrapper — used when rendered via CDK Overlay
+.gcal-popover-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.gcal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 24px 16px 24px;
+}
+
+.gcal-close-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 8px 0 0;
+}
+
 .gcal-close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   background: none;
   border: none;
   outline: none;
   cursor: pointer;
   color: #5f6368;
-  z-index: 1;
   width: 36px;
   height: 36px;
   display: flex;
@@ -26,11 +43,6 @@
   max-width: 500px;
 }
 
-.gcal-title-row {
-  margin-bottom: 16px;
-  padding-right: 32px;
-}
-
 // Rows
 .gcal-row {
   display: flex;
@@ -47,6 +59,10 @@
   margin-right: 16px;
   margin-top: 10px;
   flex-shrink: 0;
+
+  &--hidden {
+    visibility: hidden;
+  }
 }
 
 .gcal-row-content {
@@ -60,6 +76,11 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.gcal-date-field {
+  flex: 1;
+  min-width: 140px;
 }
 
 .gcal-time-field {

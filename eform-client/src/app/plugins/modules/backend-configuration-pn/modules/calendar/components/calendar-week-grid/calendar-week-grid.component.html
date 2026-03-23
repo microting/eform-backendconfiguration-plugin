@@ -9,6 +9,14 @@
     [columnResizable]="false">
   </mtx-grid>
   <div
+    class="selection-indicator"
+    *ngIf="selectionTop !== null && selectionLeft !== null"
+    [style.top.px]="selectionTop"
+    [style.left.px]="selectionLeft"
+    [style.width.px]="selectionWidth"
+    [style.height.px]="hourHeight"
+  ></div>
+  <div
     class="drag-source-slot"
     *ngIf="draggingTask && dragSourceLeft !== null"
     [style.top.px]="dragSourceTop"

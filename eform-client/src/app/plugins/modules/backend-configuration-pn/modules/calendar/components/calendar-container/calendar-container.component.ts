@@ -1,6 +1,7 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {Overlay} from '@angular/cdk/overlay';
+import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
+import {ComponentPortal} from '@angular/cdk/portal';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
@@ -16,7 +17,9 @@ import {
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
 import {CalendarStateService} from '../store';
-import {TaskCreateEditModalComponent} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
+import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 
 @Component({
@@ -26,7 +29,9 @@ import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning
   styleUrls: ['./calendar-container.component.scss'],
 })
 export class CalendarContainerComponent implements OnInit, OnDestroy {
+  @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
   private destroy$ = new Subject<void>();
+  private createOverlayRef: OverlayRef | null = null;
 
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
@@ -48,6 +53,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   constructor(
     private dialog: MatDialog,
     private overlay: Overlay,
+    private injector: Injector,
     private calendarService: BackendConfigurationPnCalendarService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private layoutService: CalendarLayoutService,
@@ -183,23 +189,80 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     );
   }
 
-  openCreateModal(date: string, startHour: number) {
-    const dialogRef = this.dialog.open(
-      TaskCreateEditModalComponent,
-      dialogConfigHelper(this.overlay, {
-        task: null,
-        date,
-        startHour,
-        boards: this.boards,
-        employees: this.employees,
-        tags: this.tags.map(t => t.name),
-        propertyId: this.currentPropertyId,
-        properties: this.properties,
-      })
-    );
-    dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
+  openCreateModal(event: {date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}) {
+    // Close any existing popover (without clearing selection — new selection is already set)
+    if (this.createOverlayRef) {
+      this.createOverlayRef.dispose();
+      this.createOverlayRef = null;
+    }
+
+    // Decide whether to open to the right or left based on available space
+    const modalWidth = 500;
+    const spaceRight = window.innerWidth - event.cellRight;
+    const openToRight = spaceRight >= modalWidth + 16;
+
+    const anchorX = openToRight ? event.cellRight : event.cellLeft;
+    const positions: ConnectedPosition[] = openToRight
+      ? [
+          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetX: 8},
+          {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom'},
+        ]
+      : [
+          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'top', offsetX: -8},
+          {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
+        ];
+
+    const positionStrategy = this.overlay
+      .position()
+      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .withPositions(positions)
+      .withPush(true)
+      .withViewportMargin(8);
+
+    this.createOverlayRef = this.overlay.create({
+      positionStrategy,
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-transparent-backdrop',
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+    });
+
+    const data: TaskCreateEditModalData = {
+      task: null,
+      date: event.date,
+      startHour: event.startHour,
+      boards: this.boards,
+      employees: this.employees,
+      tags: this.tags.map(t => t.name),
+      propertyId: this.currentPropertyId!,
+      properties: this.properties,
+    };
+
+    const popoverInjector = Injector.create({
+      parent: this.injector,
+      providers: [
+        {provide: MAT_DIALOG_DATA, useValue: data},
+        {provide: MatDialogRef, useValue: null},
+      ],
+    });
+
+    const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
+    const componentRef = this.createOverlayRef.attach(portal);
+
+    componentRef.instance.usePopoverMode = true;
+    componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
+      this.closeCreateOverlay();
       if (result) this.loadTasks();
     });
+
+    this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.closeCreateOverlay();
+    });
+  }
+
+  private closeCreateOverlay() {
+    this.createOverlayRef?.dispose();
+    this.createOverlayRef = null;
+    this.weekGrid?.clearSelection();
   }
 
   onNavigate(direction: -1 | 1) {

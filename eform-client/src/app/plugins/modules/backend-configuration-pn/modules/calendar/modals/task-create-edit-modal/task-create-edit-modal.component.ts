@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import {Component, EventEmitter, Inject, OnInit, Optional, Output} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -28,6 +28,9 @@ export interface TaskCreateEditModalData {
   styleUrls: ['./task-create-edit-modal.component.scss'],
 })
 export class TaskCreateEditModalComponent implements OnInit {
+  @Output() popoverClose = new EventEmitter<boolean | null>();
+  usePopoverMode = false;
+
   isEditMode = false;
   repeatOptions: RepeatSelectOption[] = [];
   timeSlots: string[] = [];
@@ -48,8 +51,8 @@ export class TaskCreateEditModalComponent implements OnInit {
   boardControl = new FormControl<number | null>(null);
 
   constructor(
-    private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: TaskCreateEditModalData,
+    @Optional() private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: TaskCreateEditModalData,
     private calendarService: BackendConfigurationPnCalendarService,
     private repeatService: CalendarRepeatService,
     private dialog: MatDialog,
@@ -210,7 +213,7 @@ export class TaskCreateEditModalComponent implements OnInit {
         : this.calendarService.createTask(payload);
 
       obs.subscribe(res => {
-        if (res && res.success) this.dialogRef.close(true);
+        if (res && res.success) this.close(true);
       });
     };
 
@@ -228,6 +231,14 @@ export class TaskCreateEditModalComponent implements OnInit {
   }
 
   onCancel() {
-    this.dialogRef.close(null);
+    this.close(null);
+  }
+
+  private close(result: boolean | null) {
+    if (this.usePopoverMode) {
+      this.popoverClose.emit(result);
+    } else {
+      this.dialogRef.close(result);
+    }
   }
 }
