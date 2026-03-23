@@ -36,6 +36,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   tasks: CalendarTaskModel[] = [];
   tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
 
+  get tagNames(): string[] { return this.tags.map(t => t.name); }
+
   currentPropertyId: number | null = null;
   currentDate: string = new Date().toISOString().split('T')[0];
   viewMode: 'week' | 'day' | 'schedule' = 'week';
@@ -192,6 +194,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         employees: this.employees,
         tags: this.tags.map(t => t.name),
         propertyId: this.currentPropertyId,
+        properties: this.properties,
       })
     );
     dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {

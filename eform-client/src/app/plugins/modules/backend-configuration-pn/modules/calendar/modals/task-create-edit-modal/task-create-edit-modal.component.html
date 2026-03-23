@@ -1,77 +1,170 @@
-<h3 mat-dialog-title>{{ isEditMode ? ('Edit task' | translate) : ('New task' | translate) }}</h3>
+<!-- Close button -->
+<button class="gcal-close-btn" (click)="onCancel()">
+  <mat-icon>close</mat-icon>
+</button>
 
-<div mat-dialog-content>
-  <form [formGroup]="form" class="task-form">
-    <mat-form-field class="full-width">
+<div mat-dialog-content class="gcal-modal">
+  <!-- Title row -->
+  <div class="gcal-title-row">
+    <mat-form-field class="w-100">
       <mat-label>{{ 'Title' | translate }}</mat-label>
-      <input matInput formControlName="title" required>
+      <input matInput [formControl]="titleControl" autocomplete="off">
     </mat-form-field>
+  </div>
 
-    <div class="row-fields">
+  <!-- Date + Time row -->
+  <div class="gcal-row">
+    <mat-icon class="gcal-icon">schedule</mat-icon>
+    <div class="gcal-row-content gcal-datetime-row">
       <mat-form-field>
         <mat-label>{{ 'Date' | translate }}</mat-label>
-        <input matInput type="date" formControlName="taskDate">
+        <input matInput [matDatepicker]="datepicker" [formControl]="dateControl">
+        <mat-datepicker-toggle matIconSuffix [for]="datepicker"></mat-datepicker-toggle>
+        <mat-datepicker #datepicker></mat-datepicker>
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label>{{ 'Start time (hour)' | translate }}</mat-label>
-        <input matInput type="number" formControlName="startHour" min="0" max="23" step="0.25">
+      <mat-form-field class="gcal-time-field">
+        <mtx-select
+          [items]="timeSlots"
+          [formControl]="startTimeControl"
+          [addTag]="true"
+          [addTagText]="''"
+          [clearable]="false"
+          [searchable]="true"
+          appendTo="body"
+        ></mtx-select>
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label>{{ 'Duration (hours)' | translate }}</mat-label>
-        <input matInput type="number" formControlName="dur" min="0.25" step="0.25">
+      <span class="gcal-time-separator">–</span>
+
+      <mat-form-field class="gcal-time-field">
+        <mtx-select
+          [items]="timeSlots"
+          [formControl]="endTimeControl"
+          [addTag]="true"
+          [addTagText]="''"
+          [clearable]="false"
+          [searchable]="true"
+          appendTo="body"
+        ></mtx-select>
       </mat-form-field>
     </div>
+  </div>
 
-    <mat-form-field class="full-width" *ngIf="data.boards.length > 0">
-      <mat-label>{{ 'Board' | translate }}</mat-label>
-      <mtx-select formControlName="boardId" [items]="data.boards" bindValue="id" bindLabel="name" [clearable]="false"></mtx-select>
-    </mat-form-field>
-
-    <div class="color-picker" *ngIf="!form.value.boardId">
-      <label>{{ 'Color' | translate }}:</label>
-      <div class="colors">
-        <div
-          class="color-swatch"
-          *ngFor="let c of colors"
-          [style.background]="c"
-          [class.selected]="form.value.color === c"
-          (click)="form.patchValue({color: c})"
-        ></div>
-      </div>
+  <!-- Repeat row -->
+  <div class="gcal-row">
+    <mat-icon class="gcal-icon">sync</mat-icon>
+    <div class="gcal-row-content">
+      <mat-form-field class="w-100">
+        <mtx-select
+          [formControl]="repeatControl"
+          [items]="repeatOptions"
+          bindValue="value"
+          bindLabel="label"
+          [clearable]="false"
+          [searchable]="false"
+        ></mtx-select>
+      </mat-form-field>
     </div>
+  </div>
 
-    <mat-form-field class="full-width" *ngIf="data.employees.length > 0">
-      <mat-label>{{ 'Responsible' | translate }}</mat-label>
-      <mtx-select formControlName="assigneeIds" [multiple]="true" bindValue="id" bindLabel="name" [items]="data.employees"></mtx-select>
-    </mat-form-field>
+  <!-- Assignee row -->
+  <div class="gcal-row" *ngIf="data.employees.length > 0">
+    <mat-icon class="gcal-icon">people</mat-icon>
+    <div class="gcal-row-content">
+      <mat-form-field class="w-100">
+        <mat-label>{{ 'Assign to...' | translate }}</mat-label>
+        <mtx-select
+          [formControl]="assigneeControl"
+          [items]="data.employees"
+          bindValue="id"
+          bindLabel="name"
+          [multiple]="true"
+          [clearable]="true"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </div>
 
-    <mat-form-field class="full-width" *ngIf="data.tags.length > 0">
-      <mat-label>{{ 'Tags' | translate }}</mat-label>
-      <mtx-select formControlName="tags" [multiple]="true" [addTag]="true" [items]="data.tags"></mtx-select>
-    </mat-form-field>
+  <!-- Tags row -->
+  <div class="gcal-row" *ngIf="data.tags.length > 0">
+    <mat-icon class="gcal-icon">label</mat-icon>
+    <div class="gcal-row-content">
+      <mat-form-field class="w-100">
+        <mat-label>{{ 'Set tags...' | translate }}</mat-label>
+        <mtx-select
+          [formControl]="tagsControl"
+          [items]="data.tags"
+          [multiple]="true"
+          [addTag]="true"
+          [clearable]="true"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </div>
 
-    <mat-form-field class="full-width">
-      <mat-label>{{ 'Repeat' | translate }}</mat-label>
-      <mtx-select formControlName="repeatRule" [items]="repeatOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
-    </mat-form-field>
+  <!-- Description row -->
+  <div class="gcal-row">
+    <mat-icon class="gcal-icon">notes</mat-icon>
+    <div class="gcal-row-content">
+      <mat-form-field class="w-100">
+        <mat-label>{{ 'Description' | translate }}</mat-label>
+        <textarea matInput [formControl]="descriptionControl" rows="2"></textarea>
+      </mat-form-field>
+    </div>
+  </div>
 
-    <mat-form-field class="full-width">
-      <mat-label>{{ 'Description' | translate }}</mat-label>
-      <textarea matInput formControlName="descriptionHtml" rows="3"></textarea>
-    </mat-form-field>
+  <!-- Drive link row -->
+  <div class="gcal-row">
+    <mat-icon class="gcal-icon">add_to_drive</mat-icon>
+    <div class="gcal-row-content">
+      <a *ngIf="!showDriveInput" class="gcal-action-link" (click)="showDriveInput = true">
+        {{ 'Add Google Drive file' | translate }}
+      </a>
+      <mat-form-field *ngIf="showDriveInput" class="w-100">
+        <mat-label>{{ 'Drive link' | translate }}</mat-label>
+        <input matInput [formControl]="driveLinkControl" type="url">
+      </mat-form-field>
+    </div>
+  </div>
 
-    <mat-form-field class="full-width">
-      <mat-label>{{ 'Drive link' | translate }}</mat-label>
-      <input matInput formControlName="driveLink" type="url">
-    </mat-form-field>
-  </form>
+  <!-- Property row -->
+  <div class="gcal-row">
+    <mat-icon class="gcal-icon">business</mat-icon>
+    <div class="gcal-row-content gcal-selector-row">
+      <span class="gcal-selector-label">{{ 'Select property' | translate }}</span>
+      <mat-form-field class="gcal-compact-select">
+        <mtx-select
+          [formControl]="propertyControl"
+          [items]="data.properties"
+          bindValue="id"
+          bindLabel="name"
+          [clearable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Board row -->
+  <div class="gcal-row" *ngIf="filteredBoards.length > 0">
+    <mat-icon class="gcal-icon">calendar_today</mat-icon>
+    <div class="gcal-row-content gcal-selector-row">
+      <span class="gcal-selector-label">{{ 'My boards' | translate }}</span>
+      <mat-form-field class="gcal-compact-select">
+        <mtx-select
+          [formControl]="boardControl"
+          [items]="filteredBoards"
+          bindValue="id"
+          bindLabel="name"
+          [clearable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </div>
 </div>
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
-  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">
-    {{ isEditMode ? ('Save changes' | translate) : ('Create task' | translate) }}
+  <button class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
+    {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
   </button>
 </div>

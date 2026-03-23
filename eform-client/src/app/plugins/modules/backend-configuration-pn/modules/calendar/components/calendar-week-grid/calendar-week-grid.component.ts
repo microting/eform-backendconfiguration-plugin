@@ -19,6 +19,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {TaskPreviewModalComponent} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
@@ -40,6 +41,9 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Input() currentDate: string = '';
   @Input() boards: CalendarBoardModel[] = [];
   @Input() dayViewMode = false;
+  @Input() employees: CommonDictionaryModel[] = [];
+  @Input() tags: string[] = [];
+  @Input() properties: CommonDictionaryModel[] = [];
 
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number}>();
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number}>();
@@ -278,7 +282,13 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   onTaskClicked(task: CalendarTaskLayoutModel) {
     const dialogRef = this.dialog.open(
       TaskPreviewModalComponent,
-      dialogConfigHelper(this.overlay, {task, boards: this.boards})
+      dialogConfigHelper(this.overlay, {
+        task,
+        boards: this.boards,
+        employees: this.employees,
+        tags: this.tags,
+        properties: this.properties,
+      })
     );
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'reload') this.tasksReload.emit();

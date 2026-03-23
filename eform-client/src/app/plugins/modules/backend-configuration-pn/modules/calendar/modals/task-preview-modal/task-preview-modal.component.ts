@@ -4,12 +4,16 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
+import {CommonDictionaryModel} from 'src/app/common/models';
 import {TaskCreateEditModalComponent} from '../task-create-edit-modal/task-create-edit-modal.component';
 import {TaskDeleteModalComponent} from '../task-delete-modal/task-delete-modal.component';
 
 export interface TaskPreviewModalData {
   task: CalendarTaskModel;
   boards: CalendarBoardModel[];
+  employees: CommonDictionaryModel[];
+  tags: string[];
+  properties: CommonDictionaryModel[];
 }
 
 @Component({
@@ -39,9 +43,10 @@ export class TaskPreviewModalComponent {
         date: this.data.task.taskDate,
         startHour: this.data.task.startHour,
         boards: this.data.boards,
-        employees: [],
-        tags: this.data.task.tags ?? [],
+        employees: this.data.employees ?? [],
+        tags: this.data.tags ?? this.data.task.tags ?? [],
         propertyId: this.data.task.propertyId,
+        properties: this.data.properties ?? [],
       })
     );
     ref.afterClosed().subscribe(result => {
