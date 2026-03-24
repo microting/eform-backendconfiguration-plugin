@@ -58,12 +58,11 @@
   </div>
   <br>
   <app-task-management-table
-  [workOrderCases]="workOrderCases"
-  (openViewModal)="openViewModal($event)"
-  (updateTable)="(selectTaskManagementPropertyIdIsNullOrUndefined$ ? updateTable() : undefined)"
-  (openDeleteModal)="openDeleteModal($event)"
-  (viewPictures)="onViewPictures($event)"
-  [highlightId]="highlightIdFromRoute"
+    [workOrderCases]="workOrderCases"
+    [highlightedId]="highlightedId"
+    (updateTable)="updateTable()"
+    (updateTableWithHighlight)="updateTableWithHighlight($event)"
+    (highlightedRowRendered)="onHighlightedRowRendered()"
   >
   </app-task-management-table>
 </div>

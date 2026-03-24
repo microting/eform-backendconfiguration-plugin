@@ -2,7 +2,7 @@
   <mtx-grid
     [data]="workOrderCases"
     [columns]="tableHeaders"
-    [cellTemplate]="{propertyName: propertyNameTpl, createdByName: createdByNameTpl, pictureNames: photosTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl, actions: actionsTpl}"
+    [cellTemplate]="{id: taskIdTpl, propertyName: propertyNameTpl, createdByName: createdByNameTpl, pictureNames: photosTpl, lastAssignedTo: lastAssignedToTpl, lastUpdatedBy: lastUpdatedByTpl, priority: priorityTpl, status: statusTpl, actions: actionsTpl}"
     [showPaginator]="false"
     [pageOnFront]="false"
     [rowStriped]="false"
@@ -19,12 +19,16 @@
 
 </div>
 
+<ng-template #taskIdTpl let-row>
+  <span id="taskId-{{row.groupId}}">{{row.groupId}}</span>
+</ng-template>
+
 <ng-template #photosTpl let-row>
   <button
     mat-icon-button
     *ngIf="row.pictureNames?.length > 0"
     matTooltip="{{ 'View images' | translate }}"
-    (click)="viewPictures.emit(row.id)"
+    (click)="onViewPictures(row.id)"
   >
     <mat-icon>image</mat-icon>
   </button>
@@ -32,27 +36,19 @@
 
 
 <ng-template #propertyNameTpl let-row>
-<!--  <mat-chip color="primary">-->
     <span>{{row.propertyName}}</span>
-<!--  </mat-chip>-->
 </ng-template>
 
 <ng-template #createdByNameTpl let-row>
-<!--  <mat-chip color="primary">-->
     <div>{{row.createdByName}}</div>
-<!--  </mat-chip>-->
 </ng-template>
 
 <ng-template #lastAssignedToTpl let-row>
-<!--  <mat-chip color="primary">-->
     <div>{{row.lastAssignedTo}}</div>
-<!--  </mat-chip>-->
 </ng-template>
 
 <ng-template #lastUpdatedByTpl let-row>
-<!--  <mat-chip color="primary">-->
     <div>{{row.lastUpdatedBy}}</div>
-<!--  </mat-chip>-->
 </ng-template>
 
 <ng-template #priorityTpl let-row>
@@ -78,7 +74,7 @@
         mat-menu-item
         id="taskManagementViewBtn-{{i}}"
         class="taskManagementViewBtn"
-        (click)="onOpenViewModal(row.id)"
+        (click)="openViewModal(row.id)"
       >
         <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
         <span>{{ 'Edit task' | translate }}</span>
@@ -87,7 +83,7 @@
         mat-menu-item
         id="taskManagementDeleteTaskBtn-{{i}}"
         class="taskManagementDeleteTaskBtn btn-delete-menu"
-        (click)="onOpenDeleteModal(row)"
+        (click)="openDeleteModal(row)"
       >
         <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete task' | translate }}</span>

@@ -2360,6 +2360,7 @@ CREATE TABLE `WorkorderCaseVersions` (
   `AssignedToSdkSiteId` int(11) DEFAULT NULL,
   `CreatedBySdkSiteId` int(11) DEFAULT NULL,
   `UpdatedBySdkSiteId` int(11) DEFAULT NULL,
+  `GroupId` char(36) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2405,6 +2406,7 @@ CREATE TABLE `WorkorderCases` (
   `AssignedToSdkSiteId` int(11) DEFAULT NULL,
   `CreatedBySdkSiteId` int(11) DEFAULT NULL,
   `UpdatedBySdkSiteId` int(11) DEFAULT NULL,
+  `GroupId` char(36) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_WorkorderCases_ParentWorkorderCaseId` (`ParentWorkorderCaseId`),
   KEY `IX_WorkorderCases_PropertyWorkerId` (`PropertyWorkerId`),

@@ -144,6 +144,14 @@ export const routes: Routes = [
             (m) => m.StatisticsModule
           ),
       },
+      {
+        path: 'calendar',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/calendar/calendar.module').then(
+            (m) => m.CalendarModule
+          ),
+      },
     ],
   },
 ];

@@ -50,6 +50,7 @@
 </div>
 <app-task-wizard-table
   [tasks]="tasks"
+  [highlightId]="highlightIdAfterEdit"
   (updateTable)="updateTable()"
   (editTask)="onEditTask($event)"
   (copyTask)="onCopyTask($event)"

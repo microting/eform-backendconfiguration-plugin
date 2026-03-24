@@ -1,0 +1,16 @@
+<h3 mat-dialog-title>{{ (data.mode === 'edit' ? 'Edit repeat' : data.mode === 'move' ? 'Move repeat' : 'Delete repeat') | translate }}</h3>
+
+<div mat-dialog-content>
+  <p>{{ 'This task is part of a recurring series. What do you want to' | translate }} {{ (data.mode === 'edit' ? 'edit' : data.mode === 'move' ? 'move' : 'delete') | translate }}?</p>
+
+  <mat-radio-group [(ngModel)]="scope" class="scope-group">
+    <mat-radio-button value="this">{{ 'Only this' | translate }}</mat-radio-button>
+    <mat-radio-button value="thisAndFollowing">{{ 'This and following' | translate }}</mat-radio-button>
+    <mat-radio-button value="all">{{ 'All in series' | translate }}</mat-radio-button>
+  </mat-radio-group>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" (click)="onConfirm()">{{ 'Confirm' | translate }}</button>
+</div>

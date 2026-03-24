@@ -65,7 +65,6 @@ using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
-using Rebus.Bus;
 using Services.BackendConfigurationAreaRulePlanningsService;
 using Services.BackendConfigurationAreaRulesService;
 using Services.BackendConfigurationAssignmentWorkerService;
@@ -84,8 +83,9 @@ using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
 using Services.ChemicalService;
 using Services.ExcelService;
-using Services.RebusService;
+using Services.TaskUpdateCompletionService;
 using Services.WordService;
+using Services.WorkorderCaseGroupIdBackfillService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -98,8 +98,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     public string PluginId => "eform-backend-configuration-plugin";
     public string PluginPath => PluginAssembly().Location;
     public string PluginBaseUrl => "backend-configuration-pn";
-    private static IBus _bus;
-
     private string _connectionString;
 
     public Assembly PluginAssembly()
@@ -126,7 +124,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
         services.AddTransient<IChemicalService, ChemicalService>();
-        services.AddSingleton<IRebusService, RebusService>();
+        services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
+        services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddControllers();
@@ -737,9 +736,14 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     {
         var serviceProvider = appBuilder.ApplicationServices;
 
-        IRebusService rebusService = serviceProvider.GetService<IRebusService>();
-        rebusService!.Start(_connectionString).GetAwaiter().GetResult();
-        _bus = rebusService.GetBus();
+        // Ensure all pending migrations are applied before the backfill queries the schema
+        var contextFactory = new BackendConfigurationPnContextFactory();
+        using var migrationContext = contextFactory.CreateDbContext([_connectionString]);
+        migrationContext.Database.Migrate();
+
+        using var scope = serviceProvider.CreateScope();
+        var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
+        backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
     }
 
     public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)

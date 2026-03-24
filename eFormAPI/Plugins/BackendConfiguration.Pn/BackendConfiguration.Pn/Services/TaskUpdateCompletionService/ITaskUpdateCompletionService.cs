@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Handlers;
-using BackendConfiguration.Pn.Messages;
-using Rebus.Handlers;
+using System;
+using System.Threading.Tasks;
 
-namespace BackendConfiguration.Pn.Installers;
+namespace BackendConfiguration.Pn.Services.TaskUpdateCompletionService;
 
-using Castle.MicroKernel.Registration;
-using Castle.MicroKernel.SubSystems.Configuration;
-using Castle.Windsor;
-
-public class RebusHandlerInstaller : IWindsorInstaller
+public interface ITaskUpdateCompletionService
 {
-    public void Install(IWindsorContainer container, IConfigurationStore store)
-    {
-        container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
-        container.Register(Component.For<IHandleMessages<WorkOrderCreated>>().ImplementedBy<WorkOrderCreatedHandler>().LifestyleTransient());
-        container.Register(Component.For<IHandleMessages<WorkOrderUpdated>>().ImplementedBy<WorkOrderUpdatedHandler>().LifestyleTransient());
-        container.Register(Component.For<IHandleMessages<DocumentUpdated>>().ImplementedBy<DocumentUpdatedHandler>().LifestyleTransient());
-    }
+    /// <summary>
+    /// Registers a pending update for the given user. Must be called before sending the bus message.
+    /// </summary>
+    void Register(int userId);
+
+    /// <summary>
+    /// Signals that the update for the given user has been fully committed to the database.
+    /// </summary>
+    void Complete(int userId);
+
+    /// <summary>
+    /// Waits until the pending update for the given user completes, or until the timeout elapses.
+    /// Returns immediately if no pending update is registered for the user.
+    /// </summary>
+    Task WaitForCompletionAsync(int userId, TimeSpan timeout);
 }

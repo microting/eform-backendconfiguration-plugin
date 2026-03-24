@@ -1,0 +1,11 @@
+<h3 mat-dialog-title>{{ 'Delete board' | translate }}</h3>
+
+<div mat-dialog-content>
+  <p>{{ 'Are you sure you want to delete the board' | translate }} <strong>{{ data.board.name }}</strong>?</p>
+  <p>{{ 'All tasks associated with this board will lose their board association' | translate }}.</p>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-delete" (click)="onConfirm()">{{ 'Delete' | translate }}</button>
+</div>

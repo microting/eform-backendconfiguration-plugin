@@ -1,5 +1,6 @@
 export class WorkOrderCaseForReadModel {
   id: number;
+  groupId: string;
   propertyId: number;
   areaName: string;
   assignedSiteId: number;

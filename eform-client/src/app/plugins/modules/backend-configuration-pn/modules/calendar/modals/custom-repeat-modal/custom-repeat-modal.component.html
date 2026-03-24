@@ -1,0 +1,44 @@
+<h3 mat-dialog-title>{{ 'Custom repeat' | translate }}</h3>
+
+<div mat-dialog-content>
+  <div class="repeat-row">
+    <span>{{ 'Repeat every' | translate }}</span>
+    <mat-form-field class="step-field">
+      <input matInput type="number" [(ngModel)]="step" min="1" max="99">
+    </mat-form-field>
+    <mat-form-field>
+      <mtx-select [(ngModel)]="unit" [items]="unitOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
+    </mat-form-field>
+  </div>
+
+  <div class="weekday-circles" *ngIf="unit === 'week'">
+    <div
+      class="circle"
+      *ngFor="let wd of weekdays"
+      [class.active]="wd.active"
+      (click)="toggleWeekday(wd)"
+    >{{ wd.label }}</div>
+  </div>
+
+  <mat-radio-group [(ngModel)]="endMode" class="end-group">
+    <mat-radio-button value="never">{{ 'Never' | translate }}</mat-radio-button>
+    <mat-radio-button value="after">
+      {{ 'After' | translate }}
+      <mat-form-field class="count-field">
+        <input matInput type="number" [(ngModel)]="afterCount" min="1">
+      </mat-form-field>
+      {{ 'times' | translate }}
+    </mat-radio-button>
+    <mat-radio-button value="until">
+      {{ 'Until' | translate }}
+      <mat-form-field>
+        <input matInput type="date" [(ngModel)]="untilDate">
+      </mat-form-field>
+    </mat-radio-button>
+  </mat-radio-group>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" (click)="onConfirm()">{{ 'Save' | translate }}</button>
+</div>

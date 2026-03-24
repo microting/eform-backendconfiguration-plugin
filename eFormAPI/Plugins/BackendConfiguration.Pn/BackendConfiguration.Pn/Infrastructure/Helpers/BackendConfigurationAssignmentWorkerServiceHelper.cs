@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
-using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
@@ -22,7 +21,6 @@ using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
-using Rebus.Bus;
 using Microsoft.Extensions.Logging;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
@@ -38,8 +36,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         CaseTemplatePnDbContext caseTemplatePnDbContext,
-        IBackendConfigurationLocalizationService? localizationService,
-        IBus bus)
+        IBackendConfigurationLocalizationService? localizationService)
         {
             try
             {
@@ -88,11 +85,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await documentSite.Delete(caseTemplatePnDbContext);
                     }
 
-                    await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
+                    await DocumentHelper.DeployDocumentAsync(documentId, core, backendConfigurationPnDbContext, caseTemplatePnDbContext).ConfigureAwait(false);
                 }
 
                 await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService,
-                    backendConfigurationPnDbContext, localizationService, bus, false).ConfigureAwait(false);
+                    backendConfigurationPnDbContext, localizationService, false).ConfigureAwait(false);
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
@@ -109,7 +106,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationResult> Update(PropertyAssignWorkersModel updateModel, Core core,
             IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            CaseTemplatePnDbContext caseTemplatePnDbContext, IBackendConfigurationLocalizationService? localizationService, IBus bus, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            CaseTemplatePnDbContext caseTemplatePnDbContext, IBackendConfigurationLocalizationService? localizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             try
             {
@@ -217,7 +214,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await documentSite.Delete(caseTemplatePnDbContext);
                     }
 
-                    await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
+                    await DocumentHelper.DeployDocumentAsync(documentId, core, backendConfigurationPnDbContext, caseTemplatePnDbContext).ConfigureAwait(false);
                 }
 
                 if (!updateModel.TaskManagementEnabled)
@@ -245,7 +242,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
 
                 await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService,
-                    backendConfigurationPnDbContext, localizationService, bus, false).ConfigureAwait(false);
+                    backendConfigurationPnDbContext, localizationService, false).ConfigureAwait(false);
                 return new OperationResult(true,"SuccessfullyUpdateAssignmentsProperties");
             }
             catch (Exception e)

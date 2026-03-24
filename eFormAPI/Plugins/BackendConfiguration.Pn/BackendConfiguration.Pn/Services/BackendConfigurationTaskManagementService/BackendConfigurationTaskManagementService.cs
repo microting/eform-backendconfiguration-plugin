@@ -22,13 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Threading;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
-using BackendConfiguration.Pn.Messages;
-using BackendConfiguration.Pn.Services.RebusService;
 using ImageMagick;
 using Microsoft.Extensions.Logging;
-using Rebus.Bus;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
@@ -55,23 +51,17 @@ public class BackendConfigurationTaskManagementService(
     IEFormCoreService coreHelper,
     IUserService userService,
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-    IRebusService rebusService,
     ILogger<BackendConfigurationTaskManagementService> logger)
     : IBackendConfigurationTaskManagementService
 {
-    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<List<WorkorderCaseModel>> Index(TaskManagementRequestModel filtersModel)
     {
-        if (filtersModel.Filters.Delayed == true)
-        {
-            Thread.Sleep(3000);
-        }
-
         try
         {
             var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
             var query = backendConfigurationPnDbContext.WorkorderCases
+                .AsNoTracking()
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -154,6 +144,7 @@ public class BackendConfigurationTaskManagementService(
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
+                    GroupId = x.GroupId,
                     Priority = string.IsNullOrEmpty(x.Priority) ? 3 :
                         int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority),
                     PictureNames = new List<string>()
@@ -488,6 +479,7 @@ public class BackendConfigurationTaskManagementService(
             var newWorkOrderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
+                GroupId = Guid.NewGuid(),
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
@@ -669,25 +661,27 @@ public class BackendConfigurationTaskManagementService(
 
             if (newWorkOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
             {
-                await _bus.SendLocal(new WorkOrderCreated(
+                await BackendConfigurationTaskManagementHelper.DeployWorkOrderEformForCreate(
                     propertyWorkerKvpList,
                     eformIdForOngoingTasks,
+                    newWorkOrderCase,
                     (int)property.FolderIdForOngoingTasks!,
+                    (int)property.FolderIdForTasks!,
+                    (int)property.FolderIdForCompletedTasks!,
                     description,
                     createModel.CaseStatusEnum,
-                    newWorkOrderCase.Id,
                     createModel.Description,
                     deviceUsersGroupMicrotingUid,
+                    site,
                     pushMessageBody,
                     pushMessageTitle,
                     createModel.AreaName,
-                    userService.UserId,
-                    picturesOfTasks,
-                    site,
                     property.Name,
-                    (int)property.FolderIdForOngoingTasks!,
-                    (int)property.FolderIdForTasks!,
-                    (int)property.FolderIdForCompletedTasks!, hasImages, picturesOfTasksList)).ConfigureAwait(false);
+                    hasImages,
+                    picturesOfTasksList,
+                    core,
+                    backendConfigurationPnDbContext,
+                    localizationService).ConfigureAwait(false);
             }
 
             return new OperationResult(true, localizationService.GetString("TaskCreatedSuccessful"));
@@ -706,6 +700,6 @@ public class BackendConfigurationTaskManagementService(
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, localizationService, core,
-            userService, backendConfigurationPnDbContext, _bus, true);
+            userService, backendConfigurationPnDbContext, true);
     }
 }

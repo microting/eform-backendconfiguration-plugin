@@ -1,0 +1,28 @@
+<h3 mat-dialog-title>{{ 'New board' | translate }}</h3>
+
+<div mat-dialog-content>
+  <form [formGroup]="form">
+    <mat-form-field class="full-width">
+      <mat-label>{{ 'Name' | translate }}</mat-label>
+      <input matInput formControlName="name" required>
+    </mat-form-field>
+
+    <div class="color-picker">
+      <label>{{ 'Color' | translate }}:</label>
+      <div class="colors">
+        <div
+          class="color-swatch"
+          *ngFor="let c of colors"
+          [style.background]="c"
+          [class.selected]="form.value.color === c"
+          (click)="form.patchValue({color: c})"
+        ></div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">{{ 'Create' | translate }}</button>
+</div>

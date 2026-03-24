@@ -1,0 +1,35 @@
+<div
+  class="day-column"
+  [class.today]="isToday"
+  cdkDropList
+  [cdkDropListData]="tasks"
+  (cdkDropListDropped)="onDrop($event)"
+  (click)="onColumnClick($event)"
+>
+  <div class="day-header" [class.today]="isToday">{{ dateLabel }}</div>
+
+  <div class="day-body" [style.height.px]="hourHeight * 24">
+    <!-- Hour slot lines -->
+    <div
+      class="hour-line"
+      *ngFor="let h of hours"
+      [style.top.px]="h * hourHeight"
+    ></div>
+
+    <!-- Now-line (today only) -->
+    <div
+      class="now-line"
+      *ngIf="nowTopPx !== null"
+      [style.top.px]="nowTopPx"
+    ></div>
+
+    <!-- Task blocks -->
+    <app-calendar-task-block
+      *ngFor="let task of tasks"
+      [task]="task"
+      [hourHeight]="hourHeight"
+      (clicked)="taskClicked.emit($event)"
+      (toggleComplete)="taskToggleComplete.emit($event)"
+    ></app-calendar-task-block>
+  </div>
+</div>

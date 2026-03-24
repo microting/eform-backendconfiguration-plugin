@@ -24,7 +24,6 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
-using BackendConfiguration.Pn.Services.RebusService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microting.EformAngularFrontendBase.Infrastructure.Data;
@@ -33,7 +32,6 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
-using Rebus.Bus;
 using Sentry;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService;
@@ -62,11 +60,9 @@ public class BackendConfigurationAssignmentWorkerService(
     TimePlanningPnDbContext timePlanningDbContext,
     CaseTemplatePnDbContext caseTemplatePnDbContext,
     BaseDbContext baseDbContext,
-    IRebusService rebusService,
     ILogger<BackendConfigurationAssignmentWorkerService> logger)
     : IBackendConfigurationAssignmentWorkerService
 {
-    private readonly IBus _bus = rebusService.GetBus();
 
     public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds)
     {
@@ -242,7 +238,7 @@ public class BackendConfigurationAssignmentWorkerService(
 
         var result = await BackendConfigurationAssignmentWorkerServiceHelper
             .Create(createModel, core, userService, backendConfigurationPnDbContext,
-                caseTemplatePnDbContext, backendConfigurationLocalizationService, _bus)
+                caseTemplatePnDbContext, backendConfigurationLocalizationService)
             .ConfigureAwait(false);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
@@ -253,7 +249,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper
             .Update(updateModel, core, userService, backendConfigurationPnDbContext, caseTemplatePnDbContext,
-                backendConfigurationLocalizationService, _bus, itemsPlanningPnDbContext)
+                backendConfigurationLocalizationService, itemsPlanningPnDbContext)
             .ConfigureAwait(false);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));

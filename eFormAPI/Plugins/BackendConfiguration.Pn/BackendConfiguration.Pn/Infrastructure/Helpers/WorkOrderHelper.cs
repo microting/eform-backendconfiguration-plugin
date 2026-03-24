@@ -16,7 +16,6 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -27,7 +26,6 @@ public static class WorkOrderHelper
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         IBackendConfigurationLocalizationService? localizationService,
-        IBus bus,
         bool useGetCurrentUserFullName)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -137,7 +135,7 @@ public static class WorkOrderHelper
                 if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
                 {
                     await DeployEform(propertyWorker, eformIdForNewTasks, property, localizationService,
-                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
+                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userService, backendConfigurationPnDbContext, useGetCurrentUserFullName).ConfigureAwait(false);
                 }
             }
         }
@@ -146,7 +144,7 @@ public static class WorkOrderHelper
     public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
         IBackendConfigurationLocalizationService? localizationService, int? areasGroupUid,
         int? deviceUsersGroupId, Core core, IUserService userService,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBus bus, bool useGetCurrentUserFullName)
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext, bool useGetCurrentUserFullName)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         if (backendConfigurationPnDbContext.WorkorderCases.Any(x =>

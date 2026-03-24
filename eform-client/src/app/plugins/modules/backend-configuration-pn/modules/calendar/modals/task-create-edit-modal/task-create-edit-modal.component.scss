@@ -1,0 +1,123 @@
+// Popover card wrapper — used when rendered via CDK Overlay
+.gcal-popover-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.gcal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 24px 16px 24px;
+}
+
+.gcal-close-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 8px 0 0;
+}
+
+.gcal-close-btn {
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: #5f6368;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.gcal-modal {
+  padding: 16px 24px 0 24px !important;
+  min-width: 420px;
+  max-width: 500px;
+}
+
+// Rows
+.gcal-row {
+  display: flex;
+  align-items: flex-start;
+  min-height: 40px;
+  margin-bottom: 4px;
+}
+
+.gcal-icon {
+  color: #5f6368;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  margin-right: 16px;
+  margin-top: 10px;
+  flex-shrink: 0;
+
+  &--hidden {
+    visibility: hidden;
+  }
+}
+
+.gcal-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+// Date + Time row
+.gcal-datetime-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gcal-date-field {
+  flex: 1;
+  min-width: 140px;
+}
+
+.gcal-time-field {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.gcal-time-separator {
+  color: #5f6368;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+// Action link (Drive)
+.gcal-action-link {
+  color: var(--primary, #289694);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 40px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Property/Board selector rows
+.gcal-selector-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gcal-selector-label {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.gcal-compact-select {
+  max-width: 250px;
+}

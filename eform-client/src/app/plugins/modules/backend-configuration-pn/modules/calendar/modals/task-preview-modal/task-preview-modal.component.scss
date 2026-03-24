@@ -1,0 +1,82 @@
+// Popover card — used when rendered via CDK Overlay
+.gcal-popover-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  min-width: 320px;
+  max-width: 420px;
+}
+
+.preview-accent-bar {
+  height: 4px;
+}
+
+.preview-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 4px 0 0;
+  gap: 2px;
+}
+
+.preview-icon-btn {
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: #5f6368;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.preview-body {
+  padding: 0 24px 16px 24px;
+}
+
+.preview-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #3c4043;
+  margin-bottom: 12px;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #3c4043;
+
+  a {
+    color: var(--primary, #289694);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.preview-icon {
+  color: #5f6368;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 16px;
+  flex-shrink: 0;
+}

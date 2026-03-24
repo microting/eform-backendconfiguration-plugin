@@ -1,11 +1,9 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output,
-  inject
-} from '@angular/core';
-import {
-  WorkOrderCaseModel,
-} from '../../../../../models';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
+import {WorkOrderCaseModel} from '../../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {BackendConfigurationPnTaskManagementService} from '../../../../../services';
+import {Subscription} from 'rxjs';
 
 @AutoUnsubscribe()
 @Component({
@@ -17,10 +15,9 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
   public dialogRef = inject(MatDialogRef<TaskManagementDeleteModalComponent>);
   public workOrderCase = inject<WorkOrderCaseModel>(MAT_DIALOG_DATA);
+  private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
 
-  @Output() workOrderCaseDelete: EventEmitter<number> = new EventEmitter<number>();
-
-  
+  deleteWorkOrderCaseSub$: Subscription;
 
   ngOnInit(): void {
   }
@@ -30,7 +27,13 @@ export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
   }
 
   delete() {
-    this.workOrderCaseDelete.emit(this.workOrderCase.id);
+    this.deleteWorkOrderCaseSub$ = this.taskManagementService
+      .deleteWorkOrderCase(this.workOrderCase.id)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.dialogRef.close(true);
+        }
+      });
   }
 
   ngOnDestroy(): void {

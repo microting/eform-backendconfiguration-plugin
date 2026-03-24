@@ -89,7 +89,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -501,7 +501,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -926,7 +926,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1341,7 +1341,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1744,7 +1744,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -2230,7 +2230,7 @@ Assert.That(folderTranslations[31].Name, Is.EqualTo("00. Завдання, що 
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
-            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null, Bus!);
+            BackendConfigurationPnDbContext!, CaseTemplatePnDbContext!, null);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;

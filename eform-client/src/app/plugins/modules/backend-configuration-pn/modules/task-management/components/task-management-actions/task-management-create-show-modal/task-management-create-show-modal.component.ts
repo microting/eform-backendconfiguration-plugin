@@ -1,4 +1,4 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output,
+import {Component, OnDestroy, OnInit,
   inject
 } from '@angular/core';
 import { CommonDictionaryModel } from 'src/app/common/models';
@@ -20,7 +20,6 @@ import {AddPictureDialogComponent} from 'src/app/common/modules/eform-cases/comp
 import {Overlay} from '@angular/cdk/overlay';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
-import {ActivatedRoute, Router} from "@angular/router";
 
 @AutoUnsubscribe()
 @Component({
@@ -41,10 +40,6 @@ export class TaskManagementCreateShowModalComponent
   private taskManagementService = inject(BackendConfigurationPnTaskManagementService);
   public dialogRef = inject(MatDialogRef<TaskManagementCreateShowModalComponent>);
   private workOrderCase = inject<WorkOrderCaseForReadModel | undefined>(MAT_DIALOG_DATA);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-
-  @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
   assignedSitesToProperty: CommonDictionaryModel[] = [];
@@ -155,14 +150,14 @@ export class TaskManagementCreateShowModalComponent
   ngOnInit(): void {
   }
 
-  hide() {
+  hide(result: any = false) {
     this.images = [];
     this.propertyAreas = [];
     this.assignedSitesToProperty = [];
     if (this.propertyIdValueChangesSub$) {
       this.propertyIdValueChangesSub$.unsubscribe();
     }
-    this.dialogRef.close();
+    this.dialogRef.close(result);
   }
 
   getPropertyAreas(propertyId: number) {
@@ -290,18 +285,7 @@ export class TaskManagementCreateShowModalComponent
       this.taskManagementService.updateWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {
-
-            const caseId = this.currentWorkOrderCase.id;
-
-            this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: { highlightId: caseId },
-              queryParamsHandling: 'merge'
-            });
-
-
-            this.taskCreated.emit();
-            this.hide();
+            this.hide(true);
           }
         });
     } else {
@@ -317,14 +301,7 @@ export class TaskManagementCreateShowModalComponent
       this.taskManagementService.createWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {
-            // const caseId = data?.id;
-            // this.router.navigate([], {
-            //   relativeTo: this.route,
-            //   queryParams: { highlightId: caseId },
-            //   queryParamsHandling: 'merge'
-            // });
-            this.taskCreated.emit();
-            this.hide();
+            this.hide(true);
           }
         });
     }

@@ -1,11 +1,13 @@
 import {
-  Component, EventEmitter, Input,
+  AfterViewChecked,
+  Component, ElementRef, EventEmitter, Input,
+  OnChanges,
   OnDestroy,
-  OnInit, Output,
+  OnInit, Output, SimpleChanges,
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {TaskWizardModel} from '../../../../models';
 import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
@@ -29,13 +31,21 @@ import {PlanningModel} from "src/app/plugins/modules/items-planning-pn/models";
     styleUrls: ['./task-wizard-table.component.scss'],
     standalone: false
 })
-export class TaskWizardTableComponent implements OnInit, OnDestroy {
+export class TaskWizardTableComponent implements OnInit, OnChanges, AfterViewChecked, OnDestroy {
   private store = inject(Store);
   private translateService = inject(TranslateService);
   private authStateService = inject(AuthStateService);
   public taskWizardStateService = inject(TaskWizardStateService);
+  private el = inject(ElementRef);
 
   @Input() tasks: TaskWizardModel[] = [];
+  @Input() set highlightId(value: number | undefined) {
+    if (value) {
+      this._highlightId = value;
+    }
+  }
+  _highlightId: number | null = null;
+  private _needsScroll = false;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() deleteTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
   @Output() copyTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
@@ -93,6 +103,9 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   public selectTaskWizardPaginationSort$ = this.store.select(selectTaskWizardPaginationSort);
   public selectTaskWizardPaginationIsSortDsc$ = this.store.select(selectTaskWizardPaginationIsSortDsc);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
+  rowClassFormatter: MtxGridRowClassFormatter = {
+    highlighted: (row: TaskWizardModel) => !!this._highlightId && row.id === this._highlightId,
+  };
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -105,6 +118,30 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   
 
   ngOnInit(): void {
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['tasks'] && this._highlightId) {
+      this._needsScroll = true;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this._needsScroll && this._highlightId && this.tasks?.length) {
+      const rowIndex = this.tasks.findIndex(t => t.id === this._highlightId);
+      if (rowIndex >= 0) {
+        this._needsScroll = false;
+        setTimeout(() => {
+          const highlightedRow = this.el.nativeElement.querySelector('tr.highlighted');
+          if (highlightedRow) {
+            highlightedRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+          setTimeout(() => {
+            this._highlightId = null;
+          }, 2000);
+        }, 300);
+      }
+    }
   }
 
   ngOnDestroy(): void {

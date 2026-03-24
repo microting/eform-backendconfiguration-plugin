@@ -274,7 +274,7 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
     this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable());
   }
 
-  openSelectWorkerModal(task: TaskModel) {
+  openSelectWorkerModal({task, rowIndex}: {task: TaskModel, rowIndex: number}) {
     this.getTaskByIdSub2$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId, true).pipe(
       tap(data => {
         if (data && data.success && data.model) {
@@ -306,6 +306,7 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
               }
             });
           this.selectWorkerForEditModalSub$ = this.selectWorkerForEditModal.componentInstance.workerSelected.subscribe(worker => {
+            sessionStorage.setItem('taskTrackerScrollIndex', String(Math.max(0, rowIndex - 1)));
             this.router.navigate([
               '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId + '/' + worker.id,
             ], {

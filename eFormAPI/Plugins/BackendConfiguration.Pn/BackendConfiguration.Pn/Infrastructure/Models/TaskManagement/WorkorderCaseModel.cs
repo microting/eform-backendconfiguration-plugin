@@ -54,6 +54,8 @@ public class WorkorderCaseModel
 
     public int? ParentWorkorderCaseId { get; set; }
 
+    public Guid? GroupId { get; set; }
+
     public int? Priority { get; set; }
     
     public List<string> PictureNames { get; set; }

@@ -1,0 +1,86 @@
+<div class="week-grid-wrapper" #scrollContainer>
+  <mtx-grid class="calendar-grid"
+    [data]="gridData"
+    [columns]="tableColumns"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="false"
+    [showToolbar]="false"
+    [columnResizable]="false">
+  </mtx-grid>
+  <div
+    class="selection-indicator"
+    *ngIf="selectionTop !== null && selectionLeft !== null"
+    [style.top.px]="selectionTop"
+    [style.left.px]="selectionLeft"
+    [style.width.px]="selectionWidth"
+    [style.height.px]="selectionHeight"
+  ></div>
+  <div
+    class="drag-source-slot"
+    *ngIf="draggingTask && dragSourceLeft !== null"
+    [style.top.px]="dragSourceTop"
+    [style.left.px]="dragSourceLeft"
+    [style.width.px]="dragSourceWidth"
+    [style.height.px]="draggingTask.dur * hourHeight - 4"
+    [style.background-color]="draggingTask.color"
+  ></div>
+  <div
+    class="drag-ghost-task"
+    *ngIf="draggingTask && dragGhostLeft !== null && dragIndicatorTopPx !== null"
+    [style.top.px]="dragIndicatorTopPx"
+    [style.left.px]="dragGhostLeft"
+    [style.width.px]="dragGhostWidth"
+    [style.height.px]="draggingTask.dur * hourHeight - 4"
+    [style.background-color]="draggingTask.color"
+  >
+    <div class="drag-ghost-title">{{ draggingTask.title }}</div>
+    <div class="drag-ghost-time" *ngIf="draggingTask.dur >= 0.5 && dragIndicatorHour !== null">
+      {{ formatHour(dragIndicatorHour) }} – {{ formatHour(dragIndicatorHour + draggingTask.dur) }}
+    </div>
+  </div>
+</div>
+
+<ng-template #timeAxisTpl>
+  <div class="time-body" [style.height.px]="hourHeight * 24">
+    <div
+      class="time-label"
+      *ngFor="let label of timeAxisLabels; let i = index"
+      [style.top.px]="i * hourHeight"
+    >{{ label }}</div>
+  </div>
+</ng-template>
+
+<ng-template #dayColTpl let-col="colDef">
+  <div class="day-cell-content"
+       cdkDropList
+       cdkDropListSortingDisabled
+       [id]="'cal-day-' + getDayIndex(col.field)"
+       [attr.data-day]="getDayIndex(col.field)"
+       [cdkDropListConnectedTo]="dayDropListIds"
+       [cdkDropListData]="tasksByDay[getDayIndex(col.field)] || []"
+       (cdkDropListDropped)="onDrop($event)"
+       (click)="onCellClick($event)">
+    <div class="day-body" [style.height.px]="hourHeight * 24">
+      <div
+        class="hour-line"
+        *ngFor="let h of hours"
+        [style.top.px]="h * hourHeight"
+      ></div>
+      <div
+        class="now-line"
+        *ngIf="isToday(getDayDate(col.field))"
+        [style.top.px]="nowTopPx"
+      ></div>
+      <app-calendar-task-block
+        *ngFor="let task of tasksByDay[getDayIndex(col.field)] || []"
+        [task]="task"
+        [hourHeight]="hourHeight"
+        (clicked)="onTaskClicked($event)"
+        (toggleComplete)="onTaskToggleComplete($event)"
+        (dragMoved)="onTaskDragMoved($event)"
+        (dragEnded)="onTaskDragEnded()"
+      ></app-calendar-task-block>
+    </div>
+  </div>
+</ng-template>
