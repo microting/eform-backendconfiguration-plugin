@@ -26,6 +26,11 @@ export interface CalendarTaskModel {
   completed: boolean;
   driveLink?: string;
   propertyId: number;
+  isFromCompliance?: boolean;
+  complianceId?: number;
+  deadline?: string;
+  nextExecutionTime?: string;
+  planningId?: number;
 }
 
 export interface CalendarRepeatMeta {

@@ -1,10 +1,8 @@
 import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {MatDialog} from '@angular/material/dialog';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-import {dialogConfigHelper} from 'src/app/common/helpers';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
@@ -22,7 +20,6 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
 
 @Component({
   standalone: false,
@@ -54,7 +51,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   sidebarOpen = true;
 
   constructor(
-    private dialog: MatDialog,
     private overlay: Overlay,
     private injector: Injector,
     private calendarService: BackendConfigurationPnCalendarService,
@@ -296,30 +292,17 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (event.repeatSeriesId) {
-      // Show scope dialog for repeating tasks
-      const ref = this.dialog.open(
-        RepeatScopeModalComponent,
-        dialogConfigHelper(this.overlay, {mode: 'move'})
-      );
-      ref.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(scope => {
-        if (scope) {
-          this.calendarService
-            .moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope)
-            .subscribe(res => {
-              if (res && res.success) this.loadTasks();
-            });
-        } else {
-          this.loadTasks(); // Revert visual position
-        }
-      });
-    } else {
-      this.calendarService
-        .moveTask(event.taskId, event.newDate, event.newStartHour)
-        .subscribe(res => {
-          if (res && res.success) this.loadTasks();
-        });
+    // Find the task to check if it's from compliance (read-only)
+    const task = this.tasks.find(t => t.id === event.taskId);
+    if (task?.isFromCompliance) {
+      return;
     }
+
+    this.calendarService
+      .moveTask(event.taskId, event.newDate, event.newStartHour)
+      .subscribe(res => {
+        if (res && res.success) this.loadTasks();
+      });
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
@@ -364,7 +347,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closePreviewOverlay();
-      if (result === 'edit') {
+      if (result === 'edit' && !event.task.isFromCompliance) {
         this.openEditModal(event);
       } else if (result === 'reload') {
         this.weekGrid?.clearSelection();
