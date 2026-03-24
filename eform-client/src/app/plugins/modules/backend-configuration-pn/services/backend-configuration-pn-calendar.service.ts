@@ -64,22 +64,16 @@ export class BackendConfigurationPnCalendarService {
   }
 
   toggleComplete(taskId: number, completed: boolean): Observable<OperationResult> {
-    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.Tasks, {id: taskId, completed});
+    return this.apiBaseService.put(
+      `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
+      {completed}
+    );
   }
 
   getBoards(propertyId: number): Observable<OperationDataResult<CalendarBoardModel[]>> {
     return this.apiBaseService.get(`${BackendConfigurationPnCalendarMethods.Boards}/${propertyId}`);
   }
 
-  createBoard(model: Omit<CalendarBoardModel, 'id'>): Observable<OperationResult> {
-    return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.Boards, model);
-  }
-
-  updateBoard(model: CalendarBoardModel): Observable<OperationResult> {
-    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.Boards, model);
-  }
-
-  deleteBoard(id: number): Observable<OperationResult> {
-    return this.apiBaseService.delete(`${BackendConfigurationPnCalendarMethods.Boards}/${id}`);
-  }
+  // TODO: Board CRUD endpoints removed — no backend controller exists yet.
+  // Add createBoard, updateBoard, deleteBoard when backend supports them.
 }

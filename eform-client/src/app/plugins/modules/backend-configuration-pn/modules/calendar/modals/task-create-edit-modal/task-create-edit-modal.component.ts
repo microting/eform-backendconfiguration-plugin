@@ -77,7 +77,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     if (task) {
       this.titleControl.setValue(task.title);
       this.startTimeControl.setValue(this.hourToTimeStr(task.startHour));
-      this.endTimeControl.setValue(this.hourToTimeStr(task.startHour + task.dur));
+      this.endTimeControl.setValue(this.hourToTimeStr(task.startHour + task.duration));
       this.repeatControl.setValue(task.repeatRule ?? 'none');
       this.assigneeControl.setValue(task.assigneeIds ?? []);
       this.tagsControl.setValue(task.tags ?? []);
@@ -216,25 +216,44 @@ export class TaskCreateEditModalComponent implements OnInit {
 
     const startHour = this.timeStrToHour(this.startTimeControl.value!);
     const endHour = this.timeStrToHour(this.endTimeControl.value!);
-    const dur = Math.max(endHour - startHour, 0.25);
+    const duration = Math.max(endHour - startHour, 0.25);
     const taskDate = this.dateControl.value!;
     const dateStr = `${taskDate.getFullYear()}-${(taskDate.getMonth() + 1).toString().padStart(2, '0')}-${taskDate.getDate().toString().padStart(2, '0')}`;
 
+    const repeatRuleMap: Record<string, number> = {
+      'none': 0, 'daily': 1, 'weekly': 2, 'monthly': 3, 'yearly': 4, 'weekdays': 5, 'custom': 6,
+    };
+    const repeatRuleValue = this.repeatControl.value ?? 'none';
+
     const payload: any = {
-      title: this.titleControl.value,
-      taskDate: dateStr,
+      // Backend CalendarTaskCreateRequestModel fields
+      translates: [{name: this.titleControl.value, languageId: 1}],
+      startDate: taskDate,
       startHour,
-      dur,
-      startText: this.startTimeControl.value,
-      endText: this.endTimeControl.value,
+      duration,
+      sites: this.assigneeControl.value ?? [],
+      tagIds: (this.tagsControl.value ?? []).map((t: any) => typeof t === 'number' ? t : 0).filter((id: number) => id > 0),
       boardId: this.boardControl.value,
       color: this.filteredBoards.find(b => b.id === this.boardControl.value)?.color ?? CALENDAR_COLORS[0],
-      assigneeIds: this.assigneeControl.value ?? [],
-      tags: this.tagsControl.value ?? [],
       descriptionHtml: this.descriptionControl.value ?? '',
-      repeatRule: this.repeatControl.value ?? 'none',
+      repeatType: repeatRuleMap[repeatRuleValue] ?? 0,
+      repeatEvery: 1,
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
+      status: 1,
+      complianceEnabled: true,
+      folderId: this.data.task?.['folderId'] ?? null,
+      eformId: this.data.task?.['eformId'] ?? null,
+      itemPlanningTagId: this.data.task?.['itemPlanningTagId'] ?? null,
+
+      // Keep these for local/UI use and backward compat
+      title: this.titleControl.value,
+      taskDate: dateStr,
+      startText: this.startTimeControl.value,
+      endText: this.endTimeControl.value,
+      assigneeIds: this.assigneeControl.value ?? [],
+      tags: this.tagsControl.value ?? [],
+      repeatRule: repeatRuleValue,
       id: this.data.task?.id,
       repeatSeriesId: this.data.task?.repeatSeriesId,
     };

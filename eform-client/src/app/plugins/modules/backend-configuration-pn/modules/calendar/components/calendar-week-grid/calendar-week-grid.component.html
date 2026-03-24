@@ -22,7 +22,7 @@
     [style.top.px]="dragSourceTop"
     [style.left.px]="dragSourceLeft"
     [style.width.px]="dragSourceWidth"
-    [style.height.px]="draggingTask.dur * hourHeight - 4"
+    [style.height.px]="draggingTask.duration * hourHeight - 4"
     [style.background-color]="draggingTask.color"
   ></div>
   <div
@@ -31,12 +31,12 @@
     [style.top.px]="dragIndicatorTopPx"
     [style.left.px]="dragGhostLeft"
     [style.width.px]="dragGhostWidth"
-    [style.height.px]="draggingTask.dur * hourHeight - 4"
+    [style.height.px]="draggingTask.duration * hourHeight - 4"
     [style.background-color]="draggingTask.color"
   >
     <div class="drag-ghost-title">{{ draggingTask.title }}</div>
-    <div class="drag-ghost-time" *ngIf="draggingTask.dur >= 0.5 && dragIndicatorHour !== null">
-      {{ formatHour(dragIndicatorHour) }} – {{ formatHour(dragIndicatorHour + draggingTask.dur) }}
+    <div class="drag-ghost-time" *ngIf="draggingTask.duration >= 0.5 && dragIndicatorHour !== null">
+      {{ formatHour(dragIndicatorHour) }} – {{ formatHour(dragIndicatorHour + draggingTask.duration) }}
     </div>
   </div>
 </div>

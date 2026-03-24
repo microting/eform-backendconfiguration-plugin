@@ -24,7 +24,7 @@ export class CalendarTaskBlockComponent {
   }
 
   get heightPx(): number {
-    return Math.max(this.task.dur * this.hourHeight - 4, 20);
+    return Math.max(this.task.duration * this.hourHeight - 4, 20);
   }
 
   get leftPercent(): number {

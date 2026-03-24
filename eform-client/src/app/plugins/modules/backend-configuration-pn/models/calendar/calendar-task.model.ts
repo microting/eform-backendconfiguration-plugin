@@ -11,7 +11,7 @@ export interface CalendarTaskModel {
   id: number;
   title: string;
   startHour: number;         // fractional hour, e.g. 9.5 = 09:30
-  dur: number;               // duration in hours
+  duration: number;           // duration in hours
   startText: string;         // "09:30"
   endText: string;           // "10:00"
   tags: string[];

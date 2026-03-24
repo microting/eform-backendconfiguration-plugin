@@ -26,7 +26,7 @@ export class CalendarLayoutService {
     let currentGroupEnd = -Infinity;
 
     events.forEach(ev => {
-      const evEnd = ev.startHour + (ev.dur || 1);
+      const evEnd = ev.startHour + (ev.duration || 1);
       if (currentGroup.length === 0 || ev.startHour < currentGroupEnd) {
         currentGroup.push(ev);
         currentGroupEnd = Math.max(currentGroupEnd, evEnd);
@@ -45,7 +45,7 @@ export class CalendarLayoutService {
         while (colIndex < columns.length && columns[colIndex] > ev.startHour) {
           colIndex++;
         }
-        columns[colIndex] = ev.startHour + (ev.dur || 1);
+        columns[colIndex] = ev.startHour + (ev.duration || 1);
         ev._colIndex = colIndex;
       });
       const maxCols = columns.length;

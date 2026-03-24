@@ -357,7 +357,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       const task = dayTasks.find(t => t.id === taskId);
       if (task) {
         task.startHour = startHour;
-        task.dur = dur;
+        task.duration = dur;
         break;
       }
     }

@@ -3,7 +3,7 @@ import {CalendarRepeatMeta, CalendarRepeatRule} from './calendar-task.model';
 export interface CalendarTaskCreateModel {
   title: string;
   startHour: number;
-  dur: number;
+  duration: number;
   tags: string[];
   assigneeIds: number[];
   boardId: number;
