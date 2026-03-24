@@ -100,6 +100,53 @@ export class BackendConfigurationPnCalendarService {
     return of({success: true, message: ''});
   }
 
+  moveTaskWithScope(
+    id: number,
+    newDate: string,
+    newStartHour: number,
+    scope: 'this' | 'thisAndFollowing' | 'all'
+  ): Observable<OperationResult> {
+    const allTasks = this.loadTasks();
+    const target = allTasks.find(t => t.id === id);
+    if (!target || !target.repeatSeriesId) {
+      return this.moveTask(id, newDate, newStartHour);
+    }
+
+    // Calculate the offset (in days and hours)
+    const oldDate = new Date(target.taskDate + 'T00:00:00');
+    const newDateObj = new Date(newDate + 'T00:00:00');
+    const dayOffset = Math.round((newDateObj.getTime() - oldDate.getTime()) / 86400000);
+    const hourOffset = newStartHour - target.startHour;
+
+    const applyOffset = (t: CalendarTaskModel): CalendarTaskModel => {
+      const d = new Date(t.taskDate + 'T00:00:00');
+      d.setDate(d.getDate() + dayOffset);
+      const y = d.getFullYear();
+      const m = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      const movedDate = `${y}-${m}-${day}`;
+      const movedHour = t.startHour + hourOffset;
+      return {
+        ...t,
+        taskDate: movedDate,
+        startHour: movedHour,
+        startText: this.formatHour(movedHour),
+        endText: this.formatHour(movedHour + t.dur),
+      };
+    };
+
+    const seriesId = target.repeatSeriesId;
+    const tasks = allTasks.map(t => {
+      if (t.repeatSeriesId !== seriesId) return t;
+      if (scope === 'this' && t.id !== id) return t;
+      if (scope === 'thisAndFollowing' && t.taskDate < target.taskDate) return t;
+      return applyOffset(t);
+    });
+
+    this.saveTasks(tasks);
+    return of({success: true, message: ''});
+  }
+
   toggleComplete(id: number, completed: boolean): Observable<OperationResult> {
     const tasks = this.loadTasks().map(t => (t.id === id ? {...t, completed} : t));
     this.saveTasks(tasks);

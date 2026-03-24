@@ -43,7 +43,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
-  @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number}>();
+  @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string}>();
   @Output() tasksReload = new EventEmitter<void>();
 
   private destroy$ = new Subject<void>();
@@ -238,7 +238,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       '| relY=', relY, '→ newStartHour=', newStartHour,
       '| taskId=', task.id, 'taskDate=', task.taskDate);
     if (!date || !newDate) return;
-    this.taskMoved.emit({taskId: task.id, newDate, newStartHour});
+    this.taskMoved.emit({taskId: task.id, newDate, newStartHour, repeatSeriesId: task.repeatSeriesId});
   }
 
   private toLocalDateString(date: Date): string {

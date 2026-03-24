@@ -22,6 +22,7 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
+import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
 
 @Component({
   standalone: false,
@@ -287,12 +288,31 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number}) {
-    this.calendarService
-      .moveTask(event.taskId, event.newDate, event.newStartHour)
-      .subscribe(res => {
-        if (res && res.success) this.loadTasks();
+  onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string}) {
+    if (event.repeatSeriesId) {
+      // Show scope dialog for repeating tasks
+      const ref = this.dialog.open(
+        RepeatScopeModalComponent,
+        dialogConfigHelper(this.overlay, {mode: 'move'})
+      );
+      ref.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(scope => {
+        if (scope) {
+          this.calendarService
+            .moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope)
+            .subscribe(res => {
+              if (res && res.success) this.loadTasks();
+            });
+        } else {
+          this.loadTasks(); // Revert visual position
+        }
       });
+    } else {
+      this.calendarService
+        .moveTask(event.taskId, event.newDate, event.newStartHour)
+        .subscribe(res => {
+          if (res && res.success) this.loadTasks();
+        });
+    }
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

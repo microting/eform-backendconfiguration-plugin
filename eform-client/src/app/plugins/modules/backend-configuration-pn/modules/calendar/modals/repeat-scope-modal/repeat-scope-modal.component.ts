@@ -3,7 +3,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {RepeatEditScope} from '../../../../models/calendar';
 
 export interface RepeatScopeModalData {
-  mode: 'edit' | 'delete';
+  mode: 'edit' | 'delete' | 'move';
 }
 
 @Component({
