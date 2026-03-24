@@ -68,6 +68,7 @@ using Microting.TimePlanningBase.Infrastructure.Data;
 using Services.BackendConfigurationAreaRulePlanningsService;
 using Services.BackendConfigurationAreaRulesService;
 using Services.BackendConfigurationAssignmentWorkerService;
+using Services.BackendConfigurationCalendarService;
 using Services.BackendConfigurationCaseService;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationDocumentService;
@@ -121,6 +122,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
         services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
         services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
+        services.AddTransient<IBackendConfigurationCalendarService, BackendConfigurationCalendarService>();
         services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
         services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
         services.AddTransient<IChemicalService, ChemicalService>();
