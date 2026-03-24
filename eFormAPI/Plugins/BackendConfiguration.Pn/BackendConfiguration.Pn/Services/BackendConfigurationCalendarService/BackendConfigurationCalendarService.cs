@@ -55,38 +55,53 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.AreaRulePlanningTags)
                 .ToListAsync();
 
+            // Batch-load plannings to avoid N+1 queries
+            var planningIds = areaRulePlannings.Select(x => x.ItemPlanningId).Distinct().ToList();
+            var planningsDict = await itemsPlanningPnDbContext.Plannings
+                .Where(x => planningIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.Id);
+
+            // Batch-load calendar configurations
+            var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
+            var calConfigsDict = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.AreaRulePlanningId);
+
+            // Batch-load tags for all ARPs
+            var allArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            var tagItemIds = allArpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            var planningTagNames = await itemsPlanningPnDbContext.PlanningTags
+                .Where(x => tagItemIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
             foreach (var arp in areaRulePlannings)
             {
-                var planning = await itemsPlanningPnDbContext.Plannings
-                    .Where(x => x.Id == arp.ItemPlanningId)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
-
-                if (planning == null) continue;
+                if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
+                    continue;
 
                 // Check if the planning's next execution overlaps with the requested week
                 if (planning.NextExecutionTime.HasValue &&
                     planning.NextExecutionTime.Value >= weekStart &&
                     planning.NextExecutionTime.Value <= weekEnd)
                 {
-                    var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
-                        .Where(x => x.AreaRulePlanningId == arp.Id)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .FirstOrDefaultAsync();
+                    calConfigsDict.TryGetValue(arp.Id, out var calConfig);
 
                     var title = arp.AreaRule?.AreaRuleTranslations?
                         .Where(t => t.LanguageId == userLanguageId)
                         .Select(t => t.Name)
                         .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
 
-                    var tags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                    var tags = allArpTags
                         .Where(x => x.AreaRulePlanningId == arp.Id)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Join(itemsPlanningPnDbContext.PlanningTags,
-                            tag => tag.ItemPlanningTagId,
-                            pt => pt.Id,
-                            (tag, pt) => pt.Name)
-                        .ToListAsync();
+                        .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                        .Where(x => x != null)
+                        .ToList();
 
                     var model = new CalendarTaskResponseModel
                     {
@@ -125,22 +140,41 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
                 .ToListAsync();
 
+            // Batch-load AreaRulePlannings for compliances
+            var compliancePlanningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
+            var complianceArps = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => compliancePlanningIds.Contains(x.ItemPlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Include(x => x.AreaRule)
+                    .ThenInclude(x => x.AreaRuleTranslations)
+                .Include(x => x.PlanningSites)
+                .ToListAsync();
+            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+
+            // Batch-load calendar configs for compliance ARPs
+            var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
+            var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.AreaRulePlanningId);
+
+            // Batch-load tags for compliance ARPs
+            var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            var complianceTagItemIds = complianceArpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            var compliancePlanningTagNames = await itemsPlanningPnDbContext.PlanningTags
+                .Where(x => complianceTagItemIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
             foreach (var compliance in compliances)
             {
-                var arp = await backendConfigurationPnDbContext.AreaRulePlannings
-                    .Where(x => x.ItemPlanningId == compliance.PlanningId)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Include(x => x.AreaRule)
-                        .ThenInclude(x => x.AreaRuleTranslations)
-                    .Include(x => x.PlanningSites)
-                    .FirstOrDefaultAsync();
-
-                var calConfig = arp != null
-                    ? await backendConfigurationPnDbContext.CalendarConfigurations
-                        .Where(x => x.AreaRulePlanningId == arp.Id)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .FirstOrDefaultAsync()
-                    : null;
+                complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                CalendarConfiguration calConfig = null;
+                if (arp != null)
+                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
 
                 var title = compliance.ItemName ?? "";
                 if (arp?.AreaRule?.AreaRuleTranslations != null)
@@ -152,14 +186,11 @@ public class BackendConfigurationCalendarService(
                 }
 
                 var tags = arp != null
-                    ? await backendConfigurationPnDbContext.AreaRulePlanningTags
+                    ? complianceArpTags
                         .Where(x => x.AreaRulePlanningId == arp.Id)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Join(itemsPlanningPnDbContext.PlanningTags,
-                            tag => tag.ItemPlanningTagId,
-                            pt => pt.Id,
-                            (tag, pt) => pt.Name)
-                        .ToListAsync()
+                        .Select(x => compliancePlanningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                        .Where(x => x != null)
+                        .ToList()
                     : [];
 
                 var model = new CalendarTaskResponseModel
@@ -178,7 +209,7 @@ public class BackendConfigurationCalendarService(
                     Color = calConfig?.Color,
                     RepeatType = arp?.RepeatType ?? 0,
                     RepeatEvery = arp?.RepeatEvery ?? 1,
-                    Completed = true,
+                    Completed = compliance.Deadline < DateTime.UtcNow,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
@@ -238,11 +269,14 @@ public class BackendConfigurationCalendarService(
                 return result;
             }
 
-            // Find the latest AreaRulePlanning for this property to link the calendar config
+            // Find the AreaRulePlanning created by TaskWizard for this specific task
             var latestArp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.PropertyId == createModel.PropertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .OrderByDescending(x => x.CreatedAt)
+                .Include(x => x.AreaRule)
+                .Where(x => x.AreaRule.CreatedInGuide == true)
+                .Where(x => x.AreaRule.EformId == createModel.EformId)
+                .OrderByDescending(x => x.Id)
                 .FirstOrDefaultAsync();
 
             if (latestArp != null)
@@ -284,23 +318,59 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
+            // Delegate to TaskWizard service for full task field updates
+            var wizardModel = new TaskWizardCreateModel
+            {
+                Id = updateModel.Id,
+                PropertyId = updateModel.PropertyId,
+                FolderId = updateModel.FolderId,
+                ItemPlanningTagId = updateModel.ItemPlanningTagId,
+                TagIds = updateModel.TagIds,
+                Translates = updateModel.Translates,
+                EformId = updateModel.EformId,
+                StartDate = updateModel.StartDate,
+                RepeatType = (Infrastructure.Enums.RepeatType)updateModel.RepeatType,
+                RepeatEvery = updateModel.RepeatEvery,
+                Status = (Infrastructure.Enums.TaskWizardStatuses)updateModel.Status,
+                Sites = updateModel.Sites,
+                ComplianceEnabled = updateModel.ComplianceEnabled
+            };
+
+            var wizardResult = await taskWizardService.UpdateTask(wizardModel);
+            if (!wizardResult.Success)
+            {
+                return wizardResult;
+            }
+
+            // Update or create CalendarConfiguration for calendar-specific fields
             var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => x.AreaRulePlanningId == updateModel.Id)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync();
 
-            if (calConfig == null)
+            if (calConfig != null)
             {
-                return new OperationResult(false,
-                    localizationService.GetString("CalendarConfigurationNotFound"));
+                calConfig.StartHour = updateModel.StartHour;
+                calConfig.Duration = updateModel.Duration;
+                calConfig.BoardId = updateModel.BoardId;
+                calConfig.Color = updateModel.Color;
+                calConfig.UpdatedByUserId = userService.UserId;
+                await calConfig.Update(backendConfigurationPnDbContext);
             }
-
-            calConfig.StartHour = updateModel.StartHour;
-            calConfig.Duration = updateModel.Duration;
-            calConfig.BoardId = updateModel.BoardId;
-            calConfig.Color = updateModel.Color;
-            calConfig.UpdatedByUserId = userService.UserId;
-            await calConfig.Update(backendConfigurationPnDbContext);
+            else
+            {
+                calConfig = new CalendarConfiguration
+                {
+                    AreaRulePlanningId = updateModel.Id,
+                    StartHour = updateModel.StartHour,
+                    Duration = updateModel.Duration,
+                    BoardId = updateModel.BoardId,
+                    Color = updateModel.Color,
+                    CreatedByUserId = userService.UserId,
+                    UpdatedByUserId = userService.UserId
+                };
+                await calConfig.Create(backendConfigurationPnDbContext);
+            }
 
             return new OperationResult(true,
                 localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
@@ -318,18 +388,23 @@ public class BackendConfigurationCalendarService(
     {
         try
         {
+            // Delete CalendarConfiguration if it exists
             var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => x.AreaRulePlanningId == id)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync();
 
-            if (calConfig == null)
+            if (calConfig != null)
             {
-                return new OperationResult(false,
-                    localizationService.GetString("CalendarConfigurationNotFound"));
+                await calConfig.Delete(backendConfigurationPnDbContext);
             }
 
-            await calConfig.Delete(backendConfigurationPnDbContext);
+            // Delete the underlying AreaRulePlanning/Planning via TaskWizard service
+            var wizardResult = await taskWizardService.DeleteTask(id);
+            if (!wizardResult.Success)
+            {
+                return wizardResult;
+            }
 
             return new OperationResult(true,
                 localizationService.GetString("CalendarTaskDeletedSuccessfully"));
