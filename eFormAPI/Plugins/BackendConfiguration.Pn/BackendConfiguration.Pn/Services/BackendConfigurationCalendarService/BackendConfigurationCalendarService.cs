@@ -505,6 +505,137 @@ public class BackendConfigurationCalendarService(
         return new OperationResult(true);
     }
 
+    public async Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId)
+    {
+        try
+        {
+            var boards = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyId == propertyId)
+                .Select(x => new CalendarBoardModel
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Color = x.Color,
+                    PropertyId = x.PropertyId,
+                })
+                .ToListAsync();
+
+            // Auto-create "Default" board if none exist
+            if (boards.Count == 0)
+            {
+                var defaultBoard = new CalendarBoard
+                {
+                    Name = "Default",
+                    Color = "#c30000",
+                    PropertyId = propertyId,
+                };
+                await defaultBoard.Create(backendConfigurationPnDbContext);
+
+                boards.Add(new CalendarBoardModel
+                {
+                    Id = defaultBoard.Id,
+                    Name = defaultBoard.Name,
+                    Color = defaultBoard.Color,
+                    PropertyId = defaultBoard.PropertyId,
+                });
+            }
+
+            return new OperationDataResult<List<CalendarBoardModel>>(true, boards);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.GetBoards: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarBoardModel>>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarBoards")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationResult> CreateBoard(CalendarBoardCreateModel model)
+    {
+        try
+        {
+            var board = new CalendarBoard
+            {
+                Name = model.Name,
+                Color = model.Color,
+                PropertyId = model.PropertyId,
+            };
+            await board.Create(backendConfigurationPnDbContext);
+
+            return new OperationResult(true,
+                localizationService.GetString("CalendarBoardCreatedSuccessfully"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.CreateBoard: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileCreatingCalendarBoard")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model)
+    {
+        try
+        {
+            var board = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.Id == model.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (board == null)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("CalendarBoardNotFound"));
+            }
+
+            board.Name = model.Name;
+            board.Color = model.Color;
+            await board.Update(backendConfigurationPnDbContext);
+
+            return new OperationResult(true,
+                localizationService.GetString("CalendarBoardUpdatedSuccessfully"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.UpdateBoard: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileUpdatingCalendarBoard")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationResult> DeleteBoard(int id)
+    {
+        try
+        {
+            var board = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.Id == id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (board == null)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("CalendarBoardNotFound"));
+            }
+
+            await board.Delete(backendConfigurationPnDbContext);
+
+            return new OperationResult(true,
+                localizationService.GetString("CalendarBoardDeletedSuccessfully"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.DeleteBoard: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {e.Message}");
+        }
+    }
+
     private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)
     {
         if (filter.BoardIds is { Count: > 0 } && task.BoardId.HasValue &&

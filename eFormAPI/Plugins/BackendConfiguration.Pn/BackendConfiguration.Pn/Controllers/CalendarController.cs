@@ -50,6 +50,30 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.MoveTask(moveModel);
     }
 
+    [HttpGet("boards/{propertyId:int}")]
+    public async Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId)
+    {
+        return await _backendConfigurationCalendarService.GetBoards(propertyId);
+    }
+
+    [HttpPost("boards")]
+    public async Task<OperationResult> CreateBoard([FromBody] CalendarBoardCreateModel model)
+    {
+        return await _backendConfigurationCalendarService.CreateBoard(model);
+    }
+
+    [HttpPut("boards")]
+    public async Task<OperationResult> UpdateBoard([FromBody] CalendarBoardUpdateModel model)
+    {
+        return await _backendConfigurationCalendarService.UpdateBoard(model);
+    }
+
+    [HttpDelete("boards/{id:int}")]
+    public async Task<OperationResult> DeleteBoard(int id)
+    {
+        return await _backendConfigurationCalendarService.DeleteBoard(id);
+    }
+
     [HttpPut("tasks/{id:int}/complete")]
     public async Task<OperationResult> ToggleComplete(int id, [FromBody] CalendarToggleCompleteModel model)
     {
