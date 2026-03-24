@@ -177,6 +177,12 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     return this.weekDays[this.getDayIndex(field)];
   }
 
+  isPastSlot(dayIndex: number, hour: number): boolean {
+    const slotDate = new Date(this.weekDays[dayIndex]);
+    slotDate.setHours(hour, 0, 0, 0);
+    return slotDate < new Date();
+  }
+
   onCellClick(event: MouseEvent) {
     if ((event.target as HTMLElement).closest('app-calendar-task-block')) return;
     const cell = event.currentTarget as HTMLElement;
@@ -186,6 +192,13 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     const rect = cell.getBoundingClientRect();
     const relY = event.clientY - rect.top;
     const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+
+    // Reject clicks on past time slots
+    const clickDateTime = new Date(date);
+    clickDateTime.setHours(Math.floor(startHour), (startHour % 1) * 60, 0, 0);
+    if (clickDateTime < new Date()) {
+      return;
+    }
 
     // Compute selection indicator position (absolute within scroll container)
     const containerEl = this.scrollContainerRef.nativeElement;
@@ -238,6 +251,14 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       '| relY=', relY, '→ newStartHour=', newStartHour,
       '| taskId=', task.id, 'taskDate=', task.taskDate);
     if (!date || !newDate) return;
+
+    // Reject drop to past time
+    const targetDateTime = new Date(date);
+    targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
+    if (targetDateTime < new Date()) {
+      return;
+    }
+
     this.taskMoved.emit({taskId: task.id, newDate, newStartHour, repeatSeriesId: task.repeatSeriesId});
   }
 

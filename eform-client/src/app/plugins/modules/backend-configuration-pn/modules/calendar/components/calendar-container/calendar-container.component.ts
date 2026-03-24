@@ -289,6 +289,13 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string}) {
+    // Safety check: reject moves to past
+    const targetDateTime = new Date(event.newDate);
+    targetDateTime.setHours(Math.floor(event.newStartHour), (event.newStartHour % 1) * 60, 0, 0);
+    if (targetDateTime < new Date()) {
+      return;
+    }
+
     if (event.repeatSeriesId) {
       // Show scope dialog for repeating tasks
       const ref = this.dialog.open(

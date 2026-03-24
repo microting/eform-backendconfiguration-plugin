@@ -37,6 +37,7 @@ export class TaskCreateEditModalComponent implements OnInit {
   timeSlots: string[] = [];
   showDriveInput = false;
   filteredBoards: CalendarBoardModel[] = [];
+  minDate = new Date();
 
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
@@ -130,10 +131,11 @@ export class TaskCreateEditModalComponent implements OnInit {
       }
     });
 
-    // When date changes, rebuild repeat options
+    // When date changes, rebuild repeat options and regenerate time slots
     this.dateControl.valueChanges.subscribe(date => {
       if (date) {
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date);
+        this.timeSlots = this.generateTimeSlots();
       }
     });
 
@@ -149,8 +151,14 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   private generateTimeSlots(): string[] {
     const slots: string[] = [];
+    const now = new Date();
+    const selectedDate = this.dateControl.value;
+    const isToday = selectedDate ? selectedDate.toDateString() === now.toDateString() : false;
     for (let h = 0; h < 24; h++) {
       for (let m = 0; m < 60; m += 15) {
+        if (isToday && (h < now.getHours() || (h === now.getHours() && m < now.getMinutes()))) {
+          continue;
+        }
         slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
       }
     }
@@ -193,8 +201,18 @@ export class TaskCreateEditModalComponent implements OnInit {
     });
   }
 
+  private isInPast(date: Date, timeStr: string): boolean {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const taskDate = new Date(date);
+    taskDate.setHours(hours, minutes, 0, 0);
+    return taskDate < new Date();
+  }
+
   onSave() {
     if (this.titleControl.invalid) return;
+    if (this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
+      return;
+    }
 
     const startHour = this.timeStrToHour(this.startTimeControl.value!);
     const endHour = this.timeStrToHour(this.endTimeControl.value!);

@@ -23,7 +23,7 @@
       <div class="gcal-row-content gcal-datetime-row">
         <mat-form-field class="gcal-date-field">
           <mat-label>{{ 'Date' | translate }}</mat-label>
-          <input matInput [matDatepicker]="datepicker" [formControl]="dateControl">
+          <input matInput [matDatepicker]="datepicker" [formControl]="dateControl" [min]="minDate">
           <mat-datepicker-toggle matIconSuffix [for]="datepicker"></mat-datepicker-toggle>
           <mat-datepicker #datepicker></mat-datepicker>
         </mat-form-field>

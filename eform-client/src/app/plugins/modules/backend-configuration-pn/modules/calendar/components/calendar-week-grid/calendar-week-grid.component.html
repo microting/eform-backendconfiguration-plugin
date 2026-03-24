@@ -65,7 +65,9 @@
       <div
         class="hour-line"
         *ngFor="let h of hours"
+        [class.past-slot]="isPastSlot(getDayIndex(col.field), h)"
         [style.top.px]="h * hourHeight"
+        [style.height.px]="hourHeight"
       ></div>
       <div
         class="now-line"
