@@ -1,6 +1,7 @@
 import {Component, Inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {CalendarBoardModel} from '../../../../models/calendar';
+import {BackendConfigurationPnCalendarService} from '../../../../services';
 
 export interface BoardDeleteModalData {
   board: CalendarBoardModel;
@@ -15,11 +16,15 @@ export class BoardDeleteModalComponent {
   constructor(
     private dialogRef: MatDialogRef<BoardDeleteModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: BoardDeleteModalData,
+    private calendarService: BackendConfigurationPnCalendarService,
   ) {}
 
   onConfirm() {
-    // TODO: Board deletion not yet supported by backend
-    this.dialogRef.close(null);
+    this.calendarService.deleteBoard(this.data.board.id).subscribe(res => {
+      if (res && res.success) {
+        this.dialogRef.close(true);
+      }
+    });
   }
 
   onCancel() {

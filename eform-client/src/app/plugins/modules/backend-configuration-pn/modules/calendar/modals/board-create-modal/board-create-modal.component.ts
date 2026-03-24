@@ -2,6 +2,7 @@ import {Component, Inject, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {CALENDAR_COLORS} from '../../../../models/calendar';
+import {BackendConfigurationPnCalendarService} from '../../../../services';
 
 export interface BoardCreateModalData {
   propertyId: number;
@@ -20,6 +21,7 @@ export class BoardCreateModalComponent implements OnInit {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<BoardCreateModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: BoardCreateModalData,
+    private calendarService: BackendConfigurationPnCalendarService,
   ) {}
 
   ngOnInit() {
@@ -31,8 +33,12 @@ export class BoardCreateModalComponent implements OnInit {
 
   onSave() {
     if (this.form.invalid) return;
-    // TODO: Board creation not yet supported by backend
-    this.dialogRef.close(null);
+    const {name, color} = this.form.value;
+    this.calendarService.createBoard({name, color, propertyId: this.data.propertyId}).subscribe(res => {
+      if (res && res.success) {
+        this.dialogRef.close(true);
+      }
+    });
   }
 
   onCancel() {

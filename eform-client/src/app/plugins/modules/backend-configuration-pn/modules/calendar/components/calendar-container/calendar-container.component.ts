@@ -15,11 +15,13 @@ import {
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
 import {CalendarStateService} from '../store';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
+import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
+import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 
 @Component({
   standalone: false,
@@ -58,6 +60,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private layoutService: CalendarLayoutService,
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -252,6 +255,31 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.createOverlayRef?.dispose();
     this.createOverlayRef = null;
     this.weekGrid?.clearSelection();
+  }
+
+  onCreateBoard() {
+    if (!this.currentPropertyId) return;
+    const dialogRef = this.dialog.open(BoardCreateModalComponent, {
+      data: {propertyId: this.currentPropertyId} as BoardCreateModalData,
+      width: '400px',
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && this.currentPropertyId) {
+        this.loadBoards(this.currentPropertyId);
+      }
+    });
+  }
+
+  onDeleteBoard(board: CalendarBoardModel) {
+    const dialogRef = this.dialog.open(BoardDeleteModalComponent, {
+      data: {board} as BoardDeleteModalData,
+      width: '400px',
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && this.currentPropertyId) {
+        this.loadBoards(this.currentPropertyId);
+      }
+    });
   }
 
   onNavigate(direction: -1 | 1) {

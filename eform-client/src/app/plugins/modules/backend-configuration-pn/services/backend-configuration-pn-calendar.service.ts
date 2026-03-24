@@ -74,6 +74,15 @@ export class BackendConfigurationPnCalendarService {
     return this.apiBaseService.get(`${BackendConfigurationPnCalendarMethods.Boards}/${propertyId}`);
   }
 
-  // TODO: Board CRUD endpoints removed — no backend controller exists yet.
-  // Add createBoard, updateBoard, deleteBoard when backend supports them.
+  createBoard(model: {name: string; color: string; propertyId: number}): Observable<OperationResult> {
+    return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.Boards, model);
+  }
+
+  updateBoard(model: {id: number; name: string; color: string}): Observable<OperationResult> {
+    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.Boards, model);
+  }
+
+  deleteBoard(id: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(`${BackendConfigurationPnCalendarMethods.Boards}/${id}`);
+  }
 }
