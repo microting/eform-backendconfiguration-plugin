@@ -499,6 +499,12 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    public async Task<OperationResult> ToggleComplete(int id, bool completed)
+    {
+        // TODO: Implement completion toggle via Compliance system
+        return new OperationResult(true);
+    }
+
     private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)
     {
         if (filter.BoardIds is { Count: > 0 } && task.BoardId.HasValue &&

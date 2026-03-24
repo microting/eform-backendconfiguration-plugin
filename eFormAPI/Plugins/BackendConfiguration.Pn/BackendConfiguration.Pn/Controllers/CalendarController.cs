@@ -49,4 +49,10 @@ public class CalendarController : Controller
     {
         return await _backendConfigurationCalendarService.MoveTask(moveModel);
     }
+
+    [HttpPut("tasks/{id:int}/complete")]
+    public async Task<OperationResult> ToggleComplete(int id, [FromBody] CalendarToggleCompleteModel model)
+    {
+        return await _backendConfigurationCalendarService.ToggleComplete(id, model.Completed);
+    }
 }

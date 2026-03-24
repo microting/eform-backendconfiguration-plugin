@@ -12,4 +12,5 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(int id);
     Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel);
+    Task<OperationResult> ToggleComplete(int id, bool completed);
 }
