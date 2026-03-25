@@ -100,7 +100,8 @@ for src_rel_path, dst_rel_path in test_files_to_copy:
             os.remove(dst_path)
 
     # Copy the source directory or file to the destination
-    if os.path.isdir(src_path):
-        shutil.copytree(src_path, dst_path)
-    else:
-        shutil.copy2(src_path, dst_path)
+    if os.path.exists(src_path):
+        if os.path.isdir(src_path):
+            shutil.copytree(src_path, dst_path)
+        else:
+            shutil.copy2(src_path, dst_path)
