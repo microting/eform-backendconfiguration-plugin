@@ -50,11 +50,17 @@
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My employees' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
-    <mat-nav-list dense>
-      <mat-list-item *ngFor="let emp of employees">
-        {{ emp.name }}
-      </mat-list-item>
-    </mat-nav-list>
+    <div class="board-list">
+      <div
+        class="board-item"
+        *ngFor="let emp of employees"
+        (click)="employeeToggled.emit(emp.id)"
+        style="cursor: pointer"
+      >
+        <span class="board-name">{{ emp.name }}</span>
+        <mat-icon *ngIf="isEmployeeActive(emp.id)" class="check-icon">check</mat-icon>
+      </div>
+    </div>
     <a class="sidebar-action-link" (click)="createEmployee.emit()">+ {{ 'Create employee' | translate }}</a>
   </mat-expansion-panel>
 

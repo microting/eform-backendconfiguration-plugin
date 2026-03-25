@@ -15,11 +15,13 @@ export class CalendarSidebarComponent {
   @Input() employees: CommonDictionaryModel[] = [];
   @Input() tags: SharedTagModel[] = [];
   @Input() activeBoardIds: number[] = [];
+  @Input() activeSiteIds: number[] = [];
   @Input() activeTagNames: string[] = [];
   @Input() selectedPropertyId: number | null = null;
 
   @Output() propertySelected = new EventEmitter<number | null>();
   @Output() boardToggled = new EventEmitter<number>();
+  @Output() employeeToggled = new EventEmitter<number>();
   @Output() tagToggled = new EventEmitter<string>();
   @Output() createProperty = new EventEmitter<void>();
   @Output() createBoard = new EventEmitter<void>();
@@ -43,6 +45,10 @@ export class CalendarSidebarComponent {
 
   isBoardActive(boardId: number): boolean {
     return this.activeBoardIds.includes(boardId);
+  }
+
+  isEmployeeActive(siteId: number): boolean {
+    return this.activeSiteIds.includes(siteId);
   }
 
   isTagActive(tag: SharedTagModel): boolean {

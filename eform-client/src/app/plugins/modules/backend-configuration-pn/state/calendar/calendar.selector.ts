@@ -22,6 +22,9 @@ export const selectCalendarCurrentDate =
 export const selectCalendarActiveBoardIds =
   createSelector(selectCalendarFilters, (f) => f.activeBoardIds);
 
+export const selectCalendarActiveSiteIds =
+  createSelector(selectCalendarFilters, (f) => f.activeSiteIds);
+
 export const selectCalendarActiveTagNames =
   createSelector(selectCalendarFilters, (f) => f.activeTagNames);
 

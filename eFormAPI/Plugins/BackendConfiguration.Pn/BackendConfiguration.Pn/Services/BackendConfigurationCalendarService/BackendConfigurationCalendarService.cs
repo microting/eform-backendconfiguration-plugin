@@ -755,6 +755,12 @@ public class BackendConfigurationCalendarService(
             return false;
         }
 
+        if (filter.SiteIds is { Count: > 0 } &&
+            !task.AssigneeIds.Any(id => filter.SiteIds.Contains(id)))
+        {
+            return false;
+        }
+
         return true;
     }
 }

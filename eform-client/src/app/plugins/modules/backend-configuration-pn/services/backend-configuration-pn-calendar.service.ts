@@ -27,7 +27,8 @@ export class BackendConfigurationPnCalendarService {
     weekStart: string,
     weekEnd: string,
     boardIds: number[],
-    tagNames: string[]
+    tagNames: string[],
+    siteIds: number[] = []
   ): Observable<OperationDataResult<CalendarTaskModel[]>> {
     return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.TasksWeek, {
       propertyId,
@@ -35,6 +36,7 @@ export class BackendConfigurationPnCalendarService {
       weekEnd,
       boardIds,
       tagNames,
+      siteIds,
     });
   }
 

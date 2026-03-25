@@ -4,6 +4,7 @@ import {
   calendarUpdateFilters,
   CalendarFiltersModel,
   selectCalendarActiveBoardIds,
+  selectCalendarActiveSiteIds,
   selectCalendarActiveTagNames,
   selectCalendarCurrentDate,
   selectCalendarFilters,
@@ -19,6 +20,7 @@ export class CalendarStateService {
   readonly viewMode$ = this.store.select(selectCalendarViewMode);
   readonly currentDate$ = this.store.select(selectCalendarCurrentDate);
   readonly activeBoardIds$ = this.store.select(selectCalendarActiveBoardIds);
+  readonly activeSiteIds$ = this.store.select(selectCalendarActiveSiteIds);
   readonly activeTagNames$ = this.store.select(selectCalendarActiveTagNames);
   readonly sidebarOpen$ = this.store.select(selectCalendarSidebarOpen);
 
@@ -29,7 +31,7 @@ export class CalendarStateService {
   }
 
   updatePropertyId(propertyId: number | null) {
-    this.dispatch({propertyId, activeBoardIds: [], activeTagNames: []});
+    this.dispatch({propertyId, activeBoardIds: [], activeSiteIds: [], activeTagNames: []});
   }
 
   updateViewMode(viewMode: 'week' | 'day' | 'schedule') {
@@ -54,6 +56,14 @@ export class CalendarStateService {
       ? names.filter(n => n !== tagName)
       : [...names, tagName];
     this.dispatch({activeTagNames});
+  }
+
+  toggleSite(siteId: number) {
+    const ids = this.currentFilters.activeSiteIds;
+    const activeSiteIds = ids.includes(siteId)
+      ? ids.filter(id => id !== siteId)
+      : [...ids, siteId];
+    this.dispatch({activeSiteIds});
   }
 
   toggleSidebar() {

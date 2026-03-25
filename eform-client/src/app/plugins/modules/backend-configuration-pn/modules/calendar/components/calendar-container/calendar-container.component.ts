@@ -53,6 +53,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
   activeBoardIds: number[] = [];
+  activeSiteIds: number[] = [];
   activeTagNames: string[] = [];
   sidebarOpen = true;
   isAdmin = false;
@@ -78,6 +79,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.currentDate = filters.currentDate;
       this.viewMode = filters.viewMode;
       this.activeBoardIds = filters.activeBoardIds;
+      this.activeSiteIds = filters.activeSiteIds;
       this.activeTagNames = filters.activeTagNames;
       this.sidebarOpen = filters.sidebarOpen;
     });
@@ -174,6 +176,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         weekEnd,
         this.activeBoardIds,
         this.activeTagNames,
+        this.activeSiteIds,
       )
       .subscribe(res => {
         if (res && res.success) {
@@ -328,6 +331,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onTagToggled(tagName: string) {
     this.stateService.toggleTag(tagName);
+    this.loadTasks();
+  }
+
+  onEmployeeToggled(siteId: number) {
+    this.stateService.toggleSite(siteId);
     this.loadTasks();
   }
 

@@ -12,6 +12,7 @@ export interface CalendarSidebarSections {
 export interface CalendarFiltersModel {
   propertyId: number | null;
   activeBoardIds: number[];
+  activeSiteIds: number[];
   activeTagNames: string[];
   currentDate: string;           // ISO "YYYY-MM-DD"
   viewMode: 'week' | 'day' | 'schedule';
@@ -27,6 +28,7 @@ export const calendarInitialState: CalendarState = {
   filters: {
     propertyId: null,
     activeBoardIds: [],
+    activeSiteIds: [],
     activeTagNames: [],
     currentDate: new Date().toISOString().split('T')[0],
     viewMode: 'week',

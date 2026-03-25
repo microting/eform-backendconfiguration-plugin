@@ -9,4 +9,5 @@ public class CalendarTaskRequestModel
     public string WeekEnd { get; set; }
     public List<int> BoardIds { get; set; } = [];
     public List<string> TagNames { get; set; } = [];
+    public List<int> SiteIds { get; set; } = [];
 }
