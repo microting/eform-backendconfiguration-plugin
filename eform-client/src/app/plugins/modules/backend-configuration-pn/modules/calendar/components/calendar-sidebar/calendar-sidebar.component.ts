@@ -4,6 +4,8 @@ import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
 import {TeamCreateDialogComponent} from './team-create-dialog.component';
 import {TeamDeleteDialogComponent} from './team-delete-dialog.component';
+import {TagCreateDialogComponent} from './tag-create-dialog.component';
+import {TagDeleteDialogComponent} from './tag-delete-dialog.component';
 
 @Component({
   standalone: false,
@@ -38,8 +40,6 @@ export class CalendarSidebarComponent {
   @Output() deleteBoard = new EventEmitter<CalendarBoardModel>();
   @Output() deleteTag = new EventEmitter<number>();
 
-  tagSort: 'popularity' | 'alphabetical' = 'popularity';
-  newTagName = '';
   editingTagId: number | null = null;
   editingTagName = '';
   editingTeamId: number | null = null;
@@ -50,13 +50,6 @@ export class CalendarSidebarComponent {
   editingBoardColor = '';
 
   constructor(private dialog: MatDialog) {}
-
-  get sortedTags(): SharedTagModel[] {
-    if (this.tagSort === 'alphabetical') {
-      return [...this.tags].sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return this.tags;
-  }
 
   isBoardActive(boardId: number): boolean {
     return this.activeBoardIds.includes(boardId);
@@ -129,10 +122,21 @@ export class CalendarSidebarComponent {
     this.deleteBoard.emit(board);
   }
 
-  emitCreateTag(): void {
-    if (this.newTagName.trim()) {
-      this.createTag.emit(this.newTagName.trim());
-      this.newTagName = '';
-    }
+  onDeleteTag(tag: SharedTagModel) {
+    const dialogRef = this.dialog.open(TagDeleteDialogComponent, {
+      disableClose: true,
+      minWidth: 300,
+      data: {id: tag.id, name: tag.name},
+    });
+    dialogRef.afterClosed().subscribe(deletedId => {
+      if (deletedId) this.deleteTag.emit(deletedId);
+    });
+  }
+
+  openCreateTagDialog() {
+    const dialogRef = this.dialog.open(TagCreateDialogComponent, {width: '360px'});
+    dialogRef.afterClosed().subscribe(name => {
+      if (name) this.createTag.emit(name);
+    });
   }
 }

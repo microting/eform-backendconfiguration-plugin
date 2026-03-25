@@ -29,6 +29,8 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {TeamCreateDialogComponent} from './components/calendar-sidebar/team-create-dialog.component';
 import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-delete-dialog.component';
+import {TagCreateDialogComponent} from './components/calendar-sidebar/tag-create-dialog.component';
+import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete-dialog.component';
 
 import {CalendarRouting} from './calendar.routing';
 import {
@@ -83,6 +85,8 @@ export {
     BoardDeleteModalComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
+    TagCreateDialogComponent,
+    TagDeleteDialogComponent,
   ],
   imports: [
     CommonModule,

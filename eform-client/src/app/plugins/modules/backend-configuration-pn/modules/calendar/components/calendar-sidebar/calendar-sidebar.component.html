@@ -104,49 +104,28 @@
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My tags' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
-
-    <div class="tag-sort" *ngIf="tags.length > 0">
-      <span class="sort-label">{{ 'Sort' | translate }}:</span>
-      <a class="sort-link" [class.active]="tagSort === 'popularity'" (click)="tagSort = 'popularity'">{{ 'Popularity' | translate }}</a>
-      <a class="sort-link" [class.active]="tagSort === 'alphabetical'" (click)="tagSort = 'alphabetical'">{{ 'Alphabetical' | translate }}</a>
+    <div class="team-list">
+      <div class="team-item" *ngFor="let tag of tags">
+        <span class="team-name" (click)="tagToggled.emit(tag.name)" style="cursor: pointer">{{ tag.name }}</span>
+        <mat-icon *ngIf="isTagActive(tag)" class="check-icon">check</mat-icon>
+        <button mat-icon-button class="team-menu-btn" [matMenuTriggerFor]="tagMenu" (click)="startEdit(tag); $event.stopPropagation()">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #tagMenu="matMenu">
+          <div class="team-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+            <label class="team-field-label">{{ 'Tagnavn' | translate }}</label>
+            <mat-form-field appearance="outline" style="width: 100%;">
+              <input matInput [(ngModel)]="editingTagName" (keydown.enter)="confirmEdit(tag)">
+            </mat-form-field>
+            <button mat-menu-item class="btn-delete-menu" (click)="onDeleteTag(tag)">
+              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Slet tag' | translate }}</span>
+            </button>
+          </div>
+        </mat-menu>
+      </div>
     </div>
-
-    <mat-list dense class="tag-list">
-      <mat-list-item *ngFor="let tag of sortedTags" class="tag-list-item">
-        <ng-container *ngIf="editingTagId !== tag.id">
-          <mat-chip [selected]="isTagActive(tag)" (click)="tagToggled.emit(tag.name)">
-            {{ tag.name }}
-          </mat-chip>
-          <button mat-icon-button class="tag-action-btn" (click)="startEdit(tag)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button class="tag-action-btn" (click)="deleteTag.emit(tag.id)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </ng-container>
-        <ng-container *ngIf="editingTagId === tag.id">
-          <mat-form-field class="tag-edit-field">
-            <input matInput [(ngModel)]="editingTagName" (keyup.enter)="confirmEdit(tag)">
-          </mat-form-field>
-          <button mat-icon-button class="tag-action-btn" (click)="confirmEdit(tag)">
-            <mat-icon>check</mat-icon>
-          </button>
-          <button mat-icon-button class="tag-action-btn" (click)="editingTagId = null">
-            <mat-icon>close</mat-icon>
-          </button>
-        </ng-container>
-      </mat-list-item>
-    </mat-list>
-
-    <div class="sidebar-create-row">
-      <mat-form-field class="tag-create-field">
-        <input matInput [placeholder]="'New tag...' | translate" [(ngModel)]="newTagName" (keyup.enter)="emitCreateTag()">
-      </mat-form-field>
-      <button mat-icon-button (click)="emitCreateTag()">
-        <mat-icon>add</mat-icon>
-      </button>
-    </div>
-
+    <a class="sidebar-action-link" (click)="openCreateTagDialog()">+ {{ 'Opret tag' | translate }}</a>
   </mat-expansion-panel>
 
 </div>
