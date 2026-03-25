@@ -123,7 +123,7 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
-        <a *ngIf="!showDriveInput" class="gcal-action-link" (click)="showDriveInput = true">
+        <a *ngIf="!showDriveInput && !isReadonly" class="gcal-action-link" (click)="showDriveInput = true">
           {{ 'Add Google Drive file' | translate }}
         </a>
         <mat-form-field *ngIf="showDriveInput" class="w-100">
@@ -168,7 +168,7 @@
     </div>
   </div>
 
-  <div class="gcal-actions">
+  <div class="gcal-actions" *ngIf="!isReadonly">
     <button class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>

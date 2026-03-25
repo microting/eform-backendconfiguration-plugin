@@ -33,6 +33,7 @@ export class TaskCreateEditModalComponent implements OnInit {
   usePopoverMode = false;
 
   isEditMode = false;
+  isReadonly = false;
   repeatOptions: RepeatSelectOption[] = [];
   timeSlots: string[] = [];
   showDriveInput = false;
@@ -92,6 +93,26 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.endTimeControl.setValue(this.hourToTimeStr(startHour + 1));
       this.propertyControl.setValue(this.data.propertyId);
       this.boardControl.setValue(this.data.boards[0]?.id ?? null);
+    }
+
+    // Disable all controls for past tasks
+    if (this.isEditMode && this.dateControl.value) {
+      const taskDate = this.dateControl.value;
+      const endTime = this.endTimeControl.value || '00:00';
+      if (this.isInPast(taskDate, endTime)) {
+        this.isReadonly = true;
+        this.titleControl.disable();
+        this.dateControl.disable();
+        this.startTimeControl.disable();
+        this.endTimeControl.disable();
+        this.repeatControl.disable();
+        this.assigneeControl.disable();
+        this.tagsControl.disable();
+        this.descriptionControl.disable();
+        this.driveLinkControl.disable();
+        this.propertyControl.disable();
+        this.boardControl.disable();
+      }
     }
 
     // When start time changes, auto-adjust end time to maintain duration
