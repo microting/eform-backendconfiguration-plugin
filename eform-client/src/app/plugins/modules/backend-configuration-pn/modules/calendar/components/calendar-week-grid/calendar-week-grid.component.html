@@ -1,3 +1,17 @@
+<div class="all-day-row" *ngIf="hasAllDayTasks">
+  <div class="all-day-label">All day</div>
+  <div class="all-day-cells">
+    <div class="all-day-cell" *ngFor="let dayTasks of allDayTasksByDay; let i = index"
+         [class.today-col]="isToday(weekDays[i])">
+      <div class="all-day-chip"
+           *ngFor="let task of dayTasks"
+           [style.background-color]="task.color"
+           (click)="onAllDayTaskClicked($event, task, i)">
+        <span *ngIf="isAdmin" class="task-id">{{ task.id }}</span> {{ task.title }}
+      </div>
+    </div>
+  </div>
+</div>
 <div class="week-grid-wrapper" #scrollContainer>
   <mtx-grid class="calendar-grid"
     [data]="gridData"
@@ -78,6 +92,7 @@
         *ngFor="let task of tasksByDay[getDayIndex(col.field)] || []"
         [task]="task"
         [hourHeight]="hourHeight"
+        [showId]="isAdmin"
         (clicked)="onTaskClicked($event)"
         (toggleComplete)="onTaskToggleComplete($event)"
         (dragMoved)="onTaskDragMoved($event)"

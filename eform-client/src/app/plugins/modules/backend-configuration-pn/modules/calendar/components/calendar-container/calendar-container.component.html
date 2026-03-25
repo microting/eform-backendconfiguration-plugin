@@ -32,6 +32,8 @@
       <app-calendar-week-grid
         *ngSwitchCase="'week'"
         [tasksByDay]="tasksByDay"
+        [allDayTasksByDay]="allDayTasksByDay"
+        [isAdmin]="isAdmin"
         [currentDate]="currentDate"
         [boards]="boards"
         [employees]="employees"
@@ -46,6 +48,8 @@
       <app-calendar-week-grid
         *ngSwitchCase="'day'"
         [tasksByDay]="tasksByDay"
+        [allDayTasksByDay]="allDayTasksByDay"
+        [isAdmin]="isAdmin"
         [currentDate]="currentDate"
         [boards]="boards"
         [dayViewMode]="true"

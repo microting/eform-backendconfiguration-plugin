@@ -13,6 +13,7 @@ export const HOUR_HEIGHT = 52; // px per hour
 export class CalendarTaskBlockComponent {
   @Input() task!: CalendarTaskLayoutModel;
   @Input() hourHeight = HOUR_HEIGHT;
+  @Input() showId = false;
 
   @Output() clicked = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() toggleComplete = new EventEmitter<CalendarTaskLayoutModel>();

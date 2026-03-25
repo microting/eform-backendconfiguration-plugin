@@ -31,6 +31,7 @@ export interface CalendarTaskModel {
   deadline?: string;
   nextExecutionTime?: string;
   planningId?: number;
+  isAllDay?: boolean;
 }
 
 export interface CalendarRepeatMeta {

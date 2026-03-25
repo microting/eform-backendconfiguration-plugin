@@ -1,3 +1,59 @@
+.all-day-row {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+  min-height: 32px;
+
+  .all-day-label {
+    width: 56px;
+    min-width: 56px;
+    font-size: 11px;
+    color: #70757a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+  }
+
+  .all-day-cells {
+    display: flex;
+    flex: 1;
+  }
+
+  .all-day-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 4px;
+    border-left: 1px solid #e0e0e0;
+
+    &.today-col {
+      background: rgba(26, 115, 232, 0.04);
+    }
+  }
+
+  .all-day-chip {
+    font-size: 12px;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      opacity: 0.85;
+    }
+
+    .task-id {
+      opacity: 0.7;
+      font-size: 0.85em;
+    }
+  }
+}
+
 .week-grid-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -53,6 +109,7 @@
   display: block;
   cursor: pointer;
   position: relative;
+  border-left: 1px solid #dadce0;
 }
 
 .day-body {
@@ -63,8 +120,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 1px;
-  background: var(--border, #f0f0f0);
+  border-bottom: 1px solid #dadce0;
+  box-sizing: border-box;
 }
 
 .cdk-drag-placeholder {

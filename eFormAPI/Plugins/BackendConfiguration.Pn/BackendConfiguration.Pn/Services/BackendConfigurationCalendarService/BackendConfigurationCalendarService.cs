@@ -44,6 +44,26 @@ public class BackendConfigurationCalendarService(
             var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
             var result = new List<CalendarTaskResponseModel>();
 
+            // Get the default board for this property (first created board)
+            var defaultBoard = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyId == requestModel.PropertyId)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync();
+            var defaultBoardId = defaultBoard?.Id;
+
+            // Pre-load compliance dates to avoid duplicates between occurrence expansion and compliances
+            var compliancesInWeek = await backendConfigurationPnDbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyId == requestModel.PropertyId)
+                .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                .ToListAsync();
+            // Build sets for dedup: by exact date and by planningId (any compliance in week)
+            var complianceDateSet = new HashSet<string>(
+                compliancesInWeek.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
+            var compliancePlanningIdsInWeek = new HashSet<int>(
+                compliancesInWeek.Select(c => c.PlanningId));
+
             // 1. Query AreaRulePlannings (future/active tasks)
             var areaRulePlannings = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -85,37 +105,47 @@ public class BackendConfigurationCalendarService(
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
                     continue;
 
-                // Check if the planning's next execution overlaps with the requested week
-                if (planning.NextExecutionTime.HasValue &&
-                    planning.NextExecutionTime.Value >= weekStart &&
-                    planning.NextExecutionTime.Value <= weekEnd)
+                // Compute all occurrence dates within the requested week
+                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd);
+
+                if (occurrences.Count == 0)
+                    continue;
+
+                calConfigsDict.TryGetValue(arp.Id, out var calConfig);
+                var isAllDay = calConfig == null;
+
+                var title = arp.AreaRule?.AreaRuleTranslations?
+                    .Where(t => t.LanguageId == userLanguageId)
+                    .Select(t => t.Name)
+                    .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
+
+                var tags = allArpTags
+                    .Where(x => x.AreaRulePlanningId == arp.Id)
+                    .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                    .Where(x => x != null)
+                    .ToList();
+
+                var assigneeIds = arp.PlanningSites?
+                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(ps => (int)ps.SiteId)
+                    .ToList() ?? [];
+
+                foreach (var occurrenceDate in occurrences)
                 {
-                    calConfigsDict.TryGetValue(arp.Id, out var calConfig);
-
-                    var title = arp.AreaRule?.AreaRuleTranslations?
-                        .Where(t => t.LanguageId == userLanguageId)
-                        .Select(t => t.Name)
-                        .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
-
-                    var tags = allArpTags
-                        .Where(x => x.AreaRulePlanningId == arp.Id)
-                        .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
-                        .Where(x => x != null)
-                        .ToList();
+                    // Skip if this planning already has a compliance in the week (avoid duplicates)
+                    if (compliancePlanningIdsInWeek.Contains(arp.ItemPlanningId))
+                        continue;
 
                     var model = new CalendarTaskResponseModel
                     {
                         Id = arp.Id,
                         Title = title,
-                        StartHour = calConfig?.StartHour ?? 9.0,
-                        Duration = calConfig?.Duration ?? 1.0,
-                        TaskDate = planning.NextExecutionTime.Value.ToString("yyyy-MM-dd"),
+                        StartHour = isAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                        Duration = isAllDay ? 0 : calConfig?.Duration ?? 1.0,
+                        TaskDate = occurrenceDate.ToString("yyyy-MM-dd"),
                         Tags = tags,
-                        AssigneeIds = arp.PlanningSites?
-                            .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Select(ps => (int)ps.SiteId)
-                            .ToList() ?? [],
-                        BoardId = calConfig?.BoardId,
+                        AssigneeIds = assigneeIds,
+                        BoardId = calConfig?.BoardId ?? defaultBoardId,
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
                         RepeatEvery = arp.RepeatEvery ?? 1,
@@ -123,7 +153,8 @@ public class BackendConfigurationCalendarService(
                         PropertyId = arp.PropertyId,
                         IsFromCompliance = false,
                         NextExecutionTime = planning.NextExecutionTime,
-                        PlanningId = planning.Id
+                        PlanningId = planning.Id,
+                        IsAllDay = isAllDay
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -133,12 +164,8 @@ public class BackendConfigurationCalendarService(
                 }
             }
 
-            // 2. Query Compliances (past/historical tasks)
-            var compliances = await backendConfigurationPnDbContext.Compliances
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PropertyId == requestModel.PropertyId)
-                .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
-                .ToListAsync();
+            // 2. Query Compliances (past/historical tasks) — reuse pre-loaded data
+            var compliances = compliancesInWeek;
 
             // Batch-load AreaRulePlannings for compliances
             var compliancePlanningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
@@ -193,19 +220,20 @@ public class BackendConfigurationCalendarService(
                         .ToList()
                     : [];
 
+                var compIsAllDay = calConfig == null;
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = calConfig?.StartHour ?? 9.0,
-                    Duration = calConfig?.Duration ?? 1.0,
+                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
                     TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(ps => (int)ps.SiteId)
                         .ToList() ?? [],
-                    BoardId = calConfig?.BoardId,
+                    BoardId = calConfig?.BoardId ?? defaultBoardId,
                     Color = calConfig?.Color,
                     RepeatType = arp?.RepeatType ?? 0,
                     RepeatEvery = arp?.RepeatEvery ?? 1,
@@ -214,7 +242,8 @@ public class BackendConfigurationCalendarService(
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
                     Deadline = compliance.Deadline,
-                    PlanningId = compliance.PlanningId
+                    PlanningId = compliance.PlanningId,
+                    IsAllDay = compIsAllDay
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -634,6 +663,82 @@ public class BackendConfigurationCalendarService(
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {e.Message}");
         }
+    }
+
+    private static List<DateTime> GetOccurrencesInWeek(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime weekStart, DateTime weekEnd)
+    {
+        var occurrences = new List<DateTime>();
+        var startDate = planning.StartDate.Date;
+        var repeatEvery = Math.Max(planning.RepeatEvery, 1);
+
+        switch (planning.RepeatType)
+        {
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day:
+            {
+                // Find the first occurrence on or after weekStart
+                if (startDate > weekEnd) break;
+                var daysSinceStart = (weekStart.Date - startDate).Days;
+                var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / repeatEvery) : 0;
+                var candidate = startDate.AddDays(periods * repeatEvery);
+                while (candidate <= weekEnd)
+                {
+                    if (candidate >= weekStart)
+                        occurrences.Add(candidate);
+                    candidate = candidate.AddDays(repeatEvery);
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
+            {
+                if (startDate > weekEnd) break;
+                var daysBetween = repeatEvery * 7;
+                var daysSinceStart = (weekStart.Date - startDate).Days;
+                var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / daysBetween) : 0;
+                var candidate = startDate.AddDays(periods * daysBetween);
+                while (candidate <= weekEnd)
+                {
+                    if (candidate >= weekStart)
+                        occurrences.Add(candidate);
+                    candidate = candidate.AddDays(daysBetween);
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
+            {
+                if (startDate > weekEnd) break;
+                var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                // Find starting month
+                var monthsSinceStart = (weekStart.Year - startDate.Year) * 12 + weekStart.Month - startDate.Month;
+                var periods = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
+                var candidateMonth = startDate.AddMonths(periods * repeatEvery);
+                for (var i = 0; i < 3; i++) // at most 3 months can overlap a week
+                {
+                    var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
+                        Math.Min(dom, DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month)),
+                        0, 0, 0, DateTimeKind.Utc);
+                    if (candidate > weekEnd) break;
+                    if (candidate >= weekStart)
+                        occurrences.Add(candidate);
+                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                }
+                break;
+            }
+            default:
+            {
+                // No repeat — show on StartDate if it falls in the week
+                if (startDate >= weekStart && startDate <= weekEnd)
+                    occurrences.Add(startDate);
+                break;
+            }
+        }
+
+        // Respect RepeatUntil if set
+        if (planning.RepeatUntil.HasValue)
+            occurrences.RemoveAll(d => d > planning.RepeatUntil.Value);
+
+        return occurrences;
     }
 
     private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)

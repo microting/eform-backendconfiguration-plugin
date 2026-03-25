@@ -15,7 +15,7 @@ import {
 import {CdkDragDrop, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
-import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
@@ -34,9 +34,11 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @ViewChild('dayColTpl', {static: true}) dayColTpl!: TemplateRef<any>;
 
   @Input() tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
+  @Input() allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
   @Input() currentDate: string = '';
   @Input() boards: CalendarBoardModel[] = [];
   @Input() dayViewMode = false;
+  @Input() isAdmin = false;
   @Input() employees: CommonDictionaryModel[] = [];
   @Input() tags: string[] = [];
   @Input() properties: CommonDictionaryModel[] = [];
@@ -371,5 +373,20 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   get timeAxisLabels(): string[] {
     return Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+  }
+
+  get hasAllDayTasks(): boolean {
+    return this.allDayTasksByDay.some(day => day.length > 0);
+  }
+
+  onAllDayTaskClicked(event: MouseEvent, task: CalendarTaskModel, dayIndex: number) {
+    const chipEl = event.currentTarget as HTMLElement;
+    const chipRect = chipEl.getBoundingClientRect();
+    this.taskClicked.emit({
+      task: {...task, _colIndex: 0, _colCount: 1} as CalendarTaskLayoutModel,
+      cellLeft: chipRect.left,
+      cellRight: chipRect.right,
+      slotTop: chipRect.bottom,
+    });
   }
 }

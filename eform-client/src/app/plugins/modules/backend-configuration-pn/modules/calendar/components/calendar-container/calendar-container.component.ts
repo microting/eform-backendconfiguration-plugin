@@ -3,12 +3,15 @@ import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
+import {Store} from '@ngrx/store';
+import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import {
   CalendarBoardModel,
+  CalendarRepeatRule,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
 } from '../../../../models/calendar';
@@ -42,6 +45,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   tags: SharedTagModel[] = [];
   tasks: CalendarTaskModel[] = [];
   tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
+  allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
 
   get tagNames(): string[] { return this.tags.map(t => t.name); }
 
@@ -51,6 +55,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   activeBoardIds: number[] = [];
   activeTagNames: string[] = [];
   sidebarOpen = true;
+  isAdmin = false;
 
   constructor(
     private overlay: Overlay,
@@ -61,7 +66,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
     private dialog: MatDialog,
-  ) {}
+    private store: Store,
+  ) {
+    this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
+      .subscribe(isAdmin => this.isAdmin = isAdmin);
+  }
 
   ngOnInit(): void {
     this.stateService.filters$.pipe(takeUntil(this.destroy$)).subscribe(filters => {
@@ -168,14 +177,19 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       )
       .subscribe(res => {
         if (res && res.success) {
-          this.tasks = res.model;
+          this.tasks = (res.model || []).map((t: any) => ({
+            ...t,
+            repeatRule: this.mapRepeatType(t.repeatType ?? 0, t.repeatEvery ?? 1),
+          }));
           this.rebuildLayout(monday);
         }
       });
   }
 
   private rebuildLayout(monday: Date) {
+    const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
     this.tasksByDay = Array.from({length: 7}, () => []);
+    this.allDayTasksByDay = Array.from({length: 7}, () => []);
     this.tasks.forEach(task => {
       const taskDate = new Date(task.taskDate);
       taskDate.setHours(0, 0, 0, 0);
@@ -183,7 +197,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       mondayCopy.setHours(0, 0, 0, 0);
       const dayIdx = Math.round((taskDate.getTime() - mondayCopy.getTime()) / 86400000);
       if (dayIdx >= 0 && dayIdx < 7) {
-        this.tasksByDay[dayIdx].push({...task, _colIndex: 0, _colCount: 1});
+        const color = (task.boardId && boardColorMap.get(task.boardId)) || task.color;
+        if (task.isAllDay) {
+          this.allDayTasksByDay[dayIdx].push({...task, color});
+        } else {
+          this.tasksByDay[dayIdx].push({...task, color, _colIndex: 0, _colCount: 1});
+        }
       }
     });
     this.tasksByDay = this.tasksByDay.map(dayTasks =>
@@ -375,7 +394,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closePreviewOverlay();
-      if (result === 'edit' && !event.task.isFromCompliance) {
+      if (result === 'edit') {
         this.openEditModal(event);
       } else if (result === 'reload') {
         this.weekGrid?.clearSelection();
@@ -476,6 +495,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const modalWidth = 500;
     const spaceRight = window.innerWidth - cellRight;
     return spaceRight >= modalWidth + 16 ? cellRight : cellLeft;
+  }
+
+  private mapRepeatType(repeatType: number, repeatEvery: number): CalendarRepeatRule {
+    if (!repeatType || repeatType === 0) return 'none';
+    switch (repeatType) {
+      case 1: return repeatEvery === 1 ? 'daily' : 'custom';
+      case 2: return repeatEvery === 1 ? 'weekly' : 'custom';
+      case 3: return repeatEvery === 1 ? 'monthly' : 'custom';
+      default: return 'none';
+    }
   }
 
   private toLocalDateString(d: Date): string {

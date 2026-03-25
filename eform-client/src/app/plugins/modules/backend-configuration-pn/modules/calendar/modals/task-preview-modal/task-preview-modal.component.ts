@@ -38,6 +38,11 @@ export class TaskPreviewModalComponent {
     return board?.name ?? '';
   }
 
+  get boardColor(): string {
+    const board = this.data.boards.find(b => b.id === this.data.task.boardId);
+    return board?.color ?? this.data.task.color;
+  }
+
   get propertyName(): string {
     const prop = this.data.properties?.find(p => p.id === this.data.task.propertyId);
     return prop?.name ?? '';

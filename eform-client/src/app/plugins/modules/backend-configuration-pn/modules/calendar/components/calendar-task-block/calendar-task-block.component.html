@@ -26,7 +26,7 @@
   </button>
 
   <div class="task-content">
-    <div class="task-title">{{ task.title }}</div>
+    <div class="task-title"><span *ngIf="showId" class="task-id">{{ task.id }} </span>{{ task.title }}</div>
     <div class="task-time" *ngIf="task.duration >= 0.5">{{ task.startText }} – {{ task.endText }}</div>
   </div>
 </div>

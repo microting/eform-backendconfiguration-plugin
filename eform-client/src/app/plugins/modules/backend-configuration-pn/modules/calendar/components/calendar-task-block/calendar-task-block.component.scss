@@ -51,6 +51,11 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
+      .task-id {
+        opacity: 0.7;
+        font-size: 0.85em;
+      }
     }
 
     .task-time {
