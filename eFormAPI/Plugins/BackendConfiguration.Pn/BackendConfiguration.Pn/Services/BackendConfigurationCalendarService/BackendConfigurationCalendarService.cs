@@ -112,7 +112,9 @@ public class BackendConfigurationCalendarService(
                     continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var calConfig);
-                var isAllDay = calConfig == null;
+                var isRepeatAlways = arp.RepeatType.HasValue && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
+                var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
+                var isAllDay = calConfig == null && !hasNonAlwaysRepeat;
 
                 var title = arp.AreaRule?.AreaRuleTranslations?
                     .Where(t => t.LanguageId == userLanguageId)
@@ -220,7 +222,9 @@ public class BackendConfigurationCalendarService(
                         .ToList()
                     : [];
 
-                var compIsAllDay = calConfig == null;
+                var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
+                var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
+                var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
