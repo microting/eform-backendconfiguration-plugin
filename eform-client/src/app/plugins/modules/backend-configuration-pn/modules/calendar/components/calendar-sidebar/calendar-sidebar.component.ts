@@ -21,11 +21,13 @@ export class CalendarSidebarComponent {
   @Input() tags: SharedTagModel[] = [];
   @Input() activeBoardIds: number[] = [];
   @Input() activeSiteIds: number[] = [];
+  @Input() activeTeamIds: number[] = [];
   @Input() activeTagNames: string[] = [];
   @Input() selectedPropertyId: number | null = null;
 
   @Output() propertySelected = new EventEmitter<number | null>();
   @Output() boardToggled = new EventEmitter<number>();
+  @Output() teamToggled = new EventEmitter<number>();
   @Output() employeeToggled = new EventEmitter<number>();
   @Output() tagToggled = new EventEmitter<string>();
   @Output() createProperty = new EventEmitter<void>();
@@ -50,6 +52,10 @@ export class CalendarSidebarComponent {
   editingBoardColor = '';
 
   constructor(private dialog: MatDialog) {}
+
+  isTeamActive(teamId: number): boolean {
+    return this.activeTeamIds.includes(teamId);
+  }
 
   isBoardActive(boardId: number): boolean {
     return this.activeBoardIds.includes(boardId);

@@ -62,8 +62,8 @@
       <mat-panel-title>{{ 'My teams' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="team-list">
-      <div class="team-item" *ngFor="let team of teams">
-        <span class="team-name">{{ team.name }}</span>
+      <div class="team-item" [class.active]="isTeamActive(team.id)" *ngFor="let team of teams">
+        <span class="team-name" (click)="teamToggled.emit(team.id)" style="cursor: pointer">{{ team.name }}</span>
         <button mat-icon-button class="team-menu-btn" [matMenuTriggerFor]="teamMenu" (click)="startEditTeam(team); $event.stopPropagation()">
           <mat-icon>more_vert</mat-icon>
         </button>

@@ -13,6 +13,7 @@ export interface CalendarFiltersModel {
   propertyId: number | null;
   activeBoardIds: number[];
   activeSiteIds: number[];
+  activeTeamIds: number[];
   activeTagNames: string[];
   currentDate: string;           // ISO "YYYY-MM-DD"
   viewMode: 'week' | 'day' | 'schedule';
@@ -29,6 +30,7 @@ export const calendarInitialState: CalendarState = {
     propertyId: null,
     activeBoardIds: [],
     activeSiteIds: [],
+    activeTeamIds: [],
     activeTagNames: [],
     currentDate: new Date().toISOString().split('T')[0],
     viewMode: 'week',
