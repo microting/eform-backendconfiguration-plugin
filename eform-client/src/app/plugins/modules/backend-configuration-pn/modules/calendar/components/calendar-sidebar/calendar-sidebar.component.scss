@@ -37,6 +37,58 @@
         height: 16px;
         color: #4caf50;
       }
+
+      .board-menu-btn {
+        opacity: 0;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      &:hover .board-menu-btn {
+        opacity: 1;
+      }
+    }
+  }
+
+  .team-list {
+    .team-item {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+      cursor: default;
+
+      &:hover {
+        background: #f5f5f5;
+
+        .team-menu-btn {
+          opacity: 1;
+        }
+      }
+
+      .team-name {
+        flex: 1;
+        font-size: 14px;
+      }
+
+      .team-menu-btn {
+        opacity: 0;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
     }
   }
 
@@ -83,5 +135,59 @@
         text-decoration: underline;
       }
     }
+  }
+}
+
+.board-edit-popover {
+  padding: 12px 16px;
+  min-width: 220px;
+
+  .field-label {
+    font-size: 13px;
+    color: #5f6368;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 32px);
+    gap: 8px;
+    margin: 4px 0 8px;
+  }
+
+  .color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+
+    &.selected {
+      outline: 2px solid #333;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.team-edit-popover {
+  padding: 12px 16px;
+  min-width: 200px;
+
+  .team-field-label {
+    font-size: 13px;
+    color: #5f6368;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .delete-team-btn {
+    margin-top: 4px;
+    width: 100%;
+    justify-content: flex-start;
   }
 }

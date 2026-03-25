@@ -1,6 +1,9 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
-import {CalendarBoardModel} from '../../../../models/calendar';
+import {CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
+import {TeamCreateDialogComponent} from './team-create-dialog.component';
+import {TeamDeleteDialogComponent} from './team-delete-dialog.component';
 
 @Component({
   standalone: false,
@@ -25,16 +28,28 @@ export class CalendarSidebarComponent {
   @Output() tagToggled = new EventEmitter<string>();
   @Output() createProperty = new EventEmitter<void>();
   @Output() createBoard = new EventEmitter<void>();
-  @Output() createTeam = new EventEmitter<void>();
+  @Output() createTeam = new EventEmitter<string>();
+  @Output() updateTeam = new EventEmitter<{id: number; name: string}>();
+  @Output() deleteTeam = new EventEmitter<number>();
   @Output() createEmployee = new EventEmitter<void>();
   @Output() createTag = new EventEmitter<string>();
   @Output() updateTag = new EventEmitter<SharedTagModel>();
+  @Output() updateBoard = new EventEmitter<{id: number; name: string; color: string}>();
+  @Output() deleteBoard = new EventEmitter<CalendarBoardModel>();
   @Output() deleteTag = new EventEmitter<number>();
 
   tagSort: 'popularity' | 'alphabetical' = 'popularity';
   newTagName = '';
   editingTagId: number | null = null;
   editingTagName = '';
+  editingTeamId: number | null = null;
+  editingTeamName = '';
+  boardColors = CALENDAR_COLORS;
+  editingBoardId: number | null = null;
+  editingBoardName = '';
+  editingBoardColor = '';
+
+  constructor(private dialog: MatDialog) {}
 
   get sortedTags(): SharedTagModel[] {
     if (this.tagSort === 'alphabetical') {
@@ -65,6 +80,53 @@ export class CalendarSidebarComponent {
       this.updateTag.emit({...tag, name: this.editingTagName.trim()});
     }
     this.editingTagId = null;
+  }
+
+  openCreateTeamDialog() {
+    const dialogRef = this.dialog.open(TeamCreateDialogComponent, {width: '360px'});
+    dialogRef.afterClosed().subscribe(name => {
+      if (name) this.createTeam.emit(name);
+    });
+  }
+
+  startEditTeam(team: CommonDictionaryModel) {
+    this.editingTeamId = team.id;
+    this.editingTeamName = team.name;
+  }
+
+  submitEditTeam() {
+    if (this.editingTeamId !== null && this.editingTeamName.trim()) {
+      this.updateTeam.emit({id: this.editingTeamId, name: this.editingTeamName.trim()});
+    }
+    this.editingTeamId = null;
+  }
+
+  onDeleteTeam(team: CommonDictionaryModel) {
+    const dialogRef = this.dialog.open(TeamDeleteDialogComponent, {
+      disableClose: true,
+      minWidth: 300,
+      data: {id: team.id, name: team.name},
+    });
+    dialogRef.afterClosed().subscribe(deletedId => {
+      if (deletedId) this.deleteTeam.emit(deletedId);
+    });
+  }
+
+  startEditBoard(board: CalendarBoardModel) {
+    this.editingBoardId = board.id;
+    this.editingBoardName = board.name;
+    this.editingBoardColor = board.color;
+  }
+
+  submitEditBoard() {
+    if (this.editingBoardId !== null && this.editingBoardName.trim()) {
+      this.updateBoard.emit({id: this.editingBoardId, name: this.editingBoardName.trim(), color: this.editingBoardColor});
+    }
+    this.editingBoardId = null;
+  }
+
+  onDeleteBoard(board: CalendarBoardModel) {
+    this.deleteBoard.emit(board);
   }
 
   emitCreateTag(): void {

@@ -21,29 +21,65 @@
       <mat-panel-title>{{ 'My boards' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="board-list">
-      <div
-        class="board-item"
-        *ngFor="let board of boards"
-        (click)="boardToggled.emit(board.id)"
-      >
-        <span class="board-color-dot" [style.background]="board.color"></span>
-        <span class="board-name">{{ board.name }}</span>
-        <mat-icon *ngIf="isBoardActive(board.id)" class="check-icon">check</mat-icon>
+      <div class="board-item" *ngFor="let board of boards">
+        <span class="board-color-dot" [style.background]="board.color" (click)="boardToggled.emit(board.id)"></span>
+        <span class="board-name" (click)="boardToggled.emit(board.id)">{{ board.name }}</span>
+        <mat-icon *ngIf="isBoardActive(board.id)" class="check-icon" (click)="boardToggled.emit(board.id)">check</mat-icon>
+        <button mat-icon-button class="board-menu-btn" [matMenuTriggerFor]="boardMenu" (click)="startEditBoard(board); $event.stopPropagation()">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #boardMenu="matMenu">
+          <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+            <label class="field-label">{{ 'Navn tavle' | translate }}</label>
+            <mat-form-field appearance="outline" style="width: 100%;">
+              <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">
+            </mat-form-field>
+            <label class="field-label">{{ 'Farve' | translate }}</label>
+            <div class="color-picker-grid">
+              <div
+                class="color-swatch"
+                *ngFor="let c of boardColors"
+                [style.background]="c"
+                [class.selected]="editingBoardColor === c"
+                (click)="editingBoardColor = c; submitEditBoard()"
+              ></div>
+            </div>
+            <button mat-menu-item class="btn-delete-menu" (click)="onDeleteBoard(board)">
+              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Slet tavle' | translate }}</span>
+            </button>
+          </div>
+        </mat-menu>
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="createBoard.emit()">+ {{ 'Create board' | translate }}</a>
+    <a class="sidebar-action-link" (click)="createBoard.emit()">+ {{ 'Opret tavle' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My teams' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
-    <mat-nav-list dense>
-      <mat-list-item *ngFor="let team of teams">
-        {{ team.name }}
-      </mat-list-item>
-    </mat-nav-list>
-    <a class="sidebar-action-link" (click)="createTeam.emit()">+ {{ 'Create team' | translate }}</a>
+    <div class="team-list">
+      <div class="team-item" *ngFor="let team of teams">
+        <span class="team-name">{{ team.name }}</span>
+        <button mat-icon-button class="team-menu-btn" [matMenuTriggerFor]="teamMenu" (click)="startEditTeam(team); $event.stopPropagation()">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #teamMenu="matMenu" class="team-edit-menu">
+          <div class="team-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+            <label class="team-field-label">{{ 'Teamnavn' | translate }}</label>
+            <mat-form-field appearance="outline" style="width: 100%;">
+              <input matInput [(ngModel)]="editingTeamName" (keydown.enter)="submitEditTeam()">
+            </mat-form-field>
+            <button mat-menu-item class="btn-delete-menu" (click)="onDeleteTeam(team)">
+              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Slet team' | translate }}</span>
+            </button>
+          </div>
+        </mat-menu>
+      </div>
+    </div>
+    <a class="sidebar-action-link" (click)="openCreateTeamDialog()">+ {{ 'Opret team' | translate }}</a>
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">

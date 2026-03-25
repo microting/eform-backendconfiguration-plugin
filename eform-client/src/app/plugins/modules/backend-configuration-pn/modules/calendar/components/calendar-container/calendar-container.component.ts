@@ -23,6 +23,7 @@ import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modal
 import {CalendarWeekGridComponent} from '../calendar-week-grid/calendar-week-grid.component';
 import {TaskPreviewModalComponent, TaskPreviewModalData} from '../../modals/task-preview-modal/task-preview-modal.component';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
+import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 
@@ -66,6 +67,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private layoutService: CalendarLayoutService,
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
+    private eformTagService: EformTagService,
     private dialog: MatDialog,
     private store: Store,
   ) {
@@ -87,6 +89,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadProperties();
     this.loadEmployees();
     this.loadTags();
+    this.loadTeams();
   }
 
   ngOnDestroy(): void {
@@ -138,6 +141,30 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onDeleteTag(id: number) {
     this.tagsService.deletePlanningTag(id).subscribe(res => {
       if (res && res.success) this.loadTags();
+    });
+  }
+
+  loadTeams() {
+    this.eformTagService.getAvailableTags().subscribe(res => {
+      if (res && res.success) this.teams = res.model;
+    });
+  }
+
+  onCreateTeam(name: string) {
+    this.eformTagService.createTag({name} as any).subscribe(res => {
+      if (res && res.success) this.loadTeams();
+    });
+  }
+
+  onUpdateTeam(event: {id: number; name: string}) {
+    this.eformTagService.updateTag({id: event.id, name: event.name, description: null} as any).subscribe(res => {
+      if (res && res.success) this.loadTeams();
+    });
+  }
+
+  onDeleteTeam(teamId: number) {
+    this.eformTagService.deleteTag(teamId).subscribe(res => {
+      if (res && res.success) this.loadTeams();
     });
   }
 
@@ -288,6 +315,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.currentPropertyId) {
         this.loadBoards(this.currentPropertyId);
+      }
+    });
+  }
+
+  onUpdateBoard(event: {id: number; name: string; color: string}) {
+    this.calendarService.updateBoard(event).subscribe(res => {
+      if (res && res.success && this.currentPropertyId) {
+        this.loadBoards(this.currentPropertyId);
+        this.loadTasks();
       }
     });
   }

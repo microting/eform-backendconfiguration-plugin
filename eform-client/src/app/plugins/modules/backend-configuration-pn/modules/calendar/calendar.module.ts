@@ -19,6 +19,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatListModule} from '@angular/material/list';
+import {MatMenuModule} from '@angular/material/menu';
 import {MatRadioModule} from '@angular/material/radio';
 import {MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -26,6 +27,8 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
+import {TeamCreateDialogComponent} from './components/calendar-sidebar/team-create-dialog.component';
+import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-delete-dialog.component';
 
 import {CalendarRouting} from './calendar.routing';
 import {
@@ -78,6 +81,8 @@ export {
     CustomRepeatModalComponent,
     BoardCreateModalComponent,
     BoardDeleteModalComponent,
+    TeamCreateDialogComponent,
+    TeamDeleteDialogComponent,
   ],
   imports: [
     CommonModule,
@@ -104,6 +109,7 @@ export {
     MatIconModule,
     MatInputModule,
     MatListModule,
+    MatMenuModule,
     MatRadioModule,
     MatSelectModule,
     MatTooltipModule,

@@ -12,6 +12,34 @@ export interface BoardCreateModalData {
   standalone: false,
   selector: 'app-board-create-modal',
   templateUrl: './board-create-modal.component.html',
+  styles: [`
+    .field-label {
+      font-size: 13px;
+      color: #5f6368;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 32px);
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+    .color-swatch.selected {
+      outline: 2px solid #333;
+      outline-offset: 2px;
+    }
+  `],
 })
 export class BoardCreateModalComponent implements OnInit {
   form!: FormGroup;

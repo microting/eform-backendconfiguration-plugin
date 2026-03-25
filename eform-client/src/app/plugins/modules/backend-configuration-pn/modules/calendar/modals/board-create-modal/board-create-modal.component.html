@@ -1,28 +1,27 @@
-<h3 mat-dialog-title>{{ 'New board' | translate }}</h3>
-
-<div mat-dialog-content>
+<h2 mat-dialog-title>
+  <mat-icon style="vertical-align: middle; margin-right: 8px;">dashboard</mat-icon>
+  {{ 'Opret tavle' | translate }}
+</h2>
+<mat-dialog-content>
   <form [formGroup]="form">
-    <mat-form-field class="full-width">
-      <mat-label>{{ 'Name' | translate }}</mat-label>
-      <input matInput formControlName="name" required>
+    <label class="field-label">{{ 'Navn' | translate }}</label>
+    <mat-form-field appearance="outline" style="width: 100%;">
+      <input matInput formControlName="name" [placeholder]="'Indtast navn tavle' | translate">
     </mat-form-field>
 
-    <div class="color-picker">
-      <label>{{ 'Color' | translate }}:</label>
-      <div class="colors">
-        <div
-          class="color-swatch"
-          *ngFor="let c of colors"
-          [style.background]="c"
-          [class.selected]="form.value.color === c"
-          (click)="form.patchValue({color: c})"
-        ></div>
-      </div>
+    <label class="field-label">{{ 'Farve' | translate }}</label>
+    <div class="color-picker-grid">
+      <div
+        class="color-swatch"
+        *ngFor="let c of colors"
+        [style.background]="c"
+        [class.selected]="form.value.color === c"
+        (click)="form.patchValue({color: c})"
+      ></div>
     </div>
   </form>
-</div>
-
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
-  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">{{ 'Create' | translate }}</button>
-</div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>{{ 'Annuller' | translate }}</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="onSave()">{{ 'Opret' | translate }}</button>
+</mat-dialog-actions>
