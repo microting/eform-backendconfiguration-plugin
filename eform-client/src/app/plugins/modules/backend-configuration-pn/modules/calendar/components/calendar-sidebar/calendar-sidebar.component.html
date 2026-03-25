@@ -4,15 +4,16 @@
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My properties' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
-    <mat-nav-list dense>
-      <mat-list-item
+    <div class="property-list">
+      <div
+        class="property-item"
         *ngFor="let prop of properties"
         [class.active]="prop.id === selectedPropertyId"
         (click)="propertySelected.emit(prop.id)"
       >
         {{ prop.name }}
-      </mat-list-item>
-    </mat-nav-list>
+      </div>
+    </div>
     <a class="sidebar-action-link" (click)="createProperty.emit()">+ {{ 'Create property' | translate }}</a>
   </mat-expansion-panel>
 
@@ -22,9 +23,10 @@
     </mat-expansion-panel-header>
     <div class="board-list">
       <div class="board-item" *ngFor="let board of boards">
-        <span class="board-color-dot" [style.background]="board.color" (click)="boardToggled.emit(board.id)"></span>
+        <span class="board-checkbox" [class.active]="isBoardActive(board.id)" [style.background]="isBoardActive(board.id) ? board.color : 'transparent'" [style.border-color]="isBoardActive(board.id) ? board.color : '#9e9e9e'" (click)="boardToggled.emit(board.id)">
+          <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon">check</mat-icon>
+        </span>
         <span class="board-name" (click)="boardToggled.emit(board.id)">{{ board.name }}</span>
-        <mat-icon *ngIf="isBoardActive(board.id)" class="check-icon" (click)="boardToggled.emit(board.id)">check</mat-icon>
         <button mat-icon-button class="board-menu-btn" [matMenuTriggerFor]="boardMenu" (click)="startEditBoard(board); $event.stopPropagation()">
           <mat-icon>more_vert</mat-icon>
         </button>
@@ -86,15 +88,14 @@
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My employees' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
-    <div class="board-list">
+    <div class="property-list">
       <div
-        class="board-item"
+        class="property-item"
         *ngFor="let emp of employees"
+        [class.active]="isEmployeeActive(emp.id)"
         (click)="employeeToggled.emit(emp.id)"
-        style="cursor: pointer"
       >
-        <span class="board-name">{{ emp.name }}</span>
-        <mat-icon *ngIf="isEmployeeActive(emp.id)" class="check-icon">check</mat-icon>
+        {{ emp.name }}
       </div>
     </div>
     <a class="sidebar-action-link" (click)="createEmployee.emit()">+ {{ 'Create employee' | translate }}</a>
@@ -105,9 +106,8 @@
       <mat-panel-title>{{ 'My tags' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="team-list">
-      <div class="team-item" *ngFor="let tag of tags">
+      <div class="team-item" [class.active]="isTagActive(tag)" *ngFor="let tag of tags">
         <span class="team-name" (click)="tagToggled.emit(tag.name)" style="cursor: pointer">{{ tag.name }}</span>
-        <mat-icon *ngIf="isTagActive(tag)" class="check-icon">check</mat-icon>
         <button mat-icon-button class="team-menu-btn" [matMenuTriggerFor]="tagMenu" (click)="startEdit(tag); $event.stopPropagation()">
           <mat-icon>more_vert</mat-icon>
         </button>

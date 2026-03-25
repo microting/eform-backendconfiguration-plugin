@@ -1,9 +1,23 @@
 .calendar-sidebar {
   padding: 8px 0;
 
-  mat-list-item.active {
-    background: rgba(0, 0, 0, 0.08);
-    font-weight: 500;
+  .property-list {
+    .property-item {
+      padding: 6px 16px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      &.active {
+        background: rgba(26, 115, 232, 0.08);
+        font-weight: 500;
+        color: #1a73e8;
+      }
+    }
   }
 
   .board-list {
@@ -19,23 +33,28 @@
         background: rgba(0, 0, 0, 0.04);
       }
 
-      .board-color-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
+      .board-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 3px;
+        border: 2px solid #9e9e9e;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        .board-check-icon {
+          font-size: 14px;
+          width: 14px;
+          height: 14px;
+          color: white;
+        }
       }
 
       .board-name {
         flex: 1;
         font-size: 0.875rem;
-      }
-
-      .check-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        color: #4caf50;
       }
 
       .board-menu-btn {
@@ -61,11 +80,18 @@
     .team-item {
       display: flex;
       align-items: center;
-      padding: 4px 8px;
+      padding: 6px 16px;
       cursor: default;
+      border-radius: 4px;
+
+      &.active {
+        background: rgba(26, 115, 232, 0.08);
+        font-weight: 500;
+        color: #1a73e8;
+      }
 
       &:hover {
-        background: #f5f5f5;
+        background: rgba(0, 0, 0, 0.04);
 
         .team-menu-btn {
           opacity: 1;
