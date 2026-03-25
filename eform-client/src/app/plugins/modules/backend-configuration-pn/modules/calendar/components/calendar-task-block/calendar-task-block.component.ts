@@ -20,6 +20,13 @@ export class CalendarTaskBlockComponent {
   @Output() dragMoved = new EventEmitter<CdkDragMove<CalendarTaskLayoutModel>>();
   @Output() dragEnded = new EventEmitter<void>();
 
+  get isPast(): boolean {
+    const d = new Date(this.task.taskDate);
+    const endHour = this.task.startHour + this.task.duration;
+    d.setHours(Math.floor(endHour), Math.round((endHour % 1) * 60), 0, 0);
+    return d < new Date();
+  }
+
   get topPx(): number {
     return this.task.startHour * this.hourHeight;
   }

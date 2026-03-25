@@ -48,6 +48,21 @@ export class TaskPreviewModalComponent {
     return prop?.name ?? '';
   }
 
+  get timeDisplay(): string {
+    const task = this.data.task;
+    const start = task.startText || this.hourToTimeStr(task.startHour);
+    const end = task.endText || this.hourToTimeStr(task.startHour + task.duration);
+    if (!start && !end) return '';
+    return `${start} – ${end}`;
+  }
+
+  private hourToTimeStr(hour: number): string {
+    if (hour == null || hour === 0) return '';
+    const h = Math.floor(Math.min(hour, 23.75));
+    const m = Math.round((hour % 1) * 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
   get repeatLabel(): string {
     const rule = this.data.task.repeatRule;
     const labels: Record<string, string> = {

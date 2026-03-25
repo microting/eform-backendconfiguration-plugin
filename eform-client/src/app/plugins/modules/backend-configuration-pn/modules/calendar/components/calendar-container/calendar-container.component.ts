@@ -26,6 +26,9 @@ import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning
 import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
+import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {RepeatEditScope} from '../../../../models/calendar';
 
 @Component({
   standalone: false,
@@ -390,17 +393,29 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Find the task to check if it's from compliance (read-only)
     const task = this.tasks.find(t => t.id === event.taskId);
-    if (task?.isFromCompliance) {
-      return;
-    }
+    const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
 
-    this.calendarService
-      .moveTask(event.taskId, event.newDate, event.newStartHour)
-      .subscribe(res => {
+    const doMove = (scope?: RepeatEditScope) => {
+      const obs = isRepeating
+        ? this.calendarService.moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope ?? 'this')
+        : this.calendarService.moveTask(event.taskId, event.newDate, event.newStartHour);
+      obs.subscribe(res => {
         if (res && res.success) this.loadTasks();
       });
+    };
+
+    if (isRepeating) {
+      const ref = this.dialog.open(
+        RepeatScopeModalComponent,
+        dialogConfigHelper(this.overlay, {mode: 'move'})
+      );
+      ref.afterClosed().subscribe(scope => {
+        if (scope) doMove(scope);
+      });
+    } else {
+      doMove();
+    }
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

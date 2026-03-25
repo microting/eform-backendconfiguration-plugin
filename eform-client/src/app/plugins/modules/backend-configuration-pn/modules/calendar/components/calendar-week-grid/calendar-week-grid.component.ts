@@ -63,6 +63,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   dragSourceLeft: number | null = null;
   dragSourceTop: number | null = null;
   dragSourceWidth: number = 0;
+  private dragTargetDayIndex: number | null = null;
 
   // Selection indicator (absolute coords within scroll container)
   selectionTop: number | null = null;
@@ -237,21 +238,14 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {
     const task: CalendarTaskLayoutModel = event.item.data;
-    const cell = event.container.element.nativeElement;
-    const dayIndex = parseInt(cell.dataset['day'] ?? '0', 10);
+
+    // Use the snapped position tracked during onTaskDragMoved
+    const dayIndex = this.dragTargetDayIndex;
+    const newStartHour = this.dragIndicatorHour ?? 0;
+    this.clearDragState();
+    if (dayIndex == null || dayIndex < 0) return;
     const date = this.weekDays[dayIndex];
-    const rect = cell.getBoundingClientRect();
-    const relY = event.dropPoint.y - rect.top;
-    const newStartHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
     const newDate = date ? this.toLocalDateString(date) : null;
-    console.log('[DROP] container.id=', event.container.id,
-      '| data-day=', cell.dataset['day'], '→ dayIndex=', dayIndex,
-      '| weekDays.length=', this.weekDays.length,
-      '| date=', newDate,
-      '| dropPoint=', event.dropPoint,
-      '| rect={left:', rect.left, 'top:', rect.top, 'width:', rect.width, '}',
-      '| relY=', relY, '→ newStartHour=', newStartHour,
-      '| taskId=', task.id, 'taskDate=', task.taskDate);
     if (!date || !newDate) return;
 
     // Reject drop to past time
@@ -295,6 +289,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
         this.dragIndicatorTopPx = cellTopAbsolute + snappedHour * this.hourHeight;
         this.dragGhostLeft = rect.left - containerRect.left + containerEl.scrollLeft;
         this.dragGhostWidth = rect.width - 4;
+        this.dragTargetDayIndex = parseInt(el.dataset['day'] ?? '-1', 10);
         found = true;
         break;
       }
@@ -306,12 +301,17 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   onTaskDragEnded() {
+    // Only clear visual state here — position data is consumed by onDrop which fires after this
     this.draggingTask = null;
     this.dragIndicatorTopPx = null;
-    this.dragIndicatorHour = null;
     this.dragGhostLeft = null;
     this.dragSourceLeft = null;
     this.dragSourceTop = null;
+  }
+
+  private clearDragState() {
+    this.dragIndicatorHour = null;
+    this.dragTargetDayIndex = null;
   }
 
   private captureDragSource(task: CalendarTaskLayoutModel): void {

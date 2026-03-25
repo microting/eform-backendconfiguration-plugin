@@ -23,7 +23,7 @@
     <!-- Date + Time -->
     <div class="preview-row">
       <mat-icon class="preview-icon">schedule</mat-icon>
-      <span>{{ data.task.taskDate | date:'d. MMMM yyyy' }}; {{ data.task.startText }} – {{ data.task.endText }}</span>
+      <span>{{ data.task.taskDate | date:'d. MMMM yyyy' }}<ng-container *ngIf="timeDisplay">; {{ timeDisplay }}</ng-container></span>
     </div>
 
     <!-- Repeat -->

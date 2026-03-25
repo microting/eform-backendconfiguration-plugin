@@ -9,7 +9,7 @@
   (click)="clicked.emit(task)"
   cdkDrag
   [cdkDragData]="task"
-  [cdkDragDisabled]="task.isFromCompliance === true"
+  [cdkDragDisabled]="isPast"
   (cdkDragMoved)="dragMoved.emit($event)"
   (cdkDragEnded)="dragEnded.emit()"
 >
