@@ -89,6 +89,29 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
+            // Batch-load occurrence exceptions for this week
+            var exceptionsInWeek = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x =>
+                    (x.OriginalDate >= weekStart && x.OriginalDate <= weekEnd) ||
+                    (x.NewDate.HasValue && x.NewDate.Value >= weekStart && x.NewDate.Value <= weekEnd))
+                .Include(x => x.ExceptionSites)
+                .ToListAsync();
+
+            var exceptionsByArp = exceptionsInWeek
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.ToDictionary(x => x.OriginalDate.Date));
+
+            var movedInExceptions = exceptionsInWeek
+                .Where(x => x.NewDate.HasValue
+                    && !x.IsDeleted
+                    && (x.OriginalDate < weekStart || x.OriginalDate > weekEnd)
+                    && x.NewDate.Value >= weekStart && x.NewDate.Value <= weekEnd)
+                .ToList();
+
             // Batch-load tags for all ARPs
             var allArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => arpIds.Contains(x.AreaRulePlanningId))
@@ -134,19 +157,37 @@ public class BackendConfigurationCalendarService(
 
                 foreach (var occurrenceDate in occurrences)
                 {
-                    // Skip if this planning already has a compliance in the week (avoid duplicates)
                     if (compliancePlanningIdsInWeek.Contains(arp.ItemPlanningId))
                         continue;
+
+                    CalendarOccurrenceException exception = null;
+                    if (exceptionsByArp.TryGetValue(arp.Id, out var arpExceptions))
+                    {
+                        arpExceptions.TryGetValue(occurrenceDate.Date, out exception);
+                    }
+
+                    if (exception is { IsDeleted: true })
+                        continue;
+
+                    var effectiveDate = exception?.NewDate?.Date ?? occurrenceDate;
+                    var effectiveStartHour = exception?.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                    var effectiveDuration = exception?.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
+                    var effectiveAssignees = exception?.ExceptionSites is { Count: > 0 }
+                        ? exception.ExceptionSites
+                            .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(s => s.SiteId)
+                            .ToList()
+                        : assigneeIds;
 
                     var model = new CalendarTaskResponseModel
                     {
                         Id = arp.Id,
                         Title = title,
-                        StartHour = isAllDay ? 0 : calConfig?.StartHour ?? 9.0,
-                        Duration = isAllDay ? 0 : calConfig?.Duration ?? 1.0,
-                        TaskDate = occurrenceDate.ToString("yyyy-MM-dd"),
+                        StartHour = effectiveStartHour,
+                        Duration = effectiveDuration,
+                        TaskDate = effectiveDate.ToString("yyyy-MM-dd"),
                         Tags = tags,
-                        AssigneeIds = assigneeIds,
+                        AssigneeIds = effectiveAssignees,
                         BoardId = calConfig?.BoardId ?? defaultBoardId,
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
@@ -156,13 +197,75 @@ public class BackendConfigurationCalendarService(
                         IsFromCompliance = false,
                         NextExecutionTime = planning.NextExecutionTime,
                         PlanningId = planning.Id,
-                        IsAllDay = isAllDay
+                        IsAllDay = isAllDay,
+                        ExceptionId = exception?.Id
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
                     {
                         result.Add(model);
                     }
+                }
+            }
+
+            // Add occurrences that were moved INTO this week from outside
+            foreach (var movedIn in movedInExceptions)
+            {
+                var arp = areaRulePlannings.FirstOrDefault(a => a.Id == movedIn.AreaRulePlanningId);
+                if (arp == null) continue;
+                if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var movedPlanning)) continue;
+
+                calConfigsDict.TryGetValue(arp.Id, out var movedCalConfig);
+                var isRepeatAlways = arp.RepeatType.HasValue && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
+                var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
+                var isAllDay = movedCalConfig == null && !hasNonAlwaysRepeat;
+
+                var title = arp.AreaRule?.AreaRuleTranslations?
+                    .Where(t => t.LanguageId == userLanguageId)
+                    .Select(t => t.Name)
+                    .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
+
+                var movedTags = allArpTags
+                    .Where(x => x.AreaRulePlanningId == arp.Id)
+                    .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                    .Where(x => x != null)
+                    .ToList();
+
+                var movedAssignees = movedIn.ExceptionSites is { Count: > 0 }
+                    ? movedIn.ExceptionSites
+                        .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(s => s.SiteId)
+                        .ToList()
+                    : arp.PlanningSites?
+                        .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(ps => (int)ps.SiteId)
+                        .ToList() ?? [];
+
+                var movedModel = new CalendarTaskResponseModel
+                {
+                    Id = arp.Id,
+                    Title = title,
+                    StartHour = movedIn.StartHour ?? (isAllDay ? 0 : movedCalConfig?.StartHour ?? 9.0),
+                    Duration = movedIn.Duration ?? (isAllDay ? 0 : movedCalConfig?.Duration ?? 1.0),
+                    TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
+                    Tags = movedTags,
+                    AssigneeIds = movedAssignees,
+                    BoardId = movedCalConfig?.BoardId ?? defaultBoardId,
+                    Color = movedCalConfig?.Color,
+                    RepeatType = arp.RepeatType ?? 0,
+                    RepeatEvery = arp.RepeatEvery ?? 1,
+                    Completed = false,
+                    PropertyId = arp.PropertyId,
+                    IsFromCompliance = false,
+                    NextExecutionTime = movedPlanning.NextExecutionTime,
+                    PlanningId = movedPlanning.Id,
+                    IsAllDay = isAllDay,
+                    ExceptionId = movedIn.Id
+                };
+
+                if (ShouldIncludeTask(movedModel, requestModel))
+                {
+                    result.Add(movedModel);
                 }
             }
 
@@ -417,30 +520,100 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationResult> DeleteTask(int id)
+    public async Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel)
     {
         try
         {
-            // Delete CalendarConfiguration if it exists
-            var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
-                .Where(x => x.AreaRulePlanningId == id)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .FirstOrDefaultAsync();
+            var scope = deleteModel.Scope ?? "all";
 
-            if (calConfig != null)
+            if (scope == "this" && !string.IsNullOrEmpty(deleteModel.OriginalDate))
             {
-                await calConfig.Delete(backendConfigurationPnDbContext);
-            }
+                var originalDate = DateTime.Parse(deleteModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-            // Delete the underlying AreaRulePlanning/Planning via TaskWizard service
-            var wizardResult = await taskWizardService.DeleteTask(id);
-            if (!wizardResult.Success)
+                var existing = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == deleteModel.Id)
+                    .Where(x => x.OriginalDate == originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (existing != null)
+                {
+                    existing.IsDeleted = true;
+                    existing.UpdatedByUserId = userService.UserId;
+                    await existing.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    var exception = new CalendarOccurrenceException
+                    {
+                        AreaRulePlanningId = deleteModel.Id,
+                        OriginalDate = originalDate,
+                        IsDeleted = true,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await exception.Create(backendConfigurationPnDbContext);
+                }
+
+                return new OperationResult(true,
+                    localizationService.GetString("CalendarTaskDeletedSuccessfully"));
+            }
+            else if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(deleteModel.OriginalDate))
             {
-                return wizardResult;
-            }
+                var originalDate = DateTime.Parse(deleteModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-            return new OperationResult(true,
-                localizationService.GetString("CalendarTaskDeletedSuccessfully"));
+                var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == deleteModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (arp == null)
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("AreaRulePlanningNotFound"));
+                }
+
+                if (originalDate <= arp.StartDate)
+                {
+                    return await DeleteEntireSeries(deleteModel.Id);
+                }
+
+                arp.EndDate = originalDate.AddDays(-1);
+                arp.UpdatedByUserId = userService.UserId;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .Where(x => x.Id == arp.ItemPlanningId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (planning != null)
+                {
+                    planning.RepeatUntil = originalDate.AddDays(-1);
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
+
+                var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == deleteModel.Id)
+                    .Where(x => x.OriginalDate >= originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+
+                foreach (var stale in staleExceptions)
+                {
+                    await stale.Delete(backendConfigurationPnDbContext);
+                }
+
+                return new OperationResult(true,
+                    localizationService.GetString("CalendarTaskDeletedSuccessfully"));
+            }
+            else
+            {
+                return await DeleteEntireSeries(deleteModel.Id);
+            }
         }
         catch (Exception e)
         {
@@ -451,6 +624,38 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    private async Task<OperationResult> DeleteEntireSeries(int arpId)
+    {
+        var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync();
+
+        if (calConfig != null)
+        {
+            await calConfig.Delete(backendConfigurationPnDbContext);
+        }
+
+        var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        foreach (var ex in exceptions)
+        {
+            await ex.Delete(backendConfigurationPnDbContext);
+        }
+
+        var wizardResult = await taskWizardService.DeleteTask(arpId);
+        if (!wizardResult.Success)
+        {
+            return wizardResult;
+        }
+
+        return new OperationResult(true,
+            localizationService.GetString("CalendarTaskDeletedSuccessfully"));
+    }
+
     public async Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel)
     {
         try
@@ -458,7 +663,6 @@ public class BackendConfigurationCalendarService(
             var newDate = DateTime.Parse(moveModel.NewDate, CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
-            // Validate: cannot move task to the past
             var taskDateTime = newDate.AddHours(moveModel.NewStartHour);
             if (taskDateTime < DateTime.UtcNow)
             {
@@ -477,47 +681,148 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AreaRulePlanningNotFound"));
             }
 
-            // Update AreaRulePlanning start date
-            arp.StartDate = newDate;
-            arp.UpdatedByUserId = userService.UserId;
-            await arp.Update(backendConfigurationPnDbContext);
+            var scope = moveModel.Scope ?? "all";
 
-            // Update Planning start date
-            var planning = await itemsPlanningPnDbContext.Plannings
-                .Where(x => x.Id == arp.ItemPlanningId)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .FirstOrDefaultAsync();
-
-            if (planning != null)
+            if (scope == "this" && !string.IsNullOrEmpty(moveModel.OriginalDate))
             {
-                planning.StartDate = newDate;
-                planning.UpdatedByUserId = userService.UserId;
-                await planning.Update(itemsPlanningPnDbContext);
+                var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.OriginalDate == originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (exception != null)
+                {
+                    exception.NewDate = newDate.Date != originalDate ? newDate : null;
+                    exception.StartHour = moveModel.NewStartHour;
+                    exception.UpdatedByUserId = userService.UserId;
+                    await exception.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    exception = new CalendarOccurrenceException
+                    {
+                        AreaRulePlanningId = moveModel.Id,
+                        OriginalDate = originalDate,
+                        IsDeleted = false,
+                        NewDate = newDate.Date != originalDate ? newDate : null,
+                        StartHour = moveModel.NewStartHour,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await exception.Create(backendConfigurationPnDbContext);
+                }
             }
-
-            // Update or create CalendarConfiguration
-            var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
-                .Where(x => x.AreaRulePlanningId == moveModel.Id)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .FirstOrDefaultAsync();
-
-            if (calConfig != null)
+            else if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(moveModel.OriginalDate))
             {
-                calConfig.StartHour = moveModel.NewStartHour;
-                calConfig.UpdatedByUserId = userService.UserId;
-                await calConfig.Update(backendConfigurationPnDbContext);
+                var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                arp.StartDate = newDate;
+                arp.UpdatedByUserId = userService.UserId;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .Where(x => x.Id == arp.ItemPlanningId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (planning != null)
+                {
+                    planning.StartDate = newDate;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
+
+                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (calConfig != null)
+                {
+                    calConfig.StartHour = moveModel.NewStartHour;
+                    calConfig.UpdatedByUserId = userService.UserId;
+                    await calConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    calConfig = new CalendarConfiguration
+                    {
+                        AreaRulePlanningId = moveModel.Id,
+                        StartHour = moveModel.NewStartHour,
+                        Duration = 1.0,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await calConfig.Create(backendConfigurationPnDbContext);
+                }
+
+                var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.OriginalDate >= originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+
+                foreach (var stale in staleExceptions)
+                {
+                    await stale.Delete(backendConfigurationPnDbContext);
+                }
             }
             else
             {
-                calConfig = new CalendarConfiguration
+                arp.StartDate = newDate;
+                arp.UpdatedByUserId = userService.UserId;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .Where(x => x.Id == arp.ItemPlanningId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (planning != null)
                 {
-                    AreaRulePlanningId = moveModel.Id,
-                    StartHour = moveModel.NewStartHour,
-                    Duration = 1.0,
-                    CreatedByUserId = userService.UserId,
-                    UpdatedByUserId = userService.UserId
-                };
-                await calConfig.Create(backendConfigurationPnDbContext);
+                    planning.StartDate = newDate;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
+
+                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (calConfig != null)
+                {
+                    calConfig.StartHour = moveModel.NewStartHour;
+                    calConfig.UpdatedByUserId = userService.UserId;
+                    await calConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    calConfig = new CalendarConfiguration
+                    {
+                        AreaRulePlanningId = moveModel.Id,
+                        StartHour = moveModel.NewStartHour,
+                        Duration = 1.0,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await calConfig.Create(backendConfigurationPnDbContext);
+                }
+
+                var allExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+
+                foreach (var ex in allExceptions)
+                {
+                    await ex.Delete(backendConfigurationPnDbContext);
+                }
             }
 
             return new OperationResult(true,
