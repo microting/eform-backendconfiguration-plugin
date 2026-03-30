@@ -10,7 +10,7 @@ public interface IBackendConfigurationCalendarService
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(CalendarTaskRequestModel requestModel);
     Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
-    Task<OperationResult> DeleteTask(int id);
+    Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
     Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel);
     Task<OperationResult> ToggleComplete(int id, bool completed);
     Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId);

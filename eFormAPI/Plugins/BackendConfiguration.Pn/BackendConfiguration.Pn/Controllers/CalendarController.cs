@@ -38,10 +38,10 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.UpdateTask(updateModel);
     }
 
-    [HttpDelete("tasks/{id:int}")]
-    public async Task<OperationResult> DeleteTask(int id)
+    [HttpPut("tasks/delete")]
+    public async Task<OperationResult> DeleteTask([FromBody] CalendarTaskDeleteRequestModel deleteModel)
     {
-        return await _backendConfigurationCalendarService.DeleteTask(id);
+        return await _backendConfigurationCalendarService.DeleteTask(deleteModel);
     }
 
     [HttpPut("tasks/move")]
