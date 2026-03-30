@@ -25,10 +25,9 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     private BackendConfigurationCalendarService _calendarService;
 
     [SetUp]
-    public new async Task Setup()
+    public async Task SetupCalendarService()
     {
-        await base.Setup();
-
+        // NUnit calls base.Setup() automatically
         _userService = Substitute.For<IUserService>();
         _userService.UserId.Returns(1);
 
@@ -48,6 +47,14 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
             _taskWizardService,
             NullLogger<BackendConfigurationCalendarService>.Instance
         );
+    }
+
+    private static DateTime GetNextMonday()
+    {
+        var today = DateTime.UtcNow.Date;
+        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+        if (daysUntilMonday == 0) daysUntilMonday = 7; // always future
+        return today.AddDays(daysUntilMonday);
     }
 
     /// <summary>
@@ -145,11 +152,12 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     public async Task MoveTask_ScopeThis_CreatesException()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
-        var originalDate = "2027-06-07T00:00:00Z";
-        var newDate = "2027-06-09T00:00:00Z";
+        var originalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z";
+        var newDate = baseMonday.AddDays(2).ToString("yyyy-MM-dd") + "T00:00:00Z";
 
         var moveModel = new CalendarTaskMoveRequestModel
         {
@@ -172,8 +180,8 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
             .FirstOrDefaultAsync();
 
         Assert.That(exception, Is.Not.Null);
-        Assert.That(exception!.OriginalDate.Date, Is.EqualTo(new DateTime(2027, 6, 7)));
-        Assert.That(exception.NewDate!.Value.Date, Is.EqualTo(new DateTime(2027, 6, 9)));
+        Assert.That(exception!.OriginalDate.Date, Is.EqualTo(baseMonday.Date));
+        Assert.That(exception.NewDate!.Value.Date, Is.EqualTo(baseMonday.AddDays(2).Date));
         Assert.That(exception.StartHour, Is.EqualTo(10.0));
         Assert.That(exception.IsDeleted, Is.False);
     }
@@ -182,15 +190,16 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     public async Task MoveTask_ScopeThis_UpdatesExistingException()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         // Pre-create an exception for that occurrence
         var preExisting = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 7),
-            NewDate = new DateTime(2027, 6, 8),
+            OriginalDate = baseMonday,
+            NewDate = baseMonday.AddDays(1),
             StartHour = 8.0,
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
@@ -203,8 +212,8 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
-            OriginalDate = "2027-06-07T00:00:00Z",
-            NewDate = "2027-06-10T00:00:00Z",
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = baseMonday.AddDays(3).ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewStartHour = 14.0,
             Scope = "this"
         };
@@ -221,7 +230,7 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
             .ToListAsync();
 
         Assert.That(exceptions, Has.Count.EqualTo(1));
-        Assert.That(exceptions[0].NewDate!.Value.Date, Is.EqualTo(new DateTime(2027, 6, 10)));
+        Assert.That(exceptions[0].NewDate!.Value.Date, Is.EqualTo(baseMonday.AddDays(3).Date));
         Assert.That(exceptions[0].StartHour, Is.EqualTo(14.0));
     }
 
@@ -229,7 +238,8 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     public async Task MoveTask_ScopeAll_ClearsAllExceptions()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         // Create two exceptions
@@ -238,7 +248,7 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
             var ex = new CalendarOccurrenceException
             {
                 AreaRulePlanningId = arpId,
-                OriginalDate = new DateTime(2027, 6, 7 + i),
+                OriginalDate = baseMonday.AddDays(i),
                 IsDeleted = false,
                 WorkflowState = Constants.WorkflowStates.Created,
                 CreatedByUserId = 1,
@@ -248,10 +258,11 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         }
         await BackendConfigurationPnDbContext!.SaveChangesAsync();
 
+        var newDate = baseMonday.AddDays(7);
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
-            NewDate = "2027-06-14T00:00:00Z",
+            NewDate = newDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewStartHour = 9.0,
             Scope = "all"
         };
@@ -271,21 +282,22 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
 
         var arp = await BackendConfigurationPnDbContext.AreaRulePlannings
             .FirstAsync(x => x.Id == arpId);
-        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(new DateTime(2027, 6, 14)));
+        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(newDate.Date));
     }
 
     [Test]
     public async Task MoveTask_ScopeThisAndFollowing_ClearsFutureExceptions()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         // Create exceptions: one before originalDate (should survive), two after (should be removed)
         var pastEx = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 1),
+            OriginalDate = baseMonday.AddDays(-6),
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
@@ -296,7 +308,7 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         var futureEx1 = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 7),
+            OriginalDate = baseMonday,
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
@@ -307,7 +319,7 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         var futureEx2 = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 14),
+            OriginalDate = baseMonday.AddDays(7),
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
@@ -319,8 +331,8 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
-            OriginalDate = "2027-06-07T00:00:00Z",
-            NewDate = "2027-06-09T00:00:00Z",
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = baseMonday.AddDays(2).ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewStartHour = 10.0,
             Scope = "thisAndFollowing"
         };
@@ -338,20 +350,21 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
 
         // Only the exception BEFORE originalDate should remain
         Assert.That(remaining, Has.Count.EqualTo(1));
-        Assert.That(remaining[0].OriginalDate.Date, Is.EqualTo(new DateTime(2027, 6, 1)));
+        Assert.That(remaining[0].OriginalDate.Date, Is.EqualTo(baseMonday.AddDays(-6).Date));
     }
 
     [Test]
     public async Task DeleteTask_ScopeThis_CreatesDeletedExceptionRow()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         var deleteModel = new CalendarTaskDeleteRequestModel
         {
             Id = arpId,
-            OriginalDate = "2027-06-07T00:00:00Z",
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
             Scope = "this"
         };
 
@@ -368,21 +381,22 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
 
         Assert.That(exception, Is.Not.Null);
         Assert.That(exception!.IsDeleted, Is.True);
-        Assert.That(exception.OriginalDate.Date, Is.EqualTo(new DateTime(2027, 6, 7)));
+        Assert.That(exception.OriginalDate.Date, Is.EqualTo(baseMonday.Date));
     }
 
     [Test]
     public async Task DeleteTask_ScopeThisAndFollowing_SetsEndDateToDayBefore()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         // Seed an exception after the originalDate that should be deleted
         var futureEx = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 14),
+            OriginalDate = baseMonday.AddDays(14),
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
@@ -391,10 +405,11 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(futureEx);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        var originalDate = baseMonday.AddDays(7);
         var deleteModel = new CalendarTaskDeleteRequestModel
         {
             Id = arpId,
-            OriginalDate = "2027-06-07T00:00:00Z",
+            OriginalDate = originalDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
             Scope = "thisAndFollowing"
         };
 
@@ -407,11 +422,11 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
         var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings
             .FirstAsync(x => x.Id == arpId);
 
-        Assert.That(arp.EndDate!.Value.Date, Is.EqualTo(new DateTime(2027, 6, 6)));
+        Assert.That(arp.EndDate!.Value.Date, Is.EqualTo(originalDate.AddDays(-1).Date));
 
         var planning = await ItemsPlanningPnDbContext!.Plannings
             .FirstAsync(x => x.Id == arp.ItemPlanningId);
-        Assert.That(planning.RepeatUntil!.Value.Date, Is.EqualTo(new DateTime(2027, 6, 6)));
+        Assert.That(planning.RepeatUntil!.Value.Date, Is.EqualTo(originalDate.AddDays(-1).Date));
 
         // Stale exceptions (>= originalDate) should be removed
         var remainingExceptions = await BackendConfigurationPnDbContext.CalendarOccurrenceExceptions
@@ -426,14 +441,15 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     public async Task DeleteTask_ScopeAll_CallsDeleteEntireSeries()
     {
         // Arrange
-        var startDate = new DateTime(2027, 6, 7, 0, 0, 0, DateTimeKind.Utc);
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
         var arpId = await SeedWeeklyTask(startDate);
 
         // Seed an exception that should be removed
         var ex = new CalendarOccurrenceException
         {
             AreaRulePlanningId = arpId,
-            OriginalDate = new DateTime(2027, 6, 7),
+            OriginalDate = baseMonday,
             IsDeleted = false,
             WorkflowState = Constants.WorkflowStates.Created,
             CreatedByUserId = 1,
