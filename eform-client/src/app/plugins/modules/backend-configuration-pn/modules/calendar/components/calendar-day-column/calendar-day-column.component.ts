@@ -23,7 +23,7 @@ export class CalendarDayColumnComponent {
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number}>();
   @Output() taskClicked = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() taskToggleComplete = new EventEmitter<CalendarTaskLayoutModel>();
-  @Output() taskDropped = new EventEmitter<{task: CalendarTaskLayoutModel; newDate: string; newStartHour: number}>();
+  @Output() taskDropped = new EventEmitter<{task: CalendarTaskLayoutModel; newDate: string; newStartHour: number; originalDate: string}>();
 
   readonly hours = Array.from({length: 24}, (_, i) => i);
 
@@ -46,7 +46,7 @@ export class CalendarDayColumnComponent {
     const rawHour = relY / this.hourHeight;
     const newStartHour = Math.max(0, Math.round(rawHour * 4) / 4);
     const newDate = this.date.toISOString().split('T')[0];
-    this.taskDropped.emit({task, newDate, newStartHour});
+    this.taskDropped.emit({task, newDate, newStartHour, originalDate: task.taskDate});
   }
 
   get dateLabel(): string {

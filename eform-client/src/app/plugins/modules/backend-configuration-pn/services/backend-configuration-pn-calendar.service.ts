@@ -48,8 +48,8 @@ export class BackendConfigurationPnCalendarService {
     return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.Tasks, {...model, scope});
   }
 
-  deleteTask(id: number, scope: RepeatDeleteScope): Observable<OperationResult> {
-    return this.apiBaseService.delete(`${BackendConfigurationPnCalendarMethods.Tasks}/${id}?scope=${scope}`);
+  deleteTask(id: number, scope: RepeatDeleteScope, originalDate: string): Observable<OperationResult> {
+    return this.apiBaseService.put(`${BackendConfigurationPnCalendarMethods.Tasks}/delete`, {id, scope, originalDate});
   }
 
   moveTask(id: number, newDate: string, newStartHour: number): Observable<OperationResult> {
@@ -60,9 +60,10 @@ export class BackendConfigurationPnCalendarService {
     id: number,
     newDate: string,
     newStartHour: number,
-    scope: 'this' | 'thisAndFollowing' | 'all'
+    scope: 'this' | 'thisAndFollowing' | 'all',
+    originalDate: string
   ): Observable<OperationResult> {
-    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.MoveTask, {id, newDate, newStartHour, scope});
+    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.MoveTask, {id, newDate, newStartHour, scope, originalDate});
   }
 
   toggleComplete(taskId: number, completed: boolean): Observable<OperationResult> {

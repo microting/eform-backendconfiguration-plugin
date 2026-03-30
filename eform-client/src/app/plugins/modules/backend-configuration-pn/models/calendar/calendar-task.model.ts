@@ -32,6 +32,7 @@ export interface CalendarTaskModel {
   nextExecutionTime?: string;
   planningId?: number;
   isAllDay?: boolean;
+  exceptionId?: number;
 }
 
 export interface CalendarRepeatMeta {

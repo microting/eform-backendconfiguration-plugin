@@ -221,6 +221,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       });
   }
 
+  private hourToTimeStr(hour: number): string {
+    const h = Math.floor(hour);
+    const m = Math.round((hour % 1) * 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
   private rebuildLayout(monday: Date) {
     const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
     this.tasksByDay = Array.from({length: 7}, () => []);
@@ -233,10 +239,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       const dayIdx = Math.round((taskDate.getTime() - mondayCopy.getTime()) / 86400000);
       if (dayIdx >= 0 && dayIdx < 7) {
         const color = (task.boardId && boardColorMap.get(task.boardId)) || task.color;
+        const startText = task.startText || this.hourToTimeStr(task.startHour);
+        const endText = task.endText || this.hourToTimeStr(task.startHour + task.duration);
         if (task.isAllDay) {
-          this.allDayTasksByDay[dayIdx].push({...task, color});
+          this.allDayTasksByDay[dayIdx].push({...task, color, startText, endText});
         } else {
-          this.tasksByDay[dayIdx].push({...task, color, _colIndex: 0, _colCount: 1});
+          this.tasksByDay[dayIdx].push({...task, color, startText, endText, _colIndex: 0, _colCount: 1});
         }
       }
     });
@@ -385,7 +393,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string}) {
+  onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string; originalDate: string}) {
     // Safety check: reject moves to past
     const targetDateTime = new Date(event.newDate);
     targetDateTime.setHours(Math.floor(event.newStartHour), (event.newStartHour % 1) * 60, 0, 0);
@@ -398,7 +406,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const doMove = (scope?: RepeatEditScope) => {
       const obs = isRepeating
-        ? this.calendarService.moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope ?? 'this')
+        ? this.calendarService.moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope ?? 'this', event.originalDate)
         : this.calendarService.moveTask(event.taskId, event.newDate, event.newStartHour);
       obs.subscribe(res => {
         if (res && res.success) this.loadTasks();

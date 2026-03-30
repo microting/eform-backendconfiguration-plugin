@@ -23,7 +23,7 @@ export class TaskDeleteModalComponent {
   ) {}
 
   onConfirm() {
-    this.calendarService.deleteTask(this.data.task.id, this.scope).subscribe(res => {
+    this.calendarService.deleteTask(this.data.task.id, this.scope, this.data.task.taskDate).subscribe(res => {
       if (res && res.success) this.dialogRef.close(true);
     });
   }
