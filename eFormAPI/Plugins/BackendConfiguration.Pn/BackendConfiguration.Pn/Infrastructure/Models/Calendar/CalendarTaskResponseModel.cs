@@ -24,4 +24,5 @@ public class CalendarTaskResponseModel
     public DateTime? NextExecutionTime { get; set; }
     public int? PlanningId { get; set; }
     public bool IsAllDay { get; set; }
+    public int? ExceptionId { get; set; }
 }

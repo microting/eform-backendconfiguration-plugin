@@ -1,10 +1,8 @@
 namespace BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 
-public class CalendarTaskMoveRequestModel
+public class CalendarTaskDeleteRequestModel
 {
     public int Id { get; set; }
-    public string NewDate { get; set; }
-    public double NewStartHour { get; set; }
     public string OriginalDate { get; set; }
     public string Scope { get; set; } // "this", "thisAndFollowing", "all"
 }
