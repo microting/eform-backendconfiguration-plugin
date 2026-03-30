@@ -119,8 +119,6 @@ jobs:
         cp -av eform-backendconfiguration-plugin/eform-client/e2e/Assets eform-angular-frontend/eform-client/e2e/
         ls -lah /home/runner/work/eform-backendconfiguration-plugin/eform-backendconfiguration-plugin/eform-angular-frontend/eform-client/e2e/Assets
         cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
-        cp -av eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.ts  eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.ts 
-        cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.ts  eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts 
         mkdir -p eform-angular-frontend/eform-client/cypress/e2e/plugins/
         cp -av eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn
         cp -av eform-backendconfiguration-plugin/eform-client/cypress/fixtures eform-angular-frontend/eform-client/cypress
@@ -150,8 +148,6 @@ jobs:
     - name: Get standard output
       run: |
         cat docker_run_log
-    - name: Plugin testing
-      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: Load DB dump
       if: matrix.test == 'a'
       run: |
