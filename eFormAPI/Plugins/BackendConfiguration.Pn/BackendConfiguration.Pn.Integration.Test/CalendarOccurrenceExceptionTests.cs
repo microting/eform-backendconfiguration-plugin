@@ -27,6 +27,34 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     [SetUp]
     public async Task SetupCalendarService()
     {
+        // Clean up all test data in FK-safe order so each test starts with a fresh state
+        // (base [SetUp] runs first, so contexts are already available here)
+        BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarOccurrenceExceptions);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarConfigurations);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRulePlannings);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AreaRules.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRules);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.Areas.RemoveRange(
+            BackendConfigurationPnDbContext.Areas);
+        BackendConfigurationPnDbContext.Properties.RemoveRange(
+            BackendConfigurationPnDbContext.Properties);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext!.Plannings.RemoveRange(
+            ItemsPlanningPnDbContext.Plannings);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         // NUnit calls base.Setup() automatically
         _userService = Substitute.For<IUserService>();
         _userService.UserId.Returns(1);
