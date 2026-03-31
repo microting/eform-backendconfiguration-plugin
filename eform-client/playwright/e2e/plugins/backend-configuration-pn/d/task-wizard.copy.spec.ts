@@ -167,6 +167,7 @@ test.describe('Area rules type 1', () => {
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
+    await page.waitForTimeout(3000);
 
     const createTaskResponse2 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',
@@ -214,6 +215,7 @@ test.describe('Area rules type 1', () => {
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
+    await page.waitForTimeout(3000);
 
     const createTaskResponse3 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',

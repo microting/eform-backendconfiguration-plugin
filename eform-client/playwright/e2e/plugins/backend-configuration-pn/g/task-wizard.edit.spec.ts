@@ -164,7 +164,8 @@ test.describe('Area rules type 1', () => {
     // edit task — create new folder first
     await page.locator('#advanced').click();
     await page.locator('#folders').click();
-    await page.getByText(property.name).locator('..').locator('..').locator('button').last().click();
+    const treeNode = page.locator('mat-tree-node').filter({ hasText: property.name }).first();
+    await treeNode.locator('button[mat-icon-button]').click();
     await page.waitForTimeout(500);
     await page.locator('#createFolderChildBtn').click();
     const newFolderName = generateRandmString(10);
