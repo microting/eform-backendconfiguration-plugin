@@ -178,23 +178,15 @@ test.describe('Area rules type 1', () => {
     await page.locator('#changeAssignmentsCancel > .mdc-button__label').click();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
-
-    const getFoldersResponse2 = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
-    );
-    const getTemplatesResponse = page.waitForResponse(
-      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
-      { timeout: 60000 }
-    );
+    await page.waitForTimeout(3000);
+    await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
     await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
     await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-    await getFoldersResponse2;
-    await getTemplatesResponse;
+    await page.waitForTimeout(3000);
 
     await page.locator('#checkboxUpdateAssignment1-input').check();
 

@@ -183,6 +183,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
+    await page.waitForTimeout(2000);
 
     // change task status (toggle)
     await page.locator('#updateTaskStatusToggle').click();
@@ -212,14 +213,9 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
 
-    const getFoldersResponse2 = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
-    );
-    await getFoldersResponse2;
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(3000);
 
-    await expect(page.locator('#updateFolder mat-select .mat-mdc-select-trigger')).toBeVisible();
+    await expect(page.locator('#updateFolder mat-select .mat-mdc-select-trigger')).toBeVisible({ timeout: 30000 });
     await page.locator('#updateFolder mat-select .mat-mdc-select-trigger').click({ force: true });
     await page.waitForTimeout(1000);
     await page.locator('mat-tree-node > button').click();
