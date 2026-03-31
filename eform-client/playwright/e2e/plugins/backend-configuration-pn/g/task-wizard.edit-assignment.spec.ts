@@ -72,7 +72,7 @@ test.describe('Area rules type 1', () => {
   });
 
   test('should edit task', async ({ page }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 

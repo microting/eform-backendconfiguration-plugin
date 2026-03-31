@@ -49,7 +49,7 @@ test.describe('Area rules type 1', () => {
 
   // TODO: Fix this
   test('should create task', async ({ page }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 

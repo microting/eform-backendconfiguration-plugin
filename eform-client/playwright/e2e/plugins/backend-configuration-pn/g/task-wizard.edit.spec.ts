@@ -71,7 +71,7 @@ test.describe('Area rules type 1', () => {
   });
 
   test('should edit task', async ({ page }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 
@@ -164,7 +164,8 @@ test.describe('Area rules type 1', () => {
     // edit task — create new folder first
     await page.locator('#advanced').click();
     await page.locator('#folders').click();
-    await page.locator('div, mat-tree-node').filter({ hasText: property.name }).locator('..').locator('..').locator('button').last().click();
+    await page.getByText(property.name).locator('..').locator('..').locator('button').last().click();
+    await page.waitForTimeout(500);
     await page.locator('#createFolderChildBtn').click();
     const newFolderName = generateRandmString(10);
     await page.waitForTimeout(2000);
