@@ -142,7 +142,9 @@ test.describe('Area rules type 1', () => {
     // Click the Delete Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first().click({ force: true });
+    await page.waitForTimeout(1000);
 
+    await expect(page.locator('#taskWizardDeleteDeleteBtn')).toBeVisible({ timeout: 30000 });
     await page.locator('#taskWizardDeleteDeleteBtn').click();
     await page.waitForTimeout(500);
     await expect(page.locator('.cdk-row')).toHaveCount(0);

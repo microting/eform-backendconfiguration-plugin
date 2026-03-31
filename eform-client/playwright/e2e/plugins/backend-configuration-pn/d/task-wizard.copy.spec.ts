@@ -169,6 +169,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
     await page.waitForTimeout(3000);
 
+    await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse2 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',
       { timeout: 60000 }
@@ -217,6 +218,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
     await page.waitForTimeout(3000);
 
+    await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse3 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',
       { timeout: 60000 }
