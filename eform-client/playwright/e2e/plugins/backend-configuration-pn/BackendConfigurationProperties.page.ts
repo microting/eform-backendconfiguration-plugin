@@ -304,7 +304,7 @@ export class PropertyRowObject {
         this.parentPage.propertyDeleteDeleteBtn().click(),
       ]);
     }
-    await this.parentPage.propertyCreateBtn().waitFor({ state: 'enabled' });
+    await this.parentPage.propertyCreateBtn().waitFor({ state: 'visible' });
   }
 
   async bindAreasByName(areasName: string[] = [], clickCancel = false, returnToProperties = false): Promise<void> {
