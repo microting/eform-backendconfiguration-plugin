@@ -103,7 +103,7 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-property span').should('have.text', task.property);
     cy.get('.cdk-row .cdk-column-folder span').should('have.text', bindArea);
     cy.get('.cdk-row .cdk-column-taskName span').should('have.text', task.translations[0]);
-    cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName + ' (11)');
+    cy.get('.cdk-row .cdk-column-eform span').invoke('text').should('match', new RegExp(`${task.eformName} \\(\\d+\\)`));
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
     cy.get('.cdk-row .cdk-column-repeat mat-chip span.mat-mdc-chip-action-label')

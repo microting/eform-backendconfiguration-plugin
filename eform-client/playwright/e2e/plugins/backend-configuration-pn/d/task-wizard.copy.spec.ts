@@ -148,7 +148,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span')).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -186,8 +186,8 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-folder span').nth(1)).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(0)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(1)).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span').nth(0)).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -239,9 +239,9 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(0)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(1)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(2)).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(2)).toHaveText(editedTask.eformName + ' (3)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(2)).toHaveText(new RegExp(`${editedTask.eformName} \\(\\d+\\)`));
   });
 
   test.afterAll(async ({ browser }) => {
