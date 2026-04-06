@@ -184,9 +184,9 @@ test.describe('Area rules type 1', () => {
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(2000);
 
     // change task status (toggle)
+    await expect(page.locator('#updateTaskStatusToggle')).toBeVisible({ timeout: 30000 });
     await page.locator('#updateTaskStatusToggle').click();
     await page.locator('#updateTaskBtn').click();
     await page.waitForTimeout(500);

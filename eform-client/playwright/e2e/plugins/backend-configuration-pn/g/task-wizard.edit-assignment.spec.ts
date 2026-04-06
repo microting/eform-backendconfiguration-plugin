@@ -215,6 +215,11 @@ test.describe('Area rules type 1', () => {
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
 
+    await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
+    await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
+
+    await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
+
     const getFoldersResponse3 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
       { timeout: 60000 }
@@ -223,11 +228,6 @@ test.describe('Area rules type 1', () => {
       r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
       { timeout: 60000 }
     );
-
-    await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
-
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
     await getFoldersResponse3;
     await getTemplatesResponse2;
