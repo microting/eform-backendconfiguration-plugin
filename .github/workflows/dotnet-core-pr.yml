@@ -184,7 +184,7 @@ jobs:
     - name: Get standard output
       run: |
         cat docker_run_log
-        result=`cat docker_run_log | grep "Now listening on: http://0.0.0.0:5000" -m 1 | wc -l`
+        result=`cat docker_run_log | grep "Now listening on:.*:5000" -m 1 | wc -l`
         if [ $result -ne 1 ];then exit 1; fi
     - name: Get standard output
       if: ${{ failure() }}
@@ -326,7 +326,7 @@ jobs:
     - name: Get standard output
       run: |
         cat docker_run_log
-        result=`cat docker_run_log | grep "Now listening on: http://0.0.0.0:5000" -m 1 | wc -l`
+        result=`cat docker_run_log | grep "Now listening on:.*:5000" -m 1 | wc -l`
         if [ $result -ne 1 ];then exit 1; fi
     - name: Wait for app
       run: npx wait-on http://localhost:4200 --timeout 120000
@@ -339,7 +339,7 @@ jobs:
     - name: Get standard output
       run: |
         cat docker_run_log
-        result=`cat docker_run_log | grep "Now listening on: http://0.0.0.0:5000" -m 1 | wc -l`
+        result=`cat docker_run_log | grep "Now listening on:.*:5000" -m 1 | wc -l`
         if [ $result -ne 1 ];then exit 1; fi
     - name: Get standard output
       if: ${{ failure() }}
