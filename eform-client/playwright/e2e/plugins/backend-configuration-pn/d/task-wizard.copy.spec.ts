@@ -166,8 +166,18 @@ test.describe('Area rules type 1', () => {
 
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
+
+    const getFoldersResponseCopy = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
+      { timeout: 60000 }
+    );
+    const getTemplatesResponseCopy = page.waitForResponse(
+      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(3000);
+    await getFoldersResponseCopy;
+    await getTemplatesResponseCopy;
 
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse2 = page.waitForResponse(
@@ -215,8 +225,18 @@ test.describe('Area rules type 1', () => {
 
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
+
+    const getFoldersResponseCopy2 = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
+      { timeout: 60000 }
+    );
+    const getTemplatesResponseCopy2 = page.waitForResponse(
+      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(3000);
+    await getFoldersResponseCopy2;
+    await getTemplatesResponseCopy2;
 
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse3 = page.waitForResponse(

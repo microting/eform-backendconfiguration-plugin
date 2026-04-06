@@ -214,6 +214,7 @@ test.describe('Area rules type 1', () => {
     await page.locator('#changeAssignmentsCancel').click();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
+    await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
     await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
     await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
