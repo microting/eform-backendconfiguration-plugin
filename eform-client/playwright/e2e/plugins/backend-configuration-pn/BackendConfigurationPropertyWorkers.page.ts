@@ -93,14 +93,6 @@ export class BackendConfigurationPropertyWorkersPage {
     return this.page.locator('#timeRegistrationEnabledToggle');
   }
 
-  isManagerCheckbox(): Locator {
-    return this.page.locator('#isManager');
-  }
-
-  managingTagsSelect(): Locator {
-    return this.page.locator('mtx-select[formControlName="managingTagIds"]');
-  }
-
   tagSelector(): Locator {
     return this.page.locator('#tagSelector');
   }
@@ -177,21 +169,6 @@ export class BackendConfigurationPropertyWorkersPage {
           await row.scrollIntoViewIfNeeded();
           await row.locator('mat-checkbox').click();
           await this.page.waitForTimeout(500);
-        }
-      }
-      if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
-        const timeregTab = this.page.locator('#timeregistrationTab');
-        await timeregTab.waitFor({ state: 'visible', timeout: 10000 });
-        await timeregTab.click();
-        await this.page.waitForTimeout(500);
-        if (propertyWorker.isManager === true) {
-          await this.isManagerCheckbox().click();
-          await this.page.waitForTimeout(500);
-          if (propertyWorker.managingTags && propertyWorker.managingTags.length > 0) {
-            for (const tag of propertyWorker.managingTags) {
-              await selectValueInNgSelector(this.page, 'mtx-select[formControlName="managingTagIds"]', tag);
-            }
-          }
         }
       }
     }
@@ -334,7 +311,5 @@ export class PropertyWorker {
   workOrderFlow?: boolean;
   workerEmail?: string;
   timeRegistrationEnabled?: boolean;
-  isManager?: boolean;
-  managingTags?: string[];
   tags?: string[];
 }
