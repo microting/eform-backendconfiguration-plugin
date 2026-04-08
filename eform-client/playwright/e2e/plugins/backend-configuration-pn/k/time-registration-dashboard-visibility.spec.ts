@@ -116,6 +116,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await propertiesPage.goToProperties();
     const property: PropertyCreateUpdate = {
       name: propertyName,
+      cvrNumber: '1111111',
       chrNumber: rand.substring(0, 6),
       address: 'Test Address 1',
     };
