@@ -29,7 +29,7 @@ import {
 import validator from 'validator';
 import {AssignedSiteModel, GlobalAutoBreakSettingsModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {Store} from '@ngrx/store';
-import {selectAuthIsAdmin, selectCurrentUserIsFirstUser} from 'src/app/state';
+import {selectAuthIsAdmin} from 'src/app/state';
 
 @AutoUnsubscribe()
 @Component({
@@ -55,7 +55,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     alreadyUsedEmails: string[];
   }>(MAT_DIALOG_DATA);
   protected selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
-  public selectCurrentUserIsFirstUser$ = this.store.select(selectCurrentUserIsFirstUser);
 
   availableProperties: CommonDictionaryModel[] = [];
   edit: boolean = false;

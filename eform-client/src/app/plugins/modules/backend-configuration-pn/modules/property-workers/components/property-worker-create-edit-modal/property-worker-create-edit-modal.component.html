@@ -242,7 +242,7 @@
 
       </mat-tab>
       <mat-tab
-        *ngIf="selectedDeviceUser.timeRegistrationEnabled && (selectCurrentUserIsFirstUser$ | async) === true"
+        *ngIf="selectedDeviceUser.timeRegistrationEnabled"
         label="{{'Timeregistration' | translate }}"
         id="timeregistrationTab">
         <br>
