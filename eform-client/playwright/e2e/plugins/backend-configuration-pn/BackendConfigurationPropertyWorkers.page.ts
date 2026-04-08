@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { selectValueInNgSelector } from '../../../helper-functions';
+import { selectValueInNgSelector } from '../../helper-functions';
 
 export class BackendConfigurationPropertyWorkersPage {
   constructor(private page: Page) {}
