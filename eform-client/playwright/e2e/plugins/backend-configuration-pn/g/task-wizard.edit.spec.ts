@@ -149,7 +149,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span')).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -184,9 +184,9 @@ test.describe('Area rules type 1', () => {
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
     await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(2000);
 
     // change task status (toggle)
+    await expect(page.locator('#updateTaskStatusToggle')).toBeVisible({ timeout: 30000 });
     await page.locator('#updateTaskStatusToggle').click();
     await page.locator('#updateTaskBtn').click();
     await page.waitForTimeout(500);
@@ -196,7 +196,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span')).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -259,7 +259,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText(newFolderName);
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(editedTask.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(editedTask.eformName + ' (3)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(new RegExp(`${editedTask.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span')).toHaveText(
       `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`
     );

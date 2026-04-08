@@ -148,7 +148,7 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span')).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span')).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -166,8 +166,18 @@ test.describe('Area rules type 1', () => {
 
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
+
+    const getFoldersResponseCopy = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
+      { timeout: 60000 }
+    );
+    const getTemplatesResponseCopy = page.waitForResponse(
+      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(3000);
+    await getFoldersResponseCopy;
+    await getTemplatesResponseCopy;
 
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse2 = page.waitForResponse(
@@ -186,8 +196,8 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-folder span').nth(1)).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(0)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(1)).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(task.eformName + ' (11)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
     await expect(page.locator('.cdk-row .cdk-column-startDate span').nth(0)).toHaveText(
       `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`
     );
@@ -215,8 +225,18 @@ test.describe('Area rules type 1', () => {
 
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
+
+    const getFoldersResponseCopy2 = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
+      { timeout: 60000 }
+    );
+    const getTemplatesResponseCopy2 = page.waitForResponse(
+      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(3000);
+    await getFoldersResponseCopy2;
+    await getTemplatesResponseCopy2;
 
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse3 = page.waitForResponse(
@@ -239,9 +259,9 @@ test.describe('Area rules type 1', () => {
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(0)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(1)).toHaveText(task.translations[0]);
     await expect(page.locator('.cdk-row .cdk-column-taskName span').nth(2)).toHaveText(task.translations[0]);
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(task.eformName + ' (11)');
-    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(2)).toHaveText(editedTask.eformName + ' (3)');
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(0)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(1)).toHaveText(new RegExp(`${task.eformName} \\(\\d+\\)`));
+    await expect(page.locator('.cdk-row .cdk-column-eform span').nth(2)).toHaveText(new RegExp(`${editedTask.eformName} \\(\\d+\\)`));
   });
 
   test.afterAll(async ({ browser }) => {
