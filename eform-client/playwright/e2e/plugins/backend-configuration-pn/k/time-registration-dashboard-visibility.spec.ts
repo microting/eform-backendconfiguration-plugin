@@ -28,7 +28,6 @@ async function loginAsAdmin(page: Page): Promise<void> {
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
   await loginAs(page, email, WORKER_PASSWORD);
-  // Non-admin users may not see #newEFormBtn, wait for the header instead
   await page.locator('#header').waitFor({ state: 'visible', timeout: 120000 });
   await page.waitForTimeout(2000);
 }
@@ -39,10 +38,24 @@ async function logout(page: Page): Promise<void> {
   await page.locator('#loginBtn').waitFor({ state: 'visible', timeout: 60000 });
 }
 
+async function navigateToDashboard(page: Page): Promise<void> {
+  await page.locator('mat-nested-tree-node').filter({ hasText: 'Timeregistrering' }).click();
+  await page.waitForTimeout(500);
+  const indexResponse = page.waitForResponse(
+    r => r.url().includes('/api/time-planning-pn/plannings/index') && r.status() === 200,
+    { timeout: 60000 }
+  );
+  await page.locator('mat-tree-node').filter({ hasText: 'Dashboard' }).click();
+  await indexResponse;
+  if (await page.locator('.overlay-spinner').count() > 0) {
+    await expect(page.locator('.overlay-spinner')).not.toBeVisible({ timeout: 30000 });
+  }
+  await page.waitForTimeout(2000);
+}
+
 async function navigateToPlannings(page: Page): Promise<void> {
   const timePlanningMenu = page.locator('#time-planning-pn');
   if (!await timePlanningMenu.isVisible()) {
-    // Menu might need to be visible; wait a moment
     await page.waitForTimeout(1000);
   }
   const planningBtn = page.locator('#time-planning-pn-planning');
@@ -54,6 +67,84 @@ async function navigateToPlannings(page: Page): Promise<void> {
   await page.waitForTimeout(2000);
 }
 
+async function openAssignedSiteDialogForWorker(page: Page, workerName: string): Promise<void> {
+  if (await page.locator('.overlay-spinner').count() > 0) {
+    await expect(page.locator('.overlay-spinner')).not.toBeVisible({ timeout: 30000 });
+  }
+  const siteSelector = page.locator('#workingHoursSite');
+  await siteSelector.waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(1000);
+  await siteSelector.click();
+  await page.waitForTimeout(500);
+  await expect(page.locator('.ng-option').first()).toBeVisible({ timeout: 10000 });
+  await page.locator('.ng-option').filter({ hasText: workerName }).first().click();
+  await page.waitForTimeout(1000);
+  await page.locator('#firstColumn0').scrollIntoViewIfNeeded();
+  await expect(page.locator('#firstColumn0')).toBeVisible();
+  await page.locator('#firstColumn0').click();
+  await page.locator('mat-dialog-container').scrollIntoViewIfNeeded();
+  await expect(page.locator('mat-dialog-container')).toBeVisible({ timeout: 10000 });
+  await page.waitForTimeout(500);
+}
+
+async function goToGeneralTabInDialog(page: Page): Promise<void> {
+  if (await page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).count() > 0) {
+    await page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).scrollIntoViewIfNeeded();
+    await page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).click({ force: true });
+    await page.waitForTimeout(500);
+  }
+}
+
+async function saveAssignedSiteDialog(page: Page): Promise<void> {
+  const [_siteUpdate, _indexUpdate] = await Promise.all([
+    page.waitForResponse(
+      r => r.url().includes('/api/time-planning-pn/settings/assigned-site') && r.request().method() === 'PUT',
+      { timeout: 10000 }
+    ),
+    page.waitForResponse(
+      r => r.url().includes('/api/time-planning-pn/plannings/index') && r.status() === 200,
+      { timeout: 10000 }
+    ),
+    (async () => {
+      await page.locator('#saveButton').scrollIntoViewIfNeeded();
+      await page.locator('#saveButton').click({ force: true });
+    })(),
+  ]);
+  if (await page.locator('.overlay-spinner').count() > 0) {
+    await expect(page.locator('.overlay-spinner')).not.toBeVisible({ timeout: 30000 });
+  }
+  await expect(page.locator('mat-dialog-container')).toHaveCount(0, { timeout: 10000 });
+  await page.waitForTimeout(2000);
+}
+
+async function setWorkerAsManager(page: Page, workerName: string, managingTagName?: string): Promise<void> {
+  await openAssignedSiteDialogForWorker(page, workerName);
+  await goToGeneralTabInDialog(page);
+
+  const checkboxInput = page.locator('#isManager > div > div > input');
+  const currentClass = await checkboxInput.getAttribute('class');
+  if (!currentClass?.includes('mdc-checkbox--selected')) {
+    await page.locator('#isManager').click();
+    await page.waitForTimeout(500);
+  }
+
+  if (managingTagName) {
+    await page.waitForTimeout(500);
+    const selector = 'mtx-select[formcontrolname="managingTagIds"]';
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    await expect(page.locator(selector)).toBeVisible();
+    await page.locator(selector).click();
+    await page.waitForTimeout(1000);
+    await page.locator(selector).locator('input').fill(managingTagName);
+    await page.waitForTimeout(1000);
+    const tagOption = page.locator('.ng-option').filter({ hasText: managingTagName });
+    await tagOption.click();
+    await page.waitForTimeout(500);
+  }
+
+  await saveAssignedSiteDialog(page);
+}
+
 async function countAvailableSites(page: Page): Promise<number> {
   const siteSelector = page.locator('#workingHoursSite');
   await siteSelector.waitFor({ state: 'visible', timeout: 30000 });
@@ -63,7 +154,6 @@ async function countAvailableSites(page: Page): Promise<number> {
   await dropdownPanel.waitFor({ state: 'visible', timeout: 10000 });
   const options = dropdownPanel.locator('.ng-option');
   const count = await options.count();
-  // Close the dropdown by pressing Escape
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   return count;
@@ -107,7 +197,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 
-    // ==================== PHASE 1: SETUP (as admin) ====================
+    // ==================== PHASE 1: CREATE WORKERS (as admin) ====================
 
     await page.goto('http://localhost:4200');
     await loginAsAdmin(page);
@@ -131,7 +221,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await workersPage.createTag(tagName);
     await page.waitForTimeout(1000);
 
-    // Create Worker A: Manager with tag and managing tag
+    // Create Worker A (will become manager with tag via dashboard)
     const workerA: PropertyWorker = {
       name: managerName,
       surname: managerSurname,
@@ -139,8 +229,6 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
-      isManager: true,
-      managingTags: [tagName],
       tags: [tagName],
     };
     await workersPage.create(workerA);
@@ -171,7 +259,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await workersPage.create(workerC);
     await page.waitForTimeout(2000);
 
-    // Create Worker D: Manager without managing tags
+    // Create Worker D (will become manager without tags via dashboard)
     const workerD: PropertyWorker = {
       name: notagMgrName,
       surname: notagMgrSurname,
@@ -179,10 +267,19 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
-      isManager: true,
     };
     await workersPage.create(workerD);
     await page.waitForTimeout(2000);
+
+    // ==================== PHASE 1.5: SET MANAGER FLAGS (via time-planning dashboard) ====================
+
+    await navigateToDashboard(page);
+
+    // Set Worker A as manager with managing tag
+    await setWorkerAsManager(page, managerName, tagName);
+
+    // Set Worker D as manager without managing tags
+    await setWorkerAsManager(page, notagMgrName);
 
     // ==================== PHASE 2: VERIFY AS MANAGER (Worker A) ====================
 
@@ -194,11 +291,6 @@ test.describe('Time Registration Dashboard Visibility', () => {
     expect(managerSiteCount).toBe(2);
 
     const managerSiteNames = await getAvailableSiteNames(page);
-    const managerFullName = `${managerName} ${managerSurname}`;
-    const taggedFullName = `${taggedName} ${taggedSurname}`;
-    const untaggedFullName = `${untaggedName} ${untaggedSurname}`;
-    const notagMgrFullName = `${notagMgrName} ${notagMgrSurname}`;
-
     expect(managerSiteNames.some(n => n.includes(managerName) || n.includes(managerSurname))).toBe(true);
     expect(managerSiteNames.some(n => n.includes(taggedName) || n.includes(taggedSurname))).toBe(true);
     expect(managerSiteNames.some(n => n.includes(untaggedName))).toBe(false);
