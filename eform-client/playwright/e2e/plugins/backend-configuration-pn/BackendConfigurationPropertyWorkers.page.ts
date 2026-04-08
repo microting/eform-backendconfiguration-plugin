@@ -165,6 +165,9 @@ export class BackendConfigurationPropertyWorkersPage {
           await row.locator('mat-checkbox').click();
           await this.page.waitForTimeout(500);
         }
+        // Navigate back to General tab
+        await this.page.locator('#generalTab').click();
+        await this.page.waitForTimeout(500);
       }
       if (propertyWorker.workOrderFlow === true) {
         await this.TaskManagementEnableToggleInput().click();
