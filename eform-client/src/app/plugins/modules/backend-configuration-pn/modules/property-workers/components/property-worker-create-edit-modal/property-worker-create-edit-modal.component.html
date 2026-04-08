@@ -242,7 +242,7 @@
 
       </mat-tab>
       <mat-tab
-        *ngIf="selectedDeviceUser.timeRegistrationEnabled"
+        *ngIf="form.get('timeRegistrationEnabled')?.value"
         label="{{'Timeregistration' | translate }}"
         id="timeregistrationTab">
         <br>
