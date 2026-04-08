@@ -154,21 +154,6 @@ export class BackendConfigurationPropertyWorkersPage {
         await langSelector.click();
         await this.page.locator('.ng-option').filter({ hasText: propertyWorker.language }).first().click();
       }
-      if (propertyWorker.properties) {
-        await this.page.locator('#propertiesTab').click();
-        await this.page.waitForTimeout(500);
-        for (let i = 0; i < propertyWorker.properties.length; i++) {
-          const row = this.page
-            .locator('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row')
-            .filter({ hasText: propertyWorker.properties[i] });
-          await row.scrollIntoViewIfNeeded();
-          await row.locator('mat-checkbox').click();
-          await this.page.waitForTimeout(500);
-        }
-        // Navigate back to General tab
-        await this.page.locator('#generalTab').click();
-        await this.page.waitForTimeout(500);
-      }
       if (propertyWorker.workOrderFlow === true) {
         await this.TaskManagementEnableToggleInput().click();
         await this.page.waitForTimeout(500);
@@ -180,6 +165,18 @@ export class BackendConfigurationPropertyWorkersPage {
       if (propertyWorker.tags && propertyWorker.tags.length > 0) {
         for (const tag of propertyWorker.tags) {
           await selectValueInNgSelector(this.page, '#tagSelector', tag);
+        }
+      }
+      if (propertyWorker.properties) {
+        await this.page.locator('#propertiesTab').click();
+        await this.page.waitForTimeout(500);
+        for (let i = 0; i < propertyWorker.properties.length; i++) {
+          const row = this.page
+            .locator('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row')
+            .filter({ hasText: propertyWorker.properties[i] });
+          await row.scrollIntoViewIfNeeded();
+          await row.locator('mat-checkbox').click();
+          await this.page.waitForTimeout(500);
         }
       }
       if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
