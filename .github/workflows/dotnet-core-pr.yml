@@ -218,7 +218,12 @@ jobs:
         path: eform-backendconfiguration-plugin
     - name: Extract branch name
       id: extract_branch
-      run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+      run: |
+        BRANCH=$(echo ${GITHUB_REF#refs/heads/})
+        if [[ "$BRANCH" != "stable" && "$BRANCH" != "master" && "$BRANCH" != "angular19" ]]; then
+          BRANCH="stable"
+        fi
+        echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
     - uses: actions/download-artifact@v4
       with:
         name: work-items-planning-container
