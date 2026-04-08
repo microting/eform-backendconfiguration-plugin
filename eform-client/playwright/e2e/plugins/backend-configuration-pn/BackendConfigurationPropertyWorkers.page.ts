@@ -89,6 +89,26 @@ export class BackendConfigurationPropertyWorkersPage {
     return this.page.locator('#taskManagementEnabledToggle');
   }
 
+  timeRegistrationEnabledToggle(): Locator {
+    return this.page.locator('#timeRegistrationEnabledToggle');
+  }
+
+  isManagerCheckbox(): Locator {
+    return this.page.locator('#isManager');
+  }
+
+  managingTagsSelect(): Locator {
+    return this.page.locator('mtx-select[formControlName="managingTagIds"]');
+  }
+
+  tagSelector(): Locator {
+    return this.page.locator('#tagSelector');
+  }
+
+  sitesManageTagsBtn(): Locator {
+    return this.page.locator('#sitesManageTagsBtn');
+  }
+
   profileLanguageSelectorCreate(): Locator {
     return this.page.locator('#profileLanguageSelectorCreate');
   }
@@ -150,6 +170,31 @@ export class BackendConfigurationPropertyWorkersPage {
         await this.TaskManagementEnableToggleInput().click();
         await this.page.waitForTimeout(500);
       }
+      if (propertyWorker.timeRegistrationEnabled === true) {
+        await this.timeRegistrationEnabledToggle().click();
+        await this.page.waitForTimeout(500);
+      }
+      if (propertyWorker.tags && propertyWorker.tags.length > 0) {
+        for (const tag of propertyWorker.tags) {
+          await selectValueInNgSelector(this.page, '#tagSelector', tag);
+        }
+      }
+      if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
+        // Navigate to Timeregistration tab (visible after toggling time registration)
+        const timeregTab = this.page.locator('#timeregistrationTab');
+        await timeregTab.waitFor({ state: 'visible', timeout: 10000 });
+        await timeregTab.click();
+        await this.page.waitForTimeout(500);
+        if (propertyWorker.isManager === true) {
+          await this.isManagerCheckbox().click();
+          await this.page.waitForTimeout(500);
+          if (propertyWorker.managingTags && propertyWorker.managingTags.length > 0) {
+            for (const tag of propertyWorker.managingTags) {
+              await selectValueInNgSelector(this.page, 'mtx-select[formControlName="managingTagIds"]', tag);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -172,6 +217,30 @@ export class BackendConfigurationPropertyWorkersPage {
       ]);
     }
     await this.newDeviceUserBtn().waitFor({ state: 'visible' });
+  }
+
+  async createTag(tagName: string): Promise<void> {
+    await this.sitesManageTagsBtn().click();
+    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagBtn').click();
+    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagName').fill(tagName);
+    await this.page.locator('#newTagSaveBtn').click();
+    await this.page.waitForTimeout(500);
+    await this.page.locator('#tagsModalCloseBtn').click();
+    await this.page.waitForTimeout(500);
+  }
+
+  async deleteTag(tagName: string): Promise<void> {
+    await this.sitesManageTagsBtn().click();
+    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: 10000 });
+    const tagRow = this.page.locator('.mat-mdc-row').filter({ hasText: tagName }).first();
+    await tagRow.locator('#deleteTagBtn').click();
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagDeleteSaveBtn').click();
+    await this.page.waitForTimeout(500);
+    await this.page.locator('#tagsModalCloseBtn').click();
+    await this.page.waitForTimeout(500);
   }
 
   async clearTable(): Promise<void> {
@@ -265,4 +334,8 @@ export class PropertyWorker {
   properties?: string[];
   workOrderFlow?: boolean;
   workerEmail?: string;
+  timeRegistrationEnabled?: boolean;
+  isManager?: boolean;
+  managingTags?: string[];
+  tags?: string[];
 }
