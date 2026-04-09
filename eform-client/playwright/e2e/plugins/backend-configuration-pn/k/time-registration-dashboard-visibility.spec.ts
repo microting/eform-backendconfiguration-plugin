@@ -398,12 +398,14 @@ test.describe('Time Registration Dashboard Visibility', () => {
         const updateRes = await page.request.put(`${BASE_URL}/api/security/groups`, {
           headers, data: { id: kunTidGroup.id, userIds: workerUserIds, name: 'Kun tid' }
         });
-        console.log(`Assign workers to Kun tid: status=${updateRes.status()}`);
+        const updateBody = await updateRes.json();
+        console.log(`Assign workers to Kun tid: status=${updateRes.status()}, body=${JSON.stringify(updateBody)}`);
 
         // Verify assignment
         const detailRes = await page.request.get(`${BASE_URL}/api/security/groups/${kunTidGroup.id}`, { headers });
         const detail = await detailRes.json();
-        const assignedUsers = (detail?.model?.securityGroupUsers || []).map((u: any) => `${u.firstName} ${u.lastName}`);
+        console.log(`Kun tid group detail keys: ${JSON.stringify(Object.keys(detail?.model || {}))}`);
+        const assignedUsers = (detail?.model?.usersList || detail?.model?.securityGroupUsers || []).map((u: any) => `${u.firstName} ${u.lastName}`);
         console.log(`Kun tid group now has users: [${assignedUsers.join(', ')}]`);
       }
     }
