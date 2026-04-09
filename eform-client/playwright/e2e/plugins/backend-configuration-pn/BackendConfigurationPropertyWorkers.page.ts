@@ -224,13 +224,13 @@ export class BackendConfigurationPropertyWorkersPage {
 
       // Wait for create-device-user PUT and log result
       const createResponse = await createResponsePromise;
-      const createBody = await createResponse.json();
-      console.log('create-device-user response:', JSON.stringify(createBody));
+      const createText = await createResponse.text();
+      console.log(`create-device-user response: status=${createResponse.status()} body=${createText}`);
 
       // Wait for assignment POST and log result
       const assignResponse = await assignResponsePromise;
-      const assignBody = await assignResponse.json();
-      console.log('assignment response:', JSON.stringify(assignBody));
+      const assignText = await assignResponse.text();
+      console.log(`assignment response: status=${assignResponse.status()} body=${assignText}`);
 
       // Wait for index-device-user POST (table refresh after dialog closes)
       await indexResponsePromise;
