@@ -351,6 +351,23 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await workersPage.create(workerD);
     await page.waitForTimeout(2000);
 
+    // ==================== DIAGNOSTIC: Check worker group assignments ====================
+    {
+      const token = await loginViaApi(page, 'admin@admin.com', 'secretpassword');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const indexRes = await page.request.post(`${BASE_URL}/api/security/groups/index`, {
+        headers, data: { sort: 'Id', nameFilter: '', pageIndex: 0, pageSize: 10000, isSortDsc: false, offset: 0 }
+      });
+      const indexJson = await indexRes.json();
+      const groups = indexJson?.model?.entities || [];
+      for (const g of groups) {
+        const detailRes = await page.request.get(`${BASE_URL}/api/security/groups/${g.id}`, { headers });
+        const detail = await detailRes.json();
+        const userNames = (detail?.model?.securityGroupUsers || []).map((u: any) => `${u.firstName} ${u.lastName} (${u.email})`);
+        console.log(`Group "${g.groupName}" (id=${g.id}, redirect=${g.redirectLink || 'none'}): users=[${userNames.join(', ')}]`);
+      }
+    }
+
     // ==================== SANITY CHECK: Admin can see planning dashboard ====================
 
     await navigateToPlannings(page);
