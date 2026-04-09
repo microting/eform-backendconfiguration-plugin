@@ -1054,6 +1054,21 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
                         Console.WriteLine($"[CreateDeviceUser] AssignedSite created, id={assignmentSite.Id}");
 
+                        // Save managing tags for manager
+                        if (deviceUserModel.ManagingTagIds != null && deviceUserModel.ManagingTagIds.Any())
+                        {
+                            foreach (var tagId in deviceUserModel.ManagingTagIds)
+                            {
+                                var managingTag = new AssignedSiteManagingTag
+                                {
+                                    AssignedSiteId = assignmentSite.Id,
+                                    TagId = tagId
+                                };
+                                await managingTag.Create(timePlanningDbContext).ConfigureAwait(false);
+                            }
+                            Console.WriteLine($"[CreateDeviceUser] Saved {deviceUserModel.ManagingTagIds.Count} managing tags for AssignedSite {assignmentSite.Id}");
+                        }
+
                         var secGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
                             timePlanningDbContext);
                         Console.WriteLine($"[CreateDeviceUser] SecurityGroupId for 'Kun tid'={secGroupId}, userId={user?.Id}");
