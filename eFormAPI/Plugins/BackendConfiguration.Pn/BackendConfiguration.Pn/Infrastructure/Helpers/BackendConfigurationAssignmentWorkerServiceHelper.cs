@@ -31,7 +31,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class BackendConfigurationAssignmentWorkerServiceHelper
 {
-    private static async Task<int> GetOrCreateSecurityGroupId(BaseDbContext baseDbContext, string groupName)
+    private static async Task<int> GetOrCreateSecurityGroupId(BaseDbContext baseDbContext, string groupName,
+        TimePlanningPnDbContext? timePlanningDbContext = null,
+        BackendConfigurationPnDbContext? backendConfigurationDbContext = null)
     {
         var groupId = await baseDbContext.SecurityGroups
             .Where(x => x.Name == groupName)
@@ -51,9 +53,70 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             baseDbContext.SecurityGroups.Add(securityGroup);
             await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
             groupId = securityGroup.Id;
+
+            // Set plugin permissions for the new security group, matching what deploy_and_configure.py does
+            if (timePlanningDbContext != null)
+            {
+                await EnsurePluginGroupPermissions(timePlanningDbContext, groupId, new[]
+                {
+                    "time_planning_plugin_access",
+                    "time_planning_flex_get",
+                    "time_planning_working_hours_get"
+                }).ConfigureAwait(false);
+            }
+
+            if (backendConfigurationDbContext != null)
+            {
+                var enabledClaims = groupName switch
+                {
+                    "Kun tid" => new[]
+                    {
+                        "backend_configuration_plugin_access",
+                        "properties_get",
+                        "document_management_enable",
+                        "task_management_enable",
+                        "time_registration_enable"
+                    },
+                    "Kun arkiv" => new[]
+                    {
+                        "backend_configuration_plugin_access",
+                        "properties_get",
+                        "document_management_enable"
+                    },
+                    _ => Array.Empty<string>()
+                };
+                if (enabledClaims.Length > 0)
+                {
+                    await EnsurePluginGroupPermissions(backendConfigurationDbContext, groupId, enabledClaims)
+                        .ConfigureAwait(false);
+                }
+            }
         }
 
         return groupId;
+    }
+
+    private static async Task EnsurePluginGroupPermissions(IPluginDbContext pluginDbContext, int groupId,
+        string[] enabledClaimNames)
+    {
+        var permissions = await pluginDbContext.PluginPermissions.ToListAsync().ConfigureAwait(false);
+        foreach (var permission in permissions)
+        {
+            var existing = await pluginDbContext.PluginGroupPermissions
+                .FirstOrDefaultAsync(x => x.GroupId == groupId && x.PermissionId == permission.Id
+                    && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ConfigureAwait(false);
+            if (existing == null)
+            {
+                var pgp = new PluginGroupPermission
+                {
+                    GroupId = groupId,
+                    PermissionId = permission.Id,
+                    IsEnabled = enabledClaimNames.Contains(permission.ClaimName)
+                };
+                pgp.Create(pluginDbContext);
+            }
+        }
     }
 
     public static async Task<OperationResult> Create(PropertyAssignWorkersModel createModel,
@@ -565,7 +628,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 var newSecurityGroupUser = new SecurityGroupUser
                                 {
                                     EformUserId = user!.Id,
-                                    SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun arkiv")
+                                    SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun arkiv",
+                                        backendConfigurationDbContext: backendConfigurationPnDbContext)
                                 };
                                 baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                                 await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -617,7 +681,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         var newSecurityGroupUser = new SecurityGroupUser
                                         {
                                             EformUserId = user!.Id,
-                                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid")
+                                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
+                                                timePlanningDbContext, backendConfigurationPnDbContext)
                                         };
                                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -950,7 +1015,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var newSecurityGroupUser = new SecurityGroupUser
                         {
                             EformUserId = user!.Id,
-                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid")
+                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
+                                timePlanningDbContext)
                         };
                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
