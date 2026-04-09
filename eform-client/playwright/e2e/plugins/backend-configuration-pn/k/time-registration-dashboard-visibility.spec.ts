@@ -17,8 +17,20 @@ async function loginAs(page: Page, email: string, password: string): Promise<voi
   await loginBtn.waitFor({ state: 'visible', timeout: 60000 });
   await page.locator('#username').fill(email);
   await page.locator('#password').fill(password);
+  // Listen for the login API response
+  const loginResponsePromise = page.waitForResponse(
+    r => r.url().includes('/api/auth/token') || r.url().includes('/api/account/login'),
+    { timeout: 30000 }
+  ).catch(() => null);
   await loginBtn.click();
+  const loginResponse = await loginResponsePromise;
+  if (loginResponse) {
+    console.log(`Login ${email}: status=${loginResponse.status()} url=${loginResponse.url()}`);
+  } else {
+    console.log(`Login ${email}: no auth response captured`);
+  }
   await page.waitForTimeout(2000);
+  console.log(`Login ${email}: current URL=${page.url()}`);
 }
 
 async function loginAsAdmin(page: Page): Promise<void> {
