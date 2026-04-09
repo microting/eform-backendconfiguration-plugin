@@ -15,10 +15,26 @@ const BASE_URL = 'http://localhost:4200';
 
 async function getAuthToken(page: Page): Promise<string> {
   return page.evaluate(() => {
-    const raw = localStorage.getItem('token');
-    if (!raw) return '';
-    const parsed = JSON.parse(raw);
-    return parsed?.token?.accessToken || '';
+    // Try ngrx auth state first (key='auth', path=token.accessToken)
+    const authRaw = localStorage.getItem('auth');
+    if (authRaw) {
+      const auth = JSON.parse(authRaw);
+      if (auth?.token?.accessToken) {
+        console.log('getAuthToken: found token via auth key');
+        return auth.token.accessToken;
+      }
+    }
+    // Fallback: legacy key='token', path=token.token.accessToken
+    const tokenRaw = localStorage.getItem('token');
+    if (tokenRaw) {
+      const token = JSON.parse(tokenRaw);
+      if (token?.token?.accessToken) {
+        console.log('getAuthToken: found token via token key');
+        return token.token.accessToken;
+      }
+    }
+    console.log('getAuthToken: no token found! Keys:', Object.keys(localStorage).join(','));
+    return '';
   });
 }
 
