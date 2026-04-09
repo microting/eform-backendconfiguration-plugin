@@ -178,53 +178,35 @@ async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
-  // Capture all post-login API responses
-  const settingsPromise = page.waitForResponse(
-    r => r.url().includes('/api/account/settings'),
-    { timeout: 30000 }
-  ).catch(() => null);
-  const claimsPromise = page.waitForResponse(
-    r => r.url().includes('/api/auth/claims'),
-    { timeout: 30000 }
-  ).catch(() => null);
-  const userInfoPromise = page.waitForResponse(
-    r => r.url().includes('/api/account/user-info'),
-    { timeout: 30000 }
-  ).catch(() => null);
-
-  await loginAs(page, email, WORKER_PASSWORD);
-
-  const settingsRes = await settingsPromise;
-  if (settingsRes) {
-    const settingsJson = await settingsRes.json().catch(() => null);
-    console.log(`Worker ${email} settings: status=${settingsRes.status()}, redirectUrl=${settingsJson?.model?.loginRedirectUrl}, role=${settingsJson?.model?.role}`);
-  } else {
-    console.log(`Worker ${email}: NO settings response captured`);
+  // Get token via API (like deploy_and_configure.py)
+  const token = await loginViaApi(page, email, WORKER_PASSWORD);
+  if (!token) {
+    throw new Error(`Failed to get token for worker ${email}`);
   }
 
-  const claimsRes = await claimsPromise;
-  if (claimsRes) {
-    const claimsJson = await claimsRes.json().catch(() => null);
-    console.log(`Worker ${email} claims: status=${claimsRes.status()}, success=${claimsJson?.success}, claims=${JSON.stringify(claimsJson?.model)?.substring(0, 500)}`);
-  } else {
-    console.log(`Worker ${email}: NO claims response captured`);
-  }
+  // Inject token into localStorage and navigate directly (avoids Angular login flow race conditions)
+  const authPayload = JSON.stringify({ token: { accessToken: token } });
+  await page.evaluate((payload) => {
+    localStorage.setItem('auth', payload);
+    localStorage.setItem('token', payload);
+  }, authPayload);
 
-  const userInfoRes = await userInfoPromise;
-  if (userInfoRes) {
-    const userInfoJson = await userInfoRes.json().catch(() => null);
-    console.log(`Worker ${email} userInfo: status=${userInfoRes.status()}, email=${userInfoJson?.email}, role=${userInfoJson?.role}`);
-  }
+  // Navigate to planning page directly
+  await page.goto(`${BASE_URL}/plugins/time-planning-pn/planning`);
+  console.log(`Worker ${email}: navigated to planning page, waiting for #workingHoursSite`);
 
-  console.log(`Worker ${email}: waiting for redirect, current URL=${page.url()}`);
-  // Workers with "Kun tid" are redirected to the planning page which has #workingHoursSite
+  // Wait for the planning page to load
   await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
   await page.waitForTimeout(2000);
 }
 
 async function logout(page: Page): Promise<void> {
-  const navbar = new Navbar(page);
-  await navbar.logout();
+  // Clear auth state and navigate to login
+  await page.evaluate(() => {
+    localStorage.removeItem('auth');
+    localStorage.removeItem('token');
+  });
+  await page.goto(`${BASE_URL}/auth`);
   await page.locator('#loginBtn').waitFor({ state: 'visible', timeout: 60000 });
 }
 
