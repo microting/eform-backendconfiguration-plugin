@@ -868,6 +868,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 await worker.Update(sdkDbContext).ConfigureAwait(false);
 
                 var user = await userService.GetByUsernameAsync(deviceUserModel.WorkerEmail).ConfigureAwait(false);
+                Console.WriteLine($"[CreateDeviceUser] email={deviceUserModel.WorkerEmail} TimeRegEnabled={deviceUserModel.TimeRegistrationEnabled} MobileAccess={deviceUserModel.EnableMobileAccess} userExists={user != null}");
                 if (user != null)
                 {
                     user.Email = deviceUserModel.WorkerEmail;
@@ -899,6 +900,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                         var result = await userManager.CreateAsync(user, "Replace_me_with_a_proper_password_2024!")
                             .ConfigureAwait(false);
+                        Console.WriteLine($"[CreateDeviceUser] CreateAsync result={result.Succeeded} errors={string.Join(",", result.Errors.Select(e => e.Description))}");
                         if (result.Succeeded)
                         {
                             await userManager.AddToRoleAsync(user, EformRole.User);
@@ -1010,22 +1012,27 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             IsManager = deviceUserModel.IsManager ?? false,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
+                        Console.WriteLine($"[CreateDeviceUser] Creating AssignedSite for siteId={site.MicrotingUid} user={user?.Id}");
                         await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
+                        Console.WriteLine($"[CreateDeviceUser] AssignedSite created, id={assignmentSite.Id}");
 
+                        var secGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
+                            timePlanningDbContext);
+                        Console.WriteLine($"[CreateDeviceUser] SecurityGroupId for 'Kun tid'={secGroupId}, userId={user?.Id}");
                         var newSecurityGroupUser = new SecurityGroupUser
                         {
                             EformUserId = user!.Id,
-                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid",
-                                timePlanningDbContext)
+                            SecurityGroupId = secGroupId
                         };
                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+                        Console.WriteLine($"[CreateDeviceUser] SecurityGroupUser saved, id={newSecurityGroupUser.Id}");
 
                         return new OperationDataResult<int>(true, site.Id);
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(e);
+                        Console.WriteLine($"[CreateDeviceUser] EXCEPTION: {e}");
                         // _logger.LogError(e.Message);
                         return new OperationDataResult<int>(false, "");
                     }
