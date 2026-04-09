@@ -41,7 +41,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         if (groupId == 0)
         {
-            var securityGroup = new SecurityGroup { Name = groupName };
+            var redirectLink = groupName switch
+            {
+                "Kun tid" => "/plugins/time-planning-pn/planning",
+                "Kun arkiv" => "/plugins/backend-configuration-pn/files",
+                _ => ""
+            };
+            var securityGroup = new SecurityGroup { Name = groupName, RedirectLink = redirectLink };
             baseDbContext.SecurityGroups.Add(securityGroup);
             await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
             groupId = securityGroup.Id;
