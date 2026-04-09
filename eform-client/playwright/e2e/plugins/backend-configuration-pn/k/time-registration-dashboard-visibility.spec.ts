@@ -178,22 +178,14 @@ async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
-  // Get token via API (like deploy_and_configure.py)
-  const token = await loginViaApi(page, email, WORKER_PASSWORD);
-  if (!token) {
-    throw new Error(`Failed to get token for worker ${email}`);
-  }
+  // Use Angular login form — the login works and navigates to planning page
+  await loginAs(page, email, WORKER_PASSWORD);
 
-  // Inject token into localStorage and navigate directly (avoids Angular login flow race conditions)
-  const authPayload = JSON.stringify({ token: { accessToken: token } });
-  await page.evaluate((payload) => {
-    localStorage.setItem('auth', payload);
-    localStorage.setItem('token', payload);
-  }, authPayload);
-
-  // Navigate to planning page directly
-  await page.goto(`${BASE_URL}/plugins/time-planning-pn/planning`);
-  console.log(`Worker ${email}: navigated to planning page, waiting for #workingHoursSite`);
+  // Wait for navigation to planning page (Angular redirects via loginRedirectUrl)
+  await page.waitForURL('**/plugins/time-planning-pn/planning**', { timeout: 30000 }).catch(() => {
+    console.log(`Worker ${email}: did not navigate to planning, current URL=${page.url()}`);
+  });
+  console.log(`Worker ${email}: current URL=${page.url()}`);
 
   // Wait for the planning page to load
   await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
@@ -201,7 +193,7 @@ async function loginAsWorker(page: Page, email: string): Promise<void> {
 }
 
 async function logout(page: Page): Promise<void> {
-  // Clear auth state and navigate to login
+  // Navigate to auth page to trigger logout (avoids navbar which may not exist for workers)
   await page.evaluate(() => {
     localStorage.removeItem('auth');
     localStorage.removeItem('token');

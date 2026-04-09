@@ -91,9 +91,47 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         .ConfigureAwait(false);
                 }
             }
+
+        }
+
+        // Ensure core eform permissions exist for the group (idempotent, matching deploy_and_configure.py)
+        var coreClaimsToEnable = groupName switch
+        {
+            "Kun tid" => new[] { "eforms_read_tags", "eforms_read", "cases_read", "case_read" },
+            "Kun arkiv" => new[] { "eforms_read_tags", "eforms_read", "cases_read", "case_read" },
+            _ => Array.Empty<string>()
+        };
+        if (coreClaimsToEnable.Length > 0)
+        {
+            await EnsureCoreGroupPermissions(baseDbContext, groupId, coreClaimsToEnable)
+                .ConfigureAwait(false);
         }
 
         return groupId;
+    }
+
+    private static async Task EnsureCoreGroupPermissions(BaseDbContext baseDbContext, int groupId,
+        string[] enabledClaimNames)
+    {
+        var permissions = await baseDbContext.Permissions.ToListAsync().ConfigureAwait(false);
+        foreach (var permission in permissions)
+        {
+            if (!enabledClaimNames.Contains(permission.ClaimName)) continue;
+
+            var existing = await baseDbContext.GroupPermissions
+                .FirstOrDefaultAsync(x => x.SecurityGroupId == groupId && x.PermissionId == permission.Id)
+                .ConfigureAwait(false);
+            if (existing == null)
+            {
+                var gp = new GroupPermission
+                {
+                    PermissionId = permission.Id,
+                    SecurityGroupId = groupId
+                };
+                baseDbContext.GroupPermissions.Add(gp);
+            }
+        }
+        await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
     }
 
     private static async Task EnsurePluginGroupPermissions(IPluginDbContext pluginDbContext, int groupId,
