@@ -146,20 +146,27 @@ export class BackendConfigurationPropertyWorkersPage {
         await langSelector.click();
         await this.page.locator('.ng-option').filter({ hasText: propertyWorker.language }).first().click();
       }
-      if (propertyWorker.workOrderFlow === true) {
-        await this.TaskManagementEnableToggleInput().click();
-        await this.page.waitForTimeout(500);
-      }
-      if (propertyWorker.timeRegistrationEnabled === true) {
-        await this.timeRegistrationEnabledToggle().click();
-        await this.page.waitForTimeout(500);
-      }
+      // Complete all General tab interactions before switching tabs
       if (propertyWorker.tags && propertyWorker.tags.length > 0) {
         for (const tag of propertyWorker.tags) {
           await selectValueInNgSelector(this.page, '#tagSelector', tag);
         }
       }
+      if (propertyWorker.workOrderFlow === true) {
+        await this.TaskManagementEnableToggleInput().click();
+        await this.page.waitForTimeout(500);
+      }
+      if (propertyWorker.timeRegistrationEnabled === true) {
+        const toggle = this.timeRegistrationEnabledToggle();
+        await toggle.waitFor({ state: 'visible', timeout: 10000 });
+        await this.page.screenshot({ path: `debug-before-toggle-click.png` });
+        await toggle.click();
+        await this.page.waitForTimeout(500);
+        await this.page.screenshot({ path: `debug-after-toggle-click.png` });
+      }
+      // Switch to Properties tab
       if (propertyWorker.properties) {
+        await this.page.screenshot({ path: `debug-before-properties-tab.png` });
         await this.page.locator('.mat-mdc-tab').filter({ hasText: /Ejendomme|Properties/ }).click();
         await this.page.waitForTimeout(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
@@ -171,7 +178,9 @@ export class BackendConfigurationPropertyWorkersPage {
           await this.page.waitForTimeout(500);
         }
       }
+      // Switch to Timeregistration tab (only visible after toggle was clicked)
       if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
+        await this.page.screenshot({ path: `debug-before-timeregistration-tab.png` });
         await this.page.locator('.mat-mdc-tab').filter({ hasText: /Timeregistration|Tidsregistrering/ }).click();
         await this.page.waitForTimeout(500);
         if (propertyWorker.isManager === true) {
