@@ -201,19 +201,39 @@ export class BackendConfigurationPropertyWorkersPage {
     if (clickCancel) {
       await this.cancelCreateBtn().click();
     } else {
-      const [createResponse, _getResponse] = await Promise.all([
-        this.page.waitForResponse(
-          r =>
-            r.url().includes('/api/backend-configuration-pn/properties/assignment/create-device-user') &&
-            r.request().method() === 'PUT'
-        ),
-        this.page.waitForResponse(
-          r =>
-            r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
-            r.request().method() === 'POST'
-        ),
-        this.saveCreateBtn().click(),
-      ]);
+      // Set up response listeners before clicking save
+      const createResponsePromise = this.page.waitForResponse(
+        r =>
+          r.url().includes('/api/backend-configuration-pn/properties/assignment/create-device-user') &&
+          r.request().method() === 'PUT'
+      );
+      const assignResponsePromise = this.page.waitForResponse(
+        r =>
+          r.url().includes('/api/backend-configuration-pn/properties/assignment') &&
+          !r.url().includes('create-device-user') &&
+          !r.url().includes('index-device-user') &&
+          r.request().method() === 'POST'
+      );
+      const indexResponsePromise = this.page.waitForResponse(
+        r =>
+          r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+          r.request().method() === 'POST'
+      );
+
+      await this.saveCreateBtn().click();
+
+      // Wait for create-device-user PUT and log result
+      const createResponse = await createResponsePromise;
+      const createBody = await createResponse.json();
+      console.log('create-device-user response:', JSON.stringify(createBody));
+
+      // Wait for assignment POST and log result
+      const assignResponse = await assignResponsePromise;
+      const assignBody = await assignResponse.json();
+      console.log('assignment response:', JSON.stringify(assignBody));
+
+      // Wait for index-device-user POST (table refresh after dialog closes)
+      await indexResponsePromise;
     }
     await this.newDeviceUserBtn().waitFor({ state: 'visible' });
   }
