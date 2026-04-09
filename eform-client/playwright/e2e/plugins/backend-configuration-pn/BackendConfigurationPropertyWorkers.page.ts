@@ -160,7 +160,7 @@ export class BackendConfigurationPropertyWorkersPage {
         }
       }
       if (propertyWorker.properties) {
-        await this.page.locator('#propertiesTab').click();
+        await this.page.locator('.mat-mdc-tab').filter({ hasText: /Ejendomme|Properties/ }).click();
         await this.page.waitForTimeout(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           const row = this.page
@@ -169,6 +169,19 @@ export class BackendConfigurationPropertyWorkersPage {
           await row.scrollIntoViewIfNeeded();
           await row.locator('mat-checkbox').click();
           await this.page.waitForTimeout(500);
+        }
+      }
+      if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
+        await this.page.locator('.mat-mdc-tab').filter({ hasText: /Timeregistration|Tidsregistrering/ }).click();
+        await this.page.waitForTimeout(500);
+        if (propertyWorker.isManager === true) {
+          await this.page.locator('#isManager').click();
+          await this.page.waitForTimeout(500);
+          if (propertyWorker.managingTags && propertyWorker.managingTags.length > 0) {
+            for (const tag of propertyWorker.managingTags) {
+              await selectValueInNgSelector(this.page, 'mtx-select[formControlName="managingTagIds"]', tag);
+            }
+          }
         }
       }
     }
@@ -311,5 +324,7 @@ export class PropertyWorker {
   workOrderFlow?: boolean;
   workerEmail?: string;
   timeRegistrationEnabled?: boolean;
+  isManager?: boolean;
+  managingTags?: string[];
   tags?: string[];
 }
