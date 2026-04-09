@@ -198,6 +198,23 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await workersPage.create(workerD);
     await page.waitForTimeout(2000);
 
+    // ==================== SANITY CHECK: Admin can see planning dashboard ====================
+
+    await navigateToPlannings(page);
+    const adminSiteSelector = page.locator('#workingHoursSite');
+    await adminSiteSelector.waitFor({ state: 'visible', timeout: 30000 });
+    console.log('SANITY CHECK: time-planning plugin is active, #workingHoursSite visible');
+
+    const adminSiteNames = await getAvailableSiteNames(page);
+    console.log(`SANITY CHECK: Admin sees ${adminSiteNames.length} sites: ${JSON.stringify(adminSiteNames)}`);
+
+    // Admin should see all 4 workers we created
+    expect(adminSiteNames.length).toBeGreaterThanOrEqual(4);
+    expect(adminSiteNames.some(n => n.includes(managerName) || n.includes(managerSurname))).toBe(true);
+    expect(adminSiteNames.some(n => n.includes(taggedName) || n.includes(taggedSurname))).toBe(true);
+    expect(adminSiteNames.some(n => n.includes(untaggedName) || n.includes(untaggedSurname))).toBe(true);
+    expect(adminSiteNames.some(n => n.includes(notagMgrName) || n.includes(notagMgrSurname))).toBe(true);
+
     // ==================== PHASE 2: VERIFY AS MANAGER (Worker A) ====================
 
     await logout(page);
