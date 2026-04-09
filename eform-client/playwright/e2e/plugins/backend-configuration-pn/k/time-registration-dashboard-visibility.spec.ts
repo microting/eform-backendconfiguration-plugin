@@ -11,6 +11,138 @@ import {
 import { generateRandmString } from '../../../helper-functions';
 
 const WORKER_PASSWORD = 'Replace_me_with_a_proper_password_2024!';
+const BASE_URL = 'http://localhost:4200';
+
+async function getAuthToken(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const raw = localStorage.getItem('token');
+    return raw ? JSON.parse(raw) : '';
+  });
+}
+
+/**
+ * Replicates what deploy_and_configure.py does: create security groups,
+ * set redirect links, and set plugin permissions via the API.
+ */
+async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
+  const token = await getAuthToken(page);
+  const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+  // Step 1: Create "Kun tid" security group via API
+  let createRes = await page.request.post(`${BASE_URL}/api/security/groups`, {
+    headers, data: { userIds: [], name: 'Kun tid' }
+  });
+  console.log(`Create 'Kun tid' group: status=${createRes.status()}`);
+
+  // Step 2: Create "Kun arkiv" security group via API
+  createRes = await page.request.post(`${BASE_URL}/api/security/groups`, {
+    headers, data: { userIds: [], name: 'Kun arkiv' }
+  });
+  console.log(`Create 'Kun arkiv' group: status=${createRes.status()}`);
+
+  // Step 3: Fetch groups to get their IDs
+  const indexRes = await page.request.post(`${BASE_URL}/api/security/groups/index`, {
+    headers, data: { sort: 'Id', nameFilter: '', pageIndex: 0, pageSize: 10000, isSortDsc: false, offset: 0 }
+  });
+  const indexJson = await indexRes.json();
+  const groups = indexJson?.model?.entities || [];
+  console.log(`Security groups found: ${groups.map((g: any) => `${g.groupName}(id=${g.id})`).join(', ')}`);
+
+  let kunTidId = 0;
+  let kunArkivId = 0;
+  for (const g of groups) {
+    if (g.groupName === 'Kun tid') kunTidId = g.id;
+    if (g.groupName === 'Kun arkiv') kunArkivId = g.id;
+  }
+
+  // Step 4: Set redirect links (like deploy_and_configure.py does)
+  if (kunTidId > 0) {
+    const r = await page.request.put(`${BASE_URL}/api/security/groups/settings`, {
+      headers, data: { id: kunTidId, redirectLink: '/plugins/time-planning-pn/planning' }
+    });
+    console.log(`Set 'Kun tid' redirect: status=${r.status()}`);
+  }
+  if (kunArkivId > 0) {
+    const r = await page.request.put(`${BASE_URL}/api/security/groups/settings`, {
+      headers, data: { id: kunArkivId, redirectLink: '/plugins/backend-configuration-pn/files' }
+    });
+    console.log(`Set 'Kun arkiv' redirect: status=${r.status()}`);
+  }
+
+  // Step 5: Set plugin permissions for both groups
+  // Find installed plugins
+  const pluginsRes = await page.request.get(
+    `${BASE_URL}/api/plugins-management/installed?sort=id&isSortDsc=true&pageSize=1000&pageIndex=0&offset=0`,
+    { headers }
+  );
+  const pluginsJson = await pluginsRes.json();
+  const plugins = pluginsJson?.model?.pluginsList || [];
+
+  for (const plugin of plugins) {
+    if (plugin.pluginId === 'eform-angular-time-planning-plugin') {
+      // Get current permissions to find correct permissionIds
+      const permUrl = `${BASE_URL}/api/plugins-permissions/group-permissions/${plugin.id}`;
+      const currentPermsRes = await page.request.get(permUrl, { headers });
+      const currentPermsJson = await currentPermsRes.json();
+      const currentPerms = currentPermsJson?.model || [];
+
+      // Build permission map: claimName -> permissionId
+      const permIdMap: Record<string, number> = {};
+      for (const gp of currentPerms) {
+        for (const perm of gp.permissions || []) {
+          permIdMap[perm.claimName] = perm.permissionId;
+        }
+      }
+
+      const timePlanningPerms = [
+        { isEnabled: true, permissionName: 'Access Time Plannings Plugin', claimName: 'time_planning_plugin_access', permissionId: permIdMap['time_planning_plugin_access'] || 1 },
+        { isEnabled: true, permissionName: 'Obtain flex', claimName: 'time_planning_flex_get', permissionId: permIdMap['time_planning_flex_get'] || 2 },
+        { isEnabled: true, permissionName: 'Obtain working hours', claimName: 'time_planning_working_hours_get', permissionId: permIdMap['time_planning_working_hours_get'] || 3 },
+      ];
+
+      // Set for eForm users (group 1) and Kun tid group
+      const payload: any[] = [{ permissions: timePlanningPerms, groupId: 1 }];
+      if (kunTidId > 0) {
+        payload.push({ permissions: timePlanningPerms, groupId: kunTidId });
+      }
+
+      const r = await page.request.put(permUrl, { headers, data: payload });
+      console.log(`Set time-planning permissions: status=${r.status()}`);
+    }
+
+    if (plugin.pluginId === 'eform-backend-configuration-plugin') {
+      const permUrl = `${BASE_URL}/api/plugins-permissions/group-permissions/${plugin.id}`;
+      const currentPermsRes = await page.request.get(permUrl, { headers });
+      const currentPermsJson = await currentPermsRes.json();
+      const currentPerms = currentPermsJson?.model || [];
+
+      const permIdMap: Record<string, number> = {};
+      for (const gp of currentPerms) {
+        for (const perm of gp.permissions || []) {
+          permIdMap[perm.claimName] = perm.permissionId;
+        }
+      }
+
+      const backendPerms = (claims: string[]) => [
+        { isEnabled: claims.includes('backend_configuration_plugin_access'), claimName: 'backend_configuration_plugin_access', permissionId: permIdMap['backend_configuration_plugin_access'] || 1, permissionName: 'Access BackendConfiguration Plugin' },
+        { isEnabled: claims.includes('properties_get'), claimName: 'properties_get', permissionId: permIdMap['properties_get'] || 3, permissionName: 'Get properties' },
+        { isEnabled: claims.includes('time_registration_enable'), claimName: 'time_registration_enable', permissionId: permIdMap['time_registration_enable'] || 8, permissionName: 'Enable time registration' },
+        { isEnabled: claims.includes('task_management_enable'), claimName: 'task_management_enable', permissionId: permIdMap['task_management_enable'] || 7, permissionName: 'Enable task management' },
+        { isEnabled: claims.includes('document_management_enable'), claimName: 'document_management_enable', permissionId: permIdMap['document_management_enable'] || 6, permissionName: 'Enable document management' },
+      ];
+
+      const payload: any[] = [
+        { permissions: backendPerms(['backend_configuration_plugin_access', 'properties_get', 'time_registration_enable', 'task_management_enable', 'document_management_enable']), groupId: 1 },
+      ];
+      if (kunTidId > 0) {
+        payload.push({ permissions: backendPerms(['backend_configuration_plugin_access', 'properties_get', 'time_registration_enable', 'task_management_enable', 'document_management_enable']), groupId: kunTidId });
+      }
+
+      const r = await page.request.put(permUrl, { headers, data: payload });
+      console.log(`Set backend-configuration permissions: status=${r.status()}`);
+    }
+  }
+}
 
 async function loginAs(page: Page, email: string, password: string): Promise<void> {
   const loginBtn = page.locator('#loginBtn');
@@ -121,6 +253,9 @@ test.describe('Time Registration Dashboard Visibility', () => {
 
     await page.goto('http://localhost:4200');
     await loginAsAdmin(page);
+
+    // Replicate deploy_and_configure.py setup: security groups, redirect links, plugin permissions
+    await setupSecurityGroupsViaApi(page);
 
     // Create a property
     await propertiesPage.goToProperties();
