@@ -168,7 +168,7 @@ export class BackendConfigurationPropertyWorkersPage {
       // Switch to Properties tab
       if (propertyWorker.properties) {
         await this.page.screenshot({ path: `debug-before-properties-tab.png` });
-        await this.page.locator('.mat-mdc-tab').filter({ hasText: /Ejendomme|Properties/ }).click();
+        await this.page.locator('.mat-mdc-tab').filter({ hasText: 'Ejendomme' }).click();
         await this.page.waitForTimeout(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           const row = this.page
@@ -182,7 +182,7 @@ export class BackendConfigurationPropertyWorkersPage {
       // Switch to Timeregistration tab (only visible after toggle was clicked)
       if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
         await this.page.screenshot({ path: `debug-before-timeregistration-tab.png` });
-        await this.page.locator('.mat-mdc-tab').filter({ hasText: /Timeregistration|Tidsregistrering/ }).click();
+        await this.page.locator('.mat-mdc-tab').filter({ hasText: 'Timeregistrering' }).click();
         await this.page.waitForTimeout(500);
         if (propertyWorker.isManager === true) {
           await this.page.locator('#isManager').click();
