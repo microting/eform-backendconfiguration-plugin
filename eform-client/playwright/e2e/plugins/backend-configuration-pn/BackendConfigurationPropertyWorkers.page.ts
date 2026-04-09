@@ -227,7 +227,9 @@ export class BackendConfigurationPropertyWorkersPage {
 
       // Wait for create-device-user PUT
       const createResponse = await createResponsePromise;
-      console.log(`create-device-user: status=${createResponse.status()}`);
+      const reqBody = createResponse.request().postData();
+      const resBody = await createResponse.json().catch(() => null);
+      console.log(`create-device-user: status=${createResponse.status()}, success=${resBody?.success}, reqBody=${reqBody}`);
 
       if (createResponse.status() >= 400) {
         // Backend returned an error (e.g. 500 from missing security group in CI).

@@ -246,6 +246,19 @@ test.describe('Time Registration Dashboard Visibility', () => {
   test('should show correct workers based on user role and tags', async ({ page }) => {
     test.setTimeout(600000);
 
+    // Log all API traffic for debugging
+    page.on('request', req => {
+      if (req.url().includes('/api/') && req.method() !== 'GET') {
+        console.log(`>> ${req.method()} ${req.url().replace(BASE_URL, '')} body=${req.postData()?.substring(0, 500)}`);
+      }
+    });
+    page.on('response', async res => {
+      if (res.url().includes('/api/') && !res.url().includes('/api/template-files/') && !res.url().includes('/api/settings/')) {
+        const body = await res.text().catch(() => '');
+        console.log(`<< ${res.status()} ${res.url().replace(BASE_URL, '')} body=${body.substring(0, 500)}`);
+      }
+    });
+
     const rand = generateRandmString(8);
     const tagName = `TeamAlpha-${rand}`;
     const propertyName = `TestProp-${rand}`;
