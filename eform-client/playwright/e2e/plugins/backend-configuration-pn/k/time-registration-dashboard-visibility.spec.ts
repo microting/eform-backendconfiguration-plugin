@@ -109,22 +109,17 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await page.goto('http://localhost:4200');
     await loginAsAdmin(page);
 
-    // Ensure "Kun tid" security group exists (required for time registration worker creation)
-    const token = await page.evaluate(() => localStorage.getItem('token'));
+    // Ensure security groups exist (required for time registration worker creation).
+    // The token is stored as a JSON string in localStorage, so we parse it.
+    const rawToken = await page.evaluate(() => localStorage.getItem('token'));
+    const token = rawToken?.replace(/^"|"$/g, '') || '';
+    const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
     for (const groupName of ['Kun tid', 'Kun arkiv', 'eForm users']) {
-      const checkResp = await page.request.post('http://localhost:4200/api/security/groups/index', {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { sort: '', isSortDsc: false, offset: 0, pageSize: 1000, nameFilter: groupName },
+      const createResp = await page.request.post('http://localhost:4200/api/security/groups', {
+        headers: authHeaders,
+        data: { name: groupName },
       });
-      const checkData = await checkResp.json();
-      const exists = checkData?.model?.securityGroupList?.some((g: any) => g.name === groupName);
-      if (!exists) {
-        await page.request.post('http://localhost:4200/api/security/groups', {
-          headers: { Authorization: `Bearer ${token}` },
-          data: { name: groupName },
-        });
-        console.log(`Created security group: ${groupName}`);
-      }
+      console.log(`Security group "${groupName}": status=${createResp.status()}`);
     }
     await page.waitForTimeout(500);
 
