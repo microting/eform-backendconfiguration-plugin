@@ -178,17 +178,44 @@ async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
-  // Capture user-settings response to check loginRedirectUrl
+  // Capture all post-login API responses
   const settingsPromise = page.waitForResponse(
     r => r.url().includes('/api/account/settings'),
     { timeout: 30000 }
   ).catch(() => null);
+  const claimsPromise = page.waitForResponse(
+    r => r.url().includes('/api/auth/claims'),
+    { timeout: 30000 }
+  ).catch(() => null);
+  const userInfoPromise = page.waitForResponse(
+    r => r.url().includes('/api/account/user-info'),
+    { timeout: 30000 }
+  ).catch(() => null);
+
   await loginAs(page, email, WORKER_PASSWORD);
+
   const settingsRes = await settingsPromise;
   if (settingsRes) {
     const settingsJson = await settingsRes.json().catch(() => null);
-    console.log(`Worker ${email} settings: redirectUrl=${settingsJson?.model?.loginRedirectUrl}, role=${settingsJson?.model?.role}`);
+    console.log(`Worker ${email} settings: status=${settingsRes.status()}, redirectUrl=${settingsJson?.model?.loginRedirectUrl}, role=${settingsJson?.model?.role}`);
+  } else {
+    console.log(`Worker ${email}: NO settings response captured`);
   }
+
+  const claimsRes = await claimsPromise;
+  if (claimsRes) {
+    const claimsJson = await claimsRes.json().catch(() => null);
+    console.log(`Worker ${email} claims: status=${claimsRes.status()}, success=${claimsJson?.success}, claims=${JSON.stringify(claimsJson?.model)?.substring(0, 500)}`);
+  } else {
+    console.log(`Worker ${email}: NO claims response captured`);
+  }
+
+  const userInfoRes = await userInfoPromise;
+  if (userInfoRes) {
+    const userInfoJson = await userInfoRes.json().catch(() => null);
+    console.log(`Worker ${email} userInfo: status=${userInfoRes.status()}, email=${userInfoJson?.email}, role=${userInfoJson?.role}`);
+  }
+
   console.log(`Worker ${email}: waiting for redirect, current URL=${page.url()}`);
   // Workers with "Kun tid" are redirected to the planning page which has #workingHoursSite
   await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
