@@ -13,29 +13,18 @@ import { generateRandmString } from '../../../helper-functions';
 const WORKER_PASSWORD = 'Replace_me_with_a_proper_password_2024!';
 const BASE_URL = 'http://localhost:4200';
 
-async function getAuthToken(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    // Try ngrx auth state first (key='auth', path=token.accessToken)
-    const authRaw = localStorage.getItem('auth');
-    if (authRaw) {
-      const auth = JSON.parse(authRaw);
-      if (auth?.token?.accessToken) {
-        console.log('getAuthToken: found token via auth key');
-        return auth.token.accessToken;
-      }
-    }
-    // Fallback: legacy key='token', path=token.token.accessToken
-    const tokenRaw = localStorage.getItem('token');
-    if (tokenRaw) {
-      const token = JSON.parse(tokenRaw);
-      if (token?.token?.accessToken) {
-        console.log('getAuthToken: found token via token key');
-        return token.token.accessToken;
-      }
-    }
-    console.log('getAuthToken: no token found! Keys:', Object.keys(localStorage).join(','));
-    return '';
+/**
+ * Login via API and get access token, exactly like deploy_and_configure.py does.
+ */
+async function loginViaApi(page: Page, email: string, password: string): Promise<string> {
+  const res = await page.request.post(`${BASE_URL}/api/auth/token`, {
+    form: { username: email, password: password, grant_type: 'password' }
   });
+  console.log(`loginViaApi ${email}: status=${res.status()}`);
+  const json = await res.json();
+  const token = json?.model?.accessToken || '';
+  console.log(`loginViaApi: token length=${token.length}`);
+  return token;
 }
 
 /**
@@ -43,7 +32,7 @@ async function getAuthToken(page: Page): Promise<string> {
  * set redirect links, and set plugin permissions via the API.
  */
 async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
-  const token = await getAuthToken(page);
+  const token = await loginViaApi(page, 'admin@admin.com', 'secretpassword');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   // Step 1: Create "Kun tid" security group via API
