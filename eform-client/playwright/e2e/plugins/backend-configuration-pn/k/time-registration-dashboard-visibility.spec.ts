@@ -351,20 +351,47 @@ test.describe('Time Registration Dashboard Visibility', () => {
     await workersPage.create(workerD);
     await page.waitForTimeout(2000);
 
-    // ==================== DIAGNOSTIC: Check worker group assignments ====================
+    // ==================== FIX: Assign workers to "Kun tid" group via API ====================
     {
       const token = await loginViaApi(page, 'admin@admin.com', 'secretpassword');
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+      // Get groups to find "Kun tid" ID
       const indexRes = await page.request.post(`${BASE_URL}/api/security/groups/index`, {
         headers, data: { sort: 'Id', nameFilter: '', pageIndex: 0, pageSize: 10000, isSortDsc: false, offset: 0 }
       });
       const indexJson = await indexRes.json();
       const groups = indexJson?.model?.entities || [];
-      for (const g of groups) {
-        const detailRes = await page.request.get(`${BASE_URL}/api/security/groups/${g.id}`, { headers });
+      const kunTidGroup = groups.find((g: any) => g.groupName === 'Kun tid');
+      console.log(`Kun tid group id=${kunTidGroup?.id}`);
+
+      // Get all users to find worker user IDs
+      const usersRes = await page.request.post(`${BASE_URL}/api/admin/index`, {
+        headers, data: { sort: 'Id', isSortDsc: false, pageSize: 10000, pageIndex: 0, offset: 0, nameFilter: '' }
+      });
+      const usersJson = await usersRes.json();
+      const users = usersJson?.model?.entities || [];
+      console.log(`Users found: ${users.map((u: any) => `${u.firstName} ${u.lastName} (id=${u.id}, email=${u.email})`).join(', ')}`);
+
+      if (kunTidGroup) {
+        // Collect worker user IDs (all 4 test workers)
+        const workerEmails = [managerEmail, taggedWorkerEmail, untaggedWorkerEmail, notagMgrEmail];
+        const workerUserIds = users
+          .filter((u: any) => workerEmails.includes(u.email))
+          .map((u: any) => u.id);
+        console.log(`Worker user IDs to assign to Kun tid: ${JSON.stringify(workerUserIds)}`);
+
+        // Update group with worker user IDs
+        const updateRes = await page.request.put(`${BASE_URL}/api/security/groups`, {
+          headers, data: { id: kunTidGroup.id, userIds: workerUserIds, name: 'Kun tid' }
+        });
+        console.log(`Assign workers to Kun tid: status=${updateRes.status()}`);
+
+        // Verify assignment
+        const detailRes = await page.request.get(`${BASE_URL}/api/security/groups/${kunTidGroup.id}`, { headers });
         const detail = await detailRes.json();
-        const userNames = (detail?.model?.securityGroupUsers || []).map((u: any) => `${u.firstName} ${u.lastName} (${u.email})`);
-        console.log(`Group "${g.groupName}" (id=${g.id}, redirect=${g.redirectLink || 'none'}): users=[${userNames.join(', ')}]`);
+        const assignedUsers = (detail?.model?.securityGroupUsers || []).map((u: any) => `${u.firstName} ${u.lastName}`);
+        console.log(`Kun tid group now has users: [${assignedUsers.join(', ')}]`);
       }
     }
 
