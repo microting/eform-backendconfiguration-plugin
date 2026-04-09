@@ -162,6 +162,13 @@ export class BackendConfigurationPropertyWorkersPage {
         await toggle.locator('button').click();
         await this.page.waitForTimeout(500);
         await expect(toggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true');
+        if (propertyWorker.enableMobileAccess === true) {
+          const mobileToggle = this.page.locator('#enableMobileAccessToggle');
+          await mobileToggle.waitFor({ state: 'visible', timeout: 10000 });
+          await mobileToggle.locator('button').click();
+          await this.page.waitForTimeout(500);
+          await expect(mobileToggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true');
+        }
       }
       // Switch to Properties tab
       if (propertyWorker.properties) {
@@ -352,6 +359,7 @@ export class PropertyWorker {
   workOrderFlow?: boolean;
   workerEmail?: string;
   timeRegistrationEnabled?: boolean;
+  enableMobileAccess?: boolean;
   isManager?: boolean;
   managingTags?: string[];
   tags?: string[];

@@ -136,6 +136,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
+      enableMobileAccess: true,
       isManager: true,
       managingTags: [tagName],
       tags: [tagName],
@@ -151,6 +152,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
+      enableMobileAccess: true,
       tags: [tagName],
     };
     await workersPage.create(workerB);
@@ -164,6 +166,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
+      enableMobileAccess: true,
     };
     await workersPage.create(workerC);
     await page.waitForTimeout(2000);
@@ -176,6 +179,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
       language: 'Dansk',
       properties: [propertyName],
       timeRegistrationEnabled: true,
+      enableMobileAccess: true,
       isManager: true,
     };
     await workersPage.create(workerD);
