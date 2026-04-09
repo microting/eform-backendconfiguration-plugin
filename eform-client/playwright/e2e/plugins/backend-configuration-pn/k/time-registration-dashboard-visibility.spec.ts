@@ -379,8 +379,8 @@ test.describe('Time Registration Dashboard Visibility', () => {
       console.log(`Kun tid group id=${kunTidGroup?.id}`);
 
       // Get all users to find worker user IDs
-      const usersRes = await page.request.post(`${BASE_URL}/api/admin/index`, {
-        headers, data: { sort: 'Id', isSortDsc: false, pageSize: 10000, pageIndex: 0, offset: 0, nameFilter: '' }
+      const usersRes = await page.request.post(`${BASE_URL}/api/admin/get-users`, {
+        headers, data: { sort: 'Id', isSortDsc: false, pageSize: 10000, pageIndex: 0, offset: 0 }
       });
       const usersJson = await usersRes.json();
       const users = usersJson?.model?.entities || [];
