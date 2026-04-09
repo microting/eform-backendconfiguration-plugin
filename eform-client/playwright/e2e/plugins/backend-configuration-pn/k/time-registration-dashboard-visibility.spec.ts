@@ -16,7 +16,9 @@ const BASE_URL = 'http://localhost:4200';
 async function getAuthToken(page: Page): Promise<string> {
   return page.evaluate(() => {
     const raw = localStorage.getItem('token');
-    return raw ? JSON.parse(raw) : '';
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    return parsed?.token?.accessToken || '';
   });
 }
 
