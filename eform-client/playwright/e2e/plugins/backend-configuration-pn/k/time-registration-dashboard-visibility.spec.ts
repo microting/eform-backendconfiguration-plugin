@@ -178,7 +178,18 @@ async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
+  // Capture user-settings response to check loginRedirectUrl
+  const settingsPromise = page.waitForResponse(
+    r => r.url().includes('/api/account/settings'),
+    { timeout: 30000 }
+  ).catch(() => null);
   await loginAs(page, email, WORKER_PASSWORD);
+  const settingsRes = await settingsPromise;
+  if (settingsRes) {
+    const settingsJson = await settingsRes.json().catch(() => null);
+    console.log(`Worker ${email} settings: redirectUrl=${settingsJson?.model?.loginRedirectUrl}, role=${settingsJson?.model?.role}`);
+  }
+  console.log(`Worker ${email}: waiting for redirect, current URL=${page.url()}`);
   // Workers with "Kun tid" are redirected to the planning page which has #workingHoursSite
   await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
   await page.waitForTimeout(2000);
