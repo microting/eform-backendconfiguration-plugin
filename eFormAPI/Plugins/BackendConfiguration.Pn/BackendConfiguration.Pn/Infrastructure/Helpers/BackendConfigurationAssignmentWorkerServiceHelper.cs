@@ -31,6 +31,25 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class BackendConfigurationAssignmentWorkerServiceHelper
 {
+    private static async Task<int> GetOrCreateSecurityGroupId(BaseDbContext baseDbContext, string groupName)
+    {
+        var groupId = await baseDbContext.SecurityGroups
+            .Where(x => x.Name == groupName)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (groupId == 0)
+        {
+            var securityGroup = new SecurityGroup { Name = groupName };
+            baseDbContext.SecurityGroups.Add(securityGroup);
+            await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
+            groupId = securityGroup.Id;
+        }
+
+        return groupId;
+    }
+
     public static async Task<OperationResult> Create(PropertyAssignWorkersModel createModel,
         Core core,
         IUserService userService,
@@ -513,10 +532,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 var newSecurityGroupUser = new SecurityGroupUser
                                 {
                                     EformUserId = user!.Id,
-                                    SecurityGroupId = baseDbContext.SecurityGroups
-                                        .Where(x => x.Name == "eForm users")
-                                        .Select(x => x.Id)
-                                        .First()
+                                    SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "eForm users")
                                 };
                                 baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                                 await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -543,10 +559,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 var newSecurityGroupUser = new SecurityGroupUser
                                 {
                                     EformUserId = user!.Id,
-                                    SecurityGroupId = baseDbContext.SecurityGroups
-                                        .Where(x => x.Name == "Kun arkiv")
-                                        .Select(x => x.Id)
-                                        .First()
+                                    SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun arkiv")
                                 };
                                 baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                                 await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -598,10 +611,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         var newSecurityGroupUser = new SecurityGroupUser
                                         {
                                             EformUserId = user!.Id,
-                                            SecurityGroupId = baseDbContext.SecurityGroups
-                                                .Where(x => x.Name == "Kun tid")
-                                                .Select(x => x.Id)
-                                                .First()
+                                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid")
                                         };
                                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -848,10 +858,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var newSecurityGroupUser = new SecurityGroupUser
                         {
                             EformUserId = user!.Id,
-                            SecurityGroupId = baseDbContext.SecurityGroups
-                                .Where(x => x.Name == "eForm users")
-                                .Select(x => x.Id)
-                                .First()
+                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "eForm users")
                         };
                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -877,10 +884,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var newSecurityGroupUser = new SecurityGroupUser
                         {
                             EformUserId = user!.Id,
-                            SecurityGroupId = baseDbContext.SecurityGroups
-                                .Where(x => x.Name == "Kun arkiv")
-                                .Select(x => x.Id)
-                                .First()
+                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun arkiv")
                         };
                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);
@@ -940,10 +944,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         var newSecurityGroupUser = new SecurityGroupUser
                         {
                             EformUserId = user!.Id,
-                            SecurityGroupId = baseDbContext.SecurityGroups
-                                .Where(x => x.Name == "Kun tid")
-                                .Select(x => x.Id)
-                                .First()
+                            SecurityGroupId = await GetOrCreateSecurityGroupId(baseDbContext, "Kun tid")
                         };
                         baseDbContext.SecurityGroupUsers.Add(newSecurityGroupUser);
                         await baseDbContext.SaveChangesAsync().ConfigureAwait(false);

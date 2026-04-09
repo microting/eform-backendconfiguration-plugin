@@ -106,33 +106,8 @@ test.describe('Time Registration Dashboard Visibility', () => {
 
     // ==================== PHASE 1: SETUP (as admin) ====================
 
-    // Set up token capture before login so we catch auth headers from post-login API calls.
-    let capturedToken = '';
-    page.on('request', (req) => {
-      const auth = req.headers()['authorization'];
-      if (auth && auth.startsWith('Bearer ') && !capturedToken) {
-        capturedToken = auth;
-      }
-    });
-
     await page.goto('http://localhost:4200');
     await loginAsAdmin(page);
-    // After login, the app makes API calls — token should be captured by now.
-    console.log(`Captured auth token: ${capturedToken ? 'yes' : 'no'}`);
-
-    // Ensure security groups exist (required for time registration worker creation).
-    if (capturedToken) {
-      for (const groupName of ['Kun tid', 'Kun arkiv', 'eForm users']) {
-        const createResp = await page.request.post('http://localhost:4200/api/security/groups', {
-          headers: { Authorization: capturedToken, 'Content-Type': 'application/json' },
-          data: { name: groupName },
-        });
-        console.log(`Security group "${groupName}": status=${createResp.status()}`);
-      }
-    } else {
-      console.log('WARNING: Could not capture auth token, security groups may not be created');
-    }
-    await page.waitForTimeout(500);
 
     // Create a property
     await propertiesPage.goToProperties();
