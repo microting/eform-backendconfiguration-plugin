@@ -40,7 +40,8 @@ async function loginAsAdmin(page: Page): Promise<void> {
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
   await loginAs(page, email, WORKER_PASSWORD);
-  await page.locator('#header').waitFor({ state: 'visible', timeout: 120000 });
+  // Workers with "Kun tid" are redirected to the planning page which has #workingHoursSite
+  await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
   await page.waitForTimeout(2000);
 }
 
