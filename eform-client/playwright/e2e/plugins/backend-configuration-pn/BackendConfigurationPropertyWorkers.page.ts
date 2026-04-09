@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector } from '../../helper-functions';
 
 export class BackendConfigurationPropertyWorkersPage {
@@ -153,15 +153,16 @@ export class BackendConfigurationPropertyWorkersPage {
         }
       }
       if (propertyWorker.workOrderFlow === true) {
-        await this.TaskManagementEnableToggleInput().click();
+        await this.TaskManagementEnableToggleInput().locator('button').click();
         await this.page.waitForTimeout(500);
       }
       if (propertyWorker.timeRegistrationEnabled === true) {
         const toggle = this.timeRegistrationEnabledToggle();
         await toggle.waitFor({ state: 'visible', timeout: 10000 });
         await this.page.screenshot({ path: `debug-before-toggle-click.png` });
-        await toggle.click();
+        await toggle.locator('button').click();
         await this.page.waitForTimeout(500);
+        await expect(toggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true');
         await this.page.screenshot({ path: `debug-after-toggle-click.png` });
       }
       // Switch to Properties tab
