@@ -8,6 +8,7 @@ import {
   selectValueInNgSelectorNoSelector,
   selectDateOnNewDatePicker,
 } from '../../../helper-functions';
+import { clickAndWaitForResponses, getActionButtonForRow } from './helpers/flaky-fix-helpers';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -86,10 +87,9 @@ test.describe('Area rules type 1', () => {
     await propertiesPage.goToProperties();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
-    await page.waitForTimeout(3000);
     await expect(page.locator('#createNewTaskBtn')).toBeEnabled();
     await page.locator('#createNewTaskBtn').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('#createProperty')).toBeVisible();
 
     // fill and create task
     await page.locator('#createProperty').click();
@@ -99,28 +99,24 @@ test.describe('Area rules type 1', () => {
     );
     await selectValueInNgSelectorNoSelector(page, `${property.name}`);
     await getFoldersResponse;
-    await page.waitForTimeout(1000);
 
     await expect(page.locator('#createFolder mat-select .mat-mdc-select-trigger')).toBeVisible();
     await page.locator('#createFolder mat-select .mat-mdc-select-trigger').click({ force: true });
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400); // animation settle
     await page.locator('mat-tree-node > button').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('.folder-tree-name').filter({ hasText: '00. Logbøger' }).first()).toBeVisible();
     await page.locator('.folder-tree-name').filter({ hasText: '00. Logbøger' }).first().click();
-    await page.waitForTimeout(500);
 
     await page.locator('#createTableTags').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400); // animation settle
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
     await page.locator('#createTags').click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400); // animation settle
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
-    await page.waitForTimeout(500);
 
     for (let i = 0; i < task.translations.length; i++) {
       await page.locator(`[for='createName${i}']`).scrollIntoViewIfNeeded();
       await expect(page.locator(`[for='createName${i}']`)).toBeVisible();
-      await page.waitForTimeout(500);
       await page.locator(`[for='createName${i}']`).fill(task.translations[i]);
     }
 
@@ -145,7 +141,6 @@ test.describe('Area rules type 1', () => {
     );
     await page.locator('#createTaskBtn').click();
     await createTaskResponse;
-    await page.waitForTimeout(500);
 
     // check table
     await expect(page.locator('.cdk-row')).toHaveCount(1);
@@ -178,16 +173,19 @@ test.describe('Area rules type 1', () => {
     await page.locator('#changeAssignmentsCancel > .mdc-button__label').click();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
-    await page.waitForTimeout(3000);
     await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
 
     await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
     await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-    await page.waitForTimeout(3000);
+    await clickAndWaitForResponses(
+      page,
+      () => page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true }),
+      ['/api/backend-configuration-pn/properties/get-folder-dtos?', '/api/templates/index']
+    );
 
+    await expect(page.locator('#checkboxUpdateAssignment1-input')).toBeVisible();
     await page.locator('#checkboxUpdateAssignment1-input').check();
 
     const updateTaskResponse = page.waitForResponse(
@@ -196,7 +194,6 @@ test.describe('Area rules type 1', () => {
     );
     await page.locator('#updateTaskBtn').click();
     await updateTaskResponse;
-    await page.waitForTimeout(500);
 
     await propertiesPage.goToPlanningPage();
     await page.locator('.planningAssignmentBtn.mat-accent').click();
@@ -221,17 +218,11 @@ test.describe('Area rules type 1', () => {
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
 
-    const getFoldersResponse3 = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
+    await clickAndWaitForResponses(
+      page,
+      () => page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true }),
+      ['/api/backend-configuration-pn/properties/get-folder-dtos?', '/api/templates/index']
     );
-    const getTemplatesResponse2 = page.waitForResponse(
-      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
-      { timeout: 60000 }
-    );
-    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-    await getFoldersResponse3;
-    await getTemplatesResponse2;
 
     await page.locator('#checkboxUpdateAssignment0-input').uncheck();
 
@@ -241,7 +232,6 @@ test.describe('Area rules type 1', () => {
     );
     await page.locator('#updateTaskBtn').click();
     await updateTaskResponse2;
-    await page.waitForTimeout(500);
 
     await propertiesPage.goToPlanningPage();
     await page.locator('.planningAssignmentBtn.mat-accent').click();

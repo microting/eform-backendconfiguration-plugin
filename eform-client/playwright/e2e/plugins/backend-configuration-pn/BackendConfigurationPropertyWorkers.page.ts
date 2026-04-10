@@ -128,7 +128,6 @@ export class BackendConfigurationPropertyWorkersPage {
 
   async openCreateModal(propertyWorker: PropertyWorker): Promise<void> {
     await this.newDeviceUserBtn().click();
-    await this.page.waitForTimeout(500);
     await this.cancelCreateBtn().waitFor({ state: 'visible' });
     if (propertyWorker) {
       if (propertyWorker.name) {

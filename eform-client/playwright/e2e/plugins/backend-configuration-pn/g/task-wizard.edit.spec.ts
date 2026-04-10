@@ -8,6 +8,7 @@ import {
   selectValueInNgSelectorNoSelector,
   selectDateOnNewDatePicker,
 } from '../../../helper-functions';
+import { clickAndWaitForResponses, getActionButtonForRow } from './helpers/flaky-fix-helpers';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -83,41 +84,32 @@ test.describe('Area rules type 1', () => {
     await propertiesPage.goToProperties();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
-    await page.waitForTimeout(3000);
     await expect(page.locator('#createNewTaskBtn')).toBeEnabled();
     await page.locator('#createNewTaskBtn').click();
-    await page.waitForTimeout(500);
 
     // fill and create task
     await page.locator('#createProperty').click();
-    const getFoldersResponse = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
+    await clickAndWaitForResponses(
+      page,
+      () => selectValueInNgSelectorNoSelector(page, `${property.name}`),
+      ['/api/backend-configuration-pn/properties/get-folder-dtos?']
     );
-    await selectValueInNgSelectorNoSelector(page, `${property.name}`);
-    await getFoldersResponse;
-    await page.waitForTimeout(1000);
 
     await expect(page.locator('#createFolder mat-select .mat-mdc-select-trigger')).toBeVisible();
     await page.locator('#createFolder mat-select .mat-mdc-select-trigger').click({ force: true });
-    await page.waitForTimeout(500);
+    await expect(page.locator('mat-tree-node > button')).toBeVisible();
     await page.locator('mat-tree-node > button').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('.folder-tree-name').filter({ hasText: '00. Logbøger' }).first()).toBeVisible();
     await page.locator('.folder-tree-name').filter({ hasText: '00. Logbøger' }).first().click();
-    await page.waitForTimeout(500);
 
     await page.locator('#createTableTags').click();
-    await page.waitForTimeout(500);
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
     await page.locator('#createTags').click();
-    await page.waitForTimeout(500);
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
-    await page.waitForTimeout(500);
 
     for (let i = 0; i < task.translations.length; i++) {
       await page.locator(`[for='createName${i}']`).scrollIntoViewIfNeeded();
       await expect(page.locator(`[for='createName${i}']`)).toBeVisible();
-      await page.waitForTimeout(500);
       await page.locator(`[for='createName${i}']`).fill(task.translations[i]);
     }
 
@@ -136,13 +128,11 @@ test.describe('Area rules type 1', () => {
 
     await page.locator('mat-checkbox#checkboxCreateAssignment0').click();
 
-    const createTaskResponse = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',
-      { timeout: 60000 }
+    await clickAndWaitForResponses(
+      page,
+      () => page.locator('#createTaskBtn').click(),
+      [{ url: '/api/backend-configuration-pn/task-wizard', method: 'POST' }]
     );
-    await page.locator('#createTaskBtn').click();
-    await createTaskResponse;
-    await page.waitForTimeout(500);
 
     // check table
     await expect(page.locator('.cdk-row')).toHaveCount(1);
@@ -166,30 +156,30 @@ test.describe('Area rules type 1', () => {
     await page.locator('#folders').click();
     const treeNode = page.locator('mat-tree-node').filter({ hasText: property.name }).first();
     await treeNode.locator('button[mat-icon-button]').filter({ hasText: 'more_vert' }).click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('#createFolderChildBtn')).toBeVisible();
     await page.locator('#createFolderChildBtn').click();
     const newFolderName = generateRandmString(10);
-    await page.waitForTimeout(2000);
+    await expect(page.locator('#createFolderNameTranslation_0')).toBeVisible();
     await page.locator('#createFolderNameTranslation_0').fill(newFolderName);
     await page.locator('#createFolderDescriptionTranslation_0 .NgxEditor__Content').fill(generateRandmString());
-    await page.waitForTimeout(500);
     await page.locator('#folderSaveBtn').click();
-    await page.waitForTimeout(1000);
+    await expect(page.locator('#folderSaveBtn')).toBeHidden();
 
     await page.locator('#backend-configuration-pn-task-wizard').scrollIntoViewIfNeeded();
     await page.locator('#backend-configuration-pn-task-wizard').click();
 
     // Open action menu and click Edit Task
+    const editBtn1 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
+    await expect(editBtn1).toBeVisible();
+    await editBtn1.click({ force: true });
 
     // change task status (toggle)
     await expect(page.locator('#updateTaskStatusToggle')).toBeVisible({ timeout: 30000 });
     await page.locator('#updateTaskStatusToggle').click();
     await page.locator('#updateTaskBtn').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('#updateTaskBtn')).toBeHidden();
 
     // check table - status should be inactive now
     await expect(page.locator('.cdk-row')).toHaveCount(1);
@@ -209,20 +199,18 @@ test.describe('Area rules type 1', () => {
     );
 
     // Open action menu and click Edit Task again
+    const editBtn2 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
-
-    await page.waitForTimeout(3000);
+    await expect(editBtn2).toBeVisible();
+    await editBtn2.click({ force: true });
 
     await expect(page.locator('#updateFolder mat-select .mat-mdc-select-trigger')).toBeVisible({ timeout: 30000 });
     await page.locator('#updateFolder mat-select .mat-mdc-select-trigger').click({ force: true });
-    await page.waitForTimeout(1000);
+    await expect(page.locator('mat-tree-node > button')).toBeVisible();
     await page.locator('mat-tree-node > button').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('.folder-tree-name').filter({ hasText: newFolderName })).toBeVisible();
     await page.locator('.folder-tree-name').filter({ hasText: newFolderName }).click();
-    await page.waitForTimeout(500);
 
     for (let i = 0; i < editedTask.translations.length; i++) {
       await page.locator(`#updateName${i}`).clear();
@@ -244,15 +232,12 @@ test.describe('Area rules type 1', () => {
 
     // enable task
     await page.locator('#updateTaskStatusToggle').click();
-    await page.waitForTimeout(500);
 
-    const updateTaskResponse = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'PUT',
-      { timeout: 60000 }
+    await clickAndWaitForResponses(
+      page,
+      () => page.locator('#updateTaskBtn').click(),
+      [{ url: '/api/backend-configuration-pn/task-wizard', method: 'PUT' }]
     );
-    await page.locator('#updateTaskBtn').click();
-    await updateTaskResponse;
-    await page.waitForTimeout(500);
 
     // check table after edit
     await expect(page.locator('.cdk-row')).toHaveCount(1);
@@ -279,7 +264,6 @@ test.describe('Area rules type 1', () => {
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await propertiesPage.goToProperties();
-    await page.waitForTimeout(500);
     await propertiesPage.clearTable();
     await workersPage.goToPropertyWorkers();
     await workersPage.clearTable();
