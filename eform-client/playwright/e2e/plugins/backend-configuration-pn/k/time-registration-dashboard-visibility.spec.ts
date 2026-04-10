@@ -28,7 +28,6 @@ async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
   const token = await loginViaApi(page, 'admin@admin.com', 'secretpassword');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  // Create "Kun tid" and "Kun arkiv" security groups
   await page.request.post(`${BASE_URL}/api/security/groups`, {
     headers, data: { userIds: [], name: 'Kun tid' }
   });
@@ -36,7 +35,6 @@ async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
     headers, data: { userIds: [], name: 'Kun arkiv' }
   });
 
-  // Fetch groups to get their IDs
   const indexRes = await page.request.post(`${BASE_URL}/api/security/groups/index`, {
     headers, data: { sort: 'Id', nameFilter: '', pageIndex: 0, pageSize: 10000, isSortDsc: false, offset: 0 }
   });
@@ -51,7 +49,6 @@ async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
     if (g.groupName === 'Kun arkiv') kunArkivId = g.id;
   }
 
-  // Set redirect links
   if (kunTidId > 0) {
     await page.request.put(`${BASE_URL}/api/security/groups/settings`, {
       headers, data: { id: kunTidId, redirectLink: '/plugins/time-planning-pn/planning' }
@@ -63,7 +60,6 @@ async function setupSecurityGroupsViaApi(page: Page): Promise<void> {
     });
   }
 
-  // Set plugin permissions
   const pluginsRes = await page.request.get(
     `${BASE_URL}/api/plugins-management/installed?sort=id&isSortDsc=true&pageSize=1000&pageIndex=0&offset=0`,
     { headers }
@@ -135,12 +131,12 @@ async function loginAsAdmin(page: Page): Promise<void> {
 
 async function loginAsWorker(page: Page, email: string): Promise<void> {
   await loginAs(page, email, WORKER_PASSWORD);
-  // Worker should be redirected to planning page via "Kun tid" group's redirectLink
   await page.waitForURL('**/plugins/time-planning-pn/planning**', { timeout: 30000 }).catch(() => {
     console.log(`Worker ${email}: did not navigate to planning, URL=${page.url()}`);
   });
   console.log(`Worker ${email}: final URL=${page.url()}`);
-  await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 120000 });
+  // Wait for the planning page to finish loading (date picker is always visible)
+  await page.locator('mat-datepicker-toggle').first().waitFor({ state: 'visible', timeout: 120000 });
   await page.waitForTimeout(2000);
 }
 
@@ -181,7 +177,7 @@ async function getAvailableSiteNames(page: Page): Promise<string[]> {
 }
 
 test.describe('Time Registration Dashboard Visibility', () => {
-  test('should allow workers with time registration to access planning dashboard', async ({ page }) => {
+  test('should show correct workers based on user role and tags', async ({ page }) => {
     test.setTimeout(600000);
 
     const rand = generateRandmString(8);
@@ -209,30 +205,23 @@ test.describe('Time Registration Dashboard Visibility', () => {
 
     await page.goto('http://localhost:4200');
     await loginAsAdmin(page);
-
-    // Setup security groups, redirect links, plugin permissions (replicates deploy_and_configure.py)
     await setupSecurityGroupsViaApi(page);
 
     // Create a property
     await propertiesPage.goToProperties();
-    const property: PropertyCreateUpdate = {
-      name: propertyName,
-      cvrNumber: '1111111',
-      chrNumber: rand.substring(0, 6),
-      address: 'Test Address 1',
-    };
-    await propertiesPage.createProperty(property);
+    await propertiesPage.createProperty({
+      name: propertyName, cvrNumber: '1111111',
+      chrNumber: rand.substring(0, 6), address: 'Test Address 1',
+    });
     await page.waitForTimeout(1000);
 
-    // Navigate to property workers
+    // Navigate to property workers and create tag
     await workersPage.goToPropertyWorkers();
     await page.waitForTimeout(1000);
-
-    // Create tag
     await workersPage.createTag(tagName);
     await page.waitForTimeout(1000);
 
-    // Create Worker A: Manager with tag and managing tag
+    // Worker A: Manager with tag and managing tag
     await workersPage.create({
       name: managerName, surname: managerSurname, workerEmail: managerEmail,
       language: 'Dansk', properties: [propertyName],
@@ -241,7 +230,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     });
     await page.waitForTimeout(2000);
 
-    // Create Worker B: Tagged worker (same tag as manager)
+    // Worker B: Tagged worker (same tag as manager)
     await workersPage.create({
       name: taggedName, surname: taggedSurname, workerEmail: taggedWorkerEmail,
       language: 'Dansk', properties: [propertyName],
@@ -249,7 +238,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     });
     await page.waitForTimeout(2000);
 
-    // Create Worker C: Untagged worker
+    // Worker C: Untagged worker
     await workersPage.create({
       name: untaggedName, surname: untaggedSurname, workerEmail: untaggedWorkerEmail,
       language: 'Dansk', properties: [propertyName],
@@ -257,7 +246,7 @@ test.describe('Time Registration Dashboard Visibility', () => {
     });
     await page.waitForTimeout(2000);
 
-    // Create Worker D: Manager without managing tags
+    // Worker D: Manager without managing tags
     await workersPage.create({
       name: notagMgrName, surname: notagMgrSurname, workerEmail: notagMgrEmail,
       language: 'Dansk', properties: [propertyName],
@@ -265,11 +254,10 @@ test.describe('Time Registration Dashboard Visibility', () => {
     });
     await page.waitForTimeout(2000);
 
-    // ==================== SANITY CHECK: Admin sees all workers on planning dashboard ====================
+    // ==================== PHASE 2: ADMIN sees all workers ====================
 
     await navigateToPlannings(page);
     await page.locator('#workingHoursSite').waitFor({ state: 'visible', timeout: 30000 });
-    console.log('SANITY CHECK: time-planning plugin is active, #workingHoursSite visible');
 
     const adminSiteNames = await getAvailableSiteNames(page);
     console.log(`Admin sees ${adminSiteNames.length} sites: ${JSON.stringify(adminSiteNames)}`);
@@ -280,44 +268,54 @@ test.describe('Time Registration Dashboard Visibility', () => {
     expect(adminSiteNames.some(n => n.includes(untaggedName) || n.includes(untaggedSurname))).toBe(true);
     expect(adminSiteNames.some(n => n.includes(notagMgrName) || n.includes(notagMgrSurname))).toBe(true);
 
-    // ==================== PHASE 2: VERIFY WORKERS CAN ACCESS PLANNING DASHBOARD ====================
-    // Each worker should be able to log in, get redirected to the planning page,
-    // and see the #workingHoursSite selector (proves time-planning plugin access works).
+    // ==================== PHASE 3: MANAGER WITH TAGS sees self + tagged workers ====================
 
-    // Worker A: Manager with managing tags
     await logout(page);
     await loginAsWorker(page, managerEmail);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
+
+    // Manager with tags should see the dropdown (more than 1 site)
+    const siteDropdown = page.locator('#workingHoursSite');
+    await siteDropdown.waitFor({ state: 'visible', timeout: 30000 });
+
     const managerSiteNames = await getAvailableSiteNames(page);
     console.log(`Manager sees ${managerSiteNames.length} sites: ${JSON.stringify(managerSiteNames)}`);
-    // Manager should see at least their own site
+    expect(managerSiteNames.length).toBe(2);
     expect(managerSiteNames.some(n => n.includes(managerName) || n.includes(managerSurname))).toBe(true);
+    expect(managerSiteNames.some(n => n.includes(taggedName) || n.includes(taggedSurname))).toBe(true);
+    // Manager should NOT see untagged workers
+    expect(managerSiteNames.some(n => n.includes(untaggedName))).toBe(false);
+    expect(managerSiteNames.some(n => n.includes(notagMgrName))).toBe(false);
 
-    // Worker B: Tagged worker
+    // ==================== PHASE 4: TAGGED WORKER sees only self, no dropdown ====================
+
     await logout(page);
     await loginAsWorker(page, taggedWorkerEmail);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
-    const taggedSiteNames = await getAvailableSiteNames(page);
-    console.log(`Tagged worker sees ${taggedSiteNames.length} sites: ${JSON.stringify(taggedSiteNames)}`);
-    expect(taggedSiteNames.some(n => n.includes(taggedName) || n.includes(taggedSurname))).toBe(true);
 
-    // Worker C: Untagged worker
+    // Non-manager should NOT see the dropdown (only 1 site returned, dropdown hidden)
+    await expect(page.locator('#workingHoursSite')).not.toBeVisible();
+    console.log('Tagged worker: dropdown correctly hidden (single site)');
+
+    // ==================== PHASE 5: UNTAGGED WORKER sees only self, no dropdown ====================
+
     await logout(page);
     await loginAsWorker(page, untaggedWorkerEmail);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
-    const untaggedSiteNames = await getAvailableSiteNames(page);
-    console.log(`Untagged worker sees ${untaggedSiteNames.length} sites: ${JSON.stringify(untaggedSiteNames)}`);
-    expect(untaggedSiteNames.some(n => n.includes(untaggedName) || n.includes(untaggedSurname))).toBe(true);
 
-    // Worker D: Manager without managing tags
+    await expect(page.locator('#workingHoursSite')).not.toBeVisible();
+    console.log('Untagged worker: dropdown correctly hidden (single site)');
+
+    // ==================== PHASE 6: MANAGER WITHOUT TAGS sees only self, no dropdown ====================
+
     await logout(page);
     await loginAsWorker(page, notagMgrEmail);
     expect(page.url()).toContain('/plugins/time-planning-pn/planning');
-    const notagMgrSiteNames = await getAvailableSiteNames(page);
-    console.log(`NoTag Manager sees ${notagMgrSiteNames.length} sites: ${JSON.stringify(notagMgrSiteNames)}`);
-    expect(notagMgrSiteNames.some(n => n.includes(notagMgrName) || n.includes(notagMgrSurname))).toBe(true);
 
-    // ==================== PHASE 3: CLEANUP (as admin) ====================
+    await expect(page.locator('#workingHoursSite')).not.toBeVisible();
+    console.log('Manager without tags: dropdown correctly hidden (single site)');
+
+    // ==================== PHASE 7: CLEANUP (as admin) ====================
 
     await logout(page);
     await loginAsAdmin(page);
