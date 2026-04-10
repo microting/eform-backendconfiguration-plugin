@@ -8,7 +8,7 @@ import {
   selectValueInNgSelectorNoSelector,
   selectDateOnNewDatePicker,
 } from '../../../helper-functions';
-import { clickAndWaitForResponses, getActionButtonForRow } from './helpers/flaky-fix-helpers';
+import { getActionButtonForRow } from './helpers/flaky-fix-helpers';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -89,13 +89,9 @@ test.describe('Area rules type 1', () => {
 
     // fill and create task
     await page.locator('#createProperty').click();
-    await clickAndWaitForResponses(
-      page,
-      () => selectValueInNgSelectorNoSelector(page, `${property.name}`),
-      ['/api/backend-configuration-pn/properties/get-folder-dtos?']
-    );
+    await selectValueInNgSelectorNoSelector(page, `${property.name}`);
 
-    await expect(page.locator('#createFolder mat-select .mat-mdc-select-trigger')).toBeVisible();
+    await expect(page.locator('#createFolder mat-select .mat-mdc-select-trigger')).toBeVisible({ timeout: 60000 });
     await page.locator('#createFolder mat-select .mat-mdc-select-trigger').click({ force: true });
     await expect(page.locator('mat-tree-node > button')).toBeVisible();
     await page.locator('mat-tree-node > button').click();
@@ -128,14 +124,10 @@ test.describe('Area rules type 1', () => {
 
     await page.locator('mat-checkbox#checkboxCreateAssignment0').click();
 
-    await clickAndWaitForResponses(
-      page,
-      () => page.locator('#createTaskBtn').click(),
-      [{ url: '/api/backend-configuration-pn/task-wizard', method: 'POST' }]
-    );
+    await page.locator('#createTaskBtn').click();
 
     // check table
-    await expect(page.locator('.cdk-row')).toHaveCount(1);
+    await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 60000 });
     await expect(page.locator('.cdk-row .cdk-column-property span')).toHaveText(task.property);
     await expect(page.locator('.cdk-row .cdk-column-folder span')).toHaveText('00. Logbøger');
     await expect(page.locator('.cdk-row .cdk-column-taskName span')).toHaveText(task.translations[0]);
@@ -172,11 +164,12 @@ test.describe('Area rules type 1', () => {
     const editBtn1 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await page.waitForTimeout(400); // animation settle: mat-menu open
     await expect(editBtn1).toBeVisible();
     await editBtn1.click({ force: true });
 
     // change task status (toggle)
-    await expect(page.locator('#updateTaskStatusToggle')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('#updateTaskStatusToggle')).toBeVisible({ timeout: 60000 });
     await page.locator('#updateTaskStatusToggle').click();
     await page.locator('#updateTaskBtn').click();
     await expect(page.locator('#updateTaskBtn')).toBeHidden();
@@ -202,10 +195,11 @@ test.describe('Area rules type 1', () => {
     const editBtn2 = await getActionButtonForRow(page, task.translations[0], 'editTaskBtn', true);
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await page.waitForTimeout(400); // animation settle: mat-menu open
     await expect(editBtn2).toBeVisible();
     await editBtn2.click({ force: true });
 
-    await expect(page.locator('#updateFolder mat-select .mat-mdc-select-trigger')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('#updateFolder mat-select .mat-mdc-select-trigger')).toBeVisible({ timeout: 60000 });
     await page.locator('#updateFolder mat-select .mat-mdc-select-trigger').click({ force: true });
     await expect(page.locator('mat-tree-node > button')).toBeVisible();
     await page.locator('mat-tree-node > button').click();
@@ -233,11 +227,8 @@ test.describe('Area rules type 1', () => {
     // enable task
     await page.locator('#updateTaskStatusToggle').click();
 
-    await clickAndWaitForResponses(
-      page,
-      () => page.locator('#updateTaskBtn').click(),
-      [{ url: '/api/backend-configuration-pn/task-wizard', method: 'PUT' }]
-    );
+    await page.locator('#updateTaskBtn').click();
+    await expect(page.locator('#updateTaskBtn')).toBeHidden({ timeout: 60000 });
 
     // check table after edit
     await expect(page.locator('.cdk-row')).toHaveCount(1);

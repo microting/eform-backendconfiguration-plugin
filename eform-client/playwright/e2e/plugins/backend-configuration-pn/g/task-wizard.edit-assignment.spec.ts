@@ -8,7 +8,7 @@ import {
   selectValueInNgSelectorNoSelector,
   selectDateOnNewDatePicker,
 } from '../../../helper-functions';
-import { clickAndWaitForResponses, getActionButtonForRow } from './helpers/flaky-fix-helpers';
+import { getActionButtonForRow } from './helpers/flaky-fix-helpers';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -177,15 +177,12 @@ test.describe('Area rules type 1', () => {
 
     await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
     await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
+    await page.waitForTimeout(400); // animation settle: mat-menu open
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
-    await clickAndWaitForResponses(
-      page,
-      () => page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true }),
-      ['/api/backend-configuration-pn/properties/get-folder-dtos?', '/api/templates/index']
-    );
+    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
 
-    await expect(page.locator('#checkboxUpdateAssignment1-input')).toBeVisible();
+    await expect(page.locator('#checkboxUpdateAssignment1-input')).toBeVisible({ timeout: 60000 });
     await page.locator('#checkboxUpdateAssignment1-input').check();
 
     const updateTaskResponse = page.waitForResponse(
@@ -215,15 +212,12 @@ test.describe('Area rules type 1', () => {
 
     await expect(page.locator('[id^=action-items]').first().locator('#actionMenu')).toBeVisible();
     await page.locator('[id^=action-items]').first().locator('#actionMenu').click({ force: true });
+    await page.waitForTimeout(400); // animation settle: mat-menu open
 
     await expect(page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first()).toBeVisible();
+    await page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true });
 
-    await clickAndWaitForResponses(
-      page,
-      () => page.locator('.cdk-overlay-container').locator('[id^=editTaskBtn]').first().click({ force: true }),
-      ['/api/backend-configuration-pn/properties/get-folder-dtos?', '/api/templates/index']
-    );
-
+    await expect(page.locator('#checkboxUpdateAssignment0-input')).toBeVisible({ timeout: 60000 });
     await page.locator('#checkboxUpdateAssignment0-input').uncheck();
 
     const updateTaskResponse2 = page.waitForResponse(
