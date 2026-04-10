@@ -896,6 +896,21 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync()
                     .ConfigureAwait(false);
 
+                // Persist Tags as SiteTag entries so tag-based filtering works
+                if (deviceUserModel.Tags != null && deviceUserModel.Tags.Any())
+                {
+                    foreach (var tagId in deviceUserModel.Tags)
+                    {
+                        var siteTag = new SiteTag
+                        {
+                            TagId = tagId,
+                            SiteId = site.Id
+                        };
+                        await siteTag.Create(sdkDbContext).ConfigureAwait(false);
+                    }
+                    Console.WriteLine($"[CreateDeviceUser] Saved {deviceUserModel.Tags.Count} site tags for site {site.Id}");
+                }
+
                 var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid)
                     .ConfigureAwait(false);
 
