@@ -256,9 +256,6 @@
             <div class="modal-columns">
               <div class="d-flex flex-column" id="timeRegistrationColumn">
 
-                <!-- Time Registration Settings -->
-                <h4>{{ 'Time Registration Settings' | translate }}</h4>
-
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
                                 id="useGoogleSheetAsDefault"
@@ -279,15 +276,22 @@
                   </mat-checkbox>
                 </div>
 
+                <!-- ========= Break calculation ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Break calculation' | translate }}</h3>
+
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
                                 id="autoBreakCalculationActive"
                                 formControlName="autoBreakCalculationActive">
                     <div>
                       <div>{{ 'Auto break calculation' | translate }}</div>
+                      <small class="checkbox-description">{{ 'Breaks are calculated automatically from the rule set. Manual break entry on shift tabs is disabled.' | translate }}</small>
                     </div>
                   </mat-checkbox>
                 </div>
+
+                <!-- ========= Mobile registration ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Mobile registration' | translate }}</h3>
 
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
@@ -295,72 +299,84 @@
                                 formControlName="allowPersonalTimeRegistration">
                     <div>
                       <div>{{ 'Allow time registration on mobile' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Enter start time, stop time, and total break. Select Allow editing of work hours on mobile to edit times.' | translate }}</small>
+                      <small class="checkbox-description">{{ 'Main switch. When active, select registration method and editing policy below.' | translate }}</small>
                     </div>
                   </mat-checkbox>
                 </div>
 
-                <div class="d-flex flex-row" *ngIf="!form.value.daysBackInTimeAllowedEditingEnabled && !selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration">
-                  <mat-checkbox class="p-1"
-                                id="allowEditOfRegistrations"
-                                formControlName="allowEditOfRegistrations">
-                    <div>
-                      <div>{{ 'Allow editing of working hours on mobile' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Start time, stop time and breaks can be edited.' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
+                <!-- Axis 1: How working time is captured -->
+                <div class="mobile-axis" *ngIf="!selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration">
+                  <div class="axis-label">① {{ 'How working time is captured' | translate }}</div>
+                  <mat-radio-group class="radio-group-vertical"
+                                   [value]="entryMethod"
+                                   (change)="onEntryMethodChange($event.value)">
+                    <mat-radio-button id="entryMethodManual" value="manual" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>{{ 'Manual entry' | translate }}</div>
+                        <small class="checkbox-description">{{ 'The employee enters start, stop and break for each workday themselves.' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                    <mat-radio-button id="entryMethodPunchClock" value="punchClock" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>{{ 'Use time clock on mobile' | translate }}</div>
+                        <small class="checkbox-description">{{ 'Start/Stop buttons record work and breaks automatically as the day progresses.' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                    <mat-radio-button id="entryMethodAcceptPlanned" value="acceptPlanned" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>{{ 'Allow receipt for standard time on mobile' | translate }}</div>
+                        <small class="checkbox-description">{{ 'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                  </mat-radio-group>
+
+                  <!-- Sub-option under punch clock -->
+                  <div class="sub-option" *ngIf="form.value.usePunchClock">
+                    <mat-checkbox class="p-1"
+                                  id="usePunchClockWithAllowRegisteringInHistory"
+                                  formControlName="usePunchClockWithAllowRegisteringInHistory">
+                      <div>
+                        <div>{{ 'Allow entry of forgotten days' | translate }}</div>
+                        <small class="checkbox-description">{{ 'The employee can retroactively register work hours they forgot to clock in/out on.' | translate }}</small>
+                      </div>
+                    </mat-checkbox>
+                  </div>
                 </div>
 
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration && !form.value.allowAcceptOfPlannedHours">
-                  <mat-checkbox class="p-1"
-                                id="usePunchClock"
-                                formControlName="usePunchClock">
-                    <div>
-                      <div>{{ 'Use time clock on mobile' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Working hours are recorded by pressing Start/Stop working hours. Breaks are recorded by pressing Start/Stop break time. Select Allow editing of working hours on mobile to edit times.' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
+                <!-- Axis 2: Editing policy (not applicable under "accept planned hours" mode) -->
+                <div class="mobile-axis"
+                     *ngIf="!selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration && entryMethod !== 'acceptPlanned'">
+                  <div class="axis-label">② {{ 'May the employee edit past registrations?' | translate }}</div>
+                  <mat-radio-group class="radio-group-vertical"
+                                   [value]="editingPolicy"
+                                   (change)="onEditingPolicyChange($event.value)">
+                    <mat-radio-button id="editingPolicyLocked" value="locked" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>{{ 'No editing allowed' | translate }}</div>
+                        <small class="checkbox-description">{{ 'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                    <mat-radio-button id="editingPolicyUntilPayroll" value="untilPayroll" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>
+                          {{ 'Yes, until the last payroll run' | translate }}
+                          <span class="cutoff-badge">{{ 'Locks on 19th' | translate }}</span>
+                        </div>
+                        <small class="checkbox-description">{{ 'The employee can edit all registrations that fall after the last payroll run. Registrations up to and including the 19th of the month are locked when payroll runs. Older registrations cannot be changed.' | translate }}</small>
+                        <small class="checkbox-description muted-note">{{ '(Cutoff date is currently fixed at the 19th — will become configurable in a future version.)' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                    <mat-radio-button id="editingPolicyTwoDaysRolling" value="twoDaysRolling" class="radio-option">
+                      <div class="radio-option-content">
+                        <div>{{ 'Yes, but only the last 2 days' | translate }}</div>
+                        <small class="checkbox-description">{{ 'The employee can only edit registrations within a rolling 2-day window. Everything older than 2 days is automatically locked, independent of payroll.' | translate }}</small>
+                      </div>
+                    </mat-radio-button>
+                  </mat-radio-group>
                 </div>
 
-                <div class="d-flex flex-row" *ngIf="!form.value.daysBackInTimeAllowedEditingEnabled && !selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration && !form.value.allowAcceptOfPlannedHours && form.value.usePunchClock">
-                  <mat-checkbox class="p-1"
-                                id="usePunchClockWithAllowRegisteringInHistory"
-                                formControlName="usePunchClockWithAllowRegisteringInHistory">
-                    <div>
-                      <div>{{ 'Allow entry of unregistered working hours on mobile' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Enter start time, stop time, and total break time back in time. Select Allow editing of work hours on mobile to edit times.' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
-                </div>
-
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration && !form.value.usePunchClock">
-                  <mat-checkbox class="p-1"
-                                id="allowAcceptOfPlannedHours"
-                                formControlName="allowAcceptOfPlannedHours">
-                    <div>
-                      <div>{{ 'Allow receipt for standard time on mobile' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
-                </div>
-
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.allowPersonalTimeRegistration && form.value.allowEditOfRegistrations">
-                  <mat-checkbox class="p-1"
-                                id="daysBackInTimeAllowedEditingEnabled"
-                                formControlName="daysBackInTimeAllowedEditingEnabled">
-                    <div>
-                      <div>{{ 'Allow x days back in time editing' | translate }}</div>
-                      <small class="checkbox-description">{{ 'Enabling this option allows the user to edit x days back in time, default is 2.' | translate }}</small>
-                    </div>
-                  </mat-checkbox>
-                </div>
-
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && form.value.daysBackInTimeAllowedEditingEnabled">
-                  <mat-form-field class="p-1">
-                    <mat-label>{{ 'Days back in time allowed editing' | translate }}</mat-label>
-                    <input matInput type="number" formControlName="daysBackInTimeAllowedEditing" id="daysBackInTimeAllowedEditing">
-                  </mat-form-field>
-                </div>
+                <!-- ========= Shifts ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Shifts' | translate }}</h3>
 
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
@@ -379,6 +395,9 @@
                     <div>{{ 'Enable fifth shift' | translate }}</div>
                   </mat-checkbox>
                 </div>
+
+                <!-- ========= Manager settings ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Manager settings' | translate }}</h3>
 
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
@@ -399,7 +418,7 @@
                       bindLabel="name"
                       bindValue="id"
                       [multiple]="true"
-                      placeholder="{{ 'Select tags' | translate }}"
+                      [placeholder]="'Select tags' | translate"
                       formControlName="managingTagIds">
                     </mtx-select>
                     <mat-hint>{{ 'Select tags that this manager is responsible for' | translate }}</mat-hint>

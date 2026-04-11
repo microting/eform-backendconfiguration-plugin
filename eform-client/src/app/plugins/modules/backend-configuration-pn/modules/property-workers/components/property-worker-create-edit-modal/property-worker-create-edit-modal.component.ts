@@ -285,6 +285,15 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
                 });
               }
             });
+
+            // Normalize mutually-exclusive flag combinations that legacy data
+            // might contain (e.g. both usePunchClock and allowAcceptOfPlannedHours
+            // set to true). Derives the current radio values and writes them back
+            // so the stored flags match the displayed selection exactly.
+            // `emitEvent: false` so we don't trigger additional valueChanges
+            // emissions — the patchValue above already fired one.
+            this.onEntryMethodChange(this.entryMethod, { emitEvent: false });
+            this.onEditingPolicyChange(this.editingPolicy, { emitEvent: false });
         }
       })
     ).subscribe() : null;
@@ -672,6 +681,86 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
 
   getAutoBreakSettingsFormGroup(): FormGroup {
     return this.form.get('autoBreakSettings') as FormGroup;
+  }
+
+  /**
+   * Axis 1 — how working time is captured on mobile.
+   * Maps the two underlying flags (usePunchClock, allowAcceptOfPlannedHours)
+   * onto a single 3-value radio control. These flags are mutually exclusive
+   * in the UI by construction. The getter is pure (form read only) — do not
+   * add side effects; it is called every change-detection cycle via template
+   * bindings.
+   */
+  get entryMethod(): 'manual' | 'punchClock' | 'acceptPlanned' {
+    if (this.form.get('usePunchClock')?.value) {
+      return 'punchClock';
+    }
+    if (this.form.get('allowAcceptOfPlannedHours')?.value) {
+      return 'acceptPlanned';
+    }
+    return 'manual';
+  }
+
+  /**
+   * Apply a new entry-method selection. Uses `patchValue` so all affected
+   * form controls emit a single `valueChanges` event (instead of one per
+   * setValue), which keeps the `Object.assign(this.selectedDeviceUser,
+   * formValue)` subscription from firing multiple times during legacy-flag
+   * normalisation. Pass `{emitEvent: false}` from the normalisation path so
+   * the initial patch from `getAssignedSite` does not trigger a spurious
+   * overwrite of `this.selectedDeviceUser` with stale form state.
+   *
+   * Note: switching to `acceptPlanned` intentionally leaves
+   * `allowEditOfRegistrations` / `daysBackInTimeAllowedEditingEnabled`
+   * untouched — axis ② is hidden in that mode and the backend
+   * `UpdateWorkingHour` guard makes any residual stored values moot.
+   */
+  onEntryMethodChange(
+    value: 'manual' | 'punchClock' | 'acceptPlanned',
+    opts: { emitEvent?: boolean } = {},
+  ): void {
+    const punch = value === 'punchClock';
+    const accept = value === 'acceptPlanned';
+    const patch: Record<string, unknown> = {
+      usePunchClock: punch,
+      allowAcceptOfPlannedHours: accept,
+    };
+    // The "allow entry of forgotten days" sub-option only makes sense under punch clock
+    if (!punch) {
+      patch.usePunchClockWithAllowRegisteringInHistory = false;
+    }
+    this.form.patchValue(patch, { emitEvent: opts.emitEvent !== false });
+  }
+
+  /**
+   * Axis 2 — editing policy for past registrations.
+   * Maps two boolean flags (allowEditOfRegistrations, daysBackInTimeAllowedEditingEnabled)
+   * onto a single 3-value radio control:
+   *   locked          → both false
+   *   untilPayroll    → allowEditOfRegistrations=true, daysBack=false
+   *   twoDaysRolling  → both true
+   */
+  get editingPolicy(): 'locked' | 'untilPayroll' | 'twoDaysRolling' {
+    if (this.form.get('daysBackInTimeAllowedEditingEnabled')?.value) {
+      return 'twoDaysRolling';
+    }
+    if (this.form.get('allowEditOfRegistrations')?.value) {
+      return 'untilPayroll';
+    }
+    return 'locked';
+  }
+
+  onEditingPolicyChange(
+    value: 'locked' | 'untilPayroll' | 'twoDaysRolling',
+    opts: { emitEvent?: boolean } = {},
+  ): void {
+    this.form.patchValue(
+      {
+        allowEditOfRegistrations: value !== 'locked',
+        daysBackInTimeAllowedEditingEnabled: value === 'twoDaysRolling',
+      },
+      { emitEvent: opts.emitEvent !== false },
+    );
   }
 
   copyBreakSettings(day: string) {
