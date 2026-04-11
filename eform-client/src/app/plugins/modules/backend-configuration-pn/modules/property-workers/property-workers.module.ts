@@ -21,7 +21,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatRadioButton, MatRadioGroup} from '@angular/material/radio';
+import {MatRadioModule} from '@angular/material/radio';
 import {MatMenuModule} from '@angular/material/menu';
 import {
   PropertyWorkerFiltersComponent
@@ -48,8 +48,7 @@ import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
     MtxSelectModule,
     MatSlideToggleModule,
     MatCheckboxModule,
-    MatRadioGroup,
-    MatRadioButton,
+    MatRadioModule,
     MatMenuModule,
     ReactiveFormsModule,
     MatChip,
