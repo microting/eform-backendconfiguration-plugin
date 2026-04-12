@@ -258,16 +258,6 @@
 
                 <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
                   <mat-checkbox class="p-1"
-                                id="useGoogleSheetAsDefault"
-                                formControlName="useGoogleSheetAsDefault">
-                    <div>
-                      <div>{{ 'Use Google Sheet as default' | translate }}</div>
-                    </div>
-                  </mat-checkbox>
-                </div>
-
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && !form.value.useGoogleSheetAsDefault">
-                  <mat-checkbox class="p-1"
                                 id="useOnlyPlanHours"
                                 formControlName="useOnlyPlanHours">
                     <div>

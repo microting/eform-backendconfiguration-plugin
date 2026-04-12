@@ -214,7 +214,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
 
 
 
-      useGoogleSheetAsDefault: false,
+      useGoogleSheetAsDefault: true,
       useOnlyPlanHours: false,
       autoBreakCalculationActive: false,
       allowPersonalTimeRegistration: false,
