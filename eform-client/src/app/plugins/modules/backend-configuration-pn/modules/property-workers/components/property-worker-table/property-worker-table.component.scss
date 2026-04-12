@@ -16,6 +16,13 @@
   }
 }
 
+::ng-deep .mat-mdc-menu-item {
+  white-space: normal;
+  line-height: 1.4;
+  height: auto;
+  min-height: 48px;
+}
+
 .qr-icon-btn {
   width: 28px;
   height: 28px;
