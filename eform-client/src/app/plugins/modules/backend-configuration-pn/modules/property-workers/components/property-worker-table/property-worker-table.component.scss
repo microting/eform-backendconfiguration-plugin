@@ -17,10 +17,16 @@
 }
 
 ::ng-deep .mat-mdc-menu-item {
-  white-space: normal;
-  line-height: 1.4;
-  height: auto;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+  height: auto !important;
   min-height: 48px;
+  overflow: visible !important;
+
+  .mdc-list-item__primary-text {
+    white-space: normal !important;
+    overflow: visible !important;
+  }
 }
 
 .qr-icon-btn {
