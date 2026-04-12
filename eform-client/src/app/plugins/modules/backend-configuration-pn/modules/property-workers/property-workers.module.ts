@@ -31,8 +31,6 @@ import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/m
 import {MatTab, MatTabGroup} from "@angular/material/tabs";
 import {EformSharedTagsModule} from "src/app/common/modules/eform-shared-tags/eform-shared-tags.module";
 import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
-import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
-
 @NgModule({
   imports: [
     CommonModule,
@@ -60,7 +58,6 @@ import {UserSetPasswordComponent} from 'src/app/modules/account-management/compo
     MatTabGroup,
     EformSharedTagsModule,
     NgxMaterialTimepickerModule,
-    UserSetPasswordComponent,
   ],
   declarations: [
     PropertyWorkersPageComponent,
