@@ -223,7 +223,28 @@ export class BackendConfigurationPropertyWorkersPage {
       );
 
       // Wait for form to become valid (button enabled) before clicking
-      await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 30000 });
+      try {
+        await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
+      } catch {
+        // Log which form controls are invalid for debugging
+        const invalidControls = await this.page.evaluate(() => {
+          const form = document.querySelector('form');
+          if (!form) return 'no form found';
+          const ngRef = (form as any).__ngContext__ || (form as any).__ngSimpleChanges__;
+          // Check all inputs for Angular invalid class
+          const invalids: string[] = [];
+          form.querySelectorAll('.ng-invalid').forEach((el: Element) => {
+            const id = el.getAttribute('id') || el.getAttribute('formcontrolname') || el.tagName;
+            invalids.push(id);
+          });
+          return invalids.join(', ') || 'no .ng-invalid elements found';
+        });
+        console.log(`Save button disabled — invalid controls: ${invalidControls}`);
+        // Try clicking the General tab to ensure all fields are visible
+        await this.page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).first().click();
+        await this.page.waitForTimeout(500);
+        await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
+      }
       await this.saveCreateBtn().click();
 
       // Wait for create-device-user PUT
