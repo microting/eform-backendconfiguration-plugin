@@ -226,23 +226,44 @@ export class BackendConfigurationPropertyWorkersPage {
       try {
         await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
       } catch {
-        // Log which form controls are invalid for debugging
+        // Log which form controls are invalid via Angular's debug API
         const invalidControls = await this.page.evaluate(() => {
-          const form = document.querySelector('form');
-          if (!form) return 'no form found';
-          const ngRef = (form as any).__ngContext__ || (form as any).__ngSimpleChanges__;
-          // Check all inputs for Angular invalid class
+          // Try to get the Angular FormGroup via ng.getComponent
+          const tabGroup = document.querySelector('mat-tab-group[formGroup]');
+          if (!tabGroup) return 'no formGroup element found';
+          try {
+            const ng = (window as any).ng;
+            if (ng && ng.getOwningComponent) {
+              const comp = ng.getOwningComponent(tabGroup);
+              if (comp && comp.form) {
+                const invalids: string[] = [];
+                const controls = comp.form.controls;
+                for (const key of Object.keys(controls)) {
+                  if (controls[key].invalid) {
+                    const errors = JSON.stringify(controls[key].errors);
+                    invalids.push(`${key}(errors=${errors},value=${JSON.stringify(controls[key].value)})`);
+                  }
+                }
+                return invalids.join(', ') || 'form.valid=true but button disabled';
+              }
+            }
+          } catch (e) {
+            return `ng API error: ${e}`;
+          }
+          // Fallback: check DOM classes
           const invalids: string[] = [];
-          form.querySelectorAll('.ng-invalid').forEach((el: Element) => {
-            const id = el.getAttribute('id') || el.getAttribute('formcontrolname') || el.tagName;
-            invalids.push(id);
+          document.querySelectorAll('[formcontrolname].ng-invalid').forEach((el: Element) => {
+            invalids.push(el.getAttribute('formcontrolname') || el.tagName);
           });
-          return invalids.join(', ') || 'no .ng-invalid elements found';
+          return invalids.join(', ') || 'no invalid controls found (DOM check)';
         });
         console.log(`Save button disabled — invalid controls: ${invalidControls}`);
-        // Try clicking the General tab to ensure all fields are visible
-        await this.page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).first().click();
-        await this.page.waitForTimeout(500);
+        // Switch to General tab and back to force form re-validation
+        const generalTab = this.page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).first();
+        if (await generalTab.isVisible()) {
+          await generalTab.click();
+          await this.page.waitForTimeout(500);
+        }
         await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
       }
       await this.saveCreateBtn().click();
