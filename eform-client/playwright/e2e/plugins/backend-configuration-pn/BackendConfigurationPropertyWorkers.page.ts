@@ -222,6 +222,8 @@ export class BackendConfigurationPropertyWorkersPage {
           r.request().method() === 'POST'
       );
 
+      // Wait for form to become valid (button enabled) before clicking
+      await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 30000 });
       await this.saveCreateBtn().click();
 
       // Wait for create-device-user PUT
