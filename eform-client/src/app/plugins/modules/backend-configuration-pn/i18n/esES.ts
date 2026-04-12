@@ -343,4 +343,5 @@ export const esES = {
   'Managing tags': 'Gestionar etiquetas',
   'Select tags': 'Seleccionar etiquetas',
   'Select tags that this manager is responsible for': 'Seleccione las etiquetas de las que este gerente es responsable.',
+  'Set password': 'Establecer contraseña',
 };

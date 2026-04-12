@@ -344,4 +344,5 @@ export const da = {
   'Managing tags': 'Administration af tags',
   'Select tags': 'Vælg tags',
   'Select tags that this manager is responsible for': 'Vælg tags, som denne administrator er ansvarlig for',
+  'Set password': 'Angiv adgangskode',
 };

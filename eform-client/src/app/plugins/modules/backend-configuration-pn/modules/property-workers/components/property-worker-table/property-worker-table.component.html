@@ -147,6 +147,15 @@
         <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
         <span>{{ 'Delete employee' | translate }}</span>
       </button>
+      <button
+        mat-menu-item
+        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled"
+        id="setPasswordBtn-{{i}}"
+        (click)="openSetPasswordModal(row)"
+      >
+        <mat-icon fontSet="material-symbols-outlined">lock_reset</mat-icon>
+        <span>{{ 'Set password' | translate }}</span>
+      </button>
     </mat-menu>
   </div>
 </ng-template>

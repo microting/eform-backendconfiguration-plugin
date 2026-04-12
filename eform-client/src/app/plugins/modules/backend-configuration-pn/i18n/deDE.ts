@@ -404,4 +404,5 @@ export const deDE = {
   'Managing tags': 'Tags verwalten',
   'Select tags': 'Schlagwörter auswählen',
   'Select tags that this manager is responsible for': 'Wählen Sie die Schlagwörter aus, für die dieser Manager zuständig ist.',
+  'Set password': 'Passwort festlegen',
 };

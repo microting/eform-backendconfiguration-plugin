@@ -343,4 +343,5 @@ export const hrHR = {
   'Managing tags': 'Upravljanje oznakama',
   'Select tags': 'Odaberite oznake',
   'Select tags that this manager is responsible for': 'Odaberite oznake za koje je ovaj upravitelj odgovoran',
+  'Set password': 'Postavi lozinku',
 };

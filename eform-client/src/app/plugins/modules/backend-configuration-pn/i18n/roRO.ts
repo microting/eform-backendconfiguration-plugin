@@ -343,4 +343,5 @@ export const roRO = {
   'Managing tags': 'Gestionarea etichetelor',
   'Select tags': 'Selectați etichetele',
   'Select tags that this manager is responsible for': 'Selectați etichetele pentru care este responsabil acest manager',
+  'Set password': 'Setați parola',
 };

@@ -20,6 +20,7 @@ import {
   PropertyWorkerQrModalComponent,
 } from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
 import {Store} from '@ngrx/store';
 import {
   selectAuthIsAdmin,
@@ -259,6 +260,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
       this.dialog.open(PropertyWorkerOtpModalComponent,
       {...dialogConfigHelper(this.overlay, siteDto)})
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+  }
+
+  openSetPasswordModal(row: DeviceUserModel) {
+    const dialogRef = this.dialog.open(UserSetPasswordComponent,
+      dialogConfigHelper(this.overlay, { email: row.workerEmail }));
+    dialogRef.componentInstance.userPasswordSet?.subscribe(() => {
+      dialogRef.close();
+    });
   }
 
   openQrModal(row: DeviceUserModel) {

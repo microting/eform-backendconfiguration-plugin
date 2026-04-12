@@ -343,4 +343,5 @@ export const etET = {
   'Managing tags': 'Siltide haldamine',
   'Select tags': 'Valige sildid',
   'Select tags that this manager is responsible for': 'Valige sildid, mille eest see haldur vastutab',
+  'Set password': 'Parooli määramine',
 };

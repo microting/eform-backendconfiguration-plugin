@@ -343,4 +343,5 @@ export const frFR = {
   'Managing tags': 'Gestion des balises',
   'Select tags': 'Sélectionner les étiquettes',
   'Select tags that this manager is responsible for': 'Sélectionnez les tags dont ce responsable est chargé.',
+  'Set password': 'Définir un mot de passe',
 };

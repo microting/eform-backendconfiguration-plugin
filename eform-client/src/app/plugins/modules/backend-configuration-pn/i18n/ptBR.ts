@@ -343,4 +343,5 @@ export const ptBR = {
   'Managing tags': 'Gerenciando tags',
   'Select tags': 'Selecione as etiquetas',
   'Select tags that this manager is responsible for': 'Selecione as etiquetas pelas quais este gerente é responsável.',
+  'Set password': 'Definir senha',
 };

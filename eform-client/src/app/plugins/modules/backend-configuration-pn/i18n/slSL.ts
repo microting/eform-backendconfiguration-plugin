@@ -343,4 +343,5 @@ export const slSL = {
   'Managing tags': 'Upravljanje oznak',
   'Select tags': 'Izberite oznake',
   'Select tags that this manager is responsible for': 'Izberite oznake, za katere je odgovoren ta upravitelj',
+  'Set password': 'Nastavi geslo',
 };

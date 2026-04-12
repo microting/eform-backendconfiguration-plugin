@@ -343,4 +343,5 @@ export const plPL = {
   'Managing tags': 'Zarządzanie tagami',
   'Select tags': 'Wybierz tagi',
   'Select tags that this manager is responsible for': 'Wybierz tagi, za które odpowiada ten menedżer',
+  'Set password': 'Ustaw hasło',
 };

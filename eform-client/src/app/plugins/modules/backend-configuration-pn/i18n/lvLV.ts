@@ -343,4 +343,5 @@ export const lvLV = {
   'Managing tags': 'Birku pārvaldība',
   'Select tags': 'Atlasīt tagus',
   'Select tags that this manager is responsible for': 'Atlasiet tagus, par kuriem šis pārvaldnieks ir atbildīgs',
+  'Set password': 'Iestatīt paroli',
 };

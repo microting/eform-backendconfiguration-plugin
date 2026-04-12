@@ -343,4 +343,5 @@ export const huHU = {
   'Managing tags': 'Címkék kezelése',
   'Select tags': 'Címkék kiválasztása',
   'Select tags that this manager is responsible for': 'Válassza ki azokat a címkéket, amelyekért ez a kezelő felelős',
+  'Set password': 'Jelszó beállítása',
 };

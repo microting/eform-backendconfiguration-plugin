@@ -343,4 +343,5 @@ export const nlNL = {
   'Managing tags': 'Tags beheren',
   'Select tags': 'Selecteer tags',
   'Select tags that this manager is responsible for': 'Selecteer de tags waarvoor deze manager verantwoordelijk is.',
+  'Set password': 'Stel een wachtwoord in',
 };

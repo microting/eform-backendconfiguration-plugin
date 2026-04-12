@@ -343,4 +343,5 @@ export const csCZ = {
   'Managing tags': 'Správa štítků',
   'Select tags': 'Vyberte štítky',
   'Select tags that this manager is responsible for': 'Vyberte štítky, za které je tento správce zodpovědný',
+  'Set password': 'Nastavit heslo',
 };

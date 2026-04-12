@@ -343,4 +343,5 @@ export const svSE = {
   'Managing tags': 'Hantera taggar',
   'Select tags': 'Välj taggar',
   'Select tags that this manager is responsible for': 'Välj taggar som den här hanteraren ansvarar för',
+  'Set password': 'Ange lösenord',
 };

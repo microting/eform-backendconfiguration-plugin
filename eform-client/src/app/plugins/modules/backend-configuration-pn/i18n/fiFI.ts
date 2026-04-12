@@ -343,4 +343,5 @@ export const fiFI = {
   'Managing tags': 'Tagien hallinta',
   'Select tags': 'Valitse tunnisteet',
   'Select tags that this manager is responsible for': 'Valitse tunnisteet, joista tämä hallinnoija on vastuussa',
+  'Set password': 'Aseta salasana',
 };

@@ -360,4 +360,5 @@ export const enUS= {
   'Managing tags': 'Managing tags',
   'Select tags': 'Select tags',
   'Select tags that this manager is responsible for': 'Select tags that this manager is responsible for',
+  'Set password': 'Set password',
 };

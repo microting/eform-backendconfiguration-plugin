@@ -343,4 +343,5 @@ export const itIT = {
   'Managing tags': 'Gestione dei tag',
   'Select tags': 'Seleziona i tag',
   'Select tags that this manager is responsible for': 'Seleziona i tag di cui questo manager è responsabile',
+  'Set password': 'Imposta password',
 };

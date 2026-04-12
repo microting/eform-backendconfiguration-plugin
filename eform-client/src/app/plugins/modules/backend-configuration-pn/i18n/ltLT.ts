@@ -343,4 +343,5 @@ export const ltLT = {
   'Managing tags': 'Žymų tvarkymas',
   'Select tags': 'Pasirinkite žymas',
   'Select tags that this manager is responsible for': 'Pasirinkite žymas, už kurias atsakingas šis valdytojas',
+  'Set password': 'Nustatyti slaptažodį',
 };
