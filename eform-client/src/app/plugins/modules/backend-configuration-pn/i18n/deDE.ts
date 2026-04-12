@@ -405,4 +405,5 @@ export const deDE = {
   'Select tags': 'Schlagwörter auswählen',
   'Select tags that this manager is responsible for': 'Wählen Sie die Schlagwörter aus, für die dieser Manager zuständig ist.',
   'Set password': 'Passwort festlegen',
+  'Send reset password email': 'E-Mail zum Zurücksetzen des Passworts senden',
 };

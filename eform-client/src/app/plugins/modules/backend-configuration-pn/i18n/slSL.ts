@@ -344,4 +344,5 @@ export const slSL = {
   'Select tags': 'Izberite oznake',
   'Select tags that this manager is responsible for': 'Izberite oznake, za katere je odgovoren ta upravitelj',
   'Set password': 'Nastavi geslo',
+  'Send reset password email': 'Pošlji e-pošto za ponastavitev gesla',
 };

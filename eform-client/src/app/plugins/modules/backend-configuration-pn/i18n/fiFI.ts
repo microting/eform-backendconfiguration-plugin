@@ -344,4 +344,5 @@ export const fiFI = {
   'Select tags': 'Valitse tunnisteet',
   'Select tags that this manager is responsible for': 'Valitse tunnisteet, joista tämä hallinnoija on vastuussa',
   'Set password': 'Aseta salasana',
+  'Send reset password email': 'Lähetä salasanan palautussähköposti',
 };

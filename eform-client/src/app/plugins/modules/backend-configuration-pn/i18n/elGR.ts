@@ -344,4 +344,5 @@ export const elGR = {
   'Select tags': 'Επιλογή ετικετών',
   'Select tags that this manager is responsible for': 'Επιλέξτε ετικέτες για τις οποίες είναι υπεύθυνος αυτός ο διαχειριστής',
   'Set password': 'Ορισμός κωδικού πρόσβασης',
+  'Send reset password email': 'Αποστολή email επαναφοράς κωδικού πρόσβασης',
 };

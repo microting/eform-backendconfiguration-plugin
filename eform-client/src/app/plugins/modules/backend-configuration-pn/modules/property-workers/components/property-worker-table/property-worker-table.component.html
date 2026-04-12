@@ -149,12 +149,21 @@
       </button>
       <button
         mat-menu-item
-        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled"
+        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled || row.archiveEnabled"
         id="setPasswordBtn-{{i}}"
         (click)="openSetPasswordModal(row)"
       >
         <mat-icon fontSet="material-symbols-outlined">lock_reset</mat-icon>
         <span>{{ 'Set password' | translate }}</span>
+      </button>
+      <button
+        mat-menu-item
+        *ngIf="row.timeRegistrationEnabled || row.webAccessEnabled || row.archiveEnabled"
+        id="sendResetPasswordEmailBtn-{{i}}"
+        (click)="sendResetPasswordEmail(row)"
+      >
+        <mat-icon fontSet="material-symbols-outlined">mail_lock</mat-icon>
+        <span>{{ 'Send reset password email' | translate }}</span>
       </button>
     </mat-menu>
   </div>

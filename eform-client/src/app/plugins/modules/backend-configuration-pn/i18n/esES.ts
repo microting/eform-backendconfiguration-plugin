@@ -344,4 +344,5 @@ export const esES = {
   'Select tags': 'Seleccionar etiquetas',
   'Select tags that this manager is responsible for': 'Seleccione las etiquetas de las que este gerente es responsable.',
   'Set password': 'Establecer contraseña',
+  'Send reset password email': 'Enviar correo electrónico para restablecer la contraseña',
 };

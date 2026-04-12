@@ -344,4 +344,5 @@ export const frFR = {
   'Select tags': 'Sélectionner les étiquettes',
   'Select tags that this manager is responsible for': 'Sélectionnez les tags dont ce responsable est chargé.',
   'Set password': 'Définir un mot de passe',
+  'Send reset password email': 'Envoyer un e-mail de réinitialisation du mot de passe',
 };

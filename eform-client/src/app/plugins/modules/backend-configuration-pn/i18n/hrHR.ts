@@ -344,4 +344,5 @@ export const hrHR = {
   'Select tags': 'Odaberite oznake',
   'Select tags that this manager is responsible for': 'Odaberite oznake za koje je ovaj upravitelj odgovoran',
   'Set password': 'Postavi lozinku',
+  'Send reset password email': 'Pošalji e-poruku za resetiranje lozinke',
 };

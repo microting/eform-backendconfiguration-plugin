@@ -345,4 +345,5 @@ export const da = {
   'Select tags': 'Vælg tags',
   'Select tags that this manager is responsible for': 'Vælg tags, som denne administrator er ansvarlig for',
   'Set password': 'Angiv adgangskode',
+  'Send reset password email': 'Send e-mail med nulstilling af adgangskode',
 };

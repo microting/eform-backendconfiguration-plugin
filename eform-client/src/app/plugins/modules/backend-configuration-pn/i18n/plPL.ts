@@ -344,4 +344,5 @@ export const plPL = {
   'Select tags': 'Wybierz tagi',
   'Select tags that this manager is responsible for': 'Wybierz tagi, za które odpowiada ten menedżer',
   'Set password': 'Ustaw hasło',
+  'Send reset password email': 'Wyślij e-mail z prośbą o zresetowanie hasła',
 };

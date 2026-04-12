@@ -344,4 +344,5 @@ export const nlNL = {
   'Select tags': 'Selecteer tags',
   'Select tags that this manager is responsible for': 'Selecteer de tags waarvoor deze manager verantwoordelijk is.',
   'Set password': 'Stel een wachtwoord in',
+  'Send reset password email': 'Stuur een e-mail om uw wachtwoord opnieuw in te stellen.',
 };

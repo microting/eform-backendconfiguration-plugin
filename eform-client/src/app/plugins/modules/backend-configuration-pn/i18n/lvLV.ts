@@ -344,4 +344,5 @@ export const lvLV = {
   'Select tags': 'Atlasīt tagus',
   'Select tags that this manager is responsible for': 'Atlasiet tagus, par kuriem šis pārvaldnieks ir atbildīgs',
   'Set password': 'Iestatīt paroli',
+  'Send reset password email': 'Sūtīt paroles atiestatīšanas e-pastu',
 };

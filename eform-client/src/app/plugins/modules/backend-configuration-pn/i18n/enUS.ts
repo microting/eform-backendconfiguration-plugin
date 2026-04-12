@@ -361,4 +361,5 @@ export const enUS= {
   'Select tags': 'Select tags',
   'Select tags that this manager is responsible for': 'Select tags that this manager is responsible for',
   'Set password': 'Set password',
+  'Send reset password email': 'Send reset password email',
 };

@@ -344,4 +344,5 @@ export const skSK = {
   'Select tags': 'Vyberte značky',
   'Select tags that this manager is responsible for': 'Vyberte značky, za ktoré je tento správca zodpovedný',
   'Set password': 'Nastaviť heslo',
+  'Send reset password email': 'Odoslať e-mail na obnovenie hesla',
 };

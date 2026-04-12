@@ -21,6 +21,7 @@ import {
 } from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {UserSetPasswordComponent} from 'src/app/modules/account-management/components';
+import {AuthService} from 'src/app/common/services';
 import {Store} from '@ngrx/store';
 import {
   selectAuthIsAdmin,
@@ -50,6 +51,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   private translateService = inject(TranslateService);
   private authStateService = inject(AuthStateService);
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
+  private authService = inject(AuthService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private el = inject(ElementRef);
@@ -268,6 +270,10 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
     dialogRef.componentInstance.userPasswordSet?.subscribe(() => {
       dialogRef.close();
     });
+  }
+
+  sendResetPasswordEmail(row: DeviceUserModel) {
+    this.authService.sendEmailRecoveryLink({ email: row.workerEmail }).subscribe();
   }
 
   openQrModal(row: DeviceUserModel) {

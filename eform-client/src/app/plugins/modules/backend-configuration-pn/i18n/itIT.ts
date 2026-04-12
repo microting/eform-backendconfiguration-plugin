@@ -344,4 +344,5 @@ export const itIT = {
   'Select tags': 'Seleziona i tag',
   'Select tags that this manager is responsible for': 'Seleziona i tag di cui questo manager è responsabile',
   'Set password': 'Imposta password',
+  'Send reset password email': 'Invia l&#39;email per reimpostare la password',
 };

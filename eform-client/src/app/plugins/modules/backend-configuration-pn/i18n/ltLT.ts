@@ -344,4 +344,5 @@ export const ltLT = {
   'Select tags': 'Pasirinkite žymas',
   'Select tags that this manager is responsible for': 'Pasirinkite žymas, už kurias atsakingas šis valdytojas',
   'Set password': 'Nustatyti slaptažodį',
+  'Send reset password email': 'Siųsti slaptažodžio atkūrimo el. laišką',
 };

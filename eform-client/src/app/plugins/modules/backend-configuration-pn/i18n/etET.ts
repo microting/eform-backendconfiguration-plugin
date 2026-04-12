@@ -344,4 +344,5 @@ export const etET = {
   'Select tags': 'Valige sildid',
   'Select tags that this manager is responsible for': 'Valige sildid, mille eest see haldur vastutab',
   'Set password': 'Parooli määramine',
+  'Send reset password email': 'Saada parooli lähtestamise e-kiri',
 };

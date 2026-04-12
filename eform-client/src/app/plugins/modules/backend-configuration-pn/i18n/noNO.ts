@@ -344,4 +344,5 @@ export const noNO = {
   'Select tags': 'Velg tagger',
   'Select tags that this manager is responsible for': 'Velg tagger som denne administratoren er ansvarlig for',
   'Set password': 'Angi passord',
+  'Send reset password email': 'Send e-post om tilbakestilling av passord',
 };

@@ -344,4 +344,5 @@ export const bgBG = {
   'Select tags': 'Изберете етикети',
   'Select tags that this manager is responsible for': 'Изберете етикети, за които този мениджър е отговорен',
   'Set password': 'Задаване на парола',
+  'Send reset password email': 'Изпрати имейл за нулиране на паролата',
 };

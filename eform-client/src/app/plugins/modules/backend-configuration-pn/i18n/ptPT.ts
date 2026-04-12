@@ -344,4 +344,5 @@ export const ptPT = {
   'Select tags': 'Selecione as etiquetas',
   'Select tags that this manager is responsible for': 'Selecione as etiquetas pelas quais este gerente é responsável.',
   'Set password': 'Definir senha',
+  'Send reset password email': 'Enviar e-mail para redefinir a senha',
 };

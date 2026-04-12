@@ -344,4 +344,5 @@ export const ukUA = {
   'Select tags': 'Вибрати теги',
   'Select tags that this manager is responsible for': 'Виберіть теги, за які відповідає цей менеджер',
   'Set password': 'Встановити пароль',
+  'Send reset password email': 'Надіслати електронний лист для скидання пароля',
 };

@@ -344,4 +344,5 @@ export const isIS = {
   'Select tags': 'Veldu merki',
   'Select tags that this manager is responsible for': 'Veldu merki sem þessi stjórnandi ber ábyrgð á',
   'Set password': 'Setja lykilorð',
+  'Send reset password email': 'Senda tölvupóst með endurstillingu lykilorðs',
 };
