@@ -134,12 +134,15 @@ test.describe('Area rules type 1', () => {
     // Wait for delete confirmation dialog to appear
     await expect(page.locator('#taskWizardDeleteCancelBtn')).toBeVisible({ timeout: 30000 });
     await page.locator('#taskWizardDeleteCancelBtn').click();
+    // Wait for dialog/overlay to fully close before re-opening menu
+    await expect(page.locator('#taskWizardDeleteCancelBtn')).toBeHidden({ timeout: 10000 });
     await page.waitForTimeout(500);
     await expect(page.locator('.cdk-row')).toHaveCount(1);
 
     // Open the action menu again
     await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
     await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
+    await page.waitForTimeout(400);
 
     // Click the Delete Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first()).toBeVisible();

@@ -167,18 +167,9 @@ test.describe('Area rules type 1', () => {
     // Now click the Copy Task button inside the opened menu
     await expect(page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first()).toBeVisible();
 
-    const getFoldersResponseCopy = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
-      { timeout: 60000 }
-    );
-    const getTemplatesResponseCopy = page.waitForResponse(
-      r => r.url().includes('/api/templates/index') && r.request().method() === 'POST',
-      { timeout: 60000 }
-    );
     await page.locator('.cdk-overlay-container').locator('[id^=copyTaskBtn]').first().click({ force: true });
-    await getFoldersResponseCopy;
-    await getTemplatesResponseCopy;
 
+    // Wait for the copy dialog to render (responses may be cached on re-entry)
     await expect(page.locator('#createTaskBtn')).toBeVisible({ timeout: 30000 });
     const createTaskResponse2 = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'POST',
