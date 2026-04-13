@@ -52,6 +52,10 @@ export class CalendarStateService {
     this.dispatch({activeBoardIds});
   }
 
+  setActiveBoardIds(ids: number[]) {
+    this.dispatch({activeBoardIds: ids});
+  }
+
   toggleTag(tagName: string) {
     const names = this.currentFilters.activeTagNames;
     const activeTagNames = names.includes(tagName)

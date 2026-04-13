@@ -113,14 +113,20 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onPropertySelected(propertyId: number | null) {
     this.stateService.updatePropertyId(propertyId);
     if (propertyId) {
-      this.loadBoards(propertyId);
-      this.loadTasks();
+      this.loadBoards(propertyId, true);
     }
   }
 
-  loadBoards(propertyId: number) {
+  loadBoards(propertyId: number, autoSelectDefault = false) {
     this.calendarService.getBoards(propertyId).subscribe(res => {
-      if (res && res.success) this.boards = res.model;
+      if (res && res.success) {
+        this.boards = res.model;
+        if (autoSelectDefault && this.boards.length > 0) {
+          const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
+          this.stateService.setActiveBoardIds([defaultBoard.id]);
+        }
+        this.loadTasks();
+      }
     });
   }
 

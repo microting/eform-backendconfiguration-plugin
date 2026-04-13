@@ -92,7 +92,10 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(startHour + 1));
       this.propertyControl.setValue(this.data.propertyId);
-      this.boardControl.setValue(this.data.boards[0]?.id ?? null);
+      const defaultBoard = this.data.boards.length > 0
+        ? this.data.boards.reduce((min, b) => b.id < min.id ? b : min)
+        : null;
+      this.boardControl.setValue(defaultBoard?.id ?? null);
     }
 
     // Disable all controls for past tasks

@@ -12,7 +12,7 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import {CdkDragDrop, CdkDragMove} from '@angular/cdk/drag-drop';
+import {CdkDragDrop, CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
 import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
@@ -64,6 +64,9 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   dragSourceTop: number | null = null;
   dragSourceWidth: number = 0;
   private dragTargetDayIndex: number | null = null;
+  private dropOccurred = false;
+  private autoScrollAnimId: number | null = null;
+  private autoScrollSpeed = 0;
 
   // Selection indicator (absolute coords within scroll container)
   selectionTop: number | null = null;
@@ -95,6 +98,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   ngOnDestroy() {
+    this.stopAutoScroll();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -237,13 +241,14 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {
+    this.dropOccurred = true;
     const task: CalendarTaskLayoutModel = event.item.data;
 
     // Use the snapped position tracked during onTaskDragMoved
     const dayIndex = this.dragTargetDayIndex;
-    const newStartHour = this.dragIndicatorHour ?? 0;
+    const newStartHour = this.dragIndicatorHour;
     this.clearDragState();
-    if (dayIndex == null || dayIndex < 0) return;
+    if (dayIndex == null || dayIndex < 0 || newStartHour == null) return;
     const date = this.weekDays[dayIndex];
     const newDate = date ? this.toLocalDateString(date) : null;
     if (!date || !newDate) return;
@@ -298,10 +303,15 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       this.dragIndicatorTopPx = null;
       this.dragGhostLeft = null;
     }
+    this.updateAutoScroll(pointerY);
   }
 
-  onTaskDragEnded() {
-    // Only clear visual state here — position data is consumed by onDrop which fires after this
+  onTaskDragEnded(event: CdkDragEnd) {
+    this.stopAutoScroll();
+    if (!this.dropOccurred) {
+      event.source.reset();
+    }
+    this.dropOccurred = false;
     this.draggingTask = null;
     this.dragIndicatorTopPx = null;
     this.dragGhostLeft = null;
@@ -377,6 +387,46 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   get hasAllDayTasks(): boolean {
     return this.allDayTasksByDay.some(day => day.length > 0);
+  }
+
+  private updateAutoScroll(pointerY: number) {
+    const container = this.scrollContainerRef.nativeElement;
+    const rect = container.getBoundingClientRect();
+    const edgeZone = 60;
+
+    if (pointerY < rect.top + edgeZone) {
+      this.autoScrollSpeed = -((edgeZone - (pointerY - rect.top)) / edgeZone) * 8;
+    } else if (pointerY > rect.bottom - edgeZone) {
+      this.autoScrollSpeed = ((pointerY - (rect.bottom - edgeZone)) / edgeZone) * 8;
+    } else {
+      this.autoScrollSpeed = 0;
+    }
+
+    if (this.autoScrollSpeed !== 0 && !this.autoScrollAnimId) {
+      this.startAutoScroll();
+    } else if (this.autoScrollSpeed === 0 && this.autoScrollAnimId) {
+      this.stopAutoScroll();
+    }
+  }
+
+  private startAutoScroll() {
+    const tick = () => {
+      if (this.autoScrollSpeed === 0) {
+        this.stopAutoScroll();
+        return;
+      }
+      this.scrollContainerRef.nativeElement.scrollBy(0, this.autoScrollSpeed);
+      this.autoScrollAnimId = requestAnimationFrame(tick);
+    };
+    this.autoScrollAnimId = requestAnimationFrame(tick);
+  }
+
+  private stopAutoScroll() {
+    if (this.autoScrollAnimId) {
+      cancelAnimationFrame(this.autoScrollAnimId);
+      this.autoScrollAnimId = null;
+    }
+    this.autoScrollSpeed = 0;
   }
 
   onAllDayTaskClicked(event: MouseEvent, task: CalendarTaskModel, dayIndex: number) {

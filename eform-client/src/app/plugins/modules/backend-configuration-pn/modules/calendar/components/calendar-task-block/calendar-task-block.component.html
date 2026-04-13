@@ -11,7 +11,7 @@
   [cdkDragData]="task"
   [cdkDragDisabled]="isPast"
   (cdkDragMoved)="dragMoved.emit($event)"
-  (cdkDragEnded)="dragEnded.emit()"
+  (cdkDragEnded)="dragEnded.emit($event)"
 >
   <ng-template cdkDragPlaceholder></ng-template>
 

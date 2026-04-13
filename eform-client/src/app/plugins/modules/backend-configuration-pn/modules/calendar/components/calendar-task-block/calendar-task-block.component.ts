@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
-import {CdkDragMove} from '@angular/cdk/drag-drop';
+import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {CalendarTaskLayoutModel} from '../../../../models/calendar';
 
 export const HOUR_HEIGHT = 52; // px per hour
@@ -18,7 +18,7 @@ export class CalendarTaskBlockComponent {
   @Output() clicked = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() toggleComplete = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() dragMoved = new EventEmitter<CdkDragMove<CalendarTaskLayoutModel>>();
-  @Output() dragEnded = new EventEmitter<void>();
+  @Output() dragEnded = new EventEmitter<CdkDragEnd>();
 
   get isPast(): boolean {
     const d = new Date(this.task.taskDate);
