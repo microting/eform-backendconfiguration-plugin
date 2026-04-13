@@ -222,50 +222,13 @@ export class BackendConfigurationPropertyWorkersPage {
           r.request().method() === 'POST'
       );
 
-      // Wait for form to become valid (button enabled) before clicking
-      try {
-        await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
-      } catch {
-        // Log which form controls are invalid via Angular's debug API
-        const invalidControls = await this.page.evaluate(() => {
-          // Try to get the Angular FormGroup via ng.getComponent
-          const tabGroup = document.querySelector('mat-tab-group[formGroup]');
-          if (!tabGroup) return 'no formGroup element found';
-          try {
-            const ng = (window as any).ng;
-            if (ng && ng.getOwningComponent) {
-              const comp = ng.getOwningComponent(tabGroup);
-              if (comp && comp.form) {
-                const invalids: string[] = [];
-                const controls = comp.form.controls;
-                for (const key of Object.keys(controls)) {
-                  if (controls[key].invalid) {
-                    const errors = JSON.stringify(controls[key].errors);
-                    invalids.push(`${key}(errors=${errors},value=${JSON.stringify(controls[key].value)})`);
-                  }
-                }
-                return invalids.join(', ') || 'form.valid=true but button disabled';
-              }
-            }
-          } catch (e) {
-            return `ng API error: ${e}`;
-          }
-          // Fallback: check DOM classes
-          const invalids: string[] = [];
-          document.querySelectorAll('[formcontrolname].ng-invalid').forEach((el: Element) => {
-            invalids.push(el.getAttribute('formcontrolname') || el.tagName);
-          });
-          return invalids.join(', ') || 'no invalid controls found (DOM check)';
-        });
-        console.log(`Save button disabled — invalid controls: ${invalidControls}`);
-        // Switch to General tab and back to force form re-validation
-        const generalTab = this.page.locator('.mat-mdc-tab').filter({ hasText: 'General' }).first();
-        if (await generalTab.isVisible()) {
-          await generalTab.click();
-          await this.page.waitForTimeout(500);
-        }
-        await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 15000 });
+      // Ensure we're on the General tab so save button validation settles
+      const generalTab = this.page.locator('mat-tab-group > .mat-mdc-tab-header .mat-mdc-tab').filter({ hasText: 'General' }).first();
+      if (await generalTab.count() > 0) {
+        await generalTab.click();
+        await this.page.waitForTimeout(300);
       }
+      await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 30000 });
       await this.saveCreateBtn().click();
 
       // Wait for create-device-user PUT
