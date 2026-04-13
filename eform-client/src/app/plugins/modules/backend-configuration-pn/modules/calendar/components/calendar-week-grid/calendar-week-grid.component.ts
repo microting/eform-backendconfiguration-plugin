@@ -12,7 +12,7 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import {CdkDragDrop, CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
+import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
 import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
@@ -64,7 +64,6 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   dragSourceTop: number | null = null;
   dragSourceWidth: number = 0;
   private dragTargetDayIndex: number | null = null;
-  private dropOccurred = false;
   private autoScrollAnimId: number | null = null;
   private autoScrollSpeed = 0;
 
@@ -240,28 +239,8 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     this.selectionHeight = duration * this.hourHeight;
   }
 
-  onDrop(event: CdkDragDrop<CalendarTaskLayoutModel[]>) {
-    this.dropOccurred = true;
-    const task: CalendarTaskLayoutModel = event.item.data;
-
-    // Use the snapped position tracked during onTaskDragMoved
-    const dayIndex = this.dragTargetDayIndex;
-    const newStartHour = this.dragIndicatorHour;
-    this.clearDragState();
-    if (dayIndex == null || dayIndex < 0 || newStartHour == null) return;
-    const date = this.weekDays[dayIndex];
-    const newDate = date ? this.toLocalDateString(date) : null;
-    if (!date || !newDate) return;
-
-    // Reject drop to past time
-    const targetDateTime = new Date(date);
-    targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
-    if (targetDateTime < new Date()) {
-      return;
-    }
-
-    this.taskMoved.emit({taskId: task.id, newDate, newStartHour, repeatSeriesId: task.repeatSeriesId, originalDate: task.taskDate});
-  }
+  // Drop logic is handled entirely in onTaskDragEnded to avoid
+  // CDK event ordering issues (ended fires before dropped).
 
   private toLocalDateString(date: Date): string {
     const y = date.getFullYear();
@@ -308,20 +287,61 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   onTaskDragEnded(event: CdkDragEnd) {
     this.stopAutoScroll();
-    if (!this.dropOccurred) {
-      event.source.reset();
-    }
-    this.dropOccurred = false;
+
+    const task = event.source.data as CalendarTaskLayoutModel;
+    const dayIndex = this.dragTargetDayIndex;
+    const newStartHour = this.dragIndicatorHour;
+
+    // Clean up all drag visual state
     this.draggingTask = null;
     this.dragIndicatorTopPx = null;
+    this.dragIndicatorHour = null;
     this.dragGhostLeft = null;
     this.dragSourceLeft = null;
     this.dragSourceTop = null;
-  }
-
-  private clearDragState() {
-    this.dragIndicatorHour = null;
     this.dragTargetDayIndex = null;
+
+    // Check for a valid drop target
+    if (dayIndex != null && dayIndex >= 0 && newStartHour != null) {
+      const date = this.weekDays[dayIndex];
+      if (date) {
+        const newDate = this.toLocalDateString(date);
+        const targetDateTime = new Date(date);
+        targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
+
+        if (targetDateTime >= new Date()) {
+          const originalDate = task.taskDate;
+
+          // Reset CDK transform first (element still in original DOM position)
+          event.source.reset();
+
+          // Then optimistically move the task in the local array
+          const origDayIndex = this.weekDays.findIndex(
+            d => this.toLocalDateString(d) === originalDate
+          );
+          if (origDayIndex >= 0) {
+            const origArr = this.tasksByDay[origDayIndex];
+            const idx = origArr.findIndex(t => t.id === task.id);
+            if (idx >= 0) origArr.splice(idx, 1);
+          }
+          task.startHour = newStartHour;
+          task.taskDate = newDate;
+          this.tasksByDay[dayIndex].push(task);
+
+          this.taskMoved.emit({
+            taskId: task.id,
+            newDate,
+            newStartHour,
+            repeatSeriesId: task.repeatSeriesId,
+            originalDate,
+          });
+          return;
+        }
+      }
+    }
+
+    // Invalid drop or cancel — restore original position
+    event.source.reset();
   }
 
   private captureDragSource(task: CalendarTaskLayoutModel): void {

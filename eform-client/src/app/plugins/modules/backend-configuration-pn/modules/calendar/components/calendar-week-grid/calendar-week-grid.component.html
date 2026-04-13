@@ -73,7 +73,6 @@
        [attr.data-day]="getDayIndex(col.field)"
        [cdkDropListConnectedTo]="dayDropListIds"
        [cdkDropListData]="tasksByDay[getDayIndex(col.field)] || []"
-       (cdkDropListDropped)="onDrop($event)"
        (click)="onCellClick($event)">
     <div class="day-body" [style.height.px]="hourHeight * 24">
       <div

@@ -400,13 +400,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onTaskMoved(event: {taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string; originalDate: string}) {
-    // Safety check: reject moves to past
-    const targetDateTime = new Date(event.newDate);
-    targetDateTime.setHours(Math.floor(event.newStartHour), (event.newStartHour % 1) * 60, 0, 0);
-    if (targetDateTime < new Date()) {
-      return;
-    }
-
     const task = this.tasks.find(t => t.id === event.taskId);
     const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
 
@@ -425,7 +418,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         dialogConfigHelper(this.overlay, {mode: 'move'})
       );
       ref.afterClosed().subscribe(scope => {
-        if (scope) doMove(scope);
+        if (scope) {
+          doMove(scope);
+        } else {
+          this.loadTasks();
+        }
       });
     } else {
       doMove();
