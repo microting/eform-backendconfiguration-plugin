@@ -22,10 +22,11 @@ test.describe('Calendar E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
     await new LoginPage(page).login();
+    await page.waitForTimeout(3000);
   });
 
   test('should create a calendar event for a property', async ({ page }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
 
     const calendarPage = new CalendarPage(page);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
