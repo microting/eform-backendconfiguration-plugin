@@ -31,11 +31,11 @@ export class CalendarPage {
     await this.page.waitForTimeout(500);
   }
 
-  // Fill the create event modal
+  // Fill the create event modal. Always selects the first Report headline
+  // (planning tag) option because the backend requires one.
   async fillCreateModal(data: {
     title: string;
     eformName?: string;
-    planningTag?: string;
   }): Promise<void> {
     await this.page.locator('#calendarEventTitle').fill(data.title);
 
@@ -47,14 +47,12 @@ export class CalendarPage {
       await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
 
-    if (data.planningTag) {
-      const tagSelect = this.page.locator('#calendarEventPlanningTag');
-      await tagSelect.click();
-      await this.page
-        .locator('.ng-dropdown-panel .ng-option')
-        .filter({ hasText: data.planningTag })
-        .click();
-    }
+    // Pick the first Report headline option — backend requires it.
+    const tagSelect = this.page.locator('#calendarEventPlanningTag');
+    await tagSelect.click();
+    await this.page.waitForTimeout(500);
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.page.waitForTimeout(300);
   }
 
   // Save the modal
