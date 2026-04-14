@@ -7,6 +7,7 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
+import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
@@ -76,15 +77,19 @@ export class TaskCreateEditModalComponent implements OnInit {
     this.filteredBoards = this.data.boards;
 
     const task = this.data.task;
-    const defaultDate = task ? task.taskDate : this.data.date;
+    const sourceTask = this.data.sourceTask;
+    const isCopyMode = !task && !!sourceTask;
+    let defaultDate = task ? task.taskDate : this.data.date;
+    if (isCopyMode) {
+      // Adjust past source dates forward to today (or tomorrow if today's
+      // start time has already passed).
+      defaultDate = computeCopyDate(sourceTask!.taskDate, sourceTask!.startHour);
+    }
     const baseDate = new Date(defaultDate);
     this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate);
 
     // Initialize controls
     this.dateControl.setValue(new Date(defaultDate));
-
-    const sourceTask = this.data.sourceTask;
-    const isCopyMode = !task && !!sourceTask;
 
     if (task) {
       this.titleControl.setValue(task.title);
