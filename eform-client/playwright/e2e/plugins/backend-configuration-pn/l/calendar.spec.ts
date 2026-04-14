@@ -46,7 +46,9 @@ test.describe('Calendar E2E Tests', () => {
       { timeout: 60000 }
     );
     await calendarPage.selectProperty(property.name as string);
-    await folderResponsePromise;
+    const folderResponse = await folderResponsePromise;
+    const folderBody = await folderResponse.json().catch(() => null);
+    console.log(`folders for property: status=${folderResponse.status()}, success=${folderBody?.success}, model=${JSON.stringify(folderBody?.model)}`);
     await page.waitForTimeout(2000);
 
     // Step 4: Click a future time slot.
