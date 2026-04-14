@@ -1,6 +1,6 @@
 <div [class.gcal-popover-card]="usePopoverMode">
   <div class="gcal-close-row">
-    <button class="gcal-close-btn" (click)="onCancel()">
+    <button id="calendarEventCancelBtn" class="gcal-close-btn" (click)="onCancel()">
       <mat-icon>close</mat-icon>
     </button>
   </div>
@@ -12,7 +12,7 @@
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
           <mat-label>{{ 'Title' | translate }}</mat-label>
-          <input matInput [formControl]="titleControl" autocomplete="off">
+          <input matInput id="calendarEventTitle" [formControl]="titleControl" autocomplete="off">
         </mat-form-field>
       </div>
     </div>
@@ -108,6 +108,46 @@
       </div>
     </div>
 
+    <!-- eForm row -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">description</mat-icon>
+      <div class="gcal-row-content gcal-selector-row">
+        <span class="gcal-selector-label">{{ 'eForm' | translate }}</span>
+        <mat-form-field class="gcal-compact-select">
+          <mtx-select
+            id="calendarEventEform"
+            [formControl]="eformControl"
+            [items]="data.eforms"
+            bindValue="id"
+            bindLabel="label"
+            [clearable]="false"
+            [searchable]="true"
+            appendTo="body"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Report headline row -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">bookmark</mat-icon>
+      <div class="gcal-row-content gcal-selector-row">
+        <span class="gcal-selector-label">{{ 'Report headline' | translate }}</span>
+        <mat-form-field class="gcal-compact-select">
+          <mtx-select
+            id="calendarEventPlanningTag"
+            [formControl]="planningTagControl"
+            [items]="data.planningTags"
+            bindValue="id"
+            bindLabel="name"
+            [clearable]="true"
+            [searchable]="true"
+            appendTo="body"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+
     <!-- Description row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">notes</mat-icon>
@@ -169,7 +209,7 @@
   </div>
 
   <div class="gcal-actions" *ngIf="!isReadonly">
-    <button class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
+    <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>
   </div>

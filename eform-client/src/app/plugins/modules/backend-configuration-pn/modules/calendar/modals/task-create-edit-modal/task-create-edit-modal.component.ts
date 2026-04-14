@@ -19,6 +19,9 @@ export interface TaskCreateEditModalData {
   tags: string[];
   propertyId: number;
   properties: CommonDictionaryModel[];
+  eforms: {id: number; label: string}[];
+  folderId: number | null;
+  planningTags: {id: number; name: string}[];
 }
 
 @Component({
@@ -52,6 +55,8 @@ export class TaskCreateEditModalComponent implements OnInit {
   driveLinkControl = new FormControl('');
   propertyControl = new FormControl<number | null>(null);
   boardControl = new FormControl<number | null>(null);
+  eformControl = new FormControl<number | null>(null);
+  planningTagControl = new FormControl<number | null>(null);
 
   constructor(
     @Optional() private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
@@ -87,6 +92,8 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.showDriveInput = !!task.driveLink;
       this.boardControl.setValue(task.boardId ?? null);
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
+      this.eformControl.setValue(task['eformId'] ?? null);
+      this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
     } else {
       const startHour = this.data.startHour ?? 9;
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
@@ -96,6 +103,8 @@ export class TaskCreateEditModalComponent implements OnInit {
         ? this.data.boards.reduce((min, b) => b.id < min.id ? b : min)
         : null;
       this.boardControl.setValue(defaultBoard?.id ?? null);
+      const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
+      this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
     }
 
     // Disable all controls for past tasks
@@ -115,6 +124,8 @@ export class TaskCreateEditModalComponent implements OnInit {
         this.driveLinkControl.disable();
         this.propertyControl.disable();
         this.boardControl.disable();
+        this.eformControl.disable();
+        this.planningTagControl.disable();
       }
     }
 
@@ -266,9 +277,9 @@ export class TaskCreateEditModalComponent implements OnInit {
       propertyId: this.propertyControl.value ?? this.data.propertyId,
       status: 1,
       complianceEnabled: true,
-      folderId: this.data.task?.['folderId'] ?? null,
-      eformId: this.data.task?.['eformId'] ?? null,
-      itemPlanningTagId: this.data.task?.['itemPlanningTagId'] ?? null,
+      folderId: this.data.folderId,
+      eformId: this.eformControl.value,
+      itemPlanningTagId: this.planningTagControl.value,
 
       // Keep these for local/UI use and backward compat
       title: this.titleControl.value,

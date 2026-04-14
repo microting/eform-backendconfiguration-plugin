@@ -15,7 +15,8 @@ import {
   CalendarTaskLayoutModel,
   CalendarTaskModel,
 } from '../../../../models/calendar';
-import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
+import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
+import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
 import {CalendarStateService} from '../store';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
@@ -51,6 +52,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
   allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
 
+  eforms: {id: number; label: string}[] = [];
+  logboegerFolderId: number | null = null;
+
   get tagNames(): string[] { return this.tags.map(t => t.name); }
 
   currentPropertyId: number | null = null;
@@ -72,6 +76,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private stateService: CalendarStateService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformTagService: EformTagService,
+    private eformService: EFormService,
     private dialog: MatDialog,
     private store: Store,
   ) {
@@ -95,11 +100,24 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadEmployees();
     this.loadTags();
     this.loadTeams();
+    this.loadEforms();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  loadEforms() {
+    const req = new TemplateRequestModel();
+    req.sort = 'Id';
+    req.isSortDsc = false;
+    req.pageSize = 1000;
+    this.eformService.getAll(req).subscribe(res => {
+      if (res && res.success && res.model) {
+        this.eforms = res.model.templates.map(t => ({id: t.id, label: t.label}));
+      }
+    });
   }
 
   loadProperties() {
@@ -125,6 +143,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
           this.stateService.setActiveBoardIds([defaultBoard.id]);
         }
+        this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
+          if (folderRes && folderRes.success) {
+            const logFolder = folderRes.model.find(f => f.name && f.name.includes('Logbøger'));
+            this.logboegerFolderId = logFolder ? logFolder.id : null;
+          }
+        });
         this.loadTasks();
       }
     });
@@ -292,6 +316,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
       properties: this.properties,
+      eforms: this.eforms,
+      folderId: this.logboegerFolderId,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
 
     const popoverInjector = Injector.create({
@@ -526,6 +553,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       tags: this.tags.map(t => t.name),
       propertyId: task.propertyId,
       properties: this.properties,
+      eforms: this.eforms,
+      folderId: this.logboegerFolderId,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
 
     const popoverInjector = Injector.create({
