@@ -80,6 +80,10 @@ export class TaskPreviewModalComponent {
     this.close('edit');
   }
 
+  onCopy() {
+    this.close('copy');
+  }
+
   onDelete() {
     const ref = this.dialog.open(
       TaskDeleteModalComponent,

@@ -512,6 +512,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.closePreviewOverlay();
       if (result === 'edit') {
         this.openEditModal(event);
+      } else if (result === 'copy') {
+        this.openCopyModal(event);
       } else if (result === 'reload') {
         this.weekGrid?.clearSelection();
         this.loadTasks();
@@ -585,6 +587,67 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
       this.weekGrid?.updateTaskTime(task.id, time.startHour, time.endHour);
     });
+    componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
+      this.closeCreateOverlay();
+      if (result) this.loadTasks();
+    });
+
+    this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.closeCreateOverlay();
+    });
+  }
+
+  private openCopyModal(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
+    if (this.createOverlayRef) {
+      this.createOverlayRef.dispose();
+      this.createOverlayRef = null;
+    }
+
+    const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
+    const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
+
+    const positionStrategy = this.overlay
+      .position()
+      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .withPositions(positions)
+      .withPush(true)
+      .withViewportMargin(8);
+
+    this.createOverlayRef = this.overlay.create({
+      positionStrategy,
+      hasBackdrop: true,
+      backdropClass: 'cdk-overlay-transparent-backdrop',
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+    });
+
+    const sourceTask = event.task;
+    const data: TaskCreateEditModalData = {
+      task: null,
+      sourceTask,
+      date: sourceTask.taskDate,
+      startHour: sourceTask.startHour,
+      boards: this.boards,
+      employees: this.employees,
+      tags: this.tags.map(t => t.name),
+      propertyId: sourceTask.propertyId,
+      properties: this.properties,
+      eforms: this.eforms,
+      folderId: this.logboegerFolderId,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
+    };
+
+    const popoverInjector = Injector.create({
+      parent: this.injector,
+      providers: [
+        {provide: MAT_DIALOG_DATA, useValue: data},
+        {provide: MatDialogRef, useValue: null},
+      ],
+    });
+
+    const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
+    const componentRef = this.createOverlayRef.attach(portal);
+
+    componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
       if (result) this.loadTasks();

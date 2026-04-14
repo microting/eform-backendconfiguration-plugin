@@ -91,6 +91,61 @@ test.describe('Calendar E2E Tests', () => {
     expect(resBody?.success).toBeTruthy();
   });
 
+  test('should copy an existing calendar event', async ({ page }) => {
+    test.setTimeout(600000);
+
+    const calendarPage = new CalendarPage(page);
+
+    // Navigate to calendar and select the property from the previous test
+    await calendarPage.goToCalendar();
+    await page.waitForTimeout(2000);
+    await calendarPage.selectProperty(property.name as string);
+    await page.waitForTimeout(2000);
+
+    // Find the event from the prior test. The title pattern is Event-<random>.
+    // Rather than relying on global state, locate any event block on the grid.
+    const firstEvent = page.locator('app-calendar-task-block').first();
+    await firstEvent.waitFor({ state: 'visible', timeout: 30000 });
+    const originalTitle = (await firstEvent.locator('.task-title').innerText()).trim();
+
+    // Open preview and click Copy
+    await firstEvent.click();
+    await page.waitForTimeout(1000);
+    await calendarPage.clickCopyInPreview();
+
+    // Verify the create modal opened with the source title preserved and a
+    // translated prefix. Accept English ("Copy of ") or Danish ("Kopi af ").
+    const prefilledTitle = await calendarPage.getCreateModalTitle();
+    console.log(`copy prefill: prefilledTitle="${prefilledTitle}", originalTitle="${originalTitle}"`);
+    expect(prefilledTitle).toContain(originalTitle);
+    expect(prefilledTitle).toMatch(/^(Copy of|Kopi af)\s/);
+
+    // Override title to distinguish the copy
+    const copyTitle = `Copy-${generateRandmString(5)}`;
+    await calendarPage.overrideTitle(copyTitle);
+
+    // Save and assert the API call succeeded
+    const createResponsePromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await calendarPage.saveModal();
+    const createResponse = await createResponsePromise;
+    const resBody = await createResponse.json().catch(() => null);
+    console.log(`copy create: status=${createResponse.status()}, success=${resBody?.success}, message=${resBody?.message}`);
+    expect(createResponse.status()).toBe(200);
+    expect(resBody?.success).toBeTruthy();
+
+    // Verify both events exist
+    await page.waitForTimeout(2000);
+    const originalExists = await calendarPage.verifyEventExists(originalTitle);
+    const copyExists = await calendarPage.verifyEventExists(copyTitle);
+    expect(originalExists).toBeTruthy();
+    expect(copyExists).toBeTruthy();
+  });
+
   test.afterAll(async ({ browser }) => {
     // Cleanup: delete the test property
     const page = await browser.newPage();

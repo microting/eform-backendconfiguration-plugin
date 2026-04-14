@@ -9,6 +9,7 @@ import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope}
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
+import {TranslateService} from '@ngx-translate/core';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -22,6 +23,7 @@ export interface TaskCreateEditModalData {
   eforms: {id: number; label: string}[];
   folderId: number | null;
   planningTags: {id: number; name: string}[];
+  sourceTask?: CalendarTaskModel | null;  // present in copy mode
 }
 
 @Component({
@@ -65,6 +67,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     private repeatService: CalendarRepeatService,
     private dialog: MatDialog,
     private overlay: Overlay,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit() {
@@ -80,6 +83,9 @@ export class TaskCreateEditModalComponent implements OnInit {
     // Initialize controls
     this.dateControl.setValue(new Date(defaultDate));
 
+    const sourceTask = this.data.sourceTask;
+    const isCopyMode = !task && !!sourceTask;
+
     if (task) {
       this.titleControl.setValue(task.title);
       this.startTimeControl.setValue(this.hourToTimeStr(task.startHour));
@@ -94,6 +100,21 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+    } else if (isCopyMode) {
+      const copyPrefix = this.translate.instant('Copy of');
+      this.titleControl.setValue(`${copyPrefix} ${sourceTask.title}`);
+      this.startTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour));
+      this.endTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour + sourceTask.duration));
+      this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
+      this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
+      this.tagsControl.setValue(sourceTask.tags ?? []);
+      this.descriptionControl.setValue(sourceTask.descriptionHtml ?? '');
+      this.driveLinkControl.setValue(sourceTask.driveLink ?? '');
+      this.showDriveInput = !!sourceTask.driveLink;
+      this.boardControl.setValue(sourceTask.boardId ?? null);
+      this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
+      this.eformControl.setValue(sourceTask['eformId'] ?? null);
+      this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
     } else {
       const startHour = this.data.startHour ?? 9;
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
@@ -245,7 +266,11 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   onSave() {
     if (this.titleControl.invalid) return;
-    if (this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
+    // Only block past-date save in edit mode. Copy mode may open with a past
+    // date seeded from the source event; the user is expected to pick a new
+    // date before saving, and we surface that via the standard datepicker
+    // min-date validator rather than silently returning.
+    if (this.isEditMode && this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
       return;
     }
 

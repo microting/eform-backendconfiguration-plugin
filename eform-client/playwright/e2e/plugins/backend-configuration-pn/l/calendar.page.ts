@@ -93,4 +93,28 @@ export class CalendarPage {
     await this.page.mouse.up();
     await this.page.waitForTimeout(1000);
   }
+
+  // Click an existing event to open the preview popover
+  async openEventPreview(title: string): Promise<void> {
+    await this.getEventByTitle(title).click();
+    await this.page.waitForTimeout(1000);
+  }
+
+  // Click the Copy button in the preview modal to open the create-edit modal in copy mode
+  async clickCopyInPreview(): Promise<void> {
+    await this.page.locator('#calendarEventCopyBtn').click();
+    await this.page.waitForTimeout(1000);
+  }
+
+  // Fill a title override in the create-edit modal (for copy flows)
+  async overrideTitle(title: string): Promise<void> {
+    const titleInput = this.page.locator('#calendarEventTitle');
+    await titleInput.fill(title);
+    await this.page.waitForTimeout(200);
+  }
+
+  // Read the current title value (used to verify the "Copy of" prefix)
+  async getCreateModalTitle(): Promise<string> {
+    return (await this.page.locator('#calendarEventTitle').inputValue()) || '';
+  }
 }
