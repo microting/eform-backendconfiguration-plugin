@@ -256,16 +256,6 @@
             <div class="modal-columns">
               <div class="d-flex flex-column" id="timeRegistrationColumn">
 
-                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned">
-                  <mat-checkbox class="p-1"
-                                id="useOnlyPlanHours"
-                                formControlName="useOnlyPlanHours">
-                    <div>
-                      <div>{{ 'Use only plan hours' | translate }}</div>
-                    </div>
-                  </mat-checkbox>
-                </div>
-
                 <!-- ========= Break calculation ========= -->
                 <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Break calculation' | translate }}</h3>
 
