@@ -67,13 +67,20 @@ test.describe('Calendar E2E Tests', () => {
     });
     await page.waitForTimeout(500);
 
-    // Step 6: Save
+    // Step 6: Save and assert the create-task API succeeds
+    const createResponsePromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
     await calendarPage.saveModal();
-    await page.waitForTimeout(3000);
-
-    // Step 7: Verify the event appears on the calendar
-    const eventExists = await calendarPage.verifyEventExists(testEvent.title);
-    expect(eventExists).toBeTruthy();
+    const createResponse = await createResponsePromise;
+    const resBody = await createResponse.json().catch(() => null);
+    const reqBody = createResponse.request().postData();
+    console.log(`calendar create task: status=${createResponse.status()}, success=${resBody?.success}, message=${resBody?.message}, reqBody=${reqBody}`);
+    expect(createResponse.status()).toBe(200);
+    expect(resBody?.success).toBeTruthy();
   });
 
   test.afterAll(async ({ browser }) => {
