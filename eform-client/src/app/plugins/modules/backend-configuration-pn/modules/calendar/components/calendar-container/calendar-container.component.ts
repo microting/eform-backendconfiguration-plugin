@@ -108,6 +108,18 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private findFolderByName(folders: any[], nameFragment: string): any {
+    if (!folders) return null;
+    for (const f of folders) {
+      if (f && f.name && f.name.includes(nameFragment)) return f;
+      if (f && f.children && f.children.length > 0) {
+        const hit = this.findFolderByName(f.children, nameFragment);
+        if (hit) return hit;
+      }
+    }
+    return null;
+  }
+
   loadEforms() {
     const req = new TemplateRequestModel();
     req.sort = 'Id';
@@ -145,7 +157,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         }
         this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
           if (folderRes && folderRes.success) {
-            const logFolder = folderRes.model.find(f => f.name && f.name.includes('Logbøger'));
+            const logFolder = this.findFolderByName(folderRes.model, 'Logbøger');
             this.logboegerFolderId = logFolder ? logFolder.id : null;
           }
         });
