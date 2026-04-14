@@ -97,7 +97,9 @@ test.describe('Calendar E2E Tests', () => {
     console.log(`calendar create task: status=${createResponse.status()}, success=${resBody?.success}, message=${resBody?.message}, reqBody=${reqBody}`);
     expect(createResponse.status()).toBe(200);
     expect(resBody?.success).toBeTruthy();
-    await tasksReloadPromise;
+    const reloadResponse = await tasksReloadPromise;
+    const reloadBody = await reloadResponse.json().catch(() => null);
+    console.log(`tasks reload after create: status=${reloadResponse.status()}, success=${reloadBody?.success}, taskCount=${reloadBody?.model?.length}, model=${JSON.stringify(reloadBody?.model)?.substring(0, 1000)}`);
     await page.waitForTimeout(1500);
 
     // Step 7: Copy the just-created event using the new copy action.
