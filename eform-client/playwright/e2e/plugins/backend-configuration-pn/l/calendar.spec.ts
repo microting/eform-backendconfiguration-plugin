@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
+import { generateRandmString } from '../../../helper-functions';
 import { CalendarPage } from './calendar.page';
 import {
   BackendConfigurationPropertiesPage,
@@ -11,16 +12,18 @@ import {
 } from '../BackendConfigurationPropertyWorkers.page';
 
 const testProperty: PropertyCreateUpdate = {
-  name: `CalTest-${Date.now()}`,
+  name: `CalTest-${generateRandmString(5)}`,
   cvrNumber: '1234567',
-  chrNumber: `CHR-${Date.now()}`,
+  chrNumber: `CHR-${generateRandmString(5)}`,
   address: 'Calendar Test Address 1',
 };
 
 const testWorker: PropertyWorker = {
   name: 'CalendarTest',
-  surname: `Worker-${Date.now()}`,
+  surname: generateRandmString(5),
+  language: 'Dansk',
   properties: [testProperty.name as string],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const testEvent = {
