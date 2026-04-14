@@ -82,6 +82,14 @@ test.describe('Calendar E2E Tests', () => {
         r.request().method() === 'POST',
       { timeout: 30000 }
     );
+    // Wait for both the create POST and the subsequent tasks/week GET that
+    // refreshes the calendar grid after a successful save.
+    const tasksReloadPromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
     await calendarPage.saveModal();
     const createResponse = await createResponsePromise;
     const resBody = await createResponse.json().catch(() => null);
@@ -89,9 +97,10 @@ test.describe('Calendar E2E Tests', () => {
     console.log(`calendar create task: status=${createResponse.status()}, success=${resBody?.success}, message=${resBody?.message}, reqBody=${reqBody}`);
     expect(createResponse.status()).toBe(200);
     expect(resBody?.success).toBeTruthy();
+    await tasksReloadPromise;
+    await page.waitForTimeout(1500);
 
     // Step 7: Copy the just-created event using the new copy action.
-    await page.waitForTimeout(2000);
     const firstEvent = page.locator('app-calendar-task-block').first();
     await firstEvent.waitFor({ state: 'visible', timeout: 30000 });
     const originalTitle = (await firstEvent.locator('.task-title').innerText()).trim();
@@ -112,10 +121,16 @@ test.describe('Calendar E2E Tests', () => {
     const copyTitle = `Copy-${generateRandmString(5)}`;
     await calendarPage.overrideTitle(copyTitle);
 
-    // Save and assert the copy POST succeeded
+    // Save and assert the copy POST succeeded, then wait for the grid refresh
     const copyResponsePromise = page.waitForResponse(
       r =>
         r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    const copyTasksReloadPromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
         r.request().method() === 'POST',
       { timeout: 30000 }
     );
@@ -125,9 +140,10 @@ test.describe('Calendar E2E Tests', () => {
     console.log(`copy create: status=${copyResponse.status()}, success=${copyResBody?.success}, message=${copyResBody?.message}`);
     expect(copyResponse.status()).toBe(200);
     expect(copyResBody?.success).toBeTruthy();
+    await copyTasksReloadPromise;
+    await page.waitForTimeout(1500);
 
     // Verify both events are visible on the calendar
-    await page.waitForTimeout(2000);
     const originalExists = await calendarPage.verifyEventExists(originalTitle);
     const copyExists = await calendarPage.verifyEventExists(copyTitle);
     expect(originalExists).toBeTruthy();
