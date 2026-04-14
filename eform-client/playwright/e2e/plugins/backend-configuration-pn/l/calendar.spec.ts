@@ -101,7 +101,20 @@ test.describe('Calendar E2E Tests', () => {
     const reloadBody = await reloadResponse.json().catch(() => null);
     const reloadReqBody = reloadResponse.request().postData();
     console.log(`tasks reload after create: status=${reloadResponse.status()}, success=${reloadBody?.success}, taskCount=${reloadBody?.model?.length}, reqBody=${reloadReqBody}, model=${JSON.stringify(reloadBody?.model)?.substring(0, 1000)}`);
-    await page.waitForTimeout(1500);
+
+    // The initial reload may race the backend commit (returning 0 tasks).
+    // Reload the page and re-select the property — that forces a fresh fetch
+    // with the event persisted.
+    await page.waitForTimeout(2000);
+    await calendarPage.goToCalendar();
+    await page.waitForTimeout(2000);
+    const folderResponsePromise2 = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
+      { timeout: 60000 }
+    );
+    await calendarPage.selectProperty(property.name as string);
+    await folderResponsePromise2;
+    await page.waitForTimeout(2000);
 
     // Step 7: Copy the just-created event using the new copy action.
     const firstEvent = page.locator('app-calendar-task-block').first();
