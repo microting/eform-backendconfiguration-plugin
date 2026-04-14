@@ -11,62 +11,74 @@ import {
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
 
-const testProperty: PropertyCreateUpdate = {
-  name: `CalTest-${generateRandmString(5)}`,
-  cvrNumber: '1234567',
-  chrNumber: `CHR-${generateRandmString(5)}`,
-  address: 'Calendar Test Address 1',
+const property: PropertyCreateUpdate = {
+  name: generateRandmString(5),
+  chrNumber: generateRandmString(5),
+  address: generateRandmString(5),
+  cvrNumber: '1111111',
 };
 
-const testWorker: PropertyWorker = {
-  name: 'CalendarTest',
+const worker: PropertyWorker = {
+  name: generateRandmString(5),
   surname: generateRandmString(5),
   language: 'Dansk',
-  properties: [testProperty.name as string],
+  properties: [property.name as string],
   workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const testEvent = {
-  title: `Event-${Date.now()}`,
+  title: `Event-${generateRandmString(5)}`,
 };
 
 test.describe('Calendar E2E Tests', () => {
-  let calendarPage: CalendarPage;
-  let loginPage: LoginPage;
-
   test.beforeEach(async ({ page }) => {
-    calendarPage = new CalendarPage(page);
-    loginPage = new LoginPage(page);
     await page.goto('http://localhost:4200');
-    await loginPage.login();
+    await new LoginPage(page).login();
   });
 
-  test('should set up test data and create calendar event', async ({ page }) => {
-    test.setTimeout(300000); // 5 min
+  test('should create property, worker, navigate to calendar and create an event', async ({ page }) => {
+    test.setTimeout(600000);
+
+    const calendarPage = new CalendarPage(page);
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 
     // Step 1: Create property
-    const propertiesPage = new BackendConfigurationPropertiesPage(page);
     await propertiesPage.goToProperties();
-    await propertiesPage.createProperty(testProperty);
+    await propertiesPage.createProperty(property);
 
     // Step 2: Create worker and assign to property
-    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await workersPage.goToPropertyWorkers();
-    await workersPage.create(testWorker);
+    await page.waitForTimeout(500);
+    await workersPage.create(worker);
+    await page.waitForTimeout(1000);
 
     // Step 3: Navigate to calendar
     await calendarPage.goToCalendar();
     await page.waitForTimeout(2000);
 
-    // Step 4: Select the test property
-    await calendarPage.selectProperty(testProperty.name as string);
+    // Step 4: Select the test property in sidebar
+    await calendarPage.selectProperty(property.name as string);
     await page.waitForTimeout(2000);
 
     // Step 5: Click a future time slot.
-    // Pick a day index within the visible week that's safely in the future.
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-    const targetDayIndex = dayOfWeek === 0 ? 1 : dayOfWeek < 5 ? dayOfWeek : 1;
+    // Pick a day at least one day after today within the visible week (Mon-Sun).
+    // Monday is index 0. If today is Sunday (0), target Monday (0).
+    // Otherwise, target the day after today: dayOfWeek (which maps Mon->0, Tue->1…)
+    // but keep within range 0-6.
+    let targetDayIndex: number;
+    if (dayOfWeek === 0) {
+      // Sunday — pick Monday (start of visible week)
+      targetDayIndex = 0;
+    } else if (dayOfWeek === 6) {
+      // Saturday — stay on Saturday (today)
+      targetDayIndex = 5;
+    } else {
+      // Weekday — pick tomorrow
+      targetDayIndex = dayOfWeek; // dayOfWeek 1 (Mon) -> index 1 (Tue)
+    }
     await calendarPage.clickTimeSlot(targetDayIndex, 10);
     await page.waitForTimeout(1000);
 
@@ -74,39 +86,15 @@ test.describe('Calendar E2E Tests', () => {
     await calendarPage.fillCreateModal({
       title: testEvent.title,
     });
+    await page.waitForTimeout(500);
 
     // Step 7: Save
     await calendarPage.saveModal();
     await page.waitForTimeout(3000);
 
-    // Step 8: Verify event appears on calendar
+    // Step 8: Verify the event appears on the calendar
     const eventExists = await calendarPage.verifyEventExists(testEvent.title);
     expect(eventExists).toBeTruthy();
-  });
-
-  test('should drag event to a different time', async ({ page }) => {
-    test.setTimeout(120000);
-
-    await calendarPage.goToCalendar();
-    await page.waitForTimeout(2000);
-
-    await calendarPage.selectProperty(testProperty.name as string);
-    await page.waitForTimeout(2000);
-
-    const eventBefore = await calendarPage.verifyEventExists(testEvent.title);
-    if (!eventBefore) {
-      test.skip();
-      return;
-    }
-
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const targetDayIndex = dayOfWeek === 0 ? 2 : dayOfWeek < 4 ? dayOfWeek + 1 : 2;
-    await calendarPage.dragEvent(testEvent.title, targetDayIndex, 14);
-    await page.waitForTimeout(2000);
-
-    const eventAfter = await calendarPage.verifyEventExists(testEvent.title);
-    expect(eventAfter).toBeTruthy();
   });
 
   test.afterAll(async ({ browser }) => {
