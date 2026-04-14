@@ -67,6 +67,24 @@ test.describe('Calendar E2E Tests', () => {
     await calendarPage.fillCreateModal({ title: testEvent.title });
     await page.waitForTimeout(500);
 
+    // Step 5b: Verify the eForm preview is collapsed by default but the toggle is present
+    const previewToggle = page.locator('#calendarEformPreviewToggle');
+    await previewToggle.waitFor({ state: 'visible', timeout: 10000 });
+    expect(await calendarPage.isEformPreviewExpanded()).toBeFalsy();
+
+    // Click toggle to expand
+    await calendarPage.toggleEformPreview();
+    expect(await calendarPage.isEformPreviewExpanded()).toBeTruthy();
+
+    // Kvittering eForm has at least one field — verify field rows render
+    const fieldCount = await calendarPage.countEformPreviewFields();
+    console.log(`eForm preview field count: ${fieldCount}`);
+    expect(fieldCount).toBeGreaterThan(0);
+
+    // Collapse again (so it doesn't affect any subsequent steps visually)
+    await calendarPage.toggleEformPreview();
+    expect(await calendarPage.isEformPreviewExpanded()).toBeFalsy();
+
     const createResponsePromise = page.waitForResponse(
       r =>
         r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&

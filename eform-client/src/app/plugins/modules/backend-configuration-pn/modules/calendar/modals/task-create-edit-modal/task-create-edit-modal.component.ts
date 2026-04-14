@@ -4,13 +4,17 @@ import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {BackendConfigurationPnCalendarService} from '../../../../services';
+import {TemplateDto} from 'src/app/common/models/dto/template.dto';
+import {EFormService} from 'src/app/common/services';
+import {BackendConfigurationPnCalendarService, BackendConfigurationPnPropertiesService} from '../../../../services';
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
+import {of} from 'rxjs';
+import {switchMap} from 'rxjs/operators';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -45,6 +49,10 @@ export class TaskCreateEditModalComponent implements OnInit {
   showDriveInput = false;
   filteredBoards: CalendarBoardModel[] = [];
   minDate = new Date();
+  selectedTemplate: TemplateDto | null = null;
+  isLoadingTemplate = false;
+  showEformDetails = false;
+  filteredEmployees: CommonDictionaryModel[] = [];
 
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
@@ -69,6 +77,8 @@ export class TaskCreateEditModalComponent implements OnInit {
     private dialog: MatDialog,
     private overlay: Overlay,
     private translate: TranslateService,
+    private eformService: EFormService,
+    private propertiesService: BackendConfigurationPnPropertiesService,
   ) {}
 
   ngOnInit() {
@@ -178,7 +188,7 @@ export class TaskCreateEditModalComponent implements OnInit {
       }
     });
 
-    // When property changes, reload boards
+    // When property changes, reload boards, reload filtered employees, clear stale assignee selections
     this.propertyControl.valueChanges.subscribe(propertyId => {
       if (propertyId) {
         this.calendarService.getBoards(propertyId).subscribe(res => {
@@ -190,6 +200,27 @@ export class TaskCreateEditModalComponent implements OnInit {
           }
         });
       }
+      this.loadEmployeesForProperty(propertyId);
+      this.assigneeControl.setValue([]);
+    });
+
+    // Load eForm template details when selection changes
+    // Use switchMap so rapid eForm switches cancel any in-flight getSingle()
+    // and we never overwrite the current selection with a stale response.
+    this.eformControl.valueChanges.pipe(
+      switchMap(id => {
+        if (!id) {
+          this.selectedTemplate = null;
+          return of(null);
+        }
+        this.isLoadingTemplate = true;
+        return this.eformService.getSingle(id);
+      })
+    ).subscribe(res => {
+      if (res && res.success && res.model) {
+        this.selectedTemplate = res.model;
+      }
+      this.isLoadingTemplate = false;
     });
 
     // When date changes, rebuild repeat options and regenerate time slots
@@ -202,6 +233,62 @@ export class TaskCreateEditModalComponent implements OnInit {
 
     // Emit initial time values
     this.emitTimeChanged();
+
+    // Initial data loads
+    this.loadEmployeesForProperty(this.propertyControl.value);
+    this.loadTemplate(this.eformControl.value);
+  }
+
+  loadTemplate(id: number | null) {
+    if (!id) {
+      this.selectedTemplate = null;
+      return;
+    }
+    this.isLoadingTemplate = true;
+    this.eformService.getSingle(id).subscribe({
+      next: res => {
+        if (res && res.success && res.model) {
+          this.selectedTemplate = res.model;
+        }
+        this.isLoadingTemplate = false;
+      },
+      error: () => {
+        this.selectedTemplate = null;
+        this.isLoadingTemplate = false;
+      },
+    });
+  }
+
+  loadEmployeesForProperty(propertyId: number | null) {
+    if (!propertyId) {
+      this.filteredEmployees = [];
+      return;
+    }
+    this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
+      if (res && res.success && res.model) {
+        this.filteredEmployees = res.model;
+      }
+    });
+  }
+
+  getTemplateFields(): { label: string; type: string; mandatory: boolean }[] {
+    if (!this.selectedTemplate) return [];
+    const out: { label: string; type: string; mandatory: boolean }[] = [];
+    for (let i = 1; i <= 10; i++) {
+      const f = (this.selectedTemplate as any)[`field${i}`];
+      if (f && f.label) {
+        out.push({
+          label: f.label,
+          type: f.fieldType ?? '',
+          mandatory: !!f.mandatory,
+        });
+      }
+    }
+    return out;
+  }
+
+  toggleEformDetails() {
+    this.showEformDetails = !this.showEformDetails;
   }
 
   get formattedDate(): string {
