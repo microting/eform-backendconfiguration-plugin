@@ -39,8 +39,14 @@ test.describe('Calendar E2E Tests', () => {
     await calendarPage.goToCalendar();
     await page.waitForTimeout(2000);
 
-    // Step 3: Select the test property in sidebar
+    // Step 3: Select the test property in sidebar and wait for the folder
+    // lookup to resolve — the create-event call needs the "Logbøger" folder ID.
+    const folderResponsePromise = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
+      { timeout: 60000 }
+    );
     await calendarPage.selectProperty(property.name as string);
+    await folderResponsePromise;
     await page.waitForTimeout(2000);
 
     // Step 4: Click a future time slot.
