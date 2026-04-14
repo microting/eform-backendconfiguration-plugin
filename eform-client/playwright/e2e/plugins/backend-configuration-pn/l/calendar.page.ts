@@ -3,23 +3,12 @@ import { Page, Locator } from '@playwright/test';
 export class CalendarPage {
   constructor(private page: Page) {}
 
-  backendConfigurationPnButton(): Locator {
-    return this.page.locator('#backend-configuration-pn');
-  }
-
-  backendConfigurationPnCalendarButton(): Locator {
-    return this.page.locator('#backend-configuration-pn-calendar');
-  }
-
-  // Navigation
+  // Navigation - navigate directly to calendar URL
   async goToCalendar(): Promise<void> {
-    const calendarBtn = this.backendConfigurationPnCalendarButton();
-    const isVisible = await calendarBtn.isVisible();
-    if (!isVisible) {
-      await this.backendConfigurationPnButton().click();
-    }
-    await calendarBtn.click();
+    await this.page.goto('http://localhost:4200/plugins/backend-configuration-pn/calendar');
     await this.page.waitForTimeout(2000);
+    // Wait for the calendar container to render
+    await this.page.locator('app-calendar-container').waitFor({ state: 'visible', timeout: 30000 });
   }
 
   // Sidebar - select property by name
