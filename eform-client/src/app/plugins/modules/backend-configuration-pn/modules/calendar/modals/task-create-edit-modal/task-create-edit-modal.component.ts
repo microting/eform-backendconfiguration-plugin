@@ -7,8 +7,10 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
+import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
+import {TranslateService} from '@ngx-translate/core';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -19,6 +21,10 @@ export interface TaskCreateEditModalData {
   tags: string[];
   propertyId: number;
   properties: CommonDictionaryModel[];
+  eforms: {id: number; label: string}[];
+  folderId: number | null;
+  planningTags: {id: number; name: string}[];
+  sourceTask?: CalendarTaskModel | null;  // present in copy mode
 }
 
 @Component({
@@ -52,6 +58,8 @@ export class TaskCreateEditModalComponent implements OnInit {
   driveLinkControl = new FormControl('');
   propertyControl = new FormControl<number | null>(null);
   boardControl = new FormControl<number | null>(null);
+  eformControl = new FormControl<number | null>(null);
+  planningTagControl = new FormControl<number | null>(null);
 
   constructor(
     @Optional() private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
@@ -60,6 +68,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     private repeatService: CalendarRepeatService,
     private dialog: MatDialog,
     private overlay: Overlay,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit() {
@@ -68,7 +77,14 @@ export class TaskCreateEditModalComponent implements OnInit {
     this.filteredBoards = this.data.boards;
 
     const task = this.data.task;
-    const defaultDate = task ? task.taskDate : this.data.date;
+    const sourceTask = this.data.sourceTask;
+    const isCopyMode = !task && !!sourceTask;
+    let defaultDate = task ? task.taskDate : this.data.date;
+    if (isCopyMode) {
+      // Adjust past source dates forward to today (or tomorrow if today's
+      // start time has already passed).
+      defaultDate = computeCopyDate(sourceTask!.taskDate, sourceTask!.startHour);
+    }
     const baseDate = new Date(defaultDate);
     this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate);
 
@@ -87,6 +103,23 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.showDriveInput = !!task.driveLink;
       this.boardControl.setValue(task.boardId ?? null);
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
+      this.eformControl.setValue(task['eformId'] ?? null);
+      this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+    } else if (isCopyMode) {
+      const copyPrefix = this.translate.instant('Copy of');
+      this.titleControl.setValue(`${copyPrefix} ${sourceTask.title}`);
+      this.startTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour));
+      this.endTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour + sourceTask.duration));
+      this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
+      this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
+      this.tagsControl.setValue(sourceTask.tags ?? []);
+      this.descriptionControl.setValue(sourceTask.descriptionHtml ?? '');
+      this.driveLinkControl.setValue(sourceTask.driveLink ?? '');
+      this.showDriveInput = !!sourceTask.driveLink;
+      this.boardControl.setValue(sourceTask.boardId ?? null);
+      this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
+      this.eformControl.setValue(sourceTask['eformId'] ?? null);
+      this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
     } else {
       const startHour = this.data.startHour ?? 9;
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
@@ -96,6 +129,8 @@ export class TaskCreateEditModalComponent implements OnInit {
         ? this.data.boards.reduce((min, b) => b.id < min.id ? b : min)
         : null;
       this.boardControl.setValue(defaultBoard?.id ?? null);
+      const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
+      this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
     }
 
     // Disable all controls for past tasks
@@ -115,6 +150,8 @@ export class TaskCreateEditModalComponent implements OnInit {
         this.driveLinkControl.disable();
         this.propertyControl.disable();
         this.boardControl.disable();
+        this.eformControl.disable();
+        this.planningTagControl.disable();
       }
     }
 
@@ -234,7 +271,11 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   onSave() {
     if (this.titleControl.invalid) return;
-    if (this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
+    // Only block past-date save in edit mode. Copy mode may open with a past
+    // date seeded from the source event; the user is expected to pick a new
+    // date before saving, and we surface that via the standard datepicker
+    // min-date validator rather than silently returning.
+    if (this.isEditMode && this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
       return;
     }
 
@@ -266,9 +307,9 @@ export class TaskCreateEditModalComponent implements OnInit {
       propertyId: this.propertyControl.value ?? this.data.propertyId,
       status: 1,
       complianceEnabled: true,
-      folderId: this.data.task?.['folderId'] ?? null,
-      eformId: this.data.task?.['eformId'] ?? null,
-      itemPlanningTagId: this.data.task?.['itemPlanningTagId'] ?? null,
+      folderId: this.data.folderId,
+      eformId: this.eformControl.value,
+      itemPlanningTagId: this.planningTagControl.value,
 
       // Keep these for local/UI use and backward compat
       title: this.titleControl.value,
