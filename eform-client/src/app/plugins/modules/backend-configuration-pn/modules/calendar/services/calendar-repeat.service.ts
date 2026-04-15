@@ -1,4 +1,5 @@
 import {Injectable} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
 import {CalendarRepeatMeta} from '../../../models/calendar';
 
 export interface RepeatSelectOption {
@@ -14,6 +15,37 @@ export interface RepeatSelectOption {
  */
 @Injectable({providedIn: 'root'})
 export class CalendarRepeatService {
+
+  constructor(private translate: TranslateService) {}
+
+  private getDayNames(): string[] {
+    return [
+      this.translate.instant('Monday'),
+      this.translate.instant('Tuesday'),
+      this.translate.instant('Wednesday'),
+      this.translate.instant('Thursday'),
+      this.translate.instant('Friday'),
+      this.translate.instant('Saturday'),
+      this.translate.instant('Sunday'),
+    ];
+  }
+
+  private getMonthNames(): string[] {
+    return [
+      this.translate.instant('January'),
+      this.translate.instant('February'),
+      this.translate.instant('March'),
+      this.translate.instant('April'),
+      this.translate.instant('May'),
+      this.translate.instant('June'),
+      this.translate.instant('July'),
+      this.translate.instant('August'),
+      this.translate.instant('September'),
+      this.translate.instant('October'),
+      this.translate.instant('November'),
+      this.translate.instant('December'),
+    ];
+  }
 
   private getMondayOfWeek(d: Date): Date {
     const date = new Date(d);
@@ -200,46 +232,44 @@ export class CalendarRepeatService {
    * Mirrors getRepeatSelectHtmlForDate() from JS.js.
    */
   buildRepeatSelectOptions(date: Date): RepeatSelectOption[] {
-    const dayNames = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
-    const monthNames = [
-      'januar', 'februar', 'marts', 'april', 'maj', 'juni',
-      'juli', 'august', 'september', 'oktober', 'november', 'december',
-    ];
+    const dayNames = this.getDayNames();
+    const monthNames = this.getMonthNames();
 
     const weekday = date.getDay();
     const dom = date.getDate();
     const month = date.getMonth();
-    const dayName = dayNames[weekday];
+    // dayNames is Monday-indexed (Mon=0..Sun=6); JS getDay() is Sunday-indexed.
+    const dayName = dayNames[(weekday + 6) % 7];
     const monthName = monthNames[month];
 
     return [
-      {value: 'none', label: 'Ingen gentagelse'},
+      {value: 'none', label: this.translate.instant('Does not repeat')},
       {
         value: 'daily',
-        label: 'Dagligt',
+        label: this.translate.instant('Daily'),
         meta: {kind: 'daily', endMode: 'never'},
       },
       {
         value: 'weeklyOne',
-        label: `Ugentligt på ${dayName}`,
+        label: this.translate.instant('Weekly on {{day}}', {day: dayName}),
         meta: {kind: 'weeklyOne', weekday, endMode: 'never'},
       },
       {
         value: 'weeklyAll',
-        label: 'Alle dage i ugen',
+        label: this.translate.instant('Every weekday'),
         meta: {kind: 'weeklyAll', endMode: 'never'},
       },
       {
         value: 'monthlyDom',
-        label: `Månedligt den ${dom}.`,
+        label: this.translate.instant('Monthly on day {{day}}', {day: dom}),
         meta: {kind: 'monthlyDom', dom, endMode: 'never'},
       },
       {
         value: 'yearlyOne',
-        label: `Årligt den ${dom}. ${monthName}`,
+        label: this.translate.instant('Yearly on {{day}} {{month}}', {day: dom, month: monthName}),
         meta: {kind: 'yearlyOne', dom, month, endMode: 'never'},
       },
-      {value: 'custom', label: 'Tilpasset…'},
+      {value: 'custom', label: this.translate.instant('Custom…')},
     ];
   }
 

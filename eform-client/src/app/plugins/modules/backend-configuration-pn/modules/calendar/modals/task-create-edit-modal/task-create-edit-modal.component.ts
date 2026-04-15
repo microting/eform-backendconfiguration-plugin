@@ -4,13 +4,23 @@ import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {BackendConfigurationPnCalendarService} from '../../../../services';
+import {EformVisualEditorModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor.model';
+import {EformVisualEditorFieldModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-field.model';
+import {EformVisualEditorTranslationWithDefaultValue} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-translation-with-default-value';
+import {EformVisualEditorService} from 'src/app/common/services';
+import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
+import {Store} from '@ngrx/store';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {BackendConfigurationPnCalendarService, BackendConfigurationPnPropertiesService} from '../../../../services';
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
+import {of} from 'rxjs';
+import {switchMap, take} from 'rxjs/operators';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -45,6 +55,11 @@ export class TaskCreateEditModalComponent implements OnInit {
   showDriveInput = false;
   filteredBoards: CalendarBoardModel[] = [];
   minDate = new Date();
+  selectedTemplate: EformVisualEditorModel | null = null;
+  isLoadingTemplate = false;
+  showEformDetails = false;
+  filteredEmployees: CommonDictionaryModel[] = [];
+  private currentLanguageId = 1;  // default to English
 
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
@@ -69,9 +84,16 @@ export class TaskCreateEditModalComponent implements OnInit {
     private dialog: MatDialog,
     private overlay: Overlay,
     private translate: TranslateService,
+    private eformVisualEditorService: EformVisualEditorService,
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    private store: Store,
   ) {}
 
   ngOnInit() {
+    this.store.select(selectCurrentUserLanguageId).pipe(take(1)).subscribe(langId => {
+      this.currentLanguageId = langId ?? 1;
+    });
+
     this.isEditMode = !!this.data.task;
     this.timeSlots = this.generateTimeSlots();
     this.filteredBoards = this.data.boards;
@@ -178,7 +200,7 @@ export class TaskCreateEditModalComponent implements OnInit {
       }
     });
 
-    // When property changes, reload boards
+    // When property changes, reload boards, reload filtered employees, clear stale assignee selections
     this.propertyControl.valueChanges.subscribe(propertyId => {
       if (propertyId) {
         this.calendarService.getBoards(propertyId).subscribe(res => {
@@ -190,6 +212,27 @@ export class TaskCreateEditModalComponent implements OnInit {
           }
         });
       }
+      this.loadEmployeesForProperty(propertyId);
+      this.assigneeControl.setValue([]);
+    });
+
+    // Load eForm template details when selection changes
+    // Use switchMap so rapid eForm switches cancel any in-flight getSingle()
+    // and we never overwrite the current selection with a stale response.
+    this.eformControl.valueChanges.pipe(
+      switchMap(id => {
+        if (!id) {
+          this.selectedTemplate = null;
+          return of(null);
+        }
+        this.isLoadingTemplate = true;
+        return this.eformVisualEditorService.getVisualEditorTemplate(id);
+      })
+    ).subscribe(res => {
+      if (res && res.success && res.model) {
+        this.selectedTemplate = res.model;
+      }
+      this.isLoadingTemplate = false;
     });
 
     // When date changes, rebuild repeat options and regenerate time slots
@@ -202,12 +245,103 @@ export class TaskCreateEditModalComponent implements OnInit {
 
     // Emit initial time values
     this.emitTimeChanged();
+
+    // Initial data loads
+    this.loadEmployeesForProperty(this.propertyControl.value);
+    this.loadTemplate(this.eformControl.value);
+  }
+
+  loadTemplate(id: number | null) {
+    if (!id) {
+      this.selectedTemplate = null;
+      return;
+    }
+    this.isLoadingTemplate = true;
+    this.eformVisualEditorService.getVisualEditorTemplate(id).subscribe({
+      next: res => {
+        if (res && res.success && res.model) {
+          this.selectedTemplate = res.model;
+        }
+        this.isLoadingTemplate = false;
+      },
+      error: () => {
+        this.selectedTemplate = null;
+        this.isLoadingTemplate = false;
+      },
+    });
+  }
+
+  loadEmployeesForProperty(propertyId: number | null) {
+    if (!propertyId) {
+      this.filteredEmployees = [];
+      return;
+    }
+    this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
+      if (res && res.success && res.model) {
+        this.filteredEmployees = res.model;
+      }
+    });
+  }
+
+  getTemplateFields(): { type: string; label: string; mandatory: boolean }[] {
+    const out: { type: string; label: string; mandatory: boolean }[] = [];
+    if (!this.selectedTemplate) return out;
+    this.collectFromFields(this.selectedTemplate.fields, out);
+    for (const cl of (this.selectedTemplate.checkLists ?? [])) {
+      this.collectFromChecklist(cl, out);
+    }
+    return out;
+  }
+
+  private collectFromChecklist(model: EformVisualEditorModel, out: { type: string; label: string; mandatory: boolean }[]): void {
+    this.collectFromFields(model.fields, out);
+    for (const cl of (model.checkLists ?? [])) {
+      this.collectFromChecklist(cl, out);
+    }
+  }
+
+  private collectFromFields(fields: EformVisualEditorFieldModel[] | null | undefined, out: { type: string; label: string; mandatory: boolean }[]): void {
+    for (const f of (fields ?? [])) {
+      // SaveButton fields are UI-only submit controls, not user-facing data
+      // entry — skip them in the preview.
+      if (f.fieldType !== EformFieldTypesEnum.SaveButton) {
+        out.push({
+          type: this.fieldTypeLabel(f.fieldType),
+          label: this.translatedName(f.translations),
+          mandatory: !!f.mandatory,
+        });
+      }
+      if (f.fields && f.fields.length > 0) {
+        this.collectFromFields(f.fields, out);
+      }
+    }
+  }
+
+  private fieldTypeLabel(t: number): string {
+    const name = EformFieldTypesEnum[t];
+    if (!name) return '';
+    // Translate the raw enum name (e.g. "Picture", "Text"). If no translation
+    // exists the pipe falls back to the English name which is still readable.
+    return this.translate.instant(name);
+  }
+
+  private translatedName(translations: EformVisualEditorTranslationWithDefaultValue[]): string {
+    if (!translations || translations.length === 0) return '';
+    const match = translations.find(tr => tr.languageId === this.currentLanguageId && !!tr.name);
+    if (match) return match.name;
+    // Fallback: first non-empty name in any language
+    const fallback = translations.find(tr => !!tr.name);
+    return fallback ? fallback.name : '';
+  }
+
+  toggleEformDetails() {
+    this.showEformDetails = !this.showEformDetails;
   }
 
   get formattedDate(): string {
     const d = this.dateControl.value;
     if (!d) return '';
-    return d.toLocaleDateString('da-DK', {weekday: 'long', day: 'numeric', month: 'long'});
+    return d.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'});
   }
 
   private generateTimeSlots(): string[] {

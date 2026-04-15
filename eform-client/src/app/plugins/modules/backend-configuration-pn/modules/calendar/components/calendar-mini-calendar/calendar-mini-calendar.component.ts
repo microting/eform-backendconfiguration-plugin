@@ -1,4 +1,6 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 interface CalendarDay {
   date: Date;
@@ -20,9 +22,20 @@ export class CalendarMiniCalendarComponent implements OnInit {
 
   displayMonth!: Date;
   weeks: CalendarDay[][] = [];
-  readonly dayHeaders = ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø'];
+  dayHeaders: string[] = [];
+
+  constructor(private translate: TranslateService) {}
 
   ngOnInit() {
+    this.dayHeaders = [
+      this.translate.instant('Mon'),
+      this.translate.instant('Tue'),
+      this.translate.instant('Wed'),
+      this.translate.instant('Thu'),
+      this.translate.instant('Fri'),
+      this.translate.instant('Sat'),
+      this.translate.instant('Sun'),
+    ];
     this.displayMonth = this.selectedDate
       ? new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), 1)
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -45,7 +58,7 @@ export class CalendarMiniCalendarComponent implements OnInit {
   }
 
   get monthLabel(): string {
-    return this.displayMonth.toLocaleDateString('da-DK', {month: 'long', year: 'numeric'});
+    return this.displayMonth.toLocaleDateString(getCurrentLocale(this.translate), {month: 'long', year: 'numeric'});
   }
 
   private buildCalendar() {

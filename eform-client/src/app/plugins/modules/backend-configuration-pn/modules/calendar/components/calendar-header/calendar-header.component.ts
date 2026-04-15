@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 @Component({
   standalone: false,
@@ -6,21 +8,27 @@ import {Component, EventEmitter, Input, Output} from '@angular/core';
   templateUrl: './calendar-header.component.html',
   styleUrls: ['./calendar-header.component.scss'],
 })
-export class CalendarHeaderComponent {
+export class CalendarHeaderComponent implements OnInit {
   @Input() currentDate: string = '';
   @Input() viewMode: 'week' | 'day' | 'schedule' = 'week';
   @Input() sidebarOpen = true;
 
-  viewModeOptions = [
-    {value: 'week', label: 'Week'},
-    {value: 'day', label: 'Day'},
-    {value: 'schedule', label: 'List'},
-  ];
+  viewModeOptions: {value: string; label: string}[] = [];
 
   @Output() navigate = new EventEmitter<-1 | 1>();
   @Output() goToToday = new EventEmitter<void>();
   @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule'>();
   @Output() toggleSidebar = new EventEmitter<void>();
+
+  constructor(private translate: TranslateService) {}
+
+  ngOnInit() {
+    this.viewModeOptions = [
+      {value: 'week', label: this.translate.instant('Week')},
+      {value: 'day', label: this.translate.instant('Day')},
+      {value: 'schedule', label: this.translate.instant('List')},
+    ];
+  }
 
   get displayDate(): string {
     if (!this.currentDate) return '';
@@ -29,7 +37,7 @@ export class CalendarHeaderComponent {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const fmt = (dt: Date) =>
-      dt.toLocaleDateString('da-DK', {day: 'numeric', month: 'long'});
+      dt.toLocaleDateString(getCurrentLocale(this.translate), {day: 'numeric', month: 'long'});
     return `${fmt(monday)} – ${fmt(sunday)} ${monday.getFullYear()}`;
   }
 

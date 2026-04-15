@@ -20,6 +20,8 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {TranslateService} from '@ngx-translate/core';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 @Component({
   standalone: false,
@@ -77,6 +79,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
   constructor(
     private calendarService: BackendConfigurationPnCalendarService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit() {
@@ -167,8 +170,9 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   getDateLabel(date: Date): string {
-    if (this.isToday(date)) return 'I dag';
-    const weekday = date.toLocaleDateString('da-DK', {weekday: 'short'});
+    if (this.isToday(date)) return this.translate.instant('Today');
+    const locale = getCurrentLocale(this.translate);
+    const weekday = date.toLocaleDateString(locale, {weekday: 'short'});
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     return `${weekday} ${day}/${month}`;

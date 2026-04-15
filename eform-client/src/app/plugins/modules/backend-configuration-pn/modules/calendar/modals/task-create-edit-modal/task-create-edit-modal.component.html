@@ -73,15 +73,32 @@
       </div>
     </div>
 
+    <!-- Property row -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">business</mat-icon>
+      <div class="gcal-row-content gcal-selector-row">
+        <span class="gcal-selector-label">{{ 'Select property' | translate }}</span>
+        <mat-form-field class="gcal-compact-select">
+          <mtx-select
+            [formControl]="propertyControl"
+            [items]="data.properties"
+            bindValue="id"
+            bindLabel="name"
+            [clearable]="false"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+
     <!-- Assignee row -->
-    <div class="gcal-row" *ngIf="data.employees.length > 0">
+    <div class="gcal-row" *ngIf="filteredEmployees.length > 0">
       <mat-icon class="gcal-icon">people</mat-icon>
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
           <mat-label>{{ 'Assign to...' | translate }}</mat-label>
           <mtx-select
             [formControl]="assigneeControl"
-            [items]="data.employees"
+            [items]="filteredEmployees"
             bindValue="id"
             bindLabel="name"
             [multiple]="true"
@@ -108,26 +125,6 @@
       </div>
     </div>
 
-    <!-- eForm row -->
-    <div class="gcal-row">
-      <mat-icon class="gcal-icon">description</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'eForm' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
-          <mtx-select
-            id="calendarEventEform"
-            [formControl]="eformControl"
-            [items]="data.eforms"
-            bindValue="id"
-            bindLabel="label"
-            [clearable]="false"
-            [searchable]="true"
-            appendTo="body"
-          ></mtx-select>
-        </mat-form-field>
-      </div>
-    </div>
-
     <!-- Report headline row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">bookmark</mat-icon>
@@ -148,6 +145,58 @@
       </div>
     </div>
 
+    <!-- eForm row -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">description</mat-icon>
+      <div class="gcal-row-content gcal-selector-row">
+        <span class="gcal-selector-label">{{ 'eForm' | translate }}</span>
+        <mat-form-field class="gcal-compact-select">
+          <mtx-select
+            id="calendarEventEform"
+            [formControl]="eformControl"
+            [items]="data.eforms"
+            bindValue="id"
+            bindLabel="label"
+            [clearable]="false"
+            [searchable]="true"
+            appendTo="body"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- eForm preview row -->
+    <div class="gcal-row" *ngIf="eformControl.value">
+      <mat-icon class="gcal-icon"></mat-icon>
+      <div class="gcal-row-content">
+        <div class="eform-preview-header">
+          <span class="eform-preview-label" *ngIf="isLoadingTemplate">{{ 'Loading' | translate }}…</span>
+          <span class="eform-preview-label" *ngIf="!isLoadingTemplate && selectedTemplate">{{ selectedTemplate.label }}</span>
+          <button
+            id="calendarEformPreviewToggle"
+            class="eform-preview-toggle"
+            type="button"
+            [attr.aria-expanded]="showEformDetails"
+            aria-controls="calendarEformPreviewBody"
+            (click)="toggleEformDetails()"
+            *ngIf="!isLoadingTemplate && selectedTemplate">
+            <mat-icon>{{ showEformDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+            <span>{{ (showEformDetails ? 'Hide details' : 'Show details') | translate }}</span>
+          </button>
+        </div>
+        <div id="calendarEformPreviewBody" class="eform-preview-body" *ngIf="showEformDetails && selectedTemplate">
+          <div class="eform-field-row" *ngFor="let f of getTemplateFields()">
+            <span class="eform-field-type">{{ f.type }}</span>
+            <span class="eform-field-label">{{ f.label }}</span>
+            <span class="eform-field-required" *ngIf="f.mandatory">*</span>
+          </div>
+          <div class="eform-field-empty" *ngIf="getTemplateFields().length === 0">
+            {{ 'No fields defined' | translate }}
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Description row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">notes</mat-icon>
@@ -159,7 +208,7 @@
       </div>
     </div>
 
-    <!-- Drive link row -->
+    <!-- Drive link row — hidden for now
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
@@ -172,23 +221,8 @@
         </mat-form-field>
       </div>
     </div>
+    -->
 
-    <!-- Property row -->
-    <div class="gcal-row">
-      <mat-icon class="gcal-icon">business</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'Select property' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
-          <mtx-select
-            [formControl]="propertyControl"
-            [items]="data.properties"
-            bindValue="id"
-            bindLabel="name"
-            [clearable]="false"
-          ></mtx-select>
-        </mat-form-field>
-      </div>
-    </div>
 
     <!-- Board row -->
     <div class="gcal-row" *ngIf="filteredBoards.length > 0">

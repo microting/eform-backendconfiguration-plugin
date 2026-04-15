@@ -117,4 +117,20 @@ export class CalendarPage {
   async getCreateModalTitle(): Promise<string> {
     return (await this.page.locator('#calendarEventTitle').inputValue()) || '';
   }
+
+  // Click "Show details" / "Hide details" toggle on the eForm preview
+  async toggleEformPreview(): Promise<void> {
+    await this.page.locator('#calendarEformPreviewToggle').click();
+    await this.page.waitForTimeout(500);
+  }
+
+  // True if the preview body is rendered (i.e. expanded)
+  async isEformPreviewExpanded(): Promise<boolean> {
+    return await this.page.locator('#calendarEformPreviewBody').isVisible();
+  }
+
+  // Count the field rows in the expanded preview body
+  async countEformPreviewFields(): Promise<number> {
+    return await this.page.locator('#calendarEformPreviewBody .eform-field-row').count();
+  }
 }

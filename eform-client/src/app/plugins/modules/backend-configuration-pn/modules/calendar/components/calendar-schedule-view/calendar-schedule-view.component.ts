@@ -1,5 +1,7 @@
 import {Component, EventEmitter, Input, OnChanges, Output} from '@angular/core';
+import {TranslateService} from '@ngx-translate/core';
 import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 interface ScheduleGroup {
   dateLabel: string;
@@ -21,6 +23,8 @@ export class CalendarScheduleViewComponent implements OnChanges {
 
   groups: ScheduleGroup[] = [];
 
+  constructor(private translate: TranslateService) {}
+
   ngOnChanges() {
     this.buildGroups();
   }
@@ -38,7 +42,7 @@ export class CalendarScheduleViewComponent implements OnChanges {
         const date = new Date(monday);
         date.setDate(monday.getDate() + i);
         return {
-          dateLabel: date.toLocaleDateString('da-DK', {weekday: 'long', day: 'numeric', month: 'long'}),
+          dateLabel: date.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'}),
           tasks: tasks.slice().sort((a, b) => a.startHour - b.startHour),
         };
       })
