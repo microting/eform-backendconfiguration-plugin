@@ -390,4 +390,5 @@ export const slSL = {
   'Report headline': 'Naslov poročila',
   Title: 'Naslov',
   'Set tags...': 'Nastavi oznake ...',
+  'Assign to...': 'Dodeli ...',
 };

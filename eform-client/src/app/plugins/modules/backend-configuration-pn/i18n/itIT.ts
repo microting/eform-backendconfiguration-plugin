@@ -390,4 +390,5 @@ export const itIT = {
   'Report headline': 'Titolo del rapporto',
   Title: 'Titolo',
   'Set tags...': 'Imposta i tag...',
+  'Assign to...': 'Assegna a...',
 };

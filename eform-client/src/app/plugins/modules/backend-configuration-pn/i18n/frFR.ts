@@ -390,4 +390,5 @@ export const frFR = {
   'Report headline': 'Titre du rapport',
   Title: 'Titre',
   'Set tags...': 'Définir les étiquettes...',
+  'Assign to...': 'Attribuer à...',
 };

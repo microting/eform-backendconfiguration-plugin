@@ -390,4 +390,5 @@ export const bgBG = {
   'Report headline': 'Заглавие на доклада',
   Title: 'Заглавие',
   'Set tags...': 'Задаване на етикети...',
+  'Assign to...': 'Присвояване на...',
 };

@@ -390,4 +390,5 @@ export const ptBR = {
   'Report headline': 'Título da reportagem',
   Title: 'Título',
   'Set tags...': 'Definir etiquetas...',
+  'Assign to...': 'Atribuir a...',
 };

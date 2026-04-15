@@ -390,4 +390,5 @@ export const csCZ = {
   'Report headline': 'Nadpis zprávy',
   Title: 'Titul',
   'Set tags...': 'Nastavit štítky...',
+  'Assign to...': 'Přiřadit k...',
 };

@@ -401,6 +401,7 @@ export const enUS= {
   // Modal labels
   'Title': 'Title',
   'Set tags...': 'Set tags...',
+  'Assign to...': 'Assign to...',
   // Preview + copy actions
   'Show details': 'Show details',
   'Hide details': 'Hide details',

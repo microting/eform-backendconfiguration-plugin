@@ -390,4 +390,5 @@ export const ukUA = {
   'Report headline': 'Заголовок звіту',
   Title: 'Назва',
   'Set tags...': 'Встановити теги...',
+  'Assign to...': 'Призначити...',
 };

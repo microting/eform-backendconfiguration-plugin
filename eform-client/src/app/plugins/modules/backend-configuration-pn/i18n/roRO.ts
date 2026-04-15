@@ -390,4 +390,5 @@ export const roRO = {
   'Report headline': 'Titlul raportului',
   Title: 'Titlu',
   'Set tags...': 'Setați etichete...',
+  'Assign to...': 'Atribuiți către...',
 };

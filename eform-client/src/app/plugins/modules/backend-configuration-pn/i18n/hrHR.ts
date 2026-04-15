@@ -390,4 +390,5 @@ export const hrHR = {
   'Report headline': 'Naslov izvješća',
   Title: 'Titula',
   'Set tags...': 'Postavi oznake...',
+  'Assign to...': 'Dodijeli...',
 };

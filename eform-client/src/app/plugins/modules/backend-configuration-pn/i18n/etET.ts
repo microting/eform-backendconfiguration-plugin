@@ -390,4 +390,5 @@ export const etET = {
   'Report headline': 'Aruande pealkiri',
   Title: 'Pealkiri',
   'Set tags...': 'Määra sildid...',
+  'Assign to...': 'Määrake...',
 };
