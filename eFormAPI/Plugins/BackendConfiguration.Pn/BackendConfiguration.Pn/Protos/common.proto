@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+message OperationResult {
+  bool success = 1;
+  string message = 2;
+}
+
+message Empty {}
