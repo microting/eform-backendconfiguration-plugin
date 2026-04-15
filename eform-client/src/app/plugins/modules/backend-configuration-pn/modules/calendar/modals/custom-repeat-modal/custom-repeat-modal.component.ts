@@ -1,5 +1,6 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService} from '@ngx-translate/core';
 import {CalendarRepeatService} from '../../services/calendar-repeat.service';
 import {CalendarRepeatMeta} from '../../../../models/calendar';
 
@@ -25,30 +26,33 @@ export class CustomRepeatModalComponent implements OnInit {
   afterCount = 10;
   untilDate: string = '';
 
-  unitOptions = [
-    {value: 'day', label: 'day(s)'},
-    {value: 'week', label: 'week(s)'},
-    {value: 'month', label: 'month(s)'},
-    {value: 'year', label: 'year(s)'},
-  ];
+  unitOptions: {value: string; label: string}[] = [];
 
-  weekdays: WeekdayCircle[] = [
-    {label: 'Ma', value: 1, active: false},
-    {label: 'Ti', value: 2, active: false},
-    {label: 'On', value: 3, active: false},
-    {label: 'To', value: 4, active: false},
-    {label: 'Fr', value: 5, active: false},
-    {label: 'Lø', value: 6, active: false},
-    {label: 'Sø', value: 0, active: false},
-  ];
+  weekdays: WeekdayCircle[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<CustomRepeatModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: CustomRepeatModalData,
     private repeatService: CalendarRepeatService,
+    private translate: TranslateService,
   ) {}
 
   ngOnInit() {
+    this.unitOptions = [
+      {value: 'day', label: this.translate.instant('Day(s)')},
+      {value: 'week', label: this.translate.instant('Week(s)')},
+      {value: 'month', label: this.translate.instant('Month(s)')},
+      {value: 'year', label: this.translate.instant('Year(s)')},
+    ];
+    this.weekdays = [
+      {label: this.translate.instant('Mon'), value: 1, active: false},
+      {label: this.translate.instant('Tue'), value: 2, active: false},
+      {label: this.translate.instant('Wed'), value: 3, active: false},
+      {label: this.translate.instant('Thu'), value: 4, active: false},
+      {label: this.translate.instant('Fri'), value: 5, active: false},
+      {label: this.translate.instant('Sat'), value: 6, active: false},
+      {label: this.translate.instant('Sun'), value: 0, active: false},
+    ];
     // Pre-select the weekday matching the task date
     const wdVal = this.data.date.getDay();
     const circle = this.weekdays.find(w => w.value === wdVal);

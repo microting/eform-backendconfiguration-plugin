@@ -1,5 +1,5 @@
 <div class="all-day-row" *ngIf="hasAllDayTasks">
-  <div class="all-day-label">All day</div>
+  <div class="all-day-label">{{ 'All day' | translate }}</div>
   <div class="all-day-cells">
     <div class="all-day-cell" *ngFor="let dayTasks of allDayTasksByDay; let i = index"
          [class.today-col]="isToday(weekDays[i])">

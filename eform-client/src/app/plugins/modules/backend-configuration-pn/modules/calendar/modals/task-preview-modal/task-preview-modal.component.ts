@@ -6,6 +6,7 @@ import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TaskDeleteModalComponent} from '../task-delete-modal/task-delete-modal.component';
+import {TranslateService} from '@ngx-translate/core';
 
 export interface TaskPreviewModalData {
   task: CalendarTaskModel;
@@ -31,6 +32,7 @@ export class TaskPreviewModalComponent {
     private dialog: MatDialog,
     private overlay: Overlay,
     private calendarService: BackendConfigurationPnCalendarService,
+    private translate: TranslateService,
   ) {}
 
   get boardName(): string {
@@ -66,12 +68,12 @@ export class TaskPreviewModalComponent {
   get repeatLabel(): string {
     const rule = this.data.task.repeatRule;
     const labels: Record<string, string> = {
-      daily: 'Daily',
-      weekly: 'Weekly',
-      weekdays: 'Every weekday',
-      monthly: 'Monthly',
-      yearly: 'Yearly',
-      custom: 'Custom',
+      daily: this.translate.instant('Daily'),
+      weekly: this.translate.instant('Weekly'),
+      weekdays: this.translate.instant('Every weekday'),
+      monthly: this.translate.instant('Monthly'),
+      yearly: this.translate.instant('Yearly'),
+      custom: this.translate.instant('Custom'),
     };
     return labels[rule] ?? rule;
   }

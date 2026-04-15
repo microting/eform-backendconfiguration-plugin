@@ -15,6 +15,7 @@ import {BackendConfigurationPnCalendarService, BackendConfigurationPnPropertiesS
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
@@ -317,7 +318,9 @@ export class TaskCreateEditModalComponent implements OnInit {
   }
 
   private fieldTypeLabel(t: number): string {
-    return EformFieldTypesEnum[t] ?? '';
+    const name = EformFieldTypesEnum[t];
+    if (!name) return '';
+    return this.translate.instant('FieldType' + name);
   }
 
   private translatedName(translations: EformVisualEditorTranslationWithDefaultValue[]): string {
@@ -336,7 +339,7 @@ export class TaskCreateEditModalComponent implements OnInit {
   get formattedDate(): string {
     const d = this.dateControl.value;
     if (!d) return '';
-    return d.toLocaleDateString('da-DK', {weekday: 'long', day: 'numeric', month: 'long'});
+    return d.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'});
   }
 
   private generateTimeSlots(): string[] {
