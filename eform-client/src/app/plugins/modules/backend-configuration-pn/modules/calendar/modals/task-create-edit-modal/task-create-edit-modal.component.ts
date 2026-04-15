@@ -301,11 +301,15 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   private collectFromFields(fields: EformVisualEditorFieldModel[] | null | undefined, out: { type: string; label: string; mandatory: boolean }[]): void {
     for (const f of (fields ?? [])) {
-      out.push({
-        type: this.fieldTypeLabel(f.fieldType),
-        label: this.translatedName(f.translations),
-        mandatory: !!f.mandatory,
-      });
+      // SaveButton fields are UI-only submit controls, not user-facing data
+      // entry — skip them in the preview.
+      if (f.fieldType !== EformFieldTypesEnum.SaveButton) {
+        out.push({
+          type: this.fieldTypeLabel(f.fieldType),
+          label: this.translatedName(f.translations),
+          mandatory: !!f.mandatory,
+        });
+      }
       if (f.fields && f.fields.length > 0) {
         this.collectFromFields(f.fields, out);
       }
