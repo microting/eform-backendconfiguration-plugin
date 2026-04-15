@@ -388,4 +388,6 @@ export const skSK = {
   'Copy of': 'Kópia',
   eForm: 'elektronický formulár',
   'Report headline': 'Nadpis správy',
+  Title: 'Názov',
+  'Set tags...': 'Nastaviť značky...',
 };

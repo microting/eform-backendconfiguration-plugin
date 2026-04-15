@@ -388,4 +388,6 @@ export const plPL = {
   'Copy of': 'Kopia',
   eForm: 'eFormularz',
   'Report headline': 'Nagłówek raportu',
+  Title: 'Tytuł',
+  'Set tags...': 'Ustaw tagi...',
 };

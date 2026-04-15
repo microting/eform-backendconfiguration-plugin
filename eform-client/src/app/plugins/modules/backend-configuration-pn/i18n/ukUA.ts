@@ -388,4 +388,6 @@ export const ukUA = {
   'Copy of': 'Копія',
   eForm: 'Електронна форма',
   'Report headline': 'Заголовок звіту',
+  Title: 'Назва',
+  'Set tags...': 'Встановити теги...',
 };

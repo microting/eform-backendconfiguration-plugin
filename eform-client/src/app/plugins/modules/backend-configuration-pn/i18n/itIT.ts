@@ -388,4 +388,6 @@ export const itIT = {
   'Copy of': 'Copia di',
   eForm: 'Modulo elettronico',
   'Report headline': 'Titolo del rapporto',
+  Title: 'Titolo',
+  'Set tags...': 'Imposta i tag...',
 };

@@ -388,4 +388,6 @@ export const esES = {
   'Copy of': 'Copia de',
   eForm: 'Formulario electrónico',
   'Report headline': 'titular del informe',
+  Title: 'Título',
+  'Set tags...': 'Establecer etiquetas...',
 };

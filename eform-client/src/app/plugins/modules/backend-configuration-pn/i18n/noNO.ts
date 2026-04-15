@@ -388,4 +388,6 @@ export const noNO = {
   'Copy of': 'Kopi av',
   eForm: 'e-skjema',
   'Report headline': 'Rapportoverskrift',
+  Title: 'Tittel',
+  'Set tags...': 'Angi tagger...',
 };

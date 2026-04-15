@@ -388,4 +388,6 @@ export const svSE = {
   'Copy of': 'Kopia av',
   eForm: 'e-formulär',
   'Report headline': 'Rapportrubrik',
+  Title: 'Titel',
+  'Set tags...': 'Ställ in taggar...',
 };

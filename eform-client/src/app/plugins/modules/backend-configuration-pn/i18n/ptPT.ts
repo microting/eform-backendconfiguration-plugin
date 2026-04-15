@@ -388,4 +388,6 @@ export const ptPT = {
   'Copy of': 'Cópia de',
   eForm: 'Formulário eletrônico',
   'Report headline': 'Título da reportagem',
+  Title: 'Título',
+  'Set tags...': 'Definir etiquetas...',
 };

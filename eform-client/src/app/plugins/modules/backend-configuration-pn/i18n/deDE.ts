@@ -442,4 +442,6 @@ export const deDE = {
   'Copy of': 'Kopie von',
   eForm: 'eForm',
   'Report headline': 'Schlagzeile des Berichts',
+  Title: 'Titel',
+  'Set tags...': 'Tags festlegen...',
 };

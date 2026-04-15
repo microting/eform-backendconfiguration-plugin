@@ -388,4 +388,6 @@ export const elGR = {
   'Copy of': 'Αντίγραφο του',
   eForm: 'ηλεκτρονική φόρμα',
   'Report headline': 'Τίτλος αναφοράς',
+  Title: 'Τίτλος',
+  'Set tags...': 'Ορισμός ετικετών...',
 };

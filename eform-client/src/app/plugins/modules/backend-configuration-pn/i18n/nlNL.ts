@@ -388,4 +388,6 @@ export const nlNL = {
   'Copy of': 'Kopie van',
   eForm: 'eFormulier',
   'Report headline': 'Rapportkop',
+  Title: 'Titel',
+  'Set tags...': 'Labels instellen...',
 };

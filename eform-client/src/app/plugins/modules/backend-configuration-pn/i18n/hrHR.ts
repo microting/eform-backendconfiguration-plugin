@@ -388,4 +388,6 @@ export const hrHR = {
   'Copy of': 'Kopija',
   eForm: 'e-obrazac',
   'Report headline': 'Naslov izvješća',
+  Title: 'Titula',
+  'Set tags...': 'Postavi oznake...',
 };

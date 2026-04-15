@@ -389,4 +389,6 @@ export const da = {
   'Copy of': 'Kopi af',
   eForm: 'e-formular',
   'Report headline': 'Rapportoverskrift',
+  Title: 'Titel',
+  'Set tags...': 'Angiv tags...',
 };

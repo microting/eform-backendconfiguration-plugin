@@ -388,4 +388,6 @@ export const frFR = {
   'Copy of': 'Copie de',
   eForm: 'Formulaire électronique',
   'Report headline': 'Titre du rapport',
+  Title: 'Titre',
+  'Set tags...': 'Définir les étiquettes...',
 };

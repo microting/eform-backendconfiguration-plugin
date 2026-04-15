@@ -388,4 +388,6 @@ export const etET = {
   'Copy of': 'Koopia',
   eForm: 'e-vorm',
   'Report headline': 'Aruande pealkiri',
+  Title: 'Pealkiri',
+  'Set tags...': 'Määra sildid...',
 };

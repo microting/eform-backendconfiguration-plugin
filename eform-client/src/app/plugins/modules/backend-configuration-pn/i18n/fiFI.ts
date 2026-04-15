@@ -388,4 +388,6 @@ export const fiFI = {
   'Copy of': 'Kopio',
   eForm: 'sähköinen lomake',
   'Report headline': 'Raportin otsikko',
+  Title: 'Otsikko',
+  'Set tags...': 'Aseta tunnisteet...',
 };

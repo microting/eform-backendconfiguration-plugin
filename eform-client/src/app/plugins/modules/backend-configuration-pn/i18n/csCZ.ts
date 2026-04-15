@@ -388,4 +388,6 @@ export const csCZ = {
   'Copy of': 'Kopie',
   eForm: 'elektronický formulář',
   'Report headline': 'Nadpis zprávy',
+  Title: 'Titul',
+  'Set tags...': 'Nastavit štítky...',
 };

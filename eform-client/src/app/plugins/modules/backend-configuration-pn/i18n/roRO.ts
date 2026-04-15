@@ -388,4 +388,6 @@ export const roRO = {
   'Copy of': 'Copie a',
   eForm: 'Formular electronic',
   'Report headline': 'Titlul raportului',
+  Title: 'Titlu',
+  'Set tags...': 'Setați etichete...',
 };

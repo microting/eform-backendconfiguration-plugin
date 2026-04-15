@@ -388,4 +388,6 @@ export const slSL = {
   'Copy of': 'Kopija',
   eForm: 'e-obrazec',
   'Report headline': 'Naslov poročila',
+  Title: 'Naslov',
+  'Set tags...': 'Nastavi oznake ...',
 };

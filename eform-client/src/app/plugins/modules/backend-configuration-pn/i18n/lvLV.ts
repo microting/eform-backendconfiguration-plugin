@@ -388,4 +388,6 @@ export const lvLV = {
   'Copy of': 'Kopija no',
   eForm: 'e-veidlapa',
   'Report headline': 'Ziņojuma virsraksts',
+  Title: 'Nosaukums',
+  'Set tags...': 'Iestatīt tagus...',
 };

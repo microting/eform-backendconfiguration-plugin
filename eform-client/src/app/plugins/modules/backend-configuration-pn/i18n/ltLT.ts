@@ -388,4 +388,6 @@ export const ltLT = {
   'Copy of': 'Kopija',
   eForm: 'Elektroninė forma',
   'Report headline': 'Ataskaitos antraštė',
+  Title: 'Pavadinimas',
+  'Set tags...': 'Nustatyti žymas...',
 };

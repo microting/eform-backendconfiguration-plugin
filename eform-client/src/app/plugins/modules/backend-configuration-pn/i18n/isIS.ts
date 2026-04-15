@@ -388,4 +388,6 @@ export const isIS = {
   'Copy of': 'Afrit af',
   eForm: 'Rafrænt eyðublað',
   'Report headline': 'Fyrirsögn skýrslunnar',
+  Title: 'Titill',
+  'Set tags...': 'Setja merki...',
 };

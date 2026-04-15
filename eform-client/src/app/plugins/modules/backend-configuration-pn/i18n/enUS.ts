@@ -398,6 +398,9 @@ export const enUS= {
   'Week(s)': 'Week(s)',
   'Month(s)': 'Month(s)',
   'Year(s)': 'Year(s)',
+  // Modal labels
+  'Title': 'Title',
+  'Set tags...': 'Set tags...',
   // Preview + copy actions
   'Show details': 'Show details',
   'Hide details': 'Hide details',

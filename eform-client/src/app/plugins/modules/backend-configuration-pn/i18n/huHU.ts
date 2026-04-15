@@ -388,4 +388,6 @@ export const huHU = {
   'Copy of': 'Másolat',
   eForm: 'eŰrlap',
   'Report headline': 'Jelentés címsora',
+  Title: 'Cím',
+  'Set tags...': 'Címkék beállítása...',
 };
