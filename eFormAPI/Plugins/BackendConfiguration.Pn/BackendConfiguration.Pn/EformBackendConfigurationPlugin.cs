@@ -108,6 +108,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddGrpc();
+        services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
+            Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
         services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
         services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
@@ -746,6 +749,13 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         using var scope = serviceProvider.CreateScope();
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
         backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
+
+        appBuilder.UseRouting();
+        appBuilder.UseEndpoints(endpoints =>
+        {
+            endpoints.MapGrpcService<Services.GrpcServices.CalendarGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.PropertiesGrpcService>();
+        });
     }
 
     public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)

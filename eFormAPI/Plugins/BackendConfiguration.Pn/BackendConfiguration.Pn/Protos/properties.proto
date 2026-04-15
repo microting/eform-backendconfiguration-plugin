@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+service BackendConfigurationPropertiesGrpc {
+  rpc GetCommonDictionary(GetCommonDictionaryRequest) returns (GetCommonDictionaryResponse);
+}
+
+message GetCommonDictionaryRequest {
+  int32 sdk_site_id = 1;
+  bool full_names = 2;
+}
+
+message CommonDictionaryItem {
+  int32 id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message GetCommonDictionaryResponse {
+  bool success = 1;
+  string message = 2;
+  repeated CommonDictionaryItem items = 3;
+}

@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+service BackendConfigurationCalendarGrpc {
+  rpc GetTasksForWeek(GetTasksForWeekRequest) returns (GetTasksForWeekResponse);
+  rpc GetBoards(GetBoardsRequest) returns (GetBoardsResponse);
+}
+
+message GetTasksForWeekRequest {
+  int32 sdk_site_id = 1;
+  int32 property_id = 2;
+  string week_start = 3;               // yyyy-MM-dd
+  string week_end = 4;                 // yyyy-MM-dd
+  repeated int32 board_ids = 5;
+  repeated string tag_names = 6;
+  repeated int32 site_ids = 7;
+}
+
+message CalendarTaskItem {
+  int32 id = 1;
+  string title = 2;
+  double start_hour = 3;
+  double duration = 4;
+  string task_date = 5;
+  repeated string tags = 6;
+  repeated int32 assignee_ids = 7;
+  int32 board_id = 8;                  // 0 when null
+  string color = 9;
+  int32 repeat_type = 10;
+  int32 repeat_every = 11;
+  bool completed = 12;
+  int32 property_id = 13;
+  int32 compliance_id = 14;            // 0 when null
+  bool is_from_compliance = 15;
+  string deadline = 16;                // ISO-8601, empty when null
+  string next_execution_time = 17;     // ISO-8601, empty when null
+  int32 planning_id = 18;              // 0 when null
+  bool is_all_day = 19;
+  int32 exception_id = 20;             // 0 when null
+}
+
+message GetTasksForWeekResponse {
+  bool success = 1;
+  string message = 2;
+  repeated CalendarTaskItem tasks = 3;
+}
+
+message GetBoardsRequest {
+  int32 sdk_site_id = 1;
+  int32 property_id = 2;
+}
+
+message CalendarBoardItem {
+  int32 id = 1;
+  string name = 2;
+  string color = 3;
+  int32 property_id = 4;
+}
+
+message GetBoardsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated CalendarBoardItem boards = 3;
+}
