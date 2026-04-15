@@ -390,4 +390,5 @@ export const noNO = {
   'Report headline': 'Rapportoverskrift',
   Title: 'Tittel',
   'Set tags...': 'Angi tagger...',
+  'Assign to...': 'Tildel til...',
 };

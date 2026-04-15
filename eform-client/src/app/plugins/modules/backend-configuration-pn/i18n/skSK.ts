@@ -390,4 +390,5 @@ export const skSK = {
   'Report headline': 'Nadpis správy',
   Title: 'Názov',
   'Set tags...': 'Nastaviť značky...',
+  'Assign to...': 'Priradiť...',
 };

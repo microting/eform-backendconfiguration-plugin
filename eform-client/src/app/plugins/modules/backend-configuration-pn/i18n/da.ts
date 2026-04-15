@@ -391,4 +391,5 @@ export const da = {
   'Report headline': 'Rapportoverskrift',
   Title: 'Titel',
   'Set tags...': 'Angiv tags...',
+  'Assign to...': 'Tildel til...',
 };

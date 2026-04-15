@@ -390,4 +390,5 @@ export const nlNL = {
   'Report headline': 'Rapportkop',
   Title: 'Titel',
   'Set tags...': 'Labels instellen...',
+  'Assign to...': 'Toewijzen aan...',
 };

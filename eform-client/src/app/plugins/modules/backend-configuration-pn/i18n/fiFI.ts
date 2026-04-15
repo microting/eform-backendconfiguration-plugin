@@ -390,4 +390,5 @@ export const fiFI = {
   'Report headline': 'Raportin otsikko',
   Title: 'Otsikko',
   'Set tags...': 'Aseta tunnisteet...',
+  'Assign to...': 'Määritä...',
 };

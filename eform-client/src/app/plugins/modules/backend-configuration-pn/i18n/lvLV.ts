@@ -390,4 +390,5 @@ export const lvLV = {
   'Report headline': 'Ziņojuma virsraksts',
   Title: 'Nosaukums',
   'Set tags...': 'Iestatīt tagus...',
+  'Assign to...': 'Piešķirt...',
 };

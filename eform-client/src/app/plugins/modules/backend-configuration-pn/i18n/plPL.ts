@@ -390,4 +390,5 @@ export const plPL = {
   'Report headline': 'Nagłówek raportu',
   Title: 'Tytuł',
   'Set tags...': 'Ustaw tagi...',
+  'Assign to...': 'Przypisz do...',
 };

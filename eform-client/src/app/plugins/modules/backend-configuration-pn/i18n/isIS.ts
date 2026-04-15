@@ -390,4 +390,5 @@ export const isIS = {
   'Report headline': 'Fyrirsögn skýrslunnar',
   Title: 'Titill',
   'Set tags...': 'Setja merki...',
+  'Assign to...': 'Úthluta til...',
 };

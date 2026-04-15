@@ -390,4 +390,5 @@ export const svSE = {
   'Report headline': 'Rapportrubrik',
   Title: 'Titel',
   'Set tags...': 'Ställ in taggar...',
+  'Assign to...': 'Tilldela till...',
 };

@@ -390,4 +390,5 @@ export const elGR = {
   'Report headline': 'Τίτλος αναφοράς',
   Title: 'Τίτλος',
   'Set tags...': 'Ορισμός ετικετών...',
+  'Assign to...': 'Ανάθεση σε...',
 };

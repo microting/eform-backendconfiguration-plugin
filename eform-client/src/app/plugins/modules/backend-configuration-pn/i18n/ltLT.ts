@@ -390,4 +390,5 @@ export const ltLT = {
   'Report headline': 'Ataskaitos antraštė',
   Title: 'Pavadinimas',
   'Set tags...': 'Nustatyti žymas...',
+  'Assign to...': 'Priskirti...',
 };

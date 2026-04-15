@@ -390,4 +390,5 @@ export const esES = {
   'Report headline': 'titular del informe',
   Title: 'Título',
   'Set tags...': 'Establecer etiquetas...',
+  'Assign to...': 'Asignar a...',
 };

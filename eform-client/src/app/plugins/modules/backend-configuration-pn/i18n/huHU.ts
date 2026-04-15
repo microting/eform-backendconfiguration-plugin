@@ -390,4 +390,5 @@ export const huHU = {
   'Report headline': 'Jelentés címsora',
   Title: 'Cím',
   'Set tags...': 'Címkék beállítása...',
+  'Assign to...': 'Hozzárendelés...',
 };

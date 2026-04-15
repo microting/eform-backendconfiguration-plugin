@@ -444,4 +444,5 @@ export const deDE = {
   'Report headline': 'Schlagzeile des Berichts',
   Title: 'Titel',
   'Set tags...': 'Tags festlegen...',
+  'Assign to...': 'Zuweisen an...',
 };
