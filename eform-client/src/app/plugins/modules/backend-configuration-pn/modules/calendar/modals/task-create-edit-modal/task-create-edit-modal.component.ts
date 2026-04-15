@@ -320,7 +320,9 @@ export class TaskCreateEditModalComponent implements OnInit {
   private fieldTypeLabel(t: number): string {
     const name = EformFieldTypesEnum[t];
     if (!name) return '';
-    return this.translate.instant('FieldType' + name);
+    // Translate the raw enum name (e.g. "Picture", "Text"). If no translation
+    // exists the pipe falls back to the English name which is still readable.
+    return this.translate.instant(name);
   }
 
   private translatedName(translations: EformVisualEditorTranslationWithDefaultValue[]): string {
