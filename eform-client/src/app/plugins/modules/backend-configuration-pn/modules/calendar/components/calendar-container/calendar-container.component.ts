@@ -97,7 +97,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
 
     this.loadProperties();
-    this.loadEmployees();
     this.loadTags();
     this.loadTeams();
     this.loadEforms();
@@ -136,6 +135,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.propertiesService.getAllPropertiesDictionary().subscribe(res => {
       if (res && res.success) {
         this.properties = res.model;
+        if (this.properties.length > 0 && !this.currentPropertyId) {
+          this.onPropertySelected(this.properties[0].id);
+        }
       }
     });
   }
@@ -144,6 +146,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.stateService.updatePropertyId(propertyId);
     if (propertyId) {
       this.loadBoards(propertyId, true);
+      this.loadEmployees();
+    } else {
+      this.employees = [];
     }
   }
 
@@ -217,7 +222,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   loadEmployees() {
     this.propertiesService.getDeviceUsersFiltered({
-      propertyIds: [],
+      propertyIds: this.currentPropertyId ? [this.currentPropertyId] : [],
       nameFilter: '',
       sort: 'Name',
       isSortDsc: false,
