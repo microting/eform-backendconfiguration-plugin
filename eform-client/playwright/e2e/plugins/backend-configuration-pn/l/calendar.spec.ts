@@ -101,6 +101,71 @@ test.describe('Calendar E2E Tests', () => {
     expect(resBody?.success).toBeTruthy();
   });
 
+  test('should copy an event and preserve eForm + planning tag', async ({ page }) => {
+    test.setTimeout(600000);
+
+    const calendarPage = new CalendarPage(page);
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+
+    // Navigate to calendar (property was created by the previous test)
+    await calendarPage.goToCalendar();
+    await page.waitForTimeout(2000);
+
+    // Select the property
+    const folderResponsePromise = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
+      { timeout: 60000 }
+    );
+    await calendarPage.selectProperty(property.name as string);
+    await folderResponsePromise;
+    await page.waitForTimeout(2000);
+
+    // The event from the previous test should be visible
+    const eventVisible = await calendarPage.verifyEventExists(testEvent.title);
+    expect(eventVisible).toBeTruthy();
+
+    // Open preview and click Copy
+    await calendarPage.openEventPreview(testEvent.title);
+    await page.waitForTimeout(1000);
+    await calendarPage.clickCopyInPreview();
+    await page.waitForTimeout(1500);
+
+    // Verify copy modal is open with "Copy of" prefix
+    const copyTitle = await calendarPage.getCreateModalTitle();
+    console.log(`Copy modal title: "${copyTitle}"`);
+    expect(copyTitle).toContain('Copy of');
+    expect(copyTitle).toContain(testEvent.title);
+
+    // Verify eForm is still selected (not empty)
+    const eformValue = await calendarPage.getSelectValue('#calendarEventEform');
+    console.log(`Copy modal eForm: "${eformValue}"`);
+    expect(eformValue).toBeTruthy();
+
+    // Verify planning tag is still selected
+    const planningTagValue = await calendarPage.getSelectValue('#calendarEventPlanningTag');
+    console.log(`Copy modal planning tag: "${planningTagValue}"`);
+    expect(planningTagValue).toBeTruthy();
+
+    // Save the copy
+    const createResponsePromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await calendarPage.saveModal();
+    const createResponse = await createResponsePromise;
+    const resBody = await createResponse.json().catch(() => null);
+    console.log(`calendar copy task: status=${createResponse.status()}, success=${resBody?.success}, message=${resBody?.message}`);
+    expect(createResponse.status()).toBe(200);
+    expect(resBody?.success).toBeTruthy();
+
+    // Verify copied event appears on the calendar
+    await page.waitForTimeout(2000);
+    const copiedVisible = await calendarPage.verifyEventExists(`Copy of ${testEvent.title}`);
+    expect(copiedVisible).toBeTruthy();
+  });
+
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto('http://localhost:4200');
