@@ -411,4 +411,17 @@ export const enUS= {
   'Copy of': 'Copy of',
   'eForm': 'eForm',
   'Report headline': 'Report headline',
+  // Calendar sidebar
+  'My properties': 'My properties',
+  'My boards': 'My boards',
+  'My teams': 'My teams',
+  'My employees': 'My employees',
+  'Create employee': 'Create employee',
+  'Navn tavle': 'Board name',
+  'Farve': 'Color',
+  'Slet tavle': 'Delete board',
+  'Opret tavle': 'Create board',
+  'Teamnavn': 'Team name',
+  'Slet team': 'Delete team',
+  'Opret team': 'Create team',
 };
