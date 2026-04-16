@@ -71,6 +71,8 @@ public class BackendConfigurationReportService(
             var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
             var core = await coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var pictureFieldTypeId = (await sdkDbContext.FieldTypes
+                .FirstAsync(ft => ft.Type == Constants.FieldTypes.Picture)).Id;
             var fromDate = new DateTime(model.DateFrom!.Value.Year, model.DateFrom.Value.Month,
                 model.DateFrom.Value.Day, 0, 0, 0);
             var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
@@ -265,7 +267,7 @@ public class BackendConfigurationReportService(
                         .Include(x => x.UploadedData)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                                     && x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed
-                                    && x.Field.FieldTypeId == 5 // magic number 5 - it is FieldTypes.Picture
+                                    && x.Field.FieldTypeId == pictureFieldTypeId // magic number 5 - it is FieldTypes.Picture
                                     && x.CaseId.HasValue && templateCaseIds.Contains(x.CaseId.Value)
                                     && x.UploadedDataId != null)
                         .OrderBy(x => x.CaseId)
@@ -487,7 +489,7 @@ public class BackendConfigurationReportService(
 
                             item.ImagesCount = await sdkDbContext.FieldValues
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Where(x => x.Field.FieldTypeId == 5)
+                                .Where(x => x.Field.FieldTypeId == pictureFieldTypeId)
                                 .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
                                 .Where(x => x.UploadedDataId != null)
                                 .Select(x => x.Id)
@@ -536,6 +538,8 @@ public class BackendConfigurationReportService(
             var timeZoneInfo = await userService.GetCurrentUserTimeZoneInfo();
             var core = await coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var pictureFieldTypeId = (await sdkDbContext.FieldTypes
+                .FirstAsync(ft => ft.Type == Constants.FieldTypes.Picture)).Id;
             var fromDate = new DateTime(model.DateFrom!.Value.Year, model.DateFrom.Value.Month,
                 model.DateFrom.Value.Day, 0, 0, 0);
             var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
@@ -686,7 +690,7 @@ public class BackendConfigurationReportService(
                         .Include(x => x.UploadedData)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
                                     && x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed
-                                    && x.Field.FieldTypeId == 5 // magic number 5 - it is FieldTypes.Picture
+                                    && x.Field.FieldTypeId == pictureFieldTypeId // magic number 5 - it is FieldTypes.Picture
                                     && x.CaseId.HasValue && templateCaseIds.Contains(x.CaseId.Value)
                                     && x.UploadedDataId != null)
                         .OrderBy(x => x.CaseId)
