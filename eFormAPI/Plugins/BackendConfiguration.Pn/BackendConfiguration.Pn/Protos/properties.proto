@@ -9,8 +9,7 @@ service BackendConfigurationPropertiesGrpc {
 }
 
 message GetCommonDictionaryRequest {
-  int32 sdk_site_id = 1;
-  bool full_names = 2;
+  bool full_names = 1;
 }
 
 message CommonDictionaryItem {

@@ -9,9 +9,8 @@ service BackendConfigurationTemplatesGrpc {
 }
 
 message GetTemplateRequest {
-  int32 sdk_site_id = 1;
-  int32 template_id = 2;
-  int32 language_id = 3;
+  int32 template_id = 1;
+  int32 language_id = 2;
 }
 
 message TemplateFieldDto {

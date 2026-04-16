@@ -19,6 +19,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 public class CompliancesGrpcService(
     IEFormCoreService coreHelper,
     IBackendConfigurationUserPropertyAccess userPropertyAccess,
+    IGrpcSiteResolver siteResolver,
     BackendConfigurationPnDbContext dbContext)
     : BackendConfigurationCompliancesGrpc.BackendConfigurationCompliancesGrpcBase
 {
@@ -26,6 +27,8 @@ public class CompliancesGrpcService(
         ReadComplianceCaseRequest request,
         ServerCallContext context)
     {
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
+
         if (request.ExtraId > 0)
         {
             var compliance = await dbContext.Compliances
@@ -33,7 +36,7 @@ public class CompliancesGrpcService(
                 .ConfigureAwait(false);
 
             if (compliance != null &&
-                !await userPropertyAccess.HasAccessAsync(request.SdkSiteId, compliance.PropertyId)
+                !await userPropertyAccess.HasAccessAsync(sdkSiteId, compliance.PropertyId)
                     .ConfigureAwait(false))
             {
                 throw new RpcException(new Status(StatusCode.PermissionDenied,
@@ -43,9 +46,7 @@ public class CompliancesGrpcService(
 
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        var language = await sdkDbContext.Languages
-            .FirstAsync()
-            .ConfigureAwait(false);
+        var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
 
         ReplyElement theCase;
         try
@@ -85,6 +86,8 @@ public class CompliancesGrpcService(
         UpdateComplianceCaseRequest request,
         ServerCallContext context)
     {
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
+
         var compliance = await dbContext.Compliances
             .SingleOrDefaultAsync(x => x.Id == request.ExtraId)
             .ConfigureAwait(false);
@@ -94,7 +97,7 @@ public class CompliancesGrpcService(
             return new UpdateComplianceCaseResponse { Success = false, Message = "Compliance not found" };
         }
 
-        if (!await userPropertyAccess.HasAccessAsync(request.SdkSiteId, compliance.PropertyId)
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, compliance.PropertyId)
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,

@@ -12,10 +12,9 @@ service BackendConfigurationCompliancesGrpc {
 // ─── Read ───
 
 message ReadComplianceCaseRequest {
-  int32 sdk_site_id = 1;
-  int32 case_id = 2;
-  int32 template_id = 3;
-  int32 extra_id = 4;           // compliance DB ID for access check
+  int32 case_id = 1;
+  int32 template_id = 2;
+  int32 extra_id = 3;           // compliance DB ID for access check
 }
 
 message DataItemInfo {
@@ -90,13 +89,12 @@ message CaseEditElement {
 }
 
 message UpdateComplianceCaseRequest {
-  int32 sdk_site_id = 1;
-  int32 id = 2;
-  string label = 3;
-  string done_at = 4;
-  int32 extra_id = 5;
-  int32 site_id = 6;
-  repeated CaseEditElement element_list = 7;
+  int32 id = 1;
+  string label = 2;
+  string done_at = 3;
+  int32 extra_id = 4;
+  int32 site_id = 5;
+  repeated CaseEditElement element_list = 6;
 }
 
 message UpdateComplianceCaseResponse {
