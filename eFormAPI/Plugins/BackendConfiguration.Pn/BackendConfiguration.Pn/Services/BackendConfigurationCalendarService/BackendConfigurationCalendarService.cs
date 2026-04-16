@@ -18,6 +18,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 
@@ -382,11 +383,18 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
+            // Resolve FolderId: if not provided, find or create the "00. Logbøger" folder
+            var resolvedFolderId = createModel.FolderId;
+            if (resolvedFolderId is null or 0)
+            {
+                resolvedFolderId = await ResolveOrCreateLogbøgerFolderAsync(createModel.PropertyId);
+            }
+
             // Build TaskWizardCreateModel from the calendar request
             var wizardModel = new TaskWizardCreateModel
             {
                 PropertyId = createModel.PropertyId,
-                FolderId = createModel.FolderId,
+                FolderId = resolvedFolderId,
                 ItemPlanningTagId = createModel.ItemPlanningTagId,
                 TagIds = createModel.TagIds,
                 Translates = createModel.Translates,
@@ -1071,5 +1079,57 @@ public class BackendConfigurationCalendarService(
         }
 
         return true;
+    }
+
+    private async Task<int?> ResolveOrCreateLogbøgerFolderAsync(int propertyId)
+    {
+        var existingFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
+            .Include(f => f.AreaProperty)
+            .ThenInclude(a => a.Area)
+            .ThenInclude(a => a.AreaTranslations)
+            .Where(f => f.AreaProperty.PropertyId == propertyId)
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.Area.AreaTranslations
+                .Any(t => t.Name == "00. Logbøger"))
+            .FirstOrDefaultAsync();
+
+        if (existingFolder != null)
+        {
+            return existingFolder.FolderId;
+        }
+
+        var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
+            .Where(x => x.Name == "00. Logbøger")
+            .FirstOrDefaultAsync();
+
+        if (areaTranslation == null)
+        {
+            return null;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+
+        var propertyAreaUpdateModel = new Infrastructure.Models.PropertyAreas.PropertyAreasUpdateModel
+        {
+            Areas = [new Infrastructure.Models.PropertyAreas.PropertyAreaModel { AreaId = areaTranslation.AreaId, Activated = true }],
+            PropertyId = propertyId
+        };
+
+        await Infrastructure.Helpers.BackendConfigurationPropertyAreasServiceHelper.Update(
+            propertyAreaUpdateModel, core,
+            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userService.UserId);
+
+        var newFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
+            .Include(f => f.AreaProperty)
+            .ThenInclude(a => a.Area)
+            .ThenInclude(a => a.AreaTranslations)
+            .Where(f => f.AreaProperty.PropertyId == propertyId)
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.Area.AreaTranslations
+                .Any(t => t.Name == "00. Logbøger"))
+            .FirstOrDefaultAsync();
+
+        return newFolder?.FolderId;
     }
 }

@@ -7,7 +7,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 public class CalendarTaskCreateRequestModel
 {
     public int PropertyId { get; set; }
-    public int FolderId { get; set; }
+    public int? FolderId { get; set; }
     public int? ItemPlanningTagId { get; set; }
     public List<int> TagIds { get; set; } = [];
     public List<CommonTranslationsModel> Translates { get; set; } = [];
