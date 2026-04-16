@@ -69,9 +69,28 @@ public class CompliancesGrpcService(
             Message = string.Empty,
             Id = theCase.Id,
             Label = theCase.Label ?? string.Empty,
+            DisplayOrder = theCase.DisplayOrder,
+            CheckListFolderName = theCase.CheckListFolderName ?? string.Empty,
+            Repeated = theCase.Repeated,
+            MicrotingUId = theCase.MicrotingUId ?? 0,
+            Color = theCase.Color ?? string.Empty,
+            CaseType = theCase.CaseType ?? string.Empty,
+            StartDate = theCase.StartDate.ToString("O", CultureInfo.InvariantCulture),
+            EndDate = theCase.EndDate.ToString("O", CultureInfo.InvariantCulture),
+            Language = theCase.Language ?? string.Empty,
+            MultiApproval = theCase.MultiApproval,
+            FastNavigation = theCase.FastNavigation,
+            DownloadEntities = theCase.DownloadEntities,
+            ManualSync = theCase.ManualSync,
+            EnableQuickSync = theCase.EnableQuickSync,
+            OriginalId = theCase.OriginalId ?? string.Empty,
             DoneAt = theCase.DoneAt.ToString("O", CultureInfo.InvariantCulture),
             DoneById = theCase.DoneById,
-            UnitId = theCase.UnitId
+            UnitId = theCase.UnitId,
+            SiteMicrotingUuid = theCase.SiteMicrotingUuid,
+            JasperExportEnabled = theCase.JasperExportEnabled,
+            DocxExportEnabled = theCase.DocxExportEnabled,
+            Custom = theCase.Custom ?? string.Empty
         };
 
         foreach (var element in theCase.ElementList)
@@ -112,6 +131,7 @@ public class CompliancesGrpcService(
                 DateTimeStyles.RoundtripKind, out var doneAt)
                 ? doneAt
                 : DateTime.UtcNow,
+            IsDoneAtEditable = request.IsDoneAtEditable,
             ExtraId = request.ExtraId,
             SiteId = request.SiteId,
             ElementList = request.ElementList.Select(MapCaseEditElement).ToList()
@@ -166,7 +186,16 @@ public class CompliancesGrpcService(
         var item = new ReplyElementItem
         {
             Id = element.Id,
-            Label = element.Label ?? string.Empty
+            Label = element.Label ?? string.Empty,
+            DisplayOrder = element.DisplayOrder,
+            Description = element.Description?.InderValue ?? string.Empty,
+            ApprovalEnabled = element.ApprovalEnabled,
+            ReviewEnabled = element.ReviewEnabled,
+            DoneButtonEnabled = element.DoneButtonEnabled,
+            ExtraFieldsEnabled = element.ExtraFieldsEnabled,
+            PinkBarText = element.PinkBarText ?? string.Empty,
+            QuickSyncEnabled = element.QuickSyncEnabled,
+            OriginalId = element.OriginalId ?? string.Empty
         };
 
         switch (element)
@@ -198,17 +227,120 @@ public class CompliancesGrpcService(
         if (source == null) return;
         foreach (var di in source)
         {
-            target.Add(new DataItemInfo
+            var info = new DataItemInfo
             {
                 Id = di.Id,
                 Label = di.Label ?? string.Empty,
                 Description = di.Description?.InderValue ?? string.Empty,
                 FieldType = di.GetType().Name,
-                Value = ExtractValue(di),
                 Mandatory = di.Mandatory,
                 ReadOnly = di.ReadOnly,
                 Color = di.Color ?? string.Empty,
-                DisplayOrder = di.DisplayOrder
+                DisplayOrder = di.DisplayOrder,
+                Dummy = di.Dummy,
+                OriginalId = di.OriginalId ?? string.Empty
+            };
+
+            switch (di)
+            {
+                case Date d:
+                    info.Value = d.DefaultValue ?? string.Empty;
+                    info.DefaultValue = d.DefaultValue ?? string.Empty;
+                    info.MinValue = d.MinValue.ToString("O", CultureInfo.InvariantCulture);
+                    info.MaxValue = d.MaxValue.ToString("O", CultureInfo.InvariantCulture);
+                    break;
+                case Number n:
+                    info.Value = n.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.DefaultValue = n.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.MinValue = n.MinValue ?? string.Empty;
+                    info.MaxValue = n.MaxValue ?? string.Empty;
+                    info.DecimalCount = n.DecimalCount;
+                    info.UnitName = n.UnitName ?? string.Empty;
+                    break;
+                case NumberStepper ns:
+                    info.Value = ns.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.DefaultValue = ns.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.MinValue = ns.MinValue ?? string.Empty;
+                    info.MaxValue = ns.MaxValue ?? string.Empty;
+                    info.DecimalCount = ns.DecimalCount;
+                    info.UnitName = ns.UnitName ?? string.Empty;
+                    break;
+                case Text t:
+                    info.Value = t.Value ?? string.Empty;
+                    info.MaxLength = t.MaxLength;
+                    info.GeolocationEnabled = t.GeolocationEnabled;
+                    info.GeolocationForced = t.GeolocationForced;
+                    info.GeolocationHidden = t.GeolocationHidden;
+                    info.BarcodeEnabled = t.BarcodeEnabled;
+                    info.BarcodeType = t.BarcodeType ?? string.Empty;
+                    break;
+                case Comment c:
+                    info.Value = c.Value ?? string.Empty;
+                    info.MaxLength = c.Maxlength;
+                    info.Split = c.Split;
+                    break;
+                case CheckBox cb:
+                    info.Value = cb.DefaultValue ? "1" : "0";
+                    info.DefaultValue = cb.DefaultValue ? "1" : "0";
+                    info.Selected = cb.Selected;
+                    break;
+                case Picture p:
+                    info.Multi = p.Multi;
+                    info.GeolocationEnabled = p.GeolocationEnabled;
+                    break;
+                case Audio a:
+                    info.Multi = a.Multi;
+                    break;
+                case SingleSelect ss:
+                    MapKeyValuePairs(ss.KeyValuePairList, info.KeyValuePairList);
+                    break;
+                case MultiSelect ms:
+                    MapKeyValuePairs(ms.KeyValuePairList, info.KeyValuePairList);
+                    break;
+                case EntitySearch es:
+                    info.DefaultValue = es.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.EntityTypeId = es.EntityTypeId;
+                    info.IsNum = es.IsNum;
+                    info.QueryType = es.QueryType ?? string.Empty;
+                    info.MinSearchLength = es.MinSearchLenght;
+                    info.BarcodeEnabled = es.BarcodeEnabled;
+                    info.BarcodeType = es.BarcodeType ?? string.Empty;
+                    break;
+                case EntitySelect el:
+                    info.DefaultValue = el.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                    info.Source = el.Source;
+                    break;
+                case ShowPdf sp:
+                    info.Value = sp.Value ?? string.Empty;
+                    break;
+                case SaveButton sb:
+                    info.Value = sb.Value ?? string.Empty;
+                    break;
+                case Timer tm:
+                    info.StopOnSave = tm.StopOnSave;
+                    break;
+                default:
+                    info.Value = string.Empty;
+                    break;
+            }
+
+            target.Add(info);
+        }
+    }
+
+    private static void MapKeyValuePairs(
+        List<Microting.eForm.Dto.KeyValuePair> source,
+        Google.Protobuf.Collections.RepeatedField<KeyValuePairItem> target)
+    {
+        if (source == null) return;
+        foreach (var kvp in source)
+        {
+            target.Add(new KeyValuePairItem
+            {
+                Key = kvp.Key ?? string.Empty,
+                Value = kvp.Value ?? string.Empty,
+                Selected = kvp.Selected,
+                DisplayOrder = kvp.DisplayOrder ?? string.Empty
             });
         }
     }
@@ -222,31 +354,16 @@ public class CompliancesGrpcService(
         {
             var g = new DataItemGroupInfo
             {
-                Id = int.TryParse(group.Id, out var gid) ? gid : 0,
+                Id = group.Id ?? string.Empty,
                 Label = group.Label ?? string.Empty,
                 Description = group.Description ?? string.Empty,
                 Color = group.Color ?? string.Empty,
-                DisplayOrder = group.DisplayOrder
+                DisplayOrder = group.DisplayOrder,
+                Value = group.Value ?? string.Empty
             };
             MapDataItems(group.DataItemList, g.DataItems);
             target.Add(g);
         }
-    }
-
-    private static string ExtractValue(DataItem di)
-    {
-        return di switch
-        {
-            Date d => d.DefaultValue ?? string.Empty,
-            Number n => n.DefaultValue.ToString(CultureInfo.InvariantCulture),
-            NumberStepper ns => ns.DefaultValue.ToString(CultureInfo.InvariantCulture),
-            Text t => t.Value ?? string.Empty,
-            Comment c => c.Value ?? string.Empty,
-            CheckBox cb => cb.DefaultValue ? "1" : "0",
-            SingleSelect => string.Empty,
-            MultiSelect => string.Empty,
-            _ => string.Empty
-        };
     }
 
     private static CaseEditRequest MapCaseEditElement(CaseEditElement proto)

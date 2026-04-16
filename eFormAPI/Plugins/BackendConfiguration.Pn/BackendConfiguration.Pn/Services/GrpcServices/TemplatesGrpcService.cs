@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Grpc;
 using Grpc.Core;
@@ -60,6 +59,20 @@ public class TemplatesGrpcService(IEFormCoreService coreHelper)
             IsDoneAtEditable = dto.IsDoneAtEditable
         };
 
+        if (dto.DeployedSites != null)
+        {
+            foreach (var site in dto.DeployedSites)
+            {
+                item.DeployedSites.Add(new SiteNameDto
+                {
+                    SiteUId = site.SiteUId,
+                    SiteName = site.SiteName ?? string.Empty,
+                    CreatedAt = site.CreatedAt?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
+                    UpdatedAt = site.UpdatedAt?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty
+                });
+            }
+        }
+
         if (dto.Tags != null)
         {
             foreach (var tag in dto.Tags)
@@ -91,7 +104,9 @@ public class TemplatesGrpcService(IEFormCoreService coreHelper)
             Label = src.Label ?? string.Empty,
             Description = src.Description ?? string.Empty,
             FieldType = src.FieldType ?? string.Empty,
-            FieldTypeId = src.FieldTypeId
+            FieldTypeId = src.FieldTypeId,
+            CheckListId = src.CheckListId,
+            ParentName = src.ParentName ?? string.Empty
         };
     }
 }

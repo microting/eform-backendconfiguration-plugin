@@ -13,13 +13,21 @@ message GetTemplateRequest {
   int32 language_id = 2;
 }
 
+message SiteNameDto {
+  int32 site_u_id = 1;
+  string site_name = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
 message TemplateFieldDto {
   int32 id = 1;
   string label = 2;
   string description = 3;
   string field_type = 4;
   int32 field_type_id = 5;
-  string color = 6;
+  int32 check_list_id = 6;
+  string parent_name = 7;
 }
 
 message TemplateTagItem {
@@ -36,33 +44,34 @@ message TemplateItem {
   int32 repeated = 6;
   string folder_name = 7;
   string workflow_state = 8;
-  bool has_cases = 9;
-  int32 display_index = 10;
-  int32 folder_id = 11;
-  bool jasper_export_enabled = 12;
-  bool docx_export_enabled = 13;
-  bool excel_export_enabled = 14;
-  string report_h1 = 15;
-  string report_h2 = 16;
-  string report_h3 = 17;
-  string report_h4 = 18;
-  string report_h5 = 19;
-  bool is_locked = 20;
-  bool is_editable = 21;
-  bool is_hidden = 22;
-  bool is_achievable = 23;
-  bool is_done_at_editable = 24;
-  repeated TemplateTagItem tags = 25;
-  TemplateFieldDto field1 = 26;
-  TemplateFieldDto field2 = 27;
-  TemplateFieldDto field3 = 28;
-  TemplateFieldDto field4 = 29;
-  TemplateFieldDto field5 = 30;
-  TemplateFieldDto field6 = 31;
-  TemplateFieldDto field7 = 32;
-  TemplateFieldDto field8 = 33;
-  TemplateFieldDto field9 = 34;
-  TemplateFieldDto field10 = 35;
+  repeated SiteNameDto deployed_sites = 9;
+  bool has_cases = 10;
+  int32 display_index = 11;
+  int32 folder_id = 12;
+  bool jasper_export_enabled = 13;
+  bool docx_export_enabled = 14;
+  bool excel_export_enabled = 15;
+  string report_h1 = 16;
+  string report_h2 = 17;
+  string report_h3 = 18;
+  string report_h4 = 19;
+  string report_h5 = 20;
+  bool is_locked = 21;
+  bool is_editable = 22;
+  bool is_hidden = 23;
+  bool is_achievable = 24;
+  bool is_done_at_editable = 25;
+  repeated TemplateTagItem tags = 26;
+  TemplateFieldDto field1 = 27;
+  TemplateFieldDto field2 = 28;
+  TemplateFieldDto field3 = 29;
+  TemplateFieldDto field4 = 30;
+  TemplateFieldDto field5 = 31;
+  TemplateFieldDto field6 = 32;
+  TemplateFieldDto field7 = 33;
+  TemplateFieldDto field8 = 34;
+  TemplateFieldDto field9 = 35;
+  TemplateFieldDto field10 = 36;
 }
 
 message GetTemplateResponse {
