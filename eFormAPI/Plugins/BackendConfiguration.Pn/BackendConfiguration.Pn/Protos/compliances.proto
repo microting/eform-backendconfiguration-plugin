@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+service BackendConfigurationCompliancesGrpc {
+  rpc ReadComplianceCase(ReadComplianceCaseRequest) returns (ReadComplianceCaseResponse);
+  rpc UpdateComplianceCase(UpdateComplianceCaseRequest) returns (UpdateComplianceCaseResponse);
+}
+
+// ─── Read ───
+
+message ReadComplianceCaseRequest {
+  int32 case_id = 1;
+  int32 template_id = 2;
+  int32 extra_id = 3;           // compliance DB ID for access check
+}
+
+message DataItemInfo {
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string field_type = 4;
+  string value = 5;
+  bool mandatory = 6;
+  bool read_only = 7;
+  string color = 8;
+  int32 display_order = 9;
+}
+
+message DataItemGroupInfo {
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string color = 4;
+  int32 display_order = 5;
+  repeated DataItemInfo data_items = 6;
+}
+
+message ReplyElementItem {
+  int32 id = 1;
+  string label = 2;
+  string status = 3;
+  repeated DataItemInfo data_items = 4;
+  repeated DataItemGroupInfo data_item_groups = 5;
+  repeated ReplyElementItem element_list = 6;
+}
+
+message ReadComplianceCaseResponse {
+  bool success = 1;
+  string message = 2;
+  int32 id = 3;
+  string label = 4;
+  string done_at = 5;
+  int32 done_by_id = 6;
+  int32 unit_id = 7;
+  repeated ReplyElementItem element_list = 8;
+}
+
+// ─── Update ───
+
+message CaseEditFieldValue {
+  int32 field_id = 1;
+  string value = 2;
+  string field_type = 3;
+}
+
+message CaseEditField {
+  string field_type = 1;
+  repeated CaseEditFieldValue field_values = 2;
+}
+
+message CaseEditGroupField {
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string color = 4;
+  int32 display_order = 5;
+  repeated CaseEditField fields = 6;
+}
+
+message CaseEditElement {
+  int32 id = 1;
+  string status = 2;
+  repeated CaseEditField fields = 3;
+  repeated CaseEditGroupField group_fields = 4;
+  repeated CaseEditElement element_list = 5;
+}
+
+message UpdateComplianceCaseRequest {
+  int32 id = 1;
+  string label = 2;
+  string done_at = 3;
+  int32 extra_id = 4;
+  int32 site_id = 5;
+  repeated CaseEditElement element_list = 6;
+}
+
+message UpdateComplianceCaseResponse {
+  bool success = 1;
+  string message = 2;
+}

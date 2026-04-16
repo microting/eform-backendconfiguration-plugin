@@ -243,6 +243,8 @@
       <Protobuf Include="Protos\common.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\calendar.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\properties.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\templates.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\compliances.proto" GrpcServices="Server" ProtoRoot="Protos" />
     </ItemGroup>
 
 </Project>
