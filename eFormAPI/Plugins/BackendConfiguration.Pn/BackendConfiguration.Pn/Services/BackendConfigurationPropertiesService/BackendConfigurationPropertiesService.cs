@@ -485,13 +485,21 @@ public class BackendConfigurationPropertiesService(
         {
             var properties = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.CVR,
+                    x.CHR,
+                    x.Name
+                }).ToListAsync().ConfigureAwait(false);
+            var result = properties
                 .Select(x => new CommonDictionaryModel
                 {
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).OrderBy(x => x.Name).ToListAsync().ConfigureAwait(false);
-            return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
+                }).OrderBy(x => x.Name).ToList();
+            return new OperationDataResult<List<CommonDictionaryModel>>(true, result);
         }
         catch (Exception ex)
         {
