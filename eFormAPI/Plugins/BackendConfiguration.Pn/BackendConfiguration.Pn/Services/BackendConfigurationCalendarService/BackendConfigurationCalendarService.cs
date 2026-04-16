@@ -199,7 +199,9 @@ public class BackendConfigurationCalendarService(
                         NextExecutionTime = planning.NextExecutionTime,
                         PlanningId = planning.Id,
                         IsAllDay = isAllDay,
-                        ExceptionId = exception?.Id
+                        ExceptionId = exception?.Id,
+                        EformId = arp.AreaRule?.EformId,
+                        ItemPlanningTagId = arp.ItemPlanningTagId
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -261,7 +263,9 @@ public class BackendConfigurationCalendarService(
                     NextExecutionTime = movedPlanning.NextExecutionTime,
                     PlanningId = movedPlanning.Id,
                     IsAllDay = isAllDay,
-                    ExceptionId = movedIn.Id
+                    ExceptionId = movedIn.Id,
+                    EformId = arp.AreaRule?.EformId,
+                    ItemPlanningTagId = arp.ItemPlanningTagId
                 };
 
                 if (ShouldIncludeTask(movedModel, requestModel))
@@ -351,7 +355,9 @@ public class BackendConfigurationCalendarService(
                     IsFromCompliance = true,
                     Deadline = compliance.Deadline,
                     PlanningId = compliance.PlanningId,
-                    IsAllDay = compIsAllDay
+                    IsAllDay = compIsAllDay,
+                    EformId = arp?.AreaRule?.EformId,
+                    ItemPlanningTagId = arp?.ItemPlanningTagId
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
