@@ -18,6 +18,7 @@ interface WeekdayCircle {
   standalone: false,
   selector: 'app-custom-repeat-modal',
   templateUrl: './custom-repeat-modal.component.html',
+  styleUrls: ['./custom-repeat-modal.component.scss'],
 })
 export class CustomRepeatModalComponent implements OnInit {
   step = 1;
@@ -25,6 +26,7 @@ export class CustomRepeatModalComponent implements OnInit {
   endMode: 'never' | 'after' | 'until' = 'never';
   afterCount = 10;
   untilDate: string = '';
+  untilDateObj: Date | null = null;
 
   unitOptions: {value: string; label: string}[] = [];
 
@@ -45,20 +47,20 @@ export class CustomRepeatModalComponent implements OnInit {
       {value: 'year', label: this.translate.instant('Year(s)')},
     ];
     this.weekdays = [
-      {label: this.translate.instant('Mon'), value: 1, active: false},
-      {label: this.translate.instant('Tue'), value: 2, active: false},
-      {label: this.translate.instant('Wed'), value: 3, active: false},
-      {label: this.translate.instant('Thu'), value: 4, active: false},
-      {label: this.translate.instant('Fri'), value: 5, active: false},
-      {label: this.translate.instant('Sat'), value: 6, active: false},
-      {label: this.translate.instant('Sun'), value: 0, active: false},
+      {label: this.translate.instant('Mon').charAt(0), value: 1, active: false},
+      {label: this.translate.instant('Tue').charAt(0), value: 2, active: false},
+      {label: this.translate.instant('Wed').charAt(0), value: 3, active: false},
+      {label: this.translate.instant('Thu').charAt(0), value: 4, active: false},
+      {label: this.translate.instant('Fri').charAt(0), value: 5, active: false},
+      {label: this.translate.instant('Sat').charAt(0), value: 6, active: false},
+      {label: this.translate.instant('Sun').charAt(0), value: 0, active: false},
     ];
     // Pre-select the weekday matching the task date
     const wdVal = this.data.date.getDay();
     const circle = this.weekdays.find(w => w.value === wdVal);
     if (circle) circle.active = true;
-    this.untilDate = new Date(this.data.date.getFullYear(), this.data.date.getMonth() + 3, this.data.date.getDate())
-      .toISOString().split('T')[0];
+    this.untilDateObj = new Date(this.data.date.getFullYear(), this.data.date.getMonth() + 3, this.data.date.getDate());
+    this.untilDate = this.untilDateObj.toISOString().split('T')[0];
   }
 
   toggleWeekday(circle: WeekdayCircle) {
@@ -70,8 +72,8 @@ export class CustomRepeatModalComponent implements OnInit {
   }
 
   onConfirm() {
-    const untilTs = this.endMode === 'until' && this.untilDate
-      ? new Date(this.untilDate).getTime()
+    const untilTs = this.endMode === 'until' && this.untilDateObj
+      ? this.untilDateObj.getTime()
       : undefined;
 
     const meta: CalendarRepeatMeta = this.repeatService.buildMetaFromCustomConfig(

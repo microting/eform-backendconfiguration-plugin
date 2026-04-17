@@ -1,44 +1,70 @@
-<h3 mat-dialog-title>{{ 'Custom repeat' | translate }}</h3>
+<div class="custom-repeat-dialog">
+  <div class="custom-repeat-title">{{ 'Custom repeat' | translate }}</div>
 
-<div mat-dialog-content>
-  <div class="repeat-row">
-    <span>{{ 'Repeat every' | translate }}</span>
-    <mat-form-field class="step-field">
-      <input matInput type="number" [(ngModel)]="step" min="1" max="99">
-    </mat-form-field>
-    <mat-form-field>
-      <mtx-select [(ngModel)]="unit" [items]="unitOptions" bindValue="value" bindLabel="label" [clearable]="false"></mtx-select>
-    </mat-form-field>
+  <div class="custom-repeat-content">
+    <!-- Repeat every N [unit] -->
+    <div class="repeat-every-row">
+      <span class="repeat-label">{{ 'Repeat every' | translate }}</span>
+      <mat-form-field class="step-input" appearance="outline">
+        <input matInput type="number" [(ngModel)]="step" min="1" max="99">
+      </mat-form-field>
+      <mat-form-field class="unit-select" appearance="outline">
+        <mtx-select
+          [(ngModel)]="unit"
+          [items]="unitOptions"
+          bindValue="value"
+          bindLabel="label"
+          [clearable]="false"
+          [searchable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Weekday picker (week mode only) -->
+    <div class="weekday-row" *ngIf="unit === 'week'">
+      <span class="repeat-on-label">{{ 'Repeat on' | translate }}</span>
+      <div
+        class="day-circle"
+        *ngFor="let wd of weekdays"
+        [class.active]="wd.active"
+        (click)="toggleWeekday(wd)"
+      >{{ wd.label }}</div>
+    </div>
+
+    <!-- Ends section -->
+    <div class="ends-section">
+      <div class="ends-label">{{ 'Ends' | translate }}</div>
+
+      <mat-radio-group [(ngModel)]="endMode">
+        <div class="end-option">
+          <mat-radio-button value="never"></mat-radio-button>
+          <span class="end-option-label">{{ 'Never' | translate }}</span>
+        </div>
+
+        <div class="end-option">
+          <mat-radio-button value="until"></mat-radio-button>
+          <span class="end-option-label">{{ 'On' | translate }}</span>
+          <mat-form-field class="date-input" appearance="outline">
+            <input matInput [matDatepicker]="untilPicker" [(ngModel)]="untilDateObj" [disabled]="endMode !== 'until'">
+            <mat-datepicker-toggle matIconSuffix [for]="untilPicker"></mat-datepicker-toggle>
+            <mat-datepicker #untilPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <div class="end-option">
+          <mat-radio-button value="after"></mat-radio-button>
+          <span class="end-option-label">{{ 'After' | translate }}</span>
+          <mat-form-field class="count-input" appearance="outline">
+            <input matInput type="number" [(ngModel)]="afterCount" min="1" [disabled]="endMode !== 'after'">
+          </mat-form-field>
+          <span class="count-suffix">{{ 'occurrences' | translate }}</span>
+        </div>
+      </mat-radio-group>
+    </div>
   </div>
 
-  <div class="weekday-circles" *ngIf="unit === 'week'">
-    <div
-      class="circle"
-      *ngFor="let wd of weekdays"
-      [class.active]="wd.active"
-      (click)="toggleWeekday(wd)"
-    >{{ wd.label }}</div>
+  <div class="custom-repeat-actions">
+    <button class="btn-cancel-gcal" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+    <button class="btn-done-gcal" (click)="onConfirm()">{{ 'Done' | translate }}</button>
   </div>
-
-  <mat-radio-group [(ngModel)]="endMode" class="end-group">
-    <mat-radio-button value="never">{{ 'Never' | translate }}</mat-radio-button>
-    <mat-radio-button value="after">
-      {{ 'After' | translate }}
-      <mat-form-field class="count-field">
-        <input matInput type="number" [(ngModel)]="afterCount" min="1">
-      </mat-form-field>
-      {{ 'times' | translate }}
-    </mat-radio-button>
-    <mat-radio-button value="until">
-      {{ 'Until' | translate }}
-      <mat-form-field>
-        <input matInput type="date" [(ngModel)]="untilDate">
-      </mat-form-field>
-    </mat-radio-button>
-  </mat-radio-group>
-</div>
-
-<div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
-  <button class="btn-primary btn-primary--icon-left" (click)="onConfirm()">{{ 'Save' | translate }}</button>
 </div>
