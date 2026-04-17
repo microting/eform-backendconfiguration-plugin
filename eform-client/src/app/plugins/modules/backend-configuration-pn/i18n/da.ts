@@ -357,7 +357,7 @@ export const da = {
   'Does not repeat': 'Gentages ikke',
   'Weekly on {{day}}': 'Ugentligt på {{day}}',
   'Monthly on day {{day}}': 'Månedligt på dag {{day}}',
-  'Yearly on {{day}} {{month}}': 'Årligt på {{dag}} {{måned}}',
+  'Yearly on {{day}} {{month}}': 'Årligt på {{day}} {{month}}',
   Mon: 'man',
   Tue: 'Tirsdag',
   Wed: 'Ons',
