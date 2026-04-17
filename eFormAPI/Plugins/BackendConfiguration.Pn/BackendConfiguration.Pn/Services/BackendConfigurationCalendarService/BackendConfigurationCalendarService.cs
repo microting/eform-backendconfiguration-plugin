@@ -1048,6 +1048,26 @@ public class BackendConfigurationCalendarService(
                 }
                 break;
             }
+            case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
+            {
+                if (startDate > weekEnd) break;
+                var yearDom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                var yearMonth = startDate.Month;
+                var yearsSinceStart = weekStart.Year - startDate.Year;
+                if (yearsSinceStart < 0) break;
+                var yearPeriods = yearsSinceStart > 0 ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
+                for (var i = 0; i < 2; i++)
+                {
+                    var candidateYear = startDate.Year + (yearPeriods + i) * repeatEvery;
+                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
+                    var candidate = new DateTime(candidateYear, yearMonth,
+                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate > weekEnd) break;
+                    if (candidate >= weekStart)
+                        occurrences.Add(candidate);
+                }
+                break;
+            }
             default:
             {
                 // No repeat — show on StartDate if it falls in the week
