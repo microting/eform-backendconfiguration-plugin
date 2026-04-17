@@ -1,3 +1,11 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .all-day-row {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
@@ -59,6 +67,10 @@
   overflow-y: auto;
   overflow-x: auto;
   position: relative;
+
+  .calendar-grid {
+    max-height: none;
+  }
 }
 
 .calendar-grid {
