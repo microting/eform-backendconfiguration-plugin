@@ -41,10 +41,10 @@ export class CustomRepeatModalComponent implements OnInit {
 
   ngOnInit() {
     this.unitOptions = [
-      {value: 'day', label: this.translate.instant('Day(s)')},
-      {value: 'week', label: this.translate.instant('Week(s)')},
-      {value: 'month', label: this.translate.instant('Month(s)')},
-      {value: 'year', label: this.translate.instant('Year(s)')},
+      {value: 'day', label: this.translate.instant('day')},
+      {value: 'week', label: this.translate.instant('week')},
+      {value: 'month', label: this.translate.instant('month')},
+      {value: 'year', label: this.translate.instant('year')},
     ];
     this.weekdays = [
       {label: this.translate.instant('Mon').charAt(0), value: 1, active: false},

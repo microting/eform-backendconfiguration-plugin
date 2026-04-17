@@ -398,6 +398,10 @@ export const enUS= {
   'Week(s)': 'Week(s)',
   'Month(s)': 'Month(s)',
   'Year(s)': 'Year(s)',
+  'day': 'day',
+  'week': 'week',
+  'month': 'month',
+  'year': 'year',
   // Modal labels
   'Title': 'Title',
   'Set tags...': 'Set tags...',
