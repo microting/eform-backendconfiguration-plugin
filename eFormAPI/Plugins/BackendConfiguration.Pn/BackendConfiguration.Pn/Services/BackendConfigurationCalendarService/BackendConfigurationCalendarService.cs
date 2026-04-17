@@ -132,6 +132,21 @@ public class BackendConfigurationCalendarService(
                 // Compute all occurrence dates within the requested week
                 var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd);
 
+                // Filter by repeat end mode
+                if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
+                    occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
+                else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
+                {
+                    var allOccsSince = GetOccurrencesInWeek(planning,
+                        planning.StartDate.Date, weekEnd);
+                    var maxOcc = arp.RepeatOccurrences.Value;
+                    if (allOccsSince.Count > maxOcc)
+                    {
+                        var cutoff = allOccsSince[maxOcc - 1];
+                        occurrences.RemoveAll(d => d > cutoff);
+                    }
+                }
+
                 if (occurrences.Count == 0)
                     continue;
 
@@ -431,6 +446,14 @@ public class BackendConfigurationCalendarService(
 
             if (latestArp != null)
             {
+                if (createModel.RepeatEndMode.HasValue)
+                {
+                    latestArp.RepeatEndMode = createModel.RepeatEndMode;
+                    latestArp.RepeatOccurrences = createModel.RepeatOccurrences;
+                    latestArp.RepeatUntilDate = createModel.RepeatUntilDate;
+                    await latestArp.Update(backendConfigurationPnDbContext);
+                }
+
                 var calConfig = new CalendarConfiguration
                 {
                     AreaRulePlanningId = latestArp.Id,

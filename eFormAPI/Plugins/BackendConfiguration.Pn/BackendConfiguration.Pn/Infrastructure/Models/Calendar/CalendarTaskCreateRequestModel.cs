@@ -22,4 +22,7 @@ public class CalendarTaskCreateRequestModel
     public double Duration { get; set; }
     public int? BoardId { get; set; }
     public string Color { get; set; }
+    public int? RepeatEndMode { get; set; }
+    public int? RepeatOccurrences { get; set; }
+    public DateTime? RepeatUntilDate { get; set; }
 }
