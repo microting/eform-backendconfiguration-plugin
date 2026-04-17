@@ -668,10 +668,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             "eform-backend-configuration-plugin",
             "eform-angular-case-template-plugin");
 
-        var frontendBaseConnectionString = connectionString.Replace(
-            "eform-backend-configuration-plugin",
-            "Angular");
-
         _connectionString = connectionString;
         services.AddDbContext<BackendConfigurationPnDbContext>(o =>
             o.UseMySql(connectionString, new MariaDbServerVersion(
@@ -708,14 +704,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddDbContext<CaseTemplatePnDbContext>(o =>
             o.UseMySql(documentsConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(documentsConnectionString)), mySqlOptionsAction: builder =>
-            {
-                builder.EnableRetryOnFailure();
-                builder.MigrationsAssembly(PluginAssembly().FullName);
-            }));
-
-        services.AddDbContext<BaseDbContext>(
-            o => o.UseMySql(frontendBaseConnectionString, new MariaDbServerVersion(
-                ServerVersion.AutoDetect(frontendBaseConnectionString)), mySqlOptionsAction: builder =>
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
