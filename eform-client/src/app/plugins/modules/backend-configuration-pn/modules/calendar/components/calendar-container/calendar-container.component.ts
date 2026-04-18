@@ -699,17 +699,35 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   private ensureOverlayInViewport(overlayRef: OverlayRef) {
-    setTimeout(() => {
-      const pane = overlayRef.overlayElement;
-      if (!pane) return;
-      const rect = pane.getBoundingClientRect();
-      const vw = window.innerHeight;
-      const margin = 8;
-      if (rect.top < margin) {
-        pane.style.transform = `translateY(${margin - rect.top}px)`;
-      } else if (rect.bottom > vw - margin) {
-        pane.style.transform = `translateY(${vw - margin - rect.bottom}px)`;
-      }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const pane = overlayRef.overlayElement;
+        if (!pane) return;
+        const margin = 8;
+        const vh = window.innerHeight;
+        const maxH = vh - margin * 2;
+
+        // Constrain height first
+        pane.style.maxHeight = `${maxH}px`;
+        pane.style.overflow = 'auto';
+
+        // Measure after constraining
+        const rect = pane.getBoundingClientRect();
+        let shiftY = 0;
+        if (rect.top < margin) {
+          shiftY = margin - rect.top;
+        }
+        if (rect.bottom > vh - margin) {
+          shiftY = vh - margin - rect.bottom;
+        }
+        if (shiftY !== 0) {
+          const current = pane.style.transform || '';
+          const existingTranslate = current.match(/translateY\(([^)]+)\)/);
+          const existingY = existingTranslate ? parseFloat(existingTranslate[1]) : 0;
+          pane.style.transform = current.replace(/translateY\([^)]+\)/, '').trim()
+            + ` translateY(${existingY + shiftY}px)`;
+        }
+      });
     });
   }
 
