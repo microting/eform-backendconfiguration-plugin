@@ -699,36 +699,34 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   private ensureOverlayInViewport(overlayRef: OverlayRef) {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const pane = overlayRef.overlayElement;
-        if (!pane) return;
-        const margin = 8;
-        const vh = window.innerHeight;
-        const maxH = vh - margin * 2;
+    const apply = () => {
+      const pane = overlayRef.overlayElement;
+      if (!pane) return;
+      const margin = 8;
+      const vh = window.innerHeight;
+      pane.style.maxHeight = `${vh - margin * 2}px`;
+      const rect = pane.getBoundingClientRect();
+      if (rect.height <= 0) return;
+      if (rect.top < margin) {
+        pane.style.top = `${margin}px`;
+      } else if (rect.bottom > vh - margin) {
+        const newTop = Math.max(margin, vh - margin - rect.height);
+        pane.style.top = `${newTop}px`;
+      }
+    };
 
-        // Constrain height first
-        pane.style.maxHeight = `${maxH}px`;
-        pane.style.overflow = 'auto';
+    requestAnimationFrame(() => requestAnimationFrame(apply));
 
-        // Measure after constraining
-        const rect = pane.getBoundingClientRect();
-        let shiftY = 0;
-        if (rect.top < margin) {
-          shiftY = margin - rect.top;
-        }
-        if (rect.bottom > vh - margin) {
-          shiftY = vh - margin - rect.bottom;
-        }
-        if (shiftY !== 0) {
-          const current = pane.style.transform || '';
-          const existingTranslate = current.match(/translateY\(([^)]+)\)/);
-          const existingY = existingTranslate ? parseFloat(existingTranslate[1]) : 0;
-          pane.style.transform = current.replace(/translateY\([^)]+\)/, '').trim()
-            + ` translateY(${existingY + shiftY}px)`;
-        }
-      });
-    });
+    const pane = overlayRef.overlayElement;
+    if (pane && typeof ResizeObserver !== 'undefined') {
+      const resizeObs = new ResizeObserver(() => apply());
+      resizeObs.observe(pane);
+      overlayRef.detachments().subscribe(() => resizeObs.disconnect());
+    }
+
+    const onWinResize = () => apply();
+    window.addEventListener('resize', onWinResize);
+    overlayRef.detachments().subscribe(() => window.removeEventListener('resize', onWinResize));
   }
 
   private pickAnchorX(cellLeft: number, cellRight: number): number {
