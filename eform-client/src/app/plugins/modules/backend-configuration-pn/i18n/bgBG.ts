@@ -415,4 +415,6 @@ export const bgBG = {
   After: 'След',
   occurrences: 'събития',
   Done: 'Готово',
+  'Could not save the event': 'Събитието не можа да бъде запазено',
+  Error: 'Грешка',
 };

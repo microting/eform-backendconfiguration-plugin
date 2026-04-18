@@ -415,4 +415,6 @@ export const esES = {
   After: 'Después',
   occurrences: 'sucesos',
   Done: 'Hecho',
+  'Could not save the event': 'No se pudo guardar el evento.',
+  Error: 'Error',
 };

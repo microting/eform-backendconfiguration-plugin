@@ -415,4 +415,6 @@ export const skSK = {
   After: 'Po',
   occurrences: 'výskyty',
   Done: 'Hotovo',
+  'Could not save the event': 'Udalosť sa nepodarilo uložiť',
+  Error: 'Chyba',
 };

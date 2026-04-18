@@ -415,4 +415,6 @@ export const ptBR = {
   After: 'Depois',
   occurrences: 'ocorrências',
   Done: 'Feito',
+  'Could not save the event': 'Não foi possível salvar o evento.',
+  Error: 'Erro',
 };

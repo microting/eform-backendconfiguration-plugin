@@ -415,4 +415,6 @@ export const itIT = {
   After: 'Dopo',
   occurrences: 'eventi',
   Done: 'Fatto',
+  'Could not save the event': 'Impossibile salvare l&#39;evento',
+  Error: 'Errore',
 };

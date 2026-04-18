@@ -436,4 +436,6 @@ export const enUS= {
   'After': 'After',
   'occurrences': 'occurrences',
   'Done': 'Done',
+  'Could not save the event': 'Could not save the event',
+  'Error': 'Error',
 };

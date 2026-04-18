@@ -415,4 +415,6 @@ export const ukUA = {
   After: 'Після',
   occurrences: 'події',
   Done: 'Готово',
+  'Could not save the event': 'Не вдалося зберегти подію',
+  Error: 'Помилка',
 };

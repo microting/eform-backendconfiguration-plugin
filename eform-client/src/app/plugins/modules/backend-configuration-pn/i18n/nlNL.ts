@@ -415,4 +415,6 @@ export const nlNL = {
   After: 'Na',
   occurrences: 'gebeurtenissen',
   Done: 'Klaar',
+  'Could not save the event': 'Het evenement kon niet worden opgeslagen.',
+  Error: 'Fout',
 };

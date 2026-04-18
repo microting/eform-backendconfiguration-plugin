@@ -415,4 +415,6 @@ export const csCZ = {
   After: 'Po',
   occurrences: 'výskyty',
   Done: 'Hotovo',
+  'Could not save the event': 'Událost se nepodařilo uložit',
+  Error: 'Chyba',
 };

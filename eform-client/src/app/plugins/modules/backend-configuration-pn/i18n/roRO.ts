@@ -415,4 +415,6 @@ export const roRO = {
   After: 'După',
   occurrences: 'apariții',
   Done: 'Făcut',
+  'Could not save the event': 'Nu s-a putut salva evenimentul',
+  Error: 'Eroare',
 };

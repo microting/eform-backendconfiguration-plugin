@@ -415,4 +415,6 @@ export const elGR = {
   After: 'Μετά',
   occurrences: 'εμφανίσεις',
   Done: 'Γινώμενος',
+  'Could not save the event': 'Δεν ήταν δυνατή η αποθήκευση του συμβάντος',
+  Error: 'Σφάλμα',
 };

@@ -415,4 +415,6 @@ export const fiFI = {
   After: 'Jälkeen',
   occurrences: 'esiintymät',
   Done: 'Tehty',
+  'Could not save the event': 'Tapahtumaa ei voitu tallentaa',
+  Error: 'Virhe',
 };

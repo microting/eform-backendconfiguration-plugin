@@ -469,4 +469,6 @@ export const deDE = {
   After: 'Nach',
   occurrences: 'Vorkommen',
   Done: 'Erledigt',
+  'Could not save the event': 'Das Ereignis konnte nicht gespeichert werden.',
+  Error: 'Fehler',
 };

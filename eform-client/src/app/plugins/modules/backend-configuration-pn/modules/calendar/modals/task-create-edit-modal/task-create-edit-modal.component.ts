@@ -19,6 +19,7 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
+import {ToastrService} from 'ngx-toastr';
 import {of} from 'rxjs';
 import {switchMap, take} from 'rxjs/operators';
 
@@ -88,6 +89,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     private eformVisualEditorService: EformVisualEditorService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private store: Store,
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit() {
@@ -503,8 +505,21 @@ export class TaskCreateEditModalComponent implements OnInit {
         ? this.calendarService.updateTask(payload, (scope ?? 'this') as RepeatEditScope)
         : this.calendarService.createTask(payload);
 
-      obs.subscribe(res => {
-        if (res && res.success) this.close(true);
+      obs.subscribe({
+        next: res => {
+          if (res && res.success) {
+            this.close(true);
+          } else {
+            const msg = (res && res.message)
+              ? res.message
+              : this.translate.instant('Could not save the event');
+            this.toastr.error(msg, this.translate.instant('Error'));
+          }
+        },
+        error: err => {
+          const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');
+          this.toastr.error(msg, this.translate.instant('Error'));
+        },
       });
     };
 

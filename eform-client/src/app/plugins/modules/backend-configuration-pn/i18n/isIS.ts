@@ -415,4 +415,6 @@ export const isIS = {
   After: 'Eftir',
   occurrences: 'atvik',
   Done: 'Lokið',
+  'Could not save the event': 'Gat ekki vistað viðburðinn',
+  Error: 'Villa',
 };

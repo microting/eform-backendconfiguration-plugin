@@ -415,4 +415,6 @@ export const huHU = {
   After: 'Után',
   occurrences: 'előfordulások',
   Done: 'Kész',
+  'Could not save the event': 'Nem sikerült menteni az eseményt',
+  Error: 'Hiba',
 };

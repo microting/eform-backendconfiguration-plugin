@@ -415,4 +415,6 @@ export const slSL = {
   After: 'Po',
   occurrences: 'dogodki',
   Done: 'Končano',
+  'Could not save the event': 'Dogodka ni bilo mogoče shraniti',
+  Error: 'Napaka',
 };

@@ -415,4 +415,6 @@ export const noNO = {
   After: 'Etter',
   occurrences: 'forekomster',
   Done: 'Ferdig',
+  'Could not save the event': 'Kunne ikke lagre hendelsen',
+  Error: 'Feil',
 };

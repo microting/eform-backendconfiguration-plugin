@@ -415,4 +415,6 @@ export const lvLV = {
   After: 'Pēc',
   occurrences: 'gadījumi',
   Done: 'Pabeigts',
+  'Could not save the event': 'Nevarēja saglabāt notikumu',
+  Error: 'Kļūda',
 };

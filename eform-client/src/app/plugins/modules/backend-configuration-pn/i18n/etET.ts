@@ -415,4 +415,6 @@ export const etET = {
   After: 'Pärast',
   occurrences: 'esinemised',
   Done: 'Valmis',
+  'Could not save the event': 'Sündmust ei õnnestunud salvestada',
+  Error: 'Viga',
 };

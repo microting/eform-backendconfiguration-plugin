@@ -415,4 +415,6 @@ export const frFR = {
   After: 'Après',
   occurrences: 'occurrences',
   Done: 'Fait',
+  'Could not save the event': 'Impossible d&#39;enregistrer l&#39;événement',
+  Error: 'Erreur',
 };

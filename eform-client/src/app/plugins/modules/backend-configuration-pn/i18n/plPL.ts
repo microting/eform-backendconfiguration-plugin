@@ -415,4 +415,6 @@ export const plPL = {
   After: 'Po',
   occurrences: 'wystąpienia',
   Done: 'Zrobione',
+  'Could not save the event': 'Nie udało się zapisać wydarzenia',
+  Error: 'Błąd',
 };

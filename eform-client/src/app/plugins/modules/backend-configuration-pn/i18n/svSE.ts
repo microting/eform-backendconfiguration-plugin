@@ -415,4 +415,6 @@ export const svSE = {
   After: 'Efter',
   occurrences: 'händelser',
   Done: 'Gjort',
+  'Could not save the event': 'Kunde inte spara händelsen',
+  Error: 'Fel',
 };

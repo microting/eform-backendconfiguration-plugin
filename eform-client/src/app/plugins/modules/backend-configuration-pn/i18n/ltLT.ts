@@ -415,4 +415,6 @@ export const ltLT = {
   After: 'Po',
   occurrences: 'įvykiai',
   Done: 'Atlikta',
+  'Could not save the event': 'Nepavyko išsaugoti įvykio',
+  Error: 'Klaida',
 };

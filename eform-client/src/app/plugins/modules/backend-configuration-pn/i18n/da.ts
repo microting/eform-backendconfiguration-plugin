@@ -416,4 +416,6 @@ export const da = {
   After: 'Efter',
   occurrences: 'forekomster',
   Done: 'Færdig',
+  'Could not save the event': 'Kunne ikke gemme begivenheden',
+  Error: 'Fejl',
 };
