@@ -428,4 +428,12 @@ export const enUS= {
   'Teamnavn': 'Team name',
   'Slet team': 'Delete team',
   'Opret team': 'Create team',
+  'Custom repeat': 'Custom repeat',
+  'Repeat on': 'Repeat on',
+  'Ends': 'Ends',
+  'Never': 'Never',
+  'On': 'On',
+  'After': 'After',
+  'occurrences': 'occurrences',
+  'Done': 'Done',
 };
