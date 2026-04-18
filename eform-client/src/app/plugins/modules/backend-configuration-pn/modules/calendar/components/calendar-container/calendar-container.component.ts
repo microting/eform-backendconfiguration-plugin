@@ -350,6 +350,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
@@ -515,6 +516,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskPreviewModalComponent, null, popoverInjector);
     const componentRef = this.previewOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.previewOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
@@ -593,6 +595,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
@@ -659,6 +662,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
@@ -692,6 +696,21 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   private clampAnchorY(y: number): number {
     return Math.max(8, Math.min(y, window.innerHeight - 8));
+  }
+
+  private ensureOverlayInViewport(overlayRef: OverlayRef) {
+    setTimeout(() => {
+      const pane = overlayRef.overlayElement;
+      if (!pane) return;
+      const rect = pane.getBoundingClientRect();
+      const vw = window.innerHeight;
+      const margin = 8;
+      if (rect.top < margin) {
+        pane.style.transform = `translateY(${margin - rect.top}px)`;
+      } else if (rect.bottom > vw - margin) {
+        pane.style.transform = `translateY(${vw - margin - rect.bottom}px)`;
+      }
+    });
   }
 
   private pickAnchorX(cellLeft: number, cellRight: number): number {

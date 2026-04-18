@@ -3,10 +3,11 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
-  max-height: 100%;
+  max-height: calc(100vh - 16px);
   display: flex;
   flex-direction: column;
 }
+
 
 // Scrolling middle zone — keeps close-row and actions pinned
 .gcal-scroll-body {
