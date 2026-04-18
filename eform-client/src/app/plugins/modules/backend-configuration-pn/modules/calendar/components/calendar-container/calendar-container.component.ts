@@ -312,9 +312,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -482,9 +483,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.previewOverlayRef = this.overlay.create({
@@ -552,9 +554,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -616,9 +619,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -684,6 +688,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
           {originX: 'start', originY: 'bottom', overlayX: 'end', overlayY: 'top'},
         ];
+  }
+
+  private clampAnchorY(y: number): number {
+    return Math.max(8, Math.min(y, window.innerHeight - 8));
   }
 
   private pickAnchorX(cellLeft: number, cellRight: number): number {
