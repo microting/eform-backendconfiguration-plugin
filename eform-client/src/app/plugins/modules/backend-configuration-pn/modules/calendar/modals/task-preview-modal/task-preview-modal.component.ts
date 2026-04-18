@@ -69,10 +69,10 @@ export class TaskPreviewModalComponent {
     const rule = this.data.task.repeatRule;
     const labels: Record<string, string> = {
       daily: this.translate.instant('Daily'),
-      weekly: this.translate.instant('Weekly'),
-      weekdays: this.translate.instant('Every weekday'),
-      monthly: this.translate.instant('Monthly'),
-      yearly: this.translate.instant('Yearly'),
+      weeklyOne: this.translate.instant('Weekly'),
+      weeklyAll: this.translate.instant('Every weekday'),
+      monthlyDom: this.translate.instant('Monthly'),
+      yearlyOne: this.translate.instant('Yearly'),
       custom: this.translate.instant('Custom'),
     };
     return labels[rule] ?? rule;

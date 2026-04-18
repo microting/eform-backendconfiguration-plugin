@@ -1,10 +1,10 @@
 export type CalendarRepeatRule =
   | 'none'
   | 'daily'
-  | 'weekly'
-  | 'weekdays'
-  | 'monthly'
-  | 'yearly'
+  | 'weeklyOne'
+  | 'weeklyAll'
+  | 'monthlyDom'
+  | 'yearlyOne'
   | 'custom';
 
 export interface CalendarTaskModel {

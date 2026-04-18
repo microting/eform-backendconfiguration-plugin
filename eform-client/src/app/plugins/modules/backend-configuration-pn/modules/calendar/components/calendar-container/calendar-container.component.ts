@@ -739,9 +739,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     if (!repeatType || repeatType === 0) return 'none';
     switch (repeatType) {
       case 1: return repeatEvery === 1 ? 'daily' : 'custom';
-      case 2: return repeatEvery === 1 ? 'weekly' : 'custom';
-      case 3: return repeatEvery === 1 ? 'monthly' : 'custom';
-      default: return 'none';
+      case 2: return repeatEvery === 1 ? 'weeklyOne' : 'custom';
+      case 3: return repeatEvery === 1 ? 'monthlyDom' : 'custom';
+      case 4: return repeatEvery === 1 ? 'yearlyOne' : 'custom';
+      default: return 'custom';
     }
   }
 
