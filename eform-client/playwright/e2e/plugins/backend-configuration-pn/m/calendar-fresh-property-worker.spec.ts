@@ -115,19 +115,26 @@ test.describe('Calendar: save event on fresh property with newly-assigned worker
 
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
-    await page.goto('http://localhost:4200');
-    await new LoginPage(page).login();
+    try {
+      await page.goto('http://localhost:4200');
+      await new LoginPage(page).login();
 
-    // Workers reference properties, so delete workers first.
-    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
-    await workersPage.goToPropertyWorkers();
-    await page.waitForTimeout(1000);
-    await workersPage.clearTable();
+      // Workers reference properties, so delete workers first.
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      await workersPage.goToPropertyWorkers();
+      await page.waitForTimeout(1000);
+      await workersPage.clearTable().catch(err =>
+        console.log(`worker cleanup failed (non-fatal): ${err?.message ?? err}`)
+      );
 
-    const propertiesPage = new BackendConfigurationPropertiesPage(page);
-    await propertiesPage.goToProperties();
-    await page.waitForTimeout(1000);
-    await propertiesPage.clearTable();
-    await page.close();
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+      await propertiesPage.goToProperties();
+      await page.waitForTimeout(1000);
+      await propertiesPage.clearTable().catch(err =>
+        console.log(`property cleanup failed (non-fatal): ${err?.message ?? err}`)
+      );
+    } finally {
+      await page.close();
+    }
   });
 });
