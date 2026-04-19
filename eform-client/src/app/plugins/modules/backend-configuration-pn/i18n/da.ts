@@ -418,4 +418,5 @@ export const da = {
   Done: 'Færdig',
   'Could not save the event': 'Kunne ikke gemme begivenheden',
   Error: 'Fejl',
+  'At least one worker must be assigned': 'Mindst én medarbejder skal tildeles',
 };

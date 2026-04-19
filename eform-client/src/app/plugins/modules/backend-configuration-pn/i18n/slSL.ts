@@ -417,4 +417,5 @@ export const slSL = {
   Done: 'Končano',
   'Could not save the event': 'Dogodka ni bilo mogoče shraniti',
   Error: 'Napaka',
+  'At least one worker must be assigned': 'Dodeljen mora biti vsaj en delavec',
 };

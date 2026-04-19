@@ -417,4 +417,5 @@ export const ltLT = {
   Done: 'Atlikta',
   'Could not save the event': 'Nepavyko išsaugoti įvykio',
   Error: 'Klaida',
+  'At least one worker must be assigned': 'Turi būti priskirtas bent vienas darbuotojas',
 };

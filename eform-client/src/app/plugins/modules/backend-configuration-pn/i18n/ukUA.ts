@@ -417,4 +417,5 @@ export const ukUA = {
   Done: 'Готово',
   'Could not save the event': 'Не вдалося зберегти подію',
   Error: 'Помилка',
+  'At least one worker must be assigned': 'Повинен бути призначений хоча б один працівник',
 };

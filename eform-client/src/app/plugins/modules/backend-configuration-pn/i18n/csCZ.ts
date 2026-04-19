@@ -417,4 +417,5 @@ export const csCZ = {
   Done: 'Hotovo',
   'Could not save the event': 'Událost se nepodařilo uložit',
   Error: 'Chyba',
+  'At least one worker must be assigned': 'Musí být přidělen alespoň jeden pracovník',
 };

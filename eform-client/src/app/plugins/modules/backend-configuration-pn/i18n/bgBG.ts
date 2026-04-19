@@ -417,4 +417,5 @@ export const bgBG = {
   Done: 'Готово',
   'Could not save the event': 'Събитието не можа да бъде запазено',
   Error: 'Грешка',
+  'At least one worker must be assigned': 'Трябва да бъде назначен поне един работник',
 };

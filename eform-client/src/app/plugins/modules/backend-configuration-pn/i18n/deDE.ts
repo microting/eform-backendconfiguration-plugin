@@ -471,4 +471,5 @@ export const deDE = {
   Done: 'Erledigt',
   'Could not save the event': 'Das Ereignis konnte nicht gespeichert werden.',
   Error: 'Fehler',
+  'At least one worker must be assigned': 'Mindestens ein Arbeiter muss zugewiesen werden.',
 };

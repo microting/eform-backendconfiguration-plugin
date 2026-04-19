@@ -417,4 +417,5 @@ export const hrHR = {
   Done: 'Gotovo',
   'Could not save the event': 'Spremanje događaja nije uspjelo',
   Error: 'Pogreška',
+  'At least one worker must be assigned': 'Mora biti dodijeljen barem jedan radnik',
 };

@@ -438,4 +438,5 @@ export const enUS= {
   'Done': 'Done',
   'Could not save the event': 'Could not save the event',
   'Error': 'Error',
+  'At least one worker must be assigned': 'At least one worker must be assigned',
 };

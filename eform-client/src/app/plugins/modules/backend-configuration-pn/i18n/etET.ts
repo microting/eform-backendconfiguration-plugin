@@ -417,4 +417,5 @@ export const etET = {
   Done: 'Valmis',
   'Could not save the event': 'Sündmust ei õnnestunud salvestada',
   Error: 'Viga',
+  'At least one worker must be assigned': 'Vähemalt üks töötaja peab olema määratud',
 };

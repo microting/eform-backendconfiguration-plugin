@@ -417,4 +417,5 @@ export const isIS = {
   Done: 'Lokið',
   'Could not save the event': 'Gat ekki vistað viðburðinn',
   Error: 'Villa',
+  'At least one worker must be assigned': 'Að minnsta kosti einn starfsmaður verður að vera úthlutaður',
 };

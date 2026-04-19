@@ -417,4 +417,5 @@ export const lvLV = {
   Done: 'Pabeigts',
   'Could not save the event': 'Nevarēja saglabāt notikumu',
   Error: 'Kļūda',
+  'At least one worker must be assigned': 'Jāpiešķir vismaz viens darbinieks',
 };

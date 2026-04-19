@@ -417,4 +417,5 @@ export const nlNL = {
   Done: 'Klaar',
   'Could not save the event': 'Het evenement kon niet worden opgeslagen.',
   Error: 'Fout',
+  'At least one worker must be assigned': 'Er moet ten minste één werknemer worden toegewezen.',
 };

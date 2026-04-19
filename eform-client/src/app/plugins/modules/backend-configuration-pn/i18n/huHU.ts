@@ -417,4 +417,5 @@ export const huHU = {
   Done: 'Kész',
   'Could not save the event': 'Nem sikerült menteni az eseményt',
   Error: 'Hiba',
+  'At least one worker must be assigned': 'Legalább egy munkavállalót hozzá kell rendelni',
 };

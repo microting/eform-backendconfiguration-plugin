@@ -417,4 +417,5 @@ export const plPL = {
   Done: 'Zrobione',
   'Could not save the event': 'Nie udało się zapisać wydarzenia',
   Error: 'Błąd',
+  'At least one worker must be assigned': 'Należy przypisać co najmniej jednego pracownika',
 };

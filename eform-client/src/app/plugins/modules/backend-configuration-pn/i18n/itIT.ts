@@ -417,4 +417,5 @@ export const itIT = {
   Done: 'Fatto',
   'Could not save the event': 'Impossibile salvare l&#39;evento',
   Error: 'Errore',
+  'At least one worker must be assigned': 'Deve essere assegnato almeno un lavoratore',
 };

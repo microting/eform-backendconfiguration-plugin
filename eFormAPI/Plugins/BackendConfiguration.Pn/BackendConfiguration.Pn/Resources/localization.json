@@ -4624,6 +4624,37 @@
     }
   },
   {
+    "Key": "AtLeastOneWorkerMustBeAssigned",
+    "LocalizedValue": {
+      "da": "Mindst én medarbejder skal tildeles",
+      "de": "Mindestens ein Mitarbeiter muss zugewiesen werden",
+      "en-US": "At least one worker must be assigned",
+      "uk-UA": "Необхідно призначити принаймні одного працівника",
+      "pl-PL": "Co najmniej jeden pracownik musi być przypisany",
+      "no-NO": "Minst én medarbeider må tildeles",
+      "sv-SE": "Minst en arbetare måste tilldelas",
+      "es-ES": "Se debe asignar al menos un trabajador",
+      "fr-FR": "Au moins un travailleur doit être assigné",
+      "it-IT": "Almeno un lavoratore deve essere assegnato",
+      "nl-NL": "Er moet ten minste één medewerker worden toegewezen",
+      "pt-BR": "Pelo menos um trabalhador deve ser atribuído",
+      "pt-PT": "Pelo menos um trabalhador deve ser atribuído",
+      "fi-FI": "Vähintään yksi työntekijä on määritettävä",
+      "et-ET": "Tuleb määrata vähemalt üks töötaja",
+      "lv-LV": "Jābūt piešķirtam vismaz vienam darbiniekam",
+      "lt-LT": "Turi būti priskirtas bent vienas darbuotojas",
+      "ro-RO": "Cel puțin un lucrător trebuie să fie alocat",
+      "hr-HR": "Mora biti dodijeljen najmanje jedan radnik",
+      "sl-SL": "Dodeljen mora biti najmanj en delavec",
+      "cs-CZ": "Musí být přiřazen alespoň jeden pracovník",
+      "sk-SK": "Musí byť priradený aspoň jeden pracovník",
+      "hu-HU": "Legalább egy dolgozót hozzá kell rendelni",
+      "bg-BG": "Трябва да бъде назначен поне един работник",
+      "el-GR": "Πρέπει να ανατεθεί τουλάχιστον ένας εργαζόμενος",
+      "is-IS": "Að minnsta kosti einn starfsmaður verður að vera úthlutaður"
+    }
+  },
+  {
     "Key": "ReportPeriod",
     "LocalizedValue": {
       "da": "Rapport periode",

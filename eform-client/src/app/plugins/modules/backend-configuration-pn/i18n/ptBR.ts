@@ -417,4 +417,5 @@ export const ptBR = {
   Done: 'Feito',
   'Could not save the event': 'Não foi possível salvar o evento.',
   Error: 'Erro',
+  'At least one worker must be assigned': 'Pelo menos um trabalhador deve ser designado.',
 };

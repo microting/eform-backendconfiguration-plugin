@@ -417,4 +417,5 @@ export const noNO = {
   Done: 'Ferdig',
   'Could not save the event': 'Kunne ikke lagre hendelsen',
   Error: 'Feil',
+  'At least one worker must be assigned': 'Minst én arbeider må tildeles',
 };

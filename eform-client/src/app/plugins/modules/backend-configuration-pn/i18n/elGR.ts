@@ -417,4 +417,5 @@ export const elGR = {
   Done: 'Γινώμενος',
   'Could not save the event': 'Δεν ήταν δυνατή η αποθήκευση του συμβάντος',
   Error: 'Σφάλμα',
+  'At least one worker must be assigned': 'Πρέπει να ανατεθεί τουλάχιστον ένας εργαζόμενος',
 };

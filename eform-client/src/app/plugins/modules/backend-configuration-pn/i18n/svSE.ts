@@ -417,4 +417,5 @@ export const svSE = {
   Done: 'Gjort',
   'Could not save the event': 'Kunde inte spara händelsen',
   Error: 'Fel',
+  'At least one worker must be assigned': 'Minst en arbetare måste tilldelas',
 };

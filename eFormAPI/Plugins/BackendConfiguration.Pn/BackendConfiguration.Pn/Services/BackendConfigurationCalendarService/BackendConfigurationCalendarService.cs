@@ -404,6 +404,17 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
+            // Validate: at least one worker must be assigned. Events without
+            // an assignee would be downgraded to NotActive by task-wizard and
+            // vanish from the calendar view (GetTasksForWeek filters Status),
+            // so creation is rejected here with a clear error rather than
+            // silently producing an invisible event.
+            if (createModel.Sites is null || createModel.Sites.Count == 0)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
+            }
+
             // Resolve FolderId: if not provided, find or create the "00. Logbøger" folder
             var resolvedFolderId = createModel.FolderId;
             if (resolvedFolderId is null or 0)
@@ -489,6 +500,15 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("CannotCreateTaskInThePast"));
+            }
+
+            // Validate: at least one worker must remain assigned. Clearing
+            // assignees would downgrade the task to NotActive and hide it
+            // from the calendar view (same as the Create path).
+            if (updateModel.Sites is null || updateModel.Sites.Count == 0)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
             // Delegate to TaskWizard service for full task field updates

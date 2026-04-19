@@ -417,4 +417,5 @@ export const roRO = {
   Done: 'Făcut',
   'Could not save the event': 'Nu s-a putut salva evenimentul',
   Error: 'Eroare',
+  'At least one worker must be assigned': 'Cel puțin un lucrător trebuie desemnat',
 };

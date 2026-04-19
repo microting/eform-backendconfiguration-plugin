@@ -417,4 +417,5 @@ export const esES = {
   Done: 'Hecho',
   'Could not save the event': 'No se pudo guardar el evento.',
   Error: 'Error',
+  'At least one worker must be assigned': 'Se debe asignar al menos un trabajador.',
 };

@@ -417,4 +417,5 @@ export const skSK = {
   Done: 'Hotovo',
   'Could not save the event': 'Udalosť sa nepodarilo uložiť',
   Error: 'Chyba',
+  'At least one worker must be assigned': 'Musí byť pridelený aspoň jeden pracovník',
 };

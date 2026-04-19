@@ -32,7 +32,8 @@ export class CalendarPage {
   }
 
   // Fill the create event modal. Always selects the first Report headline
-  // (planning tag) option because the backend requires one.
+  // (planning tag) option and the first available assignee because the
+  // backend requires both.
   async fillCreateModal(data: {
     title: string;
     eformName?: string;
@@ -52,6 +53,15 @@ export class CalendarPage {
     await tagSelect.click();
     await this.page.waitForTimeout(500);
     await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.page.waitForTimeout(300);
+
+    // Pick the first assignee — backend rejects events with no sites.
+    const assigneeSelect = this.page.locator('#calendarEventAssignee');
+    await assigneeSelect.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    // Close the multi-select dropdown by clicking outside it.
+    await this.page.locator('#calendarEventTitle').click();
     await this.page.waitForTimeout(300);
   }
 

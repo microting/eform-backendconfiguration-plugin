@@ -417,4 +417,5 @@ export const fiFI = {
   Done: 'Tehty',
   'Could not save the event': 'Tapahtumaa ei voitu tallentaa',
   Error: 'Virhe',
+  'At least one worker must be assigned': 'Vähintään yksi työntekijä on nimettävä',
 };

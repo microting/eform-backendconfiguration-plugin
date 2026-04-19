@@ -6,12 +6,26 @@ import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
 } from '../BackendConfigurationProperties.page';
+import {
+  BackendConfigurationPropertyWorkersPage,
+  PropertyWorker,
+} from '../BackendConfigurationPropertyWorkers.page';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
   chrNumber: generateRandmString(5),
   address: generateRandmString(5),
   cvrNumber: '1111111',
+};
+
+// Calendar events require at least one assignee (backend enforces), so
+// create a worker assigned to the property before saving any event.
+const worker: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const testEvent = {
@@ -30,10 +44,14 @@ test.describe('Calendar E2E Tests', () => {
 
     const calendarPage = new CalendarPage(page);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
 
-    // Step 1: Create property
+    // Step 1: Create property + worker assigned to it (calendar create
+    // requires at least one worker).
     await propertiesPage.goToProperties();
     await propertiesPage.createProperty(property);
+    await workersPage.goToPropertyWorkers();
+    await workersPage.create(worker);
 
     // Step 2: Navigate to calendar (direct URL — no sidebar entry)
     await calendarPage.goToCalendar();
@@ -125,59 +143,7 @@ test.describe('Calendar E2E Tests', () => {
     );
     await calendarPage.selectProperty(property.name as string);
     await folderResponsePromise;
-    const weekTasksResponse = await weekTasksResponsePromise;
-
-    // E1 diagnostic: log the captured request (URL + body) and response
-    // body so we can distinguish a stale pre-selection capture from the
-    // real post-selection fetch, and see exactly what the server returned.
-    const weekTasksRequest = weekTasksResponse.request();
-    const weekTasksReqBody = weekTasksRequest.postData();
-    const weekTasksRawBody = await weekTasksResponse.text().catch(() => '');
-    console.log(`week-tasks REQUEST url: ${weekTasksRequest.url()}`);
-    console.log(`week-tasks REQUEST body: ${weekTasksReqBody}`);
-    console.log(`week-tasks RESPONSE body (first 800): ${weekTasksRawBody.slice(0, 800)}`);
-    const weekTasksBody = (() => {
-      try { return JSON.parse(weekTasksRawBody); } catch { return null; }
-    })();
-    console.log(
-      `week-tasks payload: count=${weekTasksBody?.model?.length ?? 0}, titles=${
-        weekTasksBody?.model?.map((t: any) => t.title).join(', ') ?? 'none'
-      }`
-    );
-
-    // E2: bypass the UI entirely — fetch /tasks/week directly with the
-    // property from the captured request and wide-open filters. This
-    // proves whether the event is actually persisted, independent of
-    // any frontend state or board/site filter.
-    const directProbe = await page.evaluate(async (capturedBodyStr: string | null) => {
-      try {
-        const auth = JSON.parse(localStorage.getItem('auth') || '{}');
-        const token = auth?.token?.accessToken;
-        const captured = capturedBodyStr ? JSON.parse(capturedBodyStr) : {};
-        const body = {
-          propertyId: captured.propertyId,
-          weekStart: captured.weekStart,
-          weekEnd: captured.weekEnd,
-          boardIds: [],
-          tagNames: [],
-          siteIds: [],
-        };
-        const res = await fetch('/api/backend-configuration-pn/calendar/tasks/week', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        });
-        const txt = await res.text();
-        return { status: res.status, bodyUsed: body, response: txt.slice(0, 1200) };
-      } catch (e: any) {
-        return { error: String(e?.message ?? e) };
-      }
-    }, weekTasksReqBody ?? null);
-    console.log(`direct fetch RESULT: ${JSON.stringify(directProbe)}`);
+    await weekTasksResponsePromise;
 
     // The event from the previous test should be visible. 30s gives
     // generous headroom over the 10s default for slow CI renders.
@@ -230,6 +196,12 @@ test.describe('Calendar E2E Tests', () => {
     const page = await browser.newPage();
     await page.goto('http://localhost:4200');
     await new LoginPage(page).login();
+
+    // Workers reference properties, so delete workers first.
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+    await workersPage.goToPropertyWorkers();
+    await page.waitForTimeout(1000);
+    await workersPage.clearTable();
 
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     await propertiesPage.goToProperties();

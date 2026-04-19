@@ -98,6 +98,7 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'Assign to...' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventAssignee"
             [formControl]="assigneeControl"
             [items]="filteredEmployees"
             bindValue="id"
@@ -245,7 +246,10 @@
   </div>
 
   <div class="gcal-actions" *ngIf="!isReadonly">
-    <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
+    <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
+            [disabled]="titleControl.invalid || !(assigneeControl.value?.length)"
+            [title]="!(assigneeControl.value?.length) ? ('At least one worker must be assigned' | translate) : ''"
+            (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>
   </div>
