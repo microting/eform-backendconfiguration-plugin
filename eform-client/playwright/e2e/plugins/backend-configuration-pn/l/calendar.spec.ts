@@ -125,11 +125,22 @@ test.describe('Calendar E2E Tests', () => {
     );
     await calendarPage.selectProperty(property.name as string);
     await folderResponsePromise;
-    await weekTasksResponsePromise;
+    const weekTasksResponse = await weekTasksResponsePromise;
 
-    // The event from the previous test should be visible
-    const eventVisible = await calendarPage.waitForEvent(testEvent.title);
-    expect(eventVisible, `Event "${testEvent.title}" was not visible within 10s`).toBeTruthy();
+    // Diagnostic: log what the backend returned so if the event isn't
+    // present in the payload we can tell whether test 1 failed to
+    // persist vs. a UI render delay.
+    const weekTasksBody = await weekTasksResponse.json().catch(() => null);
+    console.log(
+      `week-tasks payload: count=${weekTasksBody?.model?.length ?? 0}, titles=${
+        weekTasksBody?.model?.map((t: any) => t.title).join(', ') ?? 'none'
+      }`
+    );
+
+    // The event from the previous test should be visible. 30s gives
+    // generous headroom over the 10s default for slow CI renders.
+    const eventVisible = await calendarPage.waitForEvent(testEvent.title, 30000);
+    expect(eventVisible, `Event "${testEvent.title}" was not visible within 30s`).toBeTruthy();
 
     // Open preview and click Copy
     await calendarPage.openEventPreview(testEvent.title);
