@@ -71,9 +71,11 @@ export class CalendarPage {
     await this.page.waitForTimeout(2000);
   }
 
-  // Find an event by title on the calendar
+  // Find an event by title on the calendar.
+  // Use `.task-block` (the actual rendered class) rather than the Angular
+  // component tag — the latter isn't always matched reliably across builds.
   getEventByTitle(title: string): Locator {
-    return this.page.locator('app-calendar-task-block').filter({ hasText: title });
+    return this.page.locator('.task-block').filter({ hasText: title });
   }
 
   // Wait for an event tile to appear on the calendar. Events render async

@@ -143,51 +143,11 @@ test.describe('Calendar E2E Tests', () => {
     );
     await calendarPage.selectProperty(property.name as string);
     await folderResponsePromise;
-    const weekTasksResponse = await weekTasksResponsePromise;
+    await weekTasksResponsePromise;
 
-    // Diagnostic: event creation succeeded in test 1 but the copy flow
-    // can't see the event on re-render. Log what's in the captured
-    // /tasks/week payload, and cross-check with a direct fetch that
-    // has wide-open filters. Remove once the test is stable.
-    const weekTasksReqBody = weekTasksResponse.request().postData();
-    const weekTasksRawBody = await weekTasksResponse.text().catch(() => '');
-    console.log(`week-tasks REQUEST body: ${weekTasksReqBody}`);
-    console.log(`week-tasks RESPONSE body (first 1000): ${weekTasksRawBody.slice(0, 1000)}`);
-
-    const directProbe = await page.evaluate(async (capturedBodyStr: string | null) => {
-      try {
-        const auth = JSON.parse(localStorage.getItem('auth') || '{}');
-        const token = auth?.token?.accessToken;
-        const captured = capturedBodyStr ? JSON.parse(capturedBodyStr) : {};
-        const body = {
-          propertyId: captured.propertyId,
-          weekStart: captured.weekStart,
-          weekEnd: captured.weekEnd,
-          boardIds: [],
-          tagNames: [],
-          siteIds: [],
-        };
-        const res = await fetch('/api/backend-configuration-pn/calendar/tasks/week', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        });
-        const txt = await res.text();
-        return { status: res.status, bodyUsed: body, response: txt.slice(0, 1500) };
-      } catch (e: any) {
-        return { error: String(e?.message ?? e) };
-      }
-    }, weekTasksReqBody ?? null);
-    console.log(`direct fetch RESULT: ${JSON.stringify(directProbe)}`);
-
-    // The event from the previous test should be visible. 30s gives
-    // generous headroom over the 10s default for slow CI renders.
-    const eventVisible = await calendarPage.waitForEvent(testEvent.title, 30000);
-    expect(eventVisible, `Event "${testEvent.title}" was not visible within 30s`).toBeTruthy();
+    // The event from the previous test should be visible.
+    const eventVisible = await calendarPage.waitForEvent(testEvent.title);
+    expect(eventVisible, `Event "${testEvent.title}" was not visible within 10s`).toBeTruthy();
 
     // Open preview and click Copy
     await calendarPage.openEventPreview(testEvent.title);
