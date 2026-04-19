@@ -127,15 +127,57 @@ test.describe('Calendar E2E Tests', () => {
     await folderResponsePromise;
     const weekTasksResponse = await weekTasksResponsePromise;
 
-    // Diagnostic: log what the backend returned so if the event isn't
-    // present in the payload we can tell whether test 1 failed to
-    // persist vs. a UI render delay.
-    const weekTasksBody = await weekTasksResponse.json().catch(() => null);
+    // E1 diagnostic: log the captured request (URL + body) and response
+    // body so we can distinguish a stale pre-selection capture from the
+    // real post-selection fetch, and see exactly what the server returned.
+    const weekTasksRequest = weekTasksResponse.request();
+    const weekTasksReqBody = weekTasksRequest.postData();
+    const weekTasksRawBody = await weekTasksResponse.text().catch(() => '');
+    console.log(`week-tasks REQUEST url: ${weekTasksRequest.url()}`);
+    console.log(`week-tasks REQUEST body: ${weekTasksReqBody}`);
+    console.log(`week-tasks RESPONSE body (first 800): ${weekTasksRawBody.slice(0, 800)}`);
+    const weekTasksBody = (() => {
+      try { return JSON.parse(weekTasksRawBody); } catch { return null; }
+    })();
     console.log(
       `week-tasks payload: count=${weekTasksBody?.model?.length ?? 0}, titles=${
         weekTasksBody?.model?.map((t: any) => t.title).join(', ') ?? 'none'
       }`
     );
+
+    // E2: bypass the UI entirely — fetch /tasks/week directly with the
+    // property from the captured request and wide-open filters. This
+    // proves whether the event is actually persisted, independent of
+    // any frontend state or board/site filter.
+    const directProbe = await page.evaluate(async (capturedBodyStr: string | null) => {
+      try {
+        const auth = JSON.parse(localStorage.getItem('auth') || '{}');
+        const token = auth?.token?.accessToken;
+        const captured = capturedBodyStr ? JSON.parse(capturedBodyStr) : {};
+        const body = {
+          propertyId: captured.propertyId,
+          weekStart: captured.weekStart,
+          weekEnd: captured.weekEnd,
+          boardIds: [],
+          tagNames: [],
+          siteIds: [],
+        };
+        const res = await fetch('/api/backend-configuration-pn/calendar/tasks/week', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+        const txt = await res.text();
+        return { status: res.status, bodyUsed: body, response: txt.slice(0, 1200) };
+      } catch (e: any) {
+        return { error: String(e?.message ?? e) };
+      }
+    }, weekTasksReqBody ?? null);
+    console.log(`direct fetch RESULT: ${JSON.stringify(directProbe)}`);
 
     // The event from the previous test should be visible. 30s gives
     // generous headroom over the 10s default for slow CI renders.
