@@ -67,21 +67,20 @@ test.describe('Calendar E2E Tests', () => {
     await folderResponsePromise;
     await page.waitForTimeout(2000);
 
-    // Step 4: Click a future time slot. Visible week is Mon-Sun (0-6).
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-    let targetDayIndex: number;
-    if (dayOfWeek === 0) {
-      targetDayIndex = 6;
-    } else if (dayOfWeek === 6) {
-      targetDayIndex = 5;
-    } else {
-      targetDayIndex = dayOfWeek;
-    }
-    await calendarPage.clickTimeSlot(targetDayIndex, 10);
+    // Step 4: Navigate to NEXT week so every day is guaranteed in the future.
+    // The calendar rejects clicks on past time slots, which would make
+    // today-based clicks flaky depending on wall-clock time.
+    await page.locator('mat-icon:has-text("chevron_right")').first().click();
+    await page.waitForTimeout(1500);
+
+    // Click Monday at 10:00 in the future week. Day index 0 = Monday.
+    await calendarPage.clickTimeSlot(0, 10);
     await page.waitForTimeout(1000);
 
-    // Step 5: Fill and save
+    // Step 5: wait for modal to actually appear, then fill it.
+    await page
+      .locator('#calendarEventTitle')
+      .waitFor({ state: 'visible', timeout: 15000 });
     await calendarPage.fillCreateModal({ title: testEvent.title });
     await page.waitForTimeout(500);
 
@@ -144,6 +143,17 @@ test.describe('Calendar E2E Tests', () => {
     await calendarPage.selectProperty(property.name as string);
     await folderResponsePromise;
     await weekTasksResponsePromise;
+
+    // Test 1 saved the event in the NEXT week (to avoid past-time click
+    // rejection); advance the week view so we can see it.
+    await page.locator('mat-icon:has-text("chevron_right")').first().click();
+    const nextWeekTasksPromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
+    await nextWeekTasksPromise;
 
     // The event from the previous test should be visible.
     const eventVisible = await calendarPage.waitForEvent(testEvent.title);
