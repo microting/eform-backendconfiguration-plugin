@@ -190,8 +190,10 @@ test.describe('Calendar E2E Tests', () => {
     // Verify copied event appears on the calendar — the app prefixes the
     // title with a locale-dependent "Copy of" / "Kopi af", so just look
     // for any event containing the original title whose display differs.
-    const copiedVisible = await calendarPage.waitForEvent(testEvent.title);
-    expect(copiedVisible, `Copied event containing "${testEvent.title}" not visible within 10s`).toBeTruthy();
+    // 20s because post-save the modal closes, loadTasks refetches, and
+    // the week grid re-renders — more work than the initial render.
+    const copiedVisible = await calendarPage.waitForEvent(testEvent.title, 20000);
+    expect(copiedVisible, `Copied event containing "${testEvent.title}" not visible within 20s`).toBeTruthy();
   });
 
   // Cleanup is best-effort. Each matrix slot runs against an ephemeral DB,
