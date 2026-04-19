@@ -83,9 +83,13 @@ export class CalendarPage {
   // re-renders the week grid), so a sync .isVisible() check would race
   // that render. Returns true if the event becomes visible within the
   // timeout, false otherwise — never throws.
+  //
+  // Uses .first() because in copy flows the same title substring matches
+  // both the original and the "Kopi af … " copy, and Playwright's strict
+  // mode rejects locators with multiple matches.
   async waitForEvent(title: string, timeout = 10000): Promise<boolean> {
     try {
-      await this.getEventByTitle(title).waitFor({ state: 'visible', timeout });
+      await this.getEventByTitle(title).first().waitFor({ state: 'visible', timeout });
       return true;
     } catch {
       return false;
