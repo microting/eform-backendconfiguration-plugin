@@ -78,21 +78,20 @@ test.describe('Calendar: save event on fresh property with newly-assigned worker
     await folderResponsePromise;
     await page.waitForTimeout(2000);
 
-    // Step 5: click a future time slot on the visible week
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-    let targetDayIndex: number;
-    if (dayOfWeek === 0) {
-      targetDayIndex = 6;
-    } else if (dayOfWeek === 6) {
-      targetDayIndex = 5;
-    } else {
-      targetDayIndex = dayOfWeek;
-    }
-    await calendarPage.clickTimeSlot(targetDayIndex, 10);
+    // Step 5: navigate to NEXT week so every day is guaranteed to be in the
+    // future (the calendar rejects clicks on past time slots, which makes
+    // today-based clicks flaky depending on the test's wall-clock time).
+    await page.locator('mat-icon:has-text("chevron_right")').first().click();
+    await page.waitForTimeout(1500);
+
+    // Click Monday at 10:00 in the future week. Day index 0 = Monday.
+    await calendarPage.clickTimeSlot(0, 10);
     await page.waitForTimeout(1000);
 
-    // Step 6: fill the modal (title + eForm + planning tag via page object)
+    // Step 6: wait for modal to actually appear, then fill it.
+    await page
+      .locator('#calendarEventTitle')
+      .waitFor({ state: 'visible', timeout: 15000 });
     await calendarPage.fillCreateModal({ title: testEvent.title });
     await page.waitForTimeout(500);
 
