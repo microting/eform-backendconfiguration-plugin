@@ -75,7 +75,9 @@ public class CalendarGrpcService(
                 NextExecutionTime = task.NextExecutionTime?.ToString(IsoDateTime, CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanningId = task.PlanningId ?? 0,
                 IsAllDay = task.IsAllDay,
-                ExceptionId = task.ExceptionId ?? 0
+                ExceptionId = task.ExceptionId ?? 0,
+                EformId = task.EformId ?? 0,
+                SdkCaseId = task.SdkCaseId ?? 0
             });
         }
 

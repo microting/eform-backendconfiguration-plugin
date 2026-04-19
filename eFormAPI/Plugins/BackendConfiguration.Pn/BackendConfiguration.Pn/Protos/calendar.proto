@@ -39,6 +39,8 @@ message CalendarTaskItem {
   int32 planning_id = 18;              // 0 when null
   bool is_all_day = 19;
   int32 exception_id = 20;             // 0 when null
+  int32 eform_id = 21;
+  int32 sdk_case_id = 22;
 }
 
 message GetTasksForWeekResponse {
