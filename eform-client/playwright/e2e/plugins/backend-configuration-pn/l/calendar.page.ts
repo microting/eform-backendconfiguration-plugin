@@ -66,9 +66,18 @@ export class CalendarPage {
     return this.page.locator('app-calendar-task-block').filter({ hasText: title });
   }
 
-  // Verify event exists on calendar
-  async verifyEventExists(title: string): Promise<boolean> {
-    return await this.getEventByTitle(title).isVisible();
+  // Wait for an event tile to appear on the calendar. Events render async
+  // after the property is selected (GET /tasks/week fires, then Angular
+  // re-renders the week grid), so a sync .isVisible() check would race
+  // that render. Returns true if the event becomes visible within the
+  // timeout, false otherwise — never throws.
+  async waitForEvent(title: string, timeout = 10000): Promise<boolean> {
+    try {
+      await this.getEventByTitle(title).waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Drag an event to a new day/time

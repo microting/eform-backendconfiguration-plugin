@@ -121,8 +121,8 @@ test.describe('Calendar E2E Tests', () => {
     await page.waitForTimeout(2000);
 
     // The event from the previous test should be visible
-    const eventVisible = await calendarPage.verifyEventExists(testEvent.title);
-    expect(eventVisible).toBeTruthy();
+    const eventVisible = await calendarPage.waitForEvent(testEvent.title);
+    expect(eventVisible, `Event "${testEvent.title}" was not visible within 10s`).toBeTruthy();
 
     // Open preview and click Copy
     await calendarPage.openEventPreview(testEvent.title);
@@ -161,9 +161,9 @@ test.describe('Calendar E2E Tests', () => {
     expect(resBody?.success).toBeTruthy();
 
     // Verify copied event appears on the calendar
-    await page.waitForTimeout(2000);
-    const copiedVisible = await calendarPage.verifyEventExists(`Copy of ${testEvent.title}`);
-    expect(copiedVisible).toBeTruthy();
+    const copiedTitle = `Copy of ${testEvent.title}`;
+    const copiedVisible = await calendarPage.waitForEvent(copiedTitle);
+    expect(copiedVisible, `Event "${copiedTitle}" was not visible within 10s`).toBeTruthy();
   });
 
   test.afterAll(async ({ browser }) => {
