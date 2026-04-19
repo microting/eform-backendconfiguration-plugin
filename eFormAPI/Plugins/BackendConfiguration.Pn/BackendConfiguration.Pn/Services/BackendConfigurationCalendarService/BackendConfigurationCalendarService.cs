@@ -1132,6 +1132,7 @@ public class BackendConfigurationCalendarService(
 
     private async Task<int?> ResolveOrCreateLogbøgerFolderAsync(int propertyId)
     {
+        // 1) Folder already linked to this property? Use it.
         var existingFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
             .Include(f => f.AreaProperty)
             .ThenInclude(a => a.Area)
@@ -1148,37 +1149,135 @@ public class BackendConfigurationCalendarService(
             return existingFolder.FolderId;
         }
 
-        var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
-            .Where(x => x.Name == "00. Logbøger")
-            .FirstOrDefaultAsync();
+        // 2) Resolve the Logbøger Area — if it's missing (or its translations are),
+        // seed from BackendConfigurationSeedAreas — same source the plugin-init
+        // seed loop uses (EformBackendConfigurationPlugin.SeedDatabase).
+        int areaId;
+        List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel> areaFolderTranslations;
 
-        if (areaTranslation == null)
+        var existingAreaTranslations = await backendConfigurationPnDbContext.AreaTranslations
+            .Where(x => x.Name == "00. Logbøger")
+            .ToListAsync();
+
+        if (existingAreaTranslations.Count > 0)
         {
-            return null;
+            var sampleAreaId = existingAreaTranslations[0].AreaId;
+            areaId = sampleAreaId;
+            areaFolderTranslations = await backendConfigurationPnDbContext.AreaTranslations
+                .Where(x => x.AreaId == sampleAreaId)
+                .Select(x => new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                {
+                    Name = x.Name,
+                    LanguageId = x.LanguageId,
+                    Description = ""
+                })
+                .ToListAsync();
+        }
+        else
+        {
+            var seededArea = Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreasSeed
+                .Where(a => a.IsDisabled == false)
+                .FirstOrDefault(a => a.AreaTranslations != null
+                    && a.AreaTranslations.Any(t => t.Name == "00. Logbøger"));
+            if (seededArea == null)
+            {
+                logger.LogError("Logbøger area is missing from seed data — cannot resolve folder for property {PropertyId}", propertyId);
+                return null;
+            }
+
+            var existingArea = await backendConfigurationPnDbContext.Areas
+                .FirstOrDefaultAsync(a => a.Id == seededArea.Id);
+            if (existingArea == null)
+            {
+                // Fresh Area + its translations — cascades via EF navigation.
+                await seededArea.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+                areaId = seededArea.Id;
+            }
+            else
+            {
+                // Area row exists but translations don't — reseed translations only.
+                foreach (var translation in seededArea.AreaTranslations)
+                {
+                    var translationCopy = new AreaTranslation
+                    {
+                        AreaId = existingArea.Id,
+                        LanguageId = translation.LanguageId,
+                        Name = translation.Name,
+                        Description = translation.Description,
+                        InfoBox = translation.InfoBox,
+                        Placeholder = translation.Placeholder,
+                        NewItemName = translation.NewItemName
+                    };
+                    await translationCopy.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+                areaId = existingArea.Id;
+            }
+
+            areaFolderTranslations = seededArea.AreaTranslations
+                .Select(t => new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                {
+                    Name = t.Name,
+                    LanguageId = t.LanguageId,
+                    Description = ""
+                })
+                .ToList();
         }
 
+        // 3) Inline only the creation portion of BackendConfigurationPropertyAreasServiceHelper.Update's
+        // default branch — create AreaProperty + SDK folder + ProperyAreaFolder + seed AreaRules.
+        // We skip the Update(...) call because it also computes assignmentsForDelete, which would
+        // destroy any OTHER active AreaProperties this property already has.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-        var propertyAreaUpdateModel = new Infrastructure.Models.PropertyAreas.PropertyAreasUpdateModel
+        var property = await backendConfigurationPnDbContext.Properties
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.Id == propertyId)
+            .FirstAsync();
+
+        var newAreaProperty = new AreaProperty
         {
-            Areas = [new Infrastructure.Models.PropertyAreas.PropertyAreaModel { AreaId = areaTranslation.AreaId, Activated = true }],
-            PropertyId = propertyId
+            CreatedByUserId = userService.UserId,
+            UpdatedByUserId = userService.UserId,
+            AreaId = areaId,
+            PropertyId = propertyId,
+            Checked = true
         };
+        await newAreaProperty.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        await Infrastructure.Helpers.BackendConfigurationPropertyAreasServiceHelper.Update(
-            propertyAreaUpdateModel, core,
-            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userService.UserId);
+        var folderId = await core.FolderCreate(areaFolderTranslations, property.FolderId).ConfigureAwait(false);
 
-        var newFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
-            .Include(f => f.AreaProperty)
-            .ThenInclude(a => a.Area)
-            .ThenInclude(a => a.AreaTranslations)
-            .Where(f => f.AreaProperty.PropertyId == propertyId)
-            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(f => f.AreaProperty.Area.AreaTranslations
-                .Any(t => t.Name == "00. Logbøger"))
-            .FirstOrDefaultAsync();
+        var newAreaFolder = new ProperyAreaFolder
+        {
+            FolderId = folderId,
+            ProperyAreaAsignmentId = newAreaProperty.Id
+        };
+        await newAreaFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        return newFolder?.FolderId;
+        foreach (var seedRule in Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreaRules
+                     .Where(x => x.AreaId == areaId))
+        {
+            seedRule.PropertyId = property.Id;
+            seedRule.FolderId = folderId;
+            seedRule.CreatedByUserId = userService.UserId;
+            seedRule.UpdatedByUserId = userService.UserId;
+            seedRule.ComplianceModifiable = true;
+            seedRule.NotificationsModifiable = true;
+            if (!string.IsNullOrEmpty(seedRule.EformName))
+            {
+                var eformId = await sdkDbContext.CheckListTranslations
+                    .Where(x => x.Text == seedRule.EformName)
+                    .Select(x => x.CheckListId)
+                    .FirstOrDefaultAsync();
+                if (eformId != 0)
+                {
+                    seedRule.EformId = eformId;
+                }
+            }
+
+            await seedRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+
+        return folderId;
     }
 }
