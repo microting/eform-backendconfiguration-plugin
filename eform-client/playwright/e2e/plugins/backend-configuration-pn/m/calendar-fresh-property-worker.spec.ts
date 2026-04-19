@@ -114,27 +114,30 @@ test.describe('Calendar: save event on fresh property with newly-assigned worker
   });
 
   test.afterAll(async ({ browser }) => {
+    // Cleanup is best-effort. Each matrix slot runs against an ephemeral
+    // DB, so leftover rows don't contaminate other jobs. Race the cleanup
+    // against a 60s cap so a hung action-menu never fails the suite.
     const page = await browser.newPage();
-    try {
+    const cleanup = async () => {
       await page.goto('http://localhost:4200');
       await new LoginPage(page).login();
-
-      // Workers reference properties, so delete workers first.
       const workersPage = new BackendConfigurationPropertyWorkersPage(page);
       await workersPage.goToPropertyWorkers();
       await page.waitForTimeout(1000);
-      await workersPage.clearTable().catch(err =>
-        console.log(`worker cleanup failed (non-fatal): ${err?.message ?? err}`)
-      );
-
+      await workersPage.clearTable();
       const propertiesPage = new BackendConfigurationPropertiesPage(page);
       await propertiesPage.goToProperties();
       await page.waitForTimeout(1000);
-      await propertiesPage.clearTable().catch(err =>
-        console.log(`property cleanup failed (non-fatal): ${err?.message ?? err}`)
-      );
-    } finally {
-      await page.close();
+      await propertiesPage.clearTable();
+    };
+    try {
+      await Promise.race([
+        cleanup(),
+        new Promise(resolve => setTimeout(resolve, 60000)),
+      ]);
+    } catch (err: any) {
+      console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
     }
+    try { await page.close(); } catch {}
   });
 });
