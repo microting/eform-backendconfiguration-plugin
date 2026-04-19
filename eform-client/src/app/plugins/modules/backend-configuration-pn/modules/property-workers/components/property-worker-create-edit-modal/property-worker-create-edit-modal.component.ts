@@ -91,6 +91,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   appLanguages: LanguagesModel = new LanguagesModel();
   activeLanguages: Array<any> = [];
   form: FormGroup;
+  // True once async init (languages) has completed and the form is safe to
+  // interact with programmatically. Exposed in the template as
+  // `[attr.data-form-ready]` so e2e tests can wait on a deterministic signal
+  // instead of polling the save-button's disabled state.
+  formReady: boolean = false;
   private globalAutoBreakSettings: GlobalAutoBreakSettingsModel;
 
 
@@ -243,6 +248,12 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     }, {} as { [key: string]: FormGroup });
     this.form.addControl('autoBreakSettings', this.fb.group(autoBreakGroup));
 
+    // Kick off the languages fetch early so the dropdown is populated by the
+    // time the user (or an automated test) interacts with it. Safe to call
+    // here — the form is fully constructed, so even a synchronously-replayed
+    // cached store value inside the tap callback can call `form.patchValue`.
+    this.getEnabledLanguages();
+
     // Fetch global auto break calculation settings
     this.timePlanningPnSettingsService.getGlobalAutoBreakCalculationSettings().subscribe(result => {
       if (result && result.success) {
@@ -352,7 +363,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.updateDisabledFieldsBasedOnResigned();
     });
 
-    this.getEnabledLanguages();
     this.updateFormControlDisabledStates();
   }
 
@@ -578,6 +588,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
             }
           }
         }
+        // Always unblock the form-ready signal, even on API failure — so a
+        // broken backend surfaces as a clear missing-field error rather than
+        // a cryptic 30s readiness timeout in e2e tests.
+        this.formReady = true;
       }))
       .subscribe();
   }

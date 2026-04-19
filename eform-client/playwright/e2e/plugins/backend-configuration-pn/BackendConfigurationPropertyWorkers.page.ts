@@ -129,6 +129,14 @@ export class BackendConfigurationPropertyWorkersPage {
   async openCreateModal(propertyWorker: PropertyWorker): Promise<void> {
     await this.newDeviceUserBtn().click();
     await this.cancelCreateBtn().waitFor({ state: 'visible' });
+    // Wait for the component's async init (languages) to complete before
+    // filling fields — component exposes this via a data-form-ready
+    // attribute so we don't have to poll the save-button's disabled state.
+    await expect(this.page.locator('form[data-form-ready]')).toHaveAttribute(
+      'data-form-ready',
+      'true',
+      { timeout: 30000 }
+    );
     if (propertyWorker) {
       if (propertyWorker.name) {
         await this.createFirstNameInput().fill(propertyWorker.name);
