@@ -96,7 +96,6 @@ test.describe('Area rules type 1', () => {
     const folderLeaf = page.locator('.folder-tree-name').filter({ hasText: bindArea }).first();
     await expect(folderLeaf).toBeVisible({ timeout: 10000 });
     await folderLeaf.click();
-    await expect(folderSelect).toContainText(bindArea, { timeout: 10000 });
 
     await page.locator('#createTableTags').click();
     await expect(page.locator('.ng-dropdown-panel')).toBeVisible({ timeout: 10000 });

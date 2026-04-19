@@ -111,14 +111,21 @@ test.describe('Calendar E2E Tests', () => {
     await calendarPage.goToCalendar();
     await page.waitForTimeout(2000);
 
-    // Select the property
+    // Select the property. Also wait for the week-tasks POST so we know
+    // the calendar has finished fetching events before asserting visibility.
     const folderResponsePromise = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
       { timeout: 60000 }
     );
+    const weekTasksResponsePromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
     await calendarPage.selectProperty(property.name as string);
     await folderResponsePromise;
-    await page.waitForTimeout(2000);
+    await weekTasksResponsePromise;
 
     // The event from the previous test should be visible
     const eventVisible = await calendarPage.waitForEvent(testEvent.title);
