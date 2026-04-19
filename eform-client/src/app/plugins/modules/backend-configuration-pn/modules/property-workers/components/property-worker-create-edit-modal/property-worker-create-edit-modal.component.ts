@@ -6,7 +6,7 @@ import {
   inject
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
+import {ReplaySubject, Subscription} from 'rxjs';
 import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
@@ -14,7 +14,7 @@ import {AuthStateService} from 'src/app/common/store';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
-import {tap} from 'rxjs/operators';
+import {debounceTime, filter, first, startWith, switchMap, tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
 import {TimePlanningPnSettingsService} from 'src/app/plugins/modules/time-planning-pn/services';
 import {
@@ -91,11 +91,16 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   appLanguages: LanguagesModel = new LanguagesModel();
   activeLanguages: Array<any> = [];
   form: FormGroup;
-  // True once async init (languages) has completed and the form is safe to
-  // interact with programmatically. Exposed in the template as
-  // `[attr.data-form-ready]` so e2e tests can wait on a deterministic signal
-  // instead of polling the save-button's disabled state.
+  // True only once (a) languages finished loading and (b) the form's
+  // valueChanges cascades have settled (status is VALID or INVALID, not
+  // PENDING, for at least 200ms). Exposed in the template as
+  // `[attr.data-form-ready]` so e2e tests wait on a deterministic signal
+  // instead of polling `#saveCreateBtn.disabled`.
   formReady: boolean = false;
+  // ReplaySubject(1) so a late-subscribing watcher still receives the load
+  // signal even if `getLanguages()` ever gets wrapped in a synchronous cache.
+  private languagesLoaded$ = new ReplaySubject<void>(1);
+  private formReadyWatcher$: Subscription;
   private globalAutoBreakSettings: GlobalAutoBreakSettingsModel;
 
 
@@ -321,7 +326,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       Object.assign(this.selectedDeviceUser, formValue);
     });
 
-    this.form.get('enableMobileAccess')?.valueChanges.subscribe(enabled => {
+    this.form.get('enableMobileAccess')?.valueChanges.pipe(debounceTime(50)).subscribe(enabled => {
       const emailControl = this.form.get('workerEmail');
       const currentEmail = emailControl?.value || '';
 
@@ -333,7 +338,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.updateEmailValidation();
     });
 
-    this.form.get('webAccessEnabled')?.valueChanges.subscribe(enabled => {
+    this.form.get('webAccessEnabled')?.valueChanges.pipe(debounceTime(50)).subscribe(enabled => {
       const emailControl = this.form.get('workerEmail');
       const currentEmail = emailControl?.value || '';
 
@@ -344,7 +349,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.updateEmailValidation();
     });
 
-    this.form.get('archiveEnabled')?.valueChanges.subscribe(enabled => {
+    this.form.get('archiveEnabled')?.valueChanges.pipe(debounceTime(50)).subscribe(enabled => {
       const emailControl = this.form.get('workerEmail');
       const currentEmail = emailControl?.value || '';
 
@@ -364,6 +369,23 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     });
 
     this.updateFormControlDisabledStates();
+
+    // Flip formReady only after languages load AND the form's status has
+    // settled at a non-PENDING value for 200ms — meaning every init-time
+    // valueChanges cascade (email validator re-runs, disable-state
+    // updates) has finished firing.
+    this.formReadyWatcher$ = this.languagesLoaded$
+      .pipe(
+        switchMap(() => this.form.statusChanges.pipe(
+          startWith(this.form.status),
+          debounceTime(200),
+          filter(status => status !== 'PENDING'),
+          first(),
+        )),
+      )
+      .subscribe(() => {
+        this.formReady = true;
+      });
   }
 
   hide(result: boolean | number = false) {
@@ -588,10 +610,13 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
             }
           }
         }
-        // Always unblock the form-ready signal, even on API failure — so a
-        // broken backend surfaces as a clear missing-field error rather than
-        // a cryptic 30s readiness timeout in e2e tests.
-        this.formReady = true;
+        // Signal languages phase done regardless of API success — the
+        // formReadyWatcher below gates the final formReady flag on the
+        // form's statusChanges reaching steady state, so a broken backend
+        // still surfaces as a clear field-level assertion rather than a
+        // 30s readiness timeout.
+        this.languagesLoaded$.next();
+        this.languagesLoaded$.complete();
       }))
       .subscribe();
   }
