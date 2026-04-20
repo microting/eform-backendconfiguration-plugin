@@ -391,7 +391,7 @@ export const da = {
   'No fields defined': 'Ingen felter defineret',
   Copy: 'Kopi',
   'Copy of': 'Kopi af',
-  eForm: 'e-formular',
+  eForm: 'eForm',
   'Report headline': 'Rapportoverskrift',
   Title: 'Titel',
   'Set tags...': 'Angiv tags...',
