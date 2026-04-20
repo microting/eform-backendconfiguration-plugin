@@ -32,8 +32,9 @@ export class CalendarDayColumnComponent {
     const rect = target.getBoundingClientRect();
     const relY = event.clientY - rect.top - DAY_HEADER_PX;
     const rawHour = relY / this.hourHeight;
-    // Snap to 15-min grid
-    const startHour = Math.max(0, Math.round(rawHour * 4) / 4);
+    // Snap to 30-minute boundaries on click-to-create; the edit modal's
+    // time input remains unconstrained so users can pick any start/stop.
+    const startHour = Math.max(0, Math.round(rawHour * 2) / 2);
     const iso = this.date.toISOString().split('T')[0];
     this.slotClicked.emit({date: iso, startHour});
   }

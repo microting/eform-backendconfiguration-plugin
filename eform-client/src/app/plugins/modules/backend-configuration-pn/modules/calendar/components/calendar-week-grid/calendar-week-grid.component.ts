@@ -201,7 +201,10 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     if (!date) return;
     const rect = cell.getBoundingClientRect();
     const relY = event.clientY - rect.top;
-    const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+    // Snap click-to-create to 30-minute boundaries. Drag/resize still
+    // uses a finer (15 min) grid, and the edit modal's time input is
+    // unconstrained.
+    const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 2) / 2);
 
     // Reject clicks on past time slots
     const clickDateTime = new Date(date);
