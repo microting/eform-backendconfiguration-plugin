@@ -114,7 +114,10 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     monday.setHours(0, 0, 0, 0);
 
     if (this.dayViewMode) {
-      this.weekDays = [new Date(monday)];
+      // Day view shows the currentDate itself, not the Monday of its week.
+      const target = new Date(d);
+      target.setHours(0, 0, 0, 0);
+      this.weekDays = [target];
     } else {
       this.weekDays = Array.from({length: 7}, (_, i) => {
         const date = new Date(monday);
@@ -122,6 +125,35 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
         return date;
       });
     }
+  }
+
+  // Map a weekDays index to the 7-element tasksByDay / allDayTasksByDay
+  // arrays produced by the container (always indexed Mon..Sun). In week
+  // view `i` already matches; in day view weekDays[0] may be any weekday,
+  // so compute the offset from its Monday.
+  private allDayIndexFor(i: number): number {
+    const day = this.weekDays[i];
+    if (!day) return -1;
+    const d = new Date(day);
+    const w = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + (w === 0 ? -6 : 1 - w));
+    monday.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - monday.getTime()) / 86_400_000);
+  }
+
+  getAllDayTasksForColumn(i: number): any[] {
+    const idx = this.allDayIndexFor(i);
+    return (idx >= 0 && idx < (this.allDayTasksByDay?.length ?? 0))
+      ? this.allDayTasksByDay[idx]
+      : [];
+  }
+
+  getTasksByDayForColumn(i: number): any[] {
+    const idx = this.allDayIndexFor(i);
+    return (idx >= 0 && idx < (this.tasksByDay?.length ?? 0))
+      ? this.tasksByDay[idx]
+      : [];
   }
 
   get dayDropListIds(): string[] {
@@ -160,7 +192,8 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     }, 100);
   }
 
-  isToday(date: Date): boolean {
+  isToday(date: Date | undefined): boolean {
+    if (!date) return false;
     const today = new Date();
     return (
       date.getDate() === today.getDate() &&
@@ -322,18 +355,30 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
           // Reset CDK transform first (element still in original DOM position)
           event.source.reset();
 
-          // Then optimistically move the task in the local array
+          // Then optimistically move the task in the local array.
+          // weekDays indices (0..N) may not align with tasksByDay (always
+          // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
+          // which may map to tasksByDay[2] (Wed). Translate through
+          // allDayIndexFor so the optimistic update targets the right slot.
           const origDayIndex = this.weekDays.findIndex(
             d => this.toLocalDateString(d) === originalDate
           );
           if (origDayIndex >= 0) {
-            const origArr = this.tasksByDay[origDayIndex];
-            const idx = origArr.findIndex(t => t.id === task.id);
-            if (idx >= 0) origArr.splice(idx, 1);
+            const origMappedIdx = this.allDayIndexFor(origDayIndex);
+            if (origMappedIdx >= 0) {
+              const origArr = this.tasksByDay[origMappedIdx];
+              if (origArr) {
+                const idx = origArr.findIndex(t => t.id === task.id);
+                if (idx >= 0) origArr.splice(idx, 1);
+              }
+            }
           }
           task.startHour = newStartHour;
           task.taskDate = newDate;
-          this.tasksByDay[dayIndex].push(task);
+          const targetMappedIdx = this.allDayIndexFor(dayIndex);
+          if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
+            this.tasksByDay[targetMappedIdx].push(task);
+          }
 
           this.taskMoved.emit({
             taskId: task.id,

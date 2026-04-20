@@ -1,10 +1,10 @@
 <div class="all-day-row" *ngIf="hasAllDayTasks">
   <div class="all-day-label">{{ 'All day' | translate }}</div>
   <div class="all-day-cells">
-    <div class="all-day-cell" *ngFor="let dayTasks of allDayTasksByDay; let i = index"
-         [class.today-col]="isToday(weekDays[i])">
+    <div class="all-day-cell" *ngFor="let day of weekDays; let i = index"
+         [class.today-col]="isToday(day)">
       <div class="all-day-chip"
-           *ngFor="let task of dayTasks"
+           *ngFor="let task of getAllDayTasksForColumn(i)"
            [style.background-color]="task.color"
            (click)="onAllDayTaskClicked($event, task, i)">
         <span *ngIf="isAdmin" class="task-id">{{ task.id }}</span> {{ task.title }}
@@ -72,7 +72,7 @@
        [id]="'cal-day-' + getDayIndex(col.field)"
        [attr.data-day]="getDayIndex(col.field)"
        [cdkDropListConnectedTo]="dayDropListIds"
-       [cdkDropListData]="tasksByDay[getDayIndex(col.field)] || []"
+       [cdkDropListData]="getTasksByDayForColumn(getDayIndex(col.field))"
        (click)="onCellClick($event)">
     <div class="day-body" [style.height.px]="hourHeight * 24">
       <div
@@ -88,7 +88,7 @@
         [style.top.px]="nowTopPx"
       ></div>
       <app-calendar-task-block
-        *ngFor="let task of tasksByDay[getDayIndex(col.field)] || []"
+        *ngFor="let task of getTasksByDayForColumn(getDayIndex(col.field))"
         [task]="task"
         [hourHeight]="hourHeight"
         [showId]="isAdmin"
