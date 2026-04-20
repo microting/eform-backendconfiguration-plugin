@@ -423,4 +423,6 @@ export const da = {
   'Next week': 'Næste uge',
   'Previous day': 'Forrige dag',
   'Next day': 'Næste dag',
+  'Could not create report headline': 'Rapportoverskriften kunne ikke oprettes',
+  'Create new': 'Opret ny',
 };

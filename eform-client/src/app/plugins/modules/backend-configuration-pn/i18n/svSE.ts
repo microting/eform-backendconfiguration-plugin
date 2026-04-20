@@ -422,4 +422,6 @@ export const svSE = {
   'Next week': 'Nästa vecka',
   'Previous day': 'Föregående dag',
   'Next day': 'Nästa dag',
+  'Could not create report headline': 'Kunde inte skapa rapportrubrik',
+  'Create new': 'Skapa nytt',
 };

@@ -358,7 +358,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
@@ -612,7 +615,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
@@ -676,7 +682,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {

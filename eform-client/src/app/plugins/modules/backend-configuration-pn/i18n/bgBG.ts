@@ -422,4 +422,6 @@ export const bgBG = {
   'Next week': 'Следващата седмица',
   'Previous day': 'Предишен ден',
   'Next day': 'Следващия ден',
+  'Could not create report headline': 'Не можа да се създаде заглавие на отчета',
+  'Create new': 'Създаване на ново',
 };

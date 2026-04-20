@@ -422,4 +422,6 @@ export const ukUA = {
   'Next week': 'Наступного тижня',
   'Previous day': 'Попередній день',
   'Next day': 'Наступного дня',
+  'Could not create report headline': 'Не вдалося створити заголовок звіту',
+  'Create new': 'Створити нове',
 };

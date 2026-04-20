@@ -117,10 +117,11 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'Set tags...' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventTags"
             [formControl]="tagsControl"
             [items]="data.tags"
             [multiple]="true"
-            [addTag]="true"
+            [addTag]="addTagToList"
             [clearable]="true"
           ></mtx-select>
         </mat-form-field>
@@ -139,6 +140,8 @@
             [items]="data.planningTags"
             bindValue="id"
             bindLabel="name"
+            [addTag]="addPlanningTag"
+            addTagText="{{ 'Create new' | translate }}"
             [clearable]="true"
             [searchable]="true"
             appendTo="body"

@@ -422,4 +422,6 @@ export const lvLV = {
   'Next week': 'Nākamnedēļ',
   'Previous day': 'Iepriekšējā diena',
   'Next day': 'Nākamajā dienā',
+  'Could not create report headline': 'Nevarēja izveidot ziņojuma virsrakstu',
+  'Create new': 'Izveidot jaunu',
 };

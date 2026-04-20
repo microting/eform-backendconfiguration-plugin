@@ -422,4 +422,6 @@ export const huHU = {
   'Next week': 'Jövő héten',
   'Previous day': 'Előző nap',
   'Next day': 'Másnap',
+  'Could not create report headline': 'Nem sikerült létrehozni a jelentés címsorát',
+  'Create new': 'Új létrehozása',
 };

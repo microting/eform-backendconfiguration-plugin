@@ -422,4 +422,6 @@ export const nlNL = {
   'Next week': 'Volgende week',
   'Previous day': 'Vorige dag',
   'Next day': 'Volgende dag',
+  'Could not create report headline': 'Kon geen rapportkop maken',
+  'Create new': 'Maak een nieuwe aan',
 };

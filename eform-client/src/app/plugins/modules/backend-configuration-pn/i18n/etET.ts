@@ -422,4 +422,6 @@ export const etET = {
   'Next week': 'Järgmisel nädalal',
   'Previous day': 'Eelmine päev',
   'Next day': 'Järgmisel päeval',
+  'Could not create report headline': 'Aruande pealkirja loomine ebaõnnestus',
+  'Create new': 'Loo uus',
 };

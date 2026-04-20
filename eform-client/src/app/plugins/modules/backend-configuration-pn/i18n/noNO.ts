@@ -422,4 +422,6 @@ export const noNO = {
   'Next week': 'Neste uke',
   'Previous day': 'Forrige dag',
   'Next day': 'Neste dag',
+  'Could not create report headline': 'Kunne ikke opprette rapportoverskrift',
+  'Create new': 'Opprett ny',
 };

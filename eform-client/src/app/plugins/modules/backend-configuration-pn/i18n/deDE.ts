@@ -476,4 +476,6 @@ export const deDE = {
   'Next week': 'Nächste Woche',
   'Previous day': 'Vortag',
   'Next day': 'Nächster Tag',
+  'Could not create report headline': 'Berichtsüberschrift konnte nicht erstellt werden',
+  'Create new': 'Neu erstellen',
 };

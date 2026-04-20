@@ -422,4 +422,6 @@ export const csCZ = {
   'Next week': 'Příští týden',
   'Previous day': 'Předchozí den',
   'Next day': 'Následující den',
+  'Could not create report headline': 'Nepodařilo se vytvořit nadpis přehledu',
+  'Create new': 'Vytvořit nové',
 };

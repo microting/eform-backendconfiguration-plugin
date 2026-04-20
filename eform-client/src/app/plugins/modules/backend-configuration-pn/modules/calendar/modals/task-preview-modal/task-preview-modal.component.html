@@ -1,7 +1,7 @@
 <div [class.gcal-popover-card]="usePopoverMode">
   <!-- Action icons row -->
   <div class="preview-actions-row">
-    <button class="preview-icon-btn" (click)="onEdit()" [title]="'Edit' | translate">
+    <button class="preview-icon-btn" id="calendarEventEditBtn" (click)="onEdit()" [title]="'Edit' | translate">
       <mat-icon>edit</mat-icon>
     </button>
     <button class="preview-icon-btn" id="calendarEventCopyBtn" (click)="onCopy()" [title]="'Copy' | translate">

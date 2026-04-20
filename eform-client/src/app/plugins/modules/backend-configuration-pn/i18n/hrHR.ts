@@ -422,4 +422,6 @@ export const hrHR = {
   'Next week': 'Sljedeći tjedan',
   'Previous day': 'Prethodni dan',
   'Next day': 'Sljedeći dan',
+  'Could not create report headline': 'Nije moguće stvoriti naslov izvješća',
+  'Create new': 'Stvori novo',
 };

@@ -422,4 +422,6 @@ export const elGR = {
   'Next week': 'Από βδομάδα',
   'Previous day': 'Προηγούμενη ημέρα',
   'Next day': 'Επόμενη μέρα',
+  'Could not create report headline': 'Δεν ήταν δυνατή η δημιουργία τίτλου αναφοράς',
+  'Create new': 'Δημιουργία νέου',
 };

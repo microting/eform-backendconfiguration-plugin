@@ -422,4 +422,6 @@ export const slSL = {
   'Next week': 'Naslednji teden',
   'Previous day': 'Prejšnji dan',
   'Next day': 'Naslednji dan',
+  'Could not create report headline': 'Naslova poročila ni bilo mogoče ustvariti',
+  'Create new': 'Ustvari novo',
 };

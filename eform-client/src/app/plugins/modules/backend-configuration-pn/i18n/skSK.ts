@@ -422,4 +422,6 @@ export const skSK = {
   'Next week': 'Budúci týždeň',
   'Previous day': 'Predchádzajúci deň',
   'Next day': 'Nasledujúci deň',
+  'Could not create report headline': 'Nepodarilo sa vytvoriť nadpis prehľadu',
+  'Create new': 'Vytvoriť nové',
 };

@@ -422,4 +422,6 @@ export const plPL = {
   'Next week': 'Przyszły tydzień',
   'Previous day': 'Poprzedni dzień',
   'Next day': 'Następnego dnia',
+  'Could not create report headline': 'Nie można utworzyć nagłówka raportu',
+  'Create new': 'Utwórz nowy',
 };

@@ -422,4 +422,6 @@ export const ptBR = {
   'Next week': 'Próxima semana',
   'Previous day': 'Dia anterior',
   'Next day': 'No dia seguinte',
+  'Could not create report headline': 'Não foi possível criar o título do relatório.',
+  'Create new': 'Criar novo',
 };

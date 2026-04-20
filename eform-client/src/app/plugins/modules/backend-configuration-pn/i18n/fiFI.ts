@@ -422,4 +422,6 @@ export const fiFI = {
   'Next week': 'Ensi viikolla',
   'Previous day': 'Edellinen päivä',
   'Next day': 'Seuraavana päivänä',
+  'Could not create report headline': 'Raportin otsikon luominen epäonnistui',
+  'Create new': 'Luo uusi',
 };

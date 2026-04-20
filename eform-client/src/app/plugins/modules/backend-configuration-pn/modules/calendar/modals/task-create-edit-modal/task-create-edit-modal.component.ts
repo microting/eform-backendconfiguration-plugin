@@ -12,6 +12,7 @@ import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {BackendConfigurationPnCalendarService, BackendConfigurationPnPropertiesService} from '../../../../services';
+import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
 import {CALENDAR_COLORS, CalendarBoardModel, CalendarRepeatMeta, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
@@ -90,7 +91,61 @@ export class TaskCreateEditModalComponent implements OnInit {
     private propertiesService: BackendConfigurationPnPropertiesService,
     private store: Store,
     private toastr: ToastrService,
+    private tagsService: ItemsPlanningPnTagsService,
   ) {}
+
+  addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
+    return this.persistTag(name).then(tag => {
+      // Belt-and-braces: ng-select normally writes bindValue to the form
+      // control after addTag resolves, but with mtx-select's MatFormField
+      // wrapping there's an OnPush/CD corner case where the id never
+      // reaches planningTagControl. Set it explicitly.
+      this.planningTagControl.setValue(tag.id);
+      return {id: tag.id, name: tag.name};
+    });
+  };
+
+  // For the Set tags multi-select. Returns the tag NAME (string) because
+  // that select binds to data.tags (string[]), not to {id, name}. Both
+  // backing arrays are kept in sync so creation from either field is
+  // visible in the other.
+  addTagToList = (name: string): Promise<string> => {
+    return this.persistTag(name).then(tag => {
+      const current = this.tagsControl.value ?? [];
+      if (!current.includes(tag.name)) {
+        this.tagsControl.setValue([...current, tag.name]);
+      }
+      return tag.name;
+    });
+  };
+
+  private persistTag(name: string): Promise<{id: number; name: string}> {
+    return new Promise((resolve, reject) => {
+      const trimmed = (name ?? '').trim();
+      if (!trimmed) { reject(); return; }
+      this.tagsService.createPlanningTag({name: trimmed}).subscribe({
+        next: (res) => {
+          if (res && res.success && res.model) {
+            const newTag = {id: res.model.id, name: res.model.name};
+            if (!this.data.planningTags.some(t => t.id === newTag.id)) {
+              this.data.planningTags = [...this.data.planningTags, newTag];
+            }
+            if (!this.data.tags.includes(newTag.name)) {
+              this.data.tags = [...this.data.tags, newTag.name];
+            }
+            resolve(newTag);
+          } else {
+            this.toastr.error(this.translate.instant('Could not create report headline'));
+            reject();
+          }
+        },
+        error: () => {
+          this.toastr.error(this.translate.instant('Could not create report headline'));
+          reject();
+        },
+      });
+    });
+  }
 
   ngOnInit() {
     this.store.select(selectCurrentUserLanguageId).pipe(take(1)).subscribe(langId => {
@@ -471,7 +526,11 @@ export class TaskCreateEditModalComponent implements OnInit {
       startHour,
       duration,
       sites: this.assigneeControl.value ?? [],
-      tagIds: (this.tagsControl.value ?? []).map((t: any) => typeof t === 'number' ? t : 0).filter((id: number) => id > 0),
+      tagIds: (this.tagsControl.value ?? []).map((t: any) => {
+        if (typeof t === 'number') return t;
+        const match = this.data.planningTags.find(pt => pt.name === t);
+        return match?.id ?? 0;
+      }).filter((id: number) => id > 0),
       boardId: this.boardControl.value,
       color: this.filteredBoards.find(b => b.id === this.boardControl.value)?.color ?? CALENDAR_COLORS[0],
       descriptionHtml: this.descriptionControl.value ?? '',

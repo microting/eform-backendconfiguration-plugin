@@ -422,4 +422,6 @@ export const esES = {
   'Next week': 'La próxima semana',
   'Previous day': 'Día anterior',
   'Next day': 'Al día siguiente',
+  'Could not create report headline': 'No se pudo crear el título del informe.',
+  'Create new': 'Crear nuevo',
 };

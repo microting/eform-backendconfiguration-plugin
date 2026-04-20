@@ -422,4 +422,6 @@ export const ltLT = {
   'Next week': 'Kitą savaitę',
   'Previous day': 'Ankstesnė diena',
   'Next day': 'Kitą dieną',
+  'Could not create report headline': 'Nepavyko sukurti ataskaitos antraštės',
+  'Create new': 'Sukurti naują',
 };

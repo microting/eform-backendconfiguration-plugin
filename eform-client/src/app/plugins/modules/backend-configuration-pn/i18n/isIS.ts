@@ -422,4 +422,6 @@ export const isIS = {
   'Next week': 'Í næstu viku',
   'Previous day': 'Fyrri dagur',
   'Next day': 'Næsta dag',
+  'Could not create report headline': 'Gat ekki búið til fyrirsögn skýrslunnar',
+  'Create new': 'Búa til nýtt',
 };

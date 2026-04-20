@@ -422,4 +422,6 @@ export const itIT = {
   'Next week': 'La prossima settimana',
   'Previous day': 'Giorno precedente',
   'Next day': 'Il giorno dopo',
+  'Could not create report headline': 'Impossibile creare l&#39;intestazione del report',
+  'Create new': 'Crea nuovo',
 };

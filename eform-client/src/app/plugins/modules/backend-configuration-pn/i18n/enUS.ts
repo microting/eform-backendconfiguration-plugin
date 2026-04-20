@@ -437,6 +437,8 @@ export const enUS= {
   'occurrences': 'occurrences',
   'Done': 'Done',
   'Could not save the event': 'Could not save the event',
+  'Could not create report headline': 'Could not create report headline',
+  'Create new': 'Create new',
   'Error': 'Error',
   'At least one worker must be assigned': 'At least one worker must be assigned',
   'Previous week': 'Previous week',

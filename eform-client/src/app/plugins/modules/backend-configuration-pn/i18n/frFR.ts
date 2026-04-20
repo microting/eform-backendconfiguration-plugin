@@ -422,4 +422,6 @@ export const frFR = {
   'Next week': 'La semaine prochaine',
   'Previous day': 'Jour précédent',
   'Next day': 'Lendemain',
+  'Could not create report headline': 'Impossible de créer le titre du rapport',
+  'Create new': 'Créer un nouveau',
 };
