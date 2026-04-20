@@ -28,4 +28,5 @@ public class CalendarTaskResponseModel
     public int? EformId { get; set; }
     public int? SdkCaseId { get; set; }
     public int? ItemPlanningTagId { get; set; }
+    public string? DescriptionHtml { get; set; }
 }

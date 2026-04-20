@@ -216,7 +216,8 @@ public class BackendConfigurationCalendarService(
                         IsAllDay = isAllDay,
                         ExceptionId = exception?.Id,
                         EformId = arp.AreaRule?.EformId,
-                        ItemPlanningTagId = arp.ItemPlanningTagId
+                        ItemPlanningTagId = arp.ItemPlanningTagId,
+                        DescriptionHtml = planning.Description
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -280,7 +281,8 @@ public class BackendConfigurationCalendarService(
                     IsAllDay = isAllDay,
                     ExceptionId = movedIn.Id,
                     EformId = arp.AreaRule?.EformId,
-                    ItemPlanningTagId = arp.ItemPlanningTagId
+                    ItemPlanningTagId = arp.ItemPlanningTagId,
+                    DescriptionHtml = movedPlanning.Description
                 };
 
                 if (ShouldIncludeTask(movedModel, requestModel))
@@ -320,6 +322,12 @@ public class BackendConfigurationCalendarService(
             var compliancePlanningTagNames = await itemsPlanningPnDbContext.PlanningTags
                 .Where(x => complianceTagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            // Batch-load compliance plannings so we can read description from Planning
+            var compliancePlanningsDict = await itemsPlanningPnDbContext.Plannings
+                .Where(x => compliancePlanningIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.Id);
 
             foreach (var compliance in compliances)
             {
@@ -373,7 +381,10 @@ public class BackendConfigurationCalendarService(
                     IsAllDay = compIsAllDay,
                     EformId = arp?.AreaRule?.EformId,
                     SdkCaseId = compliance.MicrotingSdkCaseId,
-                    ItemPlanningTagId = arp?.ItemPlanningTagId
+                    ItemPlanningTagId = arp?.ItemPlanningTagId,
+                    DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
+                        ? cp.Description
+                        : null
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -466,6 +477,17 @@ public class BackendConfigurationCalendarService(
                     await latestArp.Update(backendConfigurationPnDbContext);
                 }
 
+                // Persist description on the linked Planning row (not on ARP)
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .FirstOrDefaultAsync(x => x.Id == latestArp.ItemPlanningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planning != null)
+                {
+                    planning.Description = createModel.DescriptionHtml ?? string.Empty;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
+
                 var calConfig = new CalendarConfiguration
                 {
                     AreaRulePlanningId = latestArp.Id,
@@ -534,6 +556,23 @@ public class BackendConfigurationCalendarService(
             if (!wizardResult.Success)
             {
                 return wizardResult;
+            }
+
+            // Persist description on the linked Planning row (not on ARP)
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .FirstOrDefaultAsync(x => x.Id == updateModel.Id
+                    && x.WorkflowState != Constants.WorkflowStates.Removed);
+            if (arp != null)
+            {
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .FirstOrDefaultAsync(x => x.Id == arp.ItemPlanningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planning != null)
+                {
+                    planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
             }
 
             // Update or create CalendarConfiguration for calendar-specific fields

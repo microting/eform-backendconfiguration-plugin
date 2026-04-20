@@ -153,6 +153,11 @@ test.describe('Calendar tags + report tag round-trip', () => {
     await calendarPage.addExistingTag(tagA);
     await calendarPage.addExistingTag(tagB);
 
+    // Fill in the description. Round-trip this through save/edit/reopen to
+    // catch cases where the field fails to persist or rehydrate.
+    const description = `Description-${rand}`;
+    await page.locator('#calendarEventDescription').fill(description);
+
     // ------------------------------------------------------------------
     // Step 6: pick first assignee (required). eForm left as default.
     // ------------------------------------------------------------------
@@ -206,6 +211,10 @@ test.describe('Calendar tags + report tag round-trip', () => {
       reqBody.itemPlanningTagId,
       'POST itemPlanningTagId should be > 0 (an actual tag id)'
     ).toBeGreaterThan(0);
+    expect(
+      reqBody.descriptionHtml,
+      `POST descriptionHtml should be "${description}"; got ${JSON.stringify(reqBody.descriptionHtml)}`
+    ).toBe(description);
 
     // ------------------------------------------------------------------
     // Step 8: chip rendered on calendar
@@ -236,6 +245,10 @@ test.describe('Calendar tags + report tag round-trip', () => {
     console.log(`Round-trip Set tags: ${JSON.stringify(roundTripTags)}`);
     expect(roundTripTags).toEqual([tagA, tagB].sort());
 
+    const roundTripDescription = await page.locator('#calendarEventDescription').inputValue();
+    console.log(`Round-trip description: "${roundTripDescription}"`);
+    expect(roundTripDescription).toBe(description);
+
     // ------------------------------------------------------------------
     // Step 11: edit — new title, swap report tag to tagB, remove tagA chip
     // ------------------------------------------------------------------
@@ -244,6 +257,9 @@ test.describe('Calendar tags + report tag round-trip', () => {
 
     await calendarPage.selectExistingPlanningTag(tagB);
     await calendarPage.removeTagChip(tagA);
+
+    const editedDescription = `${description}-edited`;
+    await page.locator('#calendarEventDescription').fill(editedDescription);
 
     // ------------------------------------------------------------------
     // Step 12: save edit (PUT) and assert request/response
@@ -284,6 +300,10 @@ test.describe('Calendar tags + report tag round-trip', () => {
       putBody.itemPlanningTagId,
       'PUT itemPlanningTagId should be > 0 (an actual tag id)'
     ).toBeGreaterThan(0);
+    expect(
+      putBody.descriptionHtml,
+      `PUT descriptionHtml should be "${editedDescription}"; got ${JSON.stringify(putBody.descriptionHtml)}`
+    ).toBe(editedDescription);
 
     // ------------------------------------------------------------------
     // Step 13: reopen edited event and confirm edited state persists
@@ -310,6 +330,10 @@ test.describe('Calendar tags + report tag round-trip', () => {
     ).map(s => s.trim()).sort();
     console.log(`Edited round-trip Set tags: ${JSON.stringify(editedTags)}`);
     expect(editedTags).toEqual([tagB]);
+
+    const editedRoundTripDescription = await page.locator('#calendarEventDescription').inputValue();
+    console.log(`Edited round-trip description: "${editedRoundTripDescription}"`);
+    expect(editedRoundTripDescription).toBe(editedDescription);
   });
 
   // Cleanup is best-effort. Each matrix slot runs against an ephemeral DB,
