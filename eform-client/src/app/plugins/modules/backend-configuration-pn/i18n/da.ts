@@ -397,7 +397,7 @@ export const da = {
   'Set tags...': 'Angiv tags...',
   'Assign to...': 'Tildel til...',
   'My properties': 'Mine ejendomme',
-  'My boards': 'Mine opslagstavler',
+  'My boards': 'Mine tavler',
   'My teams': 'Mine hold',
   'My employees': 'Mine medarbejdere',
   'Create employee': 'Opret medarbejder',
