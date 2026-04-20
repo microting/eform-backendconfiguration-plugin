@@ -408,7 +408,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onNavigate(direction: -1 | 1) {
     const d = new Date(this.currentDate);
-    d.setDate(d.getDate() + direction * 7);
+    // Week view shifts 7 days at a time; day and list views shift 1 day.
+    const step = this.viewMode === 'week' ? 7 : 1;
+    d.setDate(d.getDate() + direction * step);
     this.stateService.updateCurrentDate(this.toLocalDateString(d));
     this.loadTasks();
   }
@@ -419,7 +421,14 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onViewModeChange(viewMode: 'week' | 'day' | 'schedule') {
+    // Switching into day or list view should always land on today, so users
+    // don't find themselves in a single-day view of some unrelated week.
+    // Week→week keeps the currently-viewed week.
+    if (viewMode !== 'week' && this.viewMode === 'week') {
+      this.stateService.updateCurrentDate(this.toLocalDateString(new Date()));
+    }
     this.stateService.updateViewMode(viewMode);
+    this.loadTasks();
   }
 
   onToggleSidebar() {
