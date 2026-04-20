@@ -418,4 +418,8 @@ export const frFR = {
   'Could not save the event': 'Impossible d&#39;enregistrer l&#39;événement',
   Error: 'Erreur',
   'At least one worker must be assigned': 'Au moins un travailleur doit être affecté',
+  'Previous week': 'Semaine précédente',
+  'Next week': 'La semaine prochaine',
+  'Previous day': 'Jour précédent',
+  'Next day': 'Lendemain',
 };

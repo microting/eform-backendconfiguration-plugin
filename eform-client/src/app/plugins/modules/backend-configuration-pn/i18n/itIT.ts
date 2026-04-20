@@ -418,4 +418,8 @@ export const itIT = {
   'Could not save the event': 'Impossibile salvare l&#39;evento',
   Error: 'Errore',
   'At least one worker must be assigned': 'Deve essere assegnato almeno un lavoratore',
+  'Previous week': 'Settimana precedente',
+  'Next week': 'La prossima settimana',
+  'Previous day': 'Giorno precedente',
+  'Next day': 'Il giorno dopo',
 };

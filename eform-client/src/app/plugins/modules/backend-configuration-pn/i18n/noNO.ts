@@ -418,4 +418,8 @@ export const noNO = {
   'Could not save the event': 'Kunne ikke lagre hendelsen',
   Error: 'Feil',
   'At least one worker must be assigned': 'Minst én arbeider må tildeles',
+  'Previous week': 'Forrige uke',
+  'Next week': 'Neste uke',
+  'Previous day': 'Forrige dag',
+  'Next day': 'Neste dag',
 };

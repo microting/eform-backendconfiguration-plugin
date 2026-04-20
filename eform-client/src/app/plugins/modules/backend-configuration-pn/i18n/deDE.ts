@@ -472,4 +472,8 @@ export const deDE = {
   'Could not save the event': 'Das Ereignis konnte nicht gespeichert werden.',
   Error: 'Fehler',
   'At least one worker must be assigned': 'Mindestens ein Arbeiter muss zugewiesen werden.',
+  'Previous week': 'Vorwoche',
+  'Next week': 'Nächste Woche',
+  'Previous day': 'Vortag',
+  'Next day': 'Nächster Tag',
 };

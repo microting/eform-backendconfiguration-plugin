@@ -418,4 +418,8 @@ export const ptPT = {
   'Could not save the event': 'Não foi possível salvar o evento.',
   Error: 'Erro',
   'At least one worker must be assigned': 'Pelo menos um trabalhador deve ser designado.',
+  'Previous week': 'Semana anterior',
+  'Next week': 'Próxima semana',
+  'Previous day': 'Dia anterior',
+  'Next day': 'No dia seguinte',
 };

@@ -418,4 +418,8 @@ export const huHU = {
   'Could not save the event': 'Nem sikerült menteni az eseményt',
   Error: 'Hiba',
   'At least one worker must be assigned': 'Legalább egy munkavállalót hozzá kell rendelni',
+  'Previous week': 'Előző hét',
+  'Next week': 'Jövő héten',
+  'Previous day': 'Előző nap',
+  'Next day': 'Másnap',
 };

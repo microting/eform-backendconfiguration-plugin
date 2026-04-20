@@ -418,4 +418,8 @@ export const lvLV = {
   'Could not save the event': 'Nevarēja saglabāt notikumu',
   Error: 'Kļūda',
   'At least one worker must be assigned': 'Jāpiešķir vismaz viens darbinieks',
+  'Previous week': 'Iepriekšējā nedēļa',
+  'Next week': 'Nākamnedēļ',
+  'Previous day': 'Iepriekšējā diena',
+  'Next day': 'Nākamajā dienā',
 };

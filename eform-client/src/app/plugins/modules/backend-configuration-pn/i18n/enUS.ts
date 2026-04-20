@@ -439,4 +439,8 @@ export const enUS= {
   'Could not save the event': 'Could not save the event',
   'Error': 'Error',
   'At least one worker must be assigned': 'At least one worker must be assigned',
+  'Previous week': 'Previous week',
+  'Next week': 'Next week',
+  'Previous day': 'Previous day',
+  'Next day': 'Next day',
 };

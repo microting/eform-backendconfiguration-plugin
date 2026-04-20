@@ -33,12 +33,34 @@ export class CalendarHeaderComponent implements OnInit {
   get displayDate(): string {
     if (!this.currentDate) return '';
     const d = new Date(this.currentDate);
+    const locale = getCurrentLocale(this.translate);
+    // Day + schedule/list views show a single date in long form, matching
+    // the event-modal label style: "Lørdag, 21. april 2026".
+    if (this.viewMode === 'day' || this.viewMode === 'schedule') {
+      const formatted = d.toLocaleDateString(locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      // Capitalize first letter (Danish locale returns "lørdag, …" lowercase).
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+    // Week view: "20. april – 26. april 2026"
     const monday = this.getMondayOfWeek(d);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const fmt = (dt: Date) =>
-      dt.toLocaleDateString(getCurrentLocale(this.translate), {day: 'numeric', month: 'long'});
+      dt.toLocaleDateString(locale, {day: 'numeric', month: 'long'});
     return `${fmt(monday)} – ${fmt(sunday)} ${monday.getFullYear()}`;
+  }
+
+  get prevTooltipKey(): string {
+    return this.viewMode === 'week' ? 'Previous week' : 'Previous day';
+  }
+
+  get nextTooltipKey(): string {
+    return this.viewMode === 'week' ? 'Next week' : 'Next day';
   }
 
   private getMondayOfWeek(d: Date): Date {

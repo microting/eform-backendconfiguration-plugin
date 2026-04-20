@@ -419,4 +419,8 @@ export const da = {
   'Could not save the event': 'Kunne ikke gemme begivenheden',
   Error: 'Fejl',
   'At least one worker must be assigned': 'Mindst én medarbejder skal tildeles',
+  'Previous week': 'Forrige uge',
+  'Next week': 'Næste uge',
+  'Previous day': 'Forrige dag',
+  'Next day': 'Næste dag',
 };

@@ -418,4 +418,8 @@ export const svSE = {
   'Could not save the event': 'Kunde inte spara händelsen',
   Error: 'Fel',
   'At least one worker must be assigned': 'Minst en arbetare måste tilldelas',
+  'Previous week': 'Föregående vecka',
+  'Next week': 'Nästa vecka',
+  'Previous day': 'Föregående dag',
+  'Next day': 'Nästa dag',
 };

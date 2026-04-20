@@ -418,4 +418,8 @@ export const plPL = {
   'Could not save the event': 'Nie udało się zapisać wydarzenia',
   Error: 'Błąd',
   'At least one worker must be assigned': 'Należy przypisać co najmniej jednego pracownika',
+  'Previous week': 'Poprzedni tydzień',
+  'Next week': 'Przyszły tydzień',
+  'Previous day': 'Poprzedni dzień',
+  'Next day': 'Następnego dnia',
 };

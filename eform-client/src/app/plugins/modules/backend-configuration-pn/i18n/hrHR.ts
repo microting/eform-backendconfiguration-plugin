@@ -418,4 +418,8 @@ export const hrHR = {
   'Could not save the event': 'Spremanje događaja nije uspjelo',
   Error: 'Pogreška',
   'At least one worker must be assigned': 'Mora biti dodijeljen barem jedan radnik',
+  'Previous week': 'Prethodni tjedan',
+  'Next week': 'Sljedeći tjedan',
+  'Previous day': 'Prethodni dan',
+  'Next day': 'Sljedeći dan',
 };

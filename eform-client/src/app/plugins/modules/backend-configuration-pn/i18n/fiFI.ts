@@ -418,4 +418,8 @@ export const fiFI = {
   'Could not save the event': 'Tapahtumaa ei voitu tallentaa',
   Error: 'Virhe',
   'At least one worker must be assigned': 'Vähintään yksi työntekijä on nimettävä',
+  'Previous week': 'Edellinen viikko',
+  'Next week': 'Ensi viikolla',
+  'Previous day': 'Edellinen päivä',
+  'Next day': 'Seuraavana päivänä',
 };

@@ -418,4 +418,8 @@ export const skSK = {
   'Could not save the event': 'Udalosť sa nepodarilo uložiť',
   Error: 'Chyba',
   'At least one worker must be assigned': 'Musí byť pridelený aspoň jeden pracovník',
+  'Previous week': 'Predchádzajúci týždeň',
+  'Next week': 'Budúci týždeň',
+  'Previous day': 'Predchádzajúci deň',
+  'Next day': 'Nasledujúci deň',
 };

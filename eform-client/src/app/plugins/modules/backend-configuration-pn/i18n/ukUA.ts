@@ -418,4 +418,8 @@ export const ukUA = {
   'Could not save the event': 'Не вдалося зберегти подію',
   Error: 'Помилка',
   'At least one worker must be assigned': 'Повинен бути призначений хоча б один працівник',
+  'Previous week': 'Попередній тиждень',
+  'Next week': 'Наступного тижня',
+  'Previous day': 'Попередній день',
+  'Next day': 'Наступного дня',
 };

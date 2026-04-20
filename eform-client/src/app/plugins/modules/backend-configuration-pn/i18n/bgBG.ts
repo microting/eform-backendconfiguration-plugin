@@ -418,4 +418,8 @@ export const bgBG = {
   'Could not save the event': 'Събитието не можа да бъде запазено',
   Error: 'Грешка',
   'At least one worker must be assigned': 'Трябва да бъде назначен поне един работник',
+  'Previous week': 'Предишната седмица',
+  'Next week': 'Следващата седмица',
+  'Previous day': 'Предишен ден',
+  'Next day': 'Следващия ден',
 };

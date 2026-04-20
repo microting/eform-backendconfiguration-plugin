@@ -418,4 +418,8 @@ export const elGR = {
   'Could not save the event': 'Δεν ήταν δυνατή η αποθήκευση του συμβάντος',
   Error: 'Σφάλμα',
   'At least one worker must be assigned': 'Πρέπει να ανατεθεί τουλάχιστον ένας εργαζόμενος',
+  'Previous week': 'Προηγούμενη εβδομάδα',
+  'Next week': 'Από βδομάδα',
+  'Previous day': 'Προηγούμενη ημέρα',
+  'Next day': 'Επόμενη μέρα',
 };

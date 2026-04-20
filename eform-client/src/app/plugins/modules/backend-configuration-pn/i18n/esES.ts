@@ -418,4 +418,8 @@ export const esES = {
   'Could not save the event': 'No se pudo guardar el evento.',
   Error: 'Error',
   'At least one worker must be assigned': 'Se debe asignar al menos un trabajador.',
+  'Previous week': 'Semana anterior',
+  'Next week': 'La próxima semana',
+  'Previous day': 'Día anterior',
+  'Next day': 'Al día siguiente',
 };

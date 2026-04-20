@@ -418,4 +418,8 @@ export const slSL = {
   'Could not save the event': 'Dogodka ni bilo mogoče shraniti',
   Error: 'Napaka',
   'At least one worker must be assigned': 'Dodeljen mora biti vsaj en delavec',
+  'Previous week': 'Prejšnji teden',
+  'Next week': 'Naslednji teden',
+  'Previous day': 'Prejšnji dan',
+  'Next day': 'Naslednji dan',
 };

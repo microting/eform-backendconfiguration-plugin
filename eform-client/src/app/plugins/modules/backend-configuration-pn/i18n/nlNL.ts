@@ -418,4 +418,8 @@ export const nlNL = {
   'Could not save the event': 'Het evenement kon niet worden opgeslagen.',
   Error: 'Fout',
   'At least one worker must be assigned': 'Er moet ten minste één werknemer worden toegewezen.',
+  'Previous week': 'Vorige week',
+  'Next week': 'Volgende week',
+  'Previous day': 'Vorige dag',
+  'Next day': 'Volgende dag',
 };

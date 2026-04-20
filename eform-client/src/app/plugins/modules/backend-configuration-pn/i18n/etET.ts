@@ -418,4 +418,8 @@ export const etET = {
   'Could not save the event': 'Sündmust ei õnnestunud salvestada',
   Error: 'Viga',
   'At least one worker must be assigned': 'Vähemalt üks töötaja peab olema määratud',
+  'Previous week': 'Eelmine nädal',
+  'Next week': 'Järgmisel nädalal',
+  'Previous day': 'Eelmine päev',
+  'Next day': 'Järgmisel päeval',
 };

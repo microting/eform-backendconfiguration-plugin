@@ -418,4 +418,8 @@ export const roRO = {
   'Could not save the event': 'Nu s-a putut salva evenimentul',
   Error: 'Eroare',
   'At least one worker must be assigned': 'Cel puțin un lucrător trebuie desemnat',
+  'Previous week': 'Săptămâna precedentă',
+  'Next week': 'Săptămâna viitoare',
+  'Previous day': 'Ziua precedentă',
+  'Next day': 'A doua zi',
 };

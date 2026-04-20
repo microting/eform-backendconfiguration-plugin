@@ -418,4 +418,8 @@ export const isIS = {
   'Could not save the event': 'Gat ekki vistað viðburðinn',
   Error: 'Villa',
   'At least one worker must be assigned': 'Að minnsta kosti einn starfsmaður verður að vera úthlutaður',
+  'Previous week': 'Fyrri viku',
+  'Next week': 'Í næstu viku',
+  'Previous day': 'Fyrri dagur',
+  'Next day': 'Næsta dag',
 };

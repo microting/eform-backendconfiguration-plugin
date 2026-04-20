@@ -418,4 +418,8 @@ export const ltLT = {
   'Could not save the event': 'Nepavyko išsaugoti įvykio',
   Error: 'Klaida',
   'At least one worker must be assigned': 'Turi būti priskirtas bent vienas darbuotojas',
+  'Previous week': 'Praėjusią savaitę',
+  'Next week': 'Kitą savaitę',
+  'Previous day': 'Ankstesnė diena',
+  'Next day': 'Kitą dieną',
 };
