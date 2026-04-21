@@ -43,7 +43,7 @@ export class CalendarPage {
     if (data.eformName) {
       const eformSelect = this.page.locator('#calendarEventEform');
       await eformSelect.click();
-      await this.page.locator('.ng-dropdown-panel input[type="text"]').fill(data.eformName);
+      await this.typeInNgSelect('#calendarEventEform', data.eformName);
       await this.page.waitForTimeout(500);
       await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
@@ -186,25 +186,26 @@ export class CalendarPage {
   // Type into an ng-select that may or may not have a selected value.
   // ng-select keeps the typeahead input in the CONTROL (.ng-input) when no
   // value is selected, and moves it into the DROPDOWN PANEL once a value
-  // is picked. Fall back to keyboard typing if neither locator resolves —
-  // this covers any version/layout difference.
+  // is picked. Caller must have already triggered the open click.
   private async typeInNgSelect(selectId: string, name: string): Promise<void> {
+    // Wait for the dropdown to actually render before probing for inputs —
+    // otherwise count() returns 0 on a still-animating panel and we'd fall
+    // through to the error path prematurely.
+    await this.page
+      .locator('.ng-dropdown-panel, .ng-select-container.ng-select-opened')
+      .first()
+      .waitFor({ state: 'visible', timeout: 5000 });
     const panelInput = this.page.locator('.ng-dropdown-panel input[type="text"]');
     const controlInput = this.page.locator(`${selectId} input[type="text"]`);
-    try {
-      if (await panelInput.count() > 0) {
-        await panelInput.first().fill(name);
-        return;
-      }
-    } catch { /* fall through */ }
-    try {
-      if (await controlInput.count() > 0) {
-        await controlInput.first().fill(name);
-        return;
-      }
-    } catch { /* fall through */ }
-    // Last resort: type on the focused element (the select was just clicked).
-    await this.page.keyboard.type(name);
+    if (await panelInput.count() > 0) {
+      await panelInput.first().fill(name);
+      return;
+    }
+    if (await controlInput.count() > 0) {
+      await controlInput.first().fill(name);
+      return;
+    }
+    throw new Error(`typeInNgSelect: no typeahead input found for ${selectId}`);
   }
 
   // Inline-create a planning tag (Rapportoverskrift) via the new addTag affordance.
@@ -213,7 +214,6 @@ export class CalendarPage {
   async inlineCreatePlanningTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventPlanningTag');
     await select.click();
-    await this.page.waitForTimeout(200);
     await this.typeInNgSelect('#calendarEventPlanningTag', name);
     await this.page.waitForTimeout(300);
     // ng-select renders the addTag pseudo-option with a `.ng-tag-label`
@@ -236,7 +236,6 @@ export class CalendarPage {
   async selectExistingPlanningTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventPlanningTag');
     await select.click();
-    await this.page.waitForTimeout(200);
     await this.typeInNgSelect('#calendarEventPlanningTag', name);
     await this.page.waitForTimeout(300);
     // Pick the option whose text equals the name exactly (avoid the "+ Create" pseudo-option).
@@ -251,7 +250,6 @@ export class CalendarPage {
   async addExistingTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventTags');
     await select.click();
-    await this.page.waitForTimeout(200);
     await this.typeInNgSelect('#calendarEventTags', name);
     await this.page.waitForTimeout(300);
     const option = this.page.locator('.ng-dropdown-panel .ng-option')
