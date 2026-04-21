@@ -276,9 +276,21 @@ test.describe('Calendar tags + report tag round-trip', () => {
         r.request().method() === 'PUT',
       { timeout: 30000 }
     );
+    // Modal close triggers loadTasks(), which POSTs /calendar/tasks/week.
+    // Wait for that response before checking for the edited chip, otherwise
+    // we race the refetch + Angular re-render and the old title can still
+    // be on screen for a beat.
+    const weekTasksAfterPutPromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
     await calendarPage.saveModal();
     const updateRequest = await updateRequestPromise;
     const updateResponse = await updateResponsePromise;
+    await weekTasksAfterPutPromise;
+    await page.waitForTimeout(500); // let weekGrid re-render after response
 
     const putBody = updateRequest.postDataJSON();
     const putResBody = await updateResponse.json().catch(() => null);
