@@ -372,7 +372,7 @@ public class BackendConfigurationCalendarService(
                     Color = calConfig?.Color,
                     RepeatType = arp?.RepeatType ?? 0,
                     RepeatEvery = arp?.RepeatEvery ?? 1,
-                    Completed = compliance.Deadline < DateTime.UtcNow,
+                    Completed = false,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
