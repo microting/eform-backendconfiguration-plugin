@@ -7,6 +7,8 @@
     <mat-icon>menu</mat-icon>
   </button>
 
+  <span class="property-pill" *ngIf="propertyName">{{ propertyName }}</span>
+
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="goToToday.emit()"
@@ -31,6 +33,7 @@
   </button>
 
   <span class="date-range">{{ displayDate }}</span>
+  <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
 
   <span class="spacer"></span>
 

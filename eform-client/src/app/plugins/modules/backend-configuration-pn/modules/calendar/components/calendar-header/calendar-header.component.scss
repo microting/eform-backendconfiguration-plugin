@@ -13,6 +13,28 @@
     font-weight: 500;
   }
 
+  .property-pill {
+    padding: 6px 14px;
+    border-radius: 18px;
+    background: var(--bg-soft, #f1f3f4);
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .week-badge {
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: #fde0e0;
+    color: #c62828;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
   .spacer {
     flex: 1;
   }

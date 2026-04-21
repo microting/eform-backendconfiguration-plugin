@@ -57,6 +57,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   get tagNames(): string[] { return this.tags.map(t => t.name); }
 
+  get selectedPropertyName(): string {
+    if (!this.currentPropertyId) return '';
+    const p = this.properties?.find(x => x.id === this.currentPropertyId);
+    return p?.name ?? '';
+  }
+
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
