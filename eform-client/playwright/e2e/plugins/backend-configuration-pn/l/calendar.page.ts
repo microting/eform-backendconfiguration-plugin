@@ -183,13 +183,38 @@ export class CalendarPage {
     await this.page.waitForTimeout(500);
   }
 
+  // Type into an ng-select that may or may not have a selected value.
+  // ng-select keeps the typeahead input in the CONTROL (.ng-input) when no
+  // value is selected, and moves it into the DROPDOWN PANEL once a value
+  // is picked. Fall back to keyboard typing if neither locator resolves —
+  // this covers any version/layout difference.
+  private async typeInNgSelect(selectId: string, name: string): Promise<void> {
+    const panelInput = this.page.locator('.ng-dropdown-panel input[type="text"]');
+    const controlInput = this.page.locator(`${selectId} input[type="text"]`);
+    try {
+      if (await panelInput.count() > 0) {
+        await panelInput.first().fill(name);
+        return;
+      }
+    } catch { /* fall through */ }
+    try {
+      if (await controlInput.count() > 0) {
+        await controlInput.first().fill(name);
+        return;
+      }
+    } catch { /* fall through */ }
+    // Last resort: type on the focused element (the select was just clicked).
+    await this.page.keyboard.type(name);
+  }
+
   // Inline-create a planning tag (Rapportoverskrift) via the new addTag affordance.
   // After this call, the new tag is selected in the planning-tag control AND
   // available in BOTH the planning-tag dropdown AND the Set tags multi-select.
   async inlineCreatePlanningTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventPlanningTag');
     await select.click();
-    await this.page.locator('.ng-dropdown-panel input[type="text"]').fill(name);
+    await this.page.waitForTimeout(200);
+    await this.typeInNgSelect('#calendarEventPlanningTag', name);
     await this.page.waitForTimeout(300);
     // ng-select renders the addTag pseudo-option with a `.ng-tag-label`
     // child node — the only option type that has it. This is stable
@@ -211,7 +236,8 @@ export class CalendarPage {
   async selectExistingPlanningTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventPlanningTag');
     await select.click();
-    await this.page.locator('.ng-dropdown-panel input[type="text"]').fill(name);
+    await this.page.waitForTimeout(200);
+    await this.typeInNgSelect('#calendarEventPlanningTag', name);
     await this.page.waitForTimeout(300);
     // Pick the option whose text equals the name exactly (avoid the "+ Create" pseudo-option).
     const option = this.page.locator('.ng-dropdown-panel .ng-option')
@@ -225,7 +251,8 @@ export class CalendarPage {
   async addExistingTag(name: string): Promise<void> {
     const select = this.page.locator('#calendarEventTags');
     await select.click();
-    await this.page.locator('.ng-dropdown-panel input[type="text"]').fill(name);
+    await this.page.waitForTimeout(200);
+    await this.typeInNgSelect('#calendarEventTags', name);
     await this.page.waitForTimeout(300);
     const option = this.page.locator('.ng-dropdown-panel .ng-option')
       .filter({ hasText: new RegExp(`^${name}$`) })
