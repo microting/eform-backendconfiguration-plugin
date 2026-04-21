@@ -111,6 +111,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddGrpc();
         services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
+        services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,
+            Services.GrpcServices.GrpcSiteResolver>();
         services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
         services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
         services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
@@ -666,12 +668,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             "eform-backend-configuration-plugin",
             "eform-angular-case-template-plugin");
 
-        var frontendBaseConnectionString = connectionString.Replace(
-            "eform-backend-configuration-plugin",
-            "Angular");
-
         _connectionString = connectionString;
-        services.AddDbContext<BackendConfigurationPnDbContext>(o =>
+        services.AddDbContextPool<BackendConfigurationPnDbContext>(o =>
             o.UseMySql(connectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(connectionString)), mySqlOptionsAction: builder =>
             {
@@ -679,7 +677,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 builder.MigrationsAssembly(PluginAssembly().FullName);
             }));
 
-        services.AddDbContext<ItemsPlanningPnDbContext>(o =>
+        services.AddDbContextPool<ItemsPlanningPnDbContext>(o =>
             o.UseMySql(itemsPlannigConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(itemsPlannigConnectionString)), mySqlOptionsAction: builder =>
             {
@@ -687,7 +685,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 builder.MigrationsAssembly(PluginAssembly().FullName);
             }));
 
-        services.AddDbContext<TimePlanningPnDbContext>(o =>
+        services.AddDbContextPool<TimePlanningPnDbContext>(o =>
             o.UseMySql(timeRegistrationConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(timeRegistrationConnectionString)), mySqlOptionsAction: builder =>
             {
@@ -695,7 +693,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 builder.MigrationsAssembly(PluginAssembly().FullName);
             }));
 
-        services.AddDbContext<ChemicalsDbContext>(o =>
+        services.AddDbContextPool<ChemicalsDbContext>(o =>
             o.UseMySql(chemicalBaseConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(chemicalBaseConnectionString)), mySqlOptionsAction: builder =>
             {
@@ -703,17 +701,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 builder.MigrationsAssembly(PluginAssembly().FullName);
             }));
 
-        services.AddDbContext<CaseTemplatePnDbContext>(o =>
+        services.AddDbContextPool<CaseTemplatePnDbContext>(o =>
             o.UseMySql(documentsConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(documentsConnectionString)), mySqlOptionsAction: builder =>
-            {
-                builder.EnableRetryOnFailure();
-                builder.MigrationsAssembly(PluginAssembly().FullName);
-            }));
-
-        services.AddDbContext<BaseDbContext>(
-            o => o.UseMySql(frontendBaseConnectionString, new MariaDbServerVersion(
-                ServerVersion.AutoDetect(frontendBaseConnectionString)), mySqlOptionsAction: builder =>
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
@@ -755,6 +745,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         {
             endpoints.MapGrpcService<Services.GrpcServices.CalendarGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.PropertiesGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.TemplatesGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.CompliancesGrpcService>();
         });
     }
 

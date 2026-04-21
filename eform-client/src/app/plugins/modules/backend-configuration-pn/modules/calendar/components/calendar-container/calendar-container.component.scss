@@ -1,6 +1,7 @@
 .calendar-shell {
   display: flex;
   height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   overflow: hidden;
 
   app-calendar-sidebar {
@@ -22,5 +23,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+
+    app-calendar-week-grid {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
   }
 }

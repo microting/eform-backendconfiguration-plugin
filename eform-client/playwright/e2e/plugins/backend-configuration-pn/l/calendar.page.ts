@@ -133,4 +133,28 @@ export class CalendarPage {
   async countEformPreviewFields(): Promise<number> {
     return await this.page.locator('#calendarEformPreviewBody .eform-field-row').count();
   }
+
+  // Read the selected value from a mtx-select / ng-select by its parent id
+  async getSelectValue(selectorId: string): Promise<string> {
+    const el = this.page.locator(`${selectorId} .ng-value-label`);
+    if (await el.count() === 0) return '';
+    return (await el.first().textContent()) || '';
+  }
+
+  // Read multi-select values (assignees, tags)
+  async getMultiSelectValues(selectorId: string): Promise<string[]> {
+    const labels = this.page.locator(`${selectorId} .ng-value-label`);
+    const count = await labels.count();
+    const values: string[] = [];
+    for (let i = 0; i < count; i++) {
+      values.push((await labels.nth(i).textContent()) || '');
+    }
+    return values;
+  }
+
+  // Close the preview popover (click the X)
+  async closePreview(): Promise<void> {
+    await this.page.locator('#calendarEventCancelBtn').click();
+    await this.page.waitForTimeout(500);
+  }
 }

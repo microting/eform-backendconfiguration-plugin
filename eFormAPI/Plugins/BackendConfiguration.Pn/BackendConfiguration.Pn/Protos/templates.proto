@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+service BackendConfigurationTemplatesGrpc {
+  rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+}
+
+message GetTemplateRequest {
+  int32 template_id = 1;
+  int32 language_id = 2;
+}
+
+message SiteNameDto {
+  int32 site_u_id = 1;
+  string site_name = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+message TemplateFieldDto {
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string field_type = 4;
+  int32 field_type_id = 5;
+  int32 check_list_id = 6;
+  string parent_name = 7;
+}
+
+message TemplateTagItem {
+  int32 id = 1;
+  string name = 2;
+}
+
+message TemplateItem {
+  int32 id = 1;
+  string created_at = 2;
+  string updated_at = 3;
+  string label = 4;
+  string description = 5;
+  int32 repeated = 6;
+  string folder_name = 7;
+  string workflow_state = 8;
+  repeated SiteNameDto deployed_sites = 9;
+  bool has_cases = 10;
+  int32 display_index = 11;
+  int32 folder_id = 12;
+  bool jasper_export_enabled = 13;
+  bool docx_export_enabled = 14;
+  bool excel_export_enabled = 15;
+  string report_h1 = 16;
+  string report_h2 = 17;
+  string report_h3 = 18;
+  string report_h4 = 19;
+  string report_h5 = 20;
+  bool is_locked = 21;
+  bool is_editable = 22;
+  bool is_hidden = 23;
+  bool is_achievable = 24;
+  bool is_done_at_editable = 25;
+  repeated TemplateTagItem tags = 26;
+  TemplateFieldDto field1 = 27;
+  TemplateFieldDto field2 = 28;
+  TemplateFieldDto field3 = 29;
+  TemplateFieldDto field4 = 30;
+  TemplateFieldDto field5 = 31;
+  TemplateFieldDto field6 = 32;
+  TemplateFieldDto field7 = 33;
+  TemplateFieldDto field8 = 34;
+  TemplateFieldDto field9 = 35;
+  TemplateFieldDto field10 = 36;
+}
+
+message GetTemplateResponse {
+  bool success = 1;
+  string message = 2;
+  TemplateItem template = 3;
+}

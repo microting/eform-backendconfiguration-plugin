@@ -9,15 +9,17 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 public class PropertiesGrpcService(
     IBackendConfigurationPropertiesService propertiesService,
-    IBackendConfigurationUserPropertyAccess userPropertyAccess)
+    IBackendConfigurationUserPropertyAccess userPropertyAccess,
+    IGrpcSiteResolver siteResolver)
     : BackendConfigurationPropertiesGrpc.BackendConfigurationPropertiesGrpcBase
 {
     public override async Task<GetCommonDictionaryResponse> GetCommonDictionary(
         GetCommonDictionaryRequest request,
         ServerCallContext context)
     {
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
         var accessibleIds = (await userPropertyAccess
-            .GetAccessiblePropertyIdsAsync(request.SdkSiteId)).ToHashSet();
+            .GetAccessiblePropertyIdsAsync(sdkSiteId)).ToHashSet();
 
         var result = await propertiesService.GetCommonDictionary(request.FullNames);
 

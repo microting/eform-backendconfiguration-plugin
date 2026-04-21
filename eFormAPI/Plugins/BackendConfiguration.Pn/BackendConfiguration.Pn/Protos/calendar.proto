@@ -10,13 +10,12 @@ service BackendConfigurationCalendarGrpc {
 }
 
 message GetTasksForWeekRequest {
-  int32 sdk_site_id = 1;
-  int32 property_id = 2;
-  string week_start = 3;               // yyyy-MM-dd
-  string week_end = 4;                 // yyyy-MM-dd
-  repeated int32 board_ids = 5;
-  repeated string tag_names = 6;
-  repeated int32 site_ids = 7;
+  int32 property_id = 1;
+  string week_start = 2;               // yyyy-MM-dd
+  string week_end = 3;                 // yyyy-MM-dd
+  repeated int32 board_ids = 4;
+  repeated string tag_names = 5;
+  repeated int32 site_ids = 6;
 }
 
 message CalendarTaskItem {
@@ -49,8 +48,7 @@ message GetTasksForWeekResponse {
 }
 
 message GetBoardsRequest {
-  int32 sdk_site_id = 1;
-  int32 property_id = 2;
+  int32 property_id = 1;
 }
 
 message CalendarBoardItem {

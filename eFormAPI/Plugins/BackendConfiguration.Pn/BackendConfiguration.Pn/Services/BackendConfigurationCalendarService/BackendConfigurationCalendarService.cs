@@ -18,6 +18,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 
@@ -131,6 +132,21 @@ public class BackendConfigurationCalendarService(
                 // Compute all occurrence dates within the requested week
                 var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd);
 
+                // Filter by repeat end mode
+                if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
+                    occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
+                else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
+                {
+                    var allOccsSince = GetOccurrencesInWeek(planning,
+                        planning.StartDate.Date, weekEnd);
+                    var maxOcc = arp.RepeatOccurrences.Value;
+                    if (allOccsSince.Count > maxOcc)
+                    {
+                        var cutoff = allOccsSince[maxOcc - 1];
+                        occurrences.RemoveAll(d => d > cutoff);
+                    }
+                }
+
                 if (occurrences.Count == 0)
                     continue;
 
@@ -198,7 +214,9 @@ public class BackendConfigurationCalendarService(
                         NextExecutionTime = planning.NextExecutionTime,
                         PlanningId = planning.Id,
                         IsAllDay = isAllDay,
-                        ExceptionId = exception?.Id
+                        ExceptionId = exception?.Id,
+                        EformId = arp.AreaRule?.EformId,
+                        ItemPlanningTagId = arp.ItemPlanningTagId
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -260,7 +278,9 @@ public class BackendConfigurationCalendarService(
                     NextExecutionTime = movedPlanning.NextExecutionTime,
                     PlanningId = movedPlanning.Id,
                     IsAllDay = isAllDay,
-                    ExceptionId = movedIn.Id
+                    ExceptionId = movedIn.Id,
+                    EformId = arp.AreaRule?.EformId,
+                    ItemPlanningTagId = arp.ItemPlanningTagId
                 };
 
                 if (ShouldIncludeTask(movedModel, requestModel))
@@ -350,7 +370,9 @@ public class BackendConfigurationCalendarService(
                     IsFromCompliance = true,
                     Deadline = compliance.Deadline,
                     PlanningId = compliance.PlanningId,
-                    IsAllDay = compIsAllDay
+                    IsAllDay = compIsAllDay,
+                    EformId = arp?.AreaRule?.EformId,
+                    ItemPlanningTagId = arp?.ItemPlanningTagId
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -382,11 +404,18 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
+            // Resolve FolderId: if not provided, find or create the "00. Logbøger" folder
+            var resolvedFolderId = createModel.FolderId;
+            if (resolvedFolderId is null or 0)
+            {
+                resolvedFolderId = await ResolveOrCreateLogbøgerFolderAsync(createModel.PropertyId);
+            }
+
             // Build TaskWizardCreateModel from the calendar request
             var wizardModel = new TaskWizardCreateModel
             {
                 PropertyId = createModel.PropertyId,
-                FolderId = createModel.FolderId,
+                FolderId = resolvedFolderId,
                 ItemPlanningTagId = createModel.ItemPlanningTagId,
                 TagIds = createModel.TagIds,
                 Translates = createModel.Translates,
@@ -417,6 +446,14 @@ public class BackendConfigurationCalendarService(
 
             if (latestArp != null)
             {
+                if (createModel.RepeatEndMode.HasValue)
+                {
+                    latestArp.RepeatEndMode = createModel.RepeatEndMode;
+                    latestArp.RepeatOccurrences = createModel.RepeatOccurrences;
+                    latestArp.RepeatUntilDate = createModel.RepeatUntilDate;
+                    await latestArp.Update(backendConfigurationPnDbContext);
+                }
+
                 var calConfig = new CalendarConfiguration
                 {
                     AreaRulePlanningId = latestArp.Id,
@@ -1034,6 +1071,26 @@ public class BackendConfigurationCalendarService(
                 }
                 break;
             }
+            case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
+            {
+                if (startDate > weekEnd) break;
+                var yearDom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                var yearMonth = startDate.Month;
+                var yearsSinceStart = weekStart.Year - startDate.Year;
+                if (yearsSinceStart < 0) break;
+                var yearPeriods = yearsSinceStart > 0 ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
+                for (var i = 0; i < 2; i++)
+                {
+                    var candidateYear = startDate.Year + (yearPeriods + i) * repeatEvery;
+                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
+                    var candidate = new DateTime(candidateYear, yearMonth,
+                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate > weekEnd) break;
+                    if (candidate >= weekStart)
+                        occurrences.Add(candidate);
+                }
+                break;
+            }
             default:
             {
                 // No repeat — show on StartDate if it falls in the week
@@ -1071,5 +1128,57 @@ public class BackendConfigurationCalendarService(
         }
 
         return true;
+    }
+
+    private async Task<int?> ResolveOrCreateLogbøgerFolderAsync(int propertyId)
+    {
+        var existingFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
+            .Include(f => f.AreaProperty)
+            .ThenInclude(a => a.Area)
+            .ThenInclude(a => a.AreaTranslations)
+            .Where(f => f.AreaProperty.PropertyId == propertyId)
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.Area.AreaTranslations
+                .Any(t => t.Name == "00. Logbøger"))
+            .FirstOrDefaultAsync();
+
+        if (existingFolder != null)
+        {
+            return existingFolder.FolderId;
+        }
+
+        var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
+            .Where(x => x.Name == "00. Logbøger")
+            .FirstOrDefaultAsync();
+
+        if (areaTranslation == null)
+        {
+            return null;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+
+        var propertyAreaUpdateModel = new Infrastructure.Models.PropertyAreas.PropertyAreasUpdateModel
+        {
+            Areas = [new Infrastructure.Models.PropertyAreas.PropertyAreaModel { AreaId = areaTranslation.AreaId, Activated = true }],
+            PropertyId = propertyId
+        };
+
+        await Infrastructure.Helpers.BackendConfigurationPropertyAreasServiceHelper.Update(
+            propertyAreaUpdateModel, core,
+            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userService.UserId);
+
+        var newFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
+            .Include(f => f.AreaProperty)
+            .ThenInclude(a => a.Area)
+            .ThenInclude(a => a.AreaTranslations)
+            .Where(f => f.AreaProperty.PropertyId == propertyId)
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(f => f.AreaProperty.Area.AreaTranslations
+                .Any(t => t.Name == "00. Logbøger"))
+            .FirstOrDefaultAsync();
+
+        return newFolder?.FolderId;
     }
 }

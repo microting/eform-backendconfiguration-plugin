@@ -97,7 +97,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
 
     this.loadProperties();
-    this.loadEmployees();
     this.loadTags();
     this.loadTeams();
     this.loadEforms();
@@ -136,6 +135,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.propertiesService.getAllPropertiesDictionary().subscribe(res => {
       if (res && res.success) {
         this.properties = res.model;
+        if (this.properties.length > 0 && !this.currentPropertyId) {
+          this.onPropertySelected(this.properties[0].id);
+        }
       }
     });
   }
@@ -144,6 +146,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.stateService.updatePropertyId(propertyId);
     if (propertyId) {
       this.loadBoards(propertyId, true);
+      this.loadEmployees();
+    } else {
+      this.employees = [];
     }
   }
 
@@ -217,7 +222,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   loadEmployees() {
     this.propertiesService.getDeviceUsersFiltered({
-      propertyIds: [],
+      propertyIds: this.currentPropertyId ? [this.currentPropertyId] : [],
       nameFilter: '',
       sort: 'Name',
       isSortDsc: false,
@@ -317,6 +322,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      maxHeight: `${window.innerHeight - 16}px`,
     });
 
     const data: TaskCreateEditModalData = {
@@ -486,6 +492,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      maxHeight: `${window.innerHeight - 16}px`,
     });
 
     const data: TaskPreviewModalData = {
@@ -555,6 +562,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      maxHeight: `${window.innerHeight - 16}px`,
     });
 
     const task = event.task;
@@ -618,6 +626,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      maxHeight: `${window.innerHeight - 16}px`,
     });
 
     const sourceTask = event.task;
@@ -665,11 +674,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     return openToRight
       ? [
           {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top', offsetX: 8},
+          {originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'bottom', offsetX: 8},
           {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom'},
+          {originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top'},
         ]
       : [
           {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'top', offsetX: -8},
+          {originX: 'start', originY: 'bottom', overlayX: 'end', overlayY: 'bottom', offsetX: -8},
           {originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'bottom'},
+          {originX: 'start', originY: 'bottom', overlayX: 'end', overlayY: 'top'},
         ];
   }
 

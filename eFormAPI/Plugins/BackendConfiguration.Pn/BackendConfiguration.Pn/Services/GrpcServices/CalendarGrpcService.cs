@@ -12,17 +12,18 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 public class CalendarGrpcService(
     IBackendConfigurationCalendarService calendarService,
-    IBackendConfigurationUserPropertyAccess userPropertyAccess)
+    IBackendConfigurationUserPropertyAccess userPropertyAccess,
+    IGrpcSiteResolver siteResolver)
     : BackendConfigurationCalendarGrpc.BackendConfigurationCalendarGrpcBase
 {
-    private const string IsoDate = "yyyy-MM-dd";
     private const string IsoDateTime = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
     public override async Task<GetTasksForWeekResponse> GetTasksForWeek(
         GetTasksForWeekRequest request,
         ServerCallContext context)
     {
-        if (!await userPropertyAccess.HasAccessAsync(request.SdkSiteId, request.PropertyId))
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, request.PropertyId))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
                 "Caller has no PropertyWorker access to the requested property."));
@@ -85,7 +86,8 @@ public class CalendarGrpcService(
         GetBoardsRequest request,
         ServerCallContext context)
     {
-        if (!await userPropertyAccess.HasAccessAsync(request.SdkSiteId, request.PropertyId))
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, request.PropertyId))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
                 "Caller has no PropertyWorker access to the requested property."));

@@ -7,7 +7,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 public class CalendarTaskCreateRequestModel
 {
     public int PropertyId { get; set; }
-    public int FolderId { get; set; }
+    public int? FolderId { get; set; }
     public int? ItemPlanningTagId { get; set; }
     public List<int> TagIds { get; set; } = [];
     public List<CommonTranslationsModel> Translates { get; set; } = [];
@@ -22,4 +22,7 @@ public class CalendarTaskCreateRequestModel
     public double Duration { get; set; }
     public int? BoardId { get; set; }
     public string Color { get; set; }
+    public int? RepeatEndMode { get; set; }
+    public int? RepeatOccurrences { get; set; }
+    public DateTime? RepeatUntilDate { get; set; }
 }

@@ -1,0 +1,173 @@
+syntax = "proto3";
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc";
+
+service BackendConfigurationCompliancesGrpc {
+  rpc ReadComplianceCase(ReadComplianceCaseRequest) returns (ReadComplianceCaseResponse);
+  rpc UpdateComplianceCase(UpdateComplianceCaseRequest) returns (UpdateComplianceCaseResponse);
+}
+
+// ─── Read ───
+
+message ReadComplianceCaseRequest {
+  int32 case_id = 1;
+  int32 template_id = 2;
+  int32 extra_id = 3;
+}
+
+// Mirrors KeyValuePair in SDK (used by SingleSelect/MultiSelect)
+message KeyValuePairItem {
+  string key = 1;
+  string value = 2;
+  bool selected = 3;
+  string display_order = 4;
+}
+
+// Mirrors DataItem base + all subclass-specific fields as optional flat fields
+message DataItemInfo {
+  // Base DataItem fields
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string field_type = 4;
+  string value = 5;
+  bool mandatory = 6;
+  bool read_only = 7;
+  string color = 8;
+  int32 display_order = 9;
+  bool dummy = 10;
+  string original_id = 11;
+
+  // Subclass-specific fields (set based on field_type)
+  string default_value = 12;
+  string min_value = 13;
+  string max_value = 14;
+  int32 max_length = 15;
+  bool split = 16;
+  int32 multi = 17;
+  bool selected = 18;
+  int32 decimal_count = 19;
+  string unit_name = 20;
+  bool geolocation_enabled = 21;
+  bool geolocation_forced = 22;
+  bool geolocation_hidden = 23;
+  bool barcode_enabled = 24;
+  string barcode_type = 25;
+  bool stop_on_save = 26;
+  int32 entity_type_id = 27;
+  bool is_num = 28;
+  string query_type = 29;
+  int32 min_search_length = 30;
+  int32 source = 31;
+  repeated KeyValuePairItem key_value_pair_list = 32;
+}
+
+// Mirrors DataItemGroup
+message DataItemGroupInfo {
+  string id = 1;                       // string in C#, not int
+  string label = 2;
+  string description = 3;
+  string color = 4;
+  int32 display_order = 5;
+  string value = 6;
+  repeated DataItemInfo data_items = 7;
+}
+
+// Mirrors Element (base) + CheckListValue/DataElement/GroupElement
+message ReplyElementItem {
+  int32 id = 1;
+  string label = 2;
+  string status = 3;
+  int32 display_order = 4;
+  string description = 5;
+  bool approval_enabled = 6;
+  bool review_enabled = 7;
+  bool done_button_enabled = 8;
+  bool extra_fields_enabled = 9;
+  string pink_bar_text = 10;
+  bool quick_sync_enabled = 11;
+  string original_id = 12;
+  repeated DataItemInfo data_items = 13;
+  repeated DataItemGroupInfo data_item_groups = 14;
+  repeated ReplyElementItem element_list = 15;
+}
+
+// Mirrors ReplyElement (extends CoreElement)
+message ReadComplianceCaseResponse {
+  bool success = 1;
+  string message = 2;
+  // CoreElement fields
+  int32 id = 3;
+  string label = 4;
+  int32 display_order = 5;
+  string check_list_folder_name = 6;
+  int32 repeated = 7;
+  int32 microting_u_id = 8;
+  string color = 9;
+  string case_type = 10;
+  string start_date = 11;
+  string end_date = 12;
+  string language = 13;
+  bool multi_approval = 14;
+  bool fast_navigation = 15;
+  bool download_entities = 16;
+  bool manual_sync = 17;
+  bool enable_quick_sync = 18;
+  string original_id = 19;
+  // ReplyElement-specific fields
+  string done_at = 20;
+  int32 done_by_id = 21;
+  int32 unit_id = 22;
+  int32 site_microting_uuid = 23;
+  bool jasper_export_enabled = 24;
+  bool docx_export_enabled = 25;
+  string custom = 26;
+  repeated ReplyElementItem element_list = 27;
+}
+
+// ─── Update ───
+
+message CaseEditFieldValue {
+  int32 field_id = 1;
+  string value = 2;
+  string field_type = 3;
+}
+
+message CaseEditField {
+  string field_type = 1;
+  repeated CaseEditFieldValue field_values = 2;
+}
+
+message CaseEditGroupField {
+  int32 id = 1;
+  string label = 2;
+  string description = 3;
+  string color = 4;
+  int32 display_order = 5;
+  repeated CaseEditField fields = 6;
+}
+
+message CaseEditElement {
+  int32 id = 1;
+  string status = 2;
+  repeated CaseEditField fields = 3;
+  repeated CaseEditGroupField group_fields = 4;
+  repeated CaseEditElement element_list = 5;
+}
+
+message UpdateComplianceCaseRequest {
+  int32 id = 1;
+  string label = 2;
+  string done_at = 3;
+  bool is_done_at_editable = 4;
+  int32 extra_id = 5;
+  int32 site_id = 6;
+  repeated CaseEditElement element_list = 7;
+}
+
+message UpdateComplianceCaseResponse {
+  bool success = 1;
+  string message = 2;
+}
