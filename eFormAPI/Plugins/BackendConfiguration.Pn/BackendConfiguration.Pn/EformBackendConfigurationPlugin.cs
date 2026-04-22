@@ -137,7 +137,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IWordService, WordService>();
         services.AddControllers();
         SeedEForms(services);
-        QuestPDF.Settings.License = LicenseType.Community;
+        // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
     }
 
     public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)

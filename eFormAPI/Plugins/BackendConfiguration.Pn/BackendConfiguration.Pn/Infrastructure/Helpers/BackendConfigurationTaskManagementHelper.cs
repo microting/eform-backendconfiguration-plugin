@@ -204,8 +204,7 @@ public static class BackendConfigurationTaskManagementHelper
                             foreach (var imageName in picturesOfTasks)
                             {
                                 var storageResult = core.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
-                                x.Item().Image(storageResult.ResponseStream)
-                                    .FitArea();
+                                x.Item().Image(storageResult.ResponseStream);
                             }
                         });
                 });
