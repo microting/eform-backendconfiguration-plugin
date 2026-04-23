@@ -740,7 +740,6 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
         backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
 
-        appBuilder.UseRouting();
         appBuilder.UseEndpoints(endpoints =>
         {
             endpoints.MapGrpcService<Services.GrpcServices.CalendarGrpcService>();
