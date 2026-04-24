@@ -1,9 +1,9 @@
 @keyframes highlightFade {
   0% {
-    background-color: #b3d3ea;
+    background-color: var(--surface-powder, #b3d3ea);
   }
   70% {
-    background-color: #b3d3ea;
+    background-color: var(--surface-powder, #b3d3ea);
   }
   100% {
     background-color: transparent;

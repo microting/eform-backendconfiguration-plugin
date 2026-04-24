@@ -18,13 +18,13 @@
 .day-row {
   margin-bottom: 24px;
   padding: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--radius-sm, 4px);
 }
 
 .day-row h5 {
   margin-bottom: 12px;
-  color: #333;
+  color: var(--text-header, #333);
 }
 
 .time-inputs {
@@ -45,32 +45,32 @@
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--text-tertiary, #6b7280);
   font-weight: 700;
-  border-bottom: 1px solid #edeff3;
+  border-bottom: 1px solid var(--border, #edeff3);
   padding-bottom: 6px;
   margin: 22px 4px 12px;
 }
 
 .checkbox-description {
   display: block;
-  color: #6b7280;
+  color: var(--text-tertiary, #6b7280);
   font-size: 11px;
   line-height: 1.4;
   margin-top: 2px;
 }
 
 .muted-note {
-  color: #9ca3af;
+  color: var(--text-quaternary, #9ca3af);
   font-size: 10px;
   display: block;
   margin-top: 4px;
 }
 
 .mobile-axis {
-  background: #f9fafb;
+  background: var(--surface-subtle, #f9fafb);
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   padding: 12px 16px;
   margin: 10px 4px;
 }
@@ -101,14 +101,14 @@
 .sub-option {
   margin: 8px 0 4px 28px;
   padding: 8px 12px;
-  background: #ffffff;
+  background: var(--bg, #FFFFFF);
   border: 1px dashed #d1d5db;
   border-radius: 5px;
 }
 
 .cutoff-badge {
   display: inline-block;
-  background: #fef3c7;
+  background: var(--surface-warning-light, #fef3c7);
   color: #92400e;
   font-size: 10px;
   font-weight: 600;

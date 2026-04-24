@@ -1,7 +1,7 @@
 // Popover card wrapper — used when rendered via CDK Overlay
 .gcal-popover-card {
-  background: white;
-  border-radius: 8px;
+  background: var(--bg, #FFFFFF);
+  border-radius: var(--radius-md, 8px);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
   max-height: calc(100vh - 16px);
   display: flex;
@@ -189,7 +189,7 @@
   background: rgba(0, 0, 0, 0.08);
   color: #5f6368;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }

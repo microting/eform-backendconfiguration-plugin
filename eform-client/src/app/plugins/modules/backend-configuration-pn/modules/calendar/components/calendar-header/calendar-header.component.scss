@@ -26,7 +26,7 @@
   .week-badge {
     padding: 4px 10px;
     border-radius: 10px;
-    background: #e3f2fd;
+    background: var(--surface-info-light, #e3f2fd);
     color: #1976d2;
     font-size: 0.8rem;
     font-weight: 600;
