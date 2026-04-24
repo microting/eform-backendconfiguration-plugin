@@ -9,7 +9,7 @@
     min-width: 240px;
     transition: width 0.2s, min-width 0.2s;
     overflow-y: auto;
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid var(--border, #e0e0e0);
   }
 
   &.sidebar-closed app-calendar-sidebar {

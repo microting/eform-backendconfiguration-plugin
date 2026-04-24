@@ -1,7 +1,7 @@
 .task-block {
   user-select: none;
   position: absolute;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   overflow: hidden;
   cursor: pointer;
   padding: 2px 4px;

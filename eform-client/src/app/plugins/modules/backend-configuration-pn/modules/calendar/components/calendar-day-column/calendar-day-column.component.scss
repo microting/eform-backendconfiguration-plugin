@@ -46,7 +46,7 @@
       left: 0;
       right: 0;
       height: 2px;
-      background: #ea4335;
+      background: var(--error, #ea4335);
       z-index: 10;
       pointer-events: none;
 
@@ -58,7 +58,7 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #ea4335;
+        background: var(--error, #ea4335);
       }
     }
   }
