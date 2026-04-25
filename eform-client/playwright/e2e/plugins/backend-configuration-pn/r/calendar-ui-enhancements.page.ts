@@ -64,6 +64,13 @@ export class CalendarUiEnhancementsPage {
   }
 
   async closeEventModal(): Promise<void> {
+    // Mini-picker overlay (if open) has a CDK backdrop that intercepts
+    // clicks aimed at elements behind it, including the cancel button.
+    // Press Escape first to dismiss any open overlay, then click cancel.
+    if (await this.getMiniPickerOverlay().count() > 0) {
+      await this.page.keyboard.press('Escape');
+      await this.getMiniPickerOverlay().waitFor({ state: 'detached', timeout: 2000 }).catch(() => undefined);
+    }
     await this.page.locator('#calendarEventCancelBtn').click();
     await this.page.waitForTimeout(500);
   }
