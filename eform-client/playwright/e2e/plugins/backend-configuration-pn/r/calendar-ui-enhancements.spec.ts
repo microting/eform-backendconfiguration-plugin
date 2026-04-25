@@ -194,22 +194,25 @@ test.describe.serial('Calendar UI enhancements', () => {
       await calendarPage.closeEventModal();
     });
 
-    test('A4: compact forms 1804 / 8:4 / 804 normalize to HH:MM', async ({ page }) => {
+    test('A4: compact forms 1804 / 9:7 / 804 normalize to HH:MM', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
 
-      // 1804 → 18:04
+      // 1804 → 18:04 (no preset matches the substring "1804")
       await calendarPage.openCreateModalAt9AM();
       await calendarPage.typeStartTime('1804', 'Enter');
       expect(await calendarPage.getStartTimeValue()).toBe('18:04');
       await calendarPage.closeEventModal();
 
-      // 8:4 → 08:04
+      // 9:7 → 09:07. Avoids forms like "8:4" where ng-select's substring
+      // filter would match a preset ("08:45" contains "8:4") and Enter
+      // would commit the preset rather than route through addTag. ":7"
+      // is not a 15-min boundary so no preset can ever match.
       await calendarPage.openCreateModalAt9AM();
-      await calendarPage.typeStartTime('8:4', 'Enter');
-      expect(await calendarPage.getStartTimeValue()).toBe('08:04');
+      await calendarPage.typeStartTime('9:7', 'Enter');
+      expect(await calendarPage.getStartTimeValue()).toBe('09:07');
       await calendarPage.closeEventModal();
 
-      // 804 → 08:04
+      // 804 → 08:04 (no preset substring-matches "804")
       await calendarPage.openCreateModalAt9AM();
       await calendarPage.typeStartTime('804', 'Enter');
       expect(await calendarPage.getStartTimeValue()).toBe('08:04');
