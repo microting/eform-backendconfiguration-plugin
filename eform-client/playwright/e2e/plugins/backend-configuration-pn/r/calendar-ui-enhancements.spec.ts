@@ -385,13 +385,10 @@ test.describe.serial('Calendar UI enhancements', () => {
       // is non-interactive; click the .ng-select-container instead.
       await repeatRow.locator('.ng-select-container').first().click();
       await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-      // Custom option label is "Custom…" (HORIZONTAL ELLIPSIS) — match by
-      // prefix to avoid Unicode surprises across locales.
-      await page
-        .locator('.ng-dropdown-panel .ng-option')
-        .filter({ hasText: /^Custom/i })
-        .first()
-        .click();
+      // Custom is always the LAST repeat option (per calendar-repeat.service
+      // buildRepeatOptions). Picking by index avoids depending on the
+      // translated label, which varies with the test environment locale.
+      await page.locator('.ng-dropdown-panel .ng-option').last().click();
 
       // Custom-repeat dialog should now be open.
       await page
