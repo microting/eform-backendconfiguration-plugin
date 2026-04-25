@@ -479,4 +479,5 @@ export const deDE = {
   'Could not create report headline': 'Berichtsüberschrift konnte nicht erstellt werden',
   'Create new': 'Neu erstellen',
   'Change property': 'Eigenschaften ändern',
+  Wk: 'Woche',
 };

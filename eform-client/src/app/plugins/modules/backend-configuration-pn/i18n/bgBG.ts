@@ -425,4 +425,5 @@ export const bgBG = {
   'Could not create report headline': 'Не можа да се създаде заглавие на отчета',
   'Create new': 'Създаване на ново',
   'Change property': 'Промяна на имота',
+  Wk: 'Седмица',
 };

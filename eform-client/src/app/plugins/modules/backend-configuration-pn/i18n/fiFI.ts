@@ -425,4 +425,5 @@ export const fiFI = {
   'Could not create report headline': 'Raportin otsikon luominen epäonnistui',
   'Create new': 'Luo uusi',
   'Change property': 'Muuta ominaisuutta',
+  Wk: 'Viikko',
 };

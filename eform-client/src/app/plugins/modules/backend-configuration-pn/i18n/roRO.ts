@@ -425,4 +425,5 @@ export const roRO = {
   'Could not create report headline': 'Nu s-a putut crea titlul raportului',
   'Create new': 'Creați nou',
   'Change property': 'Schimbați proprietatea',
+  Wk: 'Săptămâna',
 };

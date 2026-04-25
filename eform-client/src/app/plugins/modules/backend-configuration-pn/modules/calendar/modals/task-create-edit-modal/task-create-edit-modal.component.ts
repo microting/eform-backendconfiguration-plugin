@@ -60,6 +60,7 @@ export class TaskCreateEditModalComponent implements OnInit {
   selectedTemplate: EformVisualEditorModel | null = null;
   isLoadingTemplate = false;
   showEformDetails = false;
+  showMiniPicker = false;
   filteredEmployees: CommonDictionaryModel[] = [];
   private customRepeatMeta: CalendarRepeatMeta | null = null;
   private currentLanguageId = 1;  // default to English
@@ -597,6 +598,19 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   onCancel() {
     this.close(null);
+  }
+
+  get formattedSelectedDate(): string {
+    const value = this.dateControl.value;
+    if (!value) return '';
+    const locale = getCurrentLocale(this.translate);
+    const formatted = value.toLocaleDateString(locale, {weekday: 'long', day: 'numeric', month: 'long'});
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  onMiniDateSelected(date: Date) {
+    this.dateControl.setValue(date);
+    this.showMiniPicker = false;
   }
 
   private close(result: boolean | null) {

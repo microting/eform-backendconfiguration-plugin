@@ -425,4 +425,5 @@ export const itIT = {
   'Could not create report headline': 'Impossibile creare l&#39;intestazione del report',
   'Create new': 'Crea nuovo',
   'Change property': 'Modifica proprietà',
+  Wk: 'Settimana',
 };

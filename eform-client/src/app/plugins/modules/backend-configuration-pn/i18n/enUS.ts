@@ -197,6 +197,7 @@ export const enUS= {
   'Task allocation, ad-hoc tasks per': 'Task allocation, ad-hoc tasks per',
   'Select property': 'Select property',
   'Change property': 'Change property',
+  'Wk': 'Wk',
   'Today': 'Today',
   '1-7 days': '1-7 days',
   '8-30 days': '8-30 days',

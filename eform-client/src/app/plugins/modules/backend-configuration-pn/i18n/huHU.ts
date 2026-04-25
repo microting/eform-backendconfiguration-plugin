@@ -425,4 +425,5 @@ export const huHU = {
   'Could not create report headline': 'Nem sikerült létrehozni a jelentés címsorát',
   'Create new': 'Új létrehozása',
   'Change property': 'Tulajdonság módosítása',
+  Wk: 'Hét',
 };

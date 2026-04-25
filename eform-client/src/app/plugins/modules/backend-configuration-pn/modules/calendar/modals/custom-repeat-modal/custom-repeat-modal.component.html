@@ -44,11 +44,37 @@
         <div class="end-option">
           <mat-radio-button value="until"></mat-radio-button>
           <span class="end-option-label">{{ 'On' | translate }}</span>
-          <mat-form-field class="date-input" appearance="outline">
-            <input matInput [matDatepicker]="untilPicker" [(ngModel)]="untilDateObj" [disabled]="endMode !== 'until'">
-            <mat-datepicker-toggle matIconSuffix [for]="untilPicker"></mat-datepicker-toggle>
-            <mat-datepicker #untilPicker></mat-datepicker>
-          </mat-form-field>
+          <div class="date-input" cdkOverlayOrigin #miniPickerOrigin="cdkOverlayOrigin">
+            <mat-form-field appearance="outline">
+              <input matInput
+                     readonly
+                     [value]="formattedUntilDate"
+                     [disabled]="endMode !== 'until'"
+                     (click)="endMode === 'until' && (showMiniPicker = !showMiniPicker)">
+              <button mat-icon-button matIconSuffix type="button"
+                      [disabled]="endMode !== 'until'"
+                      (click)="showMiniPicker = !showMiniPicker; $event.stopPropagation()">
+                <mat-icon>calendar_today</mat-icon>
+              </button>
+            </mat-form-field>
+          </div>
+
+          <ng-template
+            cdkConnectedOverlay
+            [cdkConnectedOverlayOrigin]="miniPickerOrigin"
+            [cdkConnectedOverlayOpen]="showMiniPicker"
+            [cdkConnectedOverlayHasBackdrop]="true"
+            cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+            (backdropClick)="showMiniPicker = false"
+            (overlayOutsideClick)="showMiniPicker = false">
+            <div class="mini-picker-overlay-card">
+              <app-calendar-mini-calendar
+                [selectedDate]="untilDateObj"
+                [minDate]="data.date"
+                (dateSelected)="onMiniDateSelected($event)">
+              </app-calendar-mini-calendar>
+            </div>
+          </ng-template>
         </div>
 
         <div class="end-option">

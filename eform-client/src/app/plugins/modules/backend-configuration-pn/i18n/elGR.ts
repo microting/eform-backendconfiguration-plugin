@@ -425,4 +425,5 @@ export const elGR = {
   'Could not create report headline': 'Δεν ήταν δυνατή η δημιουργία τίτλου αναφοράς',
   'Create new': 'Δημιουργία νέου',
   'Change property': 'Αλλαγή ιδιότητας',
+  Wk: 'Εβδομάδα',
 };

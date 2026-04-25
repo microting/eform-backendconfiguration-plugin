@@ -425,4 +425,5 @@ export const plPL = {
   'Could not create report headline': 'Nie można utworzyć nagłówka raportu',
   'Create new': 'Utwórz nowy',
   'Change property': 'Zmień właściwość',
+  Wk: 'Tydzień',
 };

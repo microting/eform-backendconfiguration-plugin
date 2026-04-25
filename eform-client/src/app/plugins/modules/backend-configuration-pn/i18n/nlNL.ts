@@ -425,4 +425,5 @@ export const nlNL = {
   'Could not create report headline': 'Kon geen rapportkop maken',
   'Create new': 'Maak een nieuwe aan',
   'Change property': 'Eigenschap wijzigen',
+  Wk: 'Week',
 };

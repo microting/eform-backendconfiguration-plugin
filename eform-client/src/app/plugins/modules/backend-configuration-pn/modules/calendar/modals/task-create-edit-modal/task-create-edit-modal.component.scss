@@ -1,3 +1,12 @@
+// Mini-calendar overlay popup card — Option A demo for week-number date picker
+.mini-picker-overlay-card {
+  background: var(--bg, #FFFFFF);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  padding: 12px;
+  margin-top: 4px;
+}
+
 // Popover card wrapper — used when rendered via CDK Overlay
 .gcal-popover-card {
   background: var(--bg, #FFFFFF);

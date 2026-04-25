@@ -425,4 +425,5 @@ export const lvLV = {
   'Could not create report headline': 'Nevarēja izveidot ziņojuma virsrakstu',
   'Create new': 'Izveidot jaunu',
   'Change property': 'Mainīt īpašumu',
+  Wk: 'Nedēļa',
 };

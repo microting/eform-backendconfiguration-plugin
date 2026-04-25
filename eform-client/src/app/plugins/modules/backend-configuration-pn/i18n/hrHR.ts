@@ -425,4 +425,5 @@ export const hrHR = {
   'Could not create report headline': 'Nije moguće stvoriti naslov izvješća',
   'Create new': 'Stvori novo',
   'Change property': 'Promjena svojstva',
+  Wk: 'Tjedan',
 };

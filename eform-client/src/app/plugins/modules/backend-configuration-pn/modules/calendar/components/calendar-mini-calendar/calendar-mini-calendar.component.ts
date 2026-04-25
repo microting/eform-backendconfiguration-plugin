@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
@@ -8,6 +8,12 @@ interface CalendarDay {
   inCurrentMonth: boolean;
   isToday: boolean;
   isSelected: boolean;
+  isDisabled: boolean;
+}
+
+interface CalendarWeek {
+  weekNumber: number;
+  days: CalendarDay[];
 }
 
 @Component({
@@ -16,29 +22,31 @@ interface CalendarDay {
   templateUrl: './calendar-mini-calendar.component.html',
   styleUrls: ['./calendar-mini-calendar.component.scss'],
 })
-export class CalendarMiniCalendarComponent implements OnInit {
+export class CalendarMiniCalendarComponent implements OnInit, OnChanges {
   @Input() selectedDate: Date | null = null;
+  @Input() minDate: Date | null = null;
   @Output() dateSelected = new EventEmitter<Date>();
 
   displayMonth!: Date;
-  weeks: CalendarDay[][] = [];
+  weeks: CalendarWeek[] = [];
   dayHeaders: string[] = [];
 
   constructor(private translate: TranslateService) {}
 
   ngOnInit() {
-    this.dayHeaders = [
-      this.translate.instant('Mon'),
-      this.translate.instant('Tue'),
-      this.translate.instant('Wed'),
-      this.translate.instant('Thu'),
-      this.translate.instant('Fri'),
-      this.translate.instant('Sat'),
-      this.translate.instant('Sun'),
-    ];
+    this.dayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      .map(k => this.translate.instant(k).charAt(0).toUpperCase());
     this.displayMonth = this.selectedDate
       ? new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), 1)
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    this.buildCalendar();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (this.weeks.length === 0) return;
+    if (changes['selectedDate'] && this.selectedDate) {
+      this.displayMonth = new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), 1);
+    }
     this.buildCalendar();
   }
 
@@ -52,6 +60,7 @@ export class CalendarMiniCalendarComponent implements OnInit {
   }
 
   selectDate(day: CalendarDay) {
+    if (day.isDisabled) return;
     this.selectedDate = day.date;
     this.buildCalendar();
     this.dateSelected.emit(day.date);
@@ -66,6 +75,7 @@ export class CalendarMiniCalendarComponent implements OnInit {
     const month = this.displayMonth.getMonth();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const minDateNorm = this.minDate ? new Date(this.minDate.getFullYear(), this.minDate.getMonth(), this.minDate.getDate()).getTime() : null;
 
     const firstDay = new Date(year, month, 1);
     // Monday-based: getDay() 0=Sun, 1=Mon … shift so Mon=0
@@ -83,12 +93,27 @@ export class CalendarMiniCalendarComponent implements OnInit {
         isSelected: this.selectedDate
           ? new Date(this.selectedDate).setHours(0, 0, 0, 0) === date.getTime()
           : false,
+        isDisabled: minDateNorm !== null && date.getTime() < minDateNorm,
       });
     }
 
     this.weeks = [];
     for (let i = 0; i < 6; i++) {
-      this.weeks.push(days.slice(i * 7, i * 7 + 7));
+      const weekDays = days.slice(i * 7, i * 7 + 7);
+      this.weeks.push({
+        weekNumber: this.getIsoWeek(weekDays[0].date),
+        days: weekDays,
+      });
     }
+  }
+
+  // ISO 8601 week: anchor on the Thursday of the same week, then count
+  // whole weeks since the first Thursday of the ISO year.
+  private getIsoWeek(d: Date): number {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 }

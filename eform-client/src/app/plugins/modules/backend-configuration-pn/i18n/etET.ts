@@ -425,4 +425,5 @@ export const etET = {
   'Could not create report headline': 'Aruande pealkirja loomine ebaõnnestus',
   'Create new': 'Loo uus',
   'Change property': 'Muuda atribuuti',
+  Wk: 'Nädal',
 };

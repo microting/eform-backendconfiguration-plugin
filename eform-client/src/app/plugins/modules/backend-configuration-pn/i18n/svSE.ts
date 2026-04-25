@@ -425,4 +425,5 @@ export const svSE = {
   'Could not create report headline': 'Kunde inte skapa rapportrubrik',
   'Create new': 'Skapa nytt',
   'Change property': 'Ändra egenskap',
+  Wk: 'Vecka',
 };

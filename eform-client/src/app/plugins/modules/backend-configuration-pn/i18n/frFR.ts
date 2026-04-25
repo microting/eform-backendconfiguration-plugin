@@ -425,4 +425,5 @@ export const frFR = {
   'Could not create report headline': 'Impossible de créer le titre du rapport',
   'Create new': 'Créer un nouveau',
   'Change property': 'Changer de propriété',
+  Wk: 'Semaine',
 };

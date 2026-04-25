@@ -425,4 +425,5 @@ export const ltLT = {
   'Could not create report headline': 'Nepavyko sukurti ataskaitos antraštės',
   'Create new': 'Sukurti naują',
   'Change property': 'Keisti ypatybę',
+  Wk: 'Savaitė',
 };

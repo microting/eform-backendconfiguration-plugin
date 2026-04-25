@@ -425,4 +425,5 @@ export const skSK = {
   'Could not create report headline': 'Nepodarilo sa vytvoriť nadpis prehľadu',
   'Create new': 'Vytvoriť nové',
   'Change property': 'Zmeniť vlastnosť',
+  Wk: 'Týždeň',
 };

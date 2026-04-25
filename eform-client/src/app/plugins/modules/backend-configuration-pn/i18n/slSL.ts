@@ -425,4 +425,5 @@ export const slSL = {
   'Could not create report headline': 'Naslova poročila ni bilo mogoče ustvariti',
   'Create new': 'Ustvari novo',
   'Change property': 'Spremeni lastnost',
+  Wk: 'Ted.',
 };

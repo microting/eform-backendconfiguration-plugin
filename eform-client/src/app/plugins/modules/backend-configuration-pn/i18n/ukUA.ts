@@ -425,4 +425,5 @@ export const ukUA = {
   'Could not create report headline': 'Не вдалося створити заголовок звіту',
   'Create new': 'Створити нове',
   'Change property': 'Змінити властивість',
+  Wk: 'Тиждень',
 };

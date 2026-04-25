@@ -425,4 +425,5 @@ export const csCZ = {
   'Could not create report headline': 'Nepodařilo se vytvořit nadpis přehledu',
   'Create new': 'Vytvořit nové',
   'Change property': 'Změnit vlastnost',
+  Wk: 'Týden',
 };

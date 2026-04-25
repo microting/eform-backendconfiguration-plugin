@@ -22,12 +22,36 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">schedule</mat-icon>
       <div class="gcal-row-content gcal-datetime-row">
-        <mat-form-field class="gcal-date-field">
-          <mat-label>{{ 'Date' | translate }}</mat-label>
-          <input matInput [matDatepicker]="datepicker" [formControl]="dateControl" [min]="minDate">
-          <mat-datepicker-toggle matIconSuffix [for]="datepicker"></mat-datepicker-toggle>
-          <mat-datepicker #datepicker></mat-datepicker>
-        </mat-form-field>
+        <div class="gcal-date-field" cdkOverlayOrigin #miniPickerOrigin="cdkOverlayOrigin">
+          <mat-form-field>
+            <mat-label>{{ 'Date' | translate }}</mat-label>
+            <input matInput
+                   readonly
+                   [value]="formattedSelectedDate"
+                   (click)="showMiniPicker = !showMiniPicker">
+            <button mat-icon-button matIconSuffix type="button"
+                    (click)="showMiniPicker = !showMiniPicker; $event.stopPropagation()">
+              <mat-icon>calendar_today</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+
+        <ng-template
+          cdkConnectedOverlay
+          [cdkConnectedOverlayOrigin]="miniPickerOrigin"
+          [cdkConnectedOverlayOpen]="showMiniPicker"
+          [cdkConnectedOverlayHasBackdrop]="true"
+          cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+          (backdropClick)="showMiniPicker = false"
+          (overlayOutsideClick)="showMiniPicker = false">
+          <div class="mini-picker-overlay-card">
+            <app-calendar-mini-calendar
+              [selectedDate]="dateControl.value"
+              [minDate]="minDate"
+              (dateSelected)="onMiniDateSelected($event)">
+            </app-calendar-mini-calendar>
+          </div>
+        </ng-template>
 
         <mat-form-field class="gcal-time-field">
           <mtx-select

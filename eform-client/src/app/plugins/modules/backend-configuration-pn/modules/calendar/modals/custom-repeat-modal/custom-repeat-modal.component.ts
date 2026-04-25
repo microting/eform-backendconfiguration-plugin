@@ -3,6 +3,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
 import {CalendarRepeatService} from '../../services/calendar-repeat.service';
 import {CalendarRepeatMeta} from '../../../../models/calendar';
+import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 export interface CustomRepeatModalData {
   date: Date;
@@ -27,6 +28,7 @@ export class CustomRepeatModalComponent implements OnInit {
   afterCount = 10;
   untilDate: string = '';
   untilDateObj: Date | null = null;
+  showMiniPicker = false;
 
   unitOptions: {value: string; label: string}[] = [];
 
@@ -89,5 +91,17 @@ export class CustomRepeatModalComponent implements OnInit {
 
   onCancel() {
     this.dialogRef.close(null);
+  }
+
+  get formattedUntilDate(): string {
+    if (!this.untilDateObj) return '';
+    const formatted = this.untilDateObj.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'});
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  onMiniDateSelected(date: Date) {
+    this.untilDateObj = date;
+    this.untilDate = date.toISOString().split('T')[0];
+    this.showMiniPicker = false;
   }
 }

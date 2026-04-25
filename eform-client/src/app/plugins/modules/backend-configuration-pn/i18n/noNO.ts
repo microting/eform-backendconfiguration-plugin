@@ -425,4 +425,5 @@ export const noNO = {
   'Could not create report headline': 'Kunne ikke opprette rapportoverskrift',
   'Create new': 'Opprett ny',
   'Change property': 'Endre egenskap',
+  Wk: 'Uke',
 };

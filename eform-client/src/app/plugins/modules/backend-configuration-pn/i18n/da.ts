@@ -426,4 +426,5 @@ export const da = {
   'Could not create report headline': 'Rapportoverskriften kunne ikke oprettes',
   'Create new': 'Opret ny',
   'Change property': 'Skift ejendom',
+  Wk: 'Uge',
 };
