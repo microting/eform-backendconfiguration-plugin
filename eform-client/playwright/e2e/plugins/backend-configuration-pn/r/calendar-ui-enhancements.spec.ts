@@ -381,7 +381,9 @@ test.describe.serial('Calendar UI enhancements', () => {
       // but we identify it via its sync icon row to keep the locator robust.
       // Scope to .gcal-icon to exclude any decorative icons that aren't row markers.
       const repeatRow = page.locator('.gcal-row').filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') });
-      await repeatRow.locator('input[role="combobox"]').first().click();
+      // The repeat select is [searchable]="false" — the inner combobox input
+      // is non-interactive; click the .ng-select-container instead.
+      await repeatRow.locator('.ng-select-container').first().click();
       await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
       // Custom option label is "Custom…" (HORIZONTAL ELLIPSIS) — match by
       // prefix to avoid Unicode surprises across locales.
