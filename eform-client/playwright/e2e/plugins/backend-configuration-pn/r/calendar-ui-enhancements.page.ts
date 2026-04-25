@@ -1,0 +1,265 @@
+import { Page, Locator } from '@playwright/test';
+
+/**
+ * Self-contained page object for the calendar UI-enhancements suite under
+ * the `r/` directory. Intentionally does not import from `l/` so the two
+ * suites stay independently maintainable in the CI matrix.
+ *
+ * Helpers are thin and locator-only; assertions live in the spec.
+ */
+export class CalendarUiEnhancementsPage {
+  constructor(private page: Page) {}
+
+  // ----- Navigation / property selection -----------------------------------
+
+  async goToCalendar(): Promise<void> {
+    await this.page.goto('http://localhost:4200/plugins/backend-configuration-pn/calendar');
+    await this.page.waitForTimeout(2000);
+    await this.page
+      .locator('app-calendar-container')
+      .waitFor({ state: 'visible', timeout: 30000 });
+  }
+
+  async selectProperty(name: string): Promise<void> {
+    await this.page.locator('.property-item').filter({ hasText: name }).click();
+    await this.page.waitForTimeout(1000);
+  }
+
+  // ----- Calendar slot click ----------------------------------------------
+
+  /**
+   * Click an empty time slot on the week-grid. dayOffset 0 = first visible
+   * day (Monday in the default week view), hour 0..23.
+   */
+  async clickEmptyTimeSlot(dayOffset: number, hour: number): Promise<void> {
+    const dayCell = this.page.locator(`.day-cell-content[data-day="${dayOffset}"]`);
+    const box = await dayCell.boundingBox();
+    if (!box) throw new Error(`Day cell ${dayOffset} not found`);
+    const hourHeight = 52;
+    const y = box.y + hour * hourHeight + hourHeight / 2;
+    const x = box.x + box.width / 2;
+    await this.page.mouse.click(x, y);
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Full sequence: navigate to the next week (so today's column is in the
+   * future and slot clicks are accepted), click Monday@9AM, wait for the
+   * create modal title input to appear.
+   */
+  async openCreateModalAt9AM(): Promise<void> {
+    // Advance one week to guarantee we click a future slot.
+    await this.page.locator('mat-icon:has-text("chevron_right")').first().click();
+    await this.page.waitForTimeout(1500);
+    await this.clickEmptyTimeSlot(0, 9);
+    await this.page
+      .locator('#calendarEventTitle')
+      .waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  async closeEventModal(): Promise<void> {
+    await this.page.locator('#calendarEventCancelBtn').click();
+    await this.page.waitForTimeout(500);
+  }
+
+  // ----- Time-field helpers (mtx-select / ng-select) -----------------------
+
+  // mtx-select renders the typeable input with role="combobox". `.ng-input`
+  // is NOT what we want here — see plan §"Locator for mtx-select input".
+  getStartTimeInput(): Locator {
+    return this.page.locator('.gcal-time-field').first().locator('input[role="combobox"]');
+  }
+
+  getEndTimeInput(): Locator {
+    return this.page.locator('.gcal-time-field').nth(1).locator('input[role="combobox"]');
+  }
+
+  /**
+   * Focus → click → type → wait for the dropdown panel → press the commit
+   * key. The waitFor is mandatory: pressing Enter before the panel renders
+   * triggers ng-select's "no items" fallback and silently drops the entry.
+   */
+  async typeStartTime(text: string, key: 'Enter' | 'Tab' = 'Enter'): Promise<void> {
+    await this.typeInTimeField(this.getStartTimeInput(), text, key);
+  }
+
+  async typeEndTime(text: string, key: 'Enter' | 'Tab' = 'Enter'): Promise<void> {
+    await this.typeInTimeField(this.getEndTimeInput(), text, key);
+  }
+
+  private async typeInTimeField(input: Locator, text: string, key: 'Enter' | 'Tab'): Promise<void> {
+    await input.click();
+    await input.focus();
+    // Clear any prior search term in the input before typing — without this,
+    // re-using the same select (e.g. typing a second value back-to-back)
+    // would APPEND rather than replace.
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Delete');
+    // Use type() rather than fill() — mtx-select reads keyboard events
+    // for the addTag / typeahead path. fill() would set value without
+    // dispatching the input events ng-select listens to.
+    await input.type(text, { delay: 30 });
+    await this.page
+      .locator('.ng-dropdown-panel')
+      .waitFor({ state: 'visible', timeout: 1000 });
+    // Wait until ng-select has finished filtering and marked an option (an
+    // addTag pseudo-option OR a matching preset). Without this, Tab/Enter
+    // can fire before the marked-item state catches up and the keystroke
+    // becomes a no-op.
+    await this.page
+      .locator('.ng-dropdown-panel .ng-option-marked, .ng-dropdown-panel .ng-option:has(.ng-tag-label)')
+      .first()
+      .waitFor({ state: 'visible', timeout: 1500 })
+      .catch(() => undefined);
+    await this.page.keyboard.press(key);
+    // Small settle so the duration-preserve subscriber and the
+    // setValue() round-trip both finish before the assertion reads.
+    await this.page.waitForTimeout(250);
+  }
+
+  async getStartTimeValue(): Promise<string> {
+    const label = this.page.locator('.gcal-time-field').first().locator('.ng-value-label');
+    if ((await label.count()) === 0) return '';
+    return ((await label.first().textContent()) ?? '').trim();
+  }
+
+  async getEndTimeValue(): Promise<string> {
+    const label = this.page.locator('.gcal-time-field').nth(1).locator('.ng-value-label');
+    if ((await label.count()) === 0) return '';
+    return ((await label.first().textContent()) ?? '').trim();
+  }
+
+  /**
+   * Open the end-time mtx-select dropdown (panel is portaled via
+   * `appendTo="body"`), click the option matching the given time, then
+   * dismiss the panel by clicking the title input.
+   */
+  async setEndTimeFromDropdown(time: string): Promise<void> {
+    await this.getEndTimeInput().click();
+    await this.page
+      .locator('.ng-dropdown-panel')
+      .waitFor({ state: 'visible', timeout: 5000 });
+    const option = this.page
+      .locator('.ng-dropdown-panel .ng-option')
+      .filter({ hasText: new RegExp(`^${time}$`) })
+      .first();
+    await option.click();
+    await this.page.waitForTimeout(200);
+    // Click the modal title input to close the dropdown without
+    // mutating any other state.
+    await this.page.locator('#calendarEventTitle').click();
+    await this.page.waitForTimeout(150);
+  }
+
+  // ----- Mini-calendar overlay --------------------------------------------
+
+  /**
+   * Click the calendar-icon button next to the Date input in the event
+   * create/edit modal. The button is an Angular Material icon-button
+   * containing `<mat-icon>calendar_today</mat-icon>`; match by that icon
+   * to avoid dependence on Material's internal class names.
+   */
+  async openEventDatePicker(): Promise<void> {
+    const button = this.page
+      .locator('.gcal-date-field button')
+      .filter({ has: this.page.locator('mat-icon', { hasText: 'calendar_today' }) })
+      .first();
+    await button.click();
+    await this.getMiniPickerOverlay().waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Click the calendar-icon button in the custom-repeat dialog (Ends → On).
+   */
+  async openCustomRepeatDatePicker(): Promise<void> {
+    const button = this.page
+      .locator('.custom-repeat-dialog .end-option .date-input button')
+      .filter({ has: this.page.locator('mat-icon', { hasText: 'calendar_today' }) })
+      .first();
+    // Date input button is [disabled]="endMode !== 'until'"; wait for the
+    // disabled attribute to drop after the radio click flips endMode.
+    await button.waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.waitForFunction(
+      (el: Element) => !(el as HTMLButtonElement).disabled,
+      await button.elementHandle(),
+      { timeout: 5000 }
+    );
+    await button.click();
+    await this.getMiniPickerOverlay().waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  // The mini-picker is portaled out of the modal via cdkConnectedOverlay,
+  // so it MUST be located at page scope, never modal-scoped.
+  getMiniPickerOverlay(): Locator {
+    return this.page.locator('.mini-picker-overlay-card');
+  }
+
+  async getMiniCalendarMonthLabel(): Promise<string> {
+    return ((await this.page.locator('.mini-picker-overlay-card .month-label').textContent()) ?? '').trim();
+  }
+
+  async clickMiniCalendarNext(): Promise<void> {
+    await this.page
+      .locator('.mini-picker-overlay-card .cal-header button')
+      .nth(1)
+      .click();
+    await this.page.waitForTimeout(150);
+  }
+
+  async clickMiniCalendarPrev(): Promise<void> {
+    await this.page
+      .locator('.mini-picker-overlay-card .cal-header button')
+      .nth(0)
+      .click();
+    await this.page.waitForTimeout(150);
+  }
+
+  async getMiniCalendarWeekNumbers(): Promise<number[]> {
+    const cells = this.page.locator('.mini-picker-overlay-card .week-num-cell');
+    const count = await cells.count();
+    const out: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const txt = ((await cells.nth(i).textContent()) ?? '').trim();
+      out.push(parseInt(txt, 10));
+    }
+    return out;
+  }
+
+  // ----- Header / sidebar --------------------------------------------------
+
+  async clickPropertyPill(): Promise<void> {
+    await this.page.locator('.property-pill').click();
+    // Brief settle so the sidebar transition can flip the class.
+    await this.page.waitForTimeout(150);
+  }
+
+  /**
+   * The menu-toggle button — the leading button in `.calendar-header`
+   * containing a `<mat-icon>menu</mat-icon>`. Filtering by the icon text
+   * keeps this stable even if more icon-buttons are added to the header
+   * later.
+   */
+  getMenuToggleButton(): Locator {
+    return this.page
+      .locator('.calendar-header button')
+      .filter({ has: this.page.locator('mat-icon', { hasText: 'menu' }) })
+      .first();
+  }
+
+  async clickMenuToggleButton(): Promise<void> {
+    await this.getMenuToggleButton().click();
+    await this.page.waitForTimeout(150);
+  }
+
+  async isSidebarClosed(): Promise<boolean> {
+    return (await this.page.locator('.calendar-shell.sidebar-closed').count()) > 0;
+  }
+
+  async ensureSidebarOpen(): Promise<void> {
+    if (await this.isSidebarClosed()) {
+      await this.clickMenuToggleButton();
+      await this.page.waitForTimeout(150);
+    }
+  }
+}
