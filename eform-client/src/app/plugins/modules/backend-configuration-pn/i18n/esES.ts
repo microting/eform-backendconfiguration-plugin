@@ -424,4 +424,5 @@ export const esES = {
   'Next day': 'Al día siguiente',
   'Could not create report headline': 'No se pudo crear el título del informe.',
   'Create new': 'Crear nuevo',
+  'Change property': 'Cambiar propiedad',
 };

@@ -424,4 +424,5 @@ export const ptBR = {
   'Next day': 'No dia seguinte',
   'Could not create report headline': 'Não foi possível criar o título do relatório.',
   'Create new': 'Criar novo',
+  'Change property': 'Alterar propriedade',
 };

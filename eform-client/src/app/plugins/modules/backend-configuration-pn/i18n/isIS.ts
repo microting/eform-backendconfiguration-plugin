@@ -424,4 +424,5 @@ export const isIS = {
   'Next day': 'Næsta dag',
   'Could not create report headline': 'Gat ekki búið til fyrirsögn skýrslunnar',
   'Create new': 'Búa til nýtt',
+  'Change property': 'Breyta eign',
 };

@@ -424,4 +424,5 @@ export const frFR = {
   'Next day': 'Lendemain',
   'Could not create report headline': 'Impossible de créer le titre du rapport',
   'Create new': 'Créer un nouveau',
+  'Change property': 'Changer de propriété',
 };

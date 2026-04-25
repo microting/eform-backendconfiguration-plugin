@@ -36,6 +36,7 @@
       (goToToday)="onGoToToday()"
       (viewModeChange)="onViewModeChange($event)"
       (toggleSidebar)="onToggleSidebar()"
+      (propertyPillClicked)="onPropertyPillClicked()"
     ></app-calendar-header>
 
     <ng-container [ngSwitch]="viewMode">

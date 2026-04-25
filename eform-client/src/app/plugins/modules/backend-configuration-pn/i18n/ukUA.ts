@@ -424,4 +424,5 @@ export const ukUA = {
   'Next day': 'Наступного дня',
   'Could not create report headline': 'Не вдалося створити заголовок звіту',
   'Create new': 'Створити нове',
+  'Change property': 'Змінити властивість',
 };

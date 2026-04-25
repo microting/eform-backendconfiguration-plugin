@@ -424,4 +424,5 @@ export const ltLT = {
   'Next day': 'Kitą dieną',
   'Could not create report headline': 'Nepavyko sukurti ataskaitos antraštės',
   'Create new': 'Sukurti naują',
+  'Change property': 'Keisti ypatybę',
 };

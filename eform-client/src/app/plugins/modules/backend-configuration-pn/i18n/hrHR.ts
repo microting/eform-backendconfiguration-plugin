@@ -424,4 +424,5 @@ export const hrHR = {
   'Next day': 'Sljedeći dan',
   'Could not create report headline': 'Nije moguće stvoriti naslov izvješća',
   'Create new': 'Stvori novo',
+  'Change property': 'Promjena svojstva',
 };

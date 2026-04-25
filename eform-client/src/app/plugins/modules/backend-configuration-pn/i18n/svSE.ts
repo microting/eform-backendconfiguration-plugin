@@ -424,4 +424,5 @@ export const svSE = {
   'Next day': 'Nästa dag',
   'Could not create report headline': 'Kunde inte skapa rapportrubrik',
   'Create new': 'Skapa nytt',
+  'Change property': 'Ändra egenskap',
 };

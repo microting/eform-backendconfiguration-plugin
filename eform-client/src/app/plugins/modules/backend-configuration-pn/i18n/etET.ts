@@ -424,4 +424,5 @@ export const etET = {
   'Next day': 'Järgmisel päeval',
   'Could not create report headline': 'Aruande pealkirja loomine ebaõnnestus',
   'Create new': 'Loo uus',
+  'Change property': 'Muuda atribuuti',
 };

@@ -424,4 +424,5 @@ export const bgBG = {
   'Next day': 'Следващия ден',
   'Could not create report headline': 'Не можа да се създаде заглавие на отчета',
   'Create new': 'Създаване на ново',
+  'Change property': 'Промяна на имота',
 };

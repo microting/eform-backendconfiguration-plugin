@@ -424,4 +424,5 @@ export const elGR = {
   'Next day': 'Επόμενη μέρα',
   'Could not create report headline': 'Δεν ήταν δυνατή η δημιουργία τίτλου αναφοράς',
   'Create new': 'Δημιουργία νέου',
+  'Change property': 'Αλλαγή ιδιότητας',
 };

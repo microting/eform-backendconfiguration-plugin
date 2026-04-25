@@ -424,4 +424,5 @@ export const noNO = {
   'Next day': 'Neste dag',
   'Could not create report headline': 'Kunne ikke opprette rapportoverskrift',
   'Create new': 'Opprett ny',
+  'Change property': 'Endre egenskap',
 };

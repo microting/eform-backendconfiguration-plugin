@@ -20,6 +20,7 @@ export class CalendarHeaderComponent implements OnInit {
   @Output() goToToday = new EventEmitter<void>();
   @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule'>();
   @Output() toggleSidebar = new EventEmitter<void>();
+  @Output() propertyPillClicked = new EventEmitter<void>();
 
   constructor(private translate: TranslateService) {}
 

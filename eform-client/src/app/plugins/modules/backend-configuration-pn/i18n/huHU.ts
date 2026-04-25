@@ -424,4 +424,5 @@ export const huHU = {
   'Next day': 'Másnap',
   'Could not create report headline': 'Nem sikerült létrehozni a jelentés címsorát',
   'Create new': 'Új létrehozása',
+  'Change property': 'Tulajdonság módosítása',
 };

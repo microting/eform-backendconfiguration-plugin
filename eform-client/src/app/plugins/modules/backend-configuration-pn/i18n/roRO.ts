@@ -424,4 +424,5 @@ export const roRO = {
   'Next day': 'A doua zi',
   'Could not create report headline': 'Nu s-a putut crea titlul raportului',
   'Create new': 'Creați nou',
+  'Change property': 'Schimbați proprietatea',
 };

@@ -444,6 +444,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.stateService.toggleSidebar();
   }
 
+  onPropertyPillClicked() {
+    if (!this.sidebarOpen) {
+      this.onToggleSidebar();
+    }
+  }
+
   onBoardToggled(boardId: number) {
     this.stateService.toggleBoard(boardId);
     this.loadTasks();

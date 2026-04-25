@@ -424,4 +424,5 @@ export const itIT = {
   'Next day': 'Il giorno dopo',
   'Could not create report headline': 'Impossibile creare l&#39;intestazione del report',
   'Create new': 'Crea nuovo',
+  'Change property': 'Modifica proprietà',
 };

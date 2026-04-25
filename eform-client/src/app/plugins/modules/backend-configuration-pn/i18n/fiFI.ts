@@ -424,4 +424,5 @@ export const fiFI = {
   'Next day': 'Seuraavana päivänä',
   'Could not create report headline': 'Raportin otsikon luominen epäonnistui',
   'Create new': 'Luo uusi',
+  'Change property': 'Muuta ominaisuutta',
 };

@@ -424,4 +424,5 @@ export const plPL = {
   'Next day': 'Następnego dnia',
   'Could not create report headline': 'Nie można utworzyć nagłówka raportu',
   'Create new': 'Utwórz nowy',
+  'Change property': 'Zmień właściwość',
 };

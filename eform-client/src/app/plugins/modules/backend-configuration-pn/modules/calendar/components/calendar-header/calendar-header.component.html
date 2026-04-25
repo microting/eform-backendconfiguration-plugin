@@ -7,7 +7,15 @@
     <mat-icon>menu</mat-icon>
   </button>
 
-  <span class="property-pill" *ngIf="propertyName">{{ propertyName }}</span>
+  <button
+    type="button"
+    class="property-pill"
+    *ngIf="propertyName"
+    (click)="propertyPillClicked.emit()"
+    [matTooltip]="'Change property' | translate"
+  >
+    {{ propertyName }}
+  </button>
 
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
