@@ -26,8 +26,8 @@ export class CalendarHeaderComponent implements OnInit {
 
   ngOnInit() {
     this.viewModeOptions = [
-      {value: 'week', label: this.translate.instant('Week')},
       {value: 'day', label: this.translate.instant('Day')},
+      {value: 'week', label: this.translate.instant('Week')},
       {value: 'schedule', label: this.translate.instant('List')},
     ];
   }

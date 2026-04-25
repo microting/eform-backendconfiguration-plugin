@@ -347,7 +347,7 @@ export const da = {
   'Set password': 'Angiv adgangskode',
   'Send reset password email': 'Send e-mail med nulstilling af adgangskode',
   'All day': 'Hele dagen',
-  List: 'Liste',
+  List: 'Tidsplan',
   Daily: 'Daglig',
   'Every weekday': 'Hver hverdag',
   Monthly: 'Månedlig',
