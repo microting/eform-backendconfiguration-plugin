@@ -30,13 +30,18 @@ export class CalendarUiEnhancementsPage {
   /**
    * Click an empty time slot on the week-grid. dayOffset 0 = first visible
    * day (Monday in the default week view), hour 0..23.
+   *
+   * The grid snaps to 30-min boundaries; clicking the CENTER of an hour
+   * band lands on H:30, not H:00. We click 5 px into the top of the band
+   * to guarantee the H:00 slot, which makes the modal's default start a
+   * clean integer hour. Tests downstream depend on this for their math.
    */
   async clickEmptyTimeSlot(dayOffset: number, hour: number): Promise<void> {
     const dayCell = this.page.locator(`.day-cell-content[data-day="${dayOffset}"]`);
     const box = await dayCell.boundingBox();
     if (!box) throw new Error(`Day cell ${dayOffset} not found`);
     const hourHeight = 52;
-    const y = box.y + hour * hourHeight + hourHeight / 2;
+    const y = box.y + hour * hourHeight + 5;
     const x = box.x + box.width / 2;
     await this.page.mouse.click(x, y);
     await this.page.waitForTimeout(500);
