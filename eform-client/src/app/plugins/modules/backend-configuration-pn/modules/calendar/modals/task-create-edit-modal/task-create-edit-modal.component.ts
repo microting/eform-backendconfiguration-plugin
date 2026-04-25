@@ -431,6 +431,28 @@ export class TaskCreateEditModalComponent implements OnInit {
     return parseInt(parts[0], 10) + parseInt(parts[1], 10) / 60;
   }
 
+  // Accepts: "18:04", "1804", "8:4", "08:04", "804" → all → "18:04"/"08:04".
+  // Throws on invalid input so ng-select rejects the entry and keeps the
+  // dropdown open — see addTag callback contract.
+  addTimeTag = (term: string): string => {
+    const trimmed = (term ?? '').trim();
+    let normalized: string;
+    if (trimmed.includes(':')) {
+      const [h, m] = trimmed.split(':');
+      if (!h || !m) throw new Error('Invalid time');
+      normalized = `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+    } else if (/^\d{3,4}$/.test(trimmed)) {
+      const padded = trimmed.padStart(4, '0');
+      normalized = `${padded.slice(0, 2)}:${padded.slice(2)}`;
+    } else {
+      throw new Error('Invalid time');
+    }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(normalized)) {
+      throw new Error('Invalid time');
+    }
+    return normalized;
+  };
+
   autoGrowTextarea(event: Event) {
     const el = event.target as HTMLTextAreaElement;
     el.style.height = 'auto';

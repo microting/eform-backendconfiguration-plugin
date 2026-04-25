@@ -57,10 +57,11 @@
           <mtx-select
             [items]="timeSlots"
             [formControl]="startTimeControl"
-            [addTag]="true"
+            [addTag]="addTimeTag"
             [addTagText]="''"
             [clearable]="false"
             [searchable]="true"
+            [selectOnTab]="true"
             appendTo="body"
           ></mtx-select>
         </mat-form-field>
@@ -71,10 +72,11 @@
           <mtx-select
             [items]="timeSlots"
             [formControl]="endTimeControl"
-            [addTag]="true"
+            [addTag]="addTimeTag"
             [addTagText]="''"
             [clearable]="false"
             [searchable]="true"
+            [selectOnTab]="true"
             appendTo="body"
           ></mtx-select>
         </mat-form-field>
