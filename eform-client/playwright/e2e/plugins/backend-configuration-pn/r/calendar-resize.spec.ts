@@ -155,16 +155,8 @@ test.describe.serial('Calendar event resize', () => {
       await createSimpleEvent(page, calendarPage, title);
 
       // Default: 09:00 – 10:00. Drag bottom down 1 hour → 09:00 – 11:00.
+      // dragResizeHandle awaits the post-resize /tasks/week POST internally.
       await calendarPage.dragResizeHandle(title, 'bottom', HOUR_PX);
-
-      // Wait for the resize PUT to land + the reload to complete.
-      const reloadWait = page.waitForResponse(
-        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
-          && r.request().method() === 'POST',
-        { timeout: 30000 }
-      );
-      await reloadWait;
-      await page.waitForTimeout(800);
 
       const timeText = await calendarPage.getEventTimeText(title);
       expect(timeText).toContain('09:00');
@@ -178,14 +170,6 @@ test.describe.serial('Calendar event resize', () => {
 
       // Default: 09:00 – 10:00. Drag bottom up 30 min → 09:00 – 09:30.
       await calendarPage.dragResizeHandle(title, 'bottom', -Math.round(HOUR_PX / 2));
-
-      const reloadWait = page.waitForResponse(
-        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
-          && r.request().method() === 'POST',
-        { timeout: 30000 }
-      );
-      await reloadWait;
-      await page.waitForTimeout(800);
 
       // Block height is now 30 min — .task-time only renders when
       // duration ≥ 0.5 h; 0.5 is the boundary so it should render. If
@@ -211,14 +195,6 @@ test.describe.serial('Calendar event resize', () => {
       // Default 09:00 – 10:00. Drag top up 1 hour → 08:00 – 10:00.
       await calendarPage.dragResizeHandle(title, 'top', -HOUR_PX);
 
-      const reloadWait = page.waitForResponse(
-        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
-          && r.request().method() === 'POST',
-        { timeout: 30000 }
-      );
-      await reloadWait;
-      await page.waitForTimeout(800);
-
       const timeText = await calendarPage.getEventTimeText(title);
       expect(timeText).toContain('08:00');
       expect(timeText).toContain('10:00');
@@ -231,14 +207,6 @@ test.describe.serial('Calendar event resize', () => {
 
       // Default 09:00 – 10:00. Drag top down 30 min → 09:30 – 10:00.
       await calendarPage.dragResizeHandle(title, 'top', Math.round(HOUR_PX / 2));
-
-      const reloadWait = page.waitForResponse(
-        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
-          && r.request().method() === 'POST',
-        { timeout: 30000 }
-      );
-      await reloadWait;
-      await page.waitForTimeout(800);
 
       const timeText = await calendarPage.getEventTimeText(title);
       if (timeText.length > 0) {

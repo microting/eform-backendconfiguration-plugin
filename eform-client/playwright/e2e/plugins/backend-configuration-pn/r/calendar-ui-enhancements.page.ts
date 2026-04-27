@@ -305,8 +305,21 @@ export class CalendarUiEnhancementsPage {
    * Hover the block first so the handles render visibly (they exist in
    * the DOM regardless, but Playwright's actionability check is happier
    * when they're visible).
+   *
+   * Registers the post-resize reload waiter BEFORE issuing mouse.up so
+   * the listener can never miss the response — registering after the
+   * gesture races the network round-trip and times out on quick CI
+   * boxes (D1 hit this pre-fix). For recurring events that pop the
+   * scope modal, pass `awaitReload: false` and the caller handles the
+   * scope click + reload separately.
    */
-  async dragResizeHandle(title: string, edge: 'top' | 'bottom', deltaPx: number): Promise<void> {
+  async dragResizeHandle(
+    title: string,
+    edge: 'top' | 'bottom',
+    deltaPx: number,
+    options: { awaitReload?: boolean } = {}
+  ): Promise<void> {
+    const { awaitReload = true } = options;
     const block = this.findEventBlock(title);
     await block.hover();
     const box = await block.boundingBox();
@@ -323,8 +336,24 @@ export class CalendarUiEnhancementsPage {
     // intermediate updates (matches the existing drag pattern in l/).
     await this.page.mouse.move(startX, startY + deltaPx, { steps: 8 });
     await this.page.waitForTimeout(150);
+
+    // Pre-register the reload waiter so it cannot miss the response.
+    const reloadWait = awaitReload
+      ? this.page.waitForResponse(
+          r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+            && r.request().method() === 'POST',
+          { timeout: 30000 }
+        )
+      : null;
+
     await this.page.mouse.up();
-    await this.page.waitForTimeout(500);
+
+    if (reloadWait) {
+      await reloadWait;
+      await this.page.waitForTimeout(500);
+    } else {
+      await this.page.waitForTimeout(500);
+    }
   }
 
   /**
