@@ -227,4 +227,100 @@ test.describe.serial('Calendar event resize', () => {
       }
     });
   });
+
+  // =======================================================================
+  // E. Recurring event resize — verifies the past-occurrence preservation
+  //    fix end to end. Without the backfill in ResizeTask
+  //    (BackendConfigurationCalendarService.cs), past occurrences with
+  //    no exception row would resolve through the new calConfig and
+  //    visually shift; the test below would fail.
+  // =======================================================================
+  test.describe('Recurring event — thisAndFollowing past preservation', () => {
+    test('E1: resize 2 weeks ahead with thisAndFollowing leaves earlier-week occurrence unchanged', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      const title = `E1-${generateRandmString(5)}`;
+
+      // Create a weekly recurring event on Friday of next week (week +1)
+      // at 09:00 — Friday avoids slot collisions with D1..D4 (Mon..Thu).
+      await calendarPage.openCreateModalAtSlot(4, 9);
+      await page.locator('#calendarEventTitle').fill(title);
+
+      const eform = page.locator('#calendarEventEform');
+      await eform.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+
+      const planningTag = page.locator('#calendarEventPlanningTag');
+      await planningTag.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+
+      const assignee = page.locator('#calendarEventAssignee');
+      await assignee.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.locator('#calendarEventTitle').click();
+      await page.waitForTimeout(300);
+
+      // Make it weekly. Index 2 in the repeat dropdown = 'weeklyOne'.
+      await calendarPage.setRepeatToWeekly();
+
+      // Match the create endpoint specifically (POST .../tasks), not the
+      // loadTasks reload (POST .../tasks/week) which fires repeatedly.
+      const createResp = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+          && !r.url().includes('/tasks/week')
+          && r.request().method() === 'POST',
+        { timeout: 30000 }
+      );
+      await page.locator('#calendarEventSaveBtn').click();
+      await createResp;
+      await page.waitForTimeout(1500);
+      await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+
+      // We are on week +1 with an event at Friday 09:00 – 10:00. Advance
+      // two weeks → week +3 (the resize anchor).
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+
+      // Sanity check: the week +3 occurrence still shows the original time.
+      const preResize = await calendarPage.getEventTimeText(title);
+      expect(preResize).toContain('09:00');
+      expect(preResize).toContain('10:00');
+
+      // Drag the TOP edge up 1 hour → start moves to 08:00 (duration 2h).
+      // Skip the internal awaitReload — the scope modal pops between
+      // mouse.up and the eventual /tasks/week reload.
+      await calendarPage.dragResizeHandle(title, 'top', -HOUR_PX, { awaitReload: false });
+
+      // Pick "this and following" — the bug-fix path.
+      const reloadAfterScope = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+          && r.request().method() === 'POST',
+        { timeout: 30000 }
+      );
+      await calendarPage.pickScopeInModal('thisAndFollowing');
+      await reloadAfterScope;
+      await page.waitForTimeout(800);
+
+      // Confirm the week +3 occurrence now shows the NEW time.
+      const postResize = await calendarPage.getEventTimeText(title);
+      expect(postResize).toContain('08:00');
+      expect(postResize).toContain('10:00');
+
+      // Navigate back ONE week → week +2 (BEFORE the resize anchor).
+      // The past-occurrence backfill must have anchored this occurrence
+      // with the OLD start/duration so it still shows 09:00 – 10:00.
+      await calendarPage.navigateToPreviousWeek();
+
+      const preserved = await calendarPage.getEventTimeText(title);
+      expect(preserved).toContain('09:00');
+      expect(preserved).toContain('10:00');
+      // Critical regression check: the earlier-week occurrence must NOT
+      // have inherited the new 08:00 start time from calConfig.
+      expect(preserved).not.toContain('08:00');
+    });
+  });
 });

@@ -368,6 +368,26 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
+   * Set the event-modal Repeat dropdown to "Weekly on {weekday}". The
+   * repeat options have stable order (calendar-repeat.service:245+):
+   * 0:none, 1:daily, 2:weeklyOne, 3:weeklyAll, 4:monthlyDom, 5:yearlyOne,
+   * 6:custom. Index 2 is what we want. Pick by position to avoid
+   * locale-dependent label matching.
+   *
+   * The repeat select is [searchable]="false", so click .ng-select-container
+   * (the inner combobox input is non-interactive at opacity 0).
+   */
+  async setRepeatToWeekly(): Promise<void> {
+    const repeatRow = this.page
+      .locator('.gcal-row')
+      .filter({ has: this.page.locator('mat-icon.gcal-icon:has-text("sync")') });
+    await repeatRow.locator('.ng-select-container').first().click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').nth(2).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
    * Pick a scope in the RepeatScopeModalComponent that pops after a
    * resize on a recurring event. Clicks the matching radio + Confirm.
    */
