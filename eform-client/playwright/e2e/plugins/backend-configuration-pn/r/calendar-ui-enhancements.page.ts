@@ -388,6 +388,80 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
+   * Drag a task block (move gesture, not resize) from its current slot
+   * to a new day-of-week + hour. cdkDrag activates only when the drag
+   * starts on the .task-block-body (which carries cdkDragHandle), so
+   * we mouse-down at the block's vertical centre — not on the resize
+   * handles at the top/bottom edges.
+   *
+   * Pre-registers the post-move reload waiter BEFORE mouse.up; pass
+   * { awaitReload: false } when the caller will handle the scope-modal
+   * flow and the eventual reload separately.
+   */
+  async dragEventToSlot(
+    title: string,
+    targetDayOffset: number,
+    targetHour: number,
+    options: { awaitReload?: boolean } = {},
+  ): Promise<void> {
+    const { awaitReload = true } = options;
+    const block = this.findEventBlock(title);
+    await block.hover();
+    const box = await block.boundingBox();
+    if (!box) throw new Error(`Task block "${title}" not found`);
+
+    // Centre of the block — well inside the body (cdkDragHandle), away
+    // from the 6 px resize handles at the top and bottom edges.
+    const startX = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+
+    const targetCell = this.page.locator(`.day-cell-content[data-day="${targetDayOffset}"]`);
+    const targetBox = await targetCell.boundingBox();
+    if (!targetBox) throw new Error(`Target day cell ${targetDayOffset} not found`);
+    const hourHeight = 52;
+    const targetX = targetBox.x + targetBox.width / 2;
+    // 5 px into the hour band — same convention as clickEmptyTimeSlot
+    // so we land cleanly on H:00 (the grid snaps to 30-min boundaries).
+    const targetY = targetBox.y + targetHour * hourHeight + 5;
+
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    // Step through so cdkDrag's drag-detection threshold fires.
+    await this.page.mouse.move(targetX, targetY, { steps: 12 });
+    await this.page.waitForTimeout(200);
+
+    const reloadWait = awaitReload
+      ? this.page.waitForResponse(
+          r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+            && r.request().method() === 'POST',
+          { timeout: 30000 }
+        )
+      : null;
+
+    await this.page.mouse.up();
+
+    if (reloadWait) {
+      await reloadWait;
+    }
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Read the parent day-cell's `data-day` attribute (0=Mon..6=Sun) for
+   * the event with the given title. Returns -1 if the event is not on
+   * the calendar grid.
+   */
+  async getEventDayIndex(title: string): Promise<number> {
+    const block = this.findEventBlock(title);
+    if ((await block.count()) === 0) return -1;
+    const dayParent = block.locator(
+      'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " day-cell-content ")]'
+    ).first();
+    const dayAttr = await dayParent.getAttribute('data-day');
+    return dayAttr ? parseInt(dayAttr, 10) : -1;
+  }
+
+  /**
    * Pick a scope in the RepeatScopeModalComponent that pops after a
    * resize on a recurring event. Clicks the matching radio + Confirm.
    */

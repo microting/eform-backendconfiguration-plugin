@@ -225,6 +225,65 @@ public class BackendConfigurationCalendarService(
                         result.Add(model);
                     }
                 }
+
+                // Render any in-week exceptions whose OriginalDate is NOT
+                // covered by the recurrence rule (e.g. past anchors created
+                // when a 'thisAndFollowing' move shifted planning.StartDate
+                // forward). Without this, those past occurrences would
+                // silently disappear from the calendar view.
+                if (exceptionsByArp.TryGetValue(arp.Id, out var allArpExceptions))
+                {
+                    var renderedDates = new HashSet<DateTime>(occurrences.Select(o => o.Date));
+                    foreach (var orphan in allArpExceptions.Values)
+                    {
+                        if (orphan.IsDeleted) continue;
+                        if (renderedDates.Contains(orphan.OriginalDate.Date)) continue;
+                        if (orphan.OriginalDate < weekStart || orphan.OriginalDate > weekEnd) continue;
+                        // Skip exceptions whose NewDate moves them to a
+                        // different date — those are handled by the
+                        // movedInExceptions pass at the destination week.
+                        if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
+
+                        var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                        var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
+                        var orphanAssignees = orphan.ExceptionSites is { Count: > 0 }
+                            ? orphan.ExceptionSites
+                                .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Select(s => s.SiteId)
+                                .ToList()
+                            : assigneeIds;
+
+                        var orphanModel = new CalendarTaskResponseModel
+                        {
+                            Id = arp.Id,
+                            Title = title,
+                            StartHour = orphanStartHour,
+                            Duration = orphanDuration,
+                            TaskDate = orphan.OriginalDate.ToString("yyyy-MM-dd"),
+                            Tags = tags,
+                            AssigneeIds = orphanAssignees,
+                            BoardId = calConfig?.BoardId ?? defaultBoardId,
+                            Color = calConfig?.Color,
+                            RepeatType = arp.RepeatType ?? 0,
+                            RepeatEvery = arp.RepeatEvery ?? 1,
+                            Completed = false,
+                            PropertyId = arp.PropertyId,
+                            IsFromCompliance = false,
+                            NextExecutionTime = planning.NextExecutionTime,
+                            PlanningId = planning.Id,
+                            IsAllDay = isAllDay,
+                            ExceptionId = orphan.Id,
+                            EformId = arp.AreaRule?.EformId,
+                            ItemPlanningTagId = arp.ItemPlanningTagId,
+                            DescriptionHtml = planning.Description
+                        };
+
+                        if (ShouldIncludeTask(orphanModel, requestModel))
+                        {
+                            result.Add(orphanModel);
+                        }
+                    }
+                }
             }
 
             // Add occurrences that were moved INTO this week from outside
@@ -818,36 +877,77 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-                arp.StartDate = newDate;
-                arp.UpdatedByUserId = userService.UserId;
-                await arp.Update(backendConfigurationPnDbContext);
-
-                var planning = await itemsPlanningPnDbContext.Plannings
+                // Anchor every PAST occurrence with an exception holding the
+                // OLD calConfig values BEFORE we shift planning.StartDate
+                // forward. Past occurrences are then rendered by
+                // GetTasksForWeek's orphan-exception branch (the recurrence
+                // rule will no longer generate them after the shift).
+                var oldPlanning = await itemsPlanningPnDbContext.Plannings
                     .Where(x => x.Id == arp.ItemPlanningId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
-
-                if (planning != null)
-                {
-                    planning.StartDate = newDate;
-                    planning.UpdatedByUserId = userService.UserId;
-                    await planning.Update(itemsPlanningPnDbContext);
-                }
-
-                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                var oldCalConfig = await backendConfigurationPnDbContext.CalendarConfigurations
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
-                if (calConfig != null)
+                if (oldPlanning != null)
                 {
-                    calConfig.StartHour = moveModel.NewStartHour;
-                    calConfig.UpdatedByUserId = userService.UserId;
-                    await calConfig.Update(backendConfigurationPnDbContext);
+                    var oldStartHour = oldCalConfig?.StartHour ?? 9.0;
+                    var oldDuration = oldCalConfig?.Duration ?? 1.0;
+
+                    var existingPastDates = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                        .Where(x => x.OriginalDate < originalDate)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => x.OriginalDate)
+                        .ToListAsync();
+                    var existingSet = new HashSet<DateTime>(existingPastDates);
+
+                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate))
+                    {
+                        if (existingSet.Contains(occDate)) continue;
+                        var anchor = new CalendarOccurrenceException
+                        {
+                            AreaRulePlanningId = moveModel.Id,
+                            OriginalDate = occDate,
+                            IsDeleted = false,
+                            NewDate = null,
+                            StartHour = oldStartHour,
+                            Duration = oldDuration,
+                            CreatedByUserId = userService.UserId,
+                            UpdatedByUserId = userService.UserId
+                        };
+                        await anchor.Create(backendConfigurationPnDbContext);
+                    }
                 }
                 else
                 {
-                    calConfig = new CalendarConfiguration
+                    logger.LogWarning(
+                        "MoveTask thisAndFollowing backfill skipped: planning {ItemPlanningId} for AreaRulePlanning {ArpId} not found",
+                        arp.ItemPlanningId, moveModel.Id);
+                }
+
+                arp.StartDate = newDate;
+                arp.UpdatedByUserId = userService.UserId;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                if (oldPlanning != null)
+                {
+                    oldPlanning.StartDate = newDate;
+                    oldPlanning.UpdatedByUserId = userService.UserId;
+                    await oldPlanning.Update(itemsPlanningPnDbContext);
+                }
+
+                if (oldCalConfig != null)
+                {
+                    oldCalConfig.StartHour = moveModel.NewStartHour;
+                    oldCalConfig.UpdatedByUserId = userService.UserId;
+                    await oldCalConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    var calConfig = new CalendarConfiguration
                     {
                         AreaRulePlanningId = moveModel.Id,
                         StartHour = moveModel.NewStartHour,

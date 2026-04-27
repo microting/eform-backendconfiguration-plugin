@@ -322,5 +322,108 @@ test.describe.serial('Calendar event resize', () => {
       // have inherited the new 08:00 start time from calConfig.
       expect(preserved).not.toContain('08:00');
     });
+
+    test('E2: thisAndFollowing MOVE preserves earlier weeks; future weeks land on new day/time; pre-series weeks empty', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      const title = `E2-${generateRandmString(5)}`;
+
+      // Create a weekly event on Tuesday week +1 at 09:00 — Tuesday avoids
+      // collisions with D-tests' Mon..Thu and E1's Friday on the same week.
+      // Wait — D2 used Tue. Use Saturday (5) instead.
+      const startDay = 5; // Saturday week +1
+      await calendarPage.openCreateModalAtSlot(startDay, 9);
+      await page.locator('#calendarEventTitle').fill(title);
+
+      const eform = page.locator('#calendarEventEform');
+      await eform.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+
+      const planningTag = page.locator('#calendarEventPlanningTag');
+      await planningTag.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+
+      const assignee = page.locator('#calendarEventAssignee');
+      await assignee.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.locator('#calendarEventTitle').click();
+      await page.waitForTimeout(300);
+
+      await calendarPage.setRepeatToWeekly();
+
+      const createResp = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+          && !r.url().includes('/tasks/week')
+          && r.request().method() === 'POST',
+        { timeout: 30000 }
+      );
+      await page.locator('#calendarEventSaveBtn').click();
+      await createResp;
+      await page.waitForTimeout(1500);
+      await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+
+      // We are at week +1 with the event on Saturday (day 5) at 09:00.
+      // Advance two weeks → week +3 (the move anchor).
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+
+      // Verify the week +3 occurrence is still on Saturday at 09:00 before
+      // the move (sanity check for the test setup).
+      expect(await calendarPage.getEventDayIndex(title)).toBe(startDay);
+
+      // Drag the event from Saturday (5) at 09:00 to Wednesday (2) at 14:00.
+      // Skip awaitReload because the scope modal pops between mouse.up and
+      // the eventual reload.
+      const targetDay = 2; // Wednesday
+      const targetHour = 14;
+      await calendarPage.dragEventToSlot(title, targetDay, targetHour, { awaitReload: false });
+
+      const reloadAfterScope = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+          && r.request().method() === 'POST',
+        { timeout: 30000 }
+      );
+      await calendarPage.pickScopeInModal('thisAndFollowing');
+      await reloadAfterScope;
+      await page.waitForTimeout(800);
+
+      // Week +3 (anchor): event should now be on Wed 14:00.
+      expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
+      const anchorTimeText = await calendarPage.getEventTimeText(title);
+      expect(anchorTimeText).toContain('14:00');
+
+      // Navigate back -1 week → week +2: event should still be on the
+      // ORIGINAL day (Saturday) at 09:00 (anchored past).
+      await calendarPage.navigateToPreviousWeek();
+      expect(await calendarPage.getEventDayIndex(title)).toBe(startDay);
+      const w2Time = await calendarPage.getEventTimeText(title);
+      expect(w2Time).toContain('09:00');
+      expect(w2Time).not.toContain('14:00');
+
+      // Navigate back -1 more → week +1 (the series-start week):
+      // event still on original day/time.
+      await calendarPage.navigateToPreviousWeek();
+      expect(await calendarPage.getEventDayIndex(title)).toBe(startDay);
+      const w1Time = await calendarPage.getEventTimeText(title);
+      expect(w1Time).toContain('09:00');
+
+      // Navigate back -1 more → week 0 (BEFORE series start): no event.
+      await calendarPage.navigateToPreviousWeek();
+      await expect(calendarPage.findEventBlock(title)).toHaveCount(0);
+
+      // Navigate +4 weeks → week +4 (one week PAST the move anchor):
+      // event must be on the NEW day (Wed) at 14:00.
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+      expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
+      const w4Time = await calendarPage.getEventTimeText(title);
+      expect(w4Time).toContain('14:00');
+    });
   });
 });
