@@ -325,10 +325,13 @@ export class CalendarUiEnhancementsPage {
     const box = await block.boundingBox();
     if (!box) throw new Error(`Task block "${title}" not found`);
 
-    // Handles are 6px tall, sitting at top:-3px and bottom:-3px relative
-    // to the block. Grab the centre of the band (the block's outer edge).
+    // Handles are 6 px tall sitting at top/bottom:-3 px relative to the
+    // block. The block has overflow:hidden, which clips pointer events
+    // for the OUTER half of the handle — only the inner 3 px receives
+    // clicks. Aim 2 px inside each edge to land squarely on the
+    // pointer-receiving strip.
     const startX = box.x + box.width / 2;
-    const startY = edge === 'top' ? box.y : box.y + box.height;
+    const startY = edge === 'top' ? box.y + 2 : box.y + box.height - 2;
 
     await this.page.mouse.move(startX, startY);
     await this.page.mouse.down();
