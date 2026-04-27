@@ -147,7 +147,17 @@ public class BackendConfigurationCalendarService(
                     }
                 }
 
-                if (occurrences.Count == 0)
+                // Even when the rule generates no occurrences for this week,
+                // we still need to consider per-occurrence exceptions whose
+                // OriginalDate falls inside the requested window — they
+                // render via the orphan-anchor pass below.
+                var hasInWeekExceptions = exceptionsByArp.TryGetValue(arp.Id, out var inWeekArpExceptions)
+                    && inWeekArpExceptions.Values.Any(x =>
+                        !x.IsDeleted
+                        && x.OriginalDate >= weekStart && x.OriginalDate <= weekEnd
+                        && (!x.NewDate.HasValue || x.NewDate.Value.Date == x.OriginalDate.Date));
+
+                if (occurrences.Count == 0 && !hasInWeekExceptions)
                     continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var calConfig);
