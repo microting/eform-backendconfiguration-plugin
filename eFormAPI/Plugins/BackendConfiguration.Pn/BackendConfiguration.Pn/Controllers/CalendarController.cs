@@ -50,6 +50,12 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.MoveTask(moveModel);
     }
 
+    [HttpPut("tasks/resize")]
+    public async Task<OperationResult> ResizeTask([FromBody] CalendarTaskResizeRequestModel resizeModel)
+    {
+        return await _backendConfigurationCalendarService.ResizeTask(resizeModel);
+    }
+
     [HttpGet("boards/{propertyId:int}")]
     public async Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId)
     {

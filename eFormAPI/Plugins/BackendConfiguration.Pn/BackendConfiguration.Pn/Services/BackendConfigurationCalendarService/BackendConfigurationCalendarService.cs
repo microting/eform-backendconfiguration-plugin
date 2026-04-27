@@ -934,6 +934,182 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    public async Task<OperationResult> ResizeTask(CalendarTaskResizeRequestModel resizeModel)
+    {
+        try
+        {
+            // No past-time check here on purpose: resize on an existing task
+            // is legitimate even when the start is in the past (e.g. the user
+            // is extending an event that's currently running). The task
+            // already exists; we are not creating a new one.
+
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == resizeModel.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (arp == null)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            var scope = resizeModel.Scope ?? "all";
+
+            if (scope == "this" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+            {
+                var originalDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                    .Where(x => x.OriginalDate == originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (exception != null)
+                {
+                    exception.StartHour = resizeModel.NewStartHour;
+                    exception.Duration = resizeModel.NewDuration;
+                    exception.UpdatedByUserId = userService.UserId;
+                    await exception.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    exception = new CalendarOccurrenceException
+                    {
+                        AreaRulePlanningId = resizeModel.Id,
+                        OriginalDate = originalDate,
+                        IsDeleted = false,
+                        NewDate = null, // resize does not change the date
+                        StartHour = resizeModel.NewStartHour,
+                        Duration = resizeModel.NewDuration,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await exception.Create(backendConfigurationPnDbContext);
+                }
+            }
+            else
+            {
+                // 'thisAndFollowing' and 'all' both update the series-wide
+                // CalendarConfiguration; we deliberately do NOT touch
+                // arp.StartDate or planning.StartDate (resize is not a move).
+                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                // For 'thisAndFollowing', anchor every PAST occurrence to its
+                // CURRENT (pre-resize) StartHour/Duration before we mutate
+                // calConfig — otherwise past occurrences without their own
+                // exception row would resolve through the new calConfig and
+                // visually shift to the new times. (See GetTasksForWeek's
+                // `exception ?? calConfig ?? defaults` resolution chain.)
+                if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+                {
+                    var anchorDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                    var oldStartHour = calConfig?.StartHour ?? 9.0;
+                    var oldDuration = calConfig?.Duration ?? 1.0;
+
+                    var planning = await itemsPlanningPnDbContext.Plannings
+                        .Where(x => x.Id == arp.ItemPlanningId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+
+                    if (planning == null)
+                    {
+                        // calConfig is about to be updated; without anchors, past
+                        // occurrences will silently shift to the new times. Log so
+                        // the issue is observable rather than invisible.
+                        logger.LogWarning(
+                            "ResizeTask thisAndFollowing backfill skipped: planning {ItemPlanningId} for AreaRulePlanning {ArpId} not found",
+                            arp.ItemPlanningId, resizeModel.Id);
+                    }
+                    else
+                    {
+                        var existingPastDates = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                            .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                            .Where(x => x.OriginalDate < anchorDate)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(x => x.OriginalDate)
+                            .ToListAsync();
+                        var existingSet = new HashSet<DateTime>(existingPastDates);
+
+                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate))
+                        {
+                            if (existingSet.Contains(occDate)) continue;
+                            var anchor = new CalendarOccurrenceException
+                            {
+                                AreaRulePlanningId = resizeModel.Id,
+                                OriginalDate = occDate,
+                                IsDeleted = false,
+                                NewDate = null,
+                                StartHour = oldStartHour,
+                                Duration = oldDuration,
+                                CreatedByUserId = userService.UserId,
+                                UpdatedByUserId = userService.UserId
+                            };
+                            await anchor.Create(backendConfigurationPnDbContext);
+                        }
+                    }
+                }
+
+                if (calConfig != null)
+                {
+                    calConfig.StartHour = resizeModel.NewStartHour;
+                    calConfig.Duration = resizeModel.NewDuration;
+                    calConfig.UpdatedByUserId = userService.UserId;
+                    await calConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    calConfig = new CalendarConfiguration
+                    {
+                        AreaRulePlanningId = resizeModel.Id,
+                        StartHour = resizeModel.NewStartHour,
+                        Duration = resizeModel.NewDuration,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await calConfig.Create(backendConfigurationPnDbContext);
+                }
+
+                // For thisAndFollowing, drop per-occurrence overrides from
+                // OriginalDate forward — they are superseded by the new
+                // series-wide values. For 'all', drop every override.
+                IQueryable<CalendarOccurrenceException> staleQuery =
+                    backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+                {
+                    var originalDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                    staleQuery = staleQuery.Where(x => x.OriginalDate >= originalDate);
+                }
+
+                var stales = await staleQuery.ToListAsync();
+                foreach (var stale in stales)
+                {
+                    await stale.Delete(backendConfigurationPnDbContext);
+                }
+            }
+
+            return new OperationResult(true,
+                localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.ResizeTask: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileUpdatingCalendarTask")}: {e.Message}");
+        }
+    }
+
     public async Task<OperationResult> ToggleComplete(int id, bool completed)
     {
         // TODO: Implement completion toggle via Compliance system
@@ -1068,6 +1244,79 @@ public class BackendConfigurationCalendarService(
             logger.LogError(e, "BackendConfigurationCalendarService.DeleteBoard: {Message}", e.Message);
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {e.Message}");
+        }
+    }
+
+    // Yields every occurrence of `planning` whose date is in
+    // [fromInclusive, toExclusive). Unlike GetOccurrencesInWeek (which
+    // assumes a week-sized range and caps Month/Year iteration), this is
+    // safe for arbitrary multi-month / multi-year ranges. Used by
+    // ResizeTask's 'thisAndFollowing' past-anchor backfill.
+    //
+    // Returns empty for non-recurring plannings (RepeatType.None / default
+    // branch) — there are no past occurrences to anchor in that case.
+    private static IEnumerable<DateTime> EnumerateOccurrences(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime fromInclusive, DateTime toExclusive)
+    {
+        var startDate = planning.StartDate.Date;
+        var rangeStart = fromInclusive.Date > startDate ? fromInclusive.Date : startDate;
+        var rangeEnd = toExclusive.Date;
+        if (rangeEnd <= rangeStart) yield break;
+        var repeatEvery = Math.Max(planning.RepeatEvery, 1);
+
+        switch (planning.RepeatType)
+        {
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day:
+            {
+                var step = repeatEvery;
+                var daysSinceStart = (rangeStart - startDate).Days;
+                var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
+                var candidate = startDate.AddDays(skip * step);
+                while (candidate < rangeEnd)
+                {
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidate = candidate.AddDays(step);
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
+            {
+                var step = repeatEvery * 7;
+                var daysSinceStart = (rangeStart - startDate).Days;
+                var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
+                var candidate = startDate.AddDays(skip * step);
+                while (candidate < rangeEnd)
+                {
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidate = candidate.AddDays(step);
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
+            {
+                var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                var monthsSinceStart = (rangeStart.Year - startDate.Year) * 12 + rangeStart.Month - startDate.Month;
+                var skip = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
+                var candidateMonth = startDate.AddMonths(skip * repeatEvery);
+                while (true)
+                {
+                    var daysInMonth = DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month);
+                    var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
+                        Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate >= rangeEnd) break;
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                }
+                break;
+            }
+            // NOTE: GetOccurrencesInWeek has a `(RepeatType)4 // Year` branch
+            // but the RepeatType enum only defines Day/Week/Month — the cast
+            // is dead code. Not propagating it here. Add a real Year case
+            // when the enum gains a member.
+            default:
+                // Non-recurring (RepeatType.None) — no past occurrences to anchor.
+                yield break;
         }
     }
 

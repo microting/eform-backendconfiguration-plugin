@@ -12,6 +12,7 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
     Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel);
+    Task<OperationResult> ResizeTask(CalendarTaskResizeRequestModel resizeModel);
     Task<OperationResult> ToggleComplete(int id, bool completed);
     Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId);
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);

@@ -500,6 +500,39 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Resize commit — calls a dedicated resize endpoint that updates only
+  // StartHour + Duration without touching other fields, mirroring how
+  // onTaskMoved uses the move endpoint. Resize on an existing task is
+  // allowed even when the start is in the past (no past-time check
+  // server-side for this endpoint).
+  onTaskResized(event: {taskId: number; newStartHour: number; newDuration: number; repeatSeriesId?: string; originalDate: string}) {
+    const task = this.tasks.find(t => t.id === event.taskId);
+    const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
+
+    const doResize = (scope: RepeatEditScope) => {
+      this.calendarService
+        .resizeTask(event.taskId, event.newStartHour, event.newDuration, scope, event.originalDate)
+        .subscribe(() => this.loadTasks());
+    };
+
+    if (isRepeating) {
+      const ref = this.dialog.open(
+        RepeatScopeModalComponent,
+        dialogConfigHelper(this.overlay, {mode: 'edit'})
+      );
+      ref.afterClosed().subscribe(scope => {
+        if (scope) {
+          doResize(scope);
+        } else {
+          // Cancelled — refetch so the optimistic local update is undone.
+          this.loadTasks();
+        }
+      });
+    } else {
+      doResize('this');
+    }
+  }
+
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
     this.closePreviewOverlay();
 

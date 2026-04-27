@@ -28,6 +28,58 @@
     text-decoration: line-through;
   }
 
+  &.resizing {
+    opacity: 0.85;
+    cursor: ns-resize;
+    z-index: 4;
+  }
+
+  // Resize handles sit at the top and bottom of the block as a thin
+  // hit-area. The visible 2 px bar inside fades in on hover so the
+  // affordance stays clean (Google-Calendar look).
+  .resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    z-index: 4;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.7);
+      opacity: 0;
+      transition: opacity 100ms;
+    }
+
+    &:hover::before {
+      opacity: 1;
+    }
+
+    &--top {
+      top: -3px;
+      &::before { top: 50%; transform: translateY(-50%); }
+    }
+
+    &--bottom {
+      bottom: -3px;
+      &::before { bottom: 50%; transform: translateY(50%); }
+    }
+  }
+
+  .task-block-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    cursor: pointer;
+  }
+
   .completion-btn {
     background: none;
     border: none;

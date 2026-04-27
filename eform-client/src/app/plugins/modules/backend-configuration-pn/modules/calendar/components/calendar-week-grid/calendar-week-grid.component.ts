@@ -18,7 +18,7 @@ import {startWith, takeUntil} from 'rxjs/operators';
 import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
-import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
+import {HOUR_HEIGHT, TaskResizePayload} from '../calendar-task-block/calendar-task-block.component';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
@@ -48,6 +48,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string; originalDate: string}>();
+  @Output() taskResized = new EventEmitter<{taskId: number; newStartHour: number; newDuration: number; repeatSeriesId?: string; originalDate: string}>();
   @Output() tasksReload = new EventEmitter<void>();
 
   private destroy$ = new Subject<void>();
@@ -394,6 +395,23 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
     // Invalid drop or cancel — restore original position
     event.source.reset();
+  }
+
+  // Resize ended — commit the new start/duration into the local
+  // tasksByDay so the UI doesn't flash back to the old size while the
+  // server roundtrip happens, then emit upward so the container can
+  // call updateTask.
+  onTaskResizeEnded(payload: TaskResizePayload) {
+    const {task, newStartHour, newDuration} = payload;
+    task.startHour = newStartHour;
+    task.duration = newDuration;
+    this.taskResized.emit({
+      taskId: task.id,
+      newStartHour,
+      newDuration,
+      repeatSeriesId: task.repeatSeriesId,
+      originalDate: task.taskDate,
+    });
   }
 
   private captureDragSource(task: CalendarTaskLayoutModel): void {

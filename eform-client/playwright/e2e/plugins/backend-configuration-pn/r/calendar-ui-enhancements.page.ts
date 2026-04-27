@@ -274,4 +274,97 @@ export class CalendarUiEnhancementsPage {
       await this.page.waitForTimeout(150);
     }
   }
+
+  // ----- Resize gesture ----------------------------------------------------
+
+  /**
+   * Find a task block by visible title substring. Use .first() because the
+   * preview popover may also render a copy of the block.
+   */
+  findEventBlock(title: string): Locator {
+    return this.page.locator('.task-block').filter({ hasText: title }).first();
+  }
+
+  /**
+   * Read the visible time text on a task block (e.g. "09:00 – 10:00"). The
+   * `.task-time` element only renders when duration ≥ 0.5 h — for very
+   * short events this returns empty.
+   */
+  async getEventTimeText(title: string): Promise<string> {
+    const block = this.findEventBlock(title);
+    const time = block.locator('.task-time');
+    if ((await time.count()) === 0) return '';
+    return ((await time.textContent()) ?? '').trim();
+  }
+
+  /**
+   * Drag a resize handle on a task block. `edge` is which edge to grab
+   * (top = changes start time, bottom = changes end/duration). `deltaPx`
+   * is signed: positive moves down, negative up.
+   *
+   * Hover the block first so the handles render visibly (they exist in
+   * the DOM regardless, but Playwright's actionability check is happier
+   * when they're visible).
+   */
+  async dragResizeHandle(title: string, edge: 'top' | 'bottom', deltaPx: number): Promise<void> {
+    const block = this.findEventBlock(title);
+    await block.hover();
+    const box = await block.boundingBox();
+    if (!box) throw new Error(`Task block "${title}" not found`);
+
+    // Handles are 6px tall, sitting at top:-3px and bottom:-3px relative
+    // to the block. Grab the centre of the band (the block's outer edge).
+    const startX = box.x + box.width / 2;
+    const startY = edge === 'top' ? box.y : box.y + box.height;
+
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    // Move in steps so the resize component's mousemove subscriber fires
+    // intermediate updates (matches the existing drag pattern in l/).
+    await this.page.mouse.move(startX, startY + deltaPx, { steps: 8 });
+    await this.page.waitForTimeout(150);
+    await this.page.mouse.up();
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Pick a scope in the RepeatScopeModalComponent that pops after a
+   * resize on a recurring event. Clicks the matching radio + Confirm.
+   */
+  async pickScopeInModal(scope: 'this' | 'thisAndFollowing' | 'all'): Promise<void> {
+    const dialog = this.page.locator('app-repeat-scope-modal');
+    await dialog.waitFor({ state: 'visible', timeout: 10000 });
+    await dialog.locator(`mat-radio-button[value="${scope}"]`).click();
+    await this.page.waitForTimeout(150);
+    // The confirm button is the second action button; matches by class
+    // since the visible label is locale-translated.
+    await dialog.locator('button.btn-primary').click();
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Click the calendar's previous-week chevron, wait for the week-tasks
+   * POST so the new week's data is loaded before assertions.
+   */
+  async navigateToPreviousWeek(): Promise<void> {
+    const wait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.page.locator('mat-icon:has-text("chevron_left")').first().click();
+    await wait;
+    await this.page.waitForTimeout(800);
+  }
+
+  async navigateToNextWeek(): Promise<void> {
+    const wait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.page.locator('mat-icon:has-text("chevron_right")').first().click();
+    await wait;
+    await this.page.waitForTimeout(800);
+  }
 }
