@@ -53,10 +53,20 @@ export class CalendarUiEnhancementsPage {
    * create modal title input to appear.
    */
   async openCreateModalAt9AM(): Promise<void> {
+    return this.openCreateModalAtSlot(0, 9);
+  }
+
+  /**
+   * Variant that lets the caller pick the day-of-week (0=Mon..6=Sun) and
+   * hour, so multiple tests in the same describe block can each create
+   * events at distinct slots without colliding with previously-created
+   * events on the same week.
+   */
+  async openCreateModalAtSlot(dayOffset: number, hour: number): Promise<void> {
     // Advance one week to guarantee we click a future slot.
     await this.page.locator('mat-icon:has-text("chevron_right")').first().click();
     await this.page.waitForTimeout(1500);
-    await this.clickEmptyTimeSlot(0, 9);
+    await this.clickEmptyTimeSlot(dayOffset, hour);
     await this.page
       .locator('#calendarEventTitle')
       .waitFor({ state: 'visible', timeout: 15000 });

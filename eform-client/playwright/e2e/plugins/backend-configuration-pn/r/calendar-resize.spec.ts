@@ -108,10 +108,17 @@ test.describe.serial('Calendar event resize', () => {
   });
 
   // Helper — open create modal, save a 1-h non-recurring event with the
-  // given title at Monday 09:00 of next week. Returns nothing; the title
-  // is the lookup key for the resulting block.
-  async function createSimpleEvent(page: import('@playwright/test').Page, calendarPage: CalendarUiEnhancementsPage, title: string) {
-    await calendarPage.openCreateModalAt9AM();
+  // given title at next week's day-of-week `dayOffset` (0=Mon..6=Sun)
+  // at 09:00. Each test in the suite should use a distinct dayOffset
+  // so subsequent tests don't accidentally click on a previously-
+  // created event (which would open the preview rather than create).
+  async function createSimpleEvent(
+    page: import('@playwright/test').Page,
+    calendarPage: CalendarUiEnhancementsPage,
+    title: string,
+    dayOffset: number = 0,
+  ) {
+    await calendarPage.openCreateModalAtSlot(dayOffset, 9);
     await page.locator('#calendarEventTitle').fill(title);
     // Pick first eForm (required by backend validation in the suite)
     const eform = page.locator('#calendarEventEform');
@@ -152,7 +159,7 @@ test.describe.serial('Calendar event resize', () => {
     test('D1: expand from end (drag bottom down) extends duration', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `D1-${generateRandmString(5)}`;
-      await createSimpleEvent(page, calendarPage, title);
+      await createSimpleEvent(page, calendarPage, title, 0); // Mon
 
       // Default: 09:00 – 10:00. Drag bottom down 1 hour → 09:00 – 11:00.
       // dragResizeHandle awaits the post-resize /tasks/week POST internally.
@@ -166,7 +173,7 @@ test.describe.serial('Calendar event resize', () => {
     test('D2: shrink from end (drag bottom up) shortens duration', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `D2-${generateRandmString(5)}`;
-      await createSimpleEvent(page, calendarPage, title);
+      await createSimpleEvent(page, calendarPage, title, 1); // Tue
 
       // Default: 09:00 – 10:00. Drag bottom up 30 min → 09:00 – 09:30.
       await calendarPage.dragResizeHandle(title, 'bottom', -Math.round(HOUR_PX / 2));
@@ -190,7 +197,7 @@ test.describe.serial('Calendar event resize', () => {
     test('D3: expand from start (drag top up) earlier-shifts start', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `D3-${generateRandmString(5)}`;
-      await createSimpleEvent(page, calendarPage, title);
+      await createSimpleEvent(page, calendarPage, title, 2); // Wed
 
       // Default 09:00 – 10:00. Drag top up 1 hour → 08:00 – 10:00.
       await calendarPage.dragResizeHandle(title, 'top', -HOUR_PX);
@@ -203,7 +210,7 @@ test.describe.serial('Calendar event resize', () => {
     test('D4: shrink from start (drag top down) later-shifts start', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `D4-${generateRandmString(5)}`;
-      await createSimpleEvent(page, calendarPage, title);
+      await createSimpleEvent(page, calendarPage, title, 3); // Thu
 
       // Default 09:00 – 10:00. Drag top down 30 min → 09:30 – 10:00.
       await calendarPage.dragResizeHandle(title, 'top', Math.round(HOUR_PX / 2));
