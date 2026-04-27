@@ -34,9 +34,11 @@
     z-index: 4;
   }
 
-  // Resize handles sit at the top and bottom of the block as a thin
-  // hit-area. The visible 2 px bar inside fades in on hover so the
-  // affordance stays clean (Google-Calendar look).
+  // Resize handles sit ENTIRELY INSIDE the block at the top and bottom,
+  // 6 px tall. Keeping them inside (rather than straddling the edge)
+  // sidesteps any pointer-events / overflow:hidden hit-test edge cases
+  // and gives Playwright a stable click target. The visible 2 px bar
+  // inside fades in on hover (Google-Calendar look).
   .resize-handle {
     position: absolute;
     left: 0;
@@ -44,6 +46,7 @@
     height: 6px;
     cursor: ns-resize;
     z-index: 4;
+    pointer-events: auto;
 
     &::before {
       content: '';
@@ -61,13 +64,13 @@
     }
 
     &--top {
-      top: -3px;
-      &::before { top: 50%; transform: translateY(-50%); }
+      top: 0;
+      &::before { top: 2px; }
     }
 
     &--bottom {
-      bottom: -3px;
-      &::before { bottom: 50%; transform: translateY(50%); }
+      bottom: 0;
+      &::before { bottom: 2px; }
     }
   }
 
