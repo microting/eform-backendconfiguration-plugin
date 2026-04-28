@@ -107,12 +107,17 @@
   // Sticky day-of-week header so the date strip ("man. 27/04" etc.) stays
   // pinned when scrolling down through the time grid.
   //
-  // mtx-grid wraps the <mat-table> in a `.mat-table-container` that has
-  // `overflow: auto` (see node_modules/@ng-matero/extensions/grid/grid.scss).
-  // That inner scroll container hijacks sticky positioning — the header
-  // would stick to the inner container instead of the outer
-  // `.week-grid-wrapper`. Override to `visible` so sticky resolves to the
-  // outer scroll container that the user actually scrolls.
+  // mtx-grid stacks several scrolling/clipping containers between
+  // <mat-table> and the outer `.week-grid-wrapper` (see
+  // node_modules/@ng-matero/extensions/grid/grid.scss):
+  //   .mtx-grid-layout     — overflow: auto  (line 158 — used by
+  //                          both .mtx-grid-main and .mtx-grid-content)
+  //   .mat-table-container — overflow: auto  (line 43)
+  // Each is a scrolling box that captures sticky positioning, so sticky
+  // resolves to whichever is closest — none of which are the wrapper the
+  // user actually scrolls. Override them all to `visible` so the header
+  // sticks to `.week-grid-wrapper` instead.
+  .mtx-grid-layout,
   .mat-table-container {
     overflow: visible !important;
   }
