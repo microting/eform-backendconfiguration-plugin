@@ -103,6 +103,24 @@
     z-index: 2;
     background: var(--bg, #FFFFFF);
   }
+
+  // Sticky day-of-week header so the date strip ("man. 11/05" etc.) stays
+  // visible when scrolling down through the time grid.
+  // z-index 3 wins over task blocks (z 2/3) but stays below the now-line
+  // (z 10) and drag-ghost-task (z 20) so those still draw on top.
+  // The time-axis header cell also gets z 4 so it stays above other cells
+  // at the top-left corner where row + column sticky overlap.
+  .mat-mdc-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg, #FFFFFF);
+    box-shadow: 0 1px 0 var(--border, #e0e0e0);
+  }
+
+  .mat-mdc-header-row .mat-column-time-axis {
+    z-index: 4;
+  }
 }
 
 .time-body {

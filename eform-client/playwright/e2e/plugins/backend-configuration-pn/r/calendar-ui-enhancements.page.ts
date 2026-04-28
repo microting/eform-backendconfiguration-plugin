@@ -501,4 +501,51 @@ export class CalendarUiEnhancementsPage {
     await wait;
     await this.page.waitForTimeout(800);
   }
+
+  // ----- Schedule (list) view ---------------------------------------------
+
+  /**
+   * Switch the calendar from week view to the schedule (list) view via the
+   * view-mode mtx-select in the header. Index 2 = "List" (per
+   * calendar-header.component.ts:28-32 viewModeOptions order: Week, Day, List).
+   */
+  async switchToScheduleView(): Promise<void> {
+    // Open the view-mode select. It's the only mtx-select inside the
+    // header's .text-field--rounded form-field.
+    const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
+    await viewSelect.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    // Index 2 is List per the modal's viewModeOptions order.
+    await this.page.locator('.ng-dropdown-panel .ng-option').nth(2).click();
+    await this.page.locator('.schedule-view').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Find a clickable schedule-view row by visible title substring.
+   */
+  findScheduleItem(title: string): Locator {
+    return this.page.locator('.schedule-item').filter({ hasText: title }).first();
+  }
+
+  /** Edit button in the preview popover (week-grid + schedule both reuse it). */
+  getPreviewEditButton(): Locator {
+    return this.page.locator('#calendarEventEditBtn');
+  }
+
+  /** Copy/Duplicate button in the preview popover. */
+  getPreviewCopyButton(): Locator {
+    return this.page.locator('#calendarEventCopyBtn');
+  }
+
+  /**
+   * Delete button in the preview popover. Has no id; identify by the
+   * `delete` mat-icon child.
+   */
+  getPreviewDeleteButton(): Locator {
+    return this.page
+      .locator('app-task-preview-modal button')
+      .filter({ has: this.page.locator('mat-icon', { hasText: 'delete' }) })
+      .first();
+  }
 }

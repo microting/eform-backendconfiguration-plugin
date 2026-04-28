@@ -117,8 +117,9 @@ test.describe.serial('Calendar event resize', () => {
     calendarPage: CalendarUiEnhancementsPage,
     title: string,
     dayOffset: number = 0,
+    hour: number = 9,
   ) {
-    await calendarPage.openCreateModalAtSlot(dayOffset, 9);
+    await calendarPage.openCreateModalAtSlot(dayOffset, hour);
     await page.locator('#calendarEventTitle').fill(title);
     // Pick first eForm (required by backend validation in the suite)
     const eform = page.locator('#calendarEventEform');
@@ -424,6 +425,58 @@ test.describe.serial('Calendar event resize', () => {
       expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
       const w4Time = await calendarPage.getEventTimeText(title);
       expect(w4Time).toContain('14:00');
+    });
+  });
+
+  // =======================================================================
+  // F. Schedule (list) view — clicking a row opens the same preview popover
+  //    used by the week-grid view (Edit / Duplicate / Delete actions).
+  // =======================================================================
+  test.describe('Schedule view — preview popover', () => {
+    test('F1: clicking a schedule row opens the preview popover with Edit/Duplicate/Delete', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      const title = `F1-${generateRandmString(5)}`;
+
+      // Sunday week +1 at 10:00 — no collision with D1..D4 (Mon-Thu),
+      // E1 (Fri), or E2 (Sat).
+      await createSimpleEvent(page, calendarPage, title, 6);
+
+      await calendarPage.switchToScheduleView();
+
+      const row = calendarPage.findScheduleItem(title);
+      await expect(row).toBeVisible();
+      await row.click();
+
+      const preview = page.locator('app-task-preview-modal');
+      await expect(preview).toBeVisible();
+
+      await expect(calendarPage.getPreviewEditButton()).toBeVisible();
+      await expect(calendarPage.getPreviewCopyButton()).toBeVisible();
+      await expect(calendarPage.getPreviewDeleteButton()).toBeVisible();
+    });
+
+    test('F2: clicking Edit in the popover opens the edit modal with the title pre-filled', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      const title = `F2-${generateRandmString(5)}`;
+
+      // Sunday at 14:00 — F1 already filled Sunday@9, so use a different
+      // hour to avoid clicking on the F1 event by mistake.
+      await createSimpleEvent(page, calendarPage, title, 6, 14);
+
+      await calendarPage.switchToScheduleView();
+      await calendarPage.findScheduleItem(title).click();
+      await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
+
+      await calendarPage.getPreviewEditButton().click();
+
+      // Edit modal title input should appear and be pre-filled.
+      const titleInput = page.locator('#calendarEventTitle');
+      await titleInput.waitFor({ state: 'visible', timeout: 15000 });
+      const value = await titleInput.inputValue();
+      expect(value).toContain(title);
+
+      // Tidy up so subsequent tests don't see lingering modal state.
+      await calendarPage.closeEventModal();
     });
   });
 });
