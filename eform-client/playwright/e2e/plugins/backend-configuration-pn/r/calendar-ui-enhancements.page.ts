@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 /**
  * Self-contained page object for the calendar UI-enhancements suite under
@@ -520,7 +520,7 @@ export class CalendarUiEnhancementsPage {
   /**
    * Switch the calendar from week view to the schedule (list) view via the
    * view-mode mtx-select in the header. Index 2 = "List" (per
-   * calendar-header.component.ts:28-32 viewModeOptions order: Week, Day, List).
+   * calendar-header.component.ts:28-32 viewModeOptions order: Day, Week, List).
    */
   async switchToScheduleView(): Promise<void> {
     // Open the view-mode select. It's the only mtx-select inside the
@@ -560,5 +560,114 @@ export class CalendarUiEnhancementsPage {
       .locator('app-task-preview-modal button')
       .filter({ has: this.page.locator('mat-icon', { hasText: 'delete' }) })
       .first();
+  }
+
+  // ----- Sticky day-of-week header (week + day views) ----------------------
+
+  /**
+   * The actual scrolling element of the calendar grid (week or day view —
+   * both are rendered via `app-calendar-week-grid`). The sticky header
+   * resolves its containing block to this element after the SCSS fix that
+   * disables `overflow: hidden` on the mtx-grid host.
+   */
+  getWeekGridWrapper(): Locator {
+    return this.page.locator('.week-grid-wrapper');
+  }
+
+  /**
+   * The day-of-week strip at the top of the grid ("man. 27/04 / I dag /
+   * ons. 29/04 / …"). Both the week-view and day-view branches in
+   * calendar-container.html mount `app-calendar-week-grid`, so we scope to
+   * that selector. `.first()` is defensive in case mtx-table renders an
+   * additional internal header row.
+   */
+  getHeaderRow(): Locator {
+    return this.page.locator('app-calendar-week-grid .mat-mdc-header-row').first();
+  }
+
+  /**
+   * Switch the calendar to day view via the view-mode mtx-select in the
+   * header. viewModeOptions order is fixed in calendar-header.component.ts
+   * ngOnInit: 0=Day, 1=Week, 2=List — so day view is index 0. Using the
+   * positional index keeps the helper locale-agnostic (the visible labels
+   * are translated, e.g. "Dag" in Danish).
+   */
+  async switchToDayView(): Promise<void> {
+    const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
+    await viewSelect.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    // Index 0 = Day per viewModeOptions order in calendar-header.component.ts.
+    await this.page.locator('.ng-dropdown-panel .ng-option').nth(0).click();
+    // Day view also renders <app-calendar-week-grid>, just with dayViewMode=true.
+    await this.page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Verify the day-of-week header row stays visually pinned to the top of
+   * the scrolling `.week-grid-wrapper` after a vertical scroll. Two modes:
+   *   - 'partial': scrollTop = 200
+   *   - 'max'    : scrollTop = scrollHeight (clamped by the browser to the
+   *                max scrollable offset)
+   *
+   * Hard-fails if the wrapper isn't actually scrollable enough to make the
+   * test meaningful — without this, a tall CI viewport could falsely pass
+   * because there is no overflow to scroll past.
+   */
+  async assertHeaderStaysSticky(scrollAmount: 'partial' | 'max'): Promise<void> {
+    const wrapper = this.getWeekGridWrapper();
+    const headerRow = this.getHeaderRow();
+
+    const wrapperBoxBefore = await wrapper.boundingBox();
+    if (!wrapperBoxBefore) {
+      throw new Error('Sticky-header check: .week-grid-wrapper has no bounding box (not visible).');
+    }
+    const metrics = await wrapper.evaluate(el => ({
+      clientHeight: (el as HTMLElement).clientHeight,
+      scrollHeight: (el as HTMLElement).scrollHeight,
+    }));
+    const overflow = metrics.scrollHeight - metrics.clientHeight;
+    if (overflow <= 50) {
+      throw new Error(
+        `Sticky-header check is not meaningful: .week-grid-wrapper is not scrollable enough ` +
+        `(scrollHeight=${metrics.scrollHeight}, clientHeight=${metrics.clientHeight}, ` +
+        `overflow=${overflow}px). Increase the viewport's height in the Playwright config or ` +
+        `rerun with a shorter window so the time grid actually overflows.`
+      );
+    }
+
+    // Apply the requested scroll. Reading offsetHeight forces a synchronous
+    // layout flush so the subsequent boundingBox read sees the post-scroll
+    // position rather than the pre-scroll one.
+    const targetScroll = scrollAmount === 'partial' ? 200 : metrics.scrollHeight;
+    await wrapper.evaluate((el, n) => {
+      (el as HTMLElement).scrollTop = n;
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      (el as HTMLElement).offsetHeight;
+    }, targetScroll);
+
+    const wrapperBoxAfter = await wrapper.boundingBox();
+    const headerBox = await headerRow.boundingBox();
+    if (!wrapperBoxAfter || !headerBox) {
+      throw new Error('Sticky-header check: missing bounding box after scroll.');
+    }
+
+    // Sanity: the wrapper itself shouldn't move during scroll (it's anchored
+    // by the calendar-main flex layout). If it does, the sticky comparison
+    // becomes meaningless — surface that as a clear failure rather than a
+    // misleading sticky regression.
+    expect(
+      wrapperBoxAfter.y,
+      `Wrapper itself moved during scroll (before=${wrapperBoxBefore.y}, ` +
+      `after=${wrapperBoxAfter.y}); sticky comparison is invalid.`
+    ).toBeCloseTo(wrapperBoxBefore.y, 0);
+
+    const delta = Math.abs(headerBox.y - wrapperBoxAfter.y);
+    expect(
+      delta,
+      `Header row drifted from wrapper top after ${scrollAmount} scroll: ` +
+      `headerBox.y=${headerBox.y}, wrapperBox.y=${wrapperBoxAfter.y}, delta=${delta}px ` +
+      `(expected < 2px — sticky regressed).`
+    ).toBeLessThan(2);
   }
 }

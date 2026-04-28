@@ -503,4 +503,45 @@ test.describe.serial('Calendar UI enhancements', () => {
       await expect(page.locator('.calendar-shell.sidebar-closed')).toHaveCount(0);
     });
   });
+
+  // =======================================================================
+  // G. Sticky day-of-week header (regression for cd637cbd) — 2 tests
+  // The mtx-grid host had `overflow: hidden` from @ng-matero/extensions,
+  // which captured `position: sticky` on the header row and made it scroll
+  // with content instead of staying pinned to the wrapper top. The SCSS fix
+  // adds `&,` to the overflow override so the host becomes overflow:visible
+  // and sticky resolves to the actual scrolling .week-grid-wrapper.
+  // =======================================================================
+  test.describe('Calendar — sticky day-of-week header', () => {
+    test('G1: week view — header stays pinned at partial and max scroll', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      // Week is the default viewMode in calendar-container.component.ts; just
+      // wait for the grid to render before measuring.
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+      await page.waitForTimeout(500);
+
+      await calendarPage.assertHeaderStaysSticky('partial');
+      await calendarPage.assertHeaderStaysSticky('max');
+    });
+
+    test('G2: day view — header stays pinned at partial and max scroll', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.switchToDayView();
+      // Re-wait after the view switch — Angular re-instantiates the
+      // <app-calendar-week-grid> when *ngSwitchCase flips from 'week' to 'day'.
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+      await page.waitForTimeout(500);
+
+      // Reset scrollTop in case the wrapper inherited a non-zero offset
+      // from prior interactions in the same beforeEach session.
+      await calendarPage
+        .getWeekGridWrapper()
+        .evaluate(el => { (el as HTMLElement).scrollTop = 0; });
+
+      await calendarPage.assertHeaderStaysSticky('partial');
+      await calendarPage.assertHeaderStaysSticky('max');
+    });
+  });
 });
