@@ -110,13 +110,16 @@
   // mtx-grid stacks several scrolling/clipping containers between
   // <mat-table> and the outer `.week-grid-wrapper` (see
   // node_modules/@ng-matero/extensions/grid/grid.scss):
-  //   .mtx-grid-layout     — overflow: auto  (line 158 — used by
-  //                          both .mtx-grid-main and .mtx-grid-content)
-  //   .mat-table-container — overflow: auto  (line 43)
-  // Each is a scrolling box that captures sticky positioning, so sticky
-  // resolves to whichever is closest — none of which are the wrapper the
-  // user actually scrolls. Override them all to `visible` so the header
-  // sticks to `.week-grid-wrapper` instead.
+  //   mtx-grid             — overflow: hidden (line 12)
+  //   .mtx-grid-layout     — overflow: auto   (line 158 — used by both
+  //                          .mtx-grid-main and .mtx-grid-content)
+  //   .mat-table-container — overflow: auto   (line 43)
+  // Each is a scrolling/clipping box that captures sticky positioning, so
+  // sticky resolves to whichever is closest — none of which are the
+  // wrapper the user actually scrolls. Override them all (including mtx-grid
+  // itself, hence `&`) to `visible` so the header sticks to
+  // `.week-grid-wrapper` instead.
+  &,
   .mtx-grid-layout,
   .mat-table-container {
     overflow: visible !important;
