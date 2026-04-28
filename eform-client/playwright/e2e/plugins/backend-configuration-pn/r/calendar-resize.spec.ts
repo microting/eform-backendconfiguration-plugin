@@ -437,11 +437,14 @@ test.describe.serial('Calendar event resize', () => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `F1-${generateRandmString(5)}`;
 
-      // Sunday week +1 at 10:00 — no collision with D1..D4 (Mon-Thu),
+      // Sunday week +1 at 9:00 — no collision with D1..D4 (Mon-Thu),
       // E1 (Fri), or E2 (Sat).
       await createSimpleEvent(page, calendarPage, title, 6);
 
       await calendarPage.switchToScheduleView();
+      // Container resets currentDate to today on week→schedule swap
+      // (calendar-container.component.ts:436). Advance back to week +1.
+      await calendarPage.navigateToNextWeek();
 
       const row = calendarPage.findScheduleItem(title);
       await expect(row).toBeVisible();
@@ -464,6 +467,9 @@ test.describe.serial('Calendar event resize', () => {
       await createSimpleEvent(page, calendarPage, title, 6, 14);
 
       await calendarPage.switchToScheduleView();
+      // View swap resets the date to today; advance to week +1 where the
+      // event lives.
+      await calendarPage.navigateToNextWeek();
       await calendarPage.findScheduleItem(title).click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
 
