@@ -20,6 +20,7 @@ export class CalendarScheduleViewComponent implements OnChanges {
   @Input() boards: CalendarBoardModel[] = [];
 
   @Output() tasksReload = new EventEmitter<void>();
+  @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
 
   groups: ScheduleGroup[] = [];
 
@@ -27,6 +28,19 @@ export class CalendarScheduleViewComponent implements OnChanges {
 
   ngOnChanges() {
     this.buildGroups();
+  }
+
+  // Mirrors the week-grid `taskClicked` payload so the container can
+  // route both views through the same `onTaskClickedFromGrid` handler
+  // (preview popover with Edit / Duplicate / Delete buttons).
+  onTaskClicked(task: CalendarTaskLayoutModel, event: MouseEvent) {
+    const row = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.taskClicked.emit({
+      task,
+      cellLeft: row.left,
+      cellRight: row.right,
+      slotTop: row.top,
+    });
   }
 
   private buildGroups() {

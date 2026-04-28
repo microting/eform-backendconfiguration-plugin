@@ -6,7 +6,12 @@
   <div class="schedule-group" *ngFor="let group of groups">
     <div class="group-header">{{ group.dateLabel }}</div>
 
-    <div class="schedule-item" *ngFor="let task of group.tasks" [style.border-left-color]="task.color">
+    <div
+      class="schedule-item"
+      *ngFor="let task of group.tasks"
+      [style.border-left-color]="task.color"
+      (click)="onTaskClicked(task, $event)"
+    >
       <div class="task-time">{{ task.startText }} – {{ task.endText }}</div>
       <div class="task-info">
         <span class="task-title" [class.completed]="task.completed">{{ task.title }}</span>
