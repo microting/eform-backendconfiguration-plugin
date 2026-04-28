@@ -104,22 +104,34 @@
     background: var(--bg, #FFFFFF);
   }
 
-  // Sticky day-of-week header so the date strip ("man. 11/05" etc.) stays
-  // visible when scrolling down through the time grid.
-  // z-index 3 wins over task blocks (z 2/3) but stays below the now-line
-  // (z 10) and drag-ghost-task (z 20) so those still draw on top.
-  // The time-axis header cell also gets z 4 so it stays above other cells
-  // at the top-left corner where row + column sticky overlap.
+  // Sticky day-of-week header so the date strip ("man. 27/04" etc.) stays
+  // pinned when scrolling down through the time grid.
+  //
+  // mtx-grid wraps the <mat-table> in a `.mat-table-container` that has
+  // `overflow: auto` (see node_modules/@ng-matero/extensions/grid/grid.scss).
+  // That inner scroll container hijacks sticky positioning — the header
+  // would stick to the inner container instead of the outer
+  // `.week-grid-wrapper`. Override to `visible` so sticky resolves to the
+  // outer scroll container that the user actually scrolls.
+  .mat-table-container {
+    overflow: visible !important;
+  }
+
+  // z-index 11 wins over task blocks (z 2/3), the now-line current-time
+  // indicator (z 10), and the all-day chips. Drag-ghost-task (z 20) still
+  // draws on top so a moving event doesn't disappear under the header.
+  // The time-axis cell of the header gets z 12 to stay above other header
+  // cells where the row + column sticky overlap.
   .mat-mdc-header-row {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 11;
     background: var(--bg, #FFFFFF);
     box-shadow: 0 1px 0 var(--border, #e0e0e0);
   }
 
   .mat-mdc-header-row .mat-column-time-axis {
-    z-index: 4;
+    z-index: 12;
   }
 }
 
