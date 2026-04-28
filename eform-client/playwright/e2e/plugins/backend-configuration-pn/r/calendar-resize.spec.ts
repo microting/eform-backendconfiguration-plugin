@@ -443,8 +443,10 @@ test.describe.serial('Calendar event resize', () => {
 
       await calendarPage.switchToScheduleView();
       // Container resets currentDate to today on week→schedule swap
-      // (calendar-container.component.ts:436). Advance back to week +1.
-      await calendarPage.navigateToNextWeek();
+      // (calendar-container.component.ts:436). The chevron in schedule
+      // view advances by 1 DAY per click, not 1 week — so we need 7
+      // clicks to land in the same week as the event (week +1).
+      await calendarPage.navigateScheduleByDays(7);
 
       const row = calendarPage.findScheduleItem(title);
       await expect(row).toBeVisible();
@@ -467,9 +469,9 @@ test.describe.serial('Calendar event resize', () => {
       await createSimpleEvent(page, calendarPage, title, 6, 14);
 
       await calendarPage.switchToScheduleView();
-      // View swap resets the date to today; advance to week +1 where the
-      // event lives.
-      await calendarPage.navigateToNextWeek();
+      // View swap resets the date to today; advance 7 days (1 chevron =
+      // 1 day in schedule view) to land in week +1 where the event lives.
+      await calendarPage.navigateScheduleByDays(7);
       await calendarPage.findScheduleItem(title).click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
 

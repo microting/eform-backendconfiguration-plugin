@@ -502,6 +502,19 @@ export class CalendarUiEnhancementsPage {
     await this.page.waitForTimeout(800);
   }
 
+  /**
+   * Advance the schedule (list) / day view by `days` days. The chevron
+   * step in non-week views is 1 day per click (see
+   * calendar-container.component.ts:421), so a 1-week advance needs 7
+   * clicks. Each click awaits the /tasks/week POST so navigation is
+   * deterministic.
+   */
+  async navigateScheduleByDays(days: number): Promise<void> {
+    for (let i = 0; i < days; i++) {
+      await this.navigateToNextWeek();
+    }
+  }
+
   // ----- Schedule (list) view ---------------------------------------------
 
   /**
