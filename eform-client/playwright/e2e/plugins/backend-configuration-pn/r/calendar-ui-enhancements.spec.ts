@@ -544,4 +544,100 @@ test.describe.serial('Calendar UI enhancements', () => {
       await calendarPage.assertHeaderStaysSticky('max');
     });
   });
+
+  // =======================================================================
+  // H. View-switch preserves the navigated week (regression for the
+  //    currentDate-reset removal). Switching from week → day or week →
+  //    schedule used to snap currentDate back to today; it now snaps to
+  //    Monday of the currently-viewed week. Schedule-view chevron also
+  //    advances 7 days per click (was 1).
+  // =======================================================================
+  test.describe('Calendar — view-switch preserves navigated week', () => {
+    // Test-side helpers (kept inline — test-only date math)
+    // Local-tz Monday of the current week. Mirrors getMondayOfWeek in
+    // calendar-container.component.ts so the tests reason in the same
+    // timezone as the running app.
+    function mondayOfThisWeekLocal(): Date {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      const dow = d.getDay(); // 0=Sun … 6=Sat
+      const diff = dow === 0 ? -6 : 1 - dow;
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+    function addDays(d: Date, n: number): Date {
+      const out = new Date(d);
+      out.setDate(out.getDate() + n);
+      return out;
+    }
+    // Mirror calendar-header.component.ts displayDate format for day/schedule views.
+    // The Playwright runtime is da-DK (matches the dev environment).
+    function formatLongDate(d: Date, locale = 'da-DK'): string {
+      const formatted = d.toLocaleDateString(locale, {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      });
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+
+    test('H1: schedule view preserves the navigated week (not today)', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Navigate two weeks forward in week view
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+
+      // Switch to schedule (Tidsplan)
+      await calendarPage.switchToScheduleView();
+
+      // Header should now show the Monday of (today's-week + 14d), in long format
+      const expected = formatLongDate(addDays(mondayOfThisWeekLocal(), 14));
+      const actual = await calendarPage.getCalendarHeaderDateText();
+      expect(actual).toBe(expected);
+    });
+
+    test('H2: day view lands on Monday of the navigated week', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      await calendarPage.navigateToNextWeek();
+      await calendarPage.navigateToNextWeek();
+
+      await calendarPage.switchToDayView();
+
+      const expectedMonday = addDays(mondayOfThisWeekLocal(), 14);
+      const expectedHeader = formatLongDate(expectedMonday);
+      const actualHeader = await calendarPage.getCalendarHeaderDateText();
+      expect(actualHeader).toBe(expectedHeader);
+
+      // The single day-grid column header should also show that Monday's date.
+      // Selector skips the time-axis column. The grid label format is
+      // "weekdayShort. dd/mm" (e.g. "man. 11/05"), so the dd/mm pair is a
+      // tighter anchor than the bare day number — a neighbour-week off-by-one
+      // would not collide.
+      const dayCol = page
+        .locator('app-calendar-week-grid .mat-mdc-header-cell:not(.mat-column-time-axis)')
+        .first();
+      const colText = (await dayCol.innerText()).trim();
+      const dd = String(expectedMonday.getDate()).padStart(2, '0');
+      const mm = String(expectedMonday.getMonth() + 1).padStart(2, '0');
+      expect(colText).toContain(`${dd}/${mm}`);
+    });
+
+    test('H3: schedule chevron advances one week per click', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Get into schedule view at this week's Monday (no navigation yet)
+      await calendarPage.switchToScheduleView();
+      const before = await calendarPage.getCalendarHeaderDateText();
+      expect(before).toBe(formatLongDate(mondayOfThisWeekLocal()));
+
+      // One chevron click should advance 7 days (NOT 1 day, post-fix)
+      await calendarPage.navigateToNextWeek();
+
+      const after = await calendarPage.getCalendarHeaderDateText();
+      expect(after).toBe(formatLongDate(addDays(mondayOfThisWeekLocal(), 7)));
+    });
+  });
 });

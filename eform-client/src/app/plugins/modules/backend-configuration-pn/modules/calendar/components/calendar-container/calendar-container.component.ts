@@ -417,8 +417,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onNavigate(direction: -1 | 1) {
     const d = new Date(this.currentDate);
-    // Week view shifts 7 days at a time; day and list views shift 1 day.
-    const step = this.viewMode === 'week' ? 7 : 1;
+    // Day view advances by one day; week and schedule (list) views both show a
+    // full week of data, so the chevron advances by one full week in those.
+    const step = this.viewMode === 'day' ? 1 : 7;
     d.setDate(d.getDate() + direction * step);
     this.stateService.updateCurrentDate(this.toLocalDateString(d));
     this.loadTasks();
@@ -430,11 +431,13 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onViewModeChange(viewMode: 'week' | 'day' | 'schedule') {
-    // Switching into day or list view should always land on today, so users
-    // don't find themselves in a single-day view of some unrelated week.
-    // Week→week keeps the currently-viewed week.
+    // Switching out of week view: snap currentDate to Monday of the
+    // currently-viewed week so day-view lands on the first day of that
+    // week and schedule-view shows that same week — preserving the
+    // user's navigation context instead of jumping back to today.
     if (viewMode !== 'week' && this.viewMode === 'week') {
-      this.stateService.updateCurrentDate(this.toLocalDateString(new Date()));
+      const monday = this.getMondayOfWeek(new Date(this.currentDate));
+      this.stateService.updateCurrentDate(this.toLocalDateString(monday));
     }
     this.stateService.updateViewMode(viewMode);
     this.loadTasks();

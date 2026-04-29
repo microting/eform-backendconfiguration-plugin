@@ -442,11 +442,11 @@ test.describe.serial('Calendar event resize', () => {
       await createSimpleEvent(page, calendarPage, title, 6);
 
       await calendarPage.switchToScheduleView();
-      // Container resets currentDate to today on week→schedule swap
-      // (calendar-container.component.ts:436). The chevron in schedule
-      // view advances by 1 DAY per click, not 1 week — so we need 7
-      // clicks to land in the same week as the event (week +1).
-      await calendarPage.navigateScheduleByDays(7);
+      // After the view-switch fix, the schedule view preserves the
+      // navigated week (no longer snaps currentDate back to today) and
+      // the chevron advances 7 days per click. Advance one week to
+      // land in the same week as the event (week +1).
+      await calendarPage.navigateScheduleByWeeks(1);
 
       const row = calendarPage.findScheduleItem(title);
       await expect(row).toBeVisible();
@@ -469,9 +469,10 @@ test.describe.serial('Calendar event resize', () => {
       await createSimpleEvent(page, calendarPage, title, 6, 14);
 
       await calendarPage.switchToScheduleView();
-      // View swap resets the date to today; advance 7 days (1 chevron =
-      // 1 day in schedule view) to land in week +1 where the event lives.
-      await calendarPage.navigateScheduleByDays(7);
+      // Schedule view preserves the navigated week post-fix and the
+      // chevron advances 7 days per click. Advance one week to land
+      // in week +1 where the event lives.
+      await calendarPage.navigateScheduleByWeeks(1);
       await calendarPage.findScheduleItem(title).click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
 

@@ -285,6 +285,20 @@ export class CalendarUiEnhancementsPage {
     }
   }
 
+  /**
+   * Read the calendar-header's rendered date string (the `displayDate`
+   * getter output from calendar-header.component.ts). Format is locale-
+   * dependent and view-dependent:
+   *   - day / schedule: "{Weekday}, {D}. {Month} {YYYY}" (long form)
+   *   - week:           "{Month} {YYYY}"
+   * The text is rendered in `<span class="date-range">{{ displayDate }}</span>`
+   * inside `app-calendar-header`. Returns the trimmed visible text.
+   */
+  async getCalendarHeaderDateText(): Promise<string> {
+    const span = this.page.locator('app-calendar-header .date-range').first();
+    return ((await span.textContent()) ?? '').trim();
+  }
+
   // ----- Resize gesture ----------------------------------------------------
 
   /**
@@ -503,14 +517,12 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
-   * Advance the schedule (list) / day view by `days` days. The chevron
-   * step in non-week views is 1 day per click (see
-   * calendar-container.component.ts:421), so a 1-week advance needs 7
-   * clicks. Each click awaits the /tasks/week POST so navigation is
-   * deterministic.
+   * Click the chevron-right N times in schedule view; advances N weeks
+   * (post the view-switch fix that made schedule chevron step 7 days).
+   * Each click awaits the /tasks/week POST so navigation is deterministic.
    */
-  async navigateScheduleByDays(days: number): Promise<void> {
-    for (let i = 0; i < days; i++) {
+  async navigateScheduleByWeeks(weeks: number): Promise<void> {
+    for (let i = 0; i < weeks; i++) {
       await this.navigateToNextWeek();
     }
   }

@@ -70,11 +70,11 @@ export class CalendarHeaderComponent implements OnInit {
   }
 
   get prevTooltipKey(): string {
-    return this.viewMode === 'week' ? 'Previous week' : 'Previous day';
+    return this.viewMode === 'day' ? 'Previous day' : 'Previous week';
   }
 
   get nextTooltipKey(): string {
-    return this.viewMode === 'week' ? 'Next week' : 'Next day';
+    return this.viewMode === 'day' ? 'Next day' : 'Next week';
   }
 
   private getMondayOfWeek(d: Date): Date {
