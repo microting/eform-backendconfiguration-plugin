@@ -7,6 +7,7 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
 export interface CustomRepeatModalData {
   date: Date;
+  meta?: CalendarRepeatMeta | null;
 }
 
 interface WeekdayCircle {
@@ -57,12 +58,42 @@ export class CustomRepeatModalComponent implements OnInit {
       {label: this.translate.instant('Sat').charAt(0), value: 6, active: false},
       {label: this.translate.instant('Sun').charAt(0), value: 0, active: false},
     ];
-    // Pre-select the weekday matching the task date
-    const wdVal = this.data.date.getDay();
-    const circle = this.weekdays.find(w => w.value === wdVal);
-    if (circle) circle.active = true;
-    this.untilDateObj = new Date(this.data.date.getFullYear(), this.data.date.getMonth() + 3, this.data.date.getDate());
-    this.untilDate = this.untilDateObj.toISOString().split('T')[0];
+
+    // Always seed a sensible untilDate fallback (date + 3 months) so the "På"
+    // branch has a value if the user toggles to it later — even when we
+    // hydrate from an existing meta whose endMode is not 'until'.
+    const fallbackUntil = new Date(
+      this.data.date.getFullYear(),
+      this.data.date.getMonth() + 3,
+      this.data.date.getDate(),
+    );
+    this.untilDateObj = fallbackUntil;
+    this.untilDate = fallbackUntil.toISOString().split('T')[0];
+
+    if (this.data.meta) {
+      // Hydrate from an existing custom-repeat rule.
+      const decomposed = this.repeatService.decomposeCustomMeta(this.data.meta);
+      this.step = decomposed.step;
+      this.unit = decomposed.unit;
+      this.endMode = decomposed.endMode;
+      if (decomposed.afterCount != null) {
+        this.afterCount = decomposed.afterCount;
+      }
+      // Sunday is value: 0 here and JS getDay() returns 0 too, so includes(0)
+      // matches correctly without special-casing.
+      for (const circle of this.weekdays) {
+        circle.active = decomposed.weekdays.includes(circle.value);
+      }
+      if (decomposed.untilTs != null) {
+        this.untilDateObj = new Date(decomposed.untilTs);
+        this.untilDate = this.untilDateObj.toISOString().split('T')[0];
+      }
+    } else {
+      // Fresh open: pre-select the weekday matching the task date.
+      const wdVal = this.data.date.getDay();
+      const circle = this.weekdays.find(w => w.value === wdVal);
+      if (circle) circle.active = true;
+    }
   }
 
   toggleWeekday(circle: WeekdayCircle) {

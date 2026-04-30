@@ -401,6 +401,87 @@ export class CalendarRepeatService {
     return formatter.format(names);
   }
 
+  /**
+   * Inverse of `buildMetaFromCustomConfig` — decompose an existing
+   * `CalendarRepeatMeta` back into the modal's editable fields so the
+   * Custom-repeat modal can hydrate from a previously configured rule.
+   *
+   * Returns step / unit / weekdays (JS getDay() format: 0=Sun..6=Sat) /
+   * endMode / afterCount / untilTs. The endMode trio is passed through
+   * directly; the modal converts `untilTs` → its `untilDateObj` itself.
+   *
+   * Defensive defaults: an unknown `kind` yields a weekly-empty config
+   * so the modal stays usable instead of throwing.
+   */
+  decomposeCustomMeta(meta: CalendarRepeatMeta): {
+    step: number;
+    unit: 'day' | 'week' | 'month' | 'year';
+    weekdays: number[];
+    endMode: 'never' | 'after' | 'until';
+    afterCount?: number;
+    untilTs?: number;
+  } {
+    let step = 1;
+    let unit: 'day' | 'week' | 'month' | 'year' = 'week';
+    let weekdays: number[] = [];
+
+    switch (meta.kind) {
+      case 'daily':
+        step = 1; unit = 'day'; weekdays = [];
+        break;
+      case 'everyNd':
+        step = meta.n ?? 1; unit = 'day'; weekdays = [];
+        break;
+      case 'weeklyOne':
+        step = 1; unit = 'week';
+        weekdays = meta.weekday != null ? [meta.weekday] : [];
+        break;
+      case 'weeklyMulti':
+        step = 1; unit = 'week'; weekdays = meta.weekdays ?? [];
+        break;
+      // 'weeklyAll' is supported here for metas emitted by the backend or by
+      // future builders; the in-app builder collapses empty-weekday weekly
+      // configs to 'everyNWeekAll' regardless of step.
+      case 'weeklyAll':
+        step = 1; unit = 'week'; weekdays = [];
+        break;
+      case 'everyNWeekOne':
+        step = meta.n ?? 1; unit = 'week';
+        weekdays = meta.weekday != null ? [meta.weekday] : [];
+        break;
+      case 'everyNWeekMulti':
+        step = meta.n ?? 1; unit = 'week'; weekdays = meta.weekdays ?? [];
+        break;
+      case 'everyNWeekAll':
+        step = meta.n ?? 1; unit = 'week'; weekdays = [];
+        break;
+      case 'monthlyDom':
+        step = 1; unit = 'month'; weekdays = [];
+        break;
+      case 'everyNMonthDom':
+        step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        break;
+      case 'yearlyOne':
+        step = 1; unit = 'year'; weekdays = [];
+        break;
+      case 'everyNYear':
+        step = meta.n ?? 1; unit = 'year'; weekdays = [];
+        break;
+      default:
+        step = 1; unit = 'week'; weekdays = [];
+        break;
+    }
+
+    return {
+      step,
+      unit,
+      weekdays,
+      endMode: meta.endMode ?? 'never',
+      afterCount: meta.afterCount,
+      untilTs: meta.untilTs,
+    };
+  }
+
   /** Convert a custom repeat config to a CalendarRepeatMeta */
   buildMetaFromCustomConfig(
     step: number,

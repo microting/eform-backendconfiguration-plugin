@@ -232,4 +232,135 @@ describe('CalendarRepeatService', () => {
       expect(meta.untilTs).toBe(ts);
     });
   });
+
+  // ─── decomposeCustomMeta ─────────────────────────────────────────────────
+  //
+  // Each test builds a meta via buildMetaFromCustomConfig, decomposes it,
+  // and asserts the decomposed values round-trip back to the inputs.
+
+  describe('decomposeCustomMeta', () => {
+    it('weeklyOne (step=1, weekday=Tue) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [2], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([2]);
+      expect(d.endMode).toBe('never');
+    });
+
+    it('weeklyMulti (step=1, weekdays=[1,2]) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [1, 2], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([1, 2]);
+    });
+
+    it('weeklyAll (constructed directly — builder collapses to everyNWeekAll)', () => {
+      // The in-app builder cannot emit `kind: 'weeklyAll'` because empty
+      // weekdays always lands on `everyNWeekAll`. Construct the meta directly
+      // to cover the explicit `weeklyAll` switch branch.
+      const meta: CalendarRepeatMeta = {kind: 'weeklyAll', endMode: 'never'};
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('everyNWeekAll-via-builder (step=1, weekdays=[]) → unit=week, weekdays=[]', () => {
+      // Confirm the builder's collapse path: empty weekdays + step=1 still
+      // collapses to everyNWeekAll, and decompose handles it.
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [], 'never');
+      expect(meta.kind).toBe('everyNWeekAll');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('everyNWeekOne (n=2, weekday=1) → step=2, unit=week, weekdays=[1]', () => {
+      const meta = service.buildMetaFromCustomConfig(2, 'week', [1], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(2);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([1]);
+    });
+
+    it('everyNWeekMulti (n=3, weekdays=[1,3,5]) → step=3, unit=week, weekdays=[1,3,5]', () => {
+      const meta = service.buildMetaFromCustomConfig(3, 'week', [1, 3, 5], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(3);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([1, 3, 5]);
+    });
+
+    it('everyNWeekAll (n=2) → weekdays=[]', () => {
+      const meta = service.buildMetaFromCustomConfig(2, 'week', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(2);
+      expect(d.unit).toBe('week');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('daily (step=1, day) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'day', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('day');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('everyNd (n=4) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(4, 'day', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(4);
+      expect(d.unit).toBe('day');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('monthlyDom (step=1, month) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'month', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('month');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('everyNMonthDom (n=2) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(2, 'month', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(2);
+      expect(d.unit).toBe('month');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('yearlyOne (step=1, year) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'year', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(1);
+      expect(d.unit).toBe('year');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('everyNYear (n=5) round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(5, 'year', [], 'never');
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.step).toBe(5);
+      expect(d.unit).toBe('year');
+      expect(d.weekdays).toEqual([]);
+    });
+
+    it('endMode "after" with afterCount=7 round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [2], 'after', 7);
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.endMode).toBe('after');
+      expect(d.afterCount).toBe(7);
+    });
+
+    it('endMode "until" with untilTs=12345 round-trips', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [2], 'until', undefined, 12345);
+      const d = service.decomposeCustomMeta(meta);
+      expect(d.endMode).toBe('until');
+      expect(d.untilTs).toBe(12345);
+    });
+  });
 });

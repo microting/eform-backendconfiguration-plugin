@@ -473,13 +473,22 @@ export class TaskCreateEditModalComponent implements OnInit {
     const previousMeta = this.customRepeatMeta;
     const ref = this.dialog.open(
       CustomRepeatModalComponent,
-      dialogConfigHelper(this.overlay, {date: this.dateControl.value ?? new Date()})
+      dialogConfigHelper(this.overlay, {
+        date: this.dateControl.value ?? new Date(),
+        meta: this.customRepeatMeta,  // pre-populate when re-opening with an existing rule
+      })
     );
     ref.afterClosed().subscribe((meta: CalendarRepeatMeta | null) => {
+      const baseDate = this.dateControl.value ?? new Date();
       if (!meta) {
         // Cancelled. If we had a custom rule before opening, keep it and restore
         // the synthesized 'customCurrent' selection. Otherwise fall back to 'none'.
         if (previousMeta) {
+          // Defensive: ensure repeatOptions still contains the synthesized
+          // option so the form value resolves to a real entry. (If a date
+          // change rebuilt the options between modal open and close, the
+          // synthesized option would be missing.)
+          this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, previousMeta);
           this.repeatControl.setValue('customCurrent', {emitEvent: false});
         } else {
           this.repeatControl.setValue('none', {emitEvent: false});
@@ -487,7 +496,6 @@ export class TaskCreateEditModalComponent implements OnInit {
         }
       } else {
         this.customRepeatMeta = meta;
-        const baseDate = this.dateControl.value ?? new Date();
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, meta);
         this.repeatControl.setValue('customCurrent', {emitEvent: false});
       }
