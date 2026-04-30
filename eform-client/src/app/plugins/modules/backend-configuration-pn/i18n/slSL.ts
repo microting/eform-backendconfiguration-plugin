@@ -426,4 +426,11 @@ export const slSL = {
   'Create new': 'Ustvari novo',
   'Change property': 'Spremeni lastnost',
   Wk: 'Ted.',
+  'Weekly every {{days}}': 'Tedensko vsakih {{days}}',
+  'Weekly on all days': 'Tedensko vse dni',
+  'Every {{n}} weeks: {{days}}': 'Vsakih {{n}} tednov: {{days}}',
+  'Every {{n}} weeks: all days': 'Vsakih {{n}} tednov: vse dni',
+  'Every {{n}} days': 'Vsakih {{n}} dni',
+  'Every {{n}} months on day {{dom}}': 'Vsakih {{n}} mesecev na dan {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Vsakih {{n}} let na {{dom}}. {{month}}',
 };

@@ -426,4 +426,11 @@ export const svSE = {
   'Create new': 'Skapa nytt',
   'Change property': 'Ändra egenskap',
   Wk: 'Vecka',
+  'Weekly every {{days}}': 'Veckovis var {{days}}',
+  'Weekly on all days': 'Veckovis alla dagar',
+  'Every {{n}} weeks: {{days}}': 'Var {{n}} vecka: {{days}}',
+  'Every {{n}} weeks: all days': 'Var {{n}} vecka: alla dagar',
+  'Every {{n}} days': 'Var {{n}} dag',
+  'Every {{n}} months on day {{dom}}': 'Var {{n}} månad på dag {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Var {{n}} år på {{dom}}. {{month}}',
 };

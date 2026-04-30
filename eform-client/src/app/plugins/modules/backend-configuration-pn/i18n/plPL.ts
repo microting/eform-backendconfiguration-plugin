@@ -426,4 +426,11 @@ export const plPL = {
   'Create new': 'Utwórz nowy',
   'Change property': 'Zmień właściwość',
   Wk: 'Tydzień',
+  'Weekly every {{days}}': 'Tygodniowo co {{days}}',
+  'Weekly on all days': 'Tygodniowo we wszystkie dni',
+  'Every {{n}} weeks: {{days}}': 'Co {{n}} tygodni: {{days}}',
+  'Every {{n}} weeks: all days': 'Co {{n}} tygodni: wszystkie dni',
+  'Every {{n}} days': 'Co {{n}} dni',
+  'Every {{n}} months on day {{dom}}': 'Co {{n}} miesięcy w dniu {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Co {{n}} lat w {{dom}}. {{month}}',
 };

@@ -426,4 +426,11 @@ export const lvLV = {
   'Create new': 'Izveidot jaunu',
   'Change property': 'Mainīt īpašumu',
   Wk: 'Nedēļa',
+  'Weekly every {{days}}': 'Katru nedēļu ik pēc {{days}}',
+  'Weekly on all days': 'Katru nedēļu visās dienās',
+  'Every {{n}} weeks: {{days}}': 'Ik pēc {{n}} nedēļām: {{days}}',
+  'Every {{n}} weeks: all days': 'Ik pēc {{n}} nedēļām: visas dienas',
+  'Every {{n}} days': 'Ik pēc {{n}} dienām',
+  'Every {{n}} months on day {{dom}}': 'Ik pēc {{n}} mēnešiem {{dom}}. dienā',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Ik pēc {{n}} gadiem {{dom}} {{month}} dienā',
 };

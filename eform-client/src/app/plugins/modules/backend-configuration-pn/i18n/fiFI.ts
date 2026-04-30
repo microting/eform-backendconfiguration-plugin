@@ -426,4 +426,11 @@ export const fiFI = {
   'Create new': 'Luo uusi',
   'Change property': 'Muuta ominaisuutta',
   Wk: 'Viikko',
+  'Weekly every {{days}}': 'Viikoittain joka {{days}}',
+  'Weekly on all days': 'Viikoittain kaikkina päivinä',
+  'Every {{n}} weeks: {{days}}': 'Joka {{n}} viikko: {{days}}',
+  'Every {{n}} weeks: all days': 'Joka {{n}} viikko: kaikkina päivinä',
+  'Every {{n}} days': 'Joka {{n}} päivä',
+  'Every {{n}} months on day {{dom}}': 'Joka {{n}} kuukausi {{dom}} päivänä',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Joka {{n}} vuosi {{dom}}-päivänä. {{month}}',
 };

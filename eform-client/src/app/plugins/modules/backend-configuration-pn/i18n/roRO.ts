@@ -426,4 +426,11 @@ export const roRO = {
   'Create new': 'Creați nou',
   'Change property': 'Schimbați proprietatea',
   Wk: 'Săptămâna',
+  'Weekly every {{days}}': 'Săptămânal în fiecare {{days}}',
+  'Weekly on all days': 'Săptămânal, în toate zilele',
+  'Every {{n}} weeks: {{days}}': 'La fiecare {{n}} săptămâni: {{days}}',
+  'Every {{n}} weeks: all days': 'La fiecare {{n}} săptămâni: toate zilele',
+  'Every {{n}} days': 'La fiecare {{n}} zile',
+  'Every {{n}} months on day {{dom}}': 'La fiecare {{n}} luni, în ziua {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'La fiecare {{n}} ani, în data de {{dom}}. {{month}}',
 };

@@ -426,4 +426,11 @@ export const csCZ = {
   'Create new': 'Vytvořit nové',
   'Change property': 'Změnit vlastnost',
   Wk: 'Týden',
+  'Weekly every {{days}}': 'Týdně každých {{days}}',
+  'Weekly on all days': 'Týdně ve všechny dny',
+  'Every {{n}} weeks: {{days}}': 'Každých {{n}} týdnů: {{days}}',
+  'Every {{n}} weeks: all days': 'Každých {{n}} týdnů: všechny dny',
+  'Every {{n}} days': 'Každých {{n}} dní',
+  'Every {{n}} months on day {{dom}}': 'Každých {{n}} měsíců v den {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Každých {{n}} let v {{dom}}. {{month}}',
 };

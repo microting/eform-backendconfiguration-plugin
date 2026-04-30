@@ -426,4 +426,11 @@ export const nlNL = {
   'Create new': 'Maak een nieuwe aan',
   'Change property': 'Eigenschap wijzigen',
   Wk: 'Week',
+  'Weekly every {{days}}': 'Wekelijks elke {{days}}',
+  'Weekly on all days': 'Wekelijks op alle dagen',
+  'Every {{n}} weeks: {{days}}': 'Elke {{n}} weken: {{days}}',
+  'Every {{n}} weeks: all days': 'Elke {{n}} weken: alle dagen',
+  'Every {{n}} days': 'Elke {{n}} dagen',
+  'Every {{n}} months on day {{dom}}': 'Elke {{n}} maanden op dag {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Elke {{n}} jaar op {{dom}}. {{month}}',
 };

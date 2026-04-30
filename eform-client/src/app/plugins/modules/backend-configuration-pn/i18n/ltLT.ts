@@ -426,4 +426,11 @@ export const ltLT = {
   'Create new': 'Sukurti naują',
   'Change property': 'Keisti ypatybę',
   Wk: 'Savaitė',
+  'Weekly every {{days}}': 'Kas savaitę, kas {{days}}',
+  'Weekly on all days': 'Kas savaitę visomis dienomis',
+  'Every {{n}} weeks: {{days}}': 'Kas {{n}} savaites: {{days}}',
+  'Every {{n}} weeks: all days': 'Kas {{n}} savaites: visomis dienomis',
+  'Every {{n}} days': 'Kas {{n}} dienas',
+  'Every {{n}} months on day {{dom}}': 'Kas {{n}} mėnesius {{dom}} dieną',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Kas {{n}} metus {{dom}} {{month}} dieną',
 };

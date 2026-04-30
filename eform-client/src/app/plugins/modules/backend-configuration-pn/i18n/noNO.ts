@@ -426,4 +426,11 @@ export const noNO = {
   'Create new': 'Opprett ny',
   'Change property': 'Endre egenskap',
   Wk: 'Uke',
+  'Weekly every {{days}}': 'Ukentlig hver {{days}}',
+  'Weekly on all days': 'Ukentlig på alle dager',
+  'Every {{n}} weeks: {{days}}': 'Hver {{n}} uke: {{days}}',
+  'Every {{n}} weeks: all days': 'Hver {{n}} uke: alle dager',
+  'Every {{n}} days': 'Hver {{n}} dag',
+  'Every {{n}} months on day {{dom}}': 'Hver {{n}} måned på dag {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Hvert {{n}} år på {{dom}}. {{month}}',
 };

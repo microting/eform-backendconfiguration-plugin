@@ -426,4 +426,11 @@ export const ptBR = {
   'Create new': 'Criar novo',
   'Change property': 'Alterar propriedade',
   Wk: 'Semana',
+  'Weekly every {{days}}': 'Semanalmente, a cada {{days}}',
+  'Weekly on all days': 'Semanalmente, em todos os dias.',
+  'Every {{n}} weeks: {{days}}': 'A cada {{n}} semanas: {{days}}',
+  'Every {{n}} weeks: all days': 'A cada {{n}} semanas: todos os dias',
+  'Every {{n}} days': 'A cada {{n}} dias',
+  'Every {{n}} months on day {{dom}}': 'A cada {{n}} meses no dia {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'A cada {{n}} anos em {{dom}}. {{month}}',
 };

@@ -426,4 +426,11 @@ export const huHU = {
   'Create new': 'Új létrehozása',
   'Change property': 'Tulajdonság módosítása',
   Wk: 'Hét',
+  'Weekly every {{days}}': 'Hetente minden {{days}}',
+  'Weekly on all days': 'Heti rendszerességgel, minden nap',
+  'Every {{n}} weeks: {{days}}': '{{n}} hetente: {{days}}',
+  'Every {{n}} weeks: all days': '{{n}} hetente: minden nap',
+  'Every {{n}} days': '{{n}} naponta',
+  'Every {{n}} months on day {{dom}}': '{{n}} havonta, a {{dom}}. napon',
+  'Every {{n}} years on {{dom}}. {{month}}': '{{n}} évente {{dom}} {{month}} napon',
 };

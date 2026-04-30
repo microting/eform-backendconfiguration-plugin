@@ -480,4 +480,11 @@ export const deDE = {
   'Create new': 'Neu erstellen',
   'Change property': 'Eigenschaften ändern',
   Wk: 'Woche',
+  'Weekly every {{days}}': 'Wöchentlich alle {{days}}',
+  'Weekly on all days': 'Wöchentlich an allen Tagen',
+  'Every {{n}} weeks: {{days}}': 'Alle {{n}} Wochen: {{days}}',
+  'Every {{n}} weeks: all days': 'Alle {{n}} Wochen: alle Tage',
+  'Every {{n}} days': 'Alle {{n}} Tage',
+  'Every {{n}} months on day {{dom}}': 'Alle {{n}} Monate am Tag {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Alle {{n}} Jahre auf {{dom}}. {{month}}',
 };

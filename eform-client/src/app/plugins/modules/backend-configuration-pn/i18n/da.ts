@@ -427,4 +427,11 @@ export const da = {
   'Create new': 'Opret ny',
   'Change property': 'Skift ejendom',
   Wk: 'Uge',
+  'Weekly every {{days}}': 'Ugentligt hver {{days}}',
+  'Weekly on all days': 'Ugentlig på alle dage',
+  'Every {{n}} weeks: {{days}}': 'Hver {{n}}. uge: {{days}}',
+  'Every {{n}} weeks: all days': 'Hver {{n}}. uge: alle dage',
+  'Every {{n}} days': 'Hver {{n}}. dag',
+  'Every {{n}} months on day {{dom}}': 'Hver {{n}}. måned på dag {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Hvert {{n}}. år på {{dom}}. {{month}}',
 };

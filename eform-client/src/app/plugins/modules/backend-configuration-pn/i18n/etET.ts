@@ -426,4 +426,11 @@ export const etET = {
   'Create new': 'Loo uus',
   'Change property': 'Muuda atribuuti',
   Wk: 'Nädal',
+  'Weekly every {{days}}': 'Iganädalaselt iga {{days}}',
+  'Weekly on all days': 'Iganädalaselt kõigil päevadel',
+  'Every {{n}} weeks: {{days}}': 'Iga {{n}} nädala järel: {{days}}',
+  'Every {{n}} weeks: all days': 'Iga {{n}} nädala järel: kõik päevad',
+  'Every {{n}} days': 'Iga {{n}} päeva tagant',
+  'Every {{n}} months on day {{dom}}': 'Iga {{n}} kuu tagant {{dom}} päeval',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Iga {{n}} aasta tagant {{dom}} kuu jooksul.',
 };

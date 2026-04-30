@@ -426,4 +426,11 @@ export const bgBG = {
   'Create new': 'Създаване на ново',
   'Change property': 'Промяна на имота',
   Wk: 'Седмица',
+  'Weekly every {{days}}': 'Седмично на всеки {{days}}',
+  'Weekly on all days': 'Седмично през всички дни',
+  'Every {{n}} weeks: {{days}}': 'На всеки {{n}} седмици: {{days}}',
+  'Every {{n}} weeks: all days': 'На всеки {{n}} седмици: през всички дни',
+  'Every {{n}} days': 'На всеки {{n}} дни',
+  'Every {{n}} months on day {{dom}}': 'На всеки {{n}} месеца на ден {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'На всеки {{n}} години на {{dom}}. {{month}}',
 };

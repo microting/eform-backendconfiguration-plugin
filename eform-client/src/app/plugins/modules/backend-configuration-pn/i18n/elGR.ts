@@ -426,4 +426,11 @@ export const elGR = {
   'Create new': 'Δημιουργία νέου',
   'Change property': 'Αλλαγή ιδιότητας',
   Wk: 'Εβδομάδα',
+  'Weekly every {{days}}': 'Εβδομαδιαίως κάθε {{days}}',
+  'Weekly on all days': 'Εβδομαδιαίως όλες τις ημέρες',
+  'Every {{n}} weeks: {{days}}': 'Κάθε {{n}} εβδομάδες: {{days}}',
+  'Every {{n}} weeks: all days': 'Κάθε {{n}} εβδομάδες: όλες τις ημέρες',
+  'Every {{n}} days': 'Κάθε {{n}} ημέρες',
+  'Every {{n}} months on day {{dom}}': 'Κάθε {{n}} μήνες την ημέρα {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Κάθε {{n}} χρόνια στις {{dom}}. {{month}}',
 };

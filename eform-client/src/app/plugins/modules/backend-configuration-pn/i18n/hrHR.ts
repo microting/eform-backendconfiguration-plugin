@@ -426,4 +426,11 @@ export const hrHR = {
   'Create new': 'Stvori novo',
   'Change property': 'Promjena svojstva',
   Wk: 'Tjedan',
+  'Weekly every {{days}}': 'Tjedno svakih {{days}}',
+  'Weekly on all days': 'Tjedno svim danima',
+  'Every {{n}} weeks: {{days}}': 'Svakih {{n}} tjedana: {{days}}',
+  'Every {{n}} weeks: all days': 'Svakih {{n}} tjedana: svi dani',
+  'Every {{n}} days': 'Svakih {{n}} dana',
+  'Every {{n}} months on day {{dom}}': 'Svakih {{n}} mjeseci na dan {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Svakih {{n}} godina na {{dom}}. {{month}}',
 };

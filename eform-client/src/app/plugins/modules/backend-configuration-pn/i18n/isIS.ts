@@ -426,4 +426,11 @@ export const isIS = {
   'Create new': 'Búa til nýtt',
   'Change property': 'Breyta eign',
   Wk: 'Vika',
+  'Weekly every {{days}}': 'Vikulega á {{days}} fresti',
+  'Weekly on all days': 'Vikulega alla daga',
+  'Every {{n}} weeks: {{days}}': 'Á {{n}} vikna fresti: {{days}}',
+  'Every {{n}} weeks: all days': 'Á {{n}} vikna fresti: alla daga',
+  'Every {{n}} days': 'Á {{n}} daga fresti',
+  'Every {{n}} months on day {{dom}}': 'Á {{n}} mánaða fresti á degi {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Á {{n}} ára fresti á {{dom}}. {{month}}',
 };

@@ -426,4 +426,11 @@ export const skSK = {
   'Create new': 'Vytvoriť nové',
   'Change property': 'Zmeniť vlastnosť',
   Wk: 'Týždeň',
+  'Weekly every {{days}}': 'Týždenne každých {{days}}',
+  'Weekly on all days': 'Týždenne vo všetky dni',
+  'Every {{n}} weeks: {{days}}': 'Každých {{n}} týždňov: {{days}}',
+  'Every {{n}} weeks: all days': 'Každých {{n}} týždňov: všetky dni',
+  'Every {{n}} days': 'Každých {{n}} dní',
+  'Every {{n}} months on day {{dom}}': 'Každých {{n}} mesiacov v deň {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Každých {{n}} rokov dňa {{dom}}. {{month}}',
 };

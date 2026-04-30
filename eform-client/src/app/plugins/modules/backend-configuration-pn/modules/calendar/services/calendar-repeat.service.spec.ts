@@ -1,8 +1,16 @@
 import {CalendarRepeatService} from './calendar-repeat.service';
 import {CalendarRepeatMeta} from '../../../models/calendar';
+import {TranslateService} from '@ngx-translate/core';
 
 // Monday 2026-03-16 00:00:00 UTC
 const BASE_DATE = new Date('2026-03-16T00:00:00').getTime();
+
+// Pass-through stub: `instant(key)` returns the key itself, which is the same
+// fallback ngx-translate uses when a key is missing. Sufficient for tests that
+// only inspect option shape, not localised strings.
+const translateStub = {
+  instant: (key: string, _params?: any) => key,
+} as unknown as TranslateService;
 
 function dayOf(ts: number): number {
   return new Date(ts).getDate();
@@ -16,7 +24,7 @@ describe('CalendarRepeatService', () => {
   let service: CalendarRepeatService;
 
   beforeEach(() => {
-    service = new CalendarRepeatService();
+    service = new CalendarRepeatService(translateStub);
   });
 
   // ─── getAllOccurrences ─────────────────────────────────────────────────────

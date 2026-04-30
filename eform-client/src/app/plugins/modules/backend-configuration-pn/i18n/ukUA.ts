@@ -426,4 +426,11 @@ export const ukUA = {
   'Create new': 'Створити нове',
   'Change property': 'Змінити властивість',
   Wk: 'Тиждень',
+  'Weekly every {{days}}': 'Щотижня кожні {{days}}',
+  'Weekly on all days': 'Щотижня у всі дні',
+  'Every {{n}} weeks: {{days}}': 'Кожні {{n}} тижні: {{days}}',
+  'Every {{n}} weeks: all days': 'Кожні {{n}} тижнів: усі дні',
+  'Every {{n}} days': 'Кожні {{n}} днів',
+  'Every {{n}} months on day {{dom}}': 'Кожні {{n}} місяців у день {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Кожні {{n}} років у {{dom}}. {{month}}',
 };

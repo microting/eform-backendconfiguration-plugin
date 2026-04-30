@@ -426,4 +426,11 @@ export const itIT = {
   'Create new': 'Crea nuovo',
   'Change property': 'Modifica proprietà',
   Wk: 'Settimana',
+  'Weekly every {{days}}': 'Settimanalmente ogni {{days}}',
+  'Weekly on all days': 'Settimanale in tutti i giorni',
+  'Every {{n}} weeks: {{days}}': 'Ogni {{n}} settimane: {{days}}',
+  'Every {{n}} weeks: all days': 'Ogni {{n}} settimane: tutti i giorni',
+  'Every {{n}} days': 'Ogni {{n}} giorni',
+  'Every {{n}} months on day {{dom}}': 'Ogni {{n}} mesi nel giorno {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Ogni {{n}} anni il {{dom}}. {{month}}',
 };

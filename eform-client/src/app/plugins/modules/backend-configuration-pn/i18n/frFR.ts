@@ -426,4 +426,11 @@ export const frFR = {
   'Create new': 'Créer un nouveau',
   'Change property': 'Changer de propriété',
   Wk: 'Semaine',
+  'Weekly every {{days}}': 'Chaque semaine, tous les {{days}}',
+  'Weekly on all days': 'Hebdomadaire tous les jours',
+  'Every {{n}} weeks: {{days}}': 'Toutes les {{n}} semaines : {{days}}',
+  'Every {{n}} weeks: all days': 'Toutes les {{n}} semaines : tous les jours',
+  'Every {{n}} days': 'Tous les {{n}} jours',
+  'Every {{n}} months on day {{dom}}': 'Tous les {{n}} mois, le jour {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Tous les {{n}} ans sur {{dom}}. {{month}}',
 };

@@ -167,7 +167,7 @@ export class TaskCreateEditModalComponent implements OnInit {
       defaultDate = computeCopyDate(sourceTask!.taskDate, sourceTask!.startHour);
     }
     const baseDate = new Date(defaultDate);
-    this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate);
+    this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, this.customRepeatMeta);
 
     // Initialize controls
     this.dateControl.setValue(new Date(defaultDate));
@@ -297,7 +297,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     // When date changes, rebuild repeat options and regenerate time slots
     this.dateControl.valueChanges.subscribe(date => {
       if (date) {
-        this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date);
+        this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date, this.customRepeatMeta);
         this.timeSlots = this.generateTimeSlots();
       }
     });
@@ -466,16 +466,30 @@ export class TaskCreateEditModalComponent implements OnInit {
   }
 
   private onRepeatChange() {
+    // Capture the meta as it was BEFORE the modal opened so a Cancel-from-edit
+    // can restore it instead of wiping a configured rule. Without this snapshot,
+    // re-opening the modal to inspect a saved custom rule and pressing Cancel
+    // would silently destroy the user's selection.
+    const previousMeta = this.customRepeatMeta;
     const ref = this.dialog.open(
       CustomRepeatModalComponent,
       dialogConfigHelper(this.overlay, {date: this.dateControl.value ?? new Date()})
     );
     ref.afterClosed().subscribe((meta: CalendarRepeatMeta | null) => {
       if (!meta) {
-        this.repeatControl.setValue('none', {emitEvent: false});
-        this.customRepeatMeta = null;
+        // Cancelled. If we had a custom rule before opening, keep it and restore
+        // the synthesized 'customCurrent' selection. Otherwise fall back to 'none'.
+        if (previousMeta) {
+          this.repeatControl.setValue('customCurrent', {emitEvent: false});
+        } else {
+          this.repeatControl.setValue('none', {emitEvent: false});
+          this.customRepeatMeta = null;
+        }
       } else {
         this.customRepeatMeta = meta;
+        const baseDate = this.dateControl.value ?? new Date();
+        this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, meta);
+        this.repeatControl.setValue('customCurrent', {emitEvent: false});
       }
     });
   }
@@ -511,6 +525,7 @@ export class TaskCreateEditModalComponent implements OnInit {
       'yearly': 4, 'yearlyOne': 4,
       'weekdays': 5,
       'custom': 6,
+      'customCurrent': 6,
     };
     const repeatRuleValue = this.repeatControl.value ?? 'none';
 
@@ -522,7 +537,8 @@ export class TaskCreateEditModalComponent implements OnInit {
     let repeatOccurrences: number | null = null;
     let repeatUntilDate: string | null = null;
 
-    if (repeatRuleValue === 'custom' && this.customRepeatMeta) {
+    const isCustomRule = repeatRuleValue === 'custom' || repeatRuleValue === 'customCurrent';
+    if (isCustomRule && this.customRepeatMeta) {
       const meta = this.customRepeatMeta;
       const kindMap: Record<string, number> = {
         'daily': 1, 'everyNd': 1,
@@ -577,7 +593,7 @@ export class TaskCreateEditModalComponent implements OnInit {
       endText: this.endTimeControl.value,
       assigneeIds: this.assigneeControl.value ?? [],
       tags: this.tagsControl.value ?? [],
-      repeatRule: repeatRuleValue,
+      repeatRule: repeatRuleValue === 'customCurrent' ? 'custom' : repeatRuleValue,
       id: this.data.task?.id,
       repeatSeriesId: this.data.task?.repeatSeriesId,
     };

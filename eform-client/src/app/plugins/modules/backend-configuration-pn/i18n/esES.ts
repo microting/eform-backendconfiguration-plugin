@@ -426,4 +426,11 @@ export const esES = {
   'Create new': 'Crear nuevo',
   'Change property': 'Cambiar propiedad',
   Wk: 'Semana',
+  'Weekly every {{days}}': 'Semanalmente cada {{days}}',
+  'Weekly on all days': 'Semanalmente todos los días',
+  'Every {{n}} weeks: {{days}}': 'Cada {{n}} semanas: {{days}}',
+  'Every {{n}} weeks: all days': 'Cada {{n}} semanas: todos los días',
+  'Every {{n}} days': 'Cada {{n}} días',
+  'Every {{n}} months on day {{dom}}': 'Cada {{n}} meses el día {{dom}}',
+  'Every {{n}} years on {{dom}}. {{month}}': 'Cada {{n}} años en {{dom}}. {{month}}',
 };
