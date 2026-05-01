@@ -218,7 +218,7 @@
     <PackageReference Include="ChemicalsBase" Version="10.0.6" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.73.0.4061" />
     <PackageReference Include="Google.Protobuf" Version="3.34.1" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageReference Include="HtmlToOpenXml.dll" Version="3.3.2" />
     <PackageReference Include="Ical.Net" Version="5.2.1" />
     <PackageReference Include="Microting.eForm" Version="10.0.22" />
