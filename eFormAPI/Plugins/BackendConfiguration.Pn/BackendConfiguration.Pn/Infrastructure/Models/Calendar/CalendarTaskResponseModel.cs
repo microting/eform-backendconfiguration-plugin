@@ -16,6 +16,12 @@ public class CalendarTaskResponseModel
     public string Color { get; set; }
     public int RepeatType { get; set; }
     public int RepeatEvery { get; set; }
+    public int? RepeatEndMode { get; set; }
+    public int? RepeatOccurrences { get; set; }
+    public DateTime? RepeatUntilDate { get; set; }
+    public int? DayOfWeek { get; set; }
+    public int? DayOfMonth { get; set; }
+    public string? RepeatWeekdaysCsv { get; set; }
     public bool Completed { get; set; }
     public int PropertyId { get; set; }
     public int? ComplianceId { get; set; }

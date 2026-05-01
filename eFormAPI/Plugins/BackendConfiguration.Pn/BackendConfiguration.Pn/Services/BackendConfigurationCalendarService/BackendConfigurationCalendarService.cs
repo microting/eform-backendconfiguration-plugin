@@ -129,16 +129,24 @@ public class BackendConfigurationCalendarService(
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
                     continue;
 
-                // Compute all occurrence dates within the requested week
-                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd);
+                // Compute all occurrence dates within the requested week.
+                // Pass arp.RepeatWeekdaysCsv so multi-day weekly rules
+                // (e.g. "1,3,5") expand to multiple occurrences per week.
+                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd, arp.RepeatWeekdaysCsv);
 
                 // Filter by repeat end mode
                 if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
                     occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
                 else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
                 {
-                    var allOccsSince = GetOccurrencesInWeek(planning,
-                        planning.StartDate.Date, weekEnd);
+                    // Use EnumerateOccurrences (week-loop iterator) instead of
+                    // GetOccurrencesInWeek for the cumulative count: the latter's
+                    // multi-day weekly branch emits at most one matching week, so
+                    // the after-cap would never fire for CSV rules. Upper bound
+                    // on EnumerateOccurrences is exclusive — add a day.
+                    var allOccsSince = EnumerateOccurrences(planning,
+                        planning.StartDate.Date, weekEnd.AddDays(1),
+                        arp.RepeatWeekdaysCsv).ToList();
                     var maxOcc = arp.RepeatOccurrences.Value;
                     if (allOccsSince.Count > maxOcc)
                     {
@@ -218,6 +226,12 @@ public class BackendConfigurationCalendarService(
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
                         RepeatEvery = arp.RepeatEvery ?? 1,
+                        RepeatEndMode = arp.RepeatEndMode,
+                        RepeatOccurrences = arp.RepeatOccurrences,
+                        RepeatUntilDate = arp.RepeatUntilDate,
+                        DayOfWeek = arp.DayOfWeek,
+                        DayOfMonth = arp.DayOfMonth,
+                        RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                         Completed = false,
                         PropertyId = arp.PropertyId,
                         IsFromCompliance = false,
@@ -276,6 +290,12 @@ public class BackendConfigurationCalendarService(
                             Color = calConfig?.Color,
                             RepeatType = arp.RepeatType ?? 0,
                             RepeatEvery = arp.RepeatEvery ?? 1,
+                            RepeatEndMode = arp.RepeatEndMode,
+                            RepeatOccurrences = arp.RepeatOccurrences,
+                            RepeatUntilDate = arp.RepeatUntilDate,
+                            DayOfWeek = arp.DayOfWeek,
+                            DayOfMonth = arp.DayOfMonth,
+                            RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                             Completed = false,
                             PropertyId = arp.PropertyId,
                             IsFromCompliance = false,
@@ -342,6 +362,12 @@ public class BackendConfigurationCalendarService(
                     Color = movedCalConfig?.Color,
                     RepeatType = arp.RepeatType ?? 0,
                     RepeatEvery = arp.RepeatEvery ?? 1,
+                    RepeatEndMode = arp.RepeatEndMode,
+                    RepeatOccurrences = arp.RepeatOccurrences,
+                    RepeatUntilDate = arp.RepeatUntilDate,
+                    DayOfWeek = arp.DayOfWeek,
+                    DayOfMonth = arp.DayOfMonth,
+                    RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                     Completed = false,
                     PropertyId = arp.PropertyId,
                     IsFromCompliance = false,
@@ -441,6 +467,12 @@ public class BackendConfigurationCalendarService(
                     Color = calConfig?.Color,
                     RepeatType = arp?.RepeatType ?? 0,
                     RepeatEvery = arp?.RepeatEvery ?? 1,
+                    RepeatEndMode = arp?.RepeatEndMode,
+                    RepeatOccurrences = arp?.RepeatOccurrences,
+                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    DayOfWeek = arp?.DayOfWeek,
+                    DayOfMonth = arp?.DayOfMonth,
+                    RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = false,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
@@ -538,13 +570,18 @@ public class BackendConfigurationCalendarService(
 
             if (latestArp != null)
             {
-                if (createModel.RepeatEndMode.HasValue)
+                // Persist repeat-end and weekday-CSV fields. The CSV column is
+                // always written (including null) so changing a multi-day
+                // weekly back to a single-day rule clears the stale list.
+                var hasRepeatEndChange = createModel.RepeatEndMode.HasValue;
+                latestArp.RepeatWeekdaysCsv = createModel.RepeatWeekdaysCsv;
+                if (hasRepeatEndChange)
                 {
                     latestArp.RepeatEndMode = createModel.RepeatEndMode;
                     latestArp.RepeatOccurrences = createModel.RepeatOccurrences;
                     latestArp.RepeatUntilDate = createModel.RepeatUntilDate;
-                    await latestArp.Update(backendConfigurationPnDbContext);
                 }
+                await latestArp.Update(backendConfigurationPnDbContext);
 
                 // Persist description on the linked Planning row (not on ARP)
                 var planning = await itemsPlanningPnDbContext.Plannings
@@ -627,12 +664,24 @@ public class BackendConfigurationCalendarService(
                 return wizardResult;
             }
 
-            // Persist description on the linked Planning row (not on ARP)
+            // Persist description on the linked Planning row (not on ARP),
+            // plus the repeat-end + multi-day-weekday CSV fields on the ARP.
+            // CSV is written unconditionally so switching from a custom
+            // multi-day rule back to a single-day rule clears the stale list.
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .FirstOrDefaultAsync(x => x.Id == updateModel.Id
                     && x.WorkflowState != Constants.WorkflowStates.Removed);
             if (arp != null)
             {
+                // Write end-mode fields unconditionally so switching from
+                // 'after 10' or 'until <date>' back to 'never' clears the
+                // stale cap. Same rationale as RepeatWeekdaysCsv above.
+                arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
+                arp.RepeatEndMode = updateModel.RepeatEndMode;
+                arp.RepeatOccurrences = updateModel.RepeatOccurrences;
+                arp.RepeatUntilDate = updateModel.RepeatUntilDate;
+                await arp.Update(backendConfigurationPnDbContext);
+
                 var planning = await itemsPlanningPnDbContext.Plannings
                     .FirstOrDefaultAsync(x => x.Id == arp.ItemPlanningId
                         && x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -914,7 +963,7 @@ public class BackendConfigurationCalendarService(
                         .ToListAsync();
                     var existingSet = new HashSet<DateTime>(existingPastDates);
 
-                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate))
+                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv))
                     {
                         if (existingSet.Contains(occDate)) continue;
                         var anchor = new CalendarOccurrenceException
@@ -1147,7 +1196,7 @@ public class BackendConfigurationCalendarService(
                             .ToListAsync();
                         var existingSet = new HashSet<DateTime>(existingPastDates);
 
-                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate))
+                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate, arp.RepeatWeekdaysCsv))
                         {
                             if (existingSet.Contains(occDate)) continue;
                             var anchor = new CalendarOccurrenceException
@@ -1357,6 +1406,21 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    // Parses a comma-separated weekday CSV (e.g. "1,3,5") into a sorted,
+    // de-duplicated array of JS-style weekday ints (0=Sun..6=Sat). Returns
+    // an empty array on null/empty/all-invalid input — callers treat empty
+    // as "no multi-day expansion, fall back to single-day weekly behavior".
+    private static int[] ParseWeekdaysCsv(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return [];
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var n) ? n : -1)
+            .Where(n => n is >= 0 and <= 6)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToArray();
+    }
+
     // Yields every occurrence of `planning` whose date is in
     // [fromInclusive, toExclusive). Unlike GetOccurrencesInWeek (which
     // assumes a week-sized range and caps Month/Year iteration), this is
@@ -1365,9 +1429,15 @@ public class BackendConfigurationCalendarService(
     //
     // Returns empty for non-recurring plannings (RepeatType.None / default
     // branch) — there are no past occurrences to anchor in that case.
+    //
+    // When repeatWeekdaysCsv is non-empty and the planning is RepeatType.Week,
+    // the weekly branch emits one occurrence per matching weekday in each
+    // matching week (anchored to startDate's week, every repeatEvery weeks).
+    // Null/empty CSV preserves the legacy single-day-per-week behavior.
     private static IEnumerable<DateTime> EnumerateOccurrences(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
-        DateTime fromInclusive, DateTime toExclusive)
+        DateTime fromInclusive, DateTime toExclusive,
+        string? repeatWeekdaysCsv = null)
     {
         var startDate = planning.StartDate.Date;
         var rangeStart = fromInclusive.Date > startDate ? fromInclusive.Date : startDate;
@@ -1392,14 +1462,58 @@ public class BackendConfigurationCalendarService(
             }
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
             {
-                var step = repeatEvery * 7;
-                var daysSinceStart = (rangeStart - startDate).Days;
-                var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
-                var candidate = startDate.AddDays(skip * step);
-                while (candidate < rangeEnd)
+                var weekdays = ParseWeekdaysCsv(repeatWeekdaysCsv);
+                if (weekdays.Length == 0)
                 {
-                    if (candidate >= rangeStart) yield return candidate;
-                    candidate = candidate.AddDays(step);
+                    // Legacy single-day path: step 7*repeatEvery from startDate.
+                    var step = repeatEvery * 7;
+                    var daysSinceStart = (rangeStart - startDate).Days;
+                    var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
+                    var candidate = startDate.AddDays(skip * step);
+                    while (candidate < rangeEnd)
+                    {
+                        if (candidate >= rangeStart) yield return candidate;
+                        candidate = candidate.AddDays(step);
+                    }
+                }
+                else
+                {
+                    // Multi-day path: anchor week is the Sunday-based week
+                    // containing startDate (matches JS getDay() numbering).
+                    // For each candidate day in [rangeStart, rangeEnd), emit
+                    // it iff its weekday is in the CSV AND its week is a
+                    // multiple of repeatEvery weeks from the anchor week.
+                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    var rangeStartWeek = rangeStart.AddDays(-(int)rangeStart.DayOfWeek);
+                    // Align rangeStart back to its week-start so we iterate
+                    // whole-week buckets cleanly.
+                    var weeksFromAnchor = (rangeStartWeek - anchorWeekStart).Days / 7;
+                    if (weeksFromAnchor < 0)
+                    {
+                        // Range begins before the anchor week — clamp.
+                        weeksFromAnchor = 0;
+                        rangeStartWeek = anchorWeekStart;
+                    }
+                    // Skip forward to the next "matching" week (k*repeatEvery
+                    // weeks past the anchor).
+                    var remainder = ((weeksFromAnchor % repeatEvery) + repeatEvery) % repeatEvery;
+                    if (remainder != 0)
+                    {
+                        rangeStartWeek = rangeStartWeek.AddDays((repeatEvery - remainder) * 7);
+                    }
+                    var weekCursor = rangeStartWeek;
+                    while (weekCursor < rangeEnd)
+                    {
+                        foreach (var wd in weekdays)
+                        {
+                            var candidate = weekCursor.AddDays(wd);
+                            if (candidate < startDate) continue;
+                            if (candidate < rangeStart) continue;
+                            if (candidate >= rangeEnd) continue;
+                            yield return candidate;
+                        }
+                        weekCursor = weekCursor.AddDays(repeatEvery * 7);
+                    }
                 }
                 break;
             }
@@ -1432,7 +1546,8 @@ public class BackendConfigurationCalendarService(
 
     private static List<DateTime> GetOccurrencesInWeek(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
-        DateTime weekStart, DateTime weekEnd)
+        DateTime weekStart, DateTime weekEnd,
+        string? repeatWeekdaysCsv = null)
     {
         var occurrences = new List<DateTime>();
         var startDate = planning.StartDate.Date;
@@ -1458,15 +1573,39 @@ public class BackendConfigurationCalendarService(
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
             {
                 if (startDate > weekEnd) break;
-                var daysBetween = repeatEvery * 7;
-                var daysSinceStart = (weekStart.Date - startDate).Days;
-                var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / daysBetween) : 0;
-                var candidate = startDate.AddDays(periods * daysBetween);
-                while (candidate <= weekEnd)
+                var weekdays = ParseWeekdaysCsv(repeatWeekdaysCsv);
+                if (weekdays.Length == 0)
                 {
-                    if (candidate >= weekStart)
-                        occurrences.Add(candidate);
-                    candidate = candidate.AddDays(daysBetween);
+                    // Legacy single-day path: step 7*repeatEvery from startDate.
+                    var daysBetween = repeatEvery * 7;
+                    var daysSinceStart = (weekStart.Date - startDate).Days;
+                    var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / daysBetween) : 0;
+                    var candidate = startDate.AddDays(periods * daysBetween);
+                    while (candidate <= weekEnd)
+                    {
+                        if (candidate >= weekStart)
+                            occurrences.Add(candidate);
+                        candidate = candidate.AddDays(daysBetween);
+                    }
+                }
+                else
+                {
+                    // Multi-day path: only emit occurrences in this week if
+                    // the requested week is a multiple of repeatEvery weeks
+                    // past the anchor week (Sunday-based, matches JS getDay).
+                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    var weekStartAligned = weekStart.Date.AddDays(-(int)weekStart.Date.DayOfWeek);
+                    var weeksFromAnchor = (weekStartAligned - anchorWeekStart).Days / 7;
+                    if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
+                    {
+                        foreach (var wd in weekdays)
+                        {
+                            var candidate = weekStartAligned.AddDays(wd);
+                            if (candidate < startDate) continue;
+                            if (candidate < weekStart || candidate > weekEnd) continue;
+                            occurrences.Add(candidate);
+                        }
+                    }
                 }
                 break;
             }
