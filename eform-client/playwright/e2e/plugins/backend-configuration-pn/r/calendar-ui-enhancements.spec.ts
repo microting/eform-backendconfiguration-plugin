@@ -661,9 +661,24 @@ test.describe.serial('Calendar UI enhancements', () => {
       // we want to override.
       await calendarPage.openCreateModalAt9AM();
       await page.locator('#calendarEventTitle').fill(eventTitle);
-      // Defaults from the modal: first eForm and a board are auto-picked;
-      // we don't set planningTag/assignee here because the suite's seeded
-      // worker isn't strictly required to validate reconstruction.
+      // Backend validation requires eForm + planning tag + at least one
+      // assignee — same pattern as createSimpleEvent in calendar-resize.spec.ts.
+      const eform = page.locator('#calendarEventEform');
+      await eform.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+      const planningTag = page.locator('#calendarEventPlanningTag');
+      await planningTag.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.waitForTimeout(300);
+      const assignee = page.locator('#calendarEventAssignee');
+      await assignee.click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+      await page.locator('#calendarEventTitle').click();
+      await page.waitForTimeout(300);
 
       // ----- Step 2: open repeat dropdown → Tilpasset… ----------------
       // The repeat select is [searchable]="false", so click .ng-select-container.
