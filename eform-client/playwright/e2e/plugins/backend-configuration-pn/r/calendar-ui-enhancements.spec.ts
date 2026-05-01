@@ -640,4 +640,192 @@ test.describe.serial('Calendar UI enhancements', () => {
       expect(after).toBe(formatLongDate(addDays(mondayOfThisWeekLocal(), 7)));
     });
   });
+
+  // =======================================================================
+  // I. Edit-mode reconstructs custom multi-day weekly rules. Regression
+  //    coverage for Layer 3 of the calendar custom-repeat reconstruction
+  //    feature: Layer 1 added RepeatWeekdaysCsv to AreaRulePlanning;
+  //    Layer 2 surfaced it on the response DTO + accepted it on
+  //    create/update; Layer 3 (this test) verifies the modal reconstructs
+  //    a CalendarRepeatMeta from the persisted fields and lands on the
+  //    synthesized 'customCurrent' option with the readable summary.
+  // =======================================================================
+  test.describe('Edit-mode meta reconstruction (custom multi-day weekly)', () => {
+    test('I1: edit-mode reconstructs custom multi-day weekly', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      const eventTitle = `I1-${generateRandmString(5)}`;
+
+      // ----- Step 1: open create-modal at Monday slot -----------------
+      // openCreateModalAt9AM advances one week then clicks Monday@9. The
+      // create-modal's Repeat dropdown defaults to 'none' which is what
+      // we want to override.
+      await calendarPage.openCreateModalAt9AM();
+      await page.locator('#calendarEventTitle').fill(eventTitle);
+      // Defaults from the modal: first eForm and a board are auto-picked;
+      // we don't set planningTag/assignee here because the suite's seeded
+      // worker isn't strictly required to validate reconstruction.
+
+      // ----- Step 2: open repeat dropdown → Tilpasset… ----------------
+      // The repeat select is [searchable]="false", so click .ng-select-container.
+      const repeatRow = page
+        .locator('.gcal-row')
+        .filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') });
+      await repeatRow.locator('.ng-select-container').first().click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      // Custom is always the LAST repeat option per
+      // calendar-repeat.service.buildRepeatSelectOptions ordering.
+      await page.locator('.ng-dropdown-panel .ng-option').last().click();
+
+      // ----- Step 3: configure custom rule -----------------------------
+      // Custom-repeat dialog opens. Set step=2, unit defaults to 'week'.
+      await page
+        .locator('.custom-repeat-dialog')
+        .waitFor({ state: 'visible', timeout: 10000 });
+      const stepInput = page.locator('.custom-repeat-dialog .step-input input');
+      await stepInput.fill('2');
+
+      // Pick Mon+Wed+Fri. Monday is auto-active when opening fresh against
+      // a Monday slot date — toggle Wednesday and Friday on, leave Monday on,
+      // turn the rest off (Tuesday/Thursday should already be off, but be
+      // defensive in case the modal reseeds them in the future).
+      const dayCircles = page.locator('.custom-repeat-dialog .day-circle');
+      // Order in the modal is Mon, Tue, Wed, Thu, Fri, Sat, Sun.
+      // Ensure each circle's active state matches the desired set.
+      const expectedActive = [true, false, true, false, true, false, false];
+      for (let i = 0; i < 7; i++) {
+        const circle = dayCircles.nth(i);
+        const cls = (await circle.getAttribute('class')) ?? '';
+        const isActive = cls.split(/\s+/).includes('active');
+        if (isActive !== expectedActive[i]) {
+          await circle.click();
+        }
+      }
+
+      // End mode "Efter" + afterCount = 6.
+      await page
+        .locator('.custom-repeat-dialog .end-option')
+        .filter({ has: page.locator('mat-radio-button[value="after"]') })
+        .locator('mat-radio-button')
+        .click();
+      await page.waitForTimeout(200);
+      await page.locator('.custom-repeat-dialog .count-input input').fill('6');
+
+      // Færdig (Done) — closes the modal, syncs meta back to parent.
+      await page.locator('.custom-repeat-dialog .btn-done-gcal').click();
+      await page
+        .locator('.custom-repeat-dialog')
+        .waitFor({ state: 'detached', timeout: 5000 });
+
+      // ----- Step 4: verify dropdown collapsed value -------------------
+      // The `customCurrent` option should now render the formatted Danish
+      // label "Hver 2. uge: mandag, onsdag og fredag".
+      const dropdownValue = page
+        .locator('.gcal-row')
+        .filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') })
+        .locator('.ng-value-label')
+        .first();
+      await expect(dropdownValue).toHaveText('Hver 2. uge: mandag, onsdag og fredag');
+
+      // ----- Step 5: save -----------------------------------------------
+      const createWait = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+          && !r.url().includes('/tasks/week')
+          && !r.url().includes('/tasks/move')
+          && !r.url().includes('/tasks/resize')
+          && r.request().method() === 'POST',
+        { timeout: 30000 }
+      );
+      await page.locator('#calendarEventSaveBtn').click();
+      await createWait;
+      await page.waitForTimeout(1500);
+
+      // ----- Step 6: full page reload ----------------------------------
+      // Reload the calendar route directly so we exercise the GET-back path
+      // (week tasks → mapper → DTO → frontend reconstruction).
+      await calendarPage.goToCalendar();
+      await calendarPage.ensureSidebarOpen();
+      const folderResponsePromise = page.waitForResponse(
+        r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos'),
+        { timeout: 60000 }
+      );
+      await calendarPage.selectProperty(property.name);
+      await folderResponsePromise.catch(() => undefined);
+      await page.waitForTimeout(1500);
+      // The event was created on next-week's Monday; advance the view so
+      // the seeded event is visible.
+      await calendarPage.navigateToNextWeek();
+
+      // ----- Step 7: open the seeded event in edit mode ----------------
+      const block = page.locator('.task-block').filter({ hasText: eventTitle }).first();
+      await block.waitFor({ state: 'visible', timeout: 10000 });
+      await block.click();
+      await calendarPage.getPreviewEditButton().waitFor({ state: 'visible', timeout: 10000 });
+      await calendarPage.getPreviewEditButton().click();
+      await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 10000 });
+
+      // ----- Step 8: assert reconstructed dropdown summary --------------
+      const reopenedDropdownValue = page
+        .locator('.gcal-row')
+        .filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') })
+        .locator('.ng-value-label')
+        .first();
+      await expect(reopenedDropdownValue)
+        .toHaveText('Hver 2. uge: mandag, onsdag og fredag');
+
+      // ----- Step 9: open Tilpasset… and verify modal pre-population ---
+      const repeatRow2 = page
+        .locator('.gcal-row')
+        .filter({ has: page.locator('mat-icon.gcal-icon:has-text("sync")') });
+      await repeatRow2.locator('.ng-select-container').first().click();
+      await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+      // Pick the actual 'custom' option (Tilpasset…) — last in the list.
+      // Its meta is undefined in the option list; the click triggers
+      // valueChanges → onRepeatChange → opens the dialog hydrated from
+      // customRepeatMeta (which was set by reconstructMetaFromTask in ngOnInit).
+      await page.locator('.ng-dropdown-panel .ng-option').last().click();
+
+      await page
+        .locator('.custom-repeat-dialog')
+        .waitFor({ state: 'visible', timeout: 10000 });
+
+      // Frequency should be 2.
+      const stepInput2 = page.locator('.custom-repeat-dialog .step-input input');
+      expect(await stepInput2.inputValue()).toBe('2');
+
+      // Unit shows "uge" (Danish for week).
+      const unitLabel = page
+        .locator('.custom-repeat-dialog .unit-select .ng-value-label')
+        .first();
+      await expect(unitLabel).toHaveText('uge');
+
+      // Mon (idx 0), Wed (idx 2), Fri (idx 4) active; others inactive.
+      const dayCircles2 = page.locator('.custom-repeat-dialog .day-circle');
+      const expectedActive2 = [true, false, true, false, true, false, false];
+      for (let i = 0; i < 7; i++) {
+        const cls = (await dayCircles2.nth(i).getAttribute('class')) ?? '';
+        const isActive = cls.split(/\s+/).includes('active');
+        expect(isActive, `weekday circle index=${i} expected active=${expectedActive2[i]}, got=${isActive}`)
+          .toBe(expectedActive2[i]);
+      }
+
+      // End mode "Efter" radio is checked (mat-radio uses .mat-mdc-radio-checked
+      // on the matching <mat-radio-button>).
+      const afterOption = page
+        .locator('.custom-repeat-dialog .end-option')
+        .filter({ has: page.locator('mat-radio-button[value="after"]') });
+      await expect(afterOption.locator('mat-radio-button.mat-mdc-radio-checked'))
+        .toHaveCount(1);
+
+      // afterCount field shows 6.
+      const countInput = page.locator('.custom-repeat-dialog .count-input input');
+      expect(await countInput.inputValue()).toBe('6');
+
+      // Cancel out so we don't disturb the row on close.
+      await page.locator('.custom-repeat-dialog .btn-cancel-gcal').click();
+      await page
+        .locator('.custom-repeat-dialog')
+        .waitFor({ state: 'detached', timeout: 5000 });
+      await calendarPage.closeEventModal();
+    });
+  });
 });

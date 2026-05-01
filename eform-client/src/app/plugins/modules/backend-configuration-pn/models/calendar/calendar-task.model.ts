@@ -33,6 +33,19 @@ export interface CalendarTaskModel {
   planningId?: number;
   isAllDay?: boolean;
   exceptionId?: number;
+
+  // Persisted custom-repeat fields surfaced from AreaRulePlanning so the
+  // edit-modal can reconstruct a full CalendarRepeatMeta for an existing row.
+  // All optional/nullable — older backends and rows without a custom rule
+  // simply omit them.
+  repeatType?: number | null;
+  repeatEvery?: number | null;
+  repeatEndMode?: number | null;
+  repeatOccurrences?: number | null;
+  repeatUntilDate?: string | null;
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+  repeatWeekdaysCsv?: string | null;
 }
 
 export interface CalendarRepeatMeta {

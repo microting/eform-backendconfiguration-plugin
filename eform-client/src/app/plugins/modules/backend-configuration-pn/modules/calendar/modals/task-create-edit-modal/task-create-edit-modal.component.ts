@@ -176,7 +176,21 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.titleControl.setValue(task.title);
       this.startTimeControl.setValue(this.hourToTimeStr(task.startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(task.startHour + task.duration));
-      this.repeatControl.setValue(task.repeatRule ?? 'none');
+      // Reconstruct a CalendarRepeatMeta from the persisted fields so a saved
+      // custom rule (incl. multi-day weekly via repeatWeekdaysCsv) lands back
+      // on the synthesized 'customCurrent' option with the readable summary,
+      // and re-opening the custom modal pre-populates from the existing rule.
+      // Reconstruction returns null for legacy rows we can't fully recover —
+      // fall through to the unmodified `repeatRule` string in that case.
+      const reconstructed = task.repeatRule && task.repeatRule !== 'none'
+        ? this.repeatService.reconstructMetaFromTask(task) : null;
+      if (reconstructed) {
+        this.customRepeatMeta = reconstructed;
+        this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, reconstructed);
+        this.repeatControl.setValue('customCurrent', {emitEvent: false});
+      } else {
+        this.repeatControl.setValue(task.repeatRule ?? 'none');
+      }
       this.assigneeControl.setValue(task.assigneeIds ?? []);
       this.tagsControl.setValue(task.tags ?? []);
       this.descriptionControl.setValue(task.descriptionHtml ?? '');
@@ -191,7 +205,18 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.titleControl.setValue(`${copyPrefix} ${sourceTask.title}`);
       this.startTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(sourceTask.startHour + sourceTask.duration));
-      this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
+      // Same reconstruction logic as edit mode — copy carries the source's
+      // custom-repeat rule forward so the copied event opens with the same
+      // selected option as the original.
+      const reconstructed = sourceTask.repeatRule && sourceTask.repeatRule !== 'none'
+        ? this.repeatService.reconstructMetaFromTask(sourceTask) : null;
+      if (reconstructed) {
+        this.customRepeatMeta = reconstructed;
+        this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, reconstructed);
+        this.repeatControl.setValue('customCurrent', {emitEvent: false});
+      } else {
+        this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
+      }
       this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
       this.tagsControl.setValue(sourceTask.tags ?? []);
       this.descriptionControl.setValue(sourceTask.descriptionHtml ?? '');
@@ -586,6 +611,13 @@ export class TaskCreateEditModalComponent implements OnInit {
       repeatEndMode,
       repeatOccurrences,
       repeatUntilDate,
+      // CSV of JS getDay() weekday indices for multi-day weekly custom rules.
+      // Sent as null for any non-custom rule (isCustomRule=false), which
+      // unconditionally clears any stale CSV the row may carry from a prior
+      // custom selection. See spec — Layer 3 / "explicit clearing rule".
+      repeatWeekdaysCsv: (isCustomRule && this.customRepeatMeta?.weekdays?.length)
+        ? this.customRepeatMeta.weekdays.join(',')
+        : null,
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
       status: 1,

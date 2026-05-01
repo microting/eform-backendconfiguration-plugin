@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
-import {CalendarRepeatMeta} from '../../../models/calendar';
+import {CalendarRepeatMeta, CalendarTaskModel} from '../../../models/calendar';
 import {getCurrentLocale} from './calendar-locale.helper';
 
 export interface RepeatSelectOption {
@@ -480,6 +480,143 @@ export class CalendarRepeatService {
       afterCount: meta.afterCount,
       untilTs: meta.untilTs,
     };
+  }
+
+  /**
+   * Reconstruct a `CalendarRepeatMeta` from a backend-loaded task so the
+   * edit-modal can land on the synthesized `customCurrent` dropdown option
+   * instead of resetting to a default rule.
+   *
+   * Mirrors `buildMetaFromCustomConfig`'s kind-selection logic. Returns
+   * `null` for `none`, malformed legacy rows (missing required fields per
+   * rule), and unknown `repeatRule` values — the caller treats `null` as
+   * "fall back to the raw `repeatRule` string and skip reconstruction".
+   *
+   * The `weekdays` rule maps to `weeklyMulti`/`everyNWeekMulti` with
+   * weekdays=[1..5] so the formatter renders the explicit Mon-Fri list
+   * rather than collapsing to "all days".
+   */
+  reconstructMetaFromTask(task: CalendarTaskModel): CalendarRepeatMeta | null {
+    // Cast to string so the switch can include `'weekdays'` even though it
+    // isn't currently in the CalendarRepeatRule union — the backend may
+    // start emitting it once the controller maps RepeatType=5 explicitly,
+    // and the helper stays forward-compatible.
+    // Cast to string so the switch can include `'weekdays'` even though it
+    // isn't currently in the CalendarRepeatRule union — the backend may
+    // start emitting it once the controller maps RepeatType=5 explicitly,
+    // and the helper stays forward-compatible.
+    const r = task.repeatRule as string | undefined;
+    // Defensive coalesce: backend should never send 0 or negative, but guard
+    // anyway so a bogus value doesn't cascade into an iterator with step=0.
+    const n = (task.repeatEvery ?? 0) > 0 ? task.repeatEvery! : 1;
+    // Clamp end-mode lookup so an out-of-range index doesn't yield undefined.
+    const endModes = ['never', 'after', 'until'] as const;
+    const endMode = endModes[task.repeatEndMode ?? 0] ?? 'never';
+    const afterCount = endMode === 'after' ? task.repeatOccurrences ?? undefined : undefined;
+    const untilTs = endMode === 'until' && task.repeatUntilDate
+      ? new Date(task.repeatUntilDate).getTime() : undefined;
+
+    if (!r || r === 'none') return null;
+
+    // Helper for yearly month — getUTCMonth avoids the local-tz off-by-one
+    // for ISO timestamps with a `Z` suffix.
+    const monthFromTaskDate = () => new Date(task.taskDate).getUTCMonth();
+
+    // Parse CSV up front so weekly branches can promote single-day to
+    // multi-day when a multi-day rule was saved at step=1 (which routes
+    // through `mapRepeatType` as 'weeklyOne' and would otherwise lose the
+    // CSV-derived day list).
+    const csvDays = (task.repeatWeekdaysCsv ?? '')
+      .split(',').map(s => s.trim()).filter(Boolean).map(Number)
+      .filter(d => d >= 0 && d <= 6);
+    const weeklyFromCsv = (): CalendarRepeatMeta => {
+      if (csvDays.length === 1) {
+        return {
+          kind: n === 1 ? 'weeklyOne' : 'everyNWeekOne', n,
+          weekday: csvDays[0], endMode, afterCount, untilTs,
+        };
+      }
+      // Length 0 (legacy fallback) and length >=2 both go to all/multi.
+      if (csvDays.length === 0) {
+        return {kind: n === 1 ? 'weeklyAll' : 'everyNWeekAll', n, endMode, afterCount, untilTs};
+      }
+      return {
+        kind: n === 1 ? 'weeklyMulti' : 'everyNWeekMulti', n,
+        weekdays: csvDays, endMode, afterCount, untilTs,
+      };
+    };
+
+    switch (r) {
+      case 'daily':
+        return {kind: n === 1 ? 'daily' : 'everyNd', n, endMode, afterCount, untilTs};
+
+      case 'weeklyOne':
+        // Promote to multi-day if a CSV is present — covers the common case
+        // where mapRepeatType collapses any weekly rule with step=1 to
+        // 'weeklyOne' regardless of CSV presence.
+        if (csvDays.length > 0) return weeklyFromCsv();
+        if (task.dayOfWeek == null) return null;
+        return {
+          kind: n === 1 ? 'weeklyOne' : 'everyNWeekOne', n,
+          weekday: task.dayOfWeek, endMode, afterCount, untilTs,
+        };
+
+      case 'weeklyAll':
+        // Same promotion path: CSV wins if present.
+        if (csvDays.length > 0) return weeklyFromCsv();
+        return {kind: n === 1 ? 'weeklyAll' : 'everyNWeekAll', n, endMode, afterCount, untilTs};
+
+      case 'weekdays':
+        // Mon-Fri. Map to weeklyMulti so the formatter renders the explicit list
+        // ("Weekly every Mon, Tue, Wed, Thu and Fri") instead of "all days".
+        return {
+          kind: n === 1 ? 'weeklyMulti' : 'everyNWeekMulti', n,
+          weekdays: [1, 2, 3, 4, 5], endMode, afterCount, untilTs,
+        };
+
+      case 'monthlyDom':
+        if (task.dayOfMonth == null) return null;
+        return {
+          kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
+          dom: task.dayOfMonth, endMode, afterCount, untilTs,
+        };
+
+      case 'yearlyOne':
+        if (task.dayOfMonth == null) return null;
+        return {
+          kind: n === 1 ? 'yearlyOne' : 'everyNYear', n,
+          dom: task.dayOfMonth, month: monthFromTaskDate(),
+          endMode, afterCount, untilTs,
+        };
+
+      case 'custom': {
+        switch (task.repeatType) {
+          case 1:
+            return {kind: n === 1 ? 'daily' : 'everyNd', n, endMode, afterCount, untilTs};
+          case 2:
+            // Pre-migration row with no CSV → weeklyAll/everyNWeekAll fallback.
+            return weeklyFromCsv();
+          case 3:
+            if (task.dayOfMonth == null) return null;
+            return {
+              kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
+              dom: task.dayOfMonth, endMode, afterCount, untilTs,
+            };
+          case 4:
+            if (task.dayOfMonth == null) return null;
+            return {
+              kind: n === 1 ? 'yearlyOne' : 'everyNYear', n,
+              dom: task.dayOfMonth, month: monthFromTaskDate(),
+              endMode, afterCount, untilTs,
+            };
+          default:
+            return null;
+        }
+      }
+
+      default:
+        return null;
+    }
   }
 
   /** Convert a custom repeat config to a CalendarRepeatMeta */

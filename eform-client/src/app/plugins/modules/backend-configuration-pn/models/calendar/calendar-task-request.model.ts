@@ -14,6 +14,10 @@ export interface CalendarTaskCreateModel {
   taskDate: string;
   driveLink?: string;
   propertyId: number;
+  // CSV of JS getDay() weekday indices ("1,3,5") — only populated for
+  // multi-day weekly custom rules. Cleared (sent as null) for any non-custom
+  // rule so the backend column is wiped on rule change.
+  repeatWeekdaysCsv?: string | null;
 }
 
 export interface CalendarTaskUpdateModel extends CalendarTaskCreateModel {
