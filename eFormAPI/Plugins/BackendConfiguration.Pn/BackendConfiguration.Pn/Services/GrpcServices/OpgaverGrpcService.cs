@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
@@ -177,8 +178,19 @@ public class OpgaverGrpcService(
             return response;
         }
 
+        // Batch-fetch Case.Custom for every compliance-derived task so the
+        // worker-supplied comment (written by SetComment into Case.Custom as
+        // a JSON envelope) round-trips on subsequent reads. Recurrence-only
+        // tasks have no SdkCaseId and therefore no Custom slot to read.
+        var commentByTaskId = await LoadCommentsByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+
         foreach (var task in result.Model)
         {
+            var comment = commentByTaskId.TryGetValue(task.Id, out var parsed)
+                ? parsed
+                : string.Empty;
+
             response.Opgaver.Add(new Opgave
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
@@ -191,13 +203,92 @@ public class OpgaverGrpcService(
                 Completed = task.Completed,
                 CompletedBy = string.Empty,
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
-                Comment = string.Empty
+                Comment = comment
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
                 // attachments: empty — populated in a later PR via the Documents/attachments flow.
             });
         }
 
         return response;
+    }
+
+    /// <summary>
+    /// Reads worker-authored comments back for the given calendar tasks.
+    /// Compliance-derived tasks carry the SDK Case id directly on the
+    /// response model (see <c>BackendConfigurationCalendarService.cs</c>
+    /// line 484), so we can batch-fetch the Cases in one query and parse
+    /// their <c>Custom</c> column. Recurrence-only tasks (no Case yet) are
+    /// skipped — there is no comment-storage slot for them in this PR.
+    /// Non-envelope or malformed Custom values degrade silently to "".
+    /// </summary>
+    private async Task<Dictionary<int, string>> LoadCommentsByTaskIdAsync(
+        IReadOnlyCollection<CalendarTaskResponseModel> tasks)
+    {
+        // Distinct (task.Id → SdkCaseId). Tasks with no SdkCaseId are
+        // recurrence-only and have no Case row to read from.
+        var taskIdToCaseId = tasks
+            .Where(t => t.SdkCaseId is > 0)
+            .GroupBy(t => t.Id)
+            .ToDictionary(g => g.Key, g => g.First().SdkCaseId!.Value);
+
+        if (taskIdToCaseId.Count == 0)
+        {
+            return new Dictionary<int, string>();
+        }
+
+        var caseIds = taskIdToCaseId.Values.Distinct().ToList();
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        // Single query for every relevant Case.Custom value.
+        var customByCaseId = await sdkDbContext.Cases
+            .Where(c => caseIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Custom })
+            .ToDictionaryAsync(c => c.Id, c => c.Custom)
+            .ConfigureAwait(false);
+
+        var result = new Dictionary<int, string>(taskIdToCaseId.Count);
+        foreach (var (taskId, caseId) in taskIdToCaseId)
+        {
+            if (!customByCaseId.TryGetValue(caseId, out var customJson))
+            {
+                continue;
+            }
+
+            var parsed = TryParseComment(customJson);
+            if (!string.IsNullOrEmpty(parsed))
+            {
+                result[taskId] = parsed;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Inverse of <see cref="SerializeOpgaverComment"/>. Returns the worker
+    /// comment text from a <c>Case.Custom</c> JSON envelope, or
+    /// <see cref="string.Empty"/> if the value is missing, empty, or not in
+    /// the expected shape (legacy free-form strings, garbage).
+    /// </summary>
+    private static string TryParseComment(string customJson)
+    {
+        if (string.IsNullOrWhiteSpace(customJson))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var envelope = JsonSerializer.Deserialize<OpgaverCustomEnvelope>(customJson);
+            return envelope?.OpgaverComment?.Text ?? string.Empty;
+        }
+        catch (JsonException)
+        {
+            // Non-envelope / pre-existing free-form string — treat as no comment.
+            return string.Empty;
+        }
     }
 
     public override async Task<CompleteOpgaveResponse> CompleteOpgave(
@@ -396,11 +487,18 @@ public class OpgaverGrpcService(
     ///     CompleteOpgave).</description></item>
     /// </list>
     ///
-    /// Like CompleteOpgave, this requires a resolved Compliance row (and
-    /// therefore an SDK Case) — pure-recurrence opgaver without a backing
-    /// case will return <c>FailedPrecondition</c>. Adding a comment to a
-    /// future occurrence requires either materialising the case early or
-    /// adopting Path B/C, both of which are out of scope here.
+    /// Compliance lookup deliberately includes <c>WorkflowState=Removed</c>
+    /// rows so that workers can still attach a comment after CompleteOpgave
+    /// has soft-deleted the compliance (e.g. "noticed leak, scheduled
+    /// repair"). The Case row and its <c>Custom</c> slot survive
+    /// completion. CompleteOpgave keeps its own not-removed filter — that
+    /// path doesn't make sense to re-run.
+    ///
+    /// Pure-recurrence opgaver without a backing Case (no compliance row at
+    /// all) cannot be persisted today; the response echoes the comment back
+    /// in a synthesised minimal Opgave so the client's optimistic write is
+    /// preserved, but no SDK write occurs. Materialising the case early or
+    /// adopting Path B/C is out of scope here.
     /// </summary>
     public override async Task<SetCommentResponse> SetComment(
         SetCommentRequest request,
@@ -436,25 +534,45 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the opgave's property."));
         }
 
-        // Find the active Compliance row → SDK Case. Same shape as
-        // CompleteOpgave: no compliance ⇒ no Case ⇒ nowhere to store.
-        var compliance = await dbContext.Compliances
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
-
-        if (compliance == null)
-        {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId} has no pending compliance — there is no SDK case to attach the comment to."));
-        }
+        // Trim only the right end so leading whitespace in legitimate worker
+        // input isn't destroyed; whitespace-only is treated as "clear"
+        // (TrimEnd of an all-whitespace string is the empty string). Done
+        // up-front so all branches below (write, synthesise) echo the same
+        // text on the wire.
+        var trimmed = text.TrimEnd();
 
         // client_ts_unix → UTC; fall back to server-side now.
         var commentAtUtc = request.ClientTsUnix > 0
             ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
             : DateTime.UtcNow;
+
+        // Find the Compliance row → SDK Case. Comments must be writable
+        // regardless of completion status, so we deliberately do NOT filter
+        // out WorkflowState=Removed rows: CompleteOpgave soft-deletes the
+        // compliance, but the Case row (and its Custom slot) survives, so a
+        // worker can still attach a post-completion remark like
+        // "noticed leak, scheduled repair". CompleteOpgave keeps the
+        // not-removed filter on its own lookup — re-completing an already
+        // completed task makes no sense there.
+        var compliance = await dbContext.Compliances
+            .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .OrderBy(x => x.Deadline)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        // Truly orphaned task (no compliance row at all → no SDK Case ever
+        // existed). Echo the comment back in a synthesised minimal Opgave so
+        // the client can keep its local optimistic write, but skip the SDK
+        // write because there is nowhere to store it. This mirrors the
+        // synthesise-on-miss fallback used in the success branch below and
+        // matches CompleteOpgave's behaviour for the same edge case.
+        if (compliance == null)
+        {
+            return new SetCommentResponse
+            {
+                Opgave = SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed)
+            };
+        }
 
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -465,14 +583,13 @@ public class OpgaverGrpcService(
 
         if (foundCase == null)
         {
+            // Compliance points at an SDK Case that no longer exists —
+            // genuinely broken state, not a "soft" miss. Fail loudly.
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
                 $"Opgave {opgaveId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
         }
 
         // Write — empty text clears the slot; non-empty wraps in the envelope.
-        // Trim only the right end so leading whitespace in legitimate worker
-        // input isn't destroyed; whitespace-only is treated as "clear".
-        var trimmed = text.Trim();
         foundCase.Custom = string.IsNullOrEmpty(trimmed)
             ? string.Empty
             : SerializeOpgaverComment(trimmed, commentAtUtc);
@@ -515,22 +632,28 @@ public class OpgaverGrpcService(
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
                 Comment = trimmed
             }
-            : new Opgave
-            {
-                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = string.Empty,
-                PlanDayKey = dayKey,
-                PlannedAt = string.Empty,
-                TaskText = string.Empty,
-                CalendarColor = string.Empty,
-                Completed = false,
-                CompletedBy = string.Empty,
-                DescriptionHtml = string.Empty,
-                Comment = trimmed
-            };
+            : SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed);
 
         return new SetCommentResponse { Opgave = opgave };
+    }
+
+    private static Opgave SynthesiseMinimalOpgave(
+        int opgaveId, int propertyId, DateTime commentAtUtc, string trimmed)
+    {
+        return new Opgave
+        {
+            Id = opgaveId.ToString(CultureInfo.InvariantCulture),
+            EjendomId = propertyId.ToString(CultureInfo.InvariantCulture),
+            TavleId = string.Empty,
+            PlanDayKey = commentAtUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            PlannedAt = string.Empty,
+            TaskText = string.Empty,
+            CalendarColor = string.Empty,
+            Completed = false,
+            CompletedBy = string.Empty,
+            DescriptionHtml = string.Empty,
+            Comment = trimmed
+        };
     }
 
     private static string SerializeOpgaverComment(string text, DateTime tsUtc)
