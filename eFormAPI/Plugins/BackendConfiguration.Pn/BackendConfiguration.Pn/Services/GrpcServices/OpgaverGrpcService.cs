@@ -20,13 +20,43 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// Read-only RPCs (ListEjendomme / ListTavler / ListOpgaver) reuse the existing
 /// Properties + Calendar service paths and reshape the result into the
 /// microting.opgaver wire contract. CompleteOpgave performs the SDK-case
-/// completion inline (mirroring CompliancesGrpcService.UpdateComplianceCase)
-/// because the JSON-side ToggleComplete is currently a TODO and the Opgaver
-/// flow has no form data — so calling core.CaseUpdate with empty field/checklist
-/// lists would be a no-op anyway. Remaining write RPCs (SetComment,
-/// UploadPhoto, RemovePhoto, StreamOpgaveChanges) are intentionally not
-/// overridden — the generated base returns UNIMPLEMENTED, which is the correct
-/// v1 behaviour. Follow-up PRs in the stack will fill them in.
+/// completion inline (mirroring CompliancesGrpcService.UpdateComplianceCase,
+/// lines 159-174) for two reasons:
+/// (1) the Opgaver flow has no form data, so <c>core.CaseUpdate</c> with empty
+///     field/checklist lists would be a no-op anyway; and
+/// (2) the JSON-side parity, <c>BackendConfigurationCalendarService.ToggleComplete</c>
+///     (line 1272), is a TODO stub returning <c>OperationResult(true)</c> — there
+///     is no real implementation to delegate to.
+/// Remaining write RPCs (SetComment, UploadPhoto, RemovePhoto,
+/// StreamOpgaveChanges) are intentionally not overridden — the generated base
+/// returns UNIMPLEMENTED, which is the correct v1 behaviour. Follow-up PRs in
+/// the stack will fill them in.
+///
+/// Known divergences from the canonical
+/// <c>BackendConfigurationCompliancesService.Update</c> JSON path that
+/// CompleteOpgave does NOT perform (parity with
+/// <c>CompliancesGrpcService.UpdateComplianceCase</c>, which has the same
+/// gaps — this PR introduces no new divergence):
+/// <list type="bullet">
+///   <item><description><c>PlanningCaseSite</c> row update (Status=100,
+///     MicrotingSdkCaseId, MicrotingSdkCaseDoneAt, DoneByUserId,
+///     DoneByUserName) — see
+///     <c>BackendConfigurationCompliancesService.cs:307-318</c>.</description></item>
+///   <item><description><c>PlanningCase</c> row update (Status=100,
+///     WorkflowState=Processed) — lines 320-335.</description></item>
+///   <item><description><c>Property.ComplianceStatus</c> /
+///     <c>ComplianceStatusThirty</c> recomputation — lines 344-371. Without
+///     this, the property compliance "dot" UI elsewhere in the system will be
+///     stale.</description></item>
+///   <item><description><c>CaseUpdateDelegate</c> invocation — lines 262-270 of
+///     <c>BackendConfigurationCompliancesService.Update</c>. Downstream
+///     subscribers won't be notified.</description></item>
+///   <item><description><c>core.CaseDelete</c> of the underlying microting
+///     case — lines 373-389. The device-side case won't be deleted.</description></item>
+/// </list>
+/// Known limitation; closing the gap likely requires factoring a shared
+/// completion helper called by both <c>Update</c> and the gRPC paths — out of
+/// scope for this PR.
 /// </summary>
 public class OpgaverGrpcService(
     IBackendConfigurationCalendarService calendarService,
