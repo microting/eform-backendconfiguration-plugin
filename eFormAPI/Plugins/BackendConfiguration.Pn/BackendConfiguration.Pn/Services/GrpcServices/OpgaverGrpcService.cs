@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Grpc.Documents;
 using BackendConfiguration.Pn.Grpc.Opgaver;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
@@ -15,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 
 namespace BackendConfiguration.Pn.Services.GrpcServices;
 
@@ -35,10 +39,20 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// <c>opgaver_comment</c> envelope (see <see cref="SetComment"/> docs for the
 /// rationale and collision analysis). No new EF entity / migration is
 /// introduced.
-/// Remaining write RPCs (UploadPhoto, RemovePhoto, StreamOpgaveChanges) are
-/// intentionally not overridden — the generated base returns UNIMPLEMENTED,
-/// which is the correct v1 behaviour. Follow-up PRs in the stack will fill
-/// them in.
+/// UploadPhoto / RemovePhoto extend the same <c>Custom</c> envelope with an
+/// <c>opgaver_photos</c> array carrying <c>{slot, uploaded_data_id, ts_unix,
+/// content_type}</c> per slot. Bytes are written to S3 via the eFormCore SDK's
+/// <c>core.PutFileToS3Storage</c> (same path as
+/// <c>BackendConfigurationTaskManagementService.CreateTask</c>); a row in the
+/// SDK <c>uploaded_data</c> table tracks file metadata. RemovePhoto soft-
+/// deletes the <c>UploadedData</c> row (<c>WorkflowState=Removed</c>) and
+/// drops the slot entry from the envelope. ListOpgaver replays the envelope
+/// and surfaces photos as <see cref="Attachment"/> messages. No new EF
+/// entity / migration is introduced; the photo-upload pipeline reuses the
+/// existing TaskManagement S3 / UploadedData pattern.
+/// Remaining write RPC (StreamOpgaveChanges) is intentionally not overridden
+/// — the generated base returns UNIMPLEMENTED, which is the correct v1
+/// behaviour. The follow-up PR in the stack will fill it in.
 ///
 /// Known divergences from the canonical
 /// <c>BackendConfigurationCompliancesService.Update</c> JSON path that
@@ -179,19 +193,20 @@ public class OpgaverGrpcService(
         }
 
         // Batch-fetch Case.Custom for every compliance-derived task so the
-        // worker-supplied comment (written by SetComment into Case.Custom as
-        // a JSON envelope) round-trips on subsequent reads. Recurrence-only
-        // tasks have no SdkCaseId and therefore no Custom slot to read.
-        var commentByTaskId = await LoadCommentsByTaskIdAsync(result.Model)
+        // worker-supplied comment (written by SetComment) and photo metadata
+        // (written by UploadPhoto / RemovePhoto, both stored as JSON in the
+        // same Custom envelope) round-trip on subsequent reads. Recurrence-
+        // only tasks have no SdkCaseId and therefore no Custom slot to read.
+        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
         foreach (var task in result.Model)
         {
-            var comment = commentByTaskId.TryGetValue(task.Id, out var parsed)
-                ? parsed
-                : string.Empty;
+            envelopeByTaskId.TryGetValue(task.Id, out var envelope);
 
-            response.Opgaver.Add(new Opgave
+            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+
+            var opgave = new Opgave
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -205,23 +220,60 @@ public class OpgaverGrpcService(
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
                 Comment = comment
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
-                // attachments: empty — populated in a later PR via the Documents/attachments flow.
-            });
+            };
+
+            PopulateAttachments(opgave, envelope);
+            response.Opgaver.Add(opgave);
         }
 
         return response;
     }
 
     /// <summary>
-    /// Reads worker-authored comments back for the given calendar tasks.
-    /// Compliance-derived tasks carry the SDK Case id directly on the
-    /// response model (see <c>BackendConfigurationCalendarService.cs</c>
+    /// Translates the <c>opgaver_photos</c> entries from the Case.Custom
+    /// envelope into <see cref="Attachment"/> wire messages on the response
+    /// Opgave. Internal storage is signalled with
+    /// <see cref="AttachmentSource.Unspecified"/>; the <c>name</c> field
+    /// carries the SDK <c>UploadedData.Id</c> as a string so clients can
+    /// later request the bytes via Documents.GetAttachment (whose contract
+    /// is opaque about what <c>name</c> is — internal id vs cloud-storage
+    /// path — both are valid). Photos are emitted in slot order so clients
+    /// can index them stably; entries with missing or invalid metadata
+    /// are skipped silently.
+    /// </summary>
+    private static void PopulateAttachments(Opgave opgave, OpgaverCustomEnvelope? envelope)
+    {
+        if (envelope?.OpgaverPhotos == null)
+        {
+            return;
+        }
+
+        foreach (var photo in envelope.OpgaverPhotos.OrderBy(p => p.Slot))
+        {
+            if (photo.UploadedDataId <= 0)
+            {
+                continue;
+            }
+
+            opgave.Attachments.Add(new Attachment
+            {
+                Source = AttachmentSource.Unspecified,
+                Name = photo.UploadedDataId.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+    }
+
+    /// <summary>
+    /// Reads the parsed Case.Custom envelope back for the given calendar
+    /// tasks. Compliance-derived tasks carry the SDK Case id directly on
+    /// the response model (see <c>BackendConfigurationCalendarService.cs</c>
     /// line 484), so we can batch-fetch the Cases in one query and parse
     /// their <c>Custom</c> column. Recurrence-only tasks (no Case yet) are
-    /// skipped — there is no comment-storage slot for them in this PR.
-    /// Non-envelope or malformed Custom values degrade silently to "".
+    /// skipped — there is no envelope storage slot for them in this PR.
+    /// Non-envelope or malformed Custom values degrade silently to a null
+    /// entry (the caller treats that as "no comment, no photos").
     /// </summary>
-    private async Task<Dictionary<int, string>> LoadCommentsByTaskIdAsync(
+    private async Task<Dictionary<int, OpgaverCustomEnvelope?>> LoadEnvelopeByTaskIdAsync(
         IReadOnlyCollection<CalendarTaskResponseModel> tasks)
     {
         // Distinct (task.Id → SdkCaseId). Tasks with no SdkCaseId are
@@ -233,7 +285,7 @@ public class OpgaverGrpcService(
 
         if (taskIdToCaseId.Count == 0)
         {
-            return new Dictionary<int, string>();
+            return new Dictionary<int, OpgaverCustomEnvelope?>();
         }
 
         var caseIds = taskIdToCaseId.Values.Distinct().ToList();
@@ -248,7 +300,7 @@ public class OpgaverGrpcService(
             .ToDictionaryAsync(c => c.Id, c => c.Custom)
             .ConfigureAwait(false);
 
-        var result = new Dictionary<int, string>(taskIdToCaseId.Count);
+        var result = new Dictionary<int, OpgaverCustomEnvelope?>(taskIdToCaseId.Count);
         foreach (var (taskId, caseId) in taskIdToCaseId)
         {
             if (!customByCaseId.TryGetValue(caseId, out var customJson))
@@ -256,38 +308,32 @@ public class OpgaverGrpcService(
                 continue;
             }
 
-            var parsed = TryParseComment(customJson);
-            if (!string.IsNullOrEmpty(parsed))
-            {
-                result[taskId] = parsed;
-            }
+            result[taskId] = TryParseEnvelope(customJson);
         }
 
         return result;
     }
 
     /// <summary>
-    /// Inverse of <see cref="SerializeOpgaverComment"/>. Returns the worker
-    /// comment text from a <c>Case.Custom</c> JSON envelope, or
-    /// <see cref="string.Empty"/> if the value is missing, empty, or not in
-    /// the expected shape (legacy free-form strings, garbage).
+    /// Returns the parsed envelope from a <c>Case.Custom</c> string, or
+    /// <c>null</c> if the value is missing, empty, or not in the expected
+    /// shape (legacy free-form strings, garbage).
     /// </summary>
-    private static string TryParseComment(string customJson)
+    private static OpgaverCustomEnvelope? TryParseEnvelope(string customJson)
     {
         if (string.IsNullOrWhiteSpace(customJson))
         {
-            return string.Empty;
+            return null;
         }
 
         try
         {
-            var envelope = JsonSerializer.Deserialize<OpgaverCustomEnvelope>(customJson);
-            return envelope?.OpgaverComment?.Text ?? string.Empty;
+            return JsonSerializer.Deserialize<OpgaverCustomEnvelope>(customJson);
         }
         catch (JsonException)
         {
-            // Non-envelope / pre-existing free-form string — treat as no comment.
-            return string.Empty;
+            // Non-envelope / pre-existing free-form string — treat as empty.
+            return null;
         }
     }
 
@@ -589,10 +635,21 @@ public class OpgaverGrpcService(
                 $"Opgave {opgaveId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
         }
 
-        // Write — empty text clears the slot; non-empty wraps in the envelope.
-        foundCase.Custom = string.IsNullOrEmpty(trimmed)
-            ? string.Empty
-            : SerializeOpgaverComment(trimmed, commentAtUtc);
+        // Write — preserve any existing photo metadata in the envelope so a
+        // SetComment call doesn't accidentally drop attachments. An empty
+        // comment with no photos collapses the envelope back to "" so the
+        // legacy CompliancesGrpcService.ReadComplianceCase passthrough sees
+        // an empty string instead of "{...}".
+        var existingEnvelope = TryParseEnvelope(foundCase.Custom);
+        var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
+        nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
+            ? null
+            : new OpgaverCommentBody
+            {
+                Text = trimmed,
+                TsUnix = ToUnixSeconds(commentAtUtc)
+            };
+        foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
         await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
         // Refresh the opgave for the day in question so the response shape
@@ -637,6 +694,361 @@ public class OpgaverGrpcService(
         return new SetCommentResponse { Opgave = opgave };
     }
 
+    /// <summary>
+    /// Maximum bytes accepted per photo. Mirrors a typical phone-camera
+    /// JPEG cap; bigger uploads cause the stream to be aborted with
+    /// <c>InvalidArgument</c> mid-flight (we don't know the size up front
+    /// because the client is streaming).
+    /// </summary>
+    private const int MaxPhotoBytes = 20 * 1024 * 1024;
+
+    /// <summary>
+    /// Maximum number of photo slots per opgave. Slots are addressed
+    /// 0..MaxPhotoSlots-1. The bound is enforced both by the proto's
+    /// <c>slot</c> validation in UploadPhoto and by the clients' UI.
+    /// </summary>
+    private const int MaxPhotoSlots = 10;
+
+    /// <summary>
+    /// Receives an uploaded photo as a stream of <c>UploadPhotoChunk</c>
+    /// messages. Wire protocol: the very first chunk MUST be the
+    /// <c>meta</c> oneof variant, all subsequent chunks MUST be <c>chunk</c>
+    /// (raw bytes). Anything else is rejected with <c>InvalidArgument</c>.
+    ///
+    /// Storage: the assembled bytes go to S3 via
+    /// <c>core.PutFileToS3Storage(stream, fileName)</c> — the same path
+    /// <c>BackendConfigurationTaskManagementService.CreateTask</c> uses for
+    /// work-order task images. A row is created in the SDK
+    /// <c>uploaded_data</c> table to track checksum / extension / filename;
+    /// no resizing or thumbnail variants are produced (the existing
+    /// TaskManagement code creates 300px / 700px variants via ImageMagick;
+    /// for the Opgaver flow the mobile clients work with the original
+    /// image, so we keep this v1 storage path simple). Filename mirrors
+    /// the TaskManagement convention: <c>{uploaded_data_id}_{checksum}{ext}</c>.
+    ///
+    /// Slot tracking: the (slot, uploaded_data_id, ts_unix, content_type)
+    /// tuple is appended to the <c>opgaver_photos</c> array in the
+    /// <c>Case.Custom</c> JSON envelope (the same envelope SetComment uses
+    /// for <c>opgaver_comment</c>). Re-uploading to a slot that already
+    /// contains a photo soft-deletes the previous <c>UploadedData</c> row
+    /// and replaces the entry, so the slot acts as a stable per-opgave
+    /// identifier.
+    ///
+    /// Validation: <c>content_type</c> must be image/jpeg or image/png,
+    /// <c>slot</c> must be in 0..<see cref="MaxPhotoSlots"/>-1, total bytes
+    /// capped at <see cref="MaxPhotoBytes"/>. Empty payloads are rejected
+    /// to prevent zero-byte files from polluting storage.
+    ///
+    /// Recurrence-only opgaver (no compliance row, no SDK Case) cannot
+    /// store photos — there is no Case.Custom slot to write to. Returns
+    /// <c>FailedPrecondition</c> in that branch (vs. SetComment's "echo
+    /// back the synthesised opgave" approach: a comment is metadata the
+    /// client can replay later, but uploaded bytes have nowhere to go and
+    /// silently discarding them would lose user content).
+    /// </summary>
+    public override async Task<UploadPhotoResponse> UploadPhoto(
+        IAsyncStreamReader<UploadPhotoChunk> requestStream,
+        ServerCallContext context)
+    {
+        // 1. Read first chunk — must be `meta`.
+        if (!await requestStream.MoveNext().ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                "UploadPhoto stream is empty — at least a meta chunk is required."));
+        }
+
+        var firstChunk = requestStream.Current;
+        if (firstChunk.KindCase != UploadPhotoChunk.KindOneofCase.Meta)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                "First UploadPhotoChunk must carry the meta oneof variant."));
+        }
+
+        var meta = firstChunk.Meta;
+
+        // 2. Validate metadata up front so we don't waste the upload.
+        var opgaveId = ParseOpgaveId(meta.OpgaveId);
+        if (meta.Slot < 0 || meta.Slot >= MaxPhotoSlots)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                $"slot must be in 0..{MaxPhotoSlots - 1}."));
+        }
+
+        var contentType = meta.ContentType?.Trim() ?? string.Empty;
+        var extension = contentType switch
+        {
+            "image/jpeg" or "image/jpg" => ".jpg",
+            "image/png" => ".png",
+            _ => throw new RpcException(new Status(StatusCode.InvalidArgument,
+                "content_type must be image/jpeg, image/jpg, or image/png."))
+        };
+
+        // 3. Auth + property access. Mirrors CompleteOpgave / SetComment.
+        var arp = await dbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .ConfigureAwait(false);
+
+        if (arp == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound,
+                $"Opgave {opgaveId} not found."));
+        }
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, arp.PropertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the opgave's property."));
+        }
+
+        // SetComment includes Removed compliance rows so post-completion
+        // edits are possible; do the same here so a worker can attach a
+        // photo to a just-completed opgave.
+        var compliance = await dbContext.Compliances
+            .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .OrderBy(x => x.Deadline)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (compliance == null)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                $"Opgave {opgaveId}: no SDK case to attach a photo to (recurrence-only opgaver are not supported in v1)."));
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var foundCase = await sdkDbContext.Cases
+            .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId)
+            .ConfigureAwait(false);
+
+        if (foundCase == null)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                $"Opgave {opgaveId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
+        }
+
+        // 4. Reassemble bytes from subsequent chunks. We allocate to
+        // MemoryStream rather than a File or pooled buffer; with 20MB cap
+        // and image-upload latency, this is well under typical request
+        // memory budgets.
+        var ms = new MemoryStream();
+        try
+        {
+            while (await requestStream.MoveNext().ConfigureAwait(false))
+            {
+                var chunk = requestStream.Current;
+                if (chunk.KindCase != UploadPhotoChunk.KindOneofCase.Chunk)
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument,
+                        "Only the first UploadPhotoChunk may carry meta; all subsequent chunks must be `chunk` bytes."));
+                }
+
+                if (chunk.Chunk.Length == 0)
+                {
+                    continue;
+                }
+
+                if (ms.Length + chunk.Chunk.Length > MaxPhotoBytes)
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument,
+                        $"Photo exceeds {MaxPhotoBytes / (1024 * 1024)} MB limit."));
+                }
+
+                chunk.Chunk.WriteTo(ms);
+            }
+
+            if (ms.Length == 0)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument,
+                    "UploadPhoto stream contained no image bytes."));
+            }
+
+            ms.Position = 0;
+
+            // 5. Compute checksum + create UploadedData row + write to S3.
+            // Order matches TaskManagementService.CreateTask: create
+            // UploadedData first to get its Id, then build the filename,
+            // then upload. The Update() at the end commits the FileName
+            // back so reads can locate the bytes.
+            string checksum;
+            using (var md5 = MD5.Create())
+            {
+                checksum = BitConverter.ToString(await md5.ComputeHashAsync(ms).ConfigureAwait(false))
+                    .Replace("-", string.Empty)
+                    .ToLowerInvariant();
+            }
+            ms.Position = 0;
+
+            var uploadedData = new SdkUploadedData
+            {
+                Checksum = checksum,
+                FileName = string.Empty,
+                FileLocation = string.Empty,
+                Extension = extension
+            };
+            await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
+
+            var fileName = $"{uploadedData.Id}_{checksum}{extension}";
+            uploadedData.FileName = fileName;
+            await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
+
+            await core.PutFileToS3Storage(ms, fileName).ConfigureAwait(false);
+
+            // 6. Update Case.Custom envelope: replace existing entry at
+            // slot if present (soft-deleting its UploadedData row), then
+            // append the new tuple.
+            var commentAtUtc = meta.ClientTsUnix > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
+                : DateTime.UtcNow;
+
+            var envelope = TryParseEnvelope(foundCase.Custom) ?? new OpgaverCustomEnvelope();
+            envelope.OpgaverPhotos ??= new List<OpgaverPhotoBody>();
+
+            var existing = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
+            if (existing != null)
+            {
+                if (existing.UploadedDataId > 0)
+                {
+                    var stale = await sdkDbContext.UploadedDatas
+                        .FirstOrDefaultAsync(u => u.Id == existing.UploadedDataId)
+                        .ConfigureAwait(false);
+                    if (stale != null)
+                    {
+                        await stale.Delete(sdkDbContext).ConfigureAwait(false);
+                    }
+                }
+                envelope.OpgaverPhotos.Remove(existing);
+            }
+
+            envelope.OpgaverPhotos.Add(new OpgaverPhotoBody
+            {
+                Slot = meta.Slot,
+                UploadedDataId = uploadedData.Id,
+                TsUnix = ToUnixSeconds(commentAtUtc),
+                ContentType = contentType
+            });
+
+            foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
+            await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+
+            // 7. Echo the new UploadedData id as the storage_id so the
+            // client can address subsequent reads / removes.
+            return new UploadPhotoResponse
+            {
+                StorageId = uploadedData.Id.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+        finally
+        {
+            await ms.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Soft-deletes the photo at the requested slot for an opgave.
+    /// "Soft" = the SDK <c>UploadedData</c> row is marked
+    /// <c>WorkflowState=Removed</c> via <c>UploadedData.Delete()</c>; the
+    /// S3 object is intentionally left in place because the eFormCore SDK
+    /// has no public delete-from-S3 helper, and orphaned objects are
+    /// already produced elsewhere in the pipeline (e.g.
+    /// <c>BackendConfigurationFilesService</c> only soft-deletes the row).
+    /// The slot entry is removed from the envelope so subsequent
+    /// ListOpgaver reads won't surface it.
+    ///
+    /// Idempotent: removing a slot that doesn't currently hold a photo
+    /// returns OK with no error — the client may retry after a partial
+    /// failure without needing to know what state the server holds.
+    /// </summary>
+    public override async Task<RemovePhotoResponse> RemovePhoto(
+        RemovePhotoRequest request,
+        ServerCallContext context)
+    {
+        var opgaveId = ParseOpgaveId(request.OpgaveId);
+        if (request.Slot < 0 || request.Slot >= MaxPhotoSlots)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                $"slot must be in 0..{MaxPhotoSlots - 1}."));
+        }
+
+        var arp = await dbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .ConfigureAwait(false);
+
+        if (arp == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound,
+                $"Opgave {opgaveId} not found."));
+        }
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, arp.PropertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the opgave's property."));
+        }
+
+        var compliance = await dbContext.Compliances
+            .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .OrderBy(x => x.Deadline)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (compliance == null)
+        {
+            // No Case → nothing to remove. Treat as success (idempotent).
+            return new RemovePhotoResponse();
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var foundCase = await sdkDbContext.Cases
+            .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId)
+            .ConfigureAwait(false);
+
+        if (foundCase == null)
+        {
+            // SDK Case missing → no envelope to clean up. Idempotent.
+            return new RemovePhotoResponse();
+        }
+
+        var envelope = TryParseEnvelope(foundCase.Custom);
+        if (envelope?.OpgaverPhotos == null || envelope.OpgaverPhotos.Count == 0)
+        {
+            return new RemovePhotoResponse();
+        }
+
+        var photo = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == request.Slot);
+        if (photo == null)
+        {
+            return new RemovePhotoResponse();
+        }
+
+        if (photo.UploadedDataId > 0)
+        {
+            var uploadedData = await sdkDbContext.UploadedDatas
+                .FirstOrDefaultAsync(u => u.Id == photo.UploadedDataId)
+                .ConfigureAwait(false);
+            if (uploadedData != null
+                && uploadedData.WorkflowState != Constants.WorkflowStates.Removed)
+            {
+                await uploadedData.Delete(sdkDbContext).ConfigureAwait(false);
+            }
+        }
+
+        envelope.OpgaverPhotos.Remove(photo);
+        foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
+        await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+
+        return new RemovePhotoResponse();
+    }
+
     private static Opgave SynthesiseMinimalOpgave(
         int opgaveId, int propertyId, DateTime commentAtUtc, string trimmed)
     {
@@ -656,23 +1068,44 @@ public class OpgaverGrpcService(
         };
     }
 
-    private static string SerializeOpgaverComment(string text, DateTime tsUtc)
+    /// <summary>
+    /// Serialises the envelope, returning the empty string when nothing
+    /// substantive remains (no comment, no photos). The empty-string
+    /// collapse is important so that the legacy
+    /// <c>CompliancesGrpcService.ReadComplianceCase</c> passthrough — which
+    /// echoes <c>Case.Custom</c> as a free-form string — sees a clean empty
+    /// value instead of <c>{}</c> after the worker clears the comment and
+    /// removes the last photo.
+    /// </summary>
+    private static string SerializeEnvelopeOrEmpty(OpgaverCustomEnvelope envelope)
     {
-        var envelope = new OpgaverCustomEnvelope
+        var hasComment = envelope.OpgaverComment != null
+            && !string.IsNullOrEmpty(envelope.OpgaverComment.Text);
+        var hasPhotos = envelope.OpgaverPhotos is { Count: > 0 };
+        if (!hasComment && !hasPhotos)
         {
-            OpgaverComment = new OpgaverCommentBody
-            {
-                Text = text,
-                TsUnix = new DateTimeOffset(tsUtc, TimeSpan.Zero).ToUnixTimeSeconds()
-            }
-        };
+            return string.Empty;
+        }
         return JsonSerializer.Serialize(envelope);
+    }
+
+    private static long ToUnixSeconds(DateTime utc)
+    {
+        return new DateTimeOffset(utc, TimeSpan.Zero).ToUnixTimeSeconds();
     }
 
     private sealed class OpgaverCustomEnvelope
     {
+        // Nullable: SetComment with empty text clears the comment slot; a
+        // null entry survives serialisation because of the null-handling
+        // option below in the writer (System.Text.Json defaults omit nulls
+        // only when explicitly opted in, but we accept the trailing null
+        // here since the absence on read is what matters).
         [JsonPropertyName("opgaver_comment")]
-        public OpgaverCommentBody OpgaverComment { get; set; } = new();
+        public OpgaverCommentBody? OpgaverComment { get; set; }
+
+        [JsonPropertyName("opgaver_photos")]
+        public List<OpgaverPhotoBody>? OpgaverPhotos { get; set; }
     }
 
     private sealed class OpgaverCommentBody
@@ -682,6 +1115,21 @@ public class OpgaverGrpcService(
 
         [JsonPropertyName("ts_unix")]
         public long TsUnix { get; set; }
+    }
+
+    private sealed class OpgaverPhotoBody
+    {
+        [JsonPropertyName("slot")]
+        public int Slot { get; set; }
+
+        [JsonPropertyName("uploaded_data_id")]
+        public int UploadedDataId { get; set; }
+
+        [JsonPropertyName("ts_unix")]
+        public long TsUnix { get; set; }
+
+        [JsonPropertyName("content_type")]
+        public string ContentType { get; set; } = string.Empty;
     }
 
     private static int ParseOpgaveId(string raw)
