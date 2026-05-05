@@ -1,0 +1,29 @@
+syntax = "proto3";
+package microting.documents;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Documents";
+
+service Documents {
+  rpc GetAttachment(GetAttachmentRequest) returns (GetAttachmentResponse);
+}
+
+message GetAttachmentRequest {
+  string opgave_id = 1;
+  AttachmentSource source = 2;
+  int32 index = 3;
+}
+
+enum AttachmentSource {
+  ATTACHMENT_SOURCE_UNSPECIFIED = 0;
+  GDRIVE = 1;
+  ONEDRIVE = 2;
+}
+
+message GetAttachmentResponse {
+  string content_type = 1;
+  string filename = 2;
+  oneof payload {
+    bytes data = 3;
+    string redirect_url = 4;
+  }
+}
