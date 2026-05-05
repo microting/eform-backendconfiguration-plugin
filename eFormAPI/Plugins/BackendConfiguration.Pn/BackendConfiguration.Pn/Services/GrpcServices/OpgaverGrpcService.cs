@@ -751,7 +751,7 @@ public class OpgaverGrpcService(
         ServerCallContext context)
     {
         // 1. Read first chunk — must be `meta`.
-        if (!await requestStream.MoveNext().ConfigureAwait(false))
+        if (!await requestStream.MoveNext(context.CancellationToken).ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 "UploadPhoto stream is empty — at least a meta chunk is required."));
@@ -838,7 +838,7 @@ public class OpgaverGrpcService(
         var ms = new MemoryStream();
         try
         {
-            while (await requestStream.MoveNext().ConfigureAwait(false))
+            while (await requestStream.MoveNext(context.CancellationToken).ConfigureAwait(false))
             {
                 var chunk = requestStream.Current;
                 if (chunk.KindCase != UploadPhotoChunk.KindOneofCase.Chunk)
