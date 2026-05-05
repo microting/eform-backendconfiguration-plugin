@@ -225,7 +225,8 @@ public class OpgaverGrpcService(
                 Completed = task.Completed,
                 CompletedBy = string.Empty,
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
-                Comment = comment
+                Comment = comment,
+                EformId = task.EformId ?? 0
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
             };
 
@@ -605,7 +606,8 @@ public class OpgaverGrpcService(
                 Completed = task.Completed,
                 CompletedBy = string.Empty,
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
-                Comment = comment
+                Comment = comment,
+                EformId = task.EformId ?? 0
             };
 
             PopulateAttachments(opgave, envelope);
