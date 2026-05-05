@@ -13,8 +13,10 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
+using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -50,9 +52,13 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// and surfaces photos as <see cref="Attachment"/> messages. No new EF
 /// entity / migration is introduced; the photo-upload pipeline reuses the
 /// existing TaskManagement S3 / UploadedData pattern.
-/// Remaining write RPC (StreamOpgaveChanges) is intentionally not overridden
-/// — the generated base returns UNIMPLEMENTED, which is the correct v1
-/// behaviour. The follow-up PR in the stack will fill it in.
+/// StreamOpgaveChanges is a poll-based server stream: the server emits a
+/// snapshot at subscribe time, then re-queries every ~5s and diffs against
+/// the previous result by JSON state-hash to emit <c>upserted</c> for
+/// new/changed tasks and <c>removed_id</c> for tasks that fell out of the
+/// watch window. v2 will likely replace this with an event-bus push model
+/// once the JSON write paths emit change notifications. See
+/// <see cref="StreamOpgaveChanges"/> for poll-window semantics.
 ///
 /// Known divergences from the canonical
 /// <c>BackendConfigurationCompliancesService.Update</c> JSON path that
@@ -86,7 +92,8 @@ public class OpgaverGrpcService(
     IBackendConfigurationUserPropertyAccess userPropertyAccess,
     IGrpcSiteResolver siteResolver,
     IEFormCoreService coreHelper,
-    BackendConfigurationPnDbContext dbContext)
+    BackendConfigurationPnDbContext dbContext,
+    ILogger<OpgaverGrpcService> logger)
     : Opgaver.OpgaverBase
 {
     public override async Task<ListEjendommeResponse> ListEjendomme(
@@ -335,6 +342,295 @@ public class OpgaverGrpcService(
             // Non-envelope / pre-existing free-form string — treat as empty.
             return null;
         }
+    }
+
+    /// <summary>
+    /// Watch window for the streaming RPC: tasks scheduled within
+    /// (today - <see cref="StreamWatchPastDays"/>) ..
+    /// (today + <see cref="StreamWatchFutureDays"/>) are tracked. The bound
+    /// keeps the per-subscriber state dictionary small (a few hundred entries
+    /// in normal usage), and the past-days lookback ensures recently-completed
+    /// tasks still emit a final upserted/removed event before falling out.
+    /// </summary>
+    private const int StreamWatchPastDays = 7;
+    private const int StreamWatchFutureDays = 30;
+
+    /// <summary>
+    /// Poll cadence for <see cref="StreamOpgaveChanges"/>. Five seconds is a
+    /// trade-off: tight enough that workers see each other's edits before
+    /// they're confused by stale UI, loose enough not to hammer the DB
+    /// across hundreds of concurrent kiosk subscribers. The value is constant
+    /// (no config knob yet) — v2 with event-bus push will retire this.
+    /// </summary>
+    private static readonly TimeSpan StreamPollInterval = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Server-streaming RPC. Initial behaviour: emit one
+    /// <c>OpgaveChange{upserted}</c> per opgave currently in the watch window
+    /// so the client gets a baseline; then poll the same window every
+    /// <see cref="StreamPollInterval"/> and emit deltas.
+    ///
+    /// Delta detection is a JSON-hash diff over the proto Opgave's serialised
+    /// form: any observable field change (comment, completion status, photo
+    /// list, color, ...) flips the hash and produces a fresh
+    /// <c>upserted</c> event. Tasks that disappear from the result set
+    /// between polls produce <c>removed_id</c> events. The per-subscriber
+    /// <c>seen</c> dictionary is bounded by the watch-window size — a few
+    /// hundred entries in normal usage.
+    ///
+    /// Cancellation: <see cref="ServerCallContext.CancellationToken"/> is
+    /// threaded through every <c>Task.Delay</c>, every DB query (via
+    /// <c>GetTasksForWeek</c>'s underlying EF queries — they don't expose a
+    /// CT, but the per-poll wait is bounded), and every
+    /// <c>responseStream.WriteAsync</c>. Client disconnect / deadline exits
+    /// the loop cleanly.
+    ///
+    /// Per-poll error isolation: a single DB hiccup logs and continues the
+    /// loop instead of killing the stream. The two terminal exceptions are
+    /// <see cref="OperationCanceledException"/> (cancellation token tripped)
+    /// and any <see cref="RpcException"/> with a permission-denied / hard-
+    /// state status — those propagate to the client.
+    ///
+    /// Concurrent subscribers: each call has its own state dictionary; the
+    /// server holds no shared subscription registry. v2 with event-bus push
+    /// will introduce one.
+    /// </summary>
+    public override async Task StreamOpgaveChanges(
+        StreamOpgaveChangesRequest request,
+        IServerStreamWriter<OpgaveChange> responseStream,
+        ServerCallContext context)
+    {
+        var propertyId = ParsePropertyId(request.EjendomId);
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, propertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the requested property."));
+        }
+
+        var boardFilter = TryParseBoardIds(request.TavleId);
+        var ct = context.CancellationToken;
+
+        // Watch window is recomputed on every poll so the day-roll-over case
+        // (a kiosk left subscribed across midnight) gradually shifts its
+        // window forward without dropping the subscription.
+        // ComputeWatchWindow uses today-N..today+M relative to UTC.
+
+        // seen: opgave_id (numeric) → state-hash. Tracks every Opgave we have
+        // already emitted, so subsequent polls only re-emit on real changes.
+        var seen = new Dictionary<int, string>();
+
+        // 1. Initial snapshot.
+        try
+        {
+            var (initialStart, initialEnd) = ComputeWatchWindow();
+            var initial = await LoadOpgaverAsync(
+                propertyId, boardFilter, initialStart, initialEnd).ConfigureAwait(false);
+            foreach (var op in initial)
+            {
+                ct.ThrowIfCancellationRequested();
+                await responseStream.WriteAsync(new OpgaveChange { Upserted = op }, ct)
+                    .ConfigureAwait(false);
+                if (int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                        out var opgaveId))
+                {
+                    seen[opgaveId] = ComputeStateHash(op);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        // 2. Poll loop.
+        // lastErrorType: tracks the exception class of the most recent
+        // consecutive poll failure so we only emit a full stack trace on
+        // the first occurrence (or whenever the failure class changes).
+        // Reset to null on every successful poll.
+        Type? lastErrorType = null;
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(StreamPollInterval, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
+            try
+            {
+                var (windowStart, windowEnd) = ComputeWatchWindow();
+                var current = await LoadOpgaverAsync(
+                    propertyId, boardFilter, windowStart, windowEnd).ConfigureAwait(false);
+
+                var currentIds = new HashSet<int>();
+
+                foreach (var op in current)
+                {
+                    if (!int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                            out var opgaveId))
+                    {
+                        continue;
+                    }
+                    currentIds.Add(opgaveId);
+
+                    var hash = ComputeStateHash(op);
+                    if (!seen.TryGetValue(opgaveId, out var prevHash) || prevHash != hash)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        await responseStream.WriteAsync(new OpgaveChange { Upserted = op }, ct)
+                            .ConfigureAwait(false);
+                        seen[opgaveId] = hash;
+                    }
+                }
+
+                // Detect removals: anything in `seen` but not in `currentIds`.
+                var removed = seen.Keys.Where(id => !currentIds.Contains(id)).ToList();
+                foreach (var id in removed)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    await responseStream.WriteAsync(new OpgaveChange
+                        {
+                            RemovedId = id.ToString(CultureInfo.InvariantCulture)
+                        }, ct).ConfigureAwait(false);
+                    seen.Remove(id);
+                }
+
+                // Successful poll — clear the consecutive-error tracker so the
+                // next failure class (if any) gets a fresh full stack trace.
+                lastErrorType = null;
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                // Per-poll failure (DB hiccup, transient I/O) — keep the
+                // stream alive; clients can decide to reconnect on
+                // noticeable staleness. To avoid log-spam during sustained
+                // outages (12 stack traces per minute per subscriber), we
+                // only emit a full stack trace on the first occurrence per
+                // consecutive-error streak, and on every change of error
+                // class. Subsequent identical failures get a single-line
+                // warning with type + message.
+                if (lastErrorType != ex.GetType())
+                {
+                    logger.LogError(ex,
+                        "OpgaverGrpcService.StreamOpgaveChanges poll failed for sdkSiteId={SdkSiteId} property={PropertyId}; suppressing further full stack traces until error class changes",
+                        sdkSiteId, propertyId);
+                    lastErrorType = ex.GetType();
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "OpgaverGrpcService.StreamOpgaveChanges poll failed (repeating): {ExType}: {ExMessage}",
+                        ex.GetType().Name, ex.Message);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Today (UTC) - <see cref="StreamWatchPastDays"/> ..
+    /// today + <see cref="StreamWatchFutureDays"/>. Recomputed every poll
+    /// so the window shifts naturally across midnight rolls.
+    /// </summary>
+    private static (DateTime start, DateTime end) ComputeWatchWindow()
+    {
+        var todayUtc = DateTime.UtcNow.Date;
+        return (todayUtc.AddDays(-StreamWatchPastDays),
+                todayUtc.AddDays(StreamWatchFutureDays));
+    }
+
+    /// <summary>
+    /// Loads the current Opgave set within the given window through the
+    /// existing calendar service path. Reuses the
+    /// <see cref="LoadEnvelopeByTaskIdAsync"/> helper from
+    /// <see cref="ListOpgaver"/> so streamed Opgave messages carry the same
+    /// comment + attachments shape as a one-shot list.
+    ///
+    /// Despite its name, <c>GetTasksForWeek</c> accepts arbitrary
+    /// <c>WeekStart</c>/<c>WeekEnd</c> date strings (see
+    /// <c>BackendConfigurationCalendarService.cs:40-43</c>) — the date range
+    /// is forwarded to the EF compliance + occurrence queries verbatim, so a
+    /// month-wide window is supported in a single call.
+    /// </summary>
+    private async Task<List<Opgave>> LoadOpgaverAsync(
+        int propertyId,
+        List<int> boardFilter,
+        DateTime windowStart,
+        DateTime windowEnd)
+    {
+        var model = new CalendarTaskRequestModel
+        {
+            PropertyId = propertyId,
+            WeekStart = windowStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            WeekEnd = windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            BoardIds = boardFilter,
+            TagNames = [],
+            SiteIds = []
+        };
+
+        var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
+        var output = new List<Opgave>();
+
+        if (!result.Success || result.Model == null)
+        {
+            return output;
+        }
+
+        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+
+        foreach (var task in result.Model)
+        {
+            envelopeByTaskId.TryGetValue(task.Id, out var envelope);
+            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+
+            var opgave = new Opgave
+            {
+                Id = task.Id.ToString(CultureInfo.InvariantCulture),
+                EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PlanDayKey = task.TaskDate ?? string.Empty,
+                PlannedAt = string.Empty,
+                TaskText = task.Title ?? string.Empty,
+                CalendarColor = task.Color ?? string.Empty,
+                Completed = task.Completed,
+                CompletedBy = string.Empty,
+                DescriptionHtml = task.DescriptionHtml ?? string.Empty,
+                Comment = comment
+            };
+
+            PopulateAttachments(opgave, envelope);
+            output.Add(opgave);
+        }
+
+        return output;
+    }
+
+    /// <summary>
+    /// Stable SHA256 hash over the canonical protobuf wire-format bytes of
+    /// the Opgave. <c>ToByteArray</c> emits a deterministic byte sequence
+    /// for all current scalar/message field types, including future-added
+    /// fields, so this is robust against schema evolution. (JSON-based
+    /// hashing was sufficient for the present Opgave shape but would
+    /// silently break the moment a <c>map&lt;...&gt;</c> field is added,
+    /// since proto map-field serialisation is not order-stable.) We hash
+    /// the bytes (instead of storing them directly) to keep the per-entry
+    /// memory footprint small (~44 base64 chars) — the dictionary may hold
+    /// a few hundred entries per subscriber.
+    /// </summary>
+    private static string ComputeStateHash(Opgave op)
+    {
+        var bytes = SHA256.HashData(op.ToByteArray());
+        return Convert.ToBase64String(bytes);
     }
 
     public override async Task<CompleteOpgaveResponse> CompleteOpgave(
