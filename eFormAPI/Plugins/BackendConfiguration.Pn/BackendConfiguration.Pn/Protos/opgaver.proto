@@ -110,9 +110,39 @@ message Opgave {
   repeated Attachment attachments = 13;
   // eform template id this opgave is backed by; clients use this to look up template-specific field structure
   int32 eform_id = 14;
+  // Form-field structure + current values for the eForm template backing
+  // this opgave. Empty when no Case exists yet (recurrence-only tasks).
+  repeated FormField fields = 15;
 }
 
 message Attachment {
   microting.documents.AttachmentSource source = 1;
   string name = 2;
+}
+
+// Field of the eForm template that backs an Opgave.
+// Carries both the template definition (label, type, options) and the
+// worker's current answer (value).
+message FormField {
+  // SDK FieldDto.Id — stable for the same field across the lifetime of the
+  // template; clients can use this as a stable key in caches.
+  int32 id = 1;
+  // Worker-facing question text.
+  string label = 2;
+  // Optional supporting text.
+  string description = 3;
+  // SDK field type name: "Text" | "Number" | "MultiSelect" | "SingleSelect"
+  // | "Picture" | "Comment" | "Date" | "CheckBox" | "EntitySearch" |
+  // "EntitySelect" | "ShowPdf" | "FieldGroup" | "SaveButton" | "Audio" |
+  // "Movie" | "Signature" | "Timer" | "None". Unrecognized values render
+  // as a generic "Unknown" placeholder client-side.
+  string field_type = 4;
+  // True if the eForm marks this field as required.
+  bool required = 5;
+  // Selectable options for SingleSelect / MultiSelect / CheckBox; ignored
+  // for other field types. Order is significant (matches index).
+  repeated string options = 6;
+  // Worker's current answer, encoded as a string per SDK FieldValue
+  // convention. Empty string = not yet answered.
+  string value = 7;
 }

@@ -18,9 +18,12 @@ using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
+using SdkDataItem = Microting.eForm.Infrastructure.Models.DataItem;
+using SdkElement = Microting.eForm.Infrastructure.Models.Element;
 
 namespace BackendConfiguration.Pn.Services.GrpcServices;
 
@@ -207,6 +210,12 @@ public class OpgaverGrpcService(
         var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        // Pull eForm template field structure + current values per backing
+        // SDK Case so the Flutter list view can render fields inline.
+        // Recurrence-only tasks (no SdkCaseId yet) get no fields.
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+
         foreach (var task in result.Model)
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
@@ -231,6 +240,10 @@ public class OpgaverGrpcService(
             };
 
             PopulateAttachments(opgave, envelope);
+            if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
+            {
+                opgave.Fields.AddRange(fields);
+            }
             response.Opgaver.Add(opgave);
         }
 
@@ -320,6 +333,219 @@ public class OpgaverGrpcService(
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Reads the eForm template field structure + current values for each
+    /// task that has a backing SDK Case. Uses
+    /// <c>core.CaseRead(caseId, language)</c> — the same path
+    /// <c>CompliancesGrpcService.ReadComplianceCase</c> takes — which
+    /// returns a <see cref="ReplyElement"/> with <c>ElementList</c> already
+    /// populated with each <see cref="SdkDataItem"/>'s definition AND its
+    /// current worker-supplied value (where one exists), so a single call
+    /// per Case yields everything we need (no separate template + values
+    /// dance, no N templates lookup).
+    ///
+    /// Recurrence-only tasks (<c>SdkCaseId &lt;= 0</c>) are skipped — there
+    /// is no Case row, so no fields can be reported. Per-task SDK lookup
+    /// failures (Case missing, decode error) log a warning and produce an
+    /// empty list for that task; the rest of the result set is unaffected.
+    ///
+    /// Field flattening: <see cref="GroupElement"/>s are walked recursively
+    /// so nested fields surface alongside top-level fields in a single
+    /// list — Flutter's inline renderer doesn't currently distinguish
+    /// nesting depth.
+    /// </summary>
+    private async Task<Dictionary<int, List<FormField>>> LoadFieldsByTaskIdAsync(
+        IReadOnlyCollection<CalendarTaskResponseModel> tasks)
+    {
+        var taskIdToCaseId = tasks
+            .Where(t => t.SdkCaseId is > 0)
+            .GroupBy(t => t.Id)
+            .ToDictionary(g => g.Key, g => g.First().SdkCaseId!.Value);
+
+        var result = new Dictionary<int, List<FormField>>(taskIdToCaseId.Count);
+        if (taskIdToCaseId.Count == 0)
+        {
+            return result;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
+
+        foreach (var (taskId, caseId) in taskIdToCaseId)
+        {
+            try
+            {
+                var theCase = await core.CaseRead(caseId, language).ConfigureAwait(false);
+                if (theCase?.ElementList == null)
+                {
+                    continue;
+                }
+
+                var fields = new List<FormField>();
+                foreach (var element in theCase.ElementList)
+                {
+                    CollectFieldsFromElement(element, fields);
+                }
+                result[taskId] = fields;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "OpgaverGrpcService.LoadFieldsByTaskIdAsync: failed to load FormField for task {TaskId} (SdkCaseId={CaseId})",
+                    taskId, caseId);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Walks a <see cref="SdkElement"/> tree and appends every
+    /// <see cref="SdkDataItem"/> it encounters to <paramref name="target"/>
+    /// as a <see cref="FormField"/>. <see cref="GroupElement"/>s recurse;
+    /// <see cref="DataElement"/> / <see cref="CheckListValue"/> emit their
+    /// own <c>DataItemList</c> as well as fields nested under
+    /// <see cref="DataItemGroup"/>s.
+    /// </summary>
+    private static void CollectFieldsFromElement(SdkElement element, List<FormField> target)
+    {
+        switch (element)
+        {
+            case CheckListValue clv:
+                AppendDataItems(clv.DataItemList, target);
+                AppendDataItemGroups(clv.DataItemGroupList, target);
+                break;
+            case DataElement de:
+                AppendDataItems(de.DataItemList, target);
+                AppendDataItemGroups(de.DataItemGroupList, target);
+                break;
+            case GroupElement ge:
+                if (ge.ElementList != null)
+                {
+                    foreach (var child in ge.ElementList)
+                    {
+                        CollectFieldsFromElement(child, target);
+                    }
+                }
+                break;
+        }
+    }
+
+    private static void AppendDataItems(List<SdkDataItem>? source, List<FormField> target)
+    {
+        if (source == null) return;
+        foreach (var di in source)
+        {
+            target.Add(MapToFormField(di));
+        }
+    }
+
+    private static void AppendDataItemGroups(List<DataItemGroup>? source, List<FormField> target)
+    {
+        if (source == null) return;
+        foreach (var group in source)
+        {
+            AppendDataItems(group.DataItemList, target);
+        }
+    }
+
+    /// <summary>
+    /// Per-type extraction of the worker-facing value + selectable options
+    /// for a <see cref="SdkDataItem"/>. Mirrors the dispatch in
+    /// <c>CompliancesGrpcService.MapDataItems</c>; types not matched here
+    /// fall through to an empty value (and field_type still carries the
+    /// SDK class name so the client renders an "Unknown" placeholder).
+    /// </summary>
+    private static FormField MapToFormField(SdkDataItem di)
+    {
+        var field = new FormField
+        {
+            Id = di.Id,
+            Label = di.Label ?? string.Empty,
+            Description = di.Description?.InderValue ?? string.Empty,
+            FieldType = di.GetType().Name,
+            Required = di.Mandatory
+        };
+
+        switch (di)
+        {
+            case Date d:
+                field.Value = d.DefaultValue ?? string.Empty;
+                break;
+            case Number n:
+                field.Value = n.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                break;
+            case NumberStepper ns:
+                field.Value = ns.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                break;
+            case Text t:
+                field.Value = t.Value ?? string.Empty;
+                break;
+            case Comment c:
+                field.Value = c.Value ?? string.Empty;
+                break;
+            case CheckBox cb:
+                field.Value = cb.Selected ? "1" : "0";
+                break;
+            case ShowPdf sp:
+                field.Value = sp.Value ?? string.Empty;
+                break;
+            case SaveButton sb:
+                field.Value = sb.Value ?? string.Empty;
+                break;
+            case SingleSelect ss:
+                AppendKeyValuePairOptions(ss.KeyValuePairList, field);
+                break;
+            case MultiSelect ms:
+                AppendKeyValuePairOptions(ms.KeyValuePairList, field);
+                break;
+            case EntitySearch es:
+                field.Value = es.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                break;
+            case EntitySelect el:
+                field.Value = el.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                break;
+            default:
+                field.Value = string.Empty;
+                break;
+        }
+
+        return field;
+    }
+
+    /// <summary>
+    /// Populates <see cref="FormField.Options"/> in display order and sets
+    /// <see cref="FormField.Value"/> to the comma-joined values of the
+    /// currently-selected entries (mirroring SDK convention for
+    /// MultiSelect / SingleSelect).
+    /// </summary>
+    private static void AppendKeyValuePairOptions(
+        List<Microting.eForm.Dto.KeyValuePair>? source, FormField field)
+    {
+        if (source == null) return;
+
+        var ordered = source
+            .OrderBy(kvp => int.TryParse(kvp.DisplayOrder, NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out var n) ? n : int.MaxValue)
+            .ToList();
+
+        var selected = new List<string>();
+        foreach (var kvp in ordered)
+        {
+            field.Options.Add(kvp.Value ?? string.Empty);
+            if (kvp.Selected)
+            {
+                selected.Add(kvp.Value ?? string.Empty);
+            }
+        }
+
+        if (selected.Count > 0)
+        {
+            field.Value = string.Join(",", selected);
+        }
     }
 
     /// <summary>
@@ -589,6 +815,9 @@ public class OpgaverGrpcService(
         var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+
         foreach (var task in result.Model)
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
@@ -611,6 +840,10 @@ public class OpgaverGrpcService(
             };
 
             PopulateAttachments(opgave, envelope);
+            if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
+            {
+                opgave.Fields.AddRange(fields);
+            }
             output.Add(opgave);
         }
 
