@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -14,6 +13,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
+using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -446,6 +446,11 @@ public class OpgaverGrpcService(
         }
 
         // 2. Poll loop.
+        // lastErrorType: tracks the exception class of the most recent
+        // consecutive poll failure so we only emit a full stack trace on
+        // the first occurrence (or whenever the failure class changes).
+        // Reset to null on every successful poll.
+        Type? lastErrorType = null;
         while (!ct.IsCancellationRequested)
         {
             try
@@ -495,6 +500,10 @@ public class OpgaverGrpcService(
                         }, ct).ConfigureAwait(false);
                     seen.Remove(id);
                 }
+
+                // Successful poll — clear the consecutive-error tracker so the
+                // next failure class (if any) gets a fresh full stack trace.
+                lastErrorType = null;
             }
             catch (OperationCanceledException)
             {
@@ -502,13 +511,27 @@ public class OpgaverGrpcService(
             }
             catch (Exception ex)
             {
-                // Per-poll failure (DB hiccup, transient I/O) — log and keep
-                // the stream alive. A repeating hard error here will spam the
-                // log but won't kill the subscription; clients can decide to
-                // reconnect on noticeable staleness.
-                logger.LogError(ex,
-                    "OpgaverGrpcService.StreamOpgaveChanges poll failed for property {PropertyId}: {Message}",
-                    propertyId, ex.Message);
+                // Per-poll failure (DB hiccup, transient I/O) — keep the
+                // stream alive; clients can decide to reconnect on
+                // noticeable staleness. To avoid log-spam during sustained
+                // outages (12 stack traces per minute per subscriber), we
+                // only emit a full stack trace on the first occurrence per
+                // consecutive-error streak, and on every change of error
+                // class. Subsequent identical failures get a single-line
+                // warning with type + message.
+                if (lastErrorType != ex.GetType())
+                {
+                    logger.LogError(ex,
+                        "OpgaverGrpcService.StreamOpgaveChanges poll failed for sdkSiteId={SdkSiteId} property={PropertyId}; suppressing further full stack traces until error class changes",
+                        sdkSiteId, propertyId);
+                    lastErrorType = ex.GetType();
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "OpgaverGrpcService.StreamOpgaveChanges poll failed (repeating): {ExType}: {ExMessage}",
+                        ex.GetType().Name, ex.Message);
+                }
             }
         }
     }
@@ -593,18 +616,20 @@ public class OpgaverGrpcService(
     }
 
     /// <summary>
-    /// Stable SHA256 hash over the serialised proto Opgave. The proto
-    /// generator's <c>ToString</c> isn't field-order-stable, but
-    /// <c>JsonSerializer.Serialize</c> over the C# object writes properties
-    /// in declared order, which is sufficient for change detection. We hash
-    /// the JSON bytes (instead of comparing the strings directly) to keep
-    /// the per-entry memory footprint small (~44 base64 chars) — the
-    /// dictionary may hold a few hundred entries per subscriber.
+    /// Stable SHA256 hash over the canonical protobuf wire-format bytes of
+    /// the Opgave. <c>ToByteArray</c> emits a deterministic byte sequence
+    /// for all current scalar/message field types, including future-added
+    /// fields, so this is robust against schema evolution. (JSON-based
+    /// hashing was sufficient for the present Opgave shape but would
+    /// silently break the moment a <c>map&lt;...&gt;</c> field is added,
+    /// since proto map-field serialisation is not order-stable.) We hash
+    /// the bytes (instead of storing them directly) to keep the per-entry
+    /// memory footprint small (~44 base64 chars) — the dictionary may hold
+    /// a few hundred entries per subscriber.
     /// </summary>
     private static string ComputeStateHash(Opgave op)
     {
-        var json = JsonSerializer.Serialize(op);
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        var bytes = SHA256.HashData(op.ToByteArray());
         return Convert.ToBase64String(bytes);
     }
 
