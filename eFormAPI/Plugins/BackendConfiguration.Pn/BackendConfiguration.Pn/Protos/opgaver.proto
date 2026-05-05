@@ -108,6 +108,8 @@ message Opgave {
   google.protobuf.Timestamp updated_at = 11;
   string comment = 12;
   repeated Attachment attachments = 13;
+  // eform template id this opgave is backed by; clients use this to look up template-specific field structure
+  int32 eform_id = 14;
 }
 
 message Attachment {
