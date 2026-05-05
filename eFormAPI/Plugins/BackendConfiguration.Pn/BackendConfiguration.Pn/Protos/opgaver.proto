@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package microting.opgaver;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Opgaver";
+
+import "google/protobuf/timestamp.proto";
+import "documents.proto";
+
+service Opgaver {
+  rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
+  rpc ListTavler(ListTavlerRequest) returns (ListTavlerResponse);
+  rpc ListOpgaver(ListOpgaverRequest) returns (ListOpgaverResponse);
+  rpc StreamOpgaveChanges(StreamOpgaveChangesRequest) returns (stream OpgaveChange);
+  rpc CompleteOpgave(CompleteOpgaveRequest) returns (CompleteOpgaveResponse);
+  rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
+  rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
+  rpc RemovePhoto(RemovePhotoRequest) returns (RemovePhotoResponse);
+}
+
+message UploadPhotoChunk {
+  oneof kind {
+    UploadPhotoMeta meta = 1;
+    bytes chunk = 2;
+  }
+}
+message UploadPhotoMeta {
+  string opgave_id = 1;
+  int32 slot = 2;
+  string content_type = 3;
+  int64 client_ts_unix = 4;
+}
+message UploadPhotoResponse {
+  string storage_id = 1;
+}
+
+message RemovePhotoRequest {
+  string opgave_id = 1;
+  int32 slot = 2;
+  int64 client_ts_unix = 3;
+}
+message RemovePhotoResponse {}
+
+message CompleteOpgaveRequest {
+  string opgave_id = 1;
+  bool completed = 2;
+  string completed_by = 3;
+  int64 client_ts_unix = 4;
+}
+message CompleteOpgaveResponse { Opgave opgave = 1; }
+
+message SetCommentRequest {
+  string opgave_id = 1;
+  string text = 2;
+  int64 client_ts_unix = 3;
+}
+message SetCommentResponse { Opgave opgave = 1; }
+
+message ListEjendommeRequest {}
+message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
+
+message ListTavlerRequest { string ejendom_id = 1; }
+message ListTavlerResponse { repeated Tavle tavler = 1; }
+
+message ListOpgaverRequest {
+  string ejendom_id = 1;
+  string tavle_id = 2;
+  string from_date_key = 3;
+  string to_date_key = 4;
+}
+message ListOpgaverResponse { repeated Opgave opgaver = 1; }
+
+message StreamOpgaveChangesRequest {
+  string ejendom_id = 1;
+  string tavle_id = 2;
+}
+
+message OpgaveChange {
+  oneof kind {
+    Opgave upserted = 1;
+    string removed_id = 2;
+  }
+}
+
+message Ejendom {
+  string id = 1;
+  string name = 2;
+}
+
+message Tavle {
+  string id = 1;
+  string ejendom_id = 2;
+  string name = 3;
+  string color_hex = 4;
+}
+
+message Opgave {
+  string id = 1;
+  string ejendom_id = 2;
+  string tavle_id = 3;
+  string plan_day_key = 4;
+  string planned_at = 5;
+  string task_text = 6;
+  string calendar_color = 7;
+  bool completed = 8;
+  string completed_by = 9;
+  string description_html = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  string comment = 12;
+  repeated Attachment attachments = 13;
+}
+
+message Attachment {
+  microting.documents.AttachmentSource source = 1;
+  string name = 2;
+}
