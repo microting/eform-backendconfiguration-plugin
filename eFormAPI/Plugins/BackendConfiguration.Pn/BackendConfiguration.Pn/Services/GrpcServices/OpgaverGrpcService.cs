@@ -901,7 +901,7 @@ public class OpgaverGrpcService(
         // Look up the AreaRulePlanning to learn its property + ItemPlanningId.
         // ItemPlanningId is the join key into Compliances.PlanningId.
         var arp = await dbContext.AreaRulePlannings
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .FirstOrDefaultAsync(x => x.Id == opgaveId)
             .ConfigureAwait(false);
 
@@ -924,7 +924,7 @@ public class OpgaverGrpcService(
         // anything else as a future occurrence with no Case to update — so the
         // absence of a compliance row is a hard error here.
         var compliance = await dbContext.Compliances
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .Where(x => x.PlanningId == arp.ItemPlanningId)
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
@@ -977,12 +977,12 @@ public class OpgaverGrpcService(
             // admin "filled cases" view (queries PlanningCases WHERE Status=100
             // AND MicrotingSdkCaseDoneAt >= fromDate) picks up device completions.
             var siteName = (await sdkDbContext.Sites
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
                 .FirstOrDefaultAsync(x => x.Id == sdkSiteId)
                 .ConfigureAwait(false))?.Name ?? string.Empty;
 
             var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
                 .FirstOrDefaultAsync(x =>
                     x.MicrotingSdkCaseId == foundCase.Id)
                 .ConfigureAwait(false);
@@ -1151,7 +1151,7 @@ public class OpgaverGrpcService(
         var opgaveId = ParseOpgaveId(request.OpgaveId);
 
         var arp = await dbContext.AreaRulePlannings
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .FirstOrDefaultAsync(x => x.Id == opgaveId)
             .ConfigureAwait(false);
 
@@ -1374,7 +1374,7 @@ public class OpgaverGrpcService(
 
         // 3. Auth + property access. Mirrors CompleteOpgave / SetComment.
         var arp = await dbContext.AreaRulePlannings
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .FirstOrDefaultAsync(x => x.Id == opgaveId)
             .ConfigureAwait(false);
 
@@ -1564,7 +1564,7 @@ public class OpgaverGrpcService(
         }
 
         var arp = await dbContext.AreaRulePlannings
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .FirstOrDefaultAsync(x => x.Id == opgaveId)
             .ConfigureAwait(false);
 
@@ -1761,7 +1761,7 @@ public class OpgaverGrpcService(
         var opgaveId = ParseOpgaveId(request.OpgaveId);
 
         var arp = await dbContext.AreaRulePlannings
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .FirstOrDefaultAsync(x => x.Id == opgaveId)
             .ConfigureAwait(false);
 
