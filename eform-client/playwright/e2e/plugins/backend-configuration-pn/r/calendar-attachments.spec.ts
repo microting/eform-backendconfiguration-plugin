@@ -61,6 +61,9 @@ const worker: PropertyWorker = {
 };
 
 let seeded = false;
+// Shared across J1..J6 — J1 sets it, J2..J6 read it. Avoids fragile
+// regex matching on `.task-block` text and resists random-suffix collision.
+let j1EventTitle = '';
 
 // Fixtures live next to the spec inside e2e/plugins/backend-configuration-pn/
 // so the CI workflow's existing `cp -av` of that directory picks them up.
@@ -144,6 +147,7 @@ test.describe.serial('Calendar event attachments', () => {
     test.setTimeout(180000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `J1-${generateRandmString(5)}`;
+    j1EventTitle = title;  // shared with J2..J6
 
     // 1. Open create modal at next-week Monday@9, fill required fields.
     await calendarPage.openCreateModalAtSlot(0, 9);
@@ -237,8 +241,7 @@ test.describe.serial('Calendar event attachments', () => {
     await page.waitForTimeout(1500);
     // We were on next-week when we created the event; advance one week to
     // the same view as before. openCreateModalAtSlot already advanced once.
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
-    await page.waitForTimeout(1500);
+    await calendarPage.navigateToNextWeek();
 
     // 7. Re-open the event → expect 3 attachment rows.
     await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
@@ -277,8 +280,7 @@ test.describe.serial('Calendar event attachments', () => {
     await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
-    await page.waitForTimeout(1500);
+    await calendarPage.navigateToNextWeek();
 
     await calendarPage.findEventBlock(title).click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
@@ -309,11 +311,10 @@ test.describe.serial('Calendar event attachments', () => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     // The J1 event title was randomized inside that test. Find any seeded
     // event with the J1- prefix; J2 runs serially after J1 so this is safe.
-    const j1Block = page.locator('.task-block').filter({ hasText: /^J1-/ }).first();
+    const j1Block = page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first();
 
     // Navigate forward one week to where J1 created its event.
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
-    await page.waitForTimeout(1500);
+    await calendarPage.navigateToNextWeek();
     await j1Block.waitFor({ state: 'visible', timeout: 10000 });
 
     // 1. Open the existing event in edit mode (preview popover → Edit button).
@@ -373,11 +374,10 @@ test.describe.serial('Calendar event attachments', () => {
     await calendarPage.ensureSidebarOpen();
     await calendarPage.selectProperty(property.name);
     await page.waitForTimeout(1500);
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
-    await page.waitForTimeout(1500);
+    await calendarPage.navigateToNextWeek();
 
     // 7. Reopen the same event in edit mode and assert all 3 attachments.
-    await page.locator('.task-block').filter({ hasText: /^J1-/ }).first().click();
+    await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
     await calendarPage.getPreviewEditButton().click();
     await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
@@ -408,9 +408,8 @@ test.describe.serial('Calendar event attachments', () => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
 
     // Navigate to J1's event week and reopen in edit mode.
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
-    await page.waitForTimeout(1500);
-    await page.locator('.task-block').filter({ hasText: /^J1-/ }).first().click();
+    await calendarPage.navigateToNextWeek();
+    await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
     await calendarPage.getPreviewEditButton().click();
     await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
@@ -461,7 +460,7 @@ test.describe.serial('Calendar event attachments', () => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
 
     // Reopen the event (state from J3 — modal is closed).
-    await page.locator('.task-block').filter({ hasText: /^J1-/ }).first().click();
+    await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
     await calendarPage.getPreviewEditButton().click();
     await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
@@ -521,7 +520,7 @@ test.describe.serial('Calendar event attachments', () => {
     testInfo.attachments.push({ name: 'oversized.pdf', path: tmpPdf, contentType: 'application/pdf' });
 
     try {
-      await page.locator('.task-block').filter({ hasText: /^J1-/ }).first().click();
+      await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
       await calendarPage.getPreviewEditButton().click();
       await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
@@ -585,7 +584,7 @@ test.describe.serial('Calendar event attachments', () => {
     testInfo.attachments.push({ name: 'unsupported.docx', path: tmpDocx });
 
     try {
-      await page.locator('.task-block').filter({ hasText: /^J1-/ }).first().click();
+      await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
       await calendarPage.getPreviewEditButton().click();
       await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
