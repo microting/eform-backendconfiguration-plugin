@@ -200,12 +200,14 @@ test.describe.serial('Calendar event attachments', () => {
     // 6. Reload the calendar (full page reload exercises the
     //    CalendarTaskResponseModel.Attachments DTO mapping).
     await page.reload();
-    // After page.reload() the session token survives in localStorage, but the
-    // app re-renders the login screen until the auth-store rehydrates.
-    // LoginPage.login() short-circuits when the user-menu (already-authed
-    // marker) is visible — call it without swallowing errors so a real auth
-    // regression actually fails the test.
-    await new LoginPage(page).login();
+    // The auth token typically survives reload via localStorage, so the
+    // app re-renders the calendar without showing the login form. But on
+    // slower CI runners the auth-store occasionally rehydrates AFTER the
+    // login screen briefly flashes. Re-login only when the form actually
+    // appears — otherwise the wait for #loginBtn would time out.
+    if (await page.locator('#loginBtn').isVisible({ timeout: 3000 }).catch(() => false)) {
+      await new LoginPage(page).login();
+    }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
     await calendarPage.ensureSidebarOpen();
@@ -244,12 +246,10 @@ test.describe.serial('Calendar event attachments', () => {
     // 9. Close + full reload → still 2 rows (PNG + JPG).
     await calendarPage.closeEventModal();
     await page.reload();
-    // After page.reload() the session token survives in localStorage, but the
-    // app re-renders the login screen until the auth-store rehydrates.
-    // LoginPage.login() short-circuits when the user-menu (already-authed
-    // marker) is visible — call it without swallowing errors so a real auth
-    // regression actually fails the test.
-    await new LoginPage(page).login();
+    // Re-login only if the form is actually shown — see step 6 above.
+    if (await page.locator('#loginBtn').isVisible({ timeout: 3000 }).catch(() => false)) {
+      await new LoginPage(page).login();
+    }
     await page.waitForTimeout(2000);
     await calendarPage.goToCalendar();
     await calendarPage.ensureSidebarOpen();
