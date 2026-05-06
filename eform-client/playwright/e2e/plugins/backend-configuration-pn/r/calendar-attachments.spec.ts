@@ -459,7 +459,9 @@ test.describe.serial('Calendar event attachments', () => {
     test.setTimeout(120000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
 
-    // Reopen the event (state from J3 — modal is closed).
+    // beforeEach resets to today's week — navigate forward to where J1
+    // created the event before locating the task block.
+    await calendarPage.navigateToNextWeek();
     await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
     await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
     await calendarPage.getPreviewEditButton().click();
@@ -520,6 +522,8 @@ test.describe.serial('Calendar event attachments', () => {
     testInfo.attachments.push({ name: 'oversized.pdf', path: tmpPdf, contentType: 'application/pdf' });
 
     try {
+      // beforeEach resets to today's week — navigate forward to J1's event.
+      await calendarPage.navigateToNextWeek();
       await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
       await calendarPage.getPreviewEditButton().click();
@@ -584,6 +588,8 @@ test.describe.serial('Calendar event attachments', () => {
     testInfo.attachments.push({ name: 'unsupported.docx', path: tmpDocx });
 
     try {
+      // beforeEach resets to today's week — navigate forward to J1's event.
+      await calendarPage.navigateToNextWeek();
       await page.locator(`.task-block`).filter({ hasText: j1EventTitle }).first().click();
       await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
       await calendarPage.getPreviewEditButton().click();
