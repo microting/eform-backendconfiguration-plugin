@@ -5,14 +5,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
@@ -21,6 +25,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 
 public class BackendConfigurationCalendarService(
     IBackendConfigurationLocalizationService localizationService,
@@ -74,6 +79,7 @@ public class BackendConfigurationCalendarService(
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningTags)
+                .Include(x => x.AreaRulePlanningFiles)
                 .ToListAsync();
 
             // Batch-load plannings to avoid N+1 queries
@@ -241,7 +247,8 @@ public class BackendConfigurationCalendarService(
                         ExceptionId = exception?.Id,
                         EformId = arp.AreaRule?.EformId,
                         ItemPlanningTagId = arp.ItemPlanningTagId,
-                        DescriptionHtml = planning.Description
+                        DescriptionHtml = planning.Description,
+                        Attachments = MapAttachments(arp)
                     };
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -305,7 +312,8 @@ public class BackendConfigurationCalendarService(
                             ExceptionId = orphan.Id,
                             EformId = arp.AreaRule?.EformId,
                             ItemPlanningTagId = arp.ItemPlanningTagId,
-                            DescriptionHtml = planning.Description
+                            DescriptionHtml = planning.Description,
+                            Attachments = MapAttachments(arp)
                         };
 
                         if (ShouldIncludeTask(orphanModel, requestModel))
@@ -377,7 +385,8 @@ public class BackendConfigurationCalendarService(
                     ExceptionId = movedIn.Id,
                     EformId = arp.AreaRule?.EformId,
                     ItemPlanningTagId = arp.ItemPlanningTagId,
-                    DescriptionHtml = movedPlanning.Description
+                    DescriptionHtml = movedPlanning.Description,
+                    Attachments = MapAttachments(arp)
                 };
 
                 if (ShouldIncludeTask(movedModel, requestModel))
@@ -397,6 +406,7 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.AreaRule)
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
+                .Include(x => x.AreaRulePlanningFiles)
                 .ToListAsync();
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
@@ -485,7 +495,8 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
-                        : null
+                        : null,
+                    Attachments = MapAttachments(arp)
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -1837,5 +1848,342 @@ public class BackendConfigurationCalendarService(
         }
 
         return folderId;
+    }
+
+    // ---------------------------------------------------------------------
+    // Attachment-related helpers + endpoints (calendar event-attachments)
+    // ---------------------------------------------------------------------
+
+    private const long MaxAttachmentBytes = 25L * 1024 * 1024;
+    private const int MaxAttachmentsPerPlanning = 10;
+
+    private static readonly Dictionary<string, string[]> AllowedMimeExtensions = new()
+    {
+        ["application/pdf"] = new[] { ".pdf" },
+        ["image/png"] = new[] { ".png" },
+        ["image/jpeg"] = new[] { ".jpg", ".jpeg" }
+    };
+
+    /// <summary>
+    /// Project the eager-loaded AreaRulePlanningFiles collection (filtered to
+    /// non-removed rows) onto the calendar response DTO. Returns an empty
+    /// list when the navigation is null or all rows are soft-deleted.
+    /// </summary>
+    private static List<CalendarTaskAttachmentDto> MapAttachments(AreaRulePlanning? arp)
+    {
+        if (arp?.AreaRulePlanningFiles == null) return new List<CalendarTaskAttachmentDto>();
+        return arp.AreaRulePlanningFiles
+            .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(f => new CalendarTaskAttachmentDto
+            {
+                Id = f.Id,
+                OriginalFileName = f.OriginalFileName ?? string.Empty,
+                MimeType = f.MimeType ?? string.Empty,
+                SizeBytes = f.SizeBytes,
+                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}"
+            })
+            .ToList();
+    }
+
+    public async Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int taskId, IFormFile file)
+    {
+        try
+        {
+            // Defensive: reject empty multipart parts immediately so the
+            // remainder of the pipeline can assume a real binary.
+            if (file == null || file.Length == 0)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileNotFound"));
+            }
+
+            if (file.Length > MaxAttachmentBytes)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileTooLarge"));
+            }
+
+            // Browsers may attach a parameter such as ";charset=binary" to the
+            // Content-Type header — strip parameters before comparing against
+            // the allow-list, otherwise legitimate uploads get rejected.
+            var mimeType = (file.ContentType ?? string.Empty)
+                .Split(';')[0]
+                .Trim()
+                .ToLowerInvariant();
+            if (!AllowedMimeExtensions.TryGetValue(mimeType, out var allowedExts))
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileTypeNotAllowed"));
+            }
+
+            // Defence-in-depth: even when the MIME is one we accept, the file
+            // extension must agree — otherwise an attacker could upload an
+            // executable disguised as a PDF and rely on the browser sniffing
+            // the content type back to something dangerous.
+            var ext = Path.GetExtension(file.FileName ?? string.Empty).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !allowedExts.Contains(ext))
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileExtensionMimeMismatch"));
+            }
+
+            var planning = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (planning == null)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            var existingCount = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .CountAsync();
+            if (existingCount >= MaxAttachmentsPerPlanning)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("AttachmentLimitReached"));
+            }
+
+            // We stage the upload to an intermediate file first so we can MD5
+            // the on-disk copy — the same pattern used by
+            // BackendConfigurationFilesService.Create and EFormFilesController.
+            // Once we know the checksum we move the bytes to a deterministic
+            // canonical path keyed on the checksum, then hand it to the SDK
+            // for storage. The intermediate (ticks/guid-named) file is
+            // *always* deleted in the finally block — that prevents the
+            // disk leak that the previous implementation produced. The
+            // canonical-named file is what FileLocation records and is what
+            // the S3-disabled fallback in DownloadFile reads from, so it is
+            // intentionally retained.
+            var folder = Path.Combine(Path.GetTempPath(), "calendar-attachments");
+            Directory.CreateDirectory(folder);
+            var intermediatePath = Path.Combine(folder, $"{DateTime.UtcNow.Ticks}_{Guid.NewGuid():N}{ext}");
+
+            try
+            {
+                await using (var stream = new FileStream(intermediatePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                string checksum;
+                using (var md5 = MD5.Create())
+                {
+                    await using var stream = System.IO.File.OpenRead(intermediatePath);
+                    var hashBytes = await md5.ComputeHashAsync(stream);
+                    checksum = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                }
+
+                var storageFileName = $"{checksum}{ext}";
+                var canonicalPath = Path.Combine(folder, storageFileName);
+
+                // Move staged bytes to the canonical path. If the canonical
+                // file already exists (same checksum re-upload) keep it as-is.
+                if (System.IO.File.Exists(canonicalPath))
+                {
+                    System.IO.File.Delete(intermediatePath);
+                }
+                else
+                {
+                    System.IO.File.Move(intermediatePath, canonicalPath);
+                }
+
+                var core = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                // Mirror EFormFilesController.AddNewImage's UploadedData
+                // shape — the SDK UploadedData does NOT carry the audit
+                // fields (those live on the Backend-Configuration-side
+                // UploadedData, a different entity). We attribute the
+                // upload to the user via UploaderId; UploaderType is left
+                // unset to match the canonical platform pattern (the
+                // earlier "system" value mis-reported a user-initiated
+                // upload as a background-system action).
+                var uploadedData = new SdkUploadedData
+                {
+                    Checksum = checksum,
+                    FileName = storageFileName,
+                    FileLocation = canonicalPath,
+                    Extension = ext.TrimStart('.'),
+                    CurrentFile = storageFileName,
+                    UploaderId = userService.UserId
+                };
+                await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
+
+                // SDK PutFileToStorageSystem is a no-op when S3 is disabled.
+                // In that case the canonical file we just moved IS the
+                // persistence layer, and DownloadFile reads it back via
+                // FileLocation. When S3 is enabled the SDK uploads from the
+                // canonical path; the canonical local file is left in place
+                // (matching the existing platform behaviour in
+                // BackendConfigurationFilesService.Create).
+                await core.PutFileToStorageSystem(canonicalPath, storageFileName).ConfigureAwait(false);
+
+                var arpFile = new AreaRulePlanningFile
+                {
+                    AreaRulePlanningId = taskId,
+                    UploadedDataId = uploadedData.Id,
+                    OriginalFileName = file.FileName ?? string.Empty,
+                    MimeType = mimeType,
+                    SizeBytes = file.Length,
+                    CreatedByUserId = userService.UserId,
+                    UpdatedByUserId = userService.UserId
+                };
+                await arpFile.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                return new OperationDataResult<CalendarTaskAttachmentDto>(true, new CalendarTaskAttachmentDto
+                {
+                    Id = arpFile.Id,
+                    OriginalFileName = arpFile.OriginalFileName,
+                    MimeType = arpFile.MimeType,
+                    SizeBytes = arpFile.SizeBytes,
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{arpFile.Id}"
+                });
+            }
+            finally
+            {
+                // Belt-and-braces: ensure the intermediate (ticks/guid-named)
+                // staging file is gone regardless of which code path ran.
+                // The canonical (checksum-named) file is the one we keep.
+                try
+                {
+                    if (System.IO.File.Exists(intermediatePath))
+                    {
+                        System.IO.File.Delete(intermediatePath);
+                    }
+                }
+                catch
+                {
+                    // Cleanup is best-effort — we don't want a stale-handle
+                    // exception masking the original outcome.
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.UploadFile: {Message}", e.Message);
+            return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                $"{localizationService.GetString("ErrorWhileUploadingAttachment")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationDataResult<List<CalendarTaskAttachmentDto>>> ListFiles(int taskId)
+    {
+        try
+        {
+            var files = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.Id)
+                .Select(x => new CalendarTaskAttachmentDto
+                {
+                    Id = x.Id,
+                    OriginalFileName = x.OriginalFileName ?? string.Empty,
+                    MimeType = x.MimeType ?? string.Empty,
+                    SizeBytes = x.SizeBytes,
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}"
+                })
+                .ToListAsync();
+            return new OperationDataResult<List<CalendarTaskAttachmentDto>>(true, files);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.ListFiles: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarTaskAttachmentDto>>(false,
+                $"{localizationService.GetString("ErrorWhileListingAttachments")}: {e.Message}");
+        }
+    }
+
+    public async Task<CalendarFileDownload?> DownloadFile(int taskId, int fileId)
+    {
+        try
+        {
+            var arpFile = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.Id == fileId)
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (arpFile == null) return null;
+
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            var uploadedData = await sdkDbContext.UploadedDatas
+                .Where(x => x.Id == arpFile.UploadedDataId)
+                .FirstOrDefaultAsync();
+            if (uploadedData == null) return null;
+
+            // Determine S3-vs-local through the SAME mechanism the SDK itself
+            // uses for PutFileToStorageSystem (Core.GetSdkSetting). This way
+            // the read path can never disagree with the write path: if the
+            // SDK persisted to S3, we read from S3; if the SDK no-op'd, we
+            // read the canonical local file that UploadFile retained at
+            // FileLocation.
+            var s3Setting = await core.GetSdkSetting(Settings.s3Enabled).ConfigureAwait(false);
+            var s3Enabled = string.Equals(s3Setting, "true", StringComparison.OrdinalIgnoreCase);
+
+            Stream content;
+            if (s3Enabled)
+            {
+                var s3Response = await core.GetFileFromS3Storage(uploadedData.FileName);
+                content = s3Response.ResponseStream;
+            }
+            else
+            {
+                if (!System.IO.File.Exists(uploadedData.FileLocation))
+                {
+                    return null;
+                }
+                content = new FileStream(uploadedData.FileLocation, FileMode.Open, FileAccess.Read);
+            }
+
+            return new CalendarFileDownload
+            {
+                Content = content,
+                MimeType = string.IsNullOrEmpty(arpFile.MimeType) ? "application/octet-stream" : arpFile.MimeType,
+                FileName = arpFile.OriginalFileName ?? string.Empty
+            };
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.DownloadFile: {Message}", e.Message);
+            return null;
+        }
+    }
+
+    public async Task<OperationResult> DeleteFile(int taskId, int fileId)
+    {
+        try
+        {
+            var arpFile = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.Id == fileId)
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (arpFile == null)
+            {
+                return new OperationResult(false, localizationService.GetString("FileNotFound"));
+            }
+
+            arpFile.UpdatedByUserId = userService.UserId;
+            // Soft-delete the join row; intentionally do NOT delete the SDK
+            // UploadedData so the audit chain to the original blob survives.
+            await arpFile.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            return new OperationResult(true);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.DeleteFile: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileDeletingAttachment")}: {e.Message}");
+        }
     }
 }

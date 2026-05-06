@@ -35,4 +35,5 @@ public class CalendarTaskResponseModel
     public int? SdkCaseId { get; set; }
     public int? ItemPlanningTagId { get; set; }
     public string? DescriptionHtml { get; set; }
+    public List<CalendarTaskAttachmentDto> Attachments { get; set; } = new();
 }

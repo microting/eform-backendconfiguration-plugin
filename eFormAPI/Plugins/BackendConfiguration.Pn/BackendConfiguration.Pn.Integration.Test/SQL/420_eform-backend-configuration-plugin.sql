@@ -207,6 +207,75 @@ LOCK TABLES `AreaRuleInitialFields` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `AreaRulePlanningFiles`
+--
+
+DROP TABLE IF EXISTS `AreaRulePlanningFiles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `AreaRulePlanningFiles` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `AreaRulePlanningId` int(11) NOT NULL,
+  `UploadedDataId` int(11) NOT NULL,
+  `OriginalFileName` varchar(255) DEFAULT NULL,
+  `MimeType` varchar(50) DEFAULT NULL,
+  `SizeBytes` bigint(20) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_AreaRulePlanningFiles_AreaRulePlanningId` (`AreaRulePlanningId`),
+  CONSTRAINT `FK_AreaRulePlanningFiles_AreaRulePlannings_AreaRulePlanningId` FOREIGN KEY (`AreaRulePlanningId`) REFERENCES `AreaRulePlannings` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `AreaRulePlanningFiles`
+--
+
+LOCK TABLES `AreaRulePlanningFiles` WRITE;
+/*!40000 ALTER TABLE `AreaRulePlanningFiles` DISABLE KEYS */;
+/*!40000 ALTER TABLE `AreaRulePlanningFiles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `AreaRulePlanningFileVersions`
+--
+
+DROP TABLE IF EXISTS `AreaRulePlanningFileVersions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `AreaRulePlanningFileVersions` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `AreaRulePlanningFileId` int(11) NOT NULL,
+  `AreaRulePlanningId` int(11) NOT NULL,
+  `UploadedDataId` int(11) NOT NULL,
+  `OriginalFileName` varchar(255) DEFAULT NULL,
+  `MimeType` varchar(50) DEFAULT NULL,
+  `SizeBytes` bigint(20) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `AreaRulePlanningFileVersions`
+--
+
+LOCK TABLES `AreaRulePlanningFileVersions` WRITE;
+/*!40000 ALTER TABLE `AreaRulePlanningFileVersions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `AreaRulePlanningFileVersions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `AreaRulePlanningTagVersion`
 --
 

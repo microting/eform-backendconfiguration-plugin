@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
+using Microsoft.AspNetCore.Http;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
@@ -18,4 +19,8 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);
     Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model);
     Task<OperationResult> DeleteBoard(int id);
+    Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int taskId, IFormFile file);
+    Task<OperationDataResult<List<CalendarTaskAttachmentDto>>> ListFiles(int taskId);
+    Task<CalendarFileDownload?> DownloadFile(int taskId, int fileId);
+    Task<OperationResult> DeleteFile(int taskId, int fileId);
 }
