@@ -16,6 +16,7 @@ service Opgaver {
   rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
   rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
   rpc RemovePhoto(RemovePhotoRequest) returns (RemovePhotoResponse);
+  rpc SetFieldValue(SetFieldValueRequest) returns (SetFieldValueResponse);
 }
 
 message UploadPhotoChunk {
@@ -55,6 +56,14 @@ message SetCommentRequest {
   int64 client_ts_unix = 3;
 }
 message SetCommentResponse { Opgave opgave = 1; }
+
+message SetFieldValueRequest {
+  string opgave_id = 1;
+  int32 field_id = 2;
+  string value = 3;
+  int64 client_ts_unix = 4;
+}
+message SetFieldValueResponse { Opgave opgave = 1; }
 
 message ListEjendommeRequest {}
 message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
