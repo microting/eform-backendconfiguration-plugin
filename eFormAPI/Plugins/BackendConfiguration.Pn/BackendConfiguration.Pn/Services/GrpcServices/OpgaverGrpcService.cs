@@ -466,7 +466,7 @@ public class OpgaverGrpcService(
             Id = di.Id,
             Label = di.Label ?? string.Empty,
             Description = di.Description?.InderValue ?? string.Empty,
-            FieldType = di.GetType().Name,
+            FieldType = di is Field sdkField ? sdkField.FieldType : di.GetType().Name,
             Required = di.Mandatory
         };
 
@@ -507,6 +507,18 @@ public class OpgaverGrpcService(
                 break;
             case EntitySelect el:
                 field.Value = el.DefaultValue.ToString(CultureInfo.InvariantCulture);
+                break;
+            case Field f:
+                // SDK runtime wrapper (returned by CaseRead) — carries the actual answer value
+                // and the canonical FieldType string (e.g. "Text", "Number", "CheckBox", ...).
+                if (f.KeyValuePairList?.Count > 0)
+                {
+                    AppendKeyValuePairOptions(f.KeyValuePairList, field);
+                }
+                else
+                {
+                    field.Value = f.FieldValue ?? string.Empty;
+                }
                 break;
             default:
                 field.Value = string.Empty;
