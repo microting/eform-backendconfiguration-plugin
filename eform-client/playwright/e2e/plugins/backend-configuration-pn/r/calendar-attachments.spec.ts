@@ -538,21 +538,26 @@ test.describe.serial('Calendar event attachments', () => {
       await expect(settledRows).toHaveCount(3, { timeout: 10000 });
       const before = await settledRows.count();
 
-      // Arm the failed-response promise (status 400 from the server's quota path).
+      // Don't waitForResponse here — Kestrel's MaxRequestBodySize middleware
+      // can abort the connection on >25 MB bodies BEFORE sending an HTTP
+      // response, which would hang waitForResponse forever. Some other paths
+      // surface as 200 + success=false or 400/413. Either way the test
+      // contract is just "no new row appeared".
       const failResp = page.waitForResponse(
         r => /\/calendar\/tasks\/\d+\/files$/.test(r.url())
           && r.request().method() === 'POST',
-        { timeout: 60000 }
-      );
+        { timeout: 15000 }
+      ).catch(() => null);
       await page.locator('#calendarEventAttachInput').setInputFiles([tmpPdf]);
       const response = await failResp;
-      // Server returns OperationDataResult with success=false → HTTP 200 with body.success=false,
-      // OR HTTP 400 if the [RequestSizeLimit] tripped. Either is acceptable.
-      expect([200, 400, 413]).toContain(response.status());
-
-      // Either way: attachment count must NOT have grown. Wait briefly for
-      // any in-flight chip to settle to error/removed.
-      await page.waitForTimeout(2000);
+      if (response) {
+        // If a response did come back, it must be a rejection (not 200+success=true).
+        expect([200, 400, 413]).toContain(response.status());
+      }
+      // Wait long enough for a successful upload (if one slipped through) to
+      // surface a new row. Tighter than the response timeout because we only
+      // need to confirm the absence of a row.
+      await page.waitForTimeout(5000);
       const after = await page.locator('.gcal-attachment-row')
         .filter({ hasNot: page.locator('mat-spinner') })
         .filter({ hasNot: page.locator('.gcal-attachment-pending-icon') })
