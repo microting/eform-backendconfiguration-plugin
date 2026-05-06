@@ -1799,14 +1799,26 @@ public class OpgaverGrpcService(
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
 
-        // Single-field update list: "fieldId|value".
-        // The SDK CaseUpdate API validates field ownership and writes the value;
-        // CaseUpdateFieldValues then syncs the FieldValues table — same two-call
-        // pattern as BackendConfigurationCaseService.Update and
-        // CompliancesGrpcService.UpdateComplianceCase.
+        // Resolve the FieldValue row PK from the (caseId, eFormFieldId) pair.
+        // Core.CaseUpdate's wire format is "[fieldValueId]|[value]" where fieldValueId
+        // is the FieldValues table PK, not the eForm template field.Id. Without this
+        // lookup the SDK silently fails (or updates a random unrelated FieldValue row
+        // that happens to have Id == request.FieldId).
+        var fieldValueRowId = await sdkDbContext.FieldValues
+            .Where(fv => fv.CaseId == caseId && fv.FieldId == request.FieldId)
+            .Select(fv => fv.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (fieldValueRowId == 0)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound,
+                $"No FieldValue row exists for case {caseId} field {request.FieldId}."));
+        }
+
         var fieldValueList = new List<string>
         {
-            $"{request.FieldId}|{request.Value ?? string.Empty}"
+            $"{fieldValueRowId}|{request.Value ?? string.Empty}"
         };
 
         try
