@@ -1675,6 +1675,182 @@ public class OpgaverGrpcService(
         public string ContentType { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Updates a single eForm field value on the backing SDK Case and returns
+    /// the refreshed Opgave so the Flutter client can reconcile in one round
+    /// trip.
+    ///
+    /// Field-value wire format: the SDK <c>core.CaseUpdate</c> method accepts a
+    /// list of <c>"fieldId|value"</c> strings (same convention used by
+    /// <c>CaseUpdateHelper.GetFieldList</c> in every existing update path). We
+    /// construct a single-element list from the caller-supplied
+    /// <c>field_id</c> and <c>value</c>, which lets the SDK validate field
+    /// ownership and persist the answer atomically.
+    ///
+    /// After <c>CaseUpdate</c>, we call <c>CaseUpdateFieldValues</c> to sync
+    /// the SDK's FieldValues table — same two-call pattern as
+    /// <c>BackendConfigurationCaseService.Update</c> and
+    /// <c>CompliancesGrpcService.UpdateComplianceCase</c>.
+    ///
+    /// The response Opgave is assembled by re-reading the calendar task and
+    /// reloading fields via <c>LoadFieldsByTaskIdAsync</c>, identical to
+    /// the pattern used in <c>SetComment</c>. An envelope read is included so
+    /// any comment / photos already written remain visible in the response.
+    ///
+    /// Authorization mirrors <c>SetComment</c>: caller must have a
+    /// <c>PropertyWorker</c> relationship to the task's property. The compliance
+    /// must exist (and may be removed/completed — same rationale as SetComment:
+    /// a worker might want to fill in a field after marking the task done).
+    /// </summary>
+    public override async Task<SetFieldValueResponse> SetFieldValue(
+        SetFieldValueRequest request,
+        ServerCallContext context)
+    {
+        if (request.FieldId <= 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument,
+                "field_id must be a positive integer."));
+        }
+
+        var opgaveId = ParseOpgaveId(request.OpgaveId);
+
+        var arp = await dbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .ConfigureAwait(false);
+
+        if (arp == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound,
+                $"Opgave {opgaveId} not found."));
+        }
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, arp.PropertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the opgave's property."));
+        }
+
+        // Accept the compliance row regardless of WorkflowState — same rationale
+        // as SetComment: a worker can write field values on a just-completed task.
+        var compliance = await dbContext.Compliances
+            .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .OrderBy(x => x.Deadline)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (compliance == null)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                $"Opgave {opgaveId} has no backing Case — field values cannot be persisted yet."));
+        }
+
+        var caseId = compliance.MicrotingSdkCaseId;
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
+
+        // Single-field update list: "fieldId|value".
+        // The SDK CaseUpdate API validates field ownership and writes the value;
+        // CaseUpdateFieldValues then syncs the FieldValues table — same two-call
+        // pattern as BackendConfigurationCaseService.Update and
+        // CompliancesGrpcService.UpdateComplianceCase.
+        var fieldValueList = new List<string>
+        {
+            $"{request.FieldId}|{request.Value ?? string.Empty}"
+        };
+
+        try
+        {
+            await core.CaseUpdate(caseId, fieldValueList, []).ConfigureAwait(false);
+            await core.CaseUpdateFieldValues(caseId, language).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "OpgaverGrpcService.SetFieldValue: CaseUpdate failed for opgave {OpgaveId} field {FieldId}",
+                opgaveId, request.FieldId);
+            throw new RpcException(new Status(StatusCode.Internal,
+                $"Field value update failed: {ex.Message}"));
+        }
+
+        // Reload the opgave for the response — preserve comment + photos from
+        // the envelope exactly as SetComment does.
+        var dayKey = (compliance.Deadline != default ? compliance.Deadline : DateTime.UtcNow)
+            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        var refreshed = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = arp.PropertyId,
+            WeekStart = dayKey,
+            WeekEnd = dayKey,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = []
+        }).ConfigureAwait(false);
+
+        var refreshedTask = refreshed.Success && refreshed.Model != null
+            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            : null;
+
+        Opgave opgave;
+        if (refreshedTask != null)
+        {
+            opgave = new Opgave
+            {
+                Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
+                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
+                PlannedAt = string.Empty,
+                TaskText = refreshedTask.Title ?? string.Empty,
+                CalendarColor = refreshedTask.Color ?? string.Empty,
+                Completed = refreshedTask.Completed,
+                CompletedBy = string.Empty,
+                DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
+                Comment = string.Empty,
+                EformId = refreshedTask.EformId ?? 0
+            };
+
+            // Reload envelope for comment + photos.
+            var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
+            envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
+            opgave.Comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            PopulateAttachments(opgave, envelope);
+
+            // Reload fields — CaseUpdateFieldValues has committed by now, so
+            // this read returns the just-written value.
+            var fieldsByTaskId = await LoadFieldsByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
+            if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
+            {
+                opgave.Fields.AddRange(fields);
+            }
+        }
+        else
+        {
+            // Task fell out of the window after update — synthesise minimal Opgave.
+            opgave = new Opgave
+            {
+                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
+                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = string.Empty,
+                PlanDayKey = dayKey,
+                PlannedAt = string.Empty,
+                TaskText = string.Empty,
+                CalendarColor = string.Empty,
+                Completed = false,
+                CompletedBy = string.Empty,
+                DescriptionHtml = string.Empty,
+                Comment = string.Empty
+            };
+        }
+
+        return new SetFieldValueResponse { Opgave = opgave };
+    }
+
     private static int ParseOpgaveId(string raw)
     {
         if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
