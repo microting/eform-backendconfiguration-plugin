@@ -433,4 +433,8 @@ export const bgBG = {
   'Every {{n}} days': 'На всеки {{n}} дни',
   'Every {{n}} months on day {{dom}}': 'На всеки {{n}} месеца на ден {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'На всеки {{n}} години на {{dom}}. {{month}}',
+  'Attach file': 'Прикачи файл',
+  'Save event first to attach files': 'Първо запазете събитието, за да прикачите файлове',
+  'Delete attachment?': 'Да се изтрие ли прикаченият файл?',
+  'Could not download file': 'Файлът не можа да бъде изтеглен',
 };

@@ -433,4 +433,8 @@ export const skSK = {
   'Every {{n}} days': 'Každých {{n}} dní',
   'Every {{n}} months on day {{dom}}': 'Každých {{n}} mesiacov v deň {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Každých {{n}} rokov dňa {{dom}}. {{month}}',
+  'Attach file': 'Priložiť súbor',
+  'Save event first to attach files': 'Najprv uložte udalosť, aby ste mohli priložiť súbory',
+  'Delete attachment?': 'Odstrániť prílohu?',
+  'Could not download file': 'Súbor sa nepodarilo stiahnuť',
 };

@@ -433,4 +433,8 @@ export const slSL = {
   'Every {{n}} days': 'Vsakih {{n}} dni',
   'Every {{n}} months on day {{dom}}': 'Vsakih {{n}} mesecev na dan {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Vsakih {{n}} let na {{dom}}. {{month}}',
+  'Attach file': 'Priloži datoteko',
+  'Save event first to attach files': 'Najprej shranite dogodek, da lahko priložite datoteke',
+  'Delete attachment?': 'Izbrisati prilogo?',
+  'Could not download file': 'Datoteke ni bilo mogoče prenesti',
 };

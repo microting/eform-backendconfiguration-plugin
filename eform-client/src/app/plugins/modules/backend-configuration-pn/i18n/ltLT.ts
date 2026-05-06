@@ -433,4 +433,8 @@ export const ltLT = {
   'Every {{n}} days': 'Kas {{n}} dienas',
   'Every {{n}} months on day {{dom}}': 'Kas {{n}} mėnesius {{dom}} dieną',
   'Every {{n}} years on {{dom}}. {{month}}': 'Kas {{n}} metus {{dom}} {{month}} dieną',
+  'Attach file': 'Pridėti failą',
+  'Save event first to attach files': 'Pirmiausia išsaugokite įvykį, kad galėtumėte pridėti failus',
+  'Delete attachment?': 'Ištrinti priedą?',
+  'Could not download file': 'Nepavyko atsisiųsti failo',
 };

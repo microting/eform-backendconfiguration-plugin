@@ -433,4 +433,8 @@ export const hrHR = {
   'Every {{n}} days': 'Svakih {{n}} dana',
   'Every {{n}} months on day {{dom}}': 'Svakih {{n}} mjeseci na dan {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Svakih {{n}} godina na {{dom}}. {{month}}',
+  'Attach file': 'Priloži datoteku',
+  'Save event first to attach files': 'Prvo spremite događaj da biste mogli priložiti datoteke',
+  'Delete attachment?': 'Izbrisati privitak?',
+  'Could not download file': 'Nije moguće preuzeti datoteku',
 };

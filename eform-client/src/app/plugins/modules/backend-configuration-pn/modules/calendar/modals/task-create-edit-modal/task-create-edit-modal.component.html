@@ -239,20 +239,72 @@
       </div>
     </div>
 
-    <!-- Drive link row — hidden for now
+    <!-- Google Drive file (placeholder — disabled until OAuth + Picker ship) -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
-        <a *ngIf="!showDriveInput && !isReadonly" class="gcal-action-link" (click)="showDriveInput = true">
+        <a class="gcal-action-link gcal-action-link--disabled"
+           [matTooltip]="'Coming soon' | translate">
           {{ 'Add Google Drive file' | translate }}
         </a>
-        <mat-form-field *ngIf="showDriveInput" class="w-100">
-          <mat-label>{{ 'Drive link' | translate }}</mat-label>
-          <input matInput [formControl]="driveLinkControl" type="url">
-        </mat-form-field>
       </div>
     </div>
-    -->
+
+    <!-- Local file attachments -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">attach_file</mat-icon>
+      <div class="gcal-row-content">
+        <a *ngIf="isEditMode && !isReadonly"
+           id="calendarEventAttachLink"
+           class="gcal-action-link"
+           (click)="fileInput.click()">
+          {{ 'Attach file' | translate }}
+        </a>
+        <a *ngIf="!isEditMode"
+           class="gcal-action-link gcal-action-link--disabled"
+           [matTooltip]="'Save event first to attach files' | translate">
+          {{ 'Attach file' | translate }}
+        </a>
+        <input #fileInput
+               id="calendarEventAttachInput"
+               type="file"
+               accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+               multiple
+               hidden
+               (change)="onFileInputChange($event)">
+
+        <div *ngIf="attachments.length > 0 || uploadingFiles.length > 0" class="gcal-attachments">
+          <div *ngFor="let f of attachments" class="gcal-attachment-row" [attr.data-attachment-id]="f.id">
+            <ng-container *ngIf="isImage(f); else pdfIcon">
+              <img [src]="f.downloadUrl | authImage | async"
+                   loading="lazy"
+                   class="gcal-attachment-thumb"
+                   [alt]="f.originalFileName"
+                   (click)="downloadAttachment(f)">
+            </ng-container>
+            <ng-template #pdfIcon>
+              <mat-icon class="gcal-attachment-icon" (click)="downloadAttachment(f)">picture_as_pdf</mat-icon>
+            </ng-template>
+            <div class="gcal-attachment-meta">
+              <a class="gcal-attachment-name" (click)="downloadAttachment(f)">{{ f.originalFileName }}</a>
+              <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+            </div>
+            <button mat-icon-button
+                    *ngIf="!isReadonly"
+                    class="gcal-attachment-delete"
+                    [attr.aria-label]="'Delete' | translate"
+                    (click)="deleteAttachment(f)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <div *ngFor="let u of uploadingFiles" class="gcal-attachment-row gcal-attachment-row--uploading">
+            <mat-spinner diameter="20"></mat-spinner>
+            <span class="gcal-attachment-name">{{ u.name }}</span>
+            <span *ngIf="u.progress === 'error'" class="gcal-attachment-error">{{ u.error }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <!-- Board row -->

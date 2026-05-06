@@ -433,4 +433,8 @@ export const csCZ = {
   'Every {{n}} days': 'Každých {{n}} dní',
   'Every {{n}} months on day {{dom}}': 'Každých {{n}} měsíců v den {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Každých {{n}} let v {{dom}}. {{month}}',
+  'Attach file': 'Přiložit soubor',
+  'Save event first to attach files': 'Pro připojení souborů nejprve uložte událost',
+  'Delete attachment?': 'Smazat přílohu?',
+  'Could not download file': 'Soubor se nepodařilo stáhnout',
 };

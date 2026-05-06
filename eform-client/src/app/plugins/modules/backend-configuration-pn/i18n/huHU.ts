@@ -433,4 +433,8 @@ export const huHU = {
   'Every {{n}} days': '{{n}} naponta',
   'Every {{n}} months on day {{dom}}': '{{n}} havonta, a {{dom}}. napon',
   'Every {{n}} years on {{dom}}. {{month}}': '{{n}} évente {{dom}} {{month}} napon',
+  'Attach file': 'Fájl csatolása',
+  'Save event first to attach files': 'Fájlok csatolásához először mentse el az eseményt',
+  'Delete attachment?': 'Törli a mellékletet?',
+  'Could not download file': 'Nem sikerült letölteni a fájlt',
 };

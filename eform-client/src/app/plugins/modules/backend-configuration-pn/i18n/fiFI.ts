@@ -433,4 +433,8 @@ export const fiFI = {
   'Every {{n}} days': 'Joka {{n}} päivä',
   'Every {{n}} months on day {{dom}}': 'Joka {{n}} kuukausi {{dom}} päivänä',
   'Every {{n}} years on {{dom}}. {{month}}': 'Joka {{n}} vuosi {{dom}}-päivänä. {{month}}',
+  'Attach file': 'Liitä tiedosto',
+  'Save event first to attach files': 'Tallenna tapahtuma ensin liittääksesi tiedostoja',
+  'Delete attachment?': 'Poistetaanko liite?',
+  'Could not download file': 'Tiedoston lataaminen epäonnistui',
 };

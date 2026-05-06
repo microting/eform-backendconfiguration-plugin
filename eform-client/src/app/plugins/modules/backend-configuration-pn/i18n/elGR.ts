@@ -433,4 +433,8 @@ export const elGR = {
   'Every {{n}} days': 'Κάθε {{n}} ημέρες',
   'Every {{n}} months on day {{dom}}': 'Κάθε {{n}} μήνες την ημέρα {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Κάθε {{n}} χρόνια στις {{dom}}. {{month}}',
+  'Attach file': 'Επισύναψη αρχείου',
+  'Save event first to attach files': 'Αποθηκεύστε πρώτα το συμβάν για να επισυνάψετε αρχεία',
+  'Delete attachment?': 'Διαγραφή συνημμένου;',
+  'Could not download file': 'Δεν ήταν δυνατή η λήψη του αρχείου',
 };

@@ -433,4 +433,8 @@ export const esES = {
   'Every {{n}} days': 'Cada {{n}} días',
   'Every {{n}} months on day {{dom}}': 'Cada {{n}} meses el día {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Cada {{n}} años en {{dom}}. {{month}}',
+  'Attach file': 'Adjuntar archivo',
+  'Save event first to attach files': 'Primero guarda el evento para adjuntar archivos.',
+  'Delete attachment?': '¿Eliminar archivo adjunto?',
+  'Could not download file': 'No se pudo descargar el archivo.',
 };

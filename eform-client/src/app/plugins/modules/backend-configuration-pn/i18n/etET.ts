@@ -433,4 +433,8 @@ export const etET = {
   'Every {{n}} days': 'Iga {{n}} päeva tagant',
   'Every {{n}} months on day {{dom}}': 'Iga {{n}} kuu tagant {{dom}} päeval',
   'Every {{n}} years on {{dom}}. {{month}}': 'Iga {{n}} aasta tagant {{dom}} kuu jooksul.',
+  'Attach file': 'Lisa fail',
+  'Save event first to attach files': 'Failide lisamiseks salvesta esmalt sündmus',
+  'Delete attachment?': 'Kustutada manus?',
+  'Could not download file': 'Faili allalaadimine ebaõnnestus',
 };

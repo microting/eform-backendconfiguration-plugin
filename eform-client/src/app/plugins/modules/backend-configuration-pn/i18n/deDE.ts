@@ -487,4 +487,8 @@ export const deDE = {
   'Every {{n}} days': 'Alle {{n}} Tage',
   'Every {{n}} months on day {{dom}}': 'Alle {{n}} Monate am Tag {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Alle {{n}} Jahre auf {{dom}}. {{month}}',
+  'Attach file': 'Datei anhängen',
+  'Save event first to attach files': 'Speichern Sie zuerst das Ereignis, um Dateien anzuhängen.',
+  'Delete attachment?': 'Anhang löschen?',
+  'Could not download file': 'Datei konnte nicht heruntergeladen werden',
 };

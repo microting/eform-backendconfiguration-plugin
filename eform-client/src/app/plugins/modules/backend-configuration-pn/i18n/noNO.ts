@@ -433,4 +433,8 @@ export const noNO = {
   'Every {{n}} days': 'Hver {{n}} dag',
   'Every {{n}} months on day {{dom}}': 'Hver {{n}} måned på dag {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Hvert {{n}} år på {{dom}}. {{month}}',
+  'Attach file': 'Legg ved fil',
+  'Save event first to attach files': 'Lagre hendelsen først for å legge ved filer',
+  'Delete attachment?': 'Slette vedlegg?',
+  'Could not download file': 'Kunne ikke laste ned filen',
 };

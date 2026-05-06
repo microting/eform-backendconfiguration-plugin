@@ -46,6 +46,19 @@ export interface CalendarTaskModel {
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
   repeatWeekdaysCsv?: string | null;
+
+  // File attachments persisted on the AreaRulePlanning. All occurrences of a
+  // recurring rule share the same attachment list — see
+  // 2026-05-06-calendar-event-attachments-design.md (Q1 master-rule scope).
+  attachments?: CalendarTaskAttachment[];
+}
+
+export interface CalendarTaskAttachment {
+  id: number;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  downloadUrl: string;
 }
 
 export interface CalendarRepeatMeta {

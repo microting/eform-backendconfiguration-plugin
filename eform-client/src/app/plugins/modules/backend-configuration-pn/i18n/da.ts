@@ -434,4 +434,10 @@ export const da = {
   'Every {{n}} days': 'Hver {{n}}. dag',
   'Every {{n}} months on day {{dom}}': 'Hver {{n}}. måned på dag {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Hvert {{n}}. år på {{dom}}. {{month}}',
+  'Attach file': 'Vedhæft fil',
+  'Save event first to attach files': 'Gem først begivenheden for at vedhæfte filer',
+  'Delete attachment?': 'Slet vedhæftet fil?',
+  'Could not download file': 'Kunne ikke downloade filen',
+  'Coming soon': 'Kommer snart',
+  'Add Google Drive file': 'Tilføj Google Drive-fil',
 };

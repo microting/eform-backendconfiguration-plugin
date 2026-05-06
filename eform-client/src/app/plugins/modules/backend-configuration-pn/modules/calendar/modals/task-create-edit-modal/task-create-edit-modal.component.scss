@@ -114,7 +114,7 @@
   flex-shrink: 0;
 }
 
-// Action link (Drive)
+// Action link (Drive / Attach file)
 .gcal-action-link {
   color: var(--primary, #289694);
   cursor: pointer;
@@ -124,6 +124,95 @@
   &:hover {
     text-decoration: underline;
   }
+
+  // Disabled placeholder variant — used by the Drive-link row and by the
+  // create-mode Attach link (gated until first save). No underline on hover.
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: auto; // keep tooltip working
+    text-decoration: none !important;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}
+
+// File-attachment list (PNG/JPG thumbnails + PDF icon rows)
+.gcal-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.gcal-attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+
+  &--uploading {
+    opacity: 0.75;
+  }
+}
+
+.gcal-attachment-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.gcal-attachment-icon {
+  width: 80px;
+  height: 80px;
+  font-size: 64px;
+  line-height: 80px;
+  cursor: pointer;
+  color: #d93025; // PDF red
+  flex-shrink: 0;
+}
+
+.gcal-attachment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gcal-attachment-name {
+  color: var(--primary, #289694);
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.gcal-attachment-size {
+  font-size: 11px;
+  color: #5f6368;
+}
+
+.gcal-attachment-delete {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.gcal-attachment-error {
+  color: #d93025;
+  font-size: 12px;
 }
 
 // Property/Board selector rows

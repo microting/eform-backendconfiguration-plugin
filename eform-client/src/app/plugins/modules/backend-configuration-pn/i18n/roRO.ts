@@ -433,4 +433,8 @@ export const roRO = {
   'Every {{n}} days': 'La fiecare {{n}} zile',
   'Every {{n}} months on day {{dom}}': 'La fiecare {{n}} luni, în ziua {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'La fiecare {{n}} ani, în data de {{dom}}. {{month}}',
+  'Attach file': 'Atașați fișierul',
+  'Save event first to attach files': 'Salvați mai întâi evenimentul pentru a atașa fișiere',
+  'Delete attachment?': 'Ștergeți atașamentul?',
+  'Could not download file': 'Nu s-a putut descărca fișierul',
 };

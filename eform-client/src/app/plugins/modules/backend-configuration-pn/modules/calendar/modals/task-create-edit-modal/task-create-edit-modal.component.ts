@@ -11,9 +11,20 @@ import {EformVisualEditorService} from 'src/app/common/services';
 import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
-import {BackendConfigurationPnCalendarService, BackendConfigurationPnPropertiesService} from '../../../../services';
+import {
+  BackendConfigurationPnCalendarFilesService,
+  BackendConfigurationPnCalendarService,
+  BackendConfigurationPnPropertiesService,
+} from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
-import {CALENDAR_COLORS, CalendarBoardModel, CalendarRepeatMeta, CalendarTaskModel, RepeatEditScope} from '../../../../models/calendar';
+import {
+  CALENDAR_COLORS,
+  CalendarBoardModel,
+  CalendarRepeatMeta,
+  CalendarTaskAttachment,
+  CalendarTaskModel,
+  RepeatEditScope,
+} from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
 import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
@@ -65,6 +76,12 @@ export class TaskCreateEditModalComponent implements OnInit {
   private customRepeatMeta: CalendarRepeatMeta | null = null;
   private currentLanguageId = 1;  // default to English
 
+  // Per-AreaRulePlanning file attachments. Mutated from the upload/delete
+  // handlers below; rendered as 80x80 thumbnails (PNG/JPEG) or filetype icons
+  // (PDF) under the "Vedhæft fil" link.
+  attachments: CalendarTaskAttachment[] = [];
+  uploadingFiles: { name: string; progress: 'uploading' | 'error'; error?: string }[] = [];
+
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
   dateControl = new FormControl<Date | null>(null);
@@ -93,6 +110,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     private store: Store,
     private toastr: ToastrService,
     private tagsService: ItemsPlanningPnTagsService,
+    private filesService: BackendConfigurationPnCalendarFilesService,
   ) {}
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
@@ -200,6 +218,10 @@ export class TaskCreateEditModalComponent implements OnInit {
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+      // Seed attachments from the task DTO. The backend mapper populates
+      // `attachments` for every occurrence of a recurring rule (master-rule
+      // scope) — copy mode intentionally does NOT carry attachments forward.
+      this.attachments = task.attachments ? [...task.attachments] : [];
     } else if (isCopyMode) {
       const copyPrefix = this.translate.instant('Copy of');
       this.titleControl.setValue(`${copyPrefix} ${sourceTask.title}`);
@@ -697,5 +719,139 @@ export class TaskCreateEditModalComponent implements OnInit {
     } else {
       this.dialogRef.close(result);
     }
+  }
+
+  // ---- File attachments ---------------------------------------------------
+
+  /** Hidden <input type="file" #fileInput> change handler. */
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    this.uploadFiles(input.files);
+    // Reset so re-selecting the same file fires `change` again. Without this,
+    // a delete-then-reupload-same-name flow would no-op silently.
+    input.value = '';
+  }
+
+  /**
+   * Upload files sequentially. The backend enforces the 10-file quota per
+   * AreaRulePlanning; sequential POSTs avoid a race between two uploads
+   * both seeing `count == 9` and slipping past the quota check.
+   *
+   * On failure the chip is mutated to `progress: 'error'` and left in
+   * `uploadingFiles` so the user sees what went wrong (auto-dismissed after
+   * 4 s). Removing it on error would silently lose the failure signal.
+   * Successful chips are filtered out immediately — the new attachment row
+   * replaces the chip in the UI.
+   *
+   * Error toasts come from `ApiBaseService.extractData` for `success: false`
+   * envelopes; we only fire our own toast for transport-level errors.
+   */
+  uploadFiles(files: FileList): void {
+    const taskId = this.data.task?.id;
+    if (!taskId) return;  // create-mode is gated in the template
+
+    const queue: File[] = [];
+    for (let i = 0; i < files.length; i++) queue.push(files.item(i)!);
+
+    const next = () => {
+      const file = queue.shift();
+      if (!file) return;
+      const chip: { name: string; progress: 'uploading' | 'error'; error?: string } = {
+        name: file.name, progress: 'uploading',
+      };
+      this.uploadingFiles = [...this.uploadingFiles, chip];
+
+      this.filesService.uploadFile(taskId, file).subscribe({
+        next: res => {
+          if (res && res.success && res.model) {
+            this.uploadingFiles = this.uploadingFiles.filter(u => u !== chip);
+            this.attachments = [...this.attachments, res.model];
+          } else {
+            // Server-side reject (success: false). ApiBaseService.extractData
+            // already fired a toast for res.message — don't duplicate it.
+            // Mutate the chip in-place so the *ngIf="u.progress === 'error'"
+            // branch in the template renders, then auto-fade after 4 s.
+            chip.progress = 'error';
+            chip.error = (res && res.message) ? res.message : this.translate.instant('Error');
+            this.uploadingFiles = [...this.uploadingFiles];
+            setTimeout(() => {
+              this.uploadingFiles = this.uploadingFiles.filter(u => u !== chip);
+            }, 4000);
+          }
+          next();
+        },
+        error: err => {
+          // Transport-level failure — extractData never ran. Toast here is
+          // the only signal the user gets, alongside the persisted chip.
+          const msg = err?.error?.message || err?.message || this.translate.instant('Error');
+          chip.progress = 'error';
+          chip.error = msg;
+          this.uploadingFiles = [...this.uploadingFiles];
+          this.toastr.error(msg, this.translate.instant('Error'));
+          setTimeout(() => {
+            this.uploadingFiles = this.uploadingFiles.filter(u => u !== chip);
+          }, 4000);
+          next();
+        },
+      });
+    };
+    next();
+  }
+
+  /**
+   * Opens the attachment in a new tab. Plain `window.open(url)` would 401:
+   * the new-tab GET has no bearer token. Fetch as a Blob (auth header set
+   * by `ApiBaseService.getBlobData`), then open the resulting object URL.
+   * The blob URL is intentionally NOT revoked — `URL.revokeObjectURL` while
+   * the new tab is still loading would break the preview.
+   */
+  downloadAttachment(att: CalendarTaskAttachment): void {
+    const taskId = this.data.task?.id;
+    if (!taskId) return;
+    this.filesService.getFileBlob(taskId, att.id).subscribe({
+      next: (blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: () => this.toastr.error(this.translate.instant('Could not download file')),
+    });
+  }
+
+  deleteAttachment(att: CalendarTaskAttachment): void {
+    const taskId = this.data.task?.id;
+    if (!taskId) return;
+    const confirmMsg = this.translate.instant('Delete attachment?');
+    if (!window.confirm(confirmMsg)) return;
+    this.filesService.deleteFile(taskId, att.id).subscribe({
+      next: res => {
+        if (res && res.success) {
+          this.attachments = this.attachments.filter(a => a.id !== att.id);
+        }
+        // Server-side reject (success: false): ApiBaseService.extractData
+        // already toasted res.message; nothing to do here.
+      },
+      error: err => {
+        // Transport-level failure — toast it explicitly.
+        const msg = err?.error?.message || err?.message || this.translate.instant('Error');
+        this.toastr.error(msg, this.translate.instant('Error'));
+      },
+    });
+  }
+
+  isImage(att: CalendarTaskAttachment): boolean {
+    // Match the server-side whitelist (see calendar-files endpoint) exactly
+    // rather than `image/*` — a hypothetical image/svg+xml or image/webp slipping
+    // past would render here but never have been accepted by upload.
+    return att.mimeType === 'image/png' || att.mimeType === 'image/jpeg';
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes == null || bytes < 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${Math.round(kb)} KB`;
+    const mb = kb / 1024;
+    return `${(Math.round(mb * 10) / 10).toFixed(1)} MB`;
   }
 }

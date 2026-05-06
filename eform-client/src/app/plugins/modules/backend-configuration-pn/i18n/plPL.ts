@@ -433,4 +433,8 @@ export const plPL = {
   'Every {{n}} days': 'Co {{n}} dni',
   'Every {{n}} months on day {{dom}}': 'Co {{n}} miesięcy w dniu {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Co {{n}} lat w {{dom}}. {{month}}',
+  'Attach file': 'Załącz plik',
+  'Save event first to attach files': 'Aby dołączyć pliki, najpierw zapisz wydarzenie',
+  'Delete attachment?': 'Usunąć załącznik?',
+  'Could not download file': 'Nie można pobrać pliku',
 };

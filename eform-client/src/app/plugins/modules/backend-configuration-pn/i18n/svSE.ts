@@ -433,4 +433,8 @@ export const svSE = {
   'Every {{n}} days': 'Var {{n}} dag',
   'Every {{n}} months on day {{dom}}': 'Var {{n}} månad på dag {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Var {{n}} år på {{dom}}. {{month}}',
+  'Attach file': 'Bifoga fil',
+  'Save event first to attach files': 'Spara händelsen först för att bifoga filer',
+  'Delete attachment?': 'Ta bort bilagan?',
+  'Could not download file': 'Kunde inte ladda ner filen',
 };

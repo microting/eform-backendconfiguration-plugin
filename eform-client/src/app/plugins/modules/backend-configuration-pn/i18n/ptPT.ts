@@ -433,4 +433,8 @@ export const ptPT = {
   'Every {{n}} days': 'A cada {{n}} dias',
   'Every {{n}} months on day {{dom}}': 'A cada {{n}} meses no dia {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'A cada {{n}} anos em {{dom}}. {{month}}',
+  'Attach file': 'Anexar arquivo',
+  'Save event first to attach files': 'Primeiro, salve o evento para anexar arquivos.',
+  'Delete attachment?': 'Excluir anexo?',
+  'Could not download file': 'Não foi possível baixar o arquivo.',
 };

@@ -433,4 +433,8 @@ export const lvLV = {
   'Every {{n}} days': 'Ik pēc {{n}} dienām',
   'Every {{n}} months on day {{dom}}': 'Ik pēc {{n}} mēnešiem {{dom}}. dienā',
   'Every {{n}} years on {{dom}}. {{month}}': 'Ik pēc {{n}} gadiem {{dom}} {{month}} dienā',
+  'Attach file': 'Pievienot failu',
+  'Save event first to attach files': 'Lai pievienotu failus, vispirms saglabājiet notikumu',
+  'Delete attachment?': 'Vai dzēst pielikumu?',
+  'Could not download file': 'Nevarēja lejupielādēt failu',
 };

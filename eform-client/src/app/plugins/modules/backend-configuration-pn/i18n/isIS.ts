@@ -433,4 +433,8 @@ export const isIS = {
   'Every {{n}} days': 'Á {{n}} daga fresti',
   'Every {{n}} months on day {{dom}}': 'Á {{n}} mánaða fresti á degi {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Á {{n}} ára fresti á {{dom}}. {{month}}',
+  'Attach file': 'Hengja við skrá',
+  'Save event first to attach files': 'Vista viðburð fyrst til að hengja við skrár',
+  'Delete attachment?': 'Eyða viðhengi?',
+  'Could not download file': 'Gat ekki sótt skrána',
 };

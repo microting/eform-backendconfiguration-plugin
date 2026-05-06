@@ -292,7 +292,6 @@ export const nlNL = {
   'Employee no': 'Werknemer nummer',
   'Deactivate task': 'Taak deactiveren',
   Areas: 'Gebieden',
-  Pictures: 'Foto&#39;s',
   'Delete employee': 'Werknemer verwijderen',
   Resigned: 'Afgetreden',
   'Show resigned': 'Toon ontslag genomen',
@@ -433,4 +432,9 @@ export const nlNL = {
   'Every {{n}} days': 'Elke {{n}} dagen',
   'Every {{n}} months on day {{dom}}': 'Elke {{n}} maanden op dag {{dom}}',
   'Every {{n}} years on {{dom}}. {{month}}': 'Elke {{n}} jaar op {{dom}}. {{month}}',
+  Pictures: "Foto's",
+  'Attach file': 'Voeg een bestand toe',
+  'Save event first to attach files': 'Sla eerst het evenement op om bestanden toe te voegen.',
+  'Delete attachment?': 'Bijlage verwijderen?',
+  'Could not download file': 'Het downloaden van het bestand is niet gelukt.',
 };
