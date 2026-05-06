@@ -21,6 +21,7 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 using SdkDataItem = Microting.eForm.Infrastructure.Models.DataItem;
 using SdkElement = Microting.eForm.Infrastructure.Models.Element;
@@ -64,17 +65,20 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// <see cref="StreamOpgaveChanges"/> for poll-window semantics.
 ///
 /// Known divergences from the canonical
-/// <c>BackendConfigurationCompliancesService.Update</c> JSON path that
-/// CompleteOpgave does NOT perform (parity with
-/// <c>CompliancesGrpcService.UpdateComplianceCase</c>, which has the same
-/// gaps — this PR introduces no new divergence):
+/// <c>BackendConfigurationCompliancesService.Update</c> JSON path.
+/// CompleteOpgave NOW performs (added in this PR):
 /// <list type="bullet">
 ///   <item><description><c>PlanningCaseSite</c> row update (Status=100,
 ///     MicrotingSdkCaseId, MicrotingSdkCaseDoneAt, DoneByUserId,
-///     DoneByUserName) — see
+///     DoneByUserName) — mirrors
 ///     <c>BackendConfigurationCompliancesService.cs:307-318</c>.</description></item>
 ///   <item><description><c>PlanningCase</c> row update (Status=100,
-///     WorkflowState=Processed) — lines 320-335.</description></item>
+///     WorkflowState=Processed, MicrotingSdkCaseDoneAt, DoneByUserId,
+///     DoneByUserName) — mirrors lines 320-335.</description></item>
+/// </list>
+/// Still omitted (deferred; closing the full gap requires factoring a shared
+/// completion helper — out of scope for this PR):
+/// <list type="bullet">
 ///   <item><description><c>Property.ComplianceStatus</c> /
 ///     <c>ComplianceStatusThirty</c> recomputation — lines 344-371. Without
 ///     this, the property compliance "dot" UI elsewhere in the system will be
@@ -85,9 +89,6 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///   <item><description><c>core.CaseDelete</c> of the underlying microting
 ///     case — lines 373-389. The device-side case won't be deleted.</description></item>
 /// </list>
-/// Known limitation; closing the gap likely requires factoring a shared
-/// completion helper called by both <c>Update</c> and the gRPC paths — out of
-/// scope for this PR.
 /// </summary>
 public class OpgaverGrpcService(
     IBackendConfigurationCalendarService calendarService,
@@ -96,6 +97,7 @@ public class OpgaverGrpcService(
     IGrpcSiteResolver siteResolver,
     IEFormCoreService coreHelper,
     BackendConfigurationPnDbContext dbContext,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     ILogger<OpgaverGrpcService> logger)
     : Opgaver.OpgaverBase
 {
@@ -968,6 +970,50 @@ public class OpgaverGrpcService(
             foundCase.Status = 100;
             foundCase.WorkflowState = Constants.WorkflowStates.Created;
             await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+
+            // Mirror the post-update sequence from
+            // BackendConfigurationCompliancesService.Update (lines 307-335):
+            // set Status=100 on PlanningCaseSite + parent PlanningCase so the
+            // admin "filled cases" view (queries PlanningCases WHERE Status=100
+            // AND MicrotingSdkCaseDoneAt >= fromDate) picks up device completions.
+            var siteName = (await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync(x => x.Id == sdkSiteId)
+                .ConfigureAwait(false))?.Name ?? string.Empty;
+
+            var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
+                .FirstOrDefaultAsync(x =>
+                    x.CreatedAt.Date == compliance.StartDate.Date &&
+                    x.PlanningId == compliance.PlanningId)
+                .ConfigureAwait(false);
+
+            if (planningCaseSite != null)
+            {
+                planningCaseSite.Status = 100;
+                planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                planningCaseSite.DoneByUserId = (int)sdkSiteId;
+                planningCaseSite.DoneByUserName = siteName;
+                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                var planningCase = await itemsPlanningPnDbContext.PlanningCases
+                    .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId)
+                    .ConfigureAwait(false);
+
+                if (planningCase.Status != 100)
+                {
+                    planningCase.Status = 100;
+                    planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                    planningCase.MicrotingSdkCaseId = foundCase.Id;
+                    planningCase.DoneByUserId = (int)sdkSiteId;
+                    planningCase.DoneByUserName = siteName;
+                    planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+                    await planningCase.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
+                planningCaseSite.PlanningCaseId = planningCase.Id;
+                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
         }
 
         // Re-read the calendar tasks for the day in question so we can return
