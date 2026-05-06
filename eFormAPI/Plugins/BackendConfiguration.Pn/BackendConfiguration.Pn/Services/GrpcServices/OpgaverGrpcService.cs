@@ -982,9 +982,9 @@ public class OpgaverGrpcService(
                 .ConfigureAwait(false))?.Name ?? string.Empty;
 
             var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync(x =>
-                    x.CreatedAt.Date == compliance.StartDate.Date &&
-                    x.PlanningId == compliance.PlanningId)
+                    x.MicrotingSdkCaseId == foundCase.Id)
                 .ConfigureAwait(false);
 
             if (planningCaseSite != null)
