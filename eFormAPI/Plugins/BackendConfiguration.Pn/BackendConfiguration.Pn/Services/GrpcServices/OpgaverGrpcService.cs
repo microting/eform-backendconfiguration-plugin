@@ -923,9 +923,25 @@ public class OpgaverGrpcService(
         // GetTasksForWeek treats compliance-derived rows as "completable" and
         // anything else as a future occurrence with no Case to update — so the
         // absence of a compliance row is a hard error here.
+        //
+        // Filter by the current worker's site: multi-site plannings have one
+        // compliance per site. Without the site filter we pick the OLDEST
+        // compliance across ALL sites — writing against a stale case that
+        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
+        // TODO: if a worker has a very large number of cases this list could grow;
+        // consider a JOIN-based query if perf becomes an issue.
+        var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
+            .Where(c => c.SiteId == sdkSiteId)
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(c => c.Id)
+            .ToListAsync()
+            .ConfigureAwait(false);
         var compliance = await dbContext.Compliances
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
@@ -953,8 +969,9 @@ public class OpgaverGrpcService(
         // shape of CompliancesGrpcService.UpdateComplianceCase but skips the
         // core.CaseUpdate / CaseUpdateFieldValues calls — the Opgaver flow has
         // no form fields, so those calls would just iterate empty lists.
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // Reuse the core/sdkDbContext already obtained for the compliance lookup above.
+        var core = coreForCompliance;
+        var sdkDbContext = sdkDbContextForCompliance;
 
         await compliance.Delete(dbContext).ConfigureAwait(false);
 
@@ -1189,8 +1206,23 @@ public class OpgaverGrpcService(
         // "noticed leak, scheduled repair". CompleteOpgave keeps the
         // not-removed filter on its own lookup — re-completing an already
         // completed task makes no sense there.
+        //
+        // Filter by the current worker's site: multi-site plannings have one
+        // compliance per site. Without the site filter we pick the OLDEST
+        // compliance across ALL sites — writing against a stale case that
+        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
+        // TODO: if a worker has a very large number of cases this list could grow;
+        // consider a JOIN-based query if perf becomes an issue.
+        var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
+            .Where(c => c.SiteId == sdkSiteId)
+            .Select(c => c.Id)
+            .ToListAsync()
+            .ConfigureAwait(false);
         var compliance = await dbContext.Compliances
             .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
@@ -1209,8 +1241,9 @@ public class OpgaverGrpcService(
             };
         }
 
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // Reuse the core/sdkDbContext already obtained for the compliance lookup above.
+        var core = coreForCompliance;
+        var sdkDbContext = sdkDbContextForCompliance;
 
         var foundCase = await sdkDbContext.Cases
             .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId)
@@ -1395,8 +1428,23 @@ public class OpgaverGrpcService(
         // SetComment includes Removed compliance rows so post-completion
         // edits are possible; do the same here so a worker can attach a
         // photo to a just-completed opgave.
+        //
+        // Filter by the current worker's site: multi-site plannings have one
+        // compliance per site. Without the site filter we pick the OLDEST
+        // compliance across ALL sites — writing against a stale case that
+        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // TODO: if a worker has a very large number of cases this list could grow;
+        // consider a JOIN-based query if perf becomes an issue.
+        var validCaseIdsForSite = await sdkDbContext.Cases
+            .Where(c => c.SiteId == sdkSiteId)
+            .Select(c => c.Id)
+            .ToListAsync()
+            .ConfigureAwait(false);
         var compliance = await dbContext.Compliances
             .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
@@ -1406,9 +1454,6 @@ public class OpgaverGrpcService(
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
                 $"Opgave {opgaveId}: no SDK case to attach a photo to (recurrence-only opgaver are not supported in v1)."));
         }
-
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
 
         var foundCase = await sdkDbContext.Cases
             .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId)
@@ -1582,8 +1627,22 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the opgave's property."));
         }
 
+        // Filter by the current worker's site: multi-site plannings have one
+        // compliance per site. Without the site filter we pick the OLDEST
+        // compliance across ALL sites — writing against a stale case that
+        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // TODO: if a worker has a very large number of cases this list could grow;
+        // consider a JOIN-based query if perf becomes an issue.
+        var validCaseIdsForSite = await sdkDbContext.Cases
+            .Where(c => c.SiteId == sdkSiteId)
+            .Select(c => c.Id)
+            .ToListAsync()
+            .ConfigureAwait(false);
         var compliance = await dbContext.Compliances
             .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
@@ -1593,9 +1652,6 @@ public class OpgaverGrpcService(
             // No Case → nothing to remove. Treat as success (idempotent).
             return new RemovePhotoResponse();
         }
-
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
 
         var foundCase = await sdkDbContext.Cases
             .FirstOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId)
@@ -1779,10 +1835,29 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the opgave's property."));
         }
 
-        // Accept the compliance row regardless of WorkflowState — same rationale
-        // as SetComment: a worker can write field values on a just-completed task.
+        // Resolve the compliance for this ARP's planning, filtered to the
+        // current worker's site. Without the site filter, multi-site plannings
+        // hand back the OLDEST compliance across all sites — leading to writes
+        // against stale cases that don't belong to this worker.
+        //
+        // WorkflowState != Removed is restored here: the "accept regardless"
+        // comment was a design assumption that doesn't hold. The practical
+        // edit-then-complete flow has the compliance still active when
+        // SetFieldValue lands. If it's been soft-deleted, we should NOT write to it.
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // TODO: if a worker has a very large number of cases this list could grow;
+        // consider a JOIN-based query if perf becomes an issue.
+        var validCaseIdsForSite = await sdkDbContext.Cases
+            .Where(c => c.SiteId == sdkSiteId)
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(c => c.Id)
+            .ToListAsync()
+            .ConfigureAwait(false);
         var compliance = await dbContext.Compliances
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .Where(x => x.PlanningId == arp.ItemPlanningId)
+            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
             .OrderBy(x => x.Deadline)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
@@ -1794,9 +1869,6 @@ public class OpgaverGrpcService(
         }
 
         var caseId = compliance.MicrotingSdkCaseId;
-
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
         var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
 
         // Resolve the FieldValue row PK from the (caseId, eFormFieldId) pair.
