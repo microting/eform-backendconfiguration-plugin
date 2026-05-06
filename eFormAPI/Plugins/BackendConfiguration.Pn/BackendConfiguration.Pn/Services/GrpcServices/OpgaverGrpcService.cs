@@ -21,6 +21,7 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 using SdkDataItem = Microting.eForm.Infrastructure.Models.DataItem;
@@ -237,7 +238,17 @@ public class OpgaverGrpcService(
                 CompletedBy = string.Empty,
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
                 Comment = comment,
-                EformId = task.EformId ?? 0
+                EformId = task.EformId ?? 0,
+                // Stable-identity round-trip: emit the compliance + sdk case PKs
+                // so the Flutter client can persist them and echo them back on
+                // every write. Server then looks them up by Id directly,
+                // avoiding the fuzzy OrderBy(Deadline).First() fallback (which
+                // is non-deterministic when one planning has multiple
+                // compliances on the same site). 0 = recurrence-only task with
+                // no backing case yet — kept legacy fallback handles that
+                // path safely.
+                ComplianceId = task.ComplianceId ?? 0,
+                MicrotingSdkCaseId = task.SdkCaseId ?? 0
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
             };
 
@@ -850,7 +861,11 @@ public class OpgaverGrpcService(
                 CompletedBy = string.Empty,
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
                 Comment = comment,
-                EformId = task.EformId ?? 0
+                EformId = task.EformId ?? 0,
+                // See comment in ListOpgaver: stable-identity round-trip so
+                // write handlers can resolve compliance + sdk case directly.
+                ComplianceId = task.ComplianceId ?? 0,
+                MicrotingSdkCaseId = task.SdkCaseId ?? 0
             };
 
             PopulateAttachments(opgave, envelope);
@@ -924,27 +939,52 @@ public class OpgaverGrpcService(
         // anything else as a future occurrence with no Case to update — so the
         // absence of a compliance row is a hard error here.
         //
-        // Filter by the current worker's site: multi-site plannings have one
-        // compliance per site. Without the site filter we pick the OLDEST
-        // compliance across ALL sites — writing against a stale case that
-        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        // Stable-identity path: when the client echoes the compliance_id from
+        // the Opgave it received, look the row up by PK directly. This is
+        // 100% deterministic — no OrderBy(Deadline).First() ambiguity when
+        // one planning has multiple compliances on the same site (recurring
+        // tasks, historical rows, overlapping windows). We still validate
+        // the row matches the ARP's planning before trusting it.
+        //
+        // Legacy fallback (compliance_id == 0): older app builds that pre-
+        // date this contract. Filter by the current worker's site: multi-
+        // site plannings have one compliance per site. Without the site
+        // filter we pick the OLDEST compliance across ALL sites — writing
+        // against a stale case that doesn't belong to this worker (bug:
+        // planning 3632, site 130 vs 142).
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
-        // TODO: if a worker has a very large number of cases this list could grow;
-        // consider a JOIN-based query if perf becomes an issue.
-        var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
-            .Where(c => c.SiteId == sdkSiteId)
-            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
-            .Select(c => c.Id)
-            .ToListAsync()
-            .ConfigureAwait(false);
-        var compliance = await dbContext.Compliances
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
+        Compliance? compliance;
+        if (request.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — DO NOT remove. Older outbox payloads
+            // queued before this contract landed will still drain through
+            // here while the device cache catches up.
+            // TODO: if a worker has a very large number of cases this list
+            // could grow; consider a JOIN-based query if perf becomes an issue.
+            var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
 
         if (compliance == null)
         {
@@ -1207,25 +1247,39 @@ public class OpgaverGrpcService(
         // not-removed filter on its own lookup — re-completing an already
         // completed task makes no sense there.
         //
-        // Filter by the current worker's site: multi-site plannings have one
-        // compliance per site. Without the site filter we pick the OLDEST
-        // compliance across ALL sites — writing against a stale case that
-        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        // Stable-identity path: when the client echoes the compliance_id
+        // from the Opgave, look up by PK directly (deterministic — see
+        // CompleteOpgave for full rationale). Legacy fallback (compliance_id
+        // == 0) keeps the existing site-filtered fuzzy lookup so older
+        // outbox payloads still drain.
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
-        // TODO: if a worker has a very large number of cases this list could grow;
-        // consider a JOIN-based query if perf becomes an issue.
-        var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
-            .Where(c => c.SiteId == sdkSiteId)
-            .Select(c => c.Id)
-            .ToListAsync()
-            .ConfigureAwait(false);
-        var compliance = await dbContext.Compliances
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
+        Compliance? compliance;
+        if (request.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // TODO: if a worker has a very large number of cases this list
+            // could grow; consider a JOIN-based query if perf becomes an issue.
+            var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
 
         // Truly orphaned task (no compliance row at all → no SDK Case ever
         // existed). Echo the comment back in a synthesised minimal Opgave so
@@ -1429,25 +1483,39 @@ public class OpgaverGrpcService(
         // edits are possible; do the same here so a worker can attach a
         // photo to a just-completed opgave.
         //
-        // Filter by the current worker's site: multi-site plannings have one
-        // compliance per site. Without the site filter we pick the OLDEST
-        // compliance across ALL sites — writing against a stale case that
-        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        // Stable-identity path: client echoes the compliance_id from the
+        // Opgave it received; we look up by PK directly. Legacy fallback
+        // (compliance_id == 0) keeps the site-filtered fuzzy lookup so
+        // older outbox payloads still drain. See CompleteOpgave for the
+        // full rationale.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        // TODO: if a worker has a very large number of cases this list could grow;
-        // consider a JOIN-based query if perf becomes an issue.
-        var validCaseIdsForSite = await sdkDbContext.Cases
-            .Where(c => c.SiteId == sdkSiteId)
-            .Select(c => c.Id)
-            .ToListAsync()
-            .ConfigureAwait(false);
-        var compliance = await dbContext.Compliances
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
+        Compliance? compliance;
+        if (meta.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.Id == (int)meta.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // TODO: if a worker has a very large number of cases this list
+            // could grow; consider a JOIN-based query if perf becomes an issue.
+            var validCaseIdsForSite = await sdkDbContext.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
 
         if (compliance == null)
         {
@@ -1627,25 +1695,38 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the opgave's property."));
         }
 
-        // Filter by the current worker's site: multi-site plannings have one
-        // compliance per site. Without the site filter we pick the OLDEST
-        // compliance across ALL sites — writing against a stale case that
-        // doesn't belong to this worker (bug: planning 3632, site 130 vs 142).
+        // Stable-identity path: client echoes the compliance_id from the
+        // Opgave; PK lookup is deterministic. Legacy fallback (== 0) keeps
+        // the site-filtered fuzzy lookup so older outbox payloads still
+        // drain. See CompleteOpgave for full rationale.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        // TODO: if a worker has a very large number of cases this list could grow;
-        // consider a JOIN-based query if perf becomes an issue.
-        var validCaseIdsForSite = await sdkDbContext.Cases
-            .Where(c => c.SiteId == sdkSiteId)
-            .Select(c => c.Id)
-            .ToListAsync()
-            .ConfigureAwait(false);
-        var compliance = await dbContext.Compliances
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
+        Compliance? compliance;
+        if (request.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // TODO: if a worker has a very large number of cases this list
+            // could grow; consider a JOIN-based query if perf becomes an issue.
+            var validCaseIdsForSite = await sdkDbContext.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
 
         if (compliance == null)
         {
@@ -1835,32 +1916,49 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the opgave's property."));
         }
 
-        // Resolve the compliance for this ARP's planning, filtered to the
-        // current worker's site. Without the site filter, multi-site plannings
-        // hand back the OLDEST compliance across all sites — leading to writes
-        // against stale cases that don't belong to this worker.
+        // Resolve the compliance for this ARP's planning.
         //
-        // WorkflowState != Removed is restored here: the "accept regardless"
-        // comment was a design assumption that doesn't hold. The practical
+        // Stable-identity path: client echoes the compliance_id from the
+        // Opgave it received; we look up by PK directly (deterministic —
+        // see CompleteOpgave for the full rationale). Legacy fallback
+        // (compliance_id == 0) preserves the existing site-filtered fuzzy
+        // lookup so older outbox payloads still drain.
+        //
+        // WorkflowState != Removed is enforced on both paths: the practical
         // edit-then-complete flow has the compliance still active when
-        // SetFieldValue lands. If it's been soft-deleted, we should NOT write to it.
+        // SetFieldValue lands. If it's been soft-deleted, we should NOT
+        // write to it.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        // TODO: if a worker has a very large number of cases this list could grow;
-        // consider a JOIN-based query if perf becomes an issue.
-        var validCaseIdsForSite = await sdkDbContext.Cases
-            .Where(c => c.SiteId == sdkSiteId)
-            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
-            .Select(c => c.Id)
-            .ToListAsync()
-            .ConfigureAwait(false);
-        var compliance = await dbContext.Compliances
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .Where(x => x.PlanningId == arp.ItemPlanningId)
-            .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
-            .OrderBy(x => x.Deadline)
-            .FirstOrDefaultAsync()
-            .ConfigureAwait(false);
+        Compliance? compliance;
+        if (request.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // TODO: if a worker has a very large number of cases this list
+            // could grow; consider a JOIN-based query if perf becomes an issue.
+            var validCaseIdsForSite = await sdkDbContext.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
 
         if (compliance == null)
         {

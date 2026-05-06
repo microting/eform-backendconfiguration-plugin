@@ -30,6 +30,13 @@ message UploadPhotoMeta {
   int32 slot = 2;
   string content_type = 3;
   int64 client_ts_unix = 4;
+  // Server-assigned PK of the Compliance row this opgave was emitted from
+  // (see Index handler). 0 means "unknown" — legacy clients that pre-date
+  // this field; server falls back to the site-filtered fuzzy lookup in
+  // that case so in-flight outbox payloads keep draining.
+  int64 compliance_id = 5;
+  // Server-assigned PK of the SDK Case row backing this opgave. 0 = legacy.
+  int64 microting_sdk_case_id = 6;
 }
 message UploadPhotoResponse {
   string storage_id = 1;
@@ -39,6 +46,9 @@ message RemovePhotoRequest {
   string opgave_id = 1;
   int32 slot = 2;
   int64 client_ts_unix = 3;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 4;
+  int64 microting_sdk_case_id = 5;
 }
 message RemovePhotoResponse {}
 
@@ -47,6 +57,9 @@ message CompleteOpgaveRequest {
   bool completed = 2;
   string completed_by = 3;
   int64 client_ts_unix = 4;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 5;
+  int64 microting_sdk_case_id = 6;
 }
 message CompleteOpgaveResponse { Opgave opgave = 1; }
 
@@ -54,6 +67,9 @@ message SetCommentRequest {
   string opgave_id = 1;
   string text = 2;
   int64 client_ts_unix = 3;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 4;
+  int64 microting_sdk_case_id = 5;
 }
 message SetCommentResponse { Opgave opgave = 1; }
 
@@ -62,6 +78,9 @@ message SetFieldValueRequest {
   int32 field_id = 2;
   string value = 3;
   int64 client_ts_unix = 4;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 5;
+  int64 microting_sdk_case_id = 6;
 }
 message SetFieldValueResponse { Opgave opgave = 1; }
 
@@ -122,6 +141,15 @@ message Opgave {
   // Form-field structure + current values for the eForm template backing
   // this opgave. Empty when no Case exists yet (recurrence-only tasks).
   repeated FormField fields = 15;
+  // Server-assigned PK of the Compliance row this opgave was emitted from.
+  // Round-tripped through the Flutter Drift cache and back on every write
+  // so the server can resolve compliance + sdk case deterministically
+  // (no fuzzy OrderBy(Deadline).First() lookup). 0 = recurrence-only task
+  // with no backing compliance yet (or legacy server pre-dating this field).
+  int64 compliance_id = 16;
+  // Server-assigned PK of the SDK Case row backing this opgave. 0 means
+  // "no backing case" (recurrence-only) or a legacy server.
+  int64 microting_sdk_case_id = 17;
 }
 
 message Attachment {
