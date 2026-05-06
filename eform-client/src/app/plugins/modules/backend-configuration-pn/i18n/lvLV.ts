@@ -437,4 +437,5 @@ export const lvLV = {
   'Save event first to attach files': 'Lai pievienotu failus, vispirms saglabājiet notikumu',
   'Delete attachment?': 'Vai dzēst pielikumu?',
   'Could not download file': 'Nevarēja lejupielādēt failu',
+  'Pending save': 'Gaida saglabāšanu',
 };

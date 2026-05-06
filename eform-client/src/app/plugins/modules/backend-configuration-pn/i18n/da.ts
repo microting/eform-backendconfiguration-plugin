@@ -438,6 +438,5 @@ export const da = {
   'Save event first to attach files': 'Gem først begivenheden for at vedhæfte filer',
   'Delete attachment?': 'Slet vedhæftet fil?',
   'Could not download file': 'Kunne ikke downloade filen',
-  'Coming soon': 'Kommer snart',
-  'Add Google Drive file': 'Tilføj Google Drive-fil',
+  'Pending save': 'Afventer gem',
 };

@@ -437,4 +437,5 @@ export const isIS = {
   'Save event first to attach files': 'Vista viðburð fyrst til að hengja við skrár',
   'Delete attachment?': 'Eyða viðhengi?',
   'Could not download file': 'Gat ekki sótt skrána',
+  'Pending save': 'Bíður vistunar',
 };

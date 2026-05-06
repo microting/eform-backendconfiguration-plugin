@@ -491,4 +491,5 @@ export const deDE = {
   'Save event first to attach files': 'Speichern Sie zuerst das Ereignis, um Dateien anzuhängen.',
   'Delete attachment?': 'Anhang löschen?',
   'Could not download file': 'Datei konnte nicht heruntergeladen werden',
+  'Pending save': 'Ausstehender Speichervorgang',
 };

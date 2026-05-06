@@ -437,4 +437,5 @@ export const slSL = {
   'Save event first to attach files': 'Najprej shranite dogodek, da lahko priložite datoteke',
   'Delete attachment?': 'Izbrisati prilogo?',
   'Could not download file': 'Datoteke ni bilo mogoče prenesti',
+  'Pending save': 'Čaka na shranjevanje',
 };

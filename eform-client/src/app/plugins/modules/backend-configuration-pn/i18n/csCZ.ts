@@ -437,4 +437,5 @@ export const csCZ = {
   'Save event first to attach files': 'Pro připojení souborů nejprve uložte událost',
   'Delete attachment?': 'Smazat přílohu?',
   'Could not download file': 'Soubor se nepodařilo stáhnout',
+  'Pending save': 'Čeká na uložení',
 };

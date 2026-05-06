@@ -9,7 +9,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 public interface IBackendConfigurationCalendarService
 {
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(CalendarTaskRequestModel requestModel);
-    Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel);
+    Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
     Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel);

@@ -437,4 +437,5 @@ export const huHU = {
   'Save event first to attach files': 'Fájlok csatolásához először mentse el az eseményt',
   'Delete attachment?': 'Törli a mellékletet?',
   'Could not download file': 'Nem sikerült letölteni a fájlt',
+  'Pending save': 'Mentés függőben',
 };

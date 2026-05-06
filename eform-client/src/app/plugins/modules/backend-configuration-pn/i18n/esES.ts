@@ -437,4 +437,5 @@ export const esES = {
   'Save event first to attach files': 'Primero guarda el evento para adjuntar archivos.',
   'Delete attachment?': '¿Eliminar archivo adjunto?',
   'Could not download file': 'No se pudo descargar el archivo.',
+  'Pending save': 'Pendiente de guardar',
 };

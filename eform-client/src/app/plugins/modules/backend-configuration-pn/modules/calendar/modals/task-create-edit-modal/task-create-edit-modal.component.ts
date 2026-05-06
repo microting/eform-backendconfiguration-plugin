@@ -32,8 +32,9 @@ import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-m
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {of} from 'rxjs';
+import {firstValueFrom, of} from 'rxjs';
 import {switchMap, take} from 'rxjs/operators';
+import {OperationDataResult} from 'src/app/common/models';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -80,7 +81,10 @@ export class TaskCreateEditModalComponent implements OnInit {
   // handlers below; rendered as 80x80 thumbnails (PNG/JPEG) or filetype icons
   // (PDF) under the "Vedhæft fil" link.
   attachments: CalendarTaskAttachment[] = [];
-  uploadingFiles: { name: string; progress: 'uploading' | 'error'; error?: string }[] = [];
+  uploadingFiles: { name: string; progress: 'uploading' | 'error' | 'pending'; error?: string }[] = [];
+
+  /** Files picked in create mode, queued until the create POST returns an id. */
+  private stagedFiles: File[] = [];
 
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
@@ -666,8 +670,16 @@ export class TaskCreateEditModalComponent implements OnInit {
         : this.calendarService.createTask(payload);
 
       obs.subscribe({
-        next: res => {
+        next: async res => {
           if (res && res.success) {
+            // Create-mode only: drain the staged-files queue against the new
+            // ARP id returned by the backend. createTask resolves to
+            // OperationDataResult<number> whose .model is the new id.
+            // updateTask still resolves to a plain OperationResult (no model).
+            const newId = (res as OperationDataResult<number>)?.model;
+            if (!this.isEditMode && this.stagedFiles.length > 0 && newId) {
+              await this.uploadStagedFilesSequential(newId);
+            }
             this.close(true);
           } else {
             const msg = (res && res.message)
@@ -723,14 +735,72 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   // ---- File attachments ---------------------------------------------------
 
-  /** Hidden <input type="file" #fileInput> change handler. */
+  /**
+   * Hidden <input type="file" #fileInput> change handler.
+   *
+   * Edit-mode: forward to the existing immediate-upload path (POSTs each file
+   * to the existing AreaRulePlanning).
+   *
+   * Create-mode: stage the files in component state and mirror them in the
+   * `uploadingFiles` UI as 'pending' chips. On Save, after the create POST
+   * succeeds and returns the new ARP id, `uploadStagedFilesSequential`
+   * iterates the queue and uploads each file via the same files endpoint.
+   */
   onFileInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    this.uploadFiles(input.files);
+    const files = input.files;
+    if (!files || files.length === 0) return;
+
+    if (this.isEditMode && this.data.task?.id) {
+      this.uploadFiles(files);   // existing immediate-upload path
+    } else {
+      Array.from(files).forEach(f => {
+        this.stagedFiles.push(f);
+        // Mirror in the same uploadingFiles UI as a "pending save" chip.
+        this.uploadingFiles = [...this.uploadingFiles, {name: f.name, progress: 'pending'}];
+      });
+    }
     // Reset so re-selecting the same file fires `change` again. Without this,
     // a delete-then-reupload-same-name flow would no-op silently.
     input.value = '';
+  }
+
+  /** Removes a staged (pre-save) file from both the queue and the UI list. */
+  removeStagedFile(name: string): void {
+    // Remove the first matching entry from each list. Two files with identical
+    // names are not blocked at pick time — but the user only sees one chip per
+    // name, so a single click should not nuke the other instance.
+    const idxStaged = this.stagedFiles.findIndex(f => f.name === name);
+    if (idxStaged >= 0) this.stagedFiles.splice(idxStaged, 1);
+    const idxUi = this.uploadingFiles.findIndex(u => u.name === name && u.progress === 'pending');
+    if (idxUi >= 0) {
+      this.uploadingFiles = [
+        ...this.uploadingFiles.slice(0, idxUi),
+        ...this.uploadingFiles.slice(idxUi + 1),
+      ];
+    }
+  }
+
+  /**
+   * After a successful create POST, walk through `stagedFiles` and upload
+   * each one against the new ARP id. We tolerate per-file failures (log +
+   * toastr.error, continue with the rest) — partial success is more useful
+   * than silently dropping all attachments because file #2 hit a quota.
+   */
+  private async uploadStagedFilesSequential(taskId: number): Promise<void> {
+    for (const file of this.stagedFiles) {
+      try {
+        const res = await firstValueFrom(this.filesService.uploadFile(taskId, file));
+        if (!res || !res.success) {
+          const msg = (res && res.message) ? res.message : this.translate.instant('Error');
+          this.toastr.error(`${file.name}: ${msg}`, this.translate.instant('Error'));
+        }
+      } catch (err: any) {
+        const msg = err?.error?.message || err?.message || this.translate.instant('Error');
+        this.toastr.error(`${file.name}: ${msg}`, this.translate.instant('Error'));
+      }
+    }
+    this.stagedFiles = [];
   }
 
   /**
@@ -757,7 +827,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     const next = () => {
       const file = queue.shift();
       if (!file) return;
-      const chip: { name: string; progress: 'uploading' | 'error'; error?: string } = {
+      const chip: { name: string; progress: 'uploading' | 'error' | 'pending'; error?: string } = {
         name: file.name, progress: 'uploading',
       };
       this.uploadingFiles = [...this.uploadingFiles, chip];

@@ -456,8 +456,7 @@ export const enUS= {
   'Next day': 'Next day',
   'Attach file': 'Attach file',
   'Save event first to attach files': 'Save event first to attach files',
+  'Pending save': 'Pending save',
   'Delete attachment?': 'Delete attachment?',
-  'Coming soon': 'Coming soon',
-  'Add Google Drive file': 'Add Google Drive file',
   'Could not download file': 'Could not download file',
 };

@@ -437,4 +437,5 @@ export const skSK = {
   'Save event first to attach files': 'Najprv uložte udalosť, aby ste mohli priložiť súbory',
   'Delete attachment?': 'Odstrániť prílohu?',
   'Could not download file': 'Súbor sa nepodarilo stiahnuť',
+  'Pending save': 'Čaká sa na uloženie',
 };

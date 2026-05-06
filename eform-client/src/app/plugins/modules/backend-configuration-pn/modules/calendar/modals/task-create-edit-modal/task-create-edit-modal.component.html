@@ -254,15 +254,10 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">attach_file</mat-icon>
       <div class="gcal-row-content">
-        <a *ngIf="isEditMode && !isReadonly"
+        <a *ngIf="!isReadonly"
            id="calendarEventAttachLink"
            class="gcal-action-link"
            (click)="fileInput.click()">
-          {{ 'Attach file' | translate }}
-        </a>
-        <a *ngIf="!isEditMode"
-           class="gcal-action-link gcal-action-link--disabled"
-           [matTooltip]="'Save event first to attach files' | translate">
           {{ 'Attach file' | translate }}
         </a>
         <input #fileInput
@@ -298,9 +293,19 @@
             </button>
           </div>
           <div *ngFor="let u of uploadingFiles" class="gcal-attachment-row gcal-attachment-row--uploading">
-            <mat-spinner diameter="20"></mat-spinner>
+            <mat-spinner *ngIf="u.progress === 'uploading'" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="u.progress === 'pending'" class="gcal-attachment-pending-icon">schedule</mat-icon>
+            <mat-icon *ngIf="u.progress === 'error'" class="gcal-attachment-error-icon">error</mat-icon>
             <span class="gcal-attachment-name">{{ u.name }}</span>
+            <span *ngIf="u.progress === 'pending'" class="gcal-attachment-hint">{{ 'Pending save' | translate }}</span>
             <span *ngIf="u.progress === 'error'" class="gcal-attachment-error">{{ u.error }}</span>
+            <button *ngIf="u.progress === 'pending'"
+                    mat-icon-button
+                    class="gcal-attachment-delete"
+                    (click)="removeStagedFile(u.name)"
+                    [attr.aria-label]="'Delete' | translate">
+              <mat-icon>delete</mat-icon>
+            </button>
           </div>
         </div>
       </div>

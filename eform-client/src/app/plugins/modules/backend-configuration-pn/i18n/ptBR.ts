@@ -437,4 +437,5 @@ export const ptBR = {
   'Save event first to attach files': 'Primeiro, salve o evento para anexar arquivos.',
   'Delete attachment?': 'Excluir anexo?',
   'Could not download file': 'Não foi possível baixar o arquivo.',
+  'Pending save': 'Salvamento pendente',
 };

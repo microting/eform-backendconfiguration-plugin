@@ -437,4 +437,5 @@ export const bgBG = {
   'Save event first to attach files': 'Първо запазете събитието, за да прикачите файлове',
   'Delete attachment?': 'Да се изтрие ли прикаченият файл?',
   'Could not download file': 'Файлът не можа да бъде изтеглен',
+  'Pending save': 'Чакащо запазване',
 };

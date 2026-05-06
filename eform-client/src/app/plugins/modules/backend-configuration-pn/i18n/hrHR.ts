@@ -437,4 +437,5 @@ export const hrHR = {
   'Save event first to attach files': 'Prvo spremite događaj da biste mogli priložiti datoteke',
   'Delete attachment?': 'Izbrisati privitak?',
   'Could not download file': 'Nije moguće preuzeti datoteku',
+  'Pending save': 'Spremanje na čekanju',
 };

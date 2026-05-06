@@ -437,4 +437,5 @@ export const plPL = {
   'Save event first to attach files': 'Aby dołączyć pliki, najpierw zapisz wydarzenie',
   'Delete attachment?': 'Usunąć załącznik?',
   'Could not download file': 'Nie można pobrać pliku',
+  'Pending save': 'Oczekiwanie na zapisanie',
 };

@@ -437,4 +437,5 @@ export const elGR = {
   'Save event first to attach files': 'Αποθηκεύστε πρώτα το συμβάν για να επισυνάψετε αρχεία',
   'Delete attachment?': 'Διαγραφή συνημμένου;',
   'Could not download file': 'Δεν ήταν δυνατή η λήψη του αρχείου',
+  'Pending save': 'Εκκρεμής αποθήκευση',
 };

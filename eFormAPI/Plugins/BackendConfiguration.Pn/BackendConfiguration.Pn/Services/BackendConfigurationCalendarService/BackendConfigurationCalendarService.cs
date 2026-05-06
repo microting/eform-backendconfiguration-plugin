@@ -516,7 +516,7 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel)
+    public async Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel)
     {
         try
         {
@@ -524,7 +524,7 @@ public class BackendConfigurationCalendarService(
             var taskDateTime = createModel.StartDate.AddHours(createModel.StartHour);
             if (taskDateTime < DateTime.UtcNow)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
@@ -535,7 +535,7 @@ public class BackendConfigurationCalendarService(
             // silently producing an invisible event.
             if (createModel.Sites is null || createModel.Sites.Count == 0)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
@@ -566,7 +566,7 @@ public class BackendConfigurationCalendarService(
             var result = await taskWizardService.CreateTask(wizardModel);
             if (!result.Success)
             {
-                return result;
+                return new OperationDataResult<int>(false, result.Message);
             }
 
             // Find the AreaRulePlanning created by TaskWizard for this specific task
@@ -618,14 +618,19 @@ public class BackendConfigurationCalendarService(
                 await calConfig.Create(backendConfigurationPnDbContext);
             }
 
-            return new OperationResult(true,
-                localizationService.GetString("CalendarTaskCreatedSuccessfully"));
+            // latestArp may be null in the rare edge case where TaskWizard
+            // succeeded but did not produce an ARP we can correlate to (e.g.
+            // EformId resolution skew). Return success with id=0 — frontend
+            // treats 0 as "no id, skip post-save uploads".
+            return new OperationDataResult<int>(true,
+                localizationService.GetString("CalendarTaskCreatedSuccessfully"),
+                latestArp?.Id ?? 0);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e, "BackendConfigurationCalendarService.CreateTask: {Message}", e.Message);
-            return new OperationResult(false,
+            return new OperationDataResult<int>(false,
                 $"{localizationService.GetString("ErrorWhileCreatingCalendarTask")}: {e.Message}");
         }
     }

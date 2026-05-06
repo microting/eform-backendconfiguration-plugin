@@ -437,4 +437,5 @@ export const etET = {
   'Save event first to attach files': 'Failide lisamiseks salvesta esmalt sündmus',
   'Delete attachment?': 'Kustutada manus?',
   'Could not download file': 'Faili allalaadimine ebaõnnestus',
+  'Pending save': 'Salvestamist ootel',
 };

@@ -437,4 +437,5 @@ export const noNO = {
   'Save event first to attach files': 'Lagre hendelsen først for å legge ved filer',
   'Delete attachment?': 'Slette vedlegg?',
   'Could not download file': 'Kunne ikke laste ned filen',
+  'Pending save': 'Venter på lagring',
 };

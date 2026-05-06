@@ -437,4 +437,5 @@ export const svSE = {
   'Save event first to attach files': 'Spara händelsen först för att bifoga filer',
   'Delete attachment?': 'Ta bort bilagan?',
   'Could not download file': 'Kunde inte ladda ner filen',
+  'Pending save': 'Väntar på att spara',
 };

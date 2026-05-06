@@ -114,11 +114,12 @@ test.describe.serial('Calendar event attachments', () => {
   });
 
   // =======================================================================
-  // J1: full attachment round-trip — create event, attach PDF + PNG + JPG,
-  //     reload, delete the PDF, reload again, assert the two remaining
+  // J1: full attachment round-trip — create event with 3 files staged BEFORE
+  //     save (pre-save staging flow), wait for the create POST + 3 sequential
+  //     file POSTs, reopen, delete the PDF, reload, assert the two remaining
   //     attachments are still present.
   // =======================================================================
-  test('J1: attach PDF + PNG + JPG to event, reload, delete one, verify', async ({ page }) => {
+  test('J1: stage PDF + PNG + JPG in create modal, save, delete one, verify', async ({ page }) => {
     test.setTimeout(180000);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `J1-${generateRandmString(5)}`;
@@ -146,54 +147,54 @@ test.describe.serial('Calendar event attachments', () => {
     await page.locator('#calendarEventTitle').click();
     await page.waitForTimeout(300);
 
-    // Sanity: in create-mode the Attach link is disabled (visible but
-    // pointer-events handled at CSS level — assert the disabled class).
-    const attachLink = page.locator('#calendarEventAttachInput');
-    // The link itself isn't rendered in create-mode (separate disabled <a>);
-    // the hidden <input> IS in the DOM via *ngIf="!isReadonly" logic, so
-    // checking the disabled-class anchor is the right gate here.
+    // Sanity: in create-mode the Attach link is now ALWAYS active (the
+    // pre-save staging flow no longer requires saving first). Verify the
+    // link is visible and clickable, with no disabled-class variant rendered.
+    await expect(page.locator('#calendarEventAttachLink')).toBeVisible();
     await expect(page.locator('a.gcal-action-link--disabled', { hasText: 'Vedhæft fil' }).or(
-                  page.locator('a.gcal-action-link--disabled', { hasText: 'Attach file' }))).toBeVisible();
+                  page.locator('a.gcal-action-link--disabled', { hasText: 'Attach file' }))).toHaveCount(0);
 
-    // 2. Save the event. This POSTs /tasks and on success closes the modal.
-    const createResp = page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
-        && !r.url().includes('/tasks/week')
-        && r.request().method() === 'POST',
-      { timeout: 30000 }
-    );
-    await page.locator('#calendarEventSaveBtn').click();
-    await createResp;
-    await page.waitForTimeout(1500);
-    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
-
-    // 3. Re-open the event in edit-mode (where the Attach link is active).
-    await calendarPage.findEventBlock(title).click();
-    // Preview popover → click Edit. Reuse the existing helper.
-    await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
-    await calendarPage.getPreviewEditButton().click();
-    await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
-
-    // 4. Wire up response promises BEFORE setting files so we don't miss
-    //    the upload POSTs (sequential — three of them).
-    const upload1 = page.waitForResponse(
-      r => /\/calendar\/tasks\/\d+\/files$/.test(r.url())
-        && r.request().method() === 'POST',
-      { timeout: 30000 }
-    );
-    // Set all three files in one shot — uploadFiles() iterates sequentially.
+    // 2. Stage all three files in the create modal — they queue locally as
+    //    'pending' chips (icon = `schedule`, no spinner), no network call yet.
     await page.locator('#calendarEventAttachInput').setInputFiles([
       PDF_FIXTURE, PNG_FIXTURE, JPG_FIXTURE,
     ]);
+    // Three pending rows visible — match by the schedule icon class so we
+    // don't false-positive on completed rows.
+    await expect(page.locator('.gcal-attachment-row .gcal-attachment-pending-icon'))
+      .toHaveCount(3, { timeout: 5000 });
+
+    // 3. Click Gem (Save). Expect 1 create POST + 3 sequential file POSTs.
+    const createResp = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+        && !r.url().includes('/tasks/week')
+        && !/\/files(?:\/|$)/.test(r.url())
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    const upload1 = page.waitForResponse(
+      r => /\/calendar\/tasks\/\d+\/files$/.test(r.url())
+        && r.request().method() === 'POST',
+      { timeout: 60000 }
+    );
+    await page.locator('#calendarEventSaveBtn').click();
+    await createResp;
+    // One file upload registered is enough proof the staged-flow fired —
+    // the modal closes once `uploadStagedFilesSequential` finishes the loop.
     await upload1;
-    // Wait for the remaining two POSTs by polling DOM count instead of racing
-    // multiple waitForResponse — sequentially-fired uploads can finish faster
-    // than playwright can register a second listener, so DOM is the truth.
+    await page.waitForTimeout(1500);
+    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+
+    // 4. Re-open the event in edit-mode. The 3 attachments should be visible
+    //    (no longer pending — they were uploaded post-save).
+    await calendarPage.findEventBlock(title).click();
+    await page.locator('app-task-preview-modal').waitFor({ state: 'visible', timeout: 10000 });
+    await calendarPage.getPreviewEditButton().click();
+    await page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
     await expect(page.locator('.gcal-attachment-row').filter({ hasNot: page.locator('mat-spinner') }))
       .toHaveCount(3, { timeout: 30000 });
 
-    // 5. Close the modal — saves are unrelated to attachments (uploads are
-    //    independent endpoint calls), so just close.
+    // 5. Close the modal — uploads are already complete.
     await calendarPage.closeEventModal();
     await page.waitForTimeout(500);
 

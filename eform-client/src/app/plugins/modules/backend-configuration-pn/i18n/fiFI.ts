@@ -437,4 +437,5 @@ export const fiFI = {
   'Save event first to attach files': 'Tallenna tapahtuma ensin liittääksesi tiedostoja',
   'Delete attachment?': 'Poistetaanko liite?',
   'Could not download file': 'Tiedoston lataaminen epäonnistui',
+  'Pending save': 'Tallennus odottaa',
 };

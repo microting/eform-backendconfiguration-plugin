@@ -30,7 +30,7 @@ public class CalendarController : Controller
     }
 
     [HttpPost("tasks")]
-    public async Task<OperationResult> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
+    public async Task<OperationDataResult<int>> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
     {
         return await _backendConfigurationCalendarService.CreateTask(createModel);
     }

@@ -437,4 +437,5 @@ export const ltLT = {
   'Save event first to attach files': 'Pirmiausia išsaugokite įvykį, kad galėtumėte pridėti failus',
   'Delete attachment?': 'Ištrinti priedą?',
   'Could not download file': 'Nepavyko atsisiųsti failo',
+  'Pending save': 'Laukiama išsaugojimo',
 };

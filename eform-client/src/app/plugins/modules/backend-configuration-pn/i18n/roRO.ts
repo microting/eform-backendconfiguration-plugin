@@ -437,4 +437,5 @@ export const roRO = {
   'Save event first to attach files': 'Salvați mai întâi evenimentul pentru a atașa fișiere',
   'Delete attachment?': 'Ștergeți atașamentul?',
   'Could not download file': 'Nu s-a putut descărca fișierul',
+  'Pending save': 'Salvare în așteptare',
 };
