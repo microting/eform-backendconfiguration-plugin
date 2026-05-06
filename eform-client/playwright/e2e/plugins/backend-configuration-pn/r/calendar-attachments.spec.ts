@@ -41,7 +41,9 @@ const worker: PropertyWorker = {
 
 let seeded = false;
 
-const FIXTURE_DIR = path.resolve(__dirname, '../../../../fixtures/calendar-attachments');
+// Fixtures live next to the spec inside e2e/plugins/backend-configuration-pn/
+// so the CI workflow's existing `cp -av` of that directory picks them up.
+const FIXTURE_DIR = path.resolve(__dirname, 'fixtures/calendar-attachments');
 const PDF_FIXTURE = path.join(FIXTURE_DIR, 'sample.pdf');
 const PNG_FIXTURE = path.join(FIXTURE_DIR, 'sample.png');
 const JPG_FIXTURE = path.join(FIXTURE_DIR, 'sample.jpg');
