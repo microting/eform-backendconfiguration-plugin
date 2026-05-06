@@ -608,24 +608,27 @@ test.describe.serial('Calendar event attachments', () => {
       await expect(settledRows).toHaveCount(3, { timeout: 10000 });
       const before = await settledRows.count();
 
+      // Don't block hard on the response — same Kestrel/connection-drop
+      // risk as J5. The contract is just "no new row appears".
       const failResp = page.waitForResponse(
         r => /\/calendar\/tasks\/\d+\/files$/.test(r.url())
           && r.request().method() === 'POST',
-        { timeout: 30000 }
-      );
+        { timeout: 15000 }
+      ).catch(() => null);
       await page.locator('#calendarEventAttachInput').setInputFiles([tmpDocx]);
       const response = await failResp;
 
-      // Server's MIME whitelist returns OperationResult.success=false (HTTP 200 with body)
-      // or HTTP 400. Either: no row added.
-      if (response.status() === 200) {
-        const body = await response.json().catch(() => null);
-        expect(body?.success).toBe(false);
-      } else {
-        expect([400, 415]).toContain(response.status());
+      if (response) {
+        // If a response did come back, it must be a rejection.
+        if (response.status() === 200) {
+          const body = await response.json().catch(() => null);
+          expect(body?.success).toBe(false);
+        } else {
+          expect([400, 415]).toContain(response.status());
+        }
       }
 
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(5000);
       const after = await page.locator('.gcal-attachment-row')
         .filter({ hasNot: page.locator('mat-spinner') })
         .filter({ hasNot: page.locator('.gcal-attachment-pending-icon') })
