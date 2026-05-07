@@ -1218,6 +1218,38 @@ public class OpgaverGrpcService(
                 await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
+            // Parity harness s3 fix: angular's /api/.../compliances/cases PUT
+            // ships the full ReplyElement tree from CaseEditRequest, so its
+            // CaseUpdateHelper batch-saves a "[fieldValueId]|" pair for every
+            // field — including unchanged ones still sitting at Value=NULL.
+            // PnBase rewrites NULL → "" and emits one FieldValueVersion row per
+            // write. Mobile's CompleteOpgave never touches FieldValues unless a
+            // SetFieldValue preceded it, so NULLs survive and no version rows
+            // emit. We mirror angular's batch by writing "" into every NULL
+            // FieldValue for this case in a single Core.CaseUpdate call. We do
+            // NOT touch non-NULL rows (would clobber user edits) or rows that
+            // are already "" (angular only versions on actual transitions).
+            var nullFieldValues = await sdkDbContext.FieldValues
+                .Where(fv => fv.CaseId == foundCase.Id
+                          && fv.Value == null
+                          && (fv.WorkflowState == null
+                              || fv.WorkflowState != Constants.WorkflowStates.Removed))
+                .ToListAsync()
+                .ConfigureAwait(false);
+            if (nullFieldValues.Count > 0)
+            {
+                var emptyPairs = nullFieldValues
+                    .Select(fv => $"{fv.Id}|")
+                    .ToList();
+                var languageForBatch = await sdkDbContext.Languages
+                    .FirstAsync()
+                    .ConfigureAwait(false);
+                await core.CaseUpdate(caseId, emptyPairs, [])
+                    .ConfigureAwait(false);
+                await core.CaseUpdateFieldValues(caseId, languageForBatch)
+                    .ConfigureAwait(false);
+            }
+
             // Mirror BackendConfigurationCompliancesService.Update lines 373-389
             // (canonical save path). After the SDK Case is updated to
             // Status=100 / WorkflowState=Created, the angular flow finishes by
