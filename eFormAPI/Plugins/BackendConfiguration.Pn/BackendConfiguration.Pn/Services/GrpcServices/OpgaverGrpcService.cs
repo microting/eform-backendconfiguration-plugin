@@ -1142,6 +1142,102 @@ public class OpgaverGrpcService(
 
         if (foundCase != null)
         {
+            // Parity harness s3 (empty-complete) fix: mirror the angular
+            // GET-then-PUT round-trip's writeback for NULL Number /
+            // NumberStepper FieldValues. The chain is:
+            //
+            //  1) BackendConfigurationCompliancesService.Read(id) calls
+            //     Core.CaseRead → SqlController.CheckRead, which builds the
+            //     ReplyElement by walking the case's CheckList tree and
+            //     materialising every Field's FieldValue
+            //     (eform-sdk/eFormCore/Infrastructure/SqlController.cs lines
+            //     1605-1796: Where(WorkflowState != Removed) ParentFieldId
+            //     gating, plus per-FieldValue ReadFieldValue).
+            //  2) ReadFieldValue serialises the FieldValue.Value verbatim
+            //     EXCEPT for Number / NumberStepper / Date / a few others —
+            //     those rewrite NULL → "" before JSON serialisation
+            //     (SqlController.cs lines 2217-2231 for Number / NumberStepper,
+            //     2233-2247 for Date).
+            //  3) The harness round-trips the ReplyElement unchanged into
+            //     CaseEditRequest[]; angular's
+            //     CaseUpdateHelper.GetFieldValuesByRequestField
+            //     (eFormApi.BasePn/.../CaseUpdateHelper.cs lines 95-103) emits
+            //     a "[fieldValueId]|" pair for any Number whose Value is
+            //     non-null on the wire — which after step 2 includes every
+            //     NULL Number FieldValue. Date's TryParseExact("",...) fails
+            //     so Date does NOT emit a pair (lines 113-137).
+            //  4) BackendConfigurationCompliancesService.Update line 223 calls
+            //     Core.CaseUpdate, which calls SqlController.FieldValueUpdate
+            //     (Core.cs lines 1649-1654) — that writes Value="" to the
+            //     matching FieldValue and PnBase.Update emits a Version row.
+            //
+            // Net: only Number / NumberStepper FieldValues whose Value is
+            // NULL get rewritten to "". Mobile's CompleteOpgave previously
+            // skipped FieldValues entirely on empty-complete, so the angular
+            // delta included a FieldValueVersion row plus an updated
+            // FieldValue.Value="" that mobile didn't emit.
+            //
+            // The filter below is the EXACT canonical set: Field is in the
+            // case's CheckList tree (Field.WorkflowState != Removed,
+            // Field.CheckListId IN (case CheckList ∪ subtree CheckLists)),
+            // FieldValue.CaseId == foundCase.Id, FieldValue.Value IS NULL,
+            // FieldValue.WorkflowState != Removed, AND Field's FieldType is
+            // Number or NumberStepper. Other types either keep NULL on the
+            // wire (filtered out by GetFieldValuesByRequestField) or
+            // round-trip through a parser that rejects "" (Date).
+            //
+            // Why scoped to the CheckList tree (not all FVs for the case):
+            // SqlController.CheckRead only walks Fields whose CheckListId is
+            // in the case's CheckList ∪ subtree (lines 1605-1668), so a
+            // FieldValue whose Field belongs to an old/different template
+            // version would not appear in the ReplyElement and angular's PUT
+            // would not touch it.
+            var caseChecklistIds = await sdkDbContext.CheckLists
+                .Where(cl => cl.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(cl => cl.Id == foundCase.CheckListId
+                          || cl.ParentId == foundCase.CheckListId
+                          || (cl.ParentId != null
+                              && sdkDbContext.CheckLists
+                                  .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed)
+                                  .Any(p => p.Id == cl.ParentId
+                                         && p.ParentId == foundCase.CheckListId)))
+                .Select(cl => cl.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            var numberFieldTypeIds = await sdkDbContext.FieldTypes
+                .Where(ft => ft.Type == Constants.FieldTypes.Number
+                          || ft.Type == Constants.FieldTypes.NumberStepper)
+                .Select(ft => ft.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            var emptyFillTargets = await sdkDbContext.FieldValues
+                .Where(fv => fv.CaseId == foundCase.Id
+                          && fv.Value == null
+                          && fv.WorkflowState != Constants.WorkflowStates.Removed)
+                .Join(sdkDbContext.Fields
+                          .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed
+                                   && f.FieldTypeId.HasValue
+                                   && numberFieldTypeIds.Contains(f.FieldTypeId.Value)
+                                   && caseChecklistIds.Contains((int)f.CheckListId)),
+                      fv => fv.FieldId,
+                      f => f.Id,
+                      (fv, f) => fv.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            if (emptyFillTargets.Count > 0)
+            {
+                var emptyPairs = emptyFillTargets
+                    .Select(id => $"{id}|")
+                    .ToList();
+                var languageForBatch = await sdkDbContext.Languages
+                    .FirstAsync()
+                    .ConfigureAwait(false);
+                await core.CaseUpdate(caseId, emptyPairs, [])
+                    .ConfigureAwait(false);
+                await core.CaseUpdateFieldValues(caseId, languageForBatch)
+                    .ConfigureAwait(false);
+            }
+
             foundCase.DoneAtUserModifiable = dayDoneAt;
             foundCase.DoneAt = dayDoneAt;
             foundCase.SiteId = sdkSiteId;
