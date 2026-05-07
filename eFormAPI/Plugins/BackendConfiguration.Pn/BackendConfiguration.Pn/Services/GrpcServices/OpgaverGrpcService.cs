@@ -2348,9 +2348,35 @@ public class OpgaverGrpcService(
                 $"No FieldValue row exists for case {caseId} field {request.FieldId}."));
         }
 
+        // Canonicalize the incoming value to match the storage form the angular
+        // admin path produces (CaseUpdateHelper.GetFieldValuesByRequestField in
+        // eFormApi.BasePn/Infrastructure/Helpers/CaseUpdateHelper.cs:63-186).
+        // The angular wire format and the SDK lookups (SqlController.cs:1303-1310,
+        // 2249-2261, 3787, 3812) assume:
+        //   * CheckBox  → "checked" / "unchecked"
+        //   * SingleSelect / MultiSelect → FieldOption.Key (numeric option id),
+        //     not the localized translation text
+        // The flutter-side gRPC client may send any of: a true/false flag, the
+        // localized label ("Ja", "Nej"), or the canonical key ("1"). We
+        // normalize here so the device UI does not need to know the storage
+        // convention. Other field types pass through unchanged.
+        var fieldTypeName = await sdkDbContext.Fields
+            .Where(f => f.Id == request.FieldId)
+            .Join(sdkDbContext.FieldTypes,
+                f => f.FieldTypeId,
+                ft => ft.Id,
+                (f, ft) => ft.Type)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        var rawValue = request.Value ?? string.Empty;
+        var canonicalValue = await CanonicalizeFieldValueAsync(
+            sdkDbContext, request.FieldId, fieldTypeName, rawValue, language.Id)
+            .ConfigureAwait(false);
+
         var fieldValueList = new List<string>
         {
-            $"{fieldValueRowId}|{request.Value ?? string.Empty}"
+            $"{fieldValueRowId}|{canonicalValue}"
         };
 
         try
@@ -2495,5 +2521,169 @@ public class OpgaverGrpcService(
 
         // Non-numeric tavle_id is treated as "no board filter" rather than a hard failure.
         return [];
+    }
+
+    /// <summary>
+    /// Normalize an incoming SetFieldValue value into the canonical wire form
+    /// the angular admin path produces. The reference implementation is
+    /// <c>CaseUpdateHelper.GetFieldValuesByRequestField</c>
+    /// (eFormApi.BasePn/Infrastructure/Helpers/CaseUpdateHelper.cs:63-186); the
+    /// SDK lookups expect:
+    ///   * CheckBox  → "checked" / "unchecked" (SqlController.cs:1303-1310,
+    ///     2249-2261). Anything truthy ("1", "true", "checked", "yes", "ja") →
+    ///     "checked"; anything falsy or empty → "unchecked".
+    ///   * SingleSelect / MultiSelect → <c>FieldOption.Key</c> (numeric
+    ///     option id), not the localized translation text. SDK matches on
+    ///     <c>FieldOption.Key == FieldValue.Value</c> at SqlController.cs:3787
+    ///     and 3812. If the caller sent a label instead of a key, we resolve
+    ///     it via FieldOptionTranslations against the language (any language
+    ///     match counts — labels are unique within a field), and fall back to
+    ///     the raw value if no match is found.
+    /// All other field types pass through unchanged.
+    /// </summary>
+    private static async Task<string> CanonicalizeFieldValueAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        int fieldId,
+        string? fieldTypeName,
+        string rawValue,
+        int languageId)
+    {
+        if (string.IsNullOrEmpty(fieldTypeName))
+        {
+            return rawValue;
+        }
+
+        switch (fieldTypeName)
+        {
+            case Constants.FieldTypes.CheckBox:
+            {
+                var v = rawValue.Trim();
+                if (v.Length == 0)
+                {
+                    return "unchecked";
+                }
+                var lower = v.ToLowerInvariant();
+                if (lower is "1" or "true" or "checked" or "yes" or "ja")
+                {
+                    return "checked";
+                }
+                if (lower is "0" or "false" or "unchecked" or "no" or "nej")
+                {
+                    return "unchecked";
+                }
+                // Unknown literal — pass through; the SDK's default branch
+                // (SqlController.cs:1309) preserves whatever was stored.
+                return v;
+            }
+
+            case Constants.FieldTypes.SingleSelect:
+            {
+                if (string.IsNullOrEmpty(rawValue))
+                {
+                    return rawValue;
+                }
+                return await ResolveFieldOptionKeyAsync(
+                    sdkDbContext, fieldId, rawValue, languageId).ConfigureAwait(false);
+            }
+
+            case Constants.FieldTypes.MultiSelect:
+            {
+                if (string.IsNullOrEmpty(rawValue))
+                {
+                    return rawValue;
+                }
+                // MultiSelect wire format is pipe-joined keys (SqlController.cs:3804).
+                // Resolve each segment independently so callers may send either keys,
+                // labels, or any mix.
+                var segments = rawValue.Split('|');
+                var resolved = new List<string>(segments.Length);
+                foreach (var seg in segments)
+                {
+                    if (string.IsNullOrEmpty(seg))
+                    {
+                        resolved.Add(seg);
+                        continue;
+                    }
+                    resolved.Add(await ResolveFieldOptionKeyAsync(
+                        sdkDbContext, fieldId, seg, languageId).ConfigureAwait(false));
+                }
+                return string.Join("|", resolved);
+            }
+
+            default:
+                return rawValue;
+        }
+    }
+
+    /// <summary>
+    /// Map a single SingleSelect/MultiSelect input value back to the
+    /// canonical <c>FieldOption.Key</c>. Order of resolution:
+    ///   1. If <paramref name="rawValue"/> exactly matches an existing
+    ///      FieldOption.Key for this field, return it as-is (caller already
+    ///      sent the canonical form).
+    ///   2. Otherwise, look up FieldOptionTranslations by Text == rawValue
+    ///      for this field. Match on the requested language first; if no
+    ///      hit, fall back to any language (translations of the same option
+    ///      across languages are mutually exclusive at the Key level).
+    ///   3. If no translation matches, return the raw value unchanged so the
+    ///      SDK's existing not-found behaviour (newValue stays empty) is
+    ///      preserved — diagnosing the failure shifts to the
+    ///      CaseUpdateFieldValues read path rather than corrupting writes.
+    /// </summary>
+    private static async Task<string> ResolveFieldOptionKeyAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        int fieldId,
+        string rawValue,
+        int languageId)
+    {
+        // Step 1 — caller already sent a key.
+        var keyMatch = await sdkDbContext.FieldOptions
+            .Where(fo => fo.FieldId == fieldId
+                         && fo.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                         && fo.Key == rawValue)
+            .Select(fo => fo.Key)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(keyMatch))
+        {
+            return keyMatch;
+        }
+
+        // Step 2a — translate label → key, prefer the requested language.
+        var preferred = await (
+            from fo in sdkDbContext.FieldOptions
+            join fot in sdkDbContext.FieldOptionTranslations
+                on fo.Id equals fot.FieldOptionId
+            where fo.FieldId == fieldId
+                  && fo.WorkflowState !=
+                     Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                  && fot.LanguageId == languageId
+                  && fot.Text == rawValue
+            select fo.Key
+        ).FirstOrDefaultAsync().ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(preferred))
+        {
+            return preferred;
+        }
+
+        // Step 2b — fall back to any language (handles flutter clients that
+        // request a different locale than the worker's primary).
+        var anyLang = await (
+            from fo in sdkDbContext.FieldOptions
+            join fot in sdkDbContext.FieldOptionTranslations
+                on fo.Id equals fot.FieldOptionId
+            where fo.FieldId == fieldId
+                  && fo.WorkflowState !=
+                     Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                  && fot.Text == rawValue
+            select fo.Key
+        ).FirstOrDefaultAsync().ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(anyLang))
+        {
+            return anyLang;
+        }
+
+        // Step 3 — no match; pass through.
+        return rawValue;
     }
 }
