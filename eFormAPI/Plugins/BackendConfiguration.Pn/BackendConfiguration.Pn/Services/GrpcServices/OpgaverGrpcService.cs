@@ -531,7 +531,23 @@ public class OpgaverGrpcService(
                 }
                 else
                 {
-                    field.Value = f.FieldValue ?? string.Empty;
+                    // f.FieldValue (singular) is the *template* DefaultValue (e.g. "False"
+                    // for a CheckBox, "" for Comment) — DbFieldToField sets it once from
+                    // the eForm definition and never reassigns it from per-case data.
+                    // The actual user-entered answer lives in f.FieldValues[0].Value
+                    // (populated by SqlController's CaseRead at lines 1715-1724 / 1785-1789
+                    // from the field_values table for this case). Without this, every
+                    // stream poll overwrites the user's optimistic write with the template
+                    // default, producing the "type → reset to empty" loop on the worker.
+                    //
+                    // Empty-string handling: IsNullOrEmpty treats both null and ""
+                    // as "no per-case value" → fall back to template default. This means
+                    // a user clearing a Comment to "" sees the default placeholder return
+                    // (minor edge case; documented in fix commit).
+                    var perCaseValue = f.FieldValues?.FirstOrDefault()?.Value;
+                    field.Value = !string.IsNullOrEmpty(perCaseValue)
+                        ? perCaseValue
+                        : (f.FieldValue ?? string.Empty);
                 }
                 break;
             default:
@@ -2170,8 +2186,27 @@ public class OpgaverGrpcService(
 
         try
         {
-            await core.CaseUpdate(caseId, fieldValueList, []).ConfigureAwait(false);
+            // Core.CaseUpdate wraps in try/catch and returns false on failure
+            // (only Log.LogFail side effect — see eform-sdk Core.cs:1665-1669).
+            // Without this check the silent write failure would look like
+            // success to the client; the next stream poll then overwrites the
+            // user's optimistic value with the template default, leaving the
+            // user confused. FailedPrecondition is treated by the Flutter side
+            // as a permanent error → conflict modal → user can retry.
+            var ok = await core.CaseUpdate(caseId, fieldValueList, []).ConfigureAwait(false);
+            if (!ok)
+            {
+                logger.LogError(
+                    "OpgaverGrpcService.SetFieldValue: Core.CaseUpdate returned false for opgave {OpgaveId} field {FieldId} caseId {CaseId}",
+                    opgaveId, request.FieldId, caseId);
+                throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                    "Field value persistence failed in SDK CaseUpdate"));
+            }
             await core.CaseUpdateFieldValues(caseId, language).ConfigureAwait(false);
+        }
+        catch (RpcException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
