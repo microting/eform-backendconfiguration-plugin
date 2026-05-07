@@ -2263,4 +2263,231 @@ public class BackendConfigurationCalendarService(
                 $"{localizationService.GetString("ErrorWhileDeletingAttachment")}: {e.Message}");
         }
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Implementation mirrors the compliance branch of
+    /// <see cref="GetTasksForWeek"/> (lines 514-583) AND the angular
+    /// <c>BackendConfigurationTaskTrackerHelper.Index</c> path
+    /// (Infrastructure/Helpers/BackendConfigurationTaskTrackerHelper.cs:46-351),
+    /// but without a deadline window — every non-removed compliance under
+    /// the property is returned. The SDK Case is loaded in one batched IN
+    /// query so we can populate <see cref="CalendarTaskResponseModel.Completed"/>
+    /// (<c>Case.Status == 100</c>) and
+    /// <see cref="CalendarTaskResponseModel.TaskIsExpired"/>
+    /// (<c>(Case.WorkflowState=Removed AND Status=77) OR
+    /// (compliance.Deadline &lt; UtcNow AND Status != 100)</c>).
+    /// </remarks>
+    public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
+        int propertyId, int? sdkSiteIdForFilter)
+    {
+        try
+        {
+            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+            var dateTimeNow = DateTime.UtcNow;
+            var result = new List<CalendarTaskResponseModel>();
+
+            // Default board for missing-board fallback (parity with GetTasksForWeek line 53-59).
+            var defaultBoard = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyId == propertyId)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync();
+            var defaultBoardId = defaultBoard?.Id;
+
+            // Full-scope compliance load — no deadline window, property scoped.
+            // Mirrors BackendConfigurationTaskTrackerHelper.cs:59-65 + 67-76.
+            // WorkflowState NULL is treated as "not removed" to match the
+            // ActionableOnly branch convention applied to other mobile-worker
+            // queries on this service.
+            var compliances = await backendConfigurationPnDbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.PropertyId == propertyId)
+                .OrderBy(x => x.Deadline)
+                .ToListAsync();
+
+            if (compliances.Count == 0)
+            {
+                return new OperationDataResult<List<CalendarTaskResponseModel>>(true, result);
+            }
+
+            // Batch-fetch the SDK Cases backing those compliances so we can
+            // derive Completed + TaskIsExpired without an N+1 round-trip.
+            var sdkCaseIds = compliances
+                .Select(c => c.MicrotingSdkCaseId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContextLocal = sdkCore.DbContextHelper.GetDbContext();
+            var sdkCasesById = await sdkDbContextLocal.Cases
+                .Where(c => sdkCaseIds.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id);
+
+            var planningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
+
+            // Batch-load AreaRulePlannings (mirrors GetTasksForWeek lines 480-488).
+            var complianceArps = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => planningIds.Contains(x.ItemPlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Include(x => x.AreaRule)
+                    .ThenInclude(x => x.AreaRuleTranslations)
+                .Include(x => x.PlanningSites)
+                .Include(x => x.AreaRulePlanningFiles)
+                .ToListAsync();
+            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+
+            var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
+            var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.AreaRulePlanningId);
+
+            var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            var complianceTagItemIds = complianceArpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            var compliancePlanningTagNames = await itemsPlanningPnDbContext.PlanningTags
+                .Where(x => complianceTagItemIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            var compliancePlanningsDict = await itemsPlanningPnDbContext.Plannings
+                .Where(x => planningIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.Id);
+
+            // PlanningSite ↔ Site mapping for the per-row Worker filter.
+            // Parity with BackendConfigurationTaskTrackerHelper.cs:166-184.
+            var planningSiteIdsByPlanning = await itemsPlanningPnDbContext.PlanningSites
+                .Where(x => planningIds.Contains(x.PlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.PlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(p => p.SiteId).Distinct().ToList());
+
+            foreach (var compliance in compliances)
+            {
+                complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                CalendarConfiguration calConfig = null;
+                if (arp != null)
+                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+
+                if (!compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var planning))
+                {
+                    // Mirrors TaskTrackerHelper.cs:142-145 — orphan compliance, skip.
+                    continue;
+                }
+
+                // Per-row Worker filter (parity with TaskTrackerHelper.cs:178-192,
+                // collapsed to a single sdk-site check because the mobile worker
+                // call passes exactly one site id; null disables the filter for
+                // admin-style callers).
+                if (sdkSiteIdForFilter.HasValue)
+                {
+                    if (!planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
+                        || !planningSiteIds.Contains(sdkSiteIdForFilter.Value))
+                    {
+                        continue;
+                    }
+                }
+
+                var title = compliance.ItemName ?? "";
+                if (arp?.AreaRule?.AreaRuleTranslations != null)
+                {
+                    title = arp.AreaRule.AreaRuleTranslations
+                        .Where(t => t.LanguageId == userLanguageId)
+                        .Select(t => t.Name)
+                        .FirstOrDefault() ?? title;
+                }
+
+                var tags = arp != null
+                    ? complianceArpTags
+                        .Where(x => x.AreaRulePlanningId == arp.Id)
+                        .Select(x => compliancePlanningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                        .Where(x => x != null)
+                        .ToList()
+                    : [];
+
+                var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
+                var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
+                var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+
+                // Per-row Completed + TaskIsExpired derivation. Predicate
+                // matches the spec: completed = Case.Status==100;
+                // task_is_expired = (Case.WorkflowState=Removed AND
+                // Status=77) OR (compliance.Deadline < UtcNow AND
+                // Status != 100). Recurrence-only or missing-Case rows fall
+                // back to the deadline-only check (no Status to consult, so
+                // they are treated as not-completed).
+                bool completed = false;
+                bool taskIsExpired;
+                if (compliance.MicrotingSdkCaseId > 0
+                    && sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase)
+                    && sdkCase != null)
+                {
+                    completed = sdkCase.Status == 100;
+                    var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
+                                    && sdkCase.Status == 77;
+                    var pastDueIncomplete = compliance.Deadline < dateTimeNow
+                                            && sdkCase.Status != 100;
+                    taskIsExpired = retracted || pastDueIncomplete;
+                }
+                else
+                {
+                    taskIsExpired = compliance.Deadline < dateTimeNow;
+                }
+
+                var model = new CalendarTaskResponseModel
+                {
+                    Id = arp?.Id ?? 0,
+                    Title = title,
+                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
+                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    Tags = tags,
+                    AssigneeIds = arp?.PlanningSites?
+                        .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(ps => (int)ps.SiteId)
+                        .ToList() ?? [],
+                    BoardId = calConfig?.BoardId ?? defaultBoardId,
+                    Color = calConfig?.Color,
+                    RepeatType = arp?.RepeatType ?? 0,
+                    RepeatEvery = arp?.RepeatEvery ?? 1,
+                    RepeatEndMode = arp?.RepeatEndMode,
+                    RepeatOccurrences = arp?.RepeatOccurrences,
+                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    DayOfWeek = arp?.DayOfWeek,
+                    DayOfMonth = arp?.DayOfMonth,
+                    RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
+                    Completed = completed,
+                    PropertyId = compliance.PropertyId,
+                    ComplianceId = compliance.Id,
+                    IsFromCompliance = true,
+                    Deadline = compliance.Deadline,
+                    NextExecutionTime = planning.NextExecutionTime,
+                    PlanningId = compliance.PlanningId,
+                    IsAllDay = compIsAllDay,
+                    EformId = arp?.AreaRule?.EformId,
+                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    ItemPlanningTagId = arp?.ItemPlanningTagId,
+                    DescriptionHtml = planning.Description,
+                    Attachments = MapAttachments(arp),
+                    TaskIsExpired = taskIsExpired
+                };
+
+                result.Add(model);
+            }
+
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(true, result);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.GetTaskTrackerList: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
+    }
 }

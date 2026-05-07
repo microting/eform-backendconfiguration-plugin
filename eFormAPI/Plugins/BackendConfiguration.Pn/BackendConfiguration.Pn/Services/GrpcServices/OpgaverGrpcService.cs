@@ -265,6 +265,96 @@ public class OpgaverGrpcService(
     }
 
     /// <summary>
+    /// Full property-scoped opgaver list for the mobile worker's "task
+    /// tracker" view. Mirror of the angular admin's
+    /// <c>BackendConfigurationTaskTrackerHelper.Index</c> (no deadline
+    /// window — actionable + missed + completed rotations all returned),
+    /// scoped to the calling worker's site via the same per-row Worker
+    /// filter that the angular path applies (TaskTrackerHelper.cs:178-192,
+    /// collapsed to a single sdk-site check on this RPC since the mobile
+    /// worker passes exactly one site).
+    ///
+    /// Permission gate is identical to <see cref="ListOpgaver"/>: the
+    /// caller must hold a PropertyWorker access entry for
+    /// <c>request.PropertyId</c> on the resolved sdk site. Per-row Worker
+    /// filtering then narrows the result set to opgaver whose planning
+    /// sites include the same sdk site (so a worker who has access to a
+    /// property still only sees opgaver that target their site).
+    /// </summary>
+    public override async Task<ListTaskTrackerResponse> ListTaskTracker(
+        ListTaskTrackerRequest request,
+        ServerCallContext context)
+    {
+        var propertyId = request.PropertyId;
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, propertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the requested property."));
+        }
+
+        var result = await calendarService.GetTaskTrackerList(propertyId, (int)sdkSiteId)
+            .ConfigureAwait(false);
+
+        var response = new ListTaskTrackerResponse();
+        if (!result.Success || result.Model == null)
+        {
+            return response;
+        }
+
+        // Reuse the same Case.Custom envelope + eForm field-structure
+        // helpers as ListOpgaver so writes (comments, photos, field values)
+        // round-trip identically across both views.
+        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
+            .ConfigureAwait(false);
+
+        foreach (var task in result.Model)
+        {
+            envelopeByTaskId.TryGetValue(task.Id, out var envelope);
+            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+
+            var opgave = new Opgave
+            {
+                Id = task.Id.ToString(CultureInfo.InvariantCulture),
+                EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                // plan_day_key is reused for the compliance deadline (yyyy-MM-dd)
+                // so the existing flutter Drift composite PK (id, planDayKey)
+                // remains stable per-rotation: a planning whose deadline rolls
+                // forward generates a new (id, planDayKey) pair rather than
+                // mutating an old row in place. This matches the calendar
+                // path, which also fills plan_day_key with the row's date.
+                PlanDayKey = task.TaskDate ?? string.Empty,
+                PlannedAt = string.Empty,
+                TaskText = task.Title ?? string.Empty,
+                CalendarColor = task.Color ?? string.Empty,
+                Completed = task.Completed,
+                CompletedBy = string.Empty,
+                DescriptionHtml = task.DescriptionHtml ?? string.Empty,
+                Comment = comment,
+                EformId = task.EformId ?? 0,
+                ComplianceId = task.ComplianceId ?? 0,
+                MicrotingSdkCaseId = task.SdkCaseId ?? 0,
+                TaskIsExpired = task.TaskIsExpired
+            };
+
+            PopulateAttachments(opgave, envelope);
+            if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
+            {
+                opgave.Fields.AddRange(fields);
+            }
+
+            response.Opgaver.Add(opgave);
+        }
+
+        return response;
+    }
+
+    /// <summary>
     /// Translates the <c>opgaver_photos</c> entries from the Case.Custom
     /// envelope into <see cref="Attachment"/> wire messages on the response
     /// Opgave. Internal storage is signalled with

@@ -11,6 +11,7 @@ service Opgaver {
   rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
   rpc ListTavler(ListTavlerRequest) returns (ListTavlerResponse);
   rpc ListOpgaver(ListOpgaverRequest) returns (ListOpgaverResponse);
+  rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
   rpc StreamOpgaveChanges(StreamOpgaveChangesRequest) returns (stream OpgaveChange);
   rpc CompleteOpgave(CompleteOpgaveRequest) returns (CompleteOpgaveResponse);
   rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
@@ -98,6 +99,16 @@ message ListOpgaverRequest {
 }
 message ListOpgaverResponse { repeated Opgave opgaver = 1; }
 
+// Full property-scoped compliance list for the mobile worker's "task
+// tracker" view (mirror of the angular admin's BackendConfigurationTaskTrackerHelper.Index).
+// No deadline window — actionable + missed + completed rotations are all
+// returned, with per-row status carried on the existing `completed` field
+// and the new `task_is_expired` field (see Opgave below).
+message ListTaskTrackerRequest {
+  int32 property_id = 1;
+}
+message ListTaskTrackerResponse { repeated Opgave opgaver = 1; }
+
 message StreamOpgaveChangesRequest {
   string ejendom_id = 1;
   string tavle_id = 2;
@@ -150,6 +161,14 @@ message Opgave {
   // Server-assigned PK of the SDK Case row backing this opgave. 0 means
   // "no backing case" (recurrence-only) or a legacy server.
   int64 microting_sdk_case_id = 17;
+  // True when the opgave's deadline has passed AND the underlying case is
+  // either retracted (Case.WorkflowState=Removed AND Status=77) or simply
+  // past its deadline without being completed (Case.Deadline < UtcNow AND
+  // Status != 100). Surfaced primarily by ListTaskTracker so flutter can
+  // render missed rotations in red. The calendar-week view (ListOpgaver)
+  // pre-filters non-actionable rows out and so emits this as false; default
+  // proto3 zero-value remains backwards-compatible with older clients.
+  bool task_is_expired = 18;
 }
 
 message Attachment {

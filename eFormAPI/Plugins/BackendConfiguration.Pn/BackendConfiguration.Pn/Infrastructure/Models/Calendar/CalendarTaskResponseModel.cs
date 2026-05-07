@@ -36,4 +36,12 @@ public class CalendarTaskResponseModel
     public int? ItemPlanningTagId { get; set; }
     public string? DescriptionHtml { get; set; }
     public List<CalendarTaskAttachmentDto> Attachments { get; set; } = new();
+
+    /// <summary>
+    /// True when the underlying compliance/case is past deadline AND not
+    /// completed (or retracted with SDK Case Status=77). Populated by the
+    /// task-tracker service path; the calendar-week path leaves this as
+    /// false (it pre-filters non-actionable rows out).
+    /// </summary>
+    public bool TaskIsExpired { get; set; }
 }
