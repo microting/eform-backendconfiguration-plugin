@@ -1909,10 +1909,16 @@ public class OpgaverGrpcService(
         }
 
         var contentType = meta.ContentType?.Trim() ?? string.Empty;
+        // Extension is stored without a leading dot to match angular's
+        // EFormFilesController.AddNewImage at line 299:
+        //     Extension = newFile.FileName.Split(".").Last()
+        // which yields e.g. "png" / "jpg". The flutter-eform parity harness
+        // photo scenario flagged the prior ".png"/".jpg" form as a column-level
+        // divergence on UploadedDatas / UploadedDataVersions.
         var extension = contentType switch
         {
-            "image/jpeg" or "image/jpg" => ".jpg",
-            "image/png" => ".png",
+            "image/jpeg" or "image/jpg" => "jpg",
+            "image/png" => "png",
             _ => throw new RpcException(new Status(StatusCode.InvalidArgument,
                 "content_type must be image/jpeg, image/jpg, or image/png."))
         };
@@ -2043,24 +2049,89 @@ public class OpgaverGrpcService(
             }
             ms.Position = 0;
 
+            // FileLocation mirrors angular's intermediate-file path shape
+            // (EFormFilesController.AddNewImage line 282/298:
+            //     Path.Combine(Path.GetTempPath(), "cases-temp-files",
+            //                  $"{DateTime.Now.Ticks}.{ext}")
+            // ). Mobile is S3-only — no local file is materialised — but
+            // the column is populated with the same string shape so the
+            // parity harness sees identical UploadedDatas.FileLocation
+            // metadata. The path is column metadata only; nothing on the
+            // mobile read path inspects it as a filesystem location.
+            var fileLocation = Path.Combine(
+                Path.GetTempPath(),
+                "cases-temp-files",
+                $"{DateTime.Now.Ticks}.{extension}");
+
+            // FileName is written in two phases to mirror angular line 297 + 302
+            // (EFormFilesController.AddNewImage):
+            //   phase 1 (Create): FileName = $"{hash}.{ext}"
+            //   phase 2 (Update): FileName = $"{Id}_{FileName}"
+            // The initial UploadedDataVersions row therefore carries the
+            // hash-only form, the second version carries "<id>_<hash>.<ext>".
+            // Both versions are visible to the parity harness; matching the
+            // two-phase shape collapses the column-level divergence on
+            // UploadedDataVersions.
             var uploadedData = new SdkUploadedData
             {
                 Checksum = checksum,
-                FileName = string.Empty,
-                FileLocation = string.Empty,
+                FileName = $"{checksum}.{extension}",
+                FileLocation = fileLocation,
                 Extension = extension
             };
             await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
 
-            var fileName = $"{uploadedData.Id}_{checksum}{extension}";
+            var fileName = $"{uploadedData.Id}_{uploadedData.FileName}";
             uploadedData.FileName = fileName;
             await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
 
             await core.PutFileToS3Storage(ms, fileName).ConfigureAwait(false);
 
-            // 6. Update Case.Custom envelope: replace existing entry at
+            // 6. Mirror angular's FieldValues row insert.
+            // EFormFilesController.AddNewImage at line 306-316 creates a NEW
+            // FieldValue row per uploaded photo (not an upsert) bound to the
+            // Picture-typed Field on the case's CheckList tree:
+            //   new FieldValue {
+            //     FieldId, CaseId, CheckListId, WorkerId,
+            //     DoneAt = DateTime.UtcNow,
+            //     UploadedDataId = newUploadedData.Id
+            //   }.Create(sdkDbContext);
+            // The angular path has the fieldId in hand because the UI passes
+            // it; the mobile UploadPhotoMeta does not, so we discover it by
+            // walking the case's CheckList descendant tree (BFS) for the
+            // first FieldType=Picture field — same lookup the parity harness
+            // picker performs (s_photo_upload_delete._findPictureFieldId).
+            //
+            // We keep this write IN ADDITION to the existing Cases.Custom
+            // envelope update below, so the mobile read path (which reads
+            // from Cases.Custom) is not regressed; both writes coexist.
+            var pictureFieldId = await FindPictureFieldIdAsync(
+                    sdkDbContext, foundCase.CheckListId)
+                .ConfigureAwait(false);
+            if (pictureFieldId > 0)
+            {
+                var pictureField = await sdkDbContext.Fields
+                    .FirstOrDefaultAsync(f => f.Id == pictureFieldId)
+                    .ConfigureAwait(false);
+                if (pictureField != null)
+                {
+                    var fieldValue = new Microting.eForm.Infrastructure.Data.Entities.FieldValue
+                    {
+                        FieldId = pictureField.Id,
+                        CaseId = foundCase.Id,
+                        CheckListId = pictureField.CheckListId,
+                        WorkerId = foundCase.WorkerId,
+                        DoneAt = DateTime.UtcNow,
+                        UploadedDataId = uploadedData.Id
+                    };
+                    await fieldValue.Create(sdkDbContext).ConfigureAwait(false);
+                }
+            }
+
+            // 7. Update Case.Custom envelope: replace existing entry at
             // slot if present (soft-deleting its UploadedData row), then
-            // append the new tuple.
+            // append the new tuple. Kept for backward compatibility with
+            // the existing mobile read path.
             var commentAtUtc = meta.ClientTsUnix > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
                 : DateTime.UtcNow;
@@ -2095,7 +2166,7 @@ public class OpgaverGrpcService(
             foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
             await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
-            // 7. Echo the new UploadedData id as the storage_id so the
+            // 8. Echo the new UploadedData id as the storage_id so the
             // client can address subsequent reads / removes.
             return new UploadPhotoResponse
             {
@@ -2781,5 +2852,78 @@ public class OpgaverGrpcService(
 
         // Step 3 — no match; pass through.
         return rawValue;
+    }
+
+    /// <summary>
+    /// BFS-walk the CheckList descendant tree rooted at <paramref name="rootCheckListId"/>
+    /// and return the Id of the first <c>FieldType.Picture</c> field found.
+    /// Returns 0 when none exists.
+    ///
+    /// Mirrors the harness picker
+    /// (<c>s_photo_upload_delete._findPictureFieldId</c>) so the field bound by
+    /// <c>UploadPhoto</c>'s mirrored FieldValue write matches the field the
+    /// angular UI passes via <c>EFormFilesController.AddNewImage(fieldId, ...)</c>.
+    /// </summary>
+    private static async Task<int> FindPictureFieldIdAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        int? rootCheckListId)
+    {
+        if (rootCheckListId == null || rootCheckListId.Value <= 0)
+        {
+            return 0;
+        }
+
+        var pictureFieldTypeId = await sdkDbContext.FieldTypes
+            .Where(ft => ft.Type == Microting.eForm.Infrastructure.Constants.Constants.FieldTypes.Picture)
+            .Select(ft => (int?)ft.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (pictureFieldTypeId == null || pictureFieldTypeId.Value <= 0)
+        {
+            return 0;
+        }
+
+        var queue = new Queue<int>();
+        var seen = new HashSet<int>();
+        queue.Enqueue(rootCheckListId.Value);
+        seen.Add(rootCheckListId.Value);
+
+        while (queue.Count > 0)
+        {
+            var clId = queue.Dequeue();
+
+            var fieldId = await sdkDbContext.Fields
+                .Where(f => f.CheckListId == clId
+                            && f.FieldTypeId == pictureFieldTypeId.Value
+                            && (f.WorkflowState == null
+                                || f.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
+                .OrderBy(f => f.DisplayIndex)
+                .ThenBy(f => f.Id)
+                .Select(f => (int?)f.Id)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+            if (fieldId != null && fieldId.Value > 0)
+            {
+                return fieldId.Value;
+            }
+
+            var children = await sdkDbContext.CheckLists
+                .Where(cl => cl.ParentId == clId
+                             && (cl.WorkflowState == null
+                                 || cl.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
+                .Select(cl => cl.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            foreach (var childId in children)
+            {
+                if (seen.Add(childId))
+                {
+                    queue.Enqueue(childId);
+                }
+            }
+        }
+
+        return 0;
     }
 }
