@@ -193,7 +193,8 @@ public class OpgaverGrpcService(
             WeekEnd = request.ToDateKey ?? string.Empty,
             BoardIds = TryParseBoardIds(request.TavleId),
             TagNames = [],
-            SiteIds = []
+            SiteIds = [],
+            ActionableOnly = true
         };
 
         var result = await calendarService.GetTasksForWeek(model);
@@ -826,7 +827,8 @@ public class OpgaverGrpcService(
             WeekEnd = windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             BoardIds = boardFilter,
             TagNames = [],
-            SiteIds = []
+            SiteIds = [],
+            ActionableOnly = true
         };
 
         var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
@@ -1085,7 +1087,8 @@ public class OpgaverGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = []
+            SiteIds = [],
+            ActionableOnly = true
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
@@ -1340,7 +1343,8 @@ public class OpgaverGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = []
+            SiteIds = [],
+            ActionableOnly = true
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
@@ -2017,7 +2021,8 @@ public class OpgaverGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = []
+            SiteIds = [],
+            ActionableOnly = true
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null

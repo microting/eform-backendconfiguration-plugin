@@ -59,64 +59,89 @@ public class BackendConfigurationCalendarService(
             var defaultBoardId = defaultBoard?.Id;
 
             // Pre-load compliance dates to avoid duplicates between occurrence expansion and compliances.
-            // We deliberately keep ALL non-removed compliances here (the original prefetch set) and
-            // then filter the subset that is *actionable* below: a compliance is actionable only if
-            // its backing SDK Case still exists, is not soft-deleted, and is not yet completed
-            // (Status != 100). Non-actionable compliance rows must NOT be emitted to the worker
-            // because the corresponding write handlers ("complete", "comment", etc.) have nothing
-            // to bind to and will fail. Treat WorkflowState NULL as "not removed" — pre-existing
-            // project rule, see e.g. similar guards across this service.
-            var compliancesInWeekAll = await backendConfigurationPnDbContext.Compliances
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-                .Where(x => x.PropertyId == requestModel.PropertyId)
-                .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
-                .ToListAsync();
-
-            // Batch-load the SDK Cases backing those compliances so we can decide actionability
-            // without an N+1 round-trip per compliance row.
-            var complianceSdkCaseIds = compliancesInWeekAll
-                .Select(c => c.MicrotingSdkCaseId)
-                .Where(id => id > 0)
-                .Distinct()
-                .ToList();
-            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
-            var sdkDbContextForCalendar = sdkCore.DbContextHelper.GetDbContext();
-            var sdkCasesById = await sdkDbContextForCalendar.Cases
-                .Where(c => complianceSdkCaseIds.Contains(c.Id))
-                .ToDictionaryAsync(c => c.Id);
-
-            bool IsComplianceActionable(Compliance compliance)
+            //
+            // Two modes, gated on requestModel.ActionableOnly:
+            //
+            // * ActionableOnly == false (default; angular admin REST calendar +
+            //   CalendarGrpcService): emit ALL non-removed compliances in the week, including
+            //   missed deadlines and already-completed ones. Bit-identical to pre-c2637800.
+            //
+            // * ActionableOnly == true (mobile worker via OpgaverGrpcService): emit only
+            //   compliances whose backing SDK Case still exists, is not soft-deleted, and is
+            //   not yet completed (Status != 100). Non-actionable compliance rows must NOT be
+            //   emitted to the worker because the corresponding write handlers ("complete",
+            //   "comment", etc.) have nothing to bind to and will fail.
+            List<Compliance> compliancesInWeek;
+            if (!requestModel.ActionableOnly)
             {
-                // 1. Compliance row itself must not be soft-deleted (NULL == not removed).
-                if (compliance.WorkflowState == Constants.WorkflowStates.Removed)
-                    return false;
+                // Default branch — bit-identical to the pre-c2637800 prefetch.
+                compliancesInWeek = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == requestModel.PropertyId)
+                    .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                    .ToListAsync();
+            }
+            else
+            {
+                // Mobile-worker branch — actionable subset only.
+                // Treat WorkflowState NULL as "not removed" here (pre-existing project rule
+                // applied across this service); the default branch above keeps its original
+                // strict `!= Removed` semantics so non-mobile callers remain bit-identical.
+                var compliancesInWeekAll = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                    .Where(x => x.PropertyId == requestModel.PropertyId)
+                    .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                    .ToListAsync();
 
-                // 2. Backing SDK Case must exist and not be soft-deleted (NULL == not removed).
-                if (compliance.MicrotingSdkCaseId <= 0)
-                    return false;
-                if (!sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase) || sdkCase == null)
-                    return false;
-                if (sdkCase.WorkflowState == Constants.WorkflowStates.Removed)
-                    return false;
+                // Batch-load the SDK Cases backing those compliances so we can decide
+                // actionability without an N+1 round-trip per compliance row.
+                var complianceSdkCaseIds = compliancesInWeekAll
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContextForCalendar = sdkCore.DbContextHelper.GetDbContext();
+                var sdkCasesById = await sdkDbContextForCalendar.Cases
+                    .Where(c => complianceSdkCaseIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id);
 
-                // 3. SDK Case must not be already completed.
-                //    Status == 100 is the canonical "done" code (see e.g.
-                //    BackendConfigurationCompliancesService.cs:258, BackendConfigurationCaseService.cs:73,
-                //    BackendConfigurationReportService.cs:84).
-                if (sdkCase.Status == 100)
-                    return false;
+                bool IsComplianceActionable(Compliance compliance)
+                {
+                    // 1. Compliance row itself must not be soft-deleted (NULL == not removed).
+                    if (compliance.WorkflowState == Constants.WorkflowStates.Removed)
+                        return false;
 
-                return true;
+                    // 2. Backing SDK Case must exist and not be soft-deleted (NULL == not removed).
+                    if (compliance.MicrotingSdkCaseId <= 0)
+                        return false;
+                    if (!sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase) || sdkCase == null)
+                        return false;
+                    if (sdkCase.WorkflowState == Constants.WorkflowStates.Removed)
+                        return false;
+
+                    // 3. SDK Case must not be already completed.
+                    //    Status == 100 is the canonical "done" code (see e.g.
+                    //    BackendConfigurationCompliancesService.cs:258, BackendConfigurationCaseService.cs:73,
+                    //    BackendConfigurationReportService.cs:84).
+                    if (sdkCase.Status == 100)
+                        return false;
+
+                    return true;
+                }
+
+                // The actionable subset is what we actually emit AND what governs the
+                // recurrence-dedup gate below. If a planning's only in-week compliance is
+                // non-actionable (missed deadline or already completed), the recurrence path
+                // SHOULD still fire so the worker doesn't lose visibility on a NEXT live
+                // rotation in the same week.
+                compliancesInWeek = compliancesInWeekAll
+                    .Where(IsComplianceActionable)
+                    .ToList();
             }
 
-            // The actionable subset is what we actually emit AND what governs the recurrence-dedup
-            // gate below. If a planning's only in-week compliance is non-actionable (missed deadline
-            // or already completed), the recurrence path SHOULD still fire so the worker doesn't
-            // lose visibility on a NEXT live rotation in the same week.
-            var compliancesInWeek = compliancesInWeekAll
-                .Where(IsComplianceActionable)
-                .ToList();
-            // Build sets for dedup: by exact date and by planningId (any actionable compliance in week)
+            // Build sets for dedup: by exact date and by planningId (any in-week compliance,
+            // or — when ActionableOnly is set — any *actionable* in-week compliance).
             var complianceDateSet = new HashSet<string>(
                 compliancesInWeek.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
             var compliancePlanningIdsInWeek = new HashSet<int>(
