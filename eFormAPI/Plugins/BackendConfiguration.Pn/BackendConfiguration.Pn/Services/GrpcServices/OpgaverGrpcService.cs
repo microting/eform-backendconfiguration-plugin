@@ -903,17 +903,22 @@ public class OpgaverGrpcService(
         CompleteOpgaveRequest request,
         ServerCallContext context)
     {
-        // Only "complete" semantics are supported in v1. The JSON-side
-        // ToggleComplete is itself a TODO; an explicit un-complete flow will
-        // require new entity work (re-creating the compliance row), which is
-        // out of scope for this PR.
+        var opgaveId = ParseOpgaveId(request.OpgaveId);
+
+        // Idempotent re-tap path. The flutter UI sends `!o.completed` when a
+        // worker re-taps a row, so a row whose local state already says
+        // "completed" arrives here as Completed=false. There is nothing to
+        // un-complete (un-completion would require re-creating the compliance
+        // row, which is out of scope), so we treat this as a no-op AND return
+        // the current authoritative server state so the client can reconcile
+        // its optimistic flip back to the truth. Without this, an Unimplemented
+        // throw triggers an infinite retry loop in the flutter outbox drainer
+        // because StatusCode.Unimplemented is not in its permanent-error set.
         if (!request.Completed)
         {
-            throw new RpcException(new Status(StatusCode.Unimplemented,
-                "Un-completing an opgave is not supported yet."));
+            return await BuildIdempotentCompleteOpgaveResponse(opgaveId, request)
+                .ConfigureAwait(false);
         }
-
-        var opgaveId = ParseOpgaveId(request.OpgaveId);
 
         // Look up the AreaRulePlanning to learn its property + ItemPlanningId.
         // ItemPlanningId is the join key into Compliances.PlanningId.
@@ -1115,6 +1120,174 @@ public class OpgaverGrpcService(
                 // Compliance row is gone and no recurrence covered today —
                 // synthesize a minimal "completed" Opgave so the client can
                 // reconcile local state against the new server truth.
+                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
+                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = string.Empty,
+                PlanDayKey = dayKey,
+                PlannedAt = string.Empty,
+                TaskText = string.Empty,
+                CalendarColor = string.Empty,
+                Completed = true,
+                CompletedBy = request.CompletedBy ?? string.Empty,
+                DescriptionHtml = string.Empty,
+                Comment = string.Empty
+            };
+
+        return new CompleteOpgaveResponse { Opgave = opgave };
+    }
+
+    /// <summary>
+    /// Idempotent no-op handler for <c>CompleteOpgave</c> when the client
+    /// sends <c>completed=false</c>. This happens when the flutter UI re-taps
+    /// an already-completed row (it sends <c>!o.completed</c>). Returns the
+    /// current authoritative state so the client can reconcile its optimistic
+    /// flip; performs NO database writes.
+    /// <para>
+    /// Three observable outcomes:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>ARP missing → <c>NotFound</c> (the flutter
+    ///     <c>_isPermanent</c> set already handles this — the row drops out
+    ///     of the outbox and into the conflict modal).</description></item>
+    ///   <item><description>Compliance gone (row was already normally
+    ///     completed) → return a synthesized minimal Opgave with
+    ///     <c>Completed=true</c>; the client treats that as "no longer
+    ///     actionable" and removes the row from Drift.</description></item>
+    ///   <item><description>Compliance + Case both alive (anomaly: a still-
+    ///     actionable row is being un-completed) → return whatever the
+    ///     calendar query says about that row today. No DB writes.</description></item>
+    /// </list>
+    /// </summary>
+    private async Task<CompleteOpgaveResponse> BuildIdempotentCompleteOpgaveResponse(
+        int opgaveId, CompleteOpgaveRequest request)
+    {
+        var arp = await dbContext.AreaRulePlannings
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .ConfigureAwait(false);
+
+        if (arp == null)
+        {
+            // Mirrors the main path. flutter _isPermanent treats NotFound as
+            // permanent so the outbox row resolves into the conflict modal
+            // rather than looping.
+            throw new RpcException(new Status(StatusCode.NotFound,
+                $"Opgave {opgaveId} not found."));
+        }
+
+        var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, arp.PropertyId)
+                .ConfigureAwait(false))
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "Caller has no PropertyWorker access to the opgave's property."));
+        }
+
+        // Resolve the Compliance row using the same PK / fallback pattern as
+        // the main CompleteOpgave path so behaviour is consistent. Filter on
+        // not-removed: a soft-deleted compliance is the signal that the row
+        // was already completed via the canonical path.
+        var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
+        Compliance? compliance;
+        if (request.ComplianceId > 0)
+        {
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Legacy fuzzy lookup — same shape as main CompleteOpgave.
+            var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
+                .Where(c => c.SiteId == sdkSiteId)
+                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(c => c.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+            compliance = await dbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .Where(x => validCaseIdsForSite.Contains(x.MicrotingSdkCaseId))
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+
+        var nowUtc = request.ClientTsUnix > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
+            : DateTime.UtcNow;
+
+        if (compliance == null)
+        {
+            // No live compliance row — the row was already completed (or never
+            // had one). Return Completed=true so the flutter client drops it
+            // from Drift via the empty/zero-id "no longer actionable" path.
+            return new CompleteOpgaveResponse
+            {
+                Opgave = new Opgave
+                {
+                    Id = opgaveId.ToString(CultureInfo.InvariantCulture),
+                    EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                    TavleId = string.Empty,
+                    PlanDayKey = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    PlannedAt = string.Empty,
+                    TaskText = string.Empty,
+                    CalendarColor = string.Empty,
+                    Completed = true,
+                    CompletedBy = request.CompletedBy ?? string.Empty,
+                    DescriptionHtml = string.Empty,
+                    Comment = string.Empty
+                }
+            };
+        }
+
+        // Compliance still alive — anomaly: a still-actionable row is being
+        // re-tapped to un-complete. Return the row's current state from the
+        // calendar query so the client converges to server truth (no DB
+        // writes — un-completion is intentionally not implemented).
+        var dayKey = (compliance.Deadline != default ? compliance.Deadline : nowUtc)
+            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var refreshed = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = arp.PropertyId,
+            WeekStart = dayKey,
+            WeekEnd = dayKey,
+            BoardIds = [],
+            TagNames = [],
+            SiteIds = [],
+            ActionableOnly = true
+        }).ConfigureAwait(false);
+
+        var refreshedTask = refreshed.Success && refreshed.Model != null
+            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            : null;
+
+        var opgave = refreshedTask != null
+            ? new Opgave
+            {
+                Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
+                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
+                PlannedAt = string.Empty,
+                TaskText = refreshedTask.Title ?? string.Empty,
+                CalendarColor = refreshedTask.Color ?? string.Empty,
+                Completed = refreshedTask.Completed,
+                CompletedBy = string.Empty,
+                DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
+                Comment = string.Empty,
+                ComplianceId = refreshedTask.ComplianceId ?? 0,
+                MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
+            }
+            : new Opgave
+            {
+                // Compliance alive but calendar query didn't surface the row
+                // (e.g. ActionableOnly filtered it out). Treat the same as
+                // "no longer actionable" so the client drops it.
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = string.Empty,
