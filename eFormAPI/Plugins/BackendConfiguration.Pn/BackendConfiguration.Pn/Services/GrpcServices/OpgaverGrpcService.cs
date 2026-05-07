@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Delegates.CaseUpdate;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
@@ -69,10 +70,17 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// <c>BackendConfigurationCompliancesService.Update</c> JSON path.
 /// CompleteOpgave NOW performs (added in this PR):
 /// <list type="bullet">
+///   <item><description>SDK <c>Case</c> row update (DoneAt, DoneAtUserModifiable,
+///     SiteId, Status=100, WorkflowState=Created — the latter REVIVES a
+///     missed-deadline case whose WorkflowState was 'removed' so the admin
+///     "filled cases" view can pick it up) — mirrors
+///     <c>BackendConfigurationCompliancesService.cs:234-260</c>.</description></item>
+///   <item><description><c>CaseUpdateDelegate</c> broadcast — mirrors lines
+///     262-270; downstream subscribers (e.g. follow-on automation) get
+///     notified the same way as on the angular admin path.</description></item>
 ///   <item><description><c>PlanningCaseSite</c> row update (Status=100,
 ///     MicrotingSdkCaseId, MicrotingSdkCaseDoneAt, DoneByUserId,
-///     DoneByUserName) — mirrors
-///     <c>BackendConfigurationCompliancesService.cs:307-318</c>.</description></item>
+///     DoneByUserName) — mirrors lines 307-318.</description></item>
 ///   <item><description><c>PlanningCase</c> row update (Status=100,
 ///     WorkflowState=Processed, MicrotingSdkCaseDoneAt, DoneByUserId,
 ///     DoneByUserName) — mirrors lines 320-335.</description></item>
@@ -84,9 +92,6 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///     <c>ComplianceStatusThirty</c> recomputation — lines 344-371. Without
 ///     this, the property compliance "dot" UI elsewhere in the system will be
 ///     stale.</description></item>
-///   <item><description><c>CaseUpdateDelegate</c> invocation — lines 262-270 of
-///     <c>BackendConfigurationCompliancesService.Update</c>. Downstream
-///     subscribers won't be notified.</description></item>
 ///   <item><description><c>core.CaseDelete</c> of the underlying microting
 ///     case — lines 373-389. The device-side case won't be deleted.</description></item>
 /// </list>
@@ -1138,8 +1143,33 @@ public class OpgaverGrpcService(
             foundCase.DoneAt = dayDoneAt;
             foundCase.SiteId = sdkSiteId;
             foundCase.Status = 100;
+            // Direct WorkflowState assignment (not entity.Delete) is the
+            // legitimate REVIVAL operation, mirroring
+            // BackendConfigurationCompliancesService.Update line 259. A
+            // missed-deadline rotation arrives here as Case.WorkflowState
+            // ='removed' Status=77 — completing it un-retracts the case so
+            // the admin "filled cases" view can pick it up. The standing
+            // "no hard-deletes / use entity.Delete()" rule is about deletion;
+            // this is the inverse (un-soft-delete) and is the only place in
+            // this service that writes WorkflowState directly.
             foundCase.WorkflowState = Constants.WorkflowStates.Created;
             await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+
+            // Broadcast the case update to any registered subscribers. Mirrors
+            // BackendConfigurationCompliancesService.Update lines 262-270 — same
+            // delegate, same invocation pattern. CaseUpdateDelegates is a
+            // static registry in Microting.eFormApi.BasePn so no DI wiring is
+            // required; if no subscribers are registered the delegate is null
+            // and we skip.
+            if (CaseUpdateDelegates.CaseUpdateDelegate != null)
+            {
+                var invocationList = CaseUpdateDelegates.CaseUpdateDelegate
+                    .GetInvocationList();
+                foreach (var func in invocationList)
+                {
+                    func.DynamicInvoke(foundCase.Id);
+                }
+            }
 
             // Mirror the post-update sequence from
             // BackendConfigurationCompliancesService.Update (lines 307-335):
