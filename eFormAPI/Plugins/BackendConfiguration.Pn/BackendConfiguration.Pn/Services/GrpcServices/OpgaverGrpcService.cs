@@ -84,6 +84,11 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///   <item><description><c>PlanningCase</c> row update (Status=100,
 ///     WorkflowState=Processed, MicrotingSdkCaseDoneAt, DoneByUserId,
 ///     DoneByUserName) — mirrors lines 320-335.</description></item>
+///   <item><description><c>core.CaseDelete</c> of the underlying microting
+///     case — mirrors lines 373-389. This soft-deletes the SDK Case
+///     (<c>WorkflowState='Removed'</c>) and writes a <c>CaseVersions</c>
+///     snapshot row, matching the parity-harness's observed angular end
+///     state. Required for s2/s3/s5 parity.</description></item>
 /// </list>
 /// Still omitted (deferred; closing the full gap requires factoring a shared
 /// completion helper — out of scope for this PR):
@@ -92,8 +97,6 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///     <c>ComplianceStatusThirty</c> recomputation — lines 344-371. Without
 ///     this, the property compliance "dot" UI elsewhere in the system will be
 ///     stale.</description></item>
-///   <item><description><c>core.CaseDelete</c> of the underlying microting
-///     case — lines 373-389. The device-side case won't be deleted.</description></item>
 /// </list>
 /// </summary>
 public class OpgaverGrpcService(
@@ -1213,6 +1216,52 @@ public class OpgaverGrpcService(
 
                 planningCaseSite.PlanningCaseId = planningCase.Id;
                 await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            // Mirror BackendConfigurationCompliancesService.Update lines 373-389
+            // (canonical save path). After the SDK Case is updated to
+            // Status=100 / WorkflowState=Created, the angular flow finishes by
+            // calling core.CaseDelete on the case's MicrotingUid. Internally
+            // (Core.cs:1748 → SqlController.CaseDelete:1069) that deletes the
+            // case on the Microting server AND soft-deletes the local SDK Case
+            // row via aCase.Delete(db) — which sets
+            // WorkflowState='Removed' and writes a CaseVersions snapshot row.
+            //
+            // Without this step the parity harness reports two divergences on
+            // s2/s3/s5: SDK.Cases.WorkflowState='created' (vs angular's
+            // 'removed') and a missing CaseVersions row. Both are healed by
+            // mirroring the same call here.
+            //
+            // Wrapped in the same try/catch shape as the angular code so a
+            // server-side failure (e.g. transient XML rejection) is logged and
+            // doesn't fail the whole CompleteOpgave RPC. We use the
+            // Core.CaseDelete helper (NOT a manual aCase.Delete) — same call,
+            // same side effects, same retry-on-"Parsing in progress" handling.
+            try
+            {
+                if (foundCase.MicrotingUid != null)
+                {
+                    await core.CaseDelete((int)foundCase.MicrotingUid).ConfigureAwait(false);
+                }
+                else
+                {
+                    var checkListSite = await sdkDbContext.CheckListSites
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == foundCase.Id)
+                        .ConfigureAwait(false);
+                    if (checkListSite != null)
+                    {
+                        await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "core.CaseDelete failed for caseId={CaseId} microtingUid={MicrotingUid} — "
+                    + "case completion otherwise succeeded; the row will linger as "
+                    + "WorkflowState=Created on the SDK side until reconciliation.",
+                    foundCase.Id, foundCase.MicrotingUid);
             }
         }
 
