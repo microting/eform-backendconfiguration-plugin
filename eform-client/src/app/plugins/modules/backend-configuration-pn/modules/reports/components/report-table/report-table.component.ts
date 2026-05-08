@@ -21,7 +21,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {format, parseISO} from 'date-fns';
+import {format, isValid, parseISO} from 'date-fns';
 import {selectAuthIsAdmin, selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
@@ -113,26 +113,35 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
           header: x.value || '',
           field: x.value || getRandomInt(1, 50000).toString(), // field is required and unique for table, but in this case - not used
           formatter: (record: ReportEformItemModel) => {
-            if (record.caseFields[i].value === 'checked') {
+            const v = record.caseFields[i].value ?? '';
+            if (v === 'checked') {
               return `<span class="material-icons">done</span>`;
             }
-            if (record.caseFields[i].value !== 'checked' && record.caseFields[i].value !== 'unchecked') {
+            if (v !== 'checked' && v !== 'unchecked') {
               // @ts-ignore
               if (record.caseFields[i].key === 'number') {
-                return record.caseFields[i].value.replace('.', ',');
+                if (v === '') {
+                  return '';
+                }
+                return String(v).replace('.', ',');
               }
               // @ts-ignore
               if (record.caseFields[i].key === 'date') {
-                if (record.caseFields[i].value === null || record.caseFields[i].value === '') {
+                if (v === '') {
                   return '';
                 }
-                return format(parseISO(record.caseFields[i].value), 'dd.MM.yyyy');
+                const parsed = parseISO(v);
+                if (!isValid(parsed)) {
+                  return v;
+                }
+                return format(parsed, 'dd.MM.yyyy');
               }
               // @ts-ignore
               if (record.caseFields[i].key !== 'number') {
-                return record.caseFields[i].value;
+                return v;
               }
             }
+            return '';
           },
         };
       });
