@@ -1549,8 +1549,26 @@ public class OpgaverGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        var opgave = refreshedTask != null
-            ? new Opgave
+        Opgave opgave;
+        if (refreshedTask != null)
+        {
+            // Reuse the same envelope + eForm field-structure helpers as
+            // ListOpgaver / LoadOpgaverAsync so the response mirrors the
+            // shape clients persist to Drift on a regular fetch. Without
+            // this, the client merges an empty Fields/Attachments list and
+            // the form fields appear to "disappear" after completion.
+            // The helpers run AFTER the bundled CaseUpdate above so values
+            // reflect the current (post-bundle) case state.
+            var refreshedSingleton = new[] { refreshedTask };
+            var envelopeByTaskId =
+                await LoadEnvelopeByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
+            var fieldsByTaskId =
+                await LoadFieldsByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
+
+            envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
+            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+
+            opgave = new Opgave
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1562,13 +1580,28 @@ public class OpgaverGrpcService(
                 Completed = true,
                 CompletedBy = request.CompletedBy ?? string.Empty,
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
-                Comment = string.Empty
-            }
-            : new Opgave
+                Comment = comment,
+                EformId = refreshedTask.EformId ?? 0,
+                // Stable-identity round-trip — see ListOpgaver for rationale.
+                ComplianceId = refreshedTask.ComplianceId ?? 0,
+                MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
+            };
+
+            PopulateAttachments(opgave, envelope);
+            if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
-                // Compliance row is gone and no recurrence covered today —
-                // synthesize a minimal "completed" Opgave so the client can
-                // reconcile local state against the new server truth.
+                opgave.Fields.AddRange(fields);
+            }
+        }
+        else
+        {
+            // Compliance row is gone and no recurrence covered today —
+            // synthesize a minimal "completed" Opgave so the client can
+            // reconcile local state against the new server truth. Empty
+            // Fields / Attachments are correct here: the row is no longer
+            // actionable and the client should drop it.
+            opgave = new Opgave
+            {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = string.Empty,
@@ -1581,6 +1614,7 @@ public class OpgaverGrpcService(
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
+        }
 
         return new CompleteOpgaveResponse { Opgave = opgave };
     }
@@ -1717,8 +1751,26 @@ public class OpgaverGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        var opgave = refreshedTask != null
-            ? new Opgave
+        Opgave opgave;
+        if (refreshedTask != null)
+        {
+            // Mirror the main CompleteOpgave path: reuse the envelope +
+            // eForm field-structure helpers so the response carries Fields,
+            // Attachments, Comment, and EformId. Without this, an outbox
+            // retry (which lands here on the second attempt because the
+            // first call already flipped the row to completed) returns an
+            // empty-shape Opgave that wipes Drift's cached field/photo
+            // state for the row.
+            var refreshedSingleton = new[] { refreshedTask };
+            var envelopeByTaskId =
+                await LoadEnvelopeByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
+            var fieldsByTaskId =
+                await LoadFieldsByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
+
+            envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
+            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+
+            opgave = new Opgave
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1730,15 +1782,26 @@ public class OpgaverGrpcService(
                 Completed = refreshedTask.Completed,
                 CompletedBy = string.Empty,
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
-                Comment = string.Empty,
+                Comment = comment,
+                EformId = refreshedTask.EformId ?? 0,
+                // Stable-identity round-trip — see ListOpgaver for rationale.
                 ComplianceId = refreshedTask.ComplianceId ?? 0,
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
-            }
-            : new Opgave
+            };
+
+            PopulateAttachments(opgave, envelope);
+            if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
-                // Compliance alive but calendar query didn't surface the row
-                // (e.g. ActionableOnly filtered it out). Treat the same as
-                // "no longer actionable" so the client drops it.
+                opgave.Fields.AddRange(fields);
+            }
+        }
+        else
+        {
+            // Compliance alive but calendar query didn't surface the row
+            // (e.g. ActionableOnly filtered it out). Treat the same as
+            // "no longer actionable" so the client drops it.
+            opgave = new Opgave
+            {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = string.Empty,
@@ -1751,6 +1814,7 @@ public class OpgaverGrpcService(
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
+        }
 
         return new CompleteOpgaveResponse { Opgave = opgave };
     }
