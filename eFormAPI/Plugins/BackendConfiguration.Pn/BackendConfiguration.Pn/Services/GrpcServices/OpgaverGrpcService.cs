@@ -1319,6 +1319,24 @@ public class OpgaverGrpcService(
                 var bundleLanguage = await sdkDbContext.Languages
                     .FirstAsync()
                     .ConfigureAwait(false);
+
+                // Mirror angular's GET /api/.../compliances/cases path which calls
+                // Core.CaseRead before the per-field PUT. CaseRead lazy-materializes
+                // the per-field FieldValues rows for the case (eform-sdk
+                // SqlController.cs:CheckRead lines 1690-1723 / 1760-1789 — for any
+                // (caseId, fieldId) pair without an existing row, a new FieldValues
+                // row is created via fieldValue.Create(db)). Without this call,
+                // the per-field row lookup below returns 0 (no row) for cases that
+                // have never been read by an admin browser session — as is the
+                // case for ListTaskTracker-fetched opgaver — and every typed
+                // value silently drops.
+                //
+                // Uses the (int id, Language) CaseRead overload (Core.cs:1132 →
+                // SqlController.CheckRead:1557) which takes the SDK Cases.Id —
+                // the same call shape as BackendConfigurationCompliancesService.Read
+                // at line 173: core.CaseRead(id, language).
+                await core.CaseRead(foundCase.Id, bundleLanguage).ConfigureAwait(false);
+
                 var pipePairs = new List<string>(request.FieldValues.Count);
                 foreach (var fvw in request.FieldValues)
                 {
