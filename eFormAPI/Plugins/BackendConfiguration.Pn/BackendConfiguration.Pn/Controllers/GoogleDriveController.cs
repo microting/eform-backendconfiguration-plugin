@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Constants;
@@ -52,6 +53,7 @@ public class GoogleDriveController : Controller
 
     private readonly IGoogleDriveAuthService _authService;
     private readonly IGoogleDriveFileService _fileService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IUserService _userService;
     private readonly IBackendConfigurationLocalizationService _localizationService;
     private readonly BackendConfigurationPnDbContext _dbContext;
@@ -62,6 +64,7 @@ public class GoogleDriveController : Controller
     public GoogleDriveController(
         IGoogleDriveAuthService authService,
         IGoogleDriveFileService fileService,
+        IServiceScopeFactory scopeFactory,
         IUserService userService,
         IBackendConfigurationLocalizationService localizationService,
         BackendConfigurationPnDbContext dbContext,
@@ -71,6 +74,7 @@ public class GoogleDriveController : Controller
     {
         _authService = authService;
         _fileService = fileService;
+        _scopeFactory = scopeFactory;
         _userService = userService;
         _localizationService = localizationService;
         _dbContext = dbContext;
@@ -450,12 +454,45 @@ public class GoogleDriveController : Controller
             return Unauthorized();
         }
 
-        // Spec PR-5: enqueue a refresh-files job. For now we just log;
-        // PR-7's processor + PR-6's reconcile cron own the actual
-        // refetch.
+        // Spec PR-7: enqueue a refresh-files job. We fire-and-forget so
+        // the webhook responds inside Drive's tight timeout budget — the
+        // spec explicitly opts for an in-process Task.Run over a
+        // persisted queue at this scale ("Enqueue a refresh job"; the
+        // persisted queue is overkill for v1). PR-6's daily reconcile
+        // cron is the safety net for any task that drops on the floor
+        // because the host crashed mid-execution.
         _logger.LogInformation(
             "Drive change notification accepted (channelId={ChannelId}, tokenId={TokenId}, resourceState={ResourceState}, msg={Message})",
             channelId, channel.GoogleOAuthTokenId, resourceState, messageNumber);
+
+        var userId = await _dbContext.GoogleOAuthTokens
+            .Where(t => t.Id == channel.GoogleOAuthTokenId)
+            .Select(t => t.UserId)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (userId > 0)
+        {
+            // Resolve the processor inside a fresh DI scope so the
+            // background task's BackendConfigurationPnDbContext outlives
+            // this request (the controller's _dbContext is request-scoped
+            // and disposed the moment we return Ok()). Standard ASP.NET
+            // pattern for fire-and-forget database work.
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var processor = scope.ServiceProvider
+                        .GetRequiredService<IGoogleDriveChangeProcessor>();
+                    await processor.ProcessUserAsync(userId).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                        "Async ProcessUserAsync failed for user {UserId}", userId);
+                }
+            });
+        }
 
         return Ok();
     }

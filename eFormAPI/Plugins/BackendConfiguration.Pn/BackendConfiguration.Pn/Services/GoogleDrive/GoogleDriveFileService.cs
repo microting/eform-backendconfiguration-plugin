@@ -307,10 +307,19 @@ public class GoogleDriveFileService : IGoogleDriveFileService
         http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var metadata = await GetDriveMetadataAsync(http, file.DriveFileId).ConfigureAwait(false);
+        // PR-7: separate 404 / 403 / other-error so the change processor
+        // can map them to DriveChangeOutcome.DriveNotFound /
+        // PermissionDenied / Error and stamp WorkflowState accordingly.
+        // The file service stays a pure transport — it does NOT mutate
+        // the AreaRulePlanningFile workflow-state itself; that's the
+        // processor's job.
+        var metadata = await GetDriveMetadataForRefreshAsync(http, file.DriveFileId).ConfigureAwait(false);
         if (metadata == null)
         {
-            // 404 / 403 — caller (PR-7) decides whether to mark removed.
+            // Other transient/5xx error — surface as a "no change" no-op
+            // to RefreshFileAsync's bool-returning legacy contract; the
+            // processor sees Error from the explicit metadata fetch it
+            // does up-front instead.
             return false;
         }
 
@@ -442,6 +451,75 @@ public class GoogleDriveFileService : IGoogleDriveFileService
         var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
         return JsonSerializer.Deserialize<DriveMetadata>(json);
     }
+
+    /// <summary>
+    /// Refresh-path metadata fetch. Differs from <see cref="GetDriveMetadataAsync"/>
+    /// by surfacing 404 / 403 as typed exceptions instead of nulls so the
+    /// PR-7 change processor can map them to <c>DriveChangeOutcome</c>
+    /// values without re-probing the response. 5xx/transient errors still
+    /// surface as a null return (caller treats as a no-op).
+    /// </summary>
+    public static async Task<DriveMetadataResult?> ProbeDriveMetadataAsync(HttpClient http, string driveFileId)
+    {
+        var url = $"https://www.googleapis.com/drive/v3/files/{Uri.EscapeDataString(driveFileId)}"
+                  + "?fields=id,name,size,mimeType,modifiedTime";
+        using var resp = await http.GetAsync(url).ConfigureAwait(false);
+        if (resp.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new DriveFileNotFoundException(driveFileId);
+        }
+        if (resp.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new DriveFilePermissionDeniedException(driveFileId);
+        }
+        if (!resp.IsSuccessStatusCode)
+        {
+            // Transient (5xx / unexpected 4xx) — caller treats as Error.
+            return null;
+        }
+        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var meta = JsonSerializer.Deserialize<DriveMetadata>(json);
+        if (meta == null)
+        {
+            return null;
+        }
+        return new DriveMetadataResult(meta.Id, meta.Name, meta.Size, meta.MimeType, meta.ModifiedTime);
+    }
+
+    /// <summary>
+    /// Internal helper used by <see cref="RefreshFileAsync"/>. Maps 404/403
+    /// to typed exceptions (which propagate up to the change processor) and
+    /// any other failure to a null return so the existing bool-returning
+    /// <c>RefreshFileAsync</c> contract continues to work.
+    /// </summary>
+    private static async Task<DriveMetadata?> GetDriveMetadataForRefreshAsync(HttpClient http, string driveFileId)
+    {
+        var url = $"https://www.googleapis.com/drive/v3/files/{Uri.EscapeDataString(driveFileId)}"
+                  + "?fields=id,name,size,mimeType,modifiedTime";
+        using var resp = await http.GetAsync(url).ConfigureAwait(false);
+        if (resp.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new DriveFileNotFoundException(driveFileId);
+        }
+        if (resp.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new DriveFilePermissionDeniedException(driveFileId);
+        }
+        if (!resp.IsSuccessStatusCode)
+        {
+            return null;
+        }
+        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        return JsonSerializer.Deserialize<DriveMetadata>(json);
+    }
+
+    /// <summary>
+    /// Public-shape projection of Drive's <c>files.get</c> metadata response,
+    /// returned by <see cref="ProbeDriveMetadataAsync"/>. Mirrors the internal
+    /// <c>DriveMetadata</c> record but kept separate so the internal type
+    /// can stay nested + private to the file service.
+    /// </summary>
+    public sealed record DriveMetadataResult(string? Id, string? Name, long Size, string? MimeType, DateTime? ModifiedTime);
 
     private class DriveMetadata
     {

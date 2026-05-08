@@ -139,6 +139,9 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
         services.AddTransient<IGoogleDriveFileService, GoogleDriveFileService>();
+        // PR-7 change processor — consumed by /notify (fire-and-forget) and
+        // by the daily reconcile cron in eform-service-backendconfiguration-plugin.
+        services.AddTransient<IGoogleDriveChangeProcessor, GoogleDriveChangeProcessor>();
         // Typed HttpClient for the Microting OAuth proxy. BaseAddress is
         // configured from IOptions at construction time so the typed
         // client never needs to know about appsettings directly.

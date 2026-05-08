@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Constants;
@@ -829,6 +830,374 @@ public class GoogleDriveTests : TestBaseSetup
             "Either revert the change OR update the proxy AND this vector together.");
     }
 
+    // -------------------------------------------------------------------
+    // PR-7 — GoogleDriveChangeProcessor
+    // -------------------------------------------------------------------
+
+    [Test]
+    public async Task ProcessFile_ModifiedTimeNewer_RefetchesAndBumpsTimestamp()
+    {
+        const int userId = 31;
+        var (file, _) = await SeedDriveFileAsync(userId, driveFileId: "file-newer",
+            cachedModifiedTime: DateTime.UtcNow.AddDays(-2));
+
+        var newModifiedTime = DateTime.UtcNow;
+        var pdfBytes = Encoding.UTF8.GetBytes("%PDF-1.4 freshly-changed-bytes");
+
+        // Drive metadata stub — newer modifiedTime.
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-newer")
+                .WithParam("alt", "media").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/pdf")
+                .WithBody(pdfBytes));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-newer").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "file-newer",
+                    name = "report-v2.pdf",
+                    size = pdfBytes.Length,
+                    mimeType = "application/pdf",
+                    modifiedTime = newModifiedTime
+                })));
+        StubProxyRefresh("ya29.refresh-tok");
+
+        var (processor, _) = NewChangeProcessor(userId);
+        var outcome = await processor.ProcessFileAsync(file.Id);
+
+        Assert.That(outcome, Is.EqualTo(DriveChangeOutcome.Refreshed));
+
+        var fromDb = await BackendConfigurationPnDbContext!.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == file.Id);
+        Assert.That(fromDb.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(fromDb.OriginalFileName, Is.EqualTo("report-v2.pdf"));
+        Assert.That(fromDb.DriveModifiedTime!.Value,
+            Is.GreaterThan(DateTime.UtcNow.AddDays(-1)),
+            "Cached DriveModifiedTime must advance to (close to) the new modifiedTime.");
+    }
+
+    [Test]
+    public async Task ProcessFile_ModifiedTimeUnchanged_NoOp()
+    {
+        const int userId = 32;
+        var cached = DateTime.UtcNow.AddHours(-3);
+        var (file, _) = await SeedDriveFileAsync(userId, driveFileId: "file-unchanged",
+            cachedModifiedTime: cached);
+
+        // Drive returns the SAME modifiedTime — processor must short-
+        // circuit before requesting bytes. Stub /alt=media to a 500 so
+        // we'd notice if the implementation accidentally fetched it.
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-unchanged")
+                .WithParam("alt", "media").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(500)
+                .WithBody("must-not-be-called"));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-unchanged").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "file-unchanged",
+                    name = "stable.pdf",
+                    size = 100,
+                    mimeType = "application/pdf",
+                    modifiedTime = cached
+                })));
+        StubProxyRefresh("ya29.unchanged-tok");
+
+        var (processor, _) = NewChangeProcessor(userId);
+        var outcome = await processor.ProcessFileAsync(file.Id);
+
+        Assert.That(outcome, Is.EqualTo(DriveChangeOutcome.NoChange));
+
+        var altMediaCalls = _proxyServer.LogEntries.Count(e =>
+            e.RequestMessage.Path == "/drive/v3/files/file-unchanged"
+            && e.RequestMessage.Query != null
+            && e.RequestMessage.Query.ContainsKey("alt"));
+        Assert.That(altMediaCalls, Is.EqualTo(0),
+            "Bytes endpoint must not be called when modifiedTime is unchanged.");
+    }
+
+    [Test]
+    public async Task ProcessFile_404_MarksRemoved()
+    {
+        const int userId = 33;
+        var (file, _) = await SeedDriveFileAsync(userId, driveFileId: "file-gone",
+            cachedModifiedTime: DateTime.UtcNow.AddDays(-1));
+
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-gone").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(404)
+                .WithBody("{\"error\":{\"code\":404,\"message\":\"File not found\"}}"));
+        StubProxyRefresh("ya29.404-tok");
+
+        var (processor, _) = NewChangeProcessor(userId);
+        var outcome = await processor.ProcessFileAsync(file.Id);
+
+        Assert.That(outcome, Is.EqualTo(DriveChangeOutcome.DriveNotFound));
+
+        var fromDb = await BackendConfigurationPnDbContext!.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == file.Id);
+        Assert.That(fromDb.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+            "404 from Drive must soft-delete the AreaRulePlanningFile row.");
+    }
+
+    [Test]
+    public async Task ProcessFile_403_MarksRemoved()
+    {
+        const int userId = 34;
+        var (file, _) = await SeedDriveFileAsync(userId, driveFileId: "file-forbidden",
+            cachedModifiedTime: DateTime.UtcNow.AddDays(-1));
+
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/file-forbidden").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(403)
+                .WithBody("{\"error\":{\"code\":403,\"message\":\"Permission denied\"}}"));
+        StubProxyRefresh("ya29.403-tok");
+
+        var (processor, _) = NewChangeProcessor(userId);
+        var outcome = await processor.ProcessFileAsync(file.Id);
+
+        Assert.That(outcome, Is.EqualTo(DriveChangeOutcome.PermissionDenied));
+
+        var fromDb = await BackendConfigurationPnDbContext!.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == file.Id);
+        Assert.That(fromDb.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+            "403 from Drive must soft-delete the AreaRulePlanningFile row.");
+    }
+
+    [Test]
+    public async Task ProcessFile_TokenRevoked_ReturnsTokenRevoked()
+    {
+        const int userId = 35;
+        var (file, _) = await SeedDriveFileAsync(userId, driveFileId: "file-revoked",
+            cachedModifiedTime: DateTime.UtcNow.AddDays(-1));
+
+        // Throwing auth service — simulates the proxy /refresh returning
+        // invalid_grant. RevokedAt would have been stamped already by the
+        // real auth service before throwing; we don't need to repeat that
+        // bookkeeping in the test because the processor's contract is to
+        // SURFACE the outcome, not to mutate the token row itself.
+        var throwingAuth = Substitute.For<IGoogleDriveAuthService>();
+        throwingAuth.GetAccessTokenAsync(Arg.Any<int>())
+            .Returns<Task<string>>(_ =>
+                Task.FromException<string>(new GoogleDriveTokenRevokedException("invalid_grant")));
+
+        var processor = new GoogleDriveChangeProcessor(
+            BackendConfigurationPnDbContext!,
+            throwingAuth,
+            Substitute.For<IGoogleDriveFileService>(),
+            new RewritingHttpClientFactory(_proxyServer.Url!),
+            NullLogger<GoogleDriveChangeProcessor>.Instance);
+
+        var outcome = await processor.ProcessFileAsync(file.Id);
+
+        Assert.That(outcome, Is.EqualTo(DriveChangeOutcome.TokenRevoked),
+            "Processor must surface TokenRevoked without crashing.");
+
+        // Row stays untouched — the disconnect/revocation flow owns
+        // workflow-state transitions on the orphan side, not us.
+        var fromDb = await BackendConfigurationPnDbContext!.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == file.Id);
+        Assert.That(fromDb.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+    }
+
+    [Test]
+    public async Task ProcessUser_ProcessesAllUserFiles_TalliesResult()
+    {
+        const int userId = 36;
+
+        // Three files for one user, each with a distinct outcome path:
+        //   1. Refreshed  — newer modifiedTime + bytes flow
+        //   2. NoChange   — unchanged modifiedTime
+        //   3. DriveNotFound (Removed) — 404
+        var cached = DateTime.UtcNow.AddDays(-2);
+        var (refreshFile, _) = await SeedDriveFileAsync(userId, "f-refresh", cached);
+        var (unchangedFile, _) = await SeedDriveFileAsync(userId, "f-unchanged", cached, reuseToken: true);
+        var (removedFile, _) = await SeedDriveFileAsync(userId, "f-removed", cached, reuseToken: true);
+
+        var pdfBytes = Encoding.UTF8.GetBytes("%PDF-1.4 user-tally-test");
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/f-refresh")
+                .WithParam("alt", "media").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/pdf")
+                .WithBody(pdfBytes));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/f-refresh").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "f-refresh",
+                    name = "tally.pdf",
+                    size = pdfBytes.Length,
+                    mimeType = "application/pdf",
+                    modifiedTime = DateTime.UtcNow
+                })));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/f-unchanged").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "f-unchanged",
+                    name = "still.pdf",
+                    size = 50,
+                    mimeType = "application/pdf",
+                    modifiedTime = cached
+                })));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/files/f-removed").UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(404)
+                .WithBody("{\"error\":{\"code\":404}}"));
+        StubProxyRefresh("ya29.tally-tok");
+
+        var (processor, _) = NewChangeProcessor(userId);
+        var result = await processor.ProcessUserAsync(userId);
+
+        Assert.That(result.Refreshed, Is.EqualTo(1));
+        Assert.That(result.NoChange, Is.EqualTo(1));
+        Assert.That(result.Removed, Is.EqualTo(1));
+        Assert.That(result.Errors, Is.EqualTo(0));
+
+        // Assert each row landed in the expected workflow state.
+        var refreshedRow = await BackendConfigurationPnDbContext!.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == refreshFile.Id);
+        var unchangedRow = await BackendConfigurationPnDbContext.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == unchangedFile.Id);
+        var removedRow = await BackendConfigurationPnDbContext.AreaRulePlanningFiles
+            .FirstAsync(x => x.Id == removedFile.Id);
+        Assert.That(refreshedRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(unchangedRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(removedRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    /// <summary>
+    /// Constructs a <see cref="GoogleDriveChangeProcessor"/> wired against the
+    /// shared WireMock server. Mirrors <see cref="NewFileService"/> but
+    /// returns the processor + its underlying file service so tests can
+    /// assert on either layer.
+    /// </summary>
+    private (GoogleDriveChangeProcessor Processor, GoogleDriveFileService FileService) NewChangeProcessor(int userId)
+    {
+        var fakeFactory = new RewritingHttpClientFactory(_proxyServer.Url!);
+        var proxyHttp = new HttpClient { BaseAddress = new Uri(_options.MicrotingOAuthProxyUrl) };
+        var proxyClient = new OAuthProxyClient(proxyHttp, Options.Create(_options));
+        var auth = new GoogleDriveAuthService(
+            BackendConfigurationPnDbContext!,
+            proxyClient,
+            new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(_options),
+            NullLogger<GoogleDriveAuthService>.Instance);
+
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(userId);
+
+        var fileService = new GoogleDriveFileService(
+            BackendConfigurationPnDbContext!,
+            auth,
+            new EFormCoreService(_sdkConnectionString),
+            userService,
+            new BackendConfigurationLocalizationService(),
+            fakeFactory,
+            NullLogger<GoogleDriveFileService>.Instance);
+
+        var processor = new GoogleDriveChangeProcessor(
+            BackendConfigurationPnDbContext!,
+            auth,
+            fileService,
+            fakeFactory,
+            NullLogger<GoogleDriveChangeProcessor>.Instance);
+        return (processor, fileService);
+    }
+
+    /// <summary>
+    /// Stubs the proxy /refresh endpoint with a fresh access token. Each
+    /// PR-7 test fixture needs at least one of these because every
+    /// processor call goes through GetAccessTokenAsync first.
+    /// </summary>
+    private void StubProxyRefresh(string accessToken)
+    {
+        _proxyServer.Given(Request.Create()
+                .WithPath("/google-drive/refresh").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    accessToken,
+                    accessTokenExpiry = DateTime.UtcNow.AddHours(1)
+                })));
+    }
+
+    /// <summary>
+    /// Seeds an <see cref="AreaRulePlanningFile"/> with Drive metadata so
+    /// the processor has something to work on. The accompanying
+    /// <see cref="GoogleOAuthToken"/> is created on first call per user;
+    /// pass <paramref name="reuseToken"/> to bind multiple files to the
+    /// same token (required for ProcessUserAsync tallying tests).
+    /// </summary>
+    private async Task<(AreaRulePlanningFile File, GoogleOAuthToken Token)> SeedDriveFileAsync(
+        int userId, string driveFileId, DateTime cachedModifiedTime, bool reuseToken = false)
+    {
+        GoogleOAuthToken token;
+        if (reuseToken)
+        {
+            token = await BackendConfigurationPnDbContext!.GoogleOAuthTokens
+                .Where(x => x.UserId == userId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderByDescending(x => x.Id)
+                .FirstAsync();
+        }
+        else
+        {
+            // StoreEnvelopeAsync wires the AES-GCM-encrypted refresh-token
+            // blob correctly. Going through the public path beats hand-
+            // assembling the row because the auth service hashes/encrypts
+            // a few fields invisibly.
+            var jwt = MintEnvelope("envelope", userId, $"n{userId}", $"rt-{userId}");
+            var auth = NewAuthService();
+            token = await auth.StoreEnvelopeAsync(jwt, userId, $"n{userId}");
+        }
+
+        var arpId = await SeedPlanning();
+
+        // Stand-in UploadedData so the file's UploadedDataId FK has a
+        // target. Real production rows come from the file service's S3
+        // upload pipeline; for processor tests we don't care about the
+        // bytes, only the metadata transitions on the file row.
+        var sdkUpload = new Microting.eForm.Infrastructure.Data.Entities.UploadedData
+        {
+            Checksum = "0000000000000000000000000000000000000000",
+            FileName = $"placeholder-{driveFileId}.pdf",
+            FileLocation = $"/tmp/placeholder-{driveFileId}.pdf",
+            Extension = "pdf",
+            CurrentFile = $"placeholder-{driveFileId}.pdf",
+            UploaderId = userId
+        };
+        await sdkUpload.Create(MicrotingDbContext!);
+
+        var file = new AreaRulePlanningFile
+        {
+            AreaRulePlanningId = arpId,
+            UploadedDataId = sdkUpload.Id,
+            OriginalFileName = $"{driveFileId}.pdf",
+            MimeType = "application/pdf",
+            SizeBytes = 100,
+            DriveFileId = driveFileId,
+            DriveModifiedTime = cachedModifiedTime,
+            GoogleOAuthTokenId = token.Id,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await file.Create(BackendConfigurationPnDbContext!);
+        return (file, token);
+    }
+
     /// <summary>
     /// Mints a channel-token JWT in the same shape EnsureWatchChannelAsync
     /// produces. Same signing key the controller verifies against.
@@ -893,10 +1262,16 @@ public class GoogleDriveTests : TestBaseSetup
         return await controller.Notify();
     }
 
-    private GoogleDriveController NewController()
+    private GoogleDriveController NewController(IGoogleDriveChangeProcessor? processor = null)
     {
         var auth = NewAuthServiceForWatch();
         var fileService = Substitute.For<IGoogleDriveFileService>();
+        // Tests that don't care about the change-processor wiring get a
+        // no-op stub so the fire-and-forget Task.Run inside Notify is
+        // observable but harmless. The Notify_* tests exercising PR-7's
+        // enqueue path supply their own substitute via the parameter.
+        processor ??= Substitute.For<IGoogleDriveChangeProcessor>();
+        var scopeFactory = new SingleProcessorScopeFactory(processor);
         var userService = Substitute.For<IUserService>();
         var localization = new BackendConfigurationLocalizationService();
         // Real ASP.NET Data Protection — the controller's CSRF cookie
@@ -907,12 +1282,33 @@ public class GoogleDriveTests : TestBaseSetup
         return new GoogleDriveController(
             auth,
             fileService,
+            scopeFactory,
             userService,
             localization,
             BackendConfigurationPnDbContext!,
             protectionProvider,
             Options.Create(_options),
             NullLogger<GoogleDriveController>.Instance);
+    }
+
+    /// <summary>
+    /// Minimal IServiceScopeFactory that resolves a single
+    /// IGoogleDriveChangeProcessor instance — exactly what the controller's
+    /// fire-and-forget Notify enqueue needs. Real ServiceProvider wiring is
+    /// overkill for unit tests; this keeps the test surface small while
+    /// still exercising the scope-factory code path the controller uses
+    /// in production.
+    /// </summary>
+    private sealed class SingleProcessorScopeFactory : IServiceScopeFactory, IServiceProvider, IServiceScope
+    {
+        private readonly IGoogleDriveChangeProcessor _processor;
+        public SingleProcessorScopeFactory(IGoogleDriveChangeProcessor processor) => _processor = processor;
+
+        public IServiceScope CreateScope() => this;
+        public IServiceProvider ServiceProvider => this;
+        public object? GetService(Type serviceType)
+            => serviceType == typeof(IGoogleDriveChangeProcessor) ? _processor : null;
+        public void Dispose() { }
     }
 
     /// <summary>
