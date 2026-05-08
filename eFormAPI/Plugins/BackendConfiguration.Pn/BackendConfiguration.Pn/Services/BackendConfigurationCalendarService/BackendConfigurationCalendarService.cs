@@ -72,6 +72,11 @@ public class BackendConfigurationCalendarService(
             //   emitted to the worker because the corresponding write handlers ("complete",
             //   "comment", etc.) have nothing to bind to and will fail.
             List<Compliance> compliancesInWeek;
+            // Bug A fix side-dict — see ActionableOnly branch below for rationale.
+            // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
+            // the recurrence-emit lookup below tolerates that as a no-op.
+            Dictionary<(int PlanningId, DateTime Date), (int ComplianceId, int SdkCaseId)> nonActionableByPlanningDate
+                = new();
             if (!requestModel.ActionableOnly)
             {
                 // Default branch — bit-identical to the pre-c2637800 prefetch.
@@ -138,6 +143,33 @@ public class BackendConfigurationCalendarService(
                 compliancesInWeek = compliancesInWeekAll
                     .Where(IsComplianceActionable)
                     .ToList();
+
+                // Bug A fix (compliance 9810 / case 17701 retracted-rotation parity):
+                // when a compliance is filtered out by IsComplianceActionable (retracted SDK
+                // case, soft-deleted, or status==100), the recurrence-emit loop below STILL
+                // fires for that planning's occurrence date because compliancePlanningIdsInWeek
+                // (built from the filtered actionable subset) no longer contains it. Without
+                // intervention the model emitted by that loop has ComplianceId=null /
+                // SdkCaseId=null, the device caches compliance_id=0 in Drift, and any
+                // subsequent CompleteOpgave / SetComment / SetFieldValue / UploadPhoto write
+                // arrives with compliance_id=0 — which then either fails to resolve (legacy
+                // payloads) or routes through the fallback fuzzy lookup that historically
+                // excluded retracted cases (Bug B).
+                //
+                // Fix: keep the actionable-only filter behavior intact (the row stays
+                // expired / non-actionable in the UI; IsFromCompliance stays false on the
+                // recurrence path) but populate ComplianceId + SdkCaseId from the stripped
+                // compliance so any device-side write round-trips through the PK lookup
+                // branch instead of the fuzzy fallback. See investigator notes for commit
+                // 47f20657 — root cause: ListOpgaver→Drift only ever sees the
+                // recurrence-emit model when actionability stripping removed the compliance.
+                nonActionableByPlanningDate = compliancesInWeekAll
+                    .Where(c => !compliancesInWeek.Contains(c))
+                    .GroupBy(c => (c.PlanningId, c.Deadline.Date))
+                    // GroupBy + first-wins guards against the (unlikely) case of multiple
+                    // non-actionable compliance rows sharing a (planning, day) tuple.
+                    .ToDictionary(g => g.Key, g => (ComplianceId: g.First().Id,
+                        SdkCaseId: g.First().MicrotingSdkCaseId));
             }
 
             // Build sets for dedup: by exact date and by planningId (any in-week compliance,
@@ -327,6 +359,18 @@ public class BackendConfigurationCalendarService(
                         DescriptionHtml = planning.Description,
                         Attachments = MapAttachments(arp)
                     };
+
+                    // Bug A fix: if a non-actionable compliance was stripped for this
+                    // (planningId, occurrenceDate), propagate its ComplianceId + SdkCaseId
+                    // so any device-side write routes through the PK lookup. Leave
+                    // IsFromCompliance=false (we are on the recurrence path and there is
+                    // no actionable compliance to materialise as a calendar row).
+                    if (nonActionableByPlanningDate.TryGetValue(
+                            (arp.ItemPlanningId, occurrenceDate.Date), out var stripped))
+                    {
+                        model.ComplianceId = stripped.ComplianceId;
+                        model.SdkCaseId = stripped.SdkCaseId;
+                    }
 
                     if (ShouldIncludeTask(model, requestModel))
                     {

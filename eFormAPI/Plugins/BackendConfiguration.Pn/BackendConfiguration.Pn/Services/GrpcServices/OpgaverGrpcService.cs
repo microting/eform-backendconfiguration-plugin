@@ -1092,9 +1092,17 @@ public class OpgaverGrpcService(
             // here while the device cache catches up.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
+            //
+            // Bug B fix (compliance 9810 / case 17701): the
+            // c.WorkflowState != Removed filter previously hid retracted SDK
+            // cases here, so any payload arriving with compliance_id=0 (legacy
+            // clients, or a device whose Drift cached zero IDs because Bug A
+            // emitted a recurrence-only row) could never resolve a
+            // missed-deadline / retracted compliance. The PK branch above
+            // doesn't filter by case state and the success path can revive a
+            // retracted case, so the fallback should match — drop the filter.
             var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
                 .Where(c => c.SiteId == sdkSiteId)
-                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(c => c.Id)
                 .ToListAsync()
                 .ConfigureAwait(false);
@@ -1483,9 +1491,11 @@ public class OpgaverGrpcService(
         else
         {
             // Legacy fuzzy lookup — same shape as main CompleteOpgave.
+            // Bug B fix: drop the c.WorkflowState != Removed filter so a payload
+            // with compliance_id=0 can still resolve a retracted/missed-deadline
+            // compliance. See CompleteOpgave's fallback for the full rationale.
             var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
                 .Where(c => c.SiteId == sdkSiteId)
-                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(c => c.Id)
                 .ToListAsync()
                 .ConfigureAwait(false);
@@ -2474,9 +2484,11 @@ public class OpgaverGrpcService(
             // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
+            // Bug B fix: drop the c.WorkflowState != Removed filter so a payload
+            // with compliance_id=0 can still resolve a retracted/missed-deadline
+            // compliance. See CompleteOpgave's fallback for the full rationale.
             var validCaseIdsForSite = await sdkDbContext.Cases
                 .Where(c => c.SiteId == sdkSiteId)
-                .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(c => c.Id)
                 .ToListAsync()
                 .ConfigureAwait(false);
