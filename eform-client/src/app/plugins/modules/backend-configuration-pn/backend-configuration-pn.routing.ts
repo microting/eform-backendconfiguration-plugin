@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
 import {
+  GoogleDriveOAuthFinishComponent,
   PropertiesContainerComponent,
   PropertyAreasComponent, ReportContainerComponent,
 } from './components';
@@ -151,6 +152,16 @@ export const routes: Routes = [
           import('./modules/calendar/calendar.module').then(
             (m) => m.CalendarModule
           ),
+      },
+      {
+        // Google OAuth popup landing route. The backend's
+        // GoogleDriveController.OAuthFinish redirects here with either
+        // ?gdrive_success=true or ?gdrive_err=<reason>. The component
+        // posts a `gd_oauth_done` message to window.opener (the calendar
+        // attach-file modal) and then closes itself.
+        path: 'google-drive-oauth-finish',
+        canActivate: [AuthGuard],
+        component: GoogleDriveOAuthFinishComponent,
       },
     ],
   },

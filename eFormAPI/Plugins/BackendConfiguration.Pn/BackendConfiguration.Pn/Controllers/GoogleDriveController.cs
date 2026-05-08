@@ -144,7 +144,8 @@ public class GoogleDriveController : Controller
         catch (Exception e)
         {
             _logger.LogError(e, "GoogleDriveController.Start failed: {Message}", e.Message);
-            return new OperationDataResult<string>(false, e.Message);
+            return new OperationDataResult<string>(false,
+                _localizationService.GetString("GenericError"));
         }
     }
 
@@ -157,18 +158,23 @@ public class GoogleDriveController : Controller
     [HttpGet("oauth-finish")]
     public async Task<IActionResult> OAuthFinish([FromQuery] string envelope)
     {
-        var calendarPage = "/plugins/backend-configuration-pn/calendar";
+        // Dedicated single-purpose page: in `ngOnInit` it does
+        // `window.opener.postMessage({type: 'gd_oauth_done', ...}, origin)`
+        // and `window.close()`. Burying that logic in the calendar route
+        // would fire the postMessage on every navigation; a dedicated route
+        // keeps the contract narrow.
+        var finishPage = "/plugins/backend-configuration-pn/google-drive-oauth-finish";
 
         if (string.IsNullOrWhiteSpace(envelope))
         {
-            return Redirect($"{calendarPage}?gdrive_err=missing_envelope");
+            return Redirect($"{finishPage}?gdrive_err=missing_envelope");
         }
 
         // Pull the nonce from the cookie and clear it — single-use.
         if (!Request.Cookies.TryGetValue(NonceCookieName, out var cookieValue)
             || string.IsNullOrEmpty(cookieValue))
         {
-            return Redirect($"{calendarPage}?gdrive_err=nonce_missing");
+            return Redirect($"{finishPage}?gdrive_err=nonce_missing");
         }
         Response.Cookies.Delete(NonceCookieName);
 
@@ -181,32 +187,32 @@ public class GoogleDriveController : Controller
             var pipe = raw.IndexOf('|');
             if (pipe <= 0)
             {
-                return Redirect($"{calendarPage}?gdrive_err=nonce_corrupt");
+                return Redirect($"{finishPage}?gdrive_err=nonce_corrupt");
             }
             cookieUserId = int.Parse(raw[..pipe], CultureInfo.InvariantCulture);
             expectedNonce = raw[(pipe + 1)..];
         }
         catch (Exception)
         {
-            return Redirect($"{calendarPage}?gdrive_err=nonce_corrupt");
+            return Redirect($"{finishPage}?gdrive_err=nonce_corrupt");
         }
 
         var currentUserId = _userService.UserId;
         if (cookieUserId != currentUserId)
         {
-            return Redirect($"{calendarPage}?gdrive_err=user_mismatch");
+            return Redirect($"{finishPage}?gdrive_err=user_mismatch");
         }
 
         try
         {
             await _authService.StoreEnvelopeAsync(envelope, currentUserId, expectedNonce)
                 .ConfigureAwait(false);
-            return Redirect($"{calendarPage}?gdrive_success=true");
+            return Redirect($"{finishPage}?gdrive_success=true");
         }
         catch (Exception e)
         {
             _logger.LogWarning(e, "OAuthFinish rejected envelope: {Message}", e.Message);
-            return Redirect($"{calendarPage}?gdrive_err={Uri.EscapeDataString(e.GetType().Name)}");
+            return Redirect($"{finishPage}?gdrive_err={Uri.EscapeDataString(e.GetType().Name)}");
         }
     }
 
@@ -245,7 +251,47 @@ public class GoogleDriveController : Controller
         catch (Exception e)
         {
             _logger.LogError(e, "GoogleDriveController.GetStatus failed: {Message}", e.Message);
-            return new OperationDataResult<GoogleDriveStatusModel>(false, e.Message);
+            return new OperationDataResult<GoogleDriveStatusModel>(false,
+                _localizationService.GetString("GenericError"));
+        }
+    }
+
+    /// <summary>
+    /// Returns a fresh OAuth access token + the (optional) developer key so
+    /// the frontend can instantiate the Google Picker JS SDK. The Picker is
+    /// rendered fully client-side; the backend can't render it for the user,
+    /// but the access token only lives server-side, so we expose it through
+    /// this read-only endpoint.
+    ///
+    /// The access token is short-lived (≤1 hour) and limited to <c>drive.file</c>
+    /// scope — a leaked token grants per-file Picker-granted access only,
+    /// not whole-Drive enumeration. Frontend MUST fetch a fresh one each
+    /// time it opens the Picker rather than caching.
+    /// </summary>
+    [HttpGet("picker-token")]
+    public async Task<OperationDataResult<GoogleDrivePickerTokenModel>> GetPickerToken()
+    {
+        try
+        {
+            var userId = _userService.UserId;
+            var accessToken = await _authService.GetAccessTokenAsync(userId).ConfigureAwait(false);
+
+            return new OperationDataResult<GoogleDrivePickerTokenModel>(true, new GoogleDrivePickerTokenModel
+            {
+                AccessToken = accessToken,
+                DeveloperKey = _options.PickerDeveloperKey ?? string.Empty,
+            });
+        }
+        catch (GoogleDriveTokenRevokedException)
+        {
+            return new OperationDataResult<GoogleDrivePickerTokenModel>(false,
+                _localizationService.GetString("GoogleDriveTokenRevoked"));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GoogleDriveController.GetPickerToken failed: {Message}", e.Message);
+            return new OperationDataResult<GoogleDrivePickerTokenModel>(false,
+                _localizationService.GetString("GenericError"));
         }
     }
 
@@ -295,7 +341,8 @@ public class GoogleDriveController : Controller
         catch (Exception e)
         {
             _logger.LogError(e, "GoogleDriveController.Attach failed: {Message}", e.Message);
-            return new OperationDataResult<CalendarTaskAttachmentDto>(false, e.Message);
+            return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                _localizationService.GetString("GenericError"));
         }
     }
 

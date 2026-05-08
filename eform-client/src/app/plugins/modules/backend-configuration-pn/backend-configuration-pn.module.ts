@@ -22,6 +22,7 @@ import {
   ReportHeaderComponent,
   ReportTableComponent,
   CaseDeleteComponent,
+  GoogleDriveOAuthFinishComponent,
 } from './components';
 import {BackendConfigurationPnLayoutComponent} from './layouts';
 import {
@@ -124,7 +125,8 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     ReportContainerComponent,
     ReportHeaderComponent,
     ReportTableComponent,
-    CaseDeleteComponent
+    CaseDeleteComponent,
+    GoogleDriveOAuthFinishComponent,
   ],
   providers: [
     BackendConfigurationPnSettingsService,

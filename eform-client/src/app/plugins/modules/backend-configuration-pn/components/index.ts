@@ -4,3 +4,4 @@ export * from './area-rule-plan-modal/area-rule-plan-modal.component';
 export * from './area-rule-entity-list-modal/area-rule-entity-list-modal.component';
 export * from './reports';
 export * from './backend-configuration-case/backend-configuration-case.module';
+export * from './google-drive-oauth-finish/google-drive-oauth-finish.component';

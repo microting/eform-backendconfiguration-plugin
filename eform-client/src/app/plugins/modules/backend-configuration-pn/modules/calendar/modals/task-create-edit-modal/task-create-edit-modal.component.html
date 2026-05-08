@@ -239,14 +239,27 @@
       </div>
     </div>
 
-    <!-- Google Drive file (placeholder — disabled until OAuth + Picker ship) -->
+    <!-- Google Drive file. Same gating as the local-file row below: only
+         enabled once the AreaRulePlanning has an id (i.e. event is saved). -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
-        <a class="gcal-action-link gcal-action-link--disabled"
-           [matTooltip]="'Coming soon' | translate">
+        <a *ngIf="!isReadonly && !!data.task?.id && !drivePickerLoading && !connecting"
+           id="calendarEventDriveAttachLink"
+           class="gcal-action-link"
+           (click)="onPickFromDrive()">
           {{ 'Add Google Drive file' | translate }}
         </a>
+        <span *ngIf="!isReadonly && !data.task?.id"
+              class="gcal-action-link gcal-action-link--disabled"
+              [matTooltip]="'Save event first to attach files' | translate">
+          {{ 'Add Google Drive file' | translate }}
+        </span>
+        <span *ngIf="drivePickerLoading" class="gcal-drive-loading">
+          <mat-progress-spinner [diameter]="16" mode="indeterminate"></mat-progress-spinner>
+          {{ 'Loading Google Picker' | translate }}
+        </span>
+        <div *ngIf="driveError" class="gcal-attachment-error">{{ driveError }}</div>
       </div>
     </div>
 
@@ -282,7 +295,20 @@
             </ng-template>
             <div class="gcal-attachment-meta">
               <a class="gcal-attachment-name" (click)="downloadAttachment(f)">{{ f.originalFileName }}</a>
-              <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+              <div class="gcal-attachment-meta-row">
+                <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+                <span *ngIf="f.driveFileId"
+                      class="gcal-drive-badge"
+                      [matTooltip]="'Synced from Google Drive' | translate">Drive</span>
+                <a *ngIf="f.driveFileId"
+                   class="gcal-drive-link"
+                   [href]="'https://drive.google.com/file/d/' + f.driveFileId + '/view'"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   [matTooltip]="'Open in Google Drive' | translate">
+                  <mat-icon>open_in_new</mat-icon>
+                </a>
+              </div>
             </div>
             <button mat-icon-button
                     *ngIf="!isReadonly"

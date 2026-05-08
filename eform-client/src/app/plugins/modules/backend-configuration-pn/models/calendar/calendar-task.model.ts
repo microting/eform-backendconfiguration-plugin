@@ -59,6 +59,14 @@ export interface CalendarTaskAttachment {
   mimeType: string;
   sizeBytes: number;
   downloadUrl: string;
+
+  // Drive-mirrored attachments. Both fields are null/undefined for
+  // regular form-data uploads. The frontend uses `driveFileId` to render the
+  // "Drive" badge and to synthesize the view-source link as
+  // `https://drive.google.com/file/d/{driveFileId}/view` (the link is NOT
+  // returned by the backend — it's deterministic from the id alone).
+  driveFileId?: string;
+  driveModifiedTime?: string;
 }
 
 export interface CalendarRepeatMeta {

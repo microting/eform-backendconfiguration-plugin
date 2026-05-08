@@ -4930,5 +4930,18 @@
       "sv-SE": "Detta fält är obligatoriskt",
       "fr-FR": "Ce champ est obligatoire"
     }
+  },
+  {
+    "Key": "GenericError",
+    "LocalizedValue": {
+      "da": "Der opstod en uventet fejl. Prøv venligst igen.",
+      "de": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "en-US": "An unexpected error occurred. Please try again.",
+      "uk-UA": "Сталася неочікувана помилка. Будь ласка, спробуйте ще раз.",
+      "pl-PL": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
+      "no-NO": "En uventet feil oppstod. Vennligst prøv igjen.",
+      "sv-SE": "Ett oväntat fel inträffade. Försök igen.",
+      "fr-FR": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    }
   }
 ]

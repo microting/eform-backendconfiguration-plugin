@@ -51,4 +51,15 @@ public class GoogleDriveOptions
 
     [Required, MinLength(32)]
     public string RefreshTokenEncryptionKey { get; set; } = "";
+
+    /// <summary>
+    /// Google Picker API browser key (NOT a sensitive secret — designed to be
+    /// embedded in client-side code; restricted by HTTP-Referrer in the GCP
+    /// console). Returned to the frontend via the <c>/picker-token</c> endpoint
+    /// so the Picker JS SDK can be instantiated. Optional: in many
+    /// configurations the Picker works with just an OAuth access token; the
+    /// developer key is mainly required for higher-quota loaders.
+    /// Empty string is a valid default.
+    /// </summary>
+    public string PickerDeveloperKey { get; set; } = "";
 }
