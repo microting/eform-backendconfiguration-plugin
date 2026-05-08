@@ -2266,36 +2266,40 @@ public class OpgaverGrpcService(
             //     DoneAt = DateTime.UtcNow,
             //     UploadedDataId = newUploadedData.Id
             //   }.Create(sdkDbContext);
-            // The angular path has the fieldId in hand because the UI passes
-            // it; the mobile UploadPhotoMeta does not, so we discover it by
-            // walking the case's CheckList descendant tree (BFS) for the
-            // first FieldType=Picture field — same lookup the parity harness
-            // picker performs (s_photo_upload_delete._findPictureFieldId).
+            //
+            // Field-id resolution order:
+            //   - meta.FieldId > 0  →  client-provided binding. Look up by Id
+            //     directly. The caller is already auth-scoped to this opgave's
+            //     property (PropertyWorker check above), so an out-of-tree
+            //     field_id is at worst a self-inflicted misbinding the same
+            //     worker can correct with another upload.
+            //   - meta.FieldId == 0 →  legacy client. BFS-discover the FIRST
+            //     Picture field on the case (s_photo_upload_delete behavior).
             //
             // We keep this write IN ADDITION to the existing Cases.Custom
             // envelope update below, so the mobile read path (which reads
             // from Cases.Custom) is not regressed; both writes coexist.
-            var pictureFieldId = await FindPictureFieldIdAsync(
-                    sdkDbContext, foundCase.CheckListId)
-                .ConfigureAwait(false);
-            if (pictureFieldId > 0)
-            {
-                var pictureField = await sdkDbContext.Fields
-                    .FirstOrDefaultAsync(f => f.Id == pictureFieldId)
+            var resolvedFieldId = meta.FieldId > 0
+                ? meta.FieldId
+                : await FindPictureFieldIdAsync(sdkDbContext, foundCase.CheckListId)
                     .ConfigureAwait(false);
-                if (pictureField != null)
+            var pictureField = resolvedFieldId > 0
+                ? await sdkDbContext.Fields
+                    .FirstOrDefaultAsync(f => f.Id == resolvedFieldId)
+                    .ConfigureAwait(false)
+                : null;
+            if (pictureField != null)
+            {
+                var fieldValue = new Microting.eForm.Infrastructure.Data.Entities.FieldValue
                 {
-                    var fieldValue = new Microting.eForm.Infrastructure.Data.Entities.FieldValue
-                    {
-                        FieldId = pictureField.Id,
-                        CaseId = foundCase.Id,
-                        CheckListId = pictureField.CheckListId,
-                        WorkerId = foundCase.WorkerId,
-                        DoneAt = DateTime.UtcNow,
-                        UploadedDataId = uploadedData.Id
-                    };
-                    await fieldValue.Create(sdkDbContext).ConfigureAwait(false);
-                }
+                    FieldId = pictureField.Id,
+                    CaseId = foundCase.Id,
+                    CheckListId = pictureField.CheckListId,
+                    WorkerId = foundCase.WorkerId,
+                    DoneAt = DateTime.UtcNow,
+                    UploadedDataId = uploadedData.Id
+                };
+                await fieldValue.Create(sdkDbContext).ConfigureAwait(false);
             }
 
             // 7. Update Case.Custom envelope: replace existing entry at

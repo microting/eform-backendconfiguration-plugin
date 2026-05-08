@@ -38,6 +38,12 @@ message UploadPhotoMeta {
   int64 compliance_id = 5;
   // Server-assigned PK of the SDK Case row backing this opgave. 0 = legacy.
   int64 microting_sdk_case_id = 6;
+  // SDK Field.Id — matches FormField.id from ListOpgaver. The server
+  // creates the FieldValue row with this Field.Id so multi-Picture-field
+  // opgaver bind each photo to the correct field. 0 = legacy clients
+  // that pre-date this field; server falls back to BFS-first-Picture
+  // discovery (matches the prior single-Picture assumption).
+  int32 field_id = 7;
 }
 message UploadPhotoResponse {
   string storage_id = 1;
