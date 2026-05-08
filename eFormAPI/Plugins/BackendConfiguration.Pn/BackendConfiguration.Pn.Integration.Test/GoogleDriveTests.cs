@@ -1,14 +1,20 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using BackendConfiguration.Pn.Controllers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.GoogleDrive;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Services;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -66,6 +72,9 @@ public class GoogleDriveTests : TestBaseSetup
         BackendConfigurationPnDbContext!.AreaRulePlanningFiles.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlanningFiles);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+        BackendConfigurationPnDbContext.DriveWatchChannels.RemoveRange(
+            BackendConfigurationPnDbContext.DriveWatchChannels);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
         BackendConfigurationPnDbContext.GoogleOAuthTokens.RemoveRange(
             BackendConfigurationPnDbContext.GoogleOAuthTokens);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
@@ -105,7 +114,13 @@ public class GoogleDriveTests : TestBaseSetup
         {
             MicrotingOAuthProxyUrl = _proxyServer.Url!,
             ProxySigningKey = ProxySigningKey,
-            RefreshTokenEncryptionKey = EncryptionKeyB64
+            RefreshTokenEncryptionKey = EncryptionKeyB64,
+            // Used by EnsureWatchChannelAsync — minted into the channel
+            // JWT so the proxy can fan a notification back to "the
+            // customer instance". The value is opaque to the auth service
+            // beyond shape (must be non-empty); the JWT is verified by
+            // the proxy in production.
+            CustomerInstanceUrl = "https://test-customer.invalid"
         };
     }
 
@@ -131,6 +146,26 @@ public class GoogleDriveTests : TestBaseSetup
             new MemoryCache(new MemoryCacheOptions()),
             Options.Create(_options),
             NullLogger<GoogleDriveAuthService>.Instance);
+    }
+
+    /// <summary>
+    /// Auth service wired with both a working OAuth proxy client (for the
+    /// inner GetAccessTokenAsync call) and a Drive-aware HttpClient factory
+    /// (for the changes.watch POST). Used by EnsureWatchChannel tests.
+    /// </summary>
+    private GoogleDriveAuthService NewAuthServiceForWatch()
+    {
+        var proxyHttp = new HttpClient { BaseAddress = new Uri(_options.MicrotingOAuthProxyUrl) };
+        var proxyClient = new OAuthProxyClient(proxyHttp, Options.Create(_options));
+        var factory = new RewritingHttpClientFactory(_proxyServer.Url!);
+        return new GoogleDriveAuthService(
+            BackendConfigurationPnDbContext!,
+            proxyClient,
+            new MemoryCache(new MemoryCacheOptions()),
+            Options.Create(_options),
+            NullLogger<GoogleDriveAuthService>.Instance,
+            configuration: null,
+            httpClientFactory: factory);
     }
 
     /// <summary>
@@ -478,8 +513,409 @@ public class GoogleDriveTests : TestBaseSetup
         Assert.That(res.Message, Does.Contain("PDF").Or.Contains("Drive").IgnoreCase);
     }
 
+    // -------------------------------------------------------------------
+    // PR-5 — EnsureWatchChannelAsync + /notify webhook receiver
+    // -------------------------------------------------------------------
+
+    [Test]
+    public async Task EnsureWatchChannel_WhenAbsent_CreatesNewChannel()
+    {
+        const int userId = 21;
+        var jwt = MintEnvelope("envelope", userId, "n21", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n21");
+
+        // /refresh stub so the inner GetAccessTokenAsync succeeds.
+        _proxyServer.Given(Request.Create().WithPath("/google-drive/refresh").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    accessToken = "watch-access-token",
+                    accessTokenExpiry = DateTime.UtcNow.AddHours(1)
+                })));
+
+        // Drive changes.watch stub. Drive responds with id, resourceId,
+        // expiration (unix-millis as a string).
+        var expirationMs = DateTimeOffset.UtcNow.AddDays(7).ToUnixTimeMilliseconds()
+            .ToString(CultureInfo.InvariantCulture);
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/changes/watch").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "channel-from-drive",
+                    resourceId = "resource-xyz",
+                    expiration = expirationMs
+                })));
+
+        var sut = NewAuthServiceForWatch();
+        var channel = await sut.EnsureWatchChannelAsync(userId);
+
+        Assert.That(channel, Is.Not.Null);
+        Assert.That(channel.GoogleOAuthTokenId, Is.EqualTo(token.Id));
+        Assert.That(channel.ChannelId, Is.EqualTo("channel-from-drive"));
+        Assert.That(channel.ResourceId, Is.EqualTo("resource-xyz"));
+        Assert.That(channel.SignedToken, Is.Not.Empty);
+        Assert.That(channel.ExpiresAt, Is.GreaterThan(DateTime.UtcNow.AddDays(6)));
+
+        var fromDb = await BackendConfigurationPnDbContext!.DriveWatchChannels
+            .FirstAsync(x => x.Id == channel.Id);
+        Assert.That(fromDb.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+    }
+
+    [Test]
+    public async Task EnsureWatchChannel_WhenFresh_ReturnsExisting()
+    {
+        const int userId = 22;
+        var jwt = MintEnvelope("envelope", userId, "n22", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n22");
+
+        // Seed a fresh channel (>1 day of life).
+        var seeded = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = "preexisting",
+            ResourceId = "preexisting-resource",
+            SignedToken = "preexisting-jwt",
+            ExpiresAt = DateTime.UtcNow.AddDays(5),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await seeded.Create(BackendConfigurationPnDbContext!);
+
+        // No /refresh nor /changes/watch stubs — if the service hits
+        // them we want a hard failure so the test catches a regression.
+        var sut = NewAuthServiceForWatch();
+        var channel = await sut.EnsureWatchChannelAsync(userId);
+
+        Assert.That(channel.Id, Is.EqualTo(seeded.Id),
+            "Service must reuse a fresh channel without contacting Drive.");
+        Assert.That(channel.ChannelId, Is.EqualTo("preexisting"));
+
+        // Sanity: WireMock should have seen no requests at all.
+        Assert.That(_proxyServer.LogEntries, Is.Empty,
+            "EnsureWatchChannel must not hit Drive when a fresh row exists.");
+    }
+
+    [Test]
+    public async Task EnsureWatchChannel_WhenExpiringSoon_RenewsRow()
+    {
+        const int userId = 23;
+        var jwt = MintEnvelope("envelope", userId, "n23", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n23");
+
+        // Seed a channel that's within the 1-day reuse window — service
+        // must soft-delete it and mint a new one.
+        var stale = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = "stale-channel",
+            ResourceId = "stale-resource",
+            SignedToken = "stale-jwt",
+            ExpiresAt = DateTime.UtcNow.AddHours(12),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await stale.Create(BackendConfigurationPnDbContext!);
+        var staleId = stale.Id;
+
+        _proxyServer.Given(Request.Create().WithPath("/google-drive/refresh").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    accessToken = "renew-access",
+                    accessTokenExpiry = DateTime.UtcNow.AddHours(1)
+                })));
+        var expirationMs = DateTimeOffset.UtcNow.AddDays(7).ToUnixTimeMilliseconds()
+            .ToString(CultureInfo.InvariantCulture);
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/changes/watch").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    id = "fresh-channel",
+                    resourceId = "fresh-resource",
+                    expiration = expirationMs
+                })));
+
+        var sut = NewAuthServiceForWatch();
+        var renewed = await sut.EnsureWatchChannelAsync(userId);
+
+        Assert.That(renewed.Id, Is.Not.EqualTo(staleId));
+        Assert.That(renewed.ChannelId, Is.EqualTo("fresh-channel"));
+
+        var oldRow = await BackendConfigurationPnDbContext!.DriveWatchChannels
+            .FirstAsync(x => x.Id == staleId);
+        Assert.That(oldRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+            "Soft-deleting the previous channel preserves the application-layer uniqueness invariant.");
+    }
+
+    [Test]
+    public async Task EnsureWatchChannel_DriveError_PropagatesException()
+    {
+        const int userId = 24;
+        var jwt = MintEnvelope("envelope", userId, "n24", "rt");
+        var auth0 = NewAuthService();
+        await auth0.StoreEnvelopeAsync(jwt, userId, "n24");
+
+        _proxyServer.Given(Request.Create().WithPath("/google-drive/refresh").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody(JsonSerializer.Serialize(new
+                {
+                    accessToken = "tok",
+                    accessTokenExpiry = DateTime.UtcNow.AddHours(1)
+                })));
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/changes/watch").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(500)
+                .WithBody("internal-server-error"));
+
+        var sut = NewAuthServiceForWatch();
+        Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await sut.EnsureWatchChannelAsync(userId));
+
+        // No DriveWatchChannel should have been persisted.
+        var anyChannel = await BackendConfigurationPnDbContext!.DriveWatchChannels
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .AnyAsync();
+        Assert.That(anyChannel, Is.False,
+            "A failed Drive call must NOT leave a half-baked channel row behind.");
+    }
+
+    [Test]
+    public async Task Notify_ValidHmacAndJwt_Returns200()
+    {
+        const int userId = 25;
+        var jwt = MintEnvelope("envelope", userId, "n25", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n25");
+
+        // Seed a watch channel + mint a channel-token JWT we'll send in
+        // the X-Goog-Channel-Token header.
+        var channelId = Guid.NewGuid().ToString("N");
+        var channelJwt = MintChannelJwt(channelId, "https://test-customer.invalid",
+            DateTime.UtcNow.AddDays(1));
+        var seeded = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = channelId,
+            ResourceId = "resource-xyz",
+            SignedToken = channelJwt,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await seeded.Create(BackendConfigurationPnDbContext!);
+
+        var result = await CallNotifyAsync(channelId, channelJwt,
+            resourceState: "change", resourceId: "res-1", messageNumber: "42");
+
+        Assert.That(result, Is.InstanceOf<OkResult>());
+    }
+
+    [Test]
+    public async Task Notify_BadHmac_Returns401()
+    {
+        const int userId = 26;
+        var jwt = MintEnvelope("envelope", userId, "n26", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n26");
+
+        var channelId = Guid.NewGuid().ToString("N");
+        var channelJwt = MintChannelJwt(channelId, "https://test-customer.invalid",
+            DateTime.UtcNow.AddDays(1));
+        var seeded = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = channelId,
+            ResourceId = "r",
+            SignedToken = channelJwt,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await seeded.Create(BackendConfigurationPnDbContext!);
+
+        var result = await CallNotifyAsync(channelId, channelJwt,
+            resourceState: "change", resourceId: "res-1", messageNumber: "42",
+            // Forge an HMAC the controller will reject.
+            overrideHmacHex: new string('0', 64));
+
+        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+    }
+
+    [Test]
+    public async Task Notify_WrongJwtTyp_Returns401()
+    {
+        const int userId = 27;
+        var jwt = MintEnvelope("envelope", userId, "n27", "rt");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n27");
+
+        var channelId = Guid.NewGuid().ToString("N");
+        // Mint a JWT with typ=state (the proxy's state JWT shape) — the
+        // notify endpoint must reject it as type-confusion.
+        var wrongTypJwt = MintChannelJwtWithTyp("state", channelId,
+            "https://test-customer.invalid", DateTime.UtcNow.AddDays(1));
+        var seeded = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = channelId,
+            ResourceId = "r",
+            SignedToken = wrongTypJwt,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await seeded.Create(BackendConfigurationPnDbContext!);
+
+        var result = await CallNotifyAsync(channelId, wrongTypJwt,
+            resourceState: "change", resourceId: "res-1", messageNumber: "42");
+
+        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
+    }
+
+    [Test]
+    public async Task Notify_StaleChannelId_Returns200WithoutEnqueue()
+    {
+        // No DriveWatchChannel seeded — the service must still 200 so
+        // Drive doesn't retry, but log a warning. We assert on the
+        // response shape; the warning is observable through logging
+        // but we don't bind the test to log output formatting.
+        // TODO PR-7: assert refresh queue not enqueued.
+        var channelId = Guid.NewGuid().ToString("N");
+        var channelJwt = MintChannelJwt(channelId, "https://test-customer.invalid",
+            DateTime.UtcNow.AddDays(1));
+
+        var result = await CallNotifyAsync(channelId, channelJwt,
+            resourceState: "change", resourceId: "res-1", messageNumber: "42");
+
+        Assert.That(result, Is.InstanceOf<OkResult>());
+    }
+
     /// <summary>
-    /// Builds a GoogleDriveFileService backed by an HttpClient that routes
+    /// Cross-service contract canary. The proxy at oauth.microting.com computes
+    /// HMAC-SHA256 of `{channelId}|{resourceState}|{resourceId}|{messageNumber}|{date}`
+    /// using the shared ProxySigningKey and forwards the hex digest to us.
+    /// If THIS code drifts (re-orders fields, changes delimiter, swaps key bytes)
+    /// the canonical-string template inside CallNotifyAsync will move with it
+    /// and existing tests still pass — but production breaks because the proxy
+    /// doesn't move. This test pins the canonical string, signing key, and
+    /// expected digest to byte-exact reference values so any drift fails here.
+    /// </summary>
+    [Test]
+    public void Notify_HmacReferenceVector_Matches()
+    {
+        const string fixedKey = "0123456789abcdef0123456789abcdef";
+        const string canonical =
+            "channel-abc|change|resource-xyz|42|Wed, 08 May 2026 12:34:56 GMT";
+        const string expectedHex =
+            "8b26c79134568abcfed3b39364b0653c80640f2c91a28c2543458f826760e77a";
+
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(fixedKey));
+        var actualHex = Convert.ToHexString(
+                hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical)))
+            .ToLowerInvariant();
+
+        Assert.That(actualHex, Is.EqualTo(expectedHex),
+            "HMAC canonical-string contract drifted from proxy. " +
+            "Either revert the change OR update the proxy AND this vector together.");
+    }
+
+    /// <summary>
+    /// Mints a channel-token JWT in the same shape EnsureWatchChannelAsync
+    /// produces. Same signing key the controller verifies against.
+    /// </summary>
+    private static string MintChannelJwt(string channelId, string customerInstanceUrl, DateTime exp)
+        => MintChannelJwtWithTyp("channel", channelId, customerInstanceUrl, exp);
+
+    private static string MintChannelJwtWithTyp(string typ, string channelId,
+        string customerInstanceUrl, DateTime exp)
+    {
+        var header = new Dictionary<string, object>
+        {
+            ["alg"] = "HS256",
+            ["typ"] = "JWT"
+        };
+        var payload = new Dictionary<string, object>
+        {
+            ["typ"] = typ,
+            ["customerInstanceUrl"] = customerInstanceUrl,
+            ["channelId"] = channelId,
+            ["exp"] = ((DateTimeOffset)exp).ToUnixTimeSeconds()
+        };
+
+        var headerB64 = B64Url(JsonSerializer.SerializeToUtf8Bytes(header));
+        var payloadB64 = B64Url(JsonSerializer.SerializeToUtf8Bytes(payload));
+        var signingInput = Encoding.UTF8.GetBytes($"{headerB64}.{payloadB64}");
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(ProxySigningKey));
+        var sig = B64Url(hmac.ComputeHash(signingInput));
+        return $"{headerB64}.{payloadB64}.{sig}";
+    }
+
+    /// <summary>
+    /// Calls the controller's Notify action with HMAC + Date + the
+    /// X-Goog-* headers the spec requires. Lets each test override the
+    /// HMAC for negative-path coverage.
+    /// </summary>
+    private async Task<IActionResult> CallNotifyAsync(string channelId, string channelToken,
+        string resourceState, string resourceId, string messageNumber,
+        string? overrideHmacHex = null)
+    {
+        var date = DateTime.UtcNow.ToString("R", CultureInfo.InvariantCulture);
+        var canonical = $"{channelId}|{resourceState}|{resourceId}|{messageNumber}|{date}";
+        string hex;
+        using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(ProxySigningKey)))
+        {
+            hex = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical)))
+                .ToLowerInvariant();
+        }
+        var auth = $"HMAC-SHA256 {overrideHmacHex ?? hex}";
+
+        var ctx = new DefaultHttpContext();
+        ctx.Request.Headers["Authorization"] = auth;
+        ctx.Request.Headers["Date"] = date;
+        ctx.Request.Headers["X-Goog-Channel-ID"] = channelId;
+        ctx.Request.Headers["X-Goog-Channel-Token"] = channelToken;
+        ctx.Request.Headers["X-Goog-Resource-State"] = resourceState;
+        ctx.Request.Headers["X-Goog-Resource-ID"] = resourceId;
+        ctx.Request.Headers["X-Goog-Message-Number"] = messageNumber;
+
+        var controller = NewController();
+        controller.ControllerContext = new ControllerContext { HttpContext = ctx };
+        return await controller.Notify();
+    }
+
+    private GoogleDriveController NewController()
+    {
+        var auth = NewAuthServiceForWatch();
+        var fileService = Substitute.For<IGoogleDriveFileService>();
+        var userService = Substitute.For<IUserService>();
+        var localization = new BackendConfigurationLocalizationService();
+        // Real ASP.NET Data Protection — the controller's CSRF cookie
+        // path is unused in /notify, but the constructor binds the
+        // protector eagerly. Ephemeral provider keeps the test hermetic.
+        var protectionProvider = DataProtectionProvider.Create(nameof(GoogleDriveTests));
+
+        return new GoogleDriveController(
+            auth,
+            fileService,
+            userService,
+            localization,
+            BackendConfigurationPnDbContext!,
+            protectionProvider,
+            Options.Create(_options),
+            NullLogger<GoogleDriveController>.Instance);
+    }
+
+    /// <summary>
     /// BOTH /drive/v3/* AND /google-drive/* to the same WireMock server.
     /// In production these are different hosts (googleapis.com vs the
     /// Microting proxy) but for the test we host both surfaces inside the

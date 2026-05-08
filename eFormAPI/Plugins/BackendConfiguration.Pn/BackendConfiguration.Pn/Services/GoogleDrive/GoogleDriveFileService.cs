@@ -226,6 +226,37 @@ public class GoogleDriveFileService : IGoogleDriveFileService
                 };
                 await arpFile.Create(_dbContext).ConfigureAwait(false);
 
+                // PR-5 watch-channel registration. Only on the *first*
+                // Drive-sourced attachment for this token — if any other
+                // AreaRulePlanningFile already references this token a
+                // channel exists already and any expiry-driven renewal is
+                // owned by PR-6's daily cron. If the watch call fails we
+                // log a Warning and let the file persist anyway: PR-6's
+                // reconcile cron is the safety net.
+                var hadEarlierDriveFile = await _dbContext.AreaRulePlanningFiles
+                    .Where(f => f.Id != arpFile.Id)
+                    .Where(f => f.GoogleOAuthTokenId == oauthToken.Id)
+                    .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
+                    .AnyAsync()
+                    .ConfigureAwait(false);
+                if (!hadEarlierDriveFile)
+                {
+                    try
+                    {
+                        await _authService.EnsureWatchChannelAsync(userId).ConfigureAwait(false);
+                    }
+                    catch (Exception watchEx)
+                    {
+                        // Don't fail the attach. PR-6's daily reconcile
+                        // cron will pick up missed changes; PR-6's daily
+                        // renewal cron will keep the channel rolling once
+                        // it's been seeded by a later attach.
+                        _logger.LogWarning(watchEx,
+                            "EnsureWatchChannelAsync failed for user {UserId} after first Drive attach; reconcile cron will recover",
+                            userId);
+                    }
+                }
+
                 return new OperationDataResult<AreaRulePlanningFile>(true, arpFile);
             }
             finally

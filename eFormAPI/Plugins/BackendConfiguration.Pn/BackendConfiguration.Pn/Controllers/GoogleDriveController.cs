@@ -346,6 +346,205 @@ public class GoogleDriveController : Controller
         }
     }
 
+    /// <summary>
+    /// Receives Drive change notifications fanned out by the OAuth proxy.
+    /// Verifies the HMAC the proxy attaches (canonical
+    /// <c>{channelId}|{resourceState}|{resourceId}|{messageNumber}|{date}</c>),
+    /// the <c>Date</c> header (±2 min skew), and the channel-token JWT
+    /// (<c>typ == "channel"</c>, signature against <c>ProxySigningKey</c>),
+    /// then logs and returns 200. The actual refetch is deferred to PR-7's
+    /// processor; PR-6's daily reconcile cron is the safety net for
+    /// missed deliveries. Anonymous because the inbound caller is the
+    /// stateless proxy, not an authenticated platform user — auth is the
+    /// HMAC + JWT pair instead.
+    /// </summary>
+    [HttpPost("notify")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Notify()
+    {
+        // Headers we need. The proxy fans these through verbatim from
+        // Drive plus the HMAC + Date pair it adds to the customer-side
+        // request.
+        var authHeader = Request.Headers["Authorization"].ToString();
+        var dateHeader = Request.Headers["Date"].ToString();
+        var channelId = Request.Headers["X-Goog-Channel-ID"].ToString();
+        var channelToken = Request.Headers["X-Goog-Channel-Token"].ToString();
+        var resourceState = Request.Headers["X-Goog-Resource-State"].ToString();
+        var resourceId = Request.Headers["X-Goog-Resource-ID"].ToString();
+        var messageNumber = Request.Headers["X-Goog-Message-Number"].ToString();
+
+        // Quick structural rejects — short-circuit before doing crypto.
+        const string hmacScheme = "HMAC-SHA256 ";
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith(hmacScheme, StringComparison.Ordinal))
+        {
+            return Unauthorized();
+        }
+        if (string.IsNullOrEmpty(dateHeader) || string.IsNullOrEmpty(channelId)
+            || string.IsNullOrEmpty(channelToken))
+        {
+            return Unauthorized();
+        }
+
+        // Skew check (±2 min). Anything older than that and we treat it
+        // as a replay; anything newer and the customer clock is out of
+        // sync with the proxy clock — same outcome.
+        if (!DateTime.TryParseExact(dateHeader, "R",
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var requestDateUtc))
+        {
+            return Unauthorized();
+        }
+        var skew = DateTime.UtcNow - requestDateUtc;
+        if (skew.Duration() > TimeSpan.FromMinutes(2))
+        {
+            return Unauthorized();
+        }
+
+        // HMAC verify against the canonical string the proxy signs.
+        var canonical = $"{channelId}|{resourceState}|{resourceId}|{messageNumber}|{dateHeader}";
+        var expected = HmacHex(canonical);
+        var supplied = authHeader.Substring(hmacScheme.Length).Trim();
+        if (!FixedTimeStringEquals(expected, supplied))
+        {
+            return Unauthorized();
+        }
+
+        // Channel-token JWT verify: signature + typ == "channel" + exp.
+        if (!TryVerifyChannelJwt(channelToken, out var failureReason))
+        {
+            _logger.LogInformation(
+                "GoogleDriveController.Notify rejected channel JWT (channelId={ChannelId}, reason={Reason})",
+                channelId, failureReason);
+            return Unauthorized();
+        }
+
+        // Channel lookup. If the row is missing (e.g. stale subscription
+        // we never finished cleaning up) we still return 200 — Drive
+        // should not retry, and PR-6's reconcile cron is the safety
+        // net. Log so an operator can spot a leak.
+        var channel = await _dbContext.DriveWatchChannels
+            .Where(x => x.ChannelId == channelId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (channel == null)
+        {
+            _logger.LogWarning(
+                "GoogleDriveController.Notify received notification for unknown channel {ChannelId} (resourceState={ResourceState}, msg={Message})",
+                channelId, resourceState, messageNumber);
+            return Ok();
+        }
+
+        // Spec PR-5: bind the JWT to the persisted SignedToken row.
+        // Defence-in-depth: a future renewal path that re-uses a
+        // ChannelId would otherwise accept a stale JWT. Compare in
+        // constant time so a near-miss can't be timing-probed.
+        var presentedTokenBytes = Encoding.UTF8.GetBytes(channelToken);
+        var persistedTokenBytes = Encoding.UTF8.GetBytes(channel.SignedToken ?? string.Empty);
+        if (presentedTokenBytes.Length != persistedTokenBytes.Length
+            || !CryptographicOperations.FixedTimeEquals(presentedTokenBytes, persistedTokenBytes))
+        {
+            _logger.LogWarning(
+                "GoogleDriveController.Notify channel-token mismatch for channel {ChannelId}",
+                channelId);
+            return Unauthorized();
+        }
+
+        // Spec PR-5: enqueue a refresh-files job. For now we just log;
+        // PR-7's processor + PR-6's reconcile cron own the actual
+        // refetch.
+        _logger.LogInformation(
+            "Drive change notification accepted (channelId={ChannelId}, tokenId={TokenId}, resourceState={ResourceState}, msg={Message})",
+            channelId, channel.GoogleOAuthTokenId, resourceState, messageNumber);
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Verifies the X-Goog-Channel-Token JWT against the shared
+    /// <c>ProxySigningKey</c>. Returns true on a valid <c>typ == "channel"</c>
+    /// envelope; <paramref name="reason"/> is set to a non-sensitive
+    /// label on rejection (logged, never returned to the caller).
+    /// </summary>
+    private bool TryVerifyChannelJwt(string jwt, out string reason)
+    {
+        reason = string.Empty;
+        var parts = jwt.Split('.');
+        if (parts.Length != 3)
+        {
+            reason = "shape";
+            return false;
+        }
+
+        try
+        {
+            var headerJson = Encoding.UTF8.GetString(Base64UrlDecode(parts[0]));
+            var payloadBytes = Base64UrlDecode(parts[1]);
+            var signature = Base64UrlDecode(parts[2]);
+
+            using var headerDoc = System.Text.Json.JsonDocument.Parse(headerJson);
+            var alg = headerDoc.RootElement.TryGetProperty("alg", out var algEl)
+                ? algEl.GetString() : null;
+            if (!string.Equals(alg, "HS256", StringComparison.Ordinal))
+            {
+                reason = "alg";
+                return false;
+            }
+
+            var signingInput = Encoding.UTF8.GetBytes(parts[0] + "." + parts[1]);
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_options.ProxySigningKey));
+            var expected = hmac.ComputeHash(signingInput);
+            if (!CryptographicOperations.FixedTimeEquals(signature, expected))
+            {
+                reason = "signature";
+                return false;
+            }
+
+            using var payloadDoc = System.Text.Json.JsonDocument.Parse(payloadBytes);
+            var typ = payloadDoc.RootElement.TryGetProperty("typ", out var typEl)
+                ? typEl.GetString() : null;
+            if (!string.Equals(typ, "channel", StringComparison.Ordinal))
+            {
+                reason = "typ";
+                return false;
+            }
+
+            if (payloadDoc.RootElement.TryGetProperty("exp", out var expEl)
+                && expEl.TryGetInt64(out var expSec))
+            {
+                var nowSec = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                if (expSec <= nowSec)
+                {
+                    reason = "exp";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            reason = "parse";
+            return false;
+        }
+    }
+
+    private static byte[] Base64UrlDecode(string s)
+    {
+        var pad = 4 - (s.Length % 4);
+        if (pad < 4) s += new string('=', pad);
+        return Convert.FromBase64String(s.Replace('-', '+').Replace('_', '/'));
+    }
+
+    private static bool FixedTimeStringEquals(string a, string b)
+    {
+        // String forms come in as lowercase hex; FixedTimeEquals on the
+        // raw bytes guards against early-exit timing leaks.
+        if (a.Length != b.Length) return false;
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(a), Encoding.UTF8.GetBytes(b));
+    }
+
     private string HmacHex(string canonical)
     {
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_options.ProxySigningKey));

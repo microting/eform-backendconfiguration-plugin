@@ -8,8 +8,12 @@
 namespace BackendConfiguration.Pn.Services.GoogleDrive;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -18,6 +22,7 @@ using System.Threading.Tasks;
 using Infrastructure.Models.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Constants;
@@ -54,6 +59,8 @@ public class GoogleDriveAuthService : IGoogleDriveAuthService
     private readonly IOAuthProxyClient _oauthProxyClient;
     private readonly IMemoryCache _accessTokenCache;
     private readonly GoogleDriveOptions _options;
+    private readonly IConfiguration? _configuration;
+    private readonly IHttpClientFactory? _httpClientFactory;
     private readonly ILogger<GoogleDriveAuthService> _logger;
 
     public GoogleDriveAuthService(
@@ -61,12 +68,16 @@ public class GoogleDriveAuthService : IGoogleDriveAuthService
         IOAuthProxyClient oauthProxyClient,
         IMemoryCache accessTokenCache,
         IOptions<GoogleDriveOptions> options,
-        ILogger<GoogleDriveAuthService> logger)
+        ILogger<GoogleDriveAuthService> logger,
+        IConfiguration? configuration = null,
+        IHttpClientFactory? httpClientFactory = null)
     {
         _dbContext = dbContext;
         _oauthProxyClient = oauthProxyClient;
         _accessTokenCache = accessTokenCache;
         _options = options.Value;
+        _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -227,6 +238,223 @@ public class GoogleDriveAuthService : IGoogleDriveAuthService
     public void ClearCachedAccessToken(int userId)
     {
         _accessTokenCache.Remove(AccessTokenCacheKey(userId));
+    }
+
+    /// <summary>
+    /// PR-5 watch-channel registration. See
+    /// <see cref="IGoogleDriveAuthService.EnsureWatchChannelAsync"/> for the
+    /// behavioural contract. Drive's <c>changes.watch</c> endpoint returns
+    /// <c>{ id, resourceId, expiration (unix ms as string) }</c>; we
+    /// persist all three plus the JWT we minted (so PR-6's renewal cron
+    /// can stop the channel by id and PR-5's webhook can verify the
+    /// X-Goog-Channel-Token against the stored signed token).
+    /// </summary>
+    public async Task<DriveWatchChannel> EnsureWatchChannelAsync(int userId)
+    {
+        var token = await _dbContext.GoogleOAuthTokens
+            .Where(x => x.UserId == userId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.RevokedAt == null)
+            .OrderByDescending(x => x.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (token == null)
+        {
+            throw new InvalidOperationException(
+                $"No active Google OAuth token for user {userId}.");
+        }
+
+        // Reuse a still-fresh channel: > 1 day of life left. Anything
+        // tighter and we risk the renewal happening in the same window
+        // PR-6's daily cron is targeting, so the cron and the watch-on-
+        // attach race against each other.
+        var existing = await _dbContext.DriveWatchChannels
+            .Where(x => x.GoogleOAuthTokenId == token.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderByDescending(x => x.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (existing != null && existing.ExpiresAt > DateTime.UtcNow.AddDays(1))
+        {
+            return existing;
+        }
+
+        // Soft-delete the old row before inserting the new one — keeps the
+        // application-layer uniqueness invariant the spec calls out (one
+        // active channel per token).
+        if (existing != null)
+        {
+            await existing.Delete(_dbContext).ConfigureAwait(false);
+        }
+
+        var customerInstanceUrl = ResolveCustomerInstanceUrl();
+        if (string.IsNullOrEmpty(customerInstanceUrl))
+        {
+            throw new InvalidOperationException(
+                "CustomerInstanceUrl is not configured (BackendConfigurationSettings:CustomerInstanceUrl or GoogleDrive:CustomerInstanceUrl).");
+        }
+
+        var channelId = Guid.NewGuid().ToString("N");
+        var now = DateTime.UtcNow;
+        var exp = now.AddDays(7);
+        var expUnixMillis = ((DateTimeOffset)exp).ToUnixTimeMilliseconds();
+        var channelJwt = MintChannelJwt(customerInstanceUrl, channelId, exp);
+
+        var accessToken = await GetAccessTokenAsync(userId).ConfigureAwait(false);
+
+        var proxyUrl = TrimTrailingSlash(_options.MicrotingOAuthProxyUrl);
+        var notifyAddress = $"{proxyUrl}/google-drive/notify";
+
+        var watchClient = (_httpClientFactory ?? throw new InvalidOperationException(
+            "IHttpClientFactory was not supplied to GoogleDriveAuthService."))
+            .CreateClient(nameof(GoogleDriveFileService));
+        // Drive accepts "expiration" as a string of unix-millis. We send
+        // it as a string explicitly to side-step the JSON serializer's
+        // tendency to write longs as numbers (Drive accepts both, but the
+        // public API doc shows the string form so we mirror it).
+        var requestBody = new DriveWatchRequest
+        {
+            Id = channelId,
+            Type = "web_hook",
+            Address = notifyAddress,
+            Token = channelJwt,
+            Expiration = expUnixMillis.ToString(CultureInfo.InvariantCulture)
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            "https://www.googleapis.com/drive/v3/changes/watch?supportsAllDrives=false");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = JsonContent.Create(requestBody, options: new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        });
+
+        using var response = await watchClient.SendAsync(request).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw new InvalidOperationException(
+                $"Drive changes.watch failed ({(int)response.StatusCode}): {body}");
+        }
+
+        var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var parsed = JsonSerializer.Deserialize<DriveWatchResponse>(responseBody)
+                     ?? throw new InvalidOperationException(
+                         "Drive changes.watch returned an unparseable body.");
+
+        // Drive's "expiration" is unix-millis as a string. Fall back to
+        // our own +7d if Drive omits it (defensive — the public API always
+        // sends it but a stub might not).
+        DateTime expiresAt;
+        if (!string.IsNullOrEmpty(parsed.Expiration)
+            && long.TryParse(parsed.Expiration, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                out var expirationUnixMs))
+        {
+            expiresAt = DateTimeOffset.FromUnixTimeMilliseconds(expirationUnixMs).UtcDateTime;
+        }
+        else
+        {
+            expiresAt = exp;
+        }
+
+        var watchChannel = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = parsed.Id ?? channelId,
+            ResourceId = parsed.ResourceId ?? string.Empty,
+            SignedToken = channelJwt,
+            ExpiresAt = expiresAt,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await watchChannel.Create(_dbContext).ConfigureAwait(false);
+
+        return watchChannel;
+    }
+
+    private string ResolveCustomerInstanceUrl()
+    {
+        // Spec PR-5: "BackendConfigurationSettings:CustomerInstanceUrl
+        // first, then a new GoogleDriveOptions.CustomerInstanceUrl". We
+        // honour both so the platform-wide value can live alongside the
+        // rest of the BackendConfigurationSettings bundle while a
+        // GoogleDrive-scoped override is still possible.
+        var fromConfig = _configuration?["BackendConfigurationSettings:CustomerInstanceUrl"];
+        if (!string.IsNullOrEmpty(fromConfig))
+        {
+            return TrimTrailingSlash(fromConfig);
+        }
+        if (!string.IsNullOrEmpty(_options.CustomerInstanceUrl))
+        {
+            return TrimTrailingSlash(_options.CustomerInstanceUrl);
+        }
+        return string.Empty;
+    }
+
+    private static string TrimTrailingSlash(string url)
+        => url.EndsWith('/') ? url[..^1] : url;
+
+    /// <summary>
+    /// Mints a <c>{typ:"channel", customerInstanceUrl, channelId, exp}</c>
+    /// JWT signed with the same shared <c>ProxySigningKey</c> the proxy
+    /// uses for envelope/state verification. The proxy validates this
+    /// JWT (signature + <c>typ == "channel"</c> + <c>exp</c>) before
+    /// fanning a Drive notification back to <c>customerInstanceUrl</c>.
+    /// </summary>
+    internal string MintChannelJwt(string customerInstanceUrl, string channelId, DateTime exp)
+    {
+        var header = new Dictionary<string, object>
+        {
+            ["alg"] = "HS256",
+            ["typ"] = "JWT"
+        };
+        var payload = new Dictionary<string, object>
+        {
+            ["typ"] = "channel",
+            ["customerInstanceUrl"] = customerInstanceUrl,
+            ["channelId"] = channelId,
+            ["exp"] = ((DateTimeOffset)exp).ToUnixTimeSeconds()
+        };
+
+        var headerB64 = Base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(header));
+        var payloadB64 = Base64UrlEncode(JsonSerializer.SerializeToUtf8Bytes(payload));
+        var signingInput = Encoding.UTF8.GetBytes($"{headerB64}.{payloadB64}");
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_options.ProxySigningKey));
+        var signature = Base64UrlEncode(hmac.ComputeHash(signingInput));
+        return $"{headerB64}.{payloadB64}.{signature}";
+    }
+
+    private static string Base64UrlEncode(byte[] bytes) =>
+        Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    private sealed class DriveWatchRequest
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = "";
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "";
+
+        [JsonPropertyName("address")]
+        public string Address { get; set; } = "";
+
+        [JsonPropertyName("token")]
+        public string? Token { get; set; }
+
+        [JsonPropertyName("expiration")]
+        public string? Expiration { get; set; }
+    }
+
+    private sealed class DriveWatchResponse
+    {
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("resourceId")]
+        public string? ResourceId { get; set; }
+
+        [JsonPropertyName("expiration")]
+        public string? Expiration { get; set; }
     }
 
     private sealed record CachedAccessToken(string AccessToken, DateTime Expiry);

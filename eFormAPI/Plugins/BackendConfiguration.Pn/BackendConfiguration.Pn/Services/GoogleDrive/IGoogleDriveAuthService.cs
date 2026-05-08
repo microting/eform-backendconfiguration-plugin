@@ -52,4 +52,24 @@ public interface IGoogleDriveAuthService
     /// out a still-valid access token from cache.
     /// </summary>
     void ClearCachedAccessToken(int userId);
+
+    /// <summary>
+    /// Ensures a Drive <c>changes.watch</c> subscription exists for the
+    /// user's <see cref="GoogleOAuthToken"/>:
+    /// <list type="bullet">
+    ///   <item><description>If a <c>WorkflowState=Created</c>
+    ///     <see cref="DriveWatchChannel"/> exists with
+    ///     <c>ExpiresAt &gt; now + 1 day</c>, returns it unchanged
+    ///     (no Drive call).</description></item>
+    ///   <item><description>Otherwise soft-deletes any existing channel for
+    ///     this token, mints a fresh <c>{typ:"channel", customerInstanceUrl,
+    ///     channelId, exp}</c> JWT, calls <c>POST drive/v3/changes/watch</c>,
+    ///     and persists the response into a new
+    ///     <see cref="DriveWatchChannel"/>.</description></item>
+    /// </list>
+    /// May throw on Drive 4xx/5xx — callers (e.g. the file-attach path)
+    /// MUST decide whether the failure is fatal or whether the daily
+    /// reconcile cron in PR-6 should pick it up later.
+    /// </summary>
+    Task<DriveWatchChannel> EnsureWatchChannelAsync(int userId);
 }
