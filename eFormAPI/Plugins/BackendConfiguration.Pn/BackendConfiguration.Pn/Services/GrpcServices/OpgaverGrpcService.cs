@@ -1121,15 +1121,37 @@ public class OpgaverGrpcService(
                 $"Opgave {opgaveId} has no pending compliance — there is no SDK case to complete."));
         }
 
-        // Convert client_ts_unix (seconds) → UTC DateTime. Fall back to
-        // server-side now if the client didn't send a usable timestamp.
-        DateTime doneAtUtc = request.ClientTsUnix > 0
-            ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
+        // DoneAt is set to compliance.Deadline (the rotation's scheduled
+        // date), NOT the server wall clock. When a worker completes a
+        // missed-deadline rotation, the report should be dated the rotation's
+        // actual scheduled deadline rather than today — otherwise a worker
+        // closing a Monday rotation on Wednesday produces Wednesday-dated
+        // reports, which misaligns with the angular admin "filled cases" view
+        // (queries PlanningCases WHERE MicrotingSdkCaseDoneAt >= fromDate)
+        // and breaks per-rotation history.
+        //
+        // Compliance.Deadline is non-nullable (DateTime, not DateTime?) but
+        // can be default(DateTime) on legacy / partially-populated rows; the
+        // != default guard mirrors lines 1681 / 1938 / 2734 in this file.
+        // Falling back to DateTime.UtcNow keeps the previous behaviour for
+        // those edge cases. request.ClientTsUnix is now ignored for DoneAt
+        // purposes — it is preserved only for the comment TsUnix audit trail
+        // (when the comment was authored on the device), distinct from when
+        // the rotation was scheduled.
+        DateTime doneAtUtc = compliance.Deadline != default
+            ? compliance.Deadline
             : DateTime.UtcNow;
         // BackendConfigurationCompliancesService.Update truncates DoneAt to
         // midnight UTC of that calendar date — keep parity.
         var dayDoneAt = new DateTime(doneAtUtc.Year, doneAtUtc.Month, doneAtUtc.Day,
             0, 0, 0, DateTimeKind.Utc);
+        // Wall-clock "when the worker actually closed this on the device" —
+        // distinct from doneAtUtc (the deadline). Used only for the comment
+        // TsUnix audit trail below; DoneAt fields all use dayDoneAt /
+        // doneAtUtc per the user directive (DoneAt = Deadline).
+        DateTime commentAtUtc = request.ClientTsUnix > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
+            : DateTime.UtcNow;
 
         var caseId = compliance.MicrotingSdkCaseId;
 
@@ -1410,7 +1432,7 @@ public class OpgaverGrpcService(
                 nextEnvelope.OpgaverComment = new OpgaverCommentBody
                 {
                     Text = request.Comment,
-                    TsUnix = ToUnixSeconds(doneAtUtc),
+                    TsUnix = ToUnixSeconds(commentAtUtc),
                 };
                 foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
                 await foundCase.Update(sdkDbContext).ConfigureAwait(false);
