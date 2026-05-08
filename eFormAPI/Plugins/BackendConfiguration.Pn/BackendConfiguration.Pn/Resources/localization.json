@@ -4839,5 +4839,96 @@
       "el-GR": "Αριθμός εργαζομένου",
       "is-IS": "Starfsmaður númer"
     }
+  },
+  {
+    "Key": "GoogleDriveConnectFailed",
+    "LocalizedValue": {
+      "da": "Kunne ikke oprette forbindelse til Google Drev",
+      "de": "Verbindung zu Google Drive konnte nicht hergestellt werden",
+      "en-US": "Could not connect to Google Drive",
+      "uk-UA": "Не вдалося підключитися до Google Диска",
+      "pl-PL": "Nie udało się połączyć z Dyskiem Google",
+      "no-NO": "Kunne ikke koble til Google Disk",
+      "sv-SE": "Det gick inte att ansluta till Google Drive",
+      "fr-FR": "Impossible de se connecter à Google Drive"
+    }
+  },
+  {
+    "Key": "GoogleDriveTokenRevoked",
+    "LocalizedValue": {
+      "da": "Adgangen til Google Drev er tilbagekaldt. Tilslut venligst igen.",
+      "de": "Der Zugriff auf Google Drive wurde widerrufen. Bitte erneut verbinden.",
+      "en-US": "Google Drive access has been revoked. Please reconnect.",
+      "uk-UA": "Доступ до Google Диска відкликано. Будь ласка, підключіться знову.",
+      "pl-PL": "Dostęp do Dysku Google został cofnięty. Połącz się ponownie.",
+      "no-NO": "Tilgangen til Google Disk er trukket tilbake. Koble til på nytt.",
+      "sv-SE": "Åtkomsten till Google Drive har återkallats. Anslut igen.",
+      "fr-FR": "L'accès à Google Drive a été révoqué. Veuillez vous reconnecter."
+    }
+  },
+  {
+    "Key": "DriveFileNotFound",
+    "LocalizedValue": {
+      "da": "Filen kunne ikke findes i Drev.",
+      "de": "Die Datei konnte in Drive nicht gefunden werden.",
+      "en-US": "The file could not be found in Drive.",
+      "uk-UA": "Файл не знайдено на Диску.",
+      "pl-PL": "Nie znaleziono pliku na Dysku.",
+      "no-NO": "Filen ble ikke funnet i Disk.",
+      "sv-SE": "Filen kunde inte hittas i Drive.",
+      "fr-FR": "Le fichier est introuvable dans Drive."
+    }
+  },
+  {
+    "Key": "DriveAttachmentMimeRejected",
+    "LocalizedValue": {
+      "da": "Kun PDF-, PNG-, JPG- og JPEG-filer kan vedhæftes fra Drev.",
+      "de": "Nur PDF-, PNG-, JPG- und JPEG-Dateien können aus Drive angehängt werden.",
+      "en-US": "Only PDF, PNG, JPG, JPEG files can be attached from Drive.",
+      "uk-UA": "З Диска можна додавати лише файли PDF, PNG, JPG, JPEG.",
+      "pl-PL": "Z Dysku można dołączać tylko pliki PDF, PNG, JPG, JPEG.",
+      "no-NO": "Bare PDF-, PNG-, JPG- og JPEG-filer kan legges ved fra Disk.",
+      "sv-SE": "Endast PDF-, PNG-, JPG- och JPEG-filer kan bifogas från Drive.",
+      "fr-FR": "Seuls les fichiers PDF, PNG, JPG, JPEG peuvent être joints depuis Drive."
+    }
+  },
+  {
+    "Key": "AreaRulePlanningNotFound",
+    "LocalizedValue": {
+      "da": "Planlægningen blev ikke fundet",
+      "de": "Planung nicht gefunden",
+      "en-US": "Planning not found",
+      "uk-UA": "Планування не знайдено",
+      "pl-PL": "Nie znaleziono planowania",
+      "no-NO": "Planleggingen ble ikke funnet",
+      "sv-SE": "Planeringen kunde inte hittas",
+      "fr-FR": "Planification introuvable"
+    }
+  },
+  {
+    "Key": "FileTooLarge",
+    "LocalizedValue": {
+      "da": "Filen er for stor",
+      "de": "Die Datei ist zu groß",
+      "en-US": "File is too large",
+      "uk-UA": "Файл занадто великий",
+      "pl-PL": "Plik jest za duży",
+      "no-NO": "Filen er for stor",
+      "sv-SE": "Filen är för stor",
+      "fr-FR": "Le fichier est trop volumineux"
+    }
+  },
+  {
+    "Key": "FieldRequired",
+    "LocalizedValue": {
+      "da": "Dette felt er påkrævet",
+      "de": "Dieses Feld ist erforderlich",
+      "en-US": "This field is required",
+      "uk-UA": "Це поле є обов'язковим",
+      "pl-PL": "To pole jest wymagane",
+      "no-NO": "Dette feltet er påkrevd",
+      "sv-SE": "Detta fält är obligatoriskt",
+      "fr-FR": "Ce champ est obligatoire"
+    }
   }
 ]

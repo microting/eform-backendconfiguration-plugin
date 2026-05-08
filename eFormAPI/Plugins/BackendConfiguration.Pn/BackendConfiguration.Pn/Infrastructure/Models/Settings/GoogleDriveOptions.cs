@@ -1,0 +1,54 @@
+/*
+The MIT License (MIT)
+
+Copyright (c) 2007 - 2026 Microting A/S
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+*/
+
+namespace BackendConfiguration.Pn.Infrastructure.Models.Settings;
+
+using System.ComponentModel.DataAnnotations;
+
+/// <summary>
+/// Configuration for the Google Drive integration. Bound from the
+/// "GoogleDrive" configuration section.
+/// <list type="bullet">
+///   <item><description><c>MicrotingOAuthProxyUrl</c> — base URL of the
+///     stateless Microting OAuth proxy (e.g. <c>https://oauth.microting.com</c>).
+///     The proxy owns the Google client_id/secret; customer instances never
+///     see them.</description></item>
+///   <item><description><c>ProxySigningKey</c> — shared HS256 key used to (a)
+///     verify the envelope/state/channel JWTs the proxy mints and (b) sign
+///     HMACs on outbound calls to <c>/start</c> and <c>/refresh</c>. Same key
+///     on every customer instance.</description></item>
+///   <item><description><c>RefreshTokenEncryptionKey</c> — base64-encoded
+///     32 byte AES-GCM key used at-rest to encrypt the user's Google refresh
+///     token before persisting it on <c>GoogleOAuthToken.EncryptedRefreshToken</c>.
+///     Per-customer-instance secret. Distinct from <c>ProxySigningKey</c>.</description></item>
+/// </list>
+///
+/// The annotations are validated by the options pipeline
+/// (<c>ValidateDataAnnotations()</c>) — a deployment that supplies the
+/// section but with a malformed/missing value fails fast at first resolve
+/// instead of producing opaque runtime crypto errors.
+/// </summary>
+public class GoogleDriveOptions
+{
+    [Required, Url]
+    public string MicrotingOAuthProxyUrl { get; set; } = "";
+
+    [Required, MinLength(32)]
+    public string ProxySigningKey { get; set; } = "";
+
+    [Required, MinLength(32)]
+    public string RefreshTokenEncryptionKey { get; set; } = "";
+}

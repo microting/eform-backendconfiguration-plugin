@@ -49,6 +49,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -84,6 +85,7 @@ using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
 using Services.ChemicalService;
 using Services.ExcelService;
+using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
 using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
@@ -135,6 +137,33 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
+        services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
+        services.AddTransient<IGoogleDriveFileService, GoogleDriveFileService>();
+        // Typed HttpClient for the Microting OAuth proxy. BaseAddress is
+        // configured from IOptions at construction time so the typed
+        // client never needs to know about appsettings directly.
+        services.AddHttpClient<IOAuthProxyClient, OAuthProxyClient>((sp, http) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
+            if (!string.IsNullOrEmpty(opts.MicrotingOAuthProxyUrl))
+            {
+                http.BaseAddress = new Uri(opts.MicrotingOAuthProxyUrl);
+            }
+        });
+        // Used by the GoogleDriveFileService to talk to Drive directly
+        // (separate from the proxy client). Named so the file service can
+        // grab a fresh, header-clean instance without polluting other
+        // typed clients.
+        services.AddHttpClient(nameof(GoogleDriveFileService));
+        // ASP.NET Data Protection backs the gd_nonce cookie used in the
+        // OAuth flow's CSRF defence (see GoogleDriveController).
+        services.AddDataProtection();
+        // GoogleDriveAuthService caches access tokens in IMemoryCache to
+        // avoid hitting /refresh on every Drive call. The host already
+        // wires AddMemoryCache via the ASP.NET defaults but we register
+        // explicitly so the plugin works even if a future host change
+        // removes the implicit registration.
+        services.AddMemoryCache();
         services.AddControllers();
         SeedEForms(services);
         // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
@@ -156,6 +185,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     {
         services.ConfigurePluginDbOptions<BackendConfigurationBaseSettings>(
             configuration.GetSection("BackendConfigurationSettings"));
+
+        // Google Drive integration. ValidateDataAnnotations covers the
+        // required-string contract today; we don't want a hard ValidateOnStart
+        // because not every deployment opts into the integration yet — when
+        // the section is absent the proxy URL is empty and the controller
+        // surfaces a "not configured" message instead of preventing boot.
+        services.AddOptions<Infrastructure.Models.Settings.GoogleDriveOptions>()
+            .Bind(configuration.GetSection("GoogleDrive"))
+            .ValidateDataAnnotations();
     }
 
     private static async void SeedEForms(IServiceCollection services)

@@ -58,19 +58,24 @@ In a NEW Google Cloud project owned by Microting:
 2. Create OAuth 2.0 credentials → application type "Web application".
    - Authorized JavaScript origins: `https://oauth.microting.com`
    - Authorized redirect URI: `https://oauth.microting.com/google-drive/callback`
-   - Scopes: `https://www.googleapis.com/auth/drive.file`
+   - Scopes: `https://www.googleapis.com/auth/drive.file`, `openid`, `email`
 3. OAuth consent screen:
    - Application type: External
    - Authorized domains: `microting.com`
-   - Scopes: `drive.file` (NOT `drive.readonly` — `drive.file` is non-sensitive and skips Google verification entirely; only files explicitly granted via the Picker are accessible).
-4. Save the Client ID + Client Secret; ship them to the proxy service via env vars (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`). Customer instances NEVER see the secret.
-5. Generate a 32-byte random key for envelope signing (`PROXY_SIGNING_KEY`); ship it to BOTH the proxy AND every customer instance via secret store.
+   - Scopes: `drive.file`, `openid`, `email` (NOT `drive.readonly` — `drive.file` is non-sensitive and skips Google verification entirely; only files explicitly granted via the Picker are accessible. `openid email` are also non-sensitive and required to call `/oauth2/v2/userinfo` for the `email` claim that ends up in the envelope.)
+4. Save the Client ID + Client Secret; ship them to the proxy service as env vars `OAuthProxy__GoogleOAuthClientId` and `OAuthProxy__GoogleOAuthClientSecret` (the `OAuthProxy__` prefix matches ASP.NET's section-binding convention). Customer instances NEVER see the secret.
+5. Generate a 32-byte random key for envelope signing (`OAuthProxy__ProxySigningKey`); ship it to BOTH the proxy AND every customer instance via secret store.
 
 **Why `drive.file` and not `drive.readonly`:**
 - `drive.file` is "non-sensitive" — no Google verification process required; ship to customers immediately.
 - Per-file access only — user grants access through the Picker on a file-by-file basis.
 - Compromised tokens cannot enumerate the user's whole Drive.
 - Trade-off: app cannot list files outside what the user explicitly picked. Acceptable since calendar attachments are explicit per-file picks.
+
+**Why `openid email` alongside `drive.file`:**
+- The proxy's `/google-drive/callback` calls Google's `/oauth2/v2/userinfo` to capture the user's Google account email (so it can be persisted on the `GoogleOAuthToken` row and shown in the user-settings UI from PR-8). That endpoint requires the `openid` and `email` scopes.
+- Both are on Google's "non-sensitive" scope list; no Google verification process is triggered.
+- The user-facing consent screen will list `drive.file`, "associate you with your personal info on Google", and "see your primary email" — three lines, all minimal.
 
 ### 0.3 Customer-instance config
 
@@ -118,6 +123,8 @@ public class GoogleOAuthToken : PnBase
 
 One row per user. If a user has multiple Google accounts they want to use, that's v2.
 
+**Uniqueness is enforced at the application layer, not the DB.** MariaDB does not natively support filtered/partial unique indexes (the WorkflowState soft-delete pattern means a naive `UNIQUE(UserId)` would block re-connection after disconnect). PR-3's `/oauth-finish` endpoint MUST: (a) look up the existing `GoogleOAuthToken` for the user, (b) if one exists with `WorkflowState = Created`, update it in place rather than inserting a new row, (c) if one exists only with `WorkflowState = Removed`, soft-undelete it and reset `EncryptedRefreshToken / RevokedAt / ConnectedAt`. Wrap this in a transaction.
+
 ### Extend `AreaRulePlanningFile`
 
 ```csharp
@@ -144,6 +151,8 @@ public class DriveWatchChannel : PnBase
 
 One per `GoogleOAuthToken`. Renewed daily (well before 7-day expiry) by the cron.
 
+**Uniqueness is enforced at the application layer, not the DB** (same MariaDB / soft-delete reason as `GoogleOAuthToken`). PR-5's `EnsureWatchChannel` and PR-6's daily renewal MUST query for an existing `DriveWatchChannel` (with `WorkflowState = Created`) for the token before inserting; if the existing channel is still valid, return it; if it is being renewed, soft-delete the old row first.
+
 ### EF migration
 
 `AddGoogleDriveIntegration` — adds three tables (token + version + channel + channel version) and three columns on `AreaRulePlanningFiles` + same on `AreaRulePlanningFileVersions`. Use the factory class as in prior migrations (CLAUDE.md memory).
@@ -162,26 +171,36 @@ One per `GoogleOAuthToken`. Renewed daily (well before 7-day expiry) by the cron
 - Builds Google OAuth URL with `redirect_uri=https://oauth.microting.com/google-drive/callback`, `scope=drive.file`, `access_type=offline`, `prompt=consent` (so refresh token always issued), and a signed `state` JWT carrying `{customer, user, nonce, exp: now+5min}`.
 - Returns 302 to Google.
 
+`GET /google-drive/start?customer=<urlencoded customer base URL>&user=<id>&nonce=<rand>`
+
+- Customer-side caller MUST send `hmac=<hex>` as a query param plus a `date` value (RFC 1123). The `date` MAY be supplied either as a `?date=<RFC1123>` query parameter or as a `Date` HTTP header — the proxy reads the query param first and falls back to the header. Browser-driven flows (`window.open(...)` top-level navigation) cannot attach custom headers and so MUST use the query param; programmatic server-to-server callers MAY use either.
+- HMAC canonical string: `{customer}|{user}|{nonce}|{date}` — UTF-8, lowercase hex SHA-256 over the raw bytes. The `{date}` value is the same regardless of whether it travelled in the query string or the header.
+- Proxy verifies HMAC + skew (±2 min) on the resolved date. Rejects 401 otherwise (including when neither query param nor header is present).
+- Builds a signed `state` JWT (HS256 via `OAuthProxy__ProxySigningKey`) containing `{ typ: "state", customer, user, nonce, exp: now+5min }`.
+- Returns 302 to Google.
+
 `GET /google-drive/callback?code=...&state=...`
 
-- Verifies signed `state` JWT.
+- Verifies signed `state` JWT (signature + `typ` claim must equal `"state"` + `exp`).
 - Exchanges `code` for tokens (uses `client_id + client_secret` env vars).
-- Calls Google's `/oauth2/v2/userinfo` to get `email`.
-- Builds a signed envelope JWT containing `{refreshToken, accessToken, accessTokenExpiry, email, user}`.
+- Calls Google's `/oauth2/v2/userinfo` to get `email` (requires `openid` and `email` scopes — see Ops 0.2).
+- Builds a signed envelope JWT containing `{ typ: "envelope", refreshToken, accessToken, accessTokenExpiry, email, user, nonce, exp: now+5min }`.
 - 302s to `<customer>/api/backend-configuration-pn/google-drive/oauth-finish?envelope=<jwt>`.
 
 `POST /google-drive/refresh`
 
-- Body: `{refreshToken}`. Customer-instance HMAC in `Authorization: HMAC-SHA256` header.
-- Server validates HMAC.
-- Server calls Google's `/token` with grant_type=`refresh_token`. Forwards new access token + expiry to customer. If Google returns 401 / `invalid_grant`, forwards that error verbatim so the customer instance can mark the token revoked.
+- Body: `{refreshToken}`. Customer-instance HMAC in `Authorization: HMAC-SHA256 <hex>` header, `Date: <RFC1123>` header.
+- HMAC canonical string: `{body}\n{date}` — raw request body bytes UTF-8 + literal newline + RFC1123 date.
+- Server validates HMAC + skew (±2 min). Rejects 401 otherwise.
+- Server calls Google's `/token` with grant_type=`refresh_token`. Forwards new access token + expiry (augmented with an ISO 8601 `accessTokenExpiry` field) to customer. If Google returns 401 / `invalid_grant`, forwards that error verbatim so the customer instance can mark the token revoked.
 
 `POST /google-drive/notify`
 
-- Drive POSTs change notifications here. Headers include `X-Goog-Channel-ID` + `X-Goog-Channel-Token` (the JWT we set when subscribing).
-- Server verifies JWT signature, decodes `{customerInstanceUrl, channelId}`.
+- Drive POSTs change notifications here. Headers include `X-Goog-Channel-ID`, `X-Goog-Channel-Token` (the JWT we set when subscribing), `X-Goog-Resource-State`, `X-Goog-Resource-ID`, `X-Goog-Message-Number`. Body may be empty.
+- Channel-token JWT claims (PR-5 must mint these): `{ typ: "channel", customerInstanceUrl, channelId, exp }`. The proxy validates signature + `typ == "channel"` + `exp`.
 - 200 immediately to Drive (Google retries on non-2xx; never block on customer-side processing).
-- Asynchronously POSTs to `<customerInstanceUrl>/api/backend-configuration-pn/google-drive/notify` with the same headers + Microting HMAC. The customer-side handler enqueues work (PR-7).
+- Asynchronously POSTs to `<customerInstanceUrl>/api/backend-configuration-pn/google-drive/notify` with all `X-Goog-*` headers preserved, `Date: <RFC1123>`, an empty JSON body (`{}`), and `Authorization: HMAC-SHA256 <hex>`.
+- HMAC canonical string for the customer fan-out: `{channelId}|{resourceState}|{resourceId}|{messageNumber}|{date}` — UTF-8, lowercase hex SHA-256 over the raw bytes. PR-5's webhook receiver MUST verify exactly this string or HMAC checks will fail.
 
 ### Why the proxy is stateless
 
@@ -195,7 +214,7 @@ All routing decisions come from signed JWTs (`state` for OAuth flow, `token` for
 
 ### Deployment
 
-Single Docker image. Env vars: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `PROXY_SIGNING_KEY`. Fronted by the existing Microting reverse proxy / load balancer, with the cert for `oauth.microting.com` terminated there.
+Single Docker image. Env vars: `OAuthProxy__GoogleOAuthClientId`, `OAuthProxy__GoogleOAuthClientSecret`, `OAuthProxy__ProxySigningKey`, `OAuthProxy__PublicBaseUrl`. The double-underscore prefix is required so ASP.NET's environment-variable provider binds to the `OAuthProxy` configuration section. All three secrets are sourced from the Kubernetes secret `oauth-secret`. Fronted by the existing Microting reverse proxy / load balancer, with the cert for `oauth.microting.com` terminated there.
 
 ## PR-2 — Base schema
 
@@ -205,8 +224,10 @@ Single migration adding the three entities + the `AreaRulePlanningFile` columns 
 
 ### Endpoint `GET /api/backend-configuration-pn/google-drive/oauth-finish?envelope=<jwt>`
 
-- Verify envelope signature with `ProxySigningKey`.
-- Decrypt envelope payload `{refreshToken, accessToken, accessTokenExpiry, email, userId}`.
+- Verify envelope JWT signature with `OAuthProxy__ProxySigningKey` AND require the `typ` claim to equal `"envelope"` (defense against type-confusion across state / envelope / channel JWTs that share the signing key).
+- Read envelope payload `{ refreshToken, accessToken, accessTokenExpiry, email, user, nonce }`.
+- **Verify the `nonce` against the value the frontend stored when initiating `/google-drive/start`** (e.g. session cookie or short-lived row keyed by user). Reject 400 on mismatch. This is the CSRF defence — without it, an attacker who controls a redirect can race a victim's OAuth flow into the attacker's Google account.
+- **Verify the envelope's `user` claim matches the currently-authenticated platform user.** Reject 403 on mismatch.
 - Encrypt refreshToken at-rest (AES-GCM key from cluster secret, NOT the proxy signing key).
 - Persist `GoogleOAuthToken` row.
 - 302 to the calendar page with a success toast.
@@ -297,11 +318,12 @@ Per-attachment UI:
 ## Security
 
 - **Refresh tokens** AES-GCM-encrypted at rest with a key from the cluster secret store (not in source). The proxy's signing key and Google's client secret are *separate* keys.
-- **Envelope JWTs** between proxy and customer instance: HS256 with shared signing key, 5-min `exp`, single-use `nonce` to prevent replay.
-- **HMAC on `/refresh` and `/notify`** between customer and proxy: HS256, time-bounded (request `Date` header within ±2 minutes).
+- **JWTs (state / envelope / channel-token)** all share the same signing key, so each carries a `typ` claim (`"state"`, `"envelope"`, `"channel"`) that is verified on every read. Without this, a state JWT could be replayed against the channel-token endpoint, and vice-versa. The proxy and the customer-side `/oauth-finish` MUST both check the `typ`.
+- **State JWT replay protection** is enforced ONLY by the 5-min `exp`. A stateless proxy cannot maintain a "used nonces" set. The downstream defence is the customer-side `/oauth-finish`: it MUST verify the envelope's `nonce` against the value the frontend stored when initiating `/start`, otherwise an attacker who controls a redirect can race a victim's OAuth flow into the attacker's account. PR-3 owns this check.
+- **HMAC on `/start`, `/refresh`, and `/notify` fan-out**: HS256, time-bounded (request `Date` header within ±2 minutes). The Date is part of the canonical string so a captured request cannot be replayed indefinitely.
 - **Stateless proxy** — compromising the proxy reveals client_secret + signing key but not customer refresh tokens (those live in customer DBs only).
 - **Per-customer signing-key compromise containment**: this design uses a SHARED signing key. If you want stricter containment, give each customer instance its own key and have the proxy hold a registry mapping customer URL → signing key. Adds DB to the proxy. Out of scope for v1; revisit if compliance demands it.
-- `drive.file` scope means a compromised refresh token grants access ONLY to files the user explicitly picked via the Picker — not their entire Drive.
+- `drive.file` scope means a compromised refresh token grants access ONLY to files the user explicitly picked via the Picker — not their entire Drive. (`openid` and `email` are also requested but only expose the user's email; they cannot be used to access Drive content.)
 
 ## Testing strategy
 
