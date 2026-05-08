@@ -2332,21 +2332,38 @@ public class OpgaverGrpcService(
             //   }.Create(sdkDbContext);
             //
             // Field-id resolution order:
-            //   - meta.FieldId > 0  →  client-provided binding. Look up by Id
-            //     directly. The caller is already auth-scoped to this opgave's
-            //     property (PropertyWorker check above), so an out-of-tree
-            //     field_id is at worst a self-inflicted misbinding the same
-            //     worker can correct with another upload.
+            //   - meta.FieldId > 0  →  client-provided binding. Validate that
+            //     the supplied id resolves to a Picture-typed field that lives
+            //     inside this case's CheckList tree. A bogus id (wrong type or
+            //     wrong tree) would otherwise corrupt the (CaseId, CheckListId,
+            //     FieldId) triple — e.g. landing an UploadedData reference on
+            //     a Text/Number/Comment field's row, or on a field belonging to
+            //     an unrelated CheckList. We fail loud with InvalidArgument so
+            //     client bugs surface instead of silently producing bad data.
             //   - meta.FieldId == 0 →  legacy client. BFS-discover the FIRST
             //     Picture field on the case (s_photo_upload_delete behavior).
             //
             // We keep this write IN ADDITION to the existing Cases.Custom
             // envelope update below, so the mobile read path (which reads
             // from Cases.Custom) is not regressed; both writes coexist.
-            var resolvedFieldId = meta.FieldId > 0
-                ? meta.FieldId
-                : await FindPictureFieldIdAsync(sdkDbContext, foundCase.CheckListId)
+            int resolvedFieldId;
+            if (meta.FieldId > 0)
+            {
+                resolvedFieldId = await ValidateClientPictureFieldIdAsync(
+                        sdkDbContext, meta.FieldId, foundCase.CheckListId)
                     .ConfigureAwait(false);
+                if (resolvedFieldId <= 0)
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument,
+                        $"meta.FieldId {meta.FieldId} is not a Picture field on case " +
+                        $"{foundCase.Id}'s checklist tree (root CheckListId={foundCase.CheckListId})."));
+                }
+            }
+            else
+            {
+                resolvedFieldId = await FindPictureFieldIdAsync(sdkDbContext, foundCase.CheckListId)
+                    .ConfigureAwait(false);
+            }
             var pictureField = resolvedFieldId > 0
                 ? await sdkDbContext.Fields
                     .FirstOrDefaultAsync(f => f.Id == resolvedFieldId)
@@ -3145,6 +3162,90 @@ public class OpgaverGrpcService(
             if (fieldId != null && fieldId.Value > 0)
             {
                 return fieldId.Value;
+            }
+
+            var children = await sdkDbContext.CheckLists
+                .Where(cl => cl.ParentId == clId
+                             && (cl.WorkflowState == null
+                                 || cl.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
+                .Select(cl => cl.Id)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            foreach (var childId in children)
+            {
+                if (seen.Add(childId))
+                {
+                    queue.Enqueue(childId);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Validates that a client-supplied <paramref name="clientFieldId"/> resolves
+    /// to a Picture-typed Field that lives inside the CheckList tree rooted at
+    /// <paramref name="rootCheckListId"/>. Returns the field id on success; 0
+    /// otherwise (not in tree, not Picture, removed, or no Picture FieldType
+    /// configured at all).
+    ///
+    /// This guards <c>UploadPhoto</c>'s <c>meta.FieldId &gt; 0</c> branch from
+    /// landing an UploadedData reference on a Text/Number/Comment field's row
+    /// or on a field that belongs to an unrelated CheckList — both invariants
+    /// that <see cref="FindPictureFieldIdAsync"/> already enforced for the
+    /// legacy slot-based resolution path.
+    /// </summary>
+    private static async Task<int> ValidateClientPictureFieldIdAsync(
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
+        int clientFieldId,
+        int? rootCheckListId)
+    {
+        if (clientFieldId <= 0 || rootCheckListId == null || rootCheckListId.Value <= 0)
+        {
+            return 0;
+        }
+
+        var pictureFieldTypeId = await sdkDbContext.FieldTypes
+            .Where(ft => ft.Type == Microting.eForm.Infrastructure.Constants.Constants.FieldTypes.Picture)
+            .Select(ft => (int?)ft.Id)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (pictureFieldTypeId == null || pictureFieldTypeId.Value <= 0)
+        {
+            return 0;
+        }
+
+        // Look up the candidate field once: must exist, be Picture-typed, and
+        // not be soft-deleted. We then verify its CheckListId is reachable
+        // from rootCheckListId via the CheckList parent/child tree.
+        var candidate = await sdkDbContext.Fields
+            .Where(f => f.Id == clientFieldId
+                        && f.FieldTypeId == pictureFieldTypeId.Value
+                        && (f.WorkflowState == null
+                            || f.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
+            .Select(f => new { f.Id, f.CheckListId })
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+        if (candidate == null || candidate.CheckListId == null || candidate.CheckListId.Value <= 0)
+        {
+            return 0;
+        }
+
+        // BFS the CheckList tree rooted at the case's CheckListId; succeed
+        // iff candidate.CheckListId is reached.
+        var queue = new Queue<int>();
+        var seen = new HashSet<int>();
+        queue.Enqueue(rootCheckListId.Value);
+        seen.Add(rootCheckListId.Value);
+
+        while (queue.Count > 0)
+        {
+            var clId = queue.Dequeue();
+            if (clId == candidate.CheckListId.Value)
+            {
+                return candidate.Id;
             }
 
             var children = await sdkDbContext.CheckLists
