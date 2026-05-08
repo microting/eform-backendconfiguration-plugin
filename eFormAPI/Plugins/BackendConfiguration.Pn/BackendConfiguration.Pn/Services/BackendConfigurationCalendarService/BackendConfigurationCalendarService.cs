@@ -80,6 +80,7 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningTags)
                 .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
 
             // Batch-load plannings to avoid N+1 queries
@@ -407,6 +408,7 @@ public class BackendConfigurationCalendarService(
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
@@ -1885,7 +1887,17 @@ public class BackendConfigurationCalendarService(
                 OriginalFileName = f.OriginalFileName ?? string.Empty,
                 MimeType = f.MimeType ?? string.Empty,
                 SizeBytes = f.SizeBytes,
-                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}"
+                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}",
+                DriveFileId = f.DriveFileId,
+                DriveModifiedTime = f.DriveModifiedTime,
+                // PR-8: only Drive-sourced rows carry refresh/revoke metadata.
+                // Use DriveModifiedTime as the proxy for "last refreshed at"
+                // (the change-processor advances it on every accepted refetch
+                // — see PR-7). For non-Drive rows both fields stay null/false.
+                LastRefreshedAt = f.DriveFileId != null ? f.DriveModifiedTime : null,
+                DriveRevoked = f.DriveFileId != null
+                    && f.GoogleOAuthToken != null
+                    && f.GoogleOAuthToken.RevokedAt != null
             })
             .ToList();
     }
@@ -2090,7 +2102,16 @@ public class BackendConfigurationCalendarService(
                     OriginalFileName = x.OriginalFileName ?? string.Empty,
                     MimeType = x.MimeType ?? string.Empty,
                     SizeBytes = x.SizeBytes,
-                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}"
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}",
+                    DriveFileId = x.DriveFileId,
+                    DriveModifiedTime = x.DriveModifiedTime,
+                    // PR-8: same proxy as MapAttachments — DriveModifiedTime
+                    // is what the change-processor bumps on every accepted
+                    // refetch, so it doubles as "last refreshed at" for the UI.
+                    LastRefreshedAt = x.DriveFileId != null ? x.DriveModifiedTime : null,
+                    DriveRevoked = x.DriveFileId != null
+                        && x.GoogleOAuthToken != null
+                        && x.GoogleOAuthToken.RevokedAt != null
                 })
                 .ToListAsync();
             return new OperationDataResult<List<CalendarTaskAttachmentDto>>(true, files);

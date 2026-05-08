@@ -297,9 +297,17 @@
               <a class="gcal-attachment-name" (click)="downloadAttachment(f)">{{ f.originalFileName }}</a>
               <div class="gcal-attachment-meta-row">
                 <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
-                <span *ngIf="f.driveFileId"
+                <span *ngIf="f.driveFileId && !f.driveRevoked"
                       class="gcal-drive-badge"
                       [matTooltip]="'Synced from Google Drive' | translate">Drive</span>
+                <span *ngIf="f.driveFileId && f.driveRevoked"
+                      class="gcal-drive-badge gcal-drive-badge--revoked"
+                      [matTooltip]="'Google Drive disconnected — reconnect to resume sync' | translate">{{ 'Google Drive disconnected' | translate }}</span>
+                <span *ngIf="f.driveFileId && f.lastRefreshedAt"
+                      class="gcal-drive-refreshed"
+                      [matTooltip]="('Last refreshed' | translate) + ' ' + (f.lastRefreshedAt | date:'medium')">
+                  {{ 'Last refreshed' | translate }} {{ formatRelativeTime(f.lastRefreshedAt) }}
+                </span>
                 <a *ngIf="f.driveFileId"
                    class="gcal-drive-link"
                    [href]="'https://drive.google.com/file/d/' + f.driveFileId + '/view'"

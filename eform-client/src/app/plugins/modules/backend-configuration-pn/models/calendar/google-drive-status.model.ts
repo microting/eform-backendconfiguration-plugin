@@ -19,3 +19,22 @@ export interface GoogleDrivePickerToken {
   accessToken: string;
   developerKey: string;
 }
+
+/**
+ * One row per Google account ever connected by the user. Returned by
+ * GET /api/backend-configuration-pn/google-drive/accounts. Powers the
+ * connected-accounts panel introduced in PR-8 of the Google Drive
+ * integration design.
+ *
+ * `revokedAt` is set when the user (or Google) has disconnected the
+ * account; `isActive` combines that signal with the soft-delete state so
+ * the UI can gate the "Disconnect" button without re-deriving the rules.
+ */
+export interface GoogleDriveAccount {
+  id: number;
+  email: string;
+  connectedAt: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
+  isActive: boolean;
+}

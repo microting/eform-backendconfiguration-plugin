@@ -4943,5 +4943,36 @@
       "sv-SE": "Ett oväntat fel inträffade. Försök igen.",
       "fr-FR": "Une erreur inattendue s'est produite. Veuillez réessayer."
     }
+  },
+  {
+    "Key": "Connected Google Drive accounts",
+    "LocalizedValue": {
+      "da": "Tilsluttede Google Drive-konti",
+      "de": "Verbundene Google Drive-Konten",
+      "en-US": "Connected Google Drive accounts",
+      "uk-UA": "Підключені облікові записи Google Drive",
+      "pl-PL": "Połączone konta Google Drive",
+      "no-NO": "Tilkoblede Google Drive-kontoer",
+      "sv-SE": "Anslutna Google Drive-konton",
+      "es-ES": "Cuentas de Google Drive conectadas",
+      "fr-FR": "Comptes Google Drive connectés",
+      "it-IT": "Account Google Drive collegati",
+      "nl-NL": "Verbonden Google Drive-accounts",
+      "pt-BR": "Contas do Google Drive conectadas",
+      "pt-PT": "Contas do Google Drive ligadas",
+      "fi-FI": "Yhdistetyt Google Drive -tilit",
+      "et-ET": "Ühendatud Google Drive'i kontod",
+      "lv-LV": "Savienotie Google Drive konti",
+      "lt-LT": "Prijungtos „Google Drive“ paskyros",
+      "ro-RO": "Conturi Google Drive conectate",
+      "hr-HR": "Povezani Google Drive računi",
+      "sl-SL": "Povezani Google Drive računi",
+      "cs-CZ": "Připojené účty Google Drive",
+      "sk-SK": "Pripojené účty Google Drive",
+      "hu-HU": "Csatlakoztatott Google Drive-fiókok",
+      "bg-BG": "Свързани Google Drive профили",
+      "el-GR": "Συνδεδεμένοι λογαριασμοί Google Drive",
+      "is-IS": "Tengdir Google Drive-reikningar"
+    }
   }
 ]

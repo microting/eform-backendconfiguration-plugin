@@ -72,4 +72,33 @@ public interface IGoogleDriveAuthService
     /// reconcile cron in PR-6 should pick it up later.
     /// </summary>
     Task<DriveWatchChannel> EnsureWatchChannelAsync(int userId);
+
+    /// <summary>
+    /// Disconnects a Google Drive token, revoking it at Google and stopping
+    /// all associated push-notification channels. Idempotent: an already-
+    /// revoked token is treated as a no-op past the ownership check.
+    ///
+    /// The flow:
+    /// <list type="number">
+    ///   <item><description>Loads <see cref="GoogleOAuthToken"/> by
+    ///     <paramref name="tokenId"/>, eager-including
+    ///     <c>DriveWatchChannels</c>.</description></item>
+    ///   <item><description>Verifies the token belongs to
+    ///     <paramref name="currentUserId"/> — users can only disconnect
+    ///     their own tokens. Throws
+    ///     <see cref="UnauthorizedAccessException"/> on mismatch.</description></item>
+    ///   <item><description>Decrypts the refresh token and POSTs to Google's
+    ///     <c>https://oauth2.googleapis.com/revoke</c>. On success the grant
+    ///     is fully revoked; if Google reports the token already revoked we
+    ///     log and continue.</description></item>
+    ///   <item><description>For each <see cref="DriveWatchChannel"/> with
+    ///     <c>WorkflowState = Created</c>: POSTs to
+    ///     <c>https://www.googleapis.com/drive/v3/channels/stop</c> with a
+    ///     fresh access token, then soft-deletes the row. Failures
+    ///     (e.g. token already revoked at Google) are logged and skipped.</description></item>
+    ///   <item><description>Stamps <c>RevokedAt = UtcNow</c> on the token
+    ///     and clears any cached access token.</description></item>
+    /// </list>
+    /// </summary>
+    Task DisconnectAsync(int tokenId, int currentUserId);
 }

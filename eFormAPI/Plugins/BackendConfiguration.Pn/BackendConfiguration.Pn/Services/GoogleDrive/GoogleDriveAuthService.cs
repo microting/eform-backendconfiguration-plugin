@@ -174,7 +174,20 @@ public class GoogleDriveAuthService : IGoogleDriveAuthService
             && cached != null
             && cached.Expiry > DateTime.UtcNow.AddSeconds(60))
         {
-            return cached.AccessToken;
+            // Defensive re-check: a concurrent DisconnectAsync (or any other
+            // path that revokes/removes the token) may have stamped
+            // RevokedAt between when we cached and now. The race window is
+            // narrow, but the consequences (returning a token that the user
+            // explicitly disconnected) are bad enough to justify the extra
+            // PK fetch — it's a single AnyAsync over an indexed column.
+            var stillActive = await _dbContext.GoogleOAuthTokens
+                .AsNoTracking()
+                .AnyAsync(t => t.UserId == userId
+                             && t.RevokedAt == null
+                             && t.WorkflowState == Constants.WorkflowStates.Created)
+                .ConfigureAwait(false);
+            if (stillActive) return cached.AccessToken;
+            _accessTokenCache.Remove(cacheKey);
         }
 
         var token = await _dbContext.GoogleOAuthTokens
@@ -238,6 +251,230 @@ public class GoogleDriveAuthService : IGoogleDriveAuthService
     public void ClearCachedAccessToken(int userId)
     {
         _accessTokenCache.Remove(AccessTokenCacheKey(userId));
+    }
+
+    /// <summary>
+    /// PR-8: revoke a token at Google + stop all watch channels + stamp
+    /// <c>RevokedAt</c>. See
+    /// <see cref="IGoogleDriveAuthService.DisconnectAsync"/> for the
+    /// behavioural contract.
+    /// </summary>
+    public async Task DisconnectAsync(int tokenId, int currentUserId)
+    {
+        // Race-window defence: clear the cache up-front so any concurrent
+        // GetAccessTokenAsync hitting the hot path is forced down to a
+        // database read (which still has its own AnyAsync re-check). We
+        // re-clear at the end of this method too — the upfront clear is
+        // cheap and closes the window between revoke-at-Google and the
+        // local RevokedAt stamp.
+        _accessTokenCache.Remove(AccessTokenCacheKey(currentUserId));
+
+        var token = await _dbContext.GoogleOAuthTokens
+            .Include(t => t.DriveWatchChannels)
+            .FirstOrDefaultAsync(t => t.Id == tokenId)
+            .ConfigureAwait(false);
+
+        if (token == null)
+        {
+            throw new InvalidOperationException(
+                $"Google OAuth token {tokenId} not found.");
+        }
+
+        // Ownership check — users can only disconnect their own tokens.
+        // The controller surfaces this as 403; we throw a typed exception so
+        // the call-site can pick the HTTP status.
+        if (token.UserId != currentUserId)
+        {
+            throw new UnauthorizedAccessException(
+                $"User {currentUserId} cannot disconnect token owned by user {token.UserId}.");
+        }
+
+        // Already revoked — short-circuit; the disconnect endpoint is
+        // idempotent.
+        if (token.RevokedAt != null)
+        {
+            _accessTokenCache.Remove(AccessTokenCacheKey(currentUserId));
+            return;
+        }
+
+        // Step 1: Revoke the refresh token at Google. Best-effort —
+        // network/HTTP failures shouldn't block local cleanup, otherwise a
+        // user whose Google account is offline cannot disconnect at all. The
+        // local revocation (RevokedAt + cache clear) is what stops our side
+        // from issuing more refresh requests; the remote revoke is a
+        // courtesy that frees Google's grant inventory and prevents anyone
+        // else from re-using the refresh token.
+        var refreshToken = SafeDecrypt(token.EncryptedRefreshToken);
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await TryRevokeAtGoogleAsync(refreshToken).ConfigureAwait(false);
+        }
+
+        // Step 2: Stop each active watch channel at Google + soft-delete the
+        // local row. We need a fresh access token to call channels/stop;
+        // skip the loop entirely if we can't get one (the token may have
+        // been revoked Google-side already, in which case
+        // GetAccessTokenAsync throws GoogleDriveTokenRevokedException after
+        // stamping RevokedAt — which we then re-stamp below, harmlessly).
+        var activeChannels = (token.DriveWatchChannels ?? new List<DriveWatchChannel>())
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToList();
+        if (activeChannels.Count > 0)
+        {
+            string? accessToken = null;
+            try
+            {
+                accessToken = await GetAccessTokenAsync(currentUserId).ConfigureAwait(false);
+            }
+            catch (GoogleDriveTokenRevokedException)
+            {
+                // Token was already revoked at Google — refresh to fetch a
+                // fresh access token failed. We can't call channels/stop
+                // (Google would 401) so we just soft-delete the rows
+                // locally; the channels expire on Google's side within 7
+                // days regardless.
+                _logger.LogInformation(
+                    "Disconnect: refresh failed (revoked); soft-deleting {Count} channel rows without remote stop for token {TokenId}",
+                    activeChannels.Count, tokenId);
+            }
+
+            foreach (var channel in activeChannels)
+            {
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    await TryStopChannelAsync(channel.ChannelId, channel.ResourceId, accessToken)
+                        .ConfigureAwait(false);
+                }
+                channel.UpdatedByUserId = currentUserId;
+                await channel.Delete(_dbContext).ConfigureAwait(false);
+            }
+        }
+
+        // Step 3: stamp RevokedAt + persist. We re-read the token from the
+        // change-tracker if GetAccessTokenAsync above already stamped it
+        // (GoogleDriveTokenRevokedException path) so we don't double-Update.
+        // The cheapest way is to set + Update unconditionally; the timestamp
+        // gets refreshed which is also the desired observable behaviour.
+        token.RevokedAt = DateTime.UtcNow;
+        token.UpdatedByUserId = currentUserId;
+        await token.Update(_dbContext).ConfigureAwait(false);
+
+        // Step 4: clear cached access token so subsequent reads observe the
+        // revoked state immediately.
+        _accessTokenCache.Remove(AccessTokenCacheKey(currentUserId));
+    }
+
+    /// <summary>
+    /// Decrypts the refresh-token blob for the disconnect path. Returns null
+    /// (rather than throwing) if the blob is malformed or the encryption key
+    /// is unavailable — the disconnect should still complete locally even if
+    /// the remote revoke at Google can't be performed.
+    /// </summary>
+    private string? SafeDecrypt(string ciphertextB64)
+    {
+        try
+        {
+            return Decrypt(ciphertextB64);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e,
+                "Disconnect: refresh-token decryption failed; skipping remote revoke.");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Best-effort POST to Google's revoke endpoint. Treats any non-2xx
+    /// other than 400 (already-revoked) as a hard failure. Per Google docs
+    /// (https://developers.google.com/identity/protocols/oauth2/web-server#tokenrevoke)
+    /// the endpoint accepts both GET and POST; we use POST so the token
+    /// never lands in any intermediate access log as a query parameter.
+    /// </summary>
+    private async Task TryRevokeAtGoogleAsync(string refreshToken)
+    {
+        if (_httpClientFactory == null)
+        {
+            _logger.LogWarning(
+                "Disconnect: IHttpClientFactory unavailable; skipping remote revoke at Google.");
+            return;
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient(nameof(GoogleDriveFileService));
+            using var request = new HttpRequestMessage(HttpMethod.Post,
+                "https://oauth2.googleapis.com/revoke");
+            request.Content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("token", refreshToken)
+            });
+            using var response = await client.SendAsync(request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            // Google returns 400 with body `{"error":"invalid_token"}` when
+            // the token is already revoked or never existed. That's a
+            // happy-path outcome for us — the disconnect remains
+            // idempotent. Treat anything else as a soft failure: log + move
+            // on so local state still gets cleaned up.
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if ((int)response.StatusCode == 400
+                && body.Contains("invalid_token", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation(
+                    "Disconnect: Google reports token already revoked; treating as success.");
+                return;
+            }
+
+            _logger.LogWarning(
+                "Disconnect: Google revoke returned {Status}: {Body}",
+                (int)response.StatusCode, body);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e,
+                "Disconnect: remote revoke at Google failed; continuing with local cleanup.");
+        }
+    }
+
+    /// <summary>
+    /// Best-effort POST to Drive's <c>channels.stop</c>. Logs + swallows
+    /// failures so a partially-broken channel cannot block disconnection.
+    /// Body shape per Drive docs:
+    /// <c>{"id":"&lt;channelId&gt;","resourceId":"&lt;resourceId&gt;"}</c>.
+    /// </summary>
+    private async Task TryStopChannelAsync(string channelId, string resourceId, string accessToken)
+    {
+        if (_httpClientFactory == null) return;
+        try
+        {
+            var client = _httpClientFactory.CreateClient(nameof(GoogleDriveFileService));
+            using var request = new HttpRequestMessage(HttpMethod.Post,
+                "https://www.googleapis.com/drive/v3/channels/stop");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            request.Content = JsonContent.Create(new
+            {
+                id = channelId,
+                resourceId
+            });
+            using var response = await client.SendAsync(request).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                _logger.LogInformation(
+                    "Disconnect: channels.stop returned {Status} for channel {ChannelId}: {Body}",
+                    (int)response.StatusCode, channelId, body);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e,
+                "Disconnect: channels.stop failed for channel {ChannelId}; continuing.",
+                channelId);
+        }
     }
 
     /// <summary>

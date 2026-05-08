@@ -1,9 +1,10 @@
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import {ApiBaseService} from 'src/app/common/services';
-import {OperationDataResult} from 'src/app/common/models';
+import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {
   CalendarTaskAttachment,
+  GoogleDriveAccount,
   GoogleDrivePickerToken,
   GoogleDriveStatus,
 } from '../models/calendar';
@@ -13,6 +14,8 @@ export let BackendConfigurationPnGoogleDriveMethods = {
   Start: 'api/backend-configuration-pn/google-drive/start',
   PickerToken: 'api/backend-configuration-pn/google-drive/picker-token',
   Attach: 'api/backend-configuration-pn/google-drive/attach',
+  Accounts: 'api/backend-configuration-pn/google-drive/accounts',
+  Disconnect: 'api/backend-configuration-pn/google-drive/disconnect',
 };
 
 /**
@@ -53,6 +56,27 @@ export class BackendConfigurationPnGoogleDriveService {
     return this.apiBaseService.post(
       BackendConfigurationPnGoogleDriveMethods.Attach,
       {areaRulePlanningId, driveFileId},
+    );
+  }
+
+  /**
+   * PR-8: lists the authenticated user's connected Google accounts (active
+   * and revoked). Used by the settings panel to render history + the
+   * "Disconnect" button on active rows.
+   */
+  getAccounts(): Observable<OperationDataResult<GoogleDriveAccount[]>> {
+    return this.apiBaseService.get(BackendConfigurationPnGoogleDriveMethods.Accounts);
+  }
+
+  /**
+   * PR-8: disconnects a Google account by token id. Backend revokes the
+   * token at Google, stops every active watch channel, and stamps
+   * RevokedAt. Idempotent — a second call on the same id is a no-op past
+   * the ownership check.
+   */
+  disconnect(tokenId: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(
+      `${BackendConfigurationPnGoogleDriveMethods.Disconnect}/${tokenId}`,
     );
   }
 }

@@ -1077,6 +1077,230 @@ public class GoogleDriveTests : TestBaseSetup
         Assert.That(removedRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
     }
 
+    // -------------------------------------------------------------------
+    // PR-8 — Disconnect + GetAccounts
+    // -------------------------------------------------------------------
+
+    [Test]
+    public async Task Disconnect_RevokesAtGoogleAndStopsChannelsAndSetsRevokedAt()
+    {
+        const int userId = 41;
+        var jwt = MintEnvelope("envelope", userId, "n41", "rt-revoke");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n41");
+
+        // Seed two active watch channels — disconnect must call channels.stop
+        // for each one and soft-delete the rows.
+        var c1 = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = "channel-one",
+            ResourceId = "resource-one",
+            SignedToken = "jwt-one",
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await c1.Create(BackendConfigurationPnDbContext!);
+        var c2 = new DriveWatchChannel
+        {
+            GoogleOAuthTokenId = token.Id,
+            ChannelId = "channel-two",
+            ResourceId = "resource-two",
+            SignedToken = "jwt-two",
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await c2.Create(BackendConfigurationPnDbContext!);
+
+        // Stub the proxy /refresh so the auth service can mint a fresh
+        // access token used to call channels.stop.
+        StubProxyRefresh("ya29.disconnect-tok");
+
+        // Stub Google's revoke endpoint (returns 200 on the happy path).
+        _proxyServer.Given(Request.Create()
+                .WithPath("/revoke").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(200));
+
+        // Stub channels.stop — Drive returns 204 No Content on success but
+        // any 2xx is acceptable.
+        _proxyServer.Given(Request.Create()
+                .WithPath("/drive/v3/channels/stop").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(204));
+
+        var sut = NewAuthServiceForWatch();
+        await sut.DisconnectAsync(token.Id, userId);
+
+        // RevokedAt stamped on the token row.
+        var refreshed = await BackendConfigurationPnDbContext!.GoogleOAuthTokens
+            .FirstAsync(x => x.Id == token.Id);
+        Assert.That(refreshed.RevokedAt, Is.Not.Null,
+            "Disconnect must stamp RevokedAt on the local token row.");
+
+        // Both channel rows soft-deleted.
+        var rowsAfter = await BackendConfigurationPnDbContext.DriveWatchChannels
+            .Where(x => x.GoogleOAuthTokenId == token.Id)
+            .ToListAsync();
+        Assert.That(rowsAfter, Has.Count.EqualTo(2));
+        Assert.That(rowsAfter.All(x => x.WorkflowState == Constants.WorkflowStates.Removed),
+            Is.True, "All active channels must be soft-deleted on disconnect.");
+
+        // Drive received both channels.stop calls + Google received the
+        // revoke. The WireMock server hosts both surfaces (the rewriter
+        // forces googleapis.com → wiremock); we assert each path saw a hit.
+        var revokeHits = _proxyServer.LogEntries.Count(e =>
+            e.RequestMessage.Path == "/revoke");
+        var stopHits = _proxyServer.LogEntries.Count(e =>
+            e.RequestMessage.Path == "/drive/v3/channels/stop");
+        Assert.That(revokeHits, Is.EqualTo(1), "revoke must be called exactly once.");
+        Assert.That(stopHits, Is.EqualTo(2), "channels.stop must be called per active channel.");
+    }
+
+    [Test]
+    public async Task Disconnect_GoogleAlreadyRevoked_StillSetsRevokedAt()
+    {
+        const int userId = 42;
+        var jwt = MintEnvelope("envelope", userId, "n42", "rt-already-revoked");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, userId, "n42");
+
+        // Google reports the refresh token is already invalid. Per the
+        // spec the disconnect remains idempotent — we still expect
+        // RevokedAt to land on the local row.
+        StubProxyRefresh("ya29.already-revoked");
+        _proxyServer.Given(Request.Create()
+                .WithPath("/revoke").UsingPost())
+            .RespondWith(Response.Create().WithStatusCode(400)
+                .WithHeader("Content-Type", "application/json")
+                .WithBody("{\"error\":\"invalid_token\"}"));
+
+        var sut = NewAuthServiceForWatch();
+        await sut.DisconnectAsync(token.Id, userId);
+
+        var refreshed = await BackendConfigurationPnDbContext!.GoogleOAuthTokens
+            .FirstAsync(x => x.Id == token.Id);
+        Assert.That(refreshed.RevokedAt, Is.Not.Null,
+            "An already-revoked-at-Google token must still get RevokedAt locally.");
+    }
+
+    [Test]
+    public async Task Disconnect_DifferentUser_Throws()
+    {
+        const int ownerUserId = 43;
+        const int otherUserId = 44;
+        var jwt = MintEnvelope("envelope", ownerUserId, "n43", "rt-not-yours");
+        var auth0 = NewAuthService();
+        var token = await auth0.StoreEnvelopeAsync(jwt, ownerUserId, "n43");
+
+        var sut = NewAuthServiceForWatch();
+        Assert.ThrowsAsync<UnauthorizedAccessException>(
+            async () => await sut.DisconnectAsync(token.Id, otherUserId));
+
+        // Token must NOT have been revoked — ownership check fails before
+        // any local mutation.
+        var still = await BackendConfigurationPnDbContext!.GoogleOAuthTokens
+            .FirstAsync(x => x.Id == token.Id);
+        Assert.That(still.RevokedAt, Is.Null,
+            "Ownership check must fail before any local mutation.");
+    }
+
+    [Test]
+    public async Task GetAccounts_ReturnsActiveAndRevoked_OrderedByConnectedAt()
+    {
+        const int userId = 45;
+
+        // Seed three rows with explicit ConnectedAt timestamps so the
+        // ordering check has something to bite on. Revoked = stamped
+        // RevokedAt + workflow stays Created (the spec only soft-deletes
+        // on full removal; a revoked-but-still-tracked row is "Created
+        // with RevokedAt set"). The IsActive flag combines both signals.
+        var now = DateTime.UtcNow;
+        var newest = new GoogleOAuthToken
+        {
+            UserId = userId,
+            GoogleAccountEmail = "newest@example.com",
+            EncryptedRefreshToken = "x",
+            ConnectedAt = now,
+            LastUsedAt = now,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await newest.Create(BackendConfigurationPnDbContext!);
+        var middle = new GoogleOAuthToken
+        {
+            UserId = userId,
+            GoogleAccountEmail = "middle@example.com",
+            EncryptedRefreshToken = "y",
+            ConnectedAt = now.AddDays(-1),
+            LastUsedAt = now.AddDays(-1),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await middle.Create(BackendConfigurationPnDbContext!);
+        var oldRevoked = new GoogleOAuthToken
+        {
+            UserId = userId,
+            GoogleAccountEmail = "revoked@example.com",
+            EncryptedRefreshToken = "z",
+            ConnectedAt = now.AddDays(-7),
+            LastUsedAt = now.AddDays(-2),
+            RevokedAt = now.AddDays(-1),
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await oldRevoked.Create(BackendConfigurationPnDbContext!);
+
+        // Drive accounts via the controller (the production wire shape).
+        // The default NewController helper sets a substitute IUserService
+        // whose UserId returns 0 — use NewControllerWithUser to bind the
+        // stub to our test user.
+        var controller = NewControllerWithUser(userId);
+        var result = await controller.GetAccounts();
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Count.EqualTo(3));
+
+        // Order: newest first (ConnectedAt DESC).
+        Assert.That(result.Model[0].Email, Is.EqualTo("newest@example.com"));
+        Assert.That(result.Model[1].Email, Is.EqualTo("middle@example.com"));
+        Assert.That(result.Model[2].Email, Is.EqualTo("revoked@example.com"));
+
+        // Active flag wired correctly: revoked row reports false,
+        // unrevoked rows report true.
+        Assert.That(result.Model[0].IsActive, Is.True);
+        Assert.That(result.Model[1].IsActive, Is.True);
+        Assert.That(result.Model[2].IsActive, Is.False);
+        Assert.That(result.Model[2].RevokedAt, Is.Not.Null);
+    }
+
+    /// <summary>
+    /// Variant of <see cref="NewController"/> that wires
+    /// <see cref="IUserService.UserId"/> to a specific value — the GetAccounts
+    /// test needs the controller to read a specific user's tokens.
+    /// </summary>
+    private GoogleDriveController NewControllerWithUser(int userId)
+    {
+        var auth = NewAuthServiceForWatch();
+        var fileService = Substitute.For<IGoogleDriveFileService>();
+        var processor = Substitute.For<IGoogleDriveChangeProcessor>();
+        var scopeFactory = new SingleProcessorScopeFactory(processor);
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(userId);
+        var localization = new BackendConfigurationLocalizationService();
+        var protectionProvider = DataProtectionProvider.Create(nameof(GoogleDriveTests));
+
+        return new GoogleDriveController(
+            auth,
+            fileService,
+            scopeFactory,
+            userService,
+            localization,
+            BackendConfigurationPnDbContext!,
+            protectionProvider,
+            Options.Create(_options),
+            NullLogger<GoogleDriveController>.Instance);
+    }
+
     /// <summary>
     /// Constructs a <see cref="GoogleDriveChangeProcessor"/> wired against the
     /// shared WireMock server. Mirrors <see cref="NewFileService"/> but
@@ -1378,8 +1602,14 @@ public class GoogleDriveTests : TestBaseSetup
             protected override Task<HttpResponseMessage> SendAsync(
                 HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
             {
+                // Rewrite Google Drive (www.googleapis.com) AND Google's
+                // OAuth revoke (oauth2.googleapis.com) onto the WireMock
+                // host. Both are Google-owned hosts the production code
+                // talks to directly; tests stub them through the same
+                // WireMock server the proxy uses.
                 if (request.RequestUri != null
-                    && request.RequestUri.Host.Equals("www.googleapis.com", StringComparison.OrdinalIgnoreCase))
+                    && (request.RequestUri.Host.Equals("www.googleapis.com", StringComparison.OrdinalIgnoreCase)
+                        || request.RequestUri.Host.Equals("oauth2.googleapis.com", StringComparison.OrdinalIgnoreCase)))
                 {
                     var rebuilt = new UriBuilder(request.RequestUri)
                     {

@@ -67,6 +67,18 @@ export interface CalendarTaskAttachment {
   // returned by the backend — it's deterministic from the id alone).
   driveFileId?: string;
   driveModifiedTime?: string;
+
+  // PR-8: timestamp of the most recent successful refresh (the change-
+  // processor advances `driveModifiedTime` on every accepted refetch — the
+  // backend uses that as the proxy for "last refreshed at"). Used by the
+  // attachment row's "Last refreshed N ago" label/tooltip.
+  lastRefreshedAt?: string;
+
+  // PR-8: true when the backing GoogleOAuthToken has been revoked (user
+  // disconnected, or Google reported invalid_grant). The attachment row
+  // renders a red "Google Drive disconnected — reconnect to resume sync"
+  // badge in place of the regular Drive badge when this is set.
+  driveRevoked?: boolean;
 }
 
 export interface CalendarRepeatMeta {

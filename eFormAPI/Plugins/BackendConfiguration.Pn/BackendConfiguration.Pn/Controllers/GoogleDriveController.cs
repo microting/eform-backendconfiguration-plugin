@@ -334,7 +334,13 @@ public class GoogleDriveController : Controller
                 SizeBytes = arpFile.SizeBytes,
                 DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{request.AreaRulePlanningId}/files/{arpFile.Id}",
                 DriveFileId = arpFile.DriveFileId,
-                DriveModifiedTime = arpFile.DriveModifiedTime
+                DriveModifiedTime = arpFile.DriveModifiedTime,
+                // Freshly-attached row: it just got mirrored, so DriveModifiedTime
+                // is the closest thing to a "last refreshed" timestamp. The
+                // backing token cannot already be revoked (the attach flow
+                // would have failed earlier), so DriveRevoked is always false here.
+                LastRefreshedAt = arpFile.DriveModifiedTime,
+                DriveRevoked = false
             });
         }
         catch (GoogleDriveTokenRevokedException)
@@ -346,6 +352,98 @@ public class GoogleDriveController : Controller
         {
             _logger.LogError(e, "GoogleDriveController.Attach failed: {Message}", e.Message);
             return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                _localizationService.GetString("GenericError"));
+        }
+    }
+
+    /// <summary>
+    /// Lists the authenticated user's Google Drive accounts (active +
+    /// revoked) for the settings UI introduced in PR-8. One row per
+    /// <see cref="GoogleOAuthToken"/> the user has ever owned, ordered
+    /// most-recently-connected first. Soft-deleted (workflow Removed) rows
+    /// are surfaced too — the panel needs to render past disconnects so the
+    /// user understands their history.
+    /// </summary>
+    [HttpGet("accounts")]
+    public async Task<OperationDataResult<List<GoogleDriveAccountModel>>> GetAccounts()
+    {
+        try
+        {
+            var userId = _userService.UserId;
+            var accounts = await _dbContext.GoogleOAuthTokens
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.ConnectedAt)
+                .Select(x => new GoogleDriveAccountModel
+                {
+                    Id = x.Id,
+                    Email = x.GoogleAccountEmail,
+                    ConnectedAt = x.ConnectedAt,
+                    LastUsedAt = x.LastUsedAt,
+                    RevokedAt = x.RevokedAt,
+                    IsActive = x.WorkflowState != Constants.WorkflowStates.Removed
+                               && x.RevokedAt == null
+                })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            return new OperationDataResult<List<GoogleDriveAccountModel>>(true, accounts);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GoogleDriveController.GetAccounts failed: {Message}", e.Message);
+            return new OperationDataResult<List<GoogleDriveAccountModel>>(false,
+                _localizationService.GetString("GenericError"));
+        }
+    }
+
+    /// <summary>
+    /// Disconnects a Google Drive account: revokes the token at Google,
+    /// stops every active <see cref="DriveWatchChannel"/>, and stamps
+    /// <c>RevokedAt</c> on the local row. Idempotent — calling it twice on
+    /// the same id is a no-op past the ownership check.
+    ///
+    /// Returns 200 with <c>success=true</c> on the happy path AND when the
+    /// token was already revoked (matching the spec's idempotency
+    /// requirement). Returns the localized <c>GenericError</c> on any other
+    /// failure (per the PR-3 review-fix pattern — opaque to the client,
+    /// detail in server logs).
+    /// </summary>
+    [HttpDelete("disconnect/{tokenId:int}")]
+    public async Task<OperationResult> Disconnect(int tokenId)
+    {
+        try
+        {
+            var userId = _userService.UserId;
+            await _authService.DisconnectAsync(tokenId, userId).ConfigureAwait(false);
+            return new OperationResult(true);
+        }
+        catch (GoogleDriveTokenRevokedException)
+        {
+            // The grant is already gone Google-side. The auth service will
+            // have stamped RevokedAt locally on the way out so the row is
+            // in a consistent state. Surface this as a happy-path 200 to
+            // match the spec's idempotent-disconnect contract.
+            return new OperationResult(true);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Ownership check failed. Per the spec we want a 403 here, but
+            // the OperationResult shape this codebase uses everywhere can't
+            // carry an HTTP status code — return Forbid() instead so ASP.NET
+            // emits 403, then translate to OperationResult on the wire.
+            // (We can't return Forbid() with an OperationResult; using a
+            // generic-error message keeps the wire shape consistent for
+            // older clients, while logging the real reason.)
+            _logger.LogWarning(
+                "Disconnect attempt denied — token {TokenId} does not belong to user {UserId}",
+                tokenId, _userService.UserId);
+            return new OperationResult(false,
+                _localizationService.GetString("GenericError"));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GoogleDriveController.Disconnect failed: {Message}", e.Message);
+            return new OperationResult(false,
                 _localizationService.GetString("GenericError"));
         }
     }

@@ -1472,6 +1472,85 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             },
             new()
             {
+                // PR-8: Settings UI for managing connected Google Drive
+                // accounts. Sits as a peer to the other plugin pages (no
+                // existing settings sub-tree to nest under) — restructuring
+                // the menu just for this entry would be out of scope.
+                Name = "Connected Google Drive accounts",
+                E2EId = "backend-configuration-pn-google-drive-accounts",
+                Link = "/plugins/backend-configuration-pn/google-drive-accounts",
+                Type = MenuItemTypeEnum.Link,
+                Position = 9,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Connected Google Drive accounts",
+                    E2EId = "backend-configuration-pn-google-drive-accounts",
+                    DefaultLink = "/plugins/backend-configuration-pn/google-drive-accounts",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Connected Google Drive accounts",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Verbundene Google Drive-Konten",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Tilsluttede Google Drive-konti",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Підключені облікові записи Google Drive",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Connected Google Drive accounts",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Verbundene Google Drive-Konten",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Tilsluttede Google Drive-konti",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Підключені облікові записи Google Drive",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
+            },
+            new()
+            {
                 Name = "Reports v1",
                 E2EId = "backend-configuration-pn-reports",
                 Link = "/plugins/backend-configuration-pn/reports",

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
 import {
+  GoogleDriveAccountsComponent,
   GoogleDriveOAuthFinishComponent,
   PropertiesContainerComponent,
   PropertyAreasComponent, ReportContainerComponent,
@@ -162,6 +163,15 @@ export const routes: Routes = [
         path: 'google-drive-oauth-finish',
         canActivate: [AuthGuard],
         component: GoogleDriveOAuthFinishComponent,
+      },
+      {
+        // PR-8 settings: connected-accounts panel. Standalone top-level
+        // route — the plugin doesn't have an existing settings page to
+        // splice into, and a deep-linkable URL keeps the disconnect flow
+        // back-button-friendly.
+        path: 'google-drive-accounts',
+        canActivate: [AuthGuard],
+        component: GoogleDriveAccountsComponent,
       },
     ],
   },

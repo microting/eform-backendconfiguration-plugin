@@ -232,6 +232,22 @@
   background: rgba(26, 115, 232, 0.12);
   padding: 1px 6px;
   border-radius: var(--radius-sm, 4px);
+
+  // PR-8: revoked variant overrides the regular Drive badge so a row whose
+  // backing token has been disconnected is glanceably-different from a
+  // healthy Drive row.
+  &--revoked {
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.12);
+  }
+}
+
+// PR-8: small "Last refreshed Xm ago" hint shown next to the Drive badge.
+// Hover reveals the absolute timestamp via matTooltip on the parent span.
+.gcal-drive-refreshed {
+  font-size: 11px;
+  color: #5f6368;
+  white-space: nowrap;
 }
 
 .gcal-drive-link {

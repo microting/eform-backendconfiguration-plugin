@@ -5,3 +5,4 @@ export * from './area-rule-entity-list-modal/area-rule-entity-list-modal.compone
 export * from './reports';
 export * from './backend-configuration-case/backend-configuration-case.module';
 export * from './google-drive-oauth-finish/google-drive-oauth-finish.component';
+export * from './google-drive-accounts/google-drive-accounts.component';
