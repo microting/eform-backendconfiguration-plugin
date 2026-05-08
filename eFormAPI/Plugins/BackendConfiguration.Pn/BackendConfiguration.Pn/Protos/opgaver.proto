@@ -61,8 +61,32 @@ message CompleteOpgaveRequest {
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
   int64 compliance_id = 5;
   int64 microting_sdk_case_id = 6;
+  // Bundled field-value writes applied AFTER the case is revived
+  // (WorkflowState='created') and BEFORE the closure cascade
+  // (PlanningCase/PlanningCaseSite Status=100 + core.CaseDelete soft-delete).
+  // Empty for legacy clients — server still completes the case the same way.
+  // Each entry corresponds to one prior SetFieldValue RPC; the bundle
+  // collapses worker edits into a single round-trip at Complete time.
+  repeated FieldValueWrite field_values = 7;
+  // Optional comment write applied alongside field_values, same lifecycle
+  // window. Empty string ("") means "no comment change" — the existing
+  // Cases.Custom envelope is left untouched. Non-empty replaces the
+  // OpgaverComment body verbatim, matching SetComment semantics.
+  string comment = 8;
 }
 message CompleteOpgaveResponse { Opgave opgave = 1; }
+
+// One field-value write bundled into CompleteOpgaveRequest.field_values.
+// Mirrors the per-RPC SetFieldValueRequest pair (field_id + value) so the
+// server-side handler can reuse the same lookup + canonicalization helpers.
+message FieldValueWrite {
+  // SDK Field.Id — matches SetFieldValueRequest.field_id and FormField.id.
+  // Server rejects field_id <= 0.
+  int32 field_id = 1;
+  // Raw worker-facing value; canonicalized server-side per the existing
+  // CanonicalizeFieldValueAsync helper (CheckBox + Select normalization).
+  string value = 2;
+}
 
 message SetCommentRequest {
   string opgave_id = 1;

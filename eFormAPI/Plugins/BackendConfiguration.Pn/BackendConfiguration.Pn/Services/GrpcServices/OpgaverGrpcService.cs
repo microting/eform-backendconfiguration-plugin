@@ -1278,6 +1278,126 @@ public class OpgaverGrpcService(
                 }
             }
 
+            // ---------------------------------------------------------------
+            // Bundled field-value + comment writes (CompleteOpgave bundle).
+            //
+            // Applied AFTER revival (foundCase.WorkflowState = Created) so
+            // the case is alive for FieldValue writes, and BEFORE the
+            // PlanningCase / PlanningCaseSite cascade + core.CaseDelete
+            // soft-delete below — same lifecycle window as the angular admin
+            // path (BackendConfigurationCompliancesService.Update lines 223-260
+            // does the field-value PUT then the closure transitions in one
+            // pass, against an alive case).
+            //
+            // Mobile previously emitted N-many SetFieldValue RPCs followed by
+            // CompleteOpgave; the bundle collapses that to a single round-
+            // trip. Legacy clients (no field_values, comment="") fall through
+            // unchanged. SetFieldValue / SetComment RPCs remain available for
+            // legacy outbox rows still in flight.
+            //
+            // Field-value writes reuse the SetFieldValue handler's helpers:
+            //   * (caseId, fieldId) → FieldValues.Id lookup, identical to
+            //     line 2518's query.
+            //   * CanonicalizeFieldValueAsync, identical to line 2552 — same
+            //     CheckBox / Select normalization so values stored via the
+            //     bundle are byte-identical with values stored via per-RPC
+            //     SetFieldValue.
+            //   * core.CaseUpdate(caseId, pipePairs, []) +
+            //     core.CaseUpdateFieldValues — single batched call (not one
+            //     per field) so we get one Versions row per FieldValue row,
+            //     not one per write.
+            //
+            // Skipped on field_id <= 0 (proto-default zero value, same
+            // convention as SetFieldValue's request validation at line 2431)
+            // or when the (caseId, fieldId) pair has no FieldValues row —
+            // the latter happens for legacy fields the client cached but
+            // that no longer exist on the server-side template; silently
+            // skipping keeps the bundle resilient.
+            // ---------------------------------------------------------------
+            if (request.FieldValues.Count > 0)
+            {
+                var bundleLanguage = await sdkDbContext.Languages
+                    .FirstAsync()
+                    .ConfigureAwait(false);
+                var pipePairs = new List<string>(request.FieldValues.Count);
+                foreach (var fvw in request.FieldValues)
+                {
+                    if (fvw.FieldId <= 0)
+                    {
+                        // Skip — same convention as SetFieldValue's input
+                        // validation. We don't fail the whole bundle on one
+                        // bad entry; the client may have queued a stale row.
+                        continue;
+                    }
+
+                    var fieldValueRowId = await sdkDbContext.FieldValues
+                        .Where(fv => fv.CaseId == foundCase.Id && fv.FieldId == fvw.FieldId)
+                        .Select(fv => fv.Id)
+                        .FirstOrDefaultAsync()
+                        .ConfigureAwait(false);
+                    if (fieldValueRowId == 0)
+                    {
+                        // Legacy field that no longer exists on the case —
+                        // skip rather than fail. Same defensive posture as
+                        // the angular CaseUpdateHelper, which silently
+                        // ignores unknown fieldValueIds.
+                        continue;
+                    }
+
+                    var fieldTypeName = await sdkDbContext.Fields
+                        .Where(f => f.Id == fvw.FieldId)
+                        .Join(sdkDbContext.FieldTypes,
+                            f => f.FieldTypeId,
+                            ft => ft.Id,
+                            (f, ft) => ft.Type)
+                        .FirstOrDefaultAsync()
+                        .ConfigureAwait(false);
+
+                    var rawValue = fvw.Value ?? string.Empty;
+                    var canonicalValue = await CanonicalizeFieldValueAsync(
+                            sdkDbContext, fvw.FieldId, fieldTypeName, rawValue, bundleLanguage.Id)
+                        .ConfigureAwait(false);
+
+                    pipePairs.Add($"{fieldValueRowId}|{canonicalValue}");
+                }
+
+                if (pipePairs.Count > 0)
+                {
+                    var ok = await core.CaseUpdate(caseId, pipePairs, [])
+                        .ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        logger.LogError(
+                            "OpgaverGrpcService.CompleteOpgave (bundle): "
+                            + "Core.CaseUpdate returned false for opgave {OpgaveId} caseId {CaseId} bundleSize {N}",
+                            opgaveId, caseId, pipePairs.Count);
+                        throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                            "CompleteOpgave bundle: field-value persistence failed in SDK CaseUpdate"));
+                    }
+                    await core.CaseUpdateFieldValues(caseId, bundleLanguage)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Bundled comment write — empty string means "no change", matching
+            // proto3 default-value semantics. Non-empty replaces the
+            // OpgaverComment body verbatim (same shape SetComment writes at
+            // line 1786-1796 above). We intentionally do NOT trim the empty
+            // case to "" → null here: an explicit comment-clear is queued by
+            // the legacy SetComment outbox path, not by the bundle.
+            if (!string.IsNullOrEmpty(request.Comment))
+            {
+                var existingEnvelope = TryParseEnvelope(foundCase.Custom);
+                var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
+                nextEnvelope.OpgaverComment = new OpgaverCommentBody
+                {
+                    Text = request.Comment,
+                    TsUnix = ToUnixSeconds(doneAtUtc),
+                };
+                foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
+                await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+            }
+
             // Mirror the post-update sequence from
             // BackendConfigurationCompliancesService.Update (lines 307-335):
             // set Status=100 on PlanningCaseSite + parent PlanningCase so the
