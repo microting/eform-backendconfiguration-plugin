@@ -113,7 +113,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
           header: x.value || '',
           field: x.value || getRandomInt(1, 50000).toString(), // field is required and unique for table, but in this case - not used
           formatter: (record: ReportEformItemModel) => {
-            const v = record.caseFields[i].value ?? '';
+            const raw = record.caseFields[i].value;
+            const v = (raw == null) ? '' : String(raw);
             if (v === 'checked') {
               return `<span class="material-icons">done</span>`;
             }
