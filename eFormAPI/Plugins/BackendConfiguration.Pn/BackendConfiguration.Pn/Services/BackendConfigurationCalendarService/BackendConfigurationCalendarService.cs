@@ -189,6 +189,7 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningTags)
                 .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
 
             // Batch-load plannings to avoid N+1 queries
@@ -528,6 +529,7 @@ public class BackendConfigurationCalendarService(
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
@@ -637,7 +639,7 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel)
+    public async Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel)
     {
         try
         {
@@ -645,7 +647,7 @@ public class BackendConfigurationCalendarService(
             var taskDateTime = createModel.StartDate.AddHours(createModel.StartHour);
             if (taskDateTime < DateTime.UtcNow)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     localizationService.GetString("CannotCreateTaskInThePast"));
             }
 
@@ -656,7 +658,7 @@ public class BackendConfigurationCalendarService(
             // silently producing an invisible event.
             if (createModel.Sites is null || createModel.Sites.Count == 0)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
@@ -687,7 +689,7 @@ public class BackendConfigurationCalendarService(
             var result = await taskWizardService.CreateTask(wizardModel);
             if (!result.Success)
             {
-                return result;
+                return new OperationDataResult<int>(false, result.Message);
             }
 
             // Find the AreaRulePlanning created by TaskWizard for this specific task
@@ -739,14 +741,19 @@ public class BackendConfigurationCalendarService(
                 await calConfig.Create(backendConfigurationPnDbContext);
             }
 
-            return new OperationResult(true,
-                localizationService.GetString("CalendarTaskCreatedSuccessfully"));
+            // latestArp may be null in the rare edge case where TaskWizard
+            // succeeded but did not produce an ARP we can correlate to (e.g.
+            // EformId resolution skew). Return success with id=0 — frontend
+            // treats 0 as "no id, skip post-save uploads".
+            return new OperationDataResult<int>(true,
+                localizationService.GetString("CalendarTaskCreatedSuccessfully"),
+                latestArp?.Id ?? 0);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e, "BackendConfigurationCalendarService.CreateTask: {Message}", e.Message);
-            return new OperationResult(false,
+            return new OperationDataResult<int>(false,
                 $"{localizationService.GetString("ErrorWhileCreatingCalendarTask")}: {e.Message}");
         }
     }
@@ -2001,7 +2008,17 @@ public class BackendConfigurationCalendarService(
                 OriginalFileName = f.OriginalFileName ?? string.Empty,
                 MimeType = f.MimeType ?? string.Empty,
                 SizeBytes = f.SizeBytes,
-                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}"
+                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}",
+                DriveFileId = f.DriveFileId,
+                DriveModifiedTime = f.DriveModifiedTime,
+                // PR-8: only Drive-sourced rows carry refresh/revoke metadata.
+                // Use DriveModifiedTime as the proxy for "last refreshed at"
+                // (the change-processor advances it on every accepted refetch
+                // — see PR-7). For non-Drive rows both fields stay null/false.
+                LastRefreshedAt = f.DriveFileId != null ? f.DriveModifiedTime : null,
+                DriveRevoked = f.DriveFileId != null
+                    && f.GoogleOAuthToken != null
+                    && f.GoogleOAuthToken.RevokedAt != null
             })
             .ToList();
     }
@@ -2206,7 +2223,16 @@ public class BackendConfigurationCalendarService(
                     OriginalFileName = x.OriginalFileName ?? string.Empty,
                     MimeType = x.MimeType ?? string.Empty,
                     SizeBytes = x.SizeBytes,
-                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}"
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}",
+                    DriveFileId = x.DriveFileId,
+                    DriveModifiedTime = x.DriveModifiedTime,
+                    // PR-8: same proxy as MapAttachments — DriveModifiedTime
+                    // is what the change-processor bumps on every accepted
+                    // refetch, so it doubles as "last refreshed at" for the UI.
+                    LastRefreshedAt = x.DriveFileId != null ? x.DriveModifiedTime : null,
+                    DriveRevoked = x.DriveFileId != null
+                        && x.GoogleOAuthToken != null
+                        && x.GoogleOAuthToken.RevokedAt != null
                 })
                 .ToListAsync();
             return new OperationDataResult<List<CalendarTaskAttachmentDto>>(true, files);

@@ -30,7 +30,7 @@ public interface IBackendConfigurationCalendarService
     /// </summary>
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
         int propertyId, int? sdkSiteIdForFilter);
-    Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel);
+    Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
     Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel);

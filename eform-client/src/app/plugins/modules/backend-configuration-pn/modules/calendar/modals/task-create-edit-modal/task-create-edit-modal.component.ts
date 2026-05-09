@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnInit, Optional, Output} from '@angular/core';
+import {Component, EventEmitter, Inject, OnDestroy, OnInit, Optional, Output} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -14,6 +14,7 @@ import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarFilesService,
   BackendConfigurationPnCalendarService,
+  BackendConfigurationPnGoogleDriveService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
@@ -32,8 +33,9 @@ import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-m
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {of} from 'rxjs';
+import {firstValueFrom, of} from 'rxjs';
 import {switchMap, take} from 'rxjs/operators';
+import {OperationDataResult} from 'src/app/common/models';
 
 export interface TaskCreateEditModalData {
   task: CalendarTaskModel | null;
@@ -50,13 +52,20 @@ export interface TaskCreateEditModalData {
   sourceTask?: CalendarTaskModel | null;  // present in copy mode
 }
 
+// PR-4 ships without @types/gapi-picker — declare the two globals the
+// dynamically-loaded https://apis.google.com/js/api.js script attaches to
+// `window`. Using `any` keeps the surface narrow; if/when we bring in the
+// official types we can drop these declarations.
+declare const gapi: any;
+declare const google: any;
+
 @Component({
   standalone: false,
   selector: 'app-task-create-edit-modal',
   templateUrl: './task-create-edit-modal.component.html',
   styleUrls: ['./task-create-edit-modal.component.scss'],
 })
-export class TaskCreateEditModalComponent implements OnInit {
+export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
   @Output() popoverClose = new EventEmitter<boolean | null>();
   @Output() timeChanged = new EventEmitter<{startHour: number; endHour: number}>();
   usePopoverMode = false;
@@ -80,7 +89,22 @@ export class TaskCreateEditModalComponent implements OnInit {
   // handlers below; rendered as 80x80 thumbnails (PNG/JPEG) or filetype icons
   // (PDF) under the "Vedhæft fil" link.
   attachments: CalendarTaskAttachment[] = [];
-  uploadingFiles: { name: string; progress: 'uploading' | 'error'; error?: string }[] = [];
+  uploadingFiles: { name: string; progress: 'uploading' | 'error' | 'pending'; error?: string }[] = [];
+
+  /** Files picked in create mode, queued until the create POST returns an id. */
+  private stagedFiles: File[] = [];
+
+  // ---- Google Drive picker state ----
+  /** True between "user clicked the Drive link" and "Picker is visible". */
+  drivePickerLoading = false;
+  /** True while the OAuth popup dance is in flight (popup open, awaiting postMessage). */
+  connecting = false;
+  /** Last user-visible error from the Drive flow. Cleared on each retry. */
+  driveError: string | null = null;
+  /** postMessage listener registered while the OAuth popup is open. */
+  private oauthListener?: (e: MessageEvent) => void;
+  /** Polls the popup so we can clear `connecting` if the user closes it without finishing. */
+  private oauthPopupWatcher?: ReturnType<typeof setInterval>;
 
   // Individual form controls
   titleControl = new FormControl('', Validators.required);
@@ -111,6 +135,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     private toastr: ToastrService,
     private tagsService: ItemsPlanningPnTagsService,
     private filesService: BackendConfigurationPnCalendarFilesService,
+    private googleDriveService: BackendConfigurationPnGoogleDriveService,
   ) {}
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
@@ -666,8 +691,16 @@ export class TaskCreateEditModalComponent implements OnInit {
         : this.calendarService.createTask(payload);
 
       obs.subscribe({
-        next: res => {
+        next: async res => {
           if (res && res.success) {
+            // Create-mode only: drain the staged-files queue against the new
+            // ARP id returned by the backend. createTask resolves to
+            // OperationDataResult<number> whose .model is the new id.
+            // updateTask still resolves to a plain OperationResult (no model).
+            const newId = (res as OperationDataResult<number>)?.model;
+            if (!this.isEditMode && this.stagedFiles.length > 0 && newId) {
+              await this.uploadStagedFilesSequential(newId);
+            }
             this.close(true);
           } else {
             const msg = (res && res.message)
@@ -723,14 +756,72 @@ export class TaskCreateEditModalComponent implements OnInit {
 
   // ---- File attachments ---------------------------------------------------
 
-  /** Hidden <input type="file" #fileInput> change handler. */
+  /**
+   * Hidden <input type="file" #fileInput> change handler.
+   *
+   * Edit-mode: forward to the existing immediate-upload path (POSTs each file
+   * to the existing AreaRulePlanning).
+   *
+   * Create-mode: stage the files in component state and mirror them in the
+   * `uploadingFiles` UI as 'pending' chips. On Save, after the create POST
+   * succeeds and returns the new ARP id, `uploadStagedFilesSequential`
+   * iterates the queue and uploads each file via the same files endpoint.
+   */
   onFileInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    this.uploadFiles(input.files);
+    const files = input.files;
+    if (!files || files.length === 0) return;
+
+    if (this.isEditMode && this.data.task?.id) {
+      this.uploadFiles(files);   // existing immediate-upload path
+    } else {
+      Array.from(files).forEach(f => {
+        this.stagedFiles.push(f);
+        // Mirror in the same uploadingFiles UI as a "pending save" chip.
+        this.uploadingFiles = [...this.uploadingFiles, {name: f.name, progress: 'pending'}];
+      });
+    }
     // Reset so re-selecting the same file fires `change` again. Without this,
     // a delete-then-reupload-same-name flow would no-op silently.
     input.value = '';
+  }
+
+  /** Removes a staged (pre-save) file from both the queue and the UI list. */
+  removeStagedFile(name: string): void {
+    // Remove the first matching entry from each list. Two files with identical
+    // names are not blocked at pick time — but the user only sees one chip per
+    // name, so a single click should not nuke the other instance.
+    const idxStaged = this.stagedFiles.findIndex(f => f.name === name);
+    if (idxStaged >= 0) this.stagedFiles.splice(idxStaged, 1);
+    const idxUi = this.uploadingFiles.findIndex(u => u.name === name && u.progress === 'pending');
+    if (idxUi >= 0) {
+      this.uploadingFiles = [
+        ...this.uploadingFiles.slice(0, idxUi),
+        ...this.uploadingFiles.slice(idxUi + 1),
+      ];
+    }
+  }
+
+  /**
+   * After a successful create POST, walk through `stagedFiles` and upload
+   * each one against the new ARP id. We tolerate per-file failures (log +
+   * toastr.error, continue with the rest) — partial success is more useful
+   * than silently dropping all attachments because file #2 hit a quota.
+   */
+  private async uploadStagedFilesSequential(taskId: number): Promise<void> {
+    for (const file of this.stagedFiles) {
+      try {
+        const res = await firstValueFrom(this.filesService.uploadFile(taskId, file));
+        if (!res || !res.success) {
+          const msg = (res && res.message) ? res.message : this.translate.instant('Error');
+          this.toastr.error(`${file.name}: ${msg}`, this.translate.instant('Error'));
+        }
+      } catch (err: any) {
+        const msg = err?.error?.message || err?.message || this.translate.instant('Error');
+        this.toastr.error(`${file.name}: ${msg}`, this.translate.instant('Error'));
+      }
+    }
+    this.stagedFiles = [];
   }
 
   /**
@@ -757,7 +848,7 @@ export class TaskCreateEditModalComponent implements OnInit {
     const next = () => {
       const file = queue.shift();
       if (!file) return;
-      const chip: { name: string; progress: 'uploading' | 'error'; error?: string } = {
+      const chip: { name: string; progress: 'uploading' | 'error' | 'pending'; error?: string } = {
         name: file.name, progress: 'uploading',
       };
       this.uploadingFiles = [...this.uploadingFiles, chip];
@@ -853,5 +944,289 @@ export class TaskCreateEditModalComponent implements OnInit {
     if (kb < 1024) return `${Math.round(kb)} KB`;
     const mb = kb / 1024;
     return `${(Math.round(mb * 10) / 10).toFixed(1)} MB`;
+  }
+
+  /**
+   * PR-8: lightweight "X minutes/hours/days ago" formatter used by the
+   * Drive attachment row's "Last refreshed" label. Avoids a moment.js
+   * dependency for one render — the absolute timestamp is also surfaced
+   * via the matTooltip on hover, so this only needs a glanceable summary.
+   */
+  formatRelativeTime(iso?: string): string {
+    if (!iso) return '';
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const diffMs = Date.now() - then;
+    if (diffMs < 0) return '';
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}mo ago`;
+    const years = Math.floor(days / 365);
+    return `${years}y ago`;
+  }
+
+  // ---- Google Drive picker ------------------------------------------------
+
+  ngOnDestroy(): void {
+    // Clean up the postMessage listener if the modal closes mid-OAuth-dance.
+    // Without this, an abandoned popup that posts back later would still
+    // fire into a destroyed component.
+    if (this.oauthListener) {
+      window.removeEventListener('message', this.oauthListener);
+      this.oauthListener = undefined;
+    }
+    if (this.oauthPopupWatcher) {
+      clearInterval(this.oauthPopupWatcher);
+      this.oauthPopupWatcher = undefined;
+    }
+    this.connecting = false;
+  }
+
+  /**
+   * Entry point for the "Add Google Drive file" link. Two-step contract:
+   *   1. Hit /status. If the user is already connected, jump straight to the
+   *      Picker.
+   *   2. If not, run the OAuth popup dance and call back into the Picker on
+   *      successful connection.
+   */
+  onPickFromDrive(): void {
+    if (!this.data.task?.id) return;  // template gates this; defensive guard.
+    this.driveError = null;
+    this.googleDriveService.getStatus().subscribe({
+      next: res => {
+        if (!res || !res.success) {
+          this.driveError = (res && res.message) ? res.message
+            : this.translate.instant('Could not connect to Google Drive');
+          return;
+        }
+        if (res.model?.connected) {
+          this.loadAndShowPicker();
+        } else {
+          this.connectAndThenPick();
+        }
+      },
+      error: () => {
+        this.driveError = this.translate.instant('Could not connect to Google Drive');
+      },
+    });
+  }
+
+  /**
+   * Opens the proxy /start URL in a popup, listens for `gd_oauth_done`
+   * postMessage, then falls through to the Picker on success. On failure,
+   * surfaces the error inline next to the Drive link. The listener is
+   * single-shot — removed as soon as a message lands or the modal is
+   * destroyed (whichever comes first).
+   */
+  private connectAndThenPick(): void {
+    this.connecting = true;
+    this.googleDriveService.start().subscribe({
+      next: res => {
+        if (!res || !res.success || !res.model) {
+          this.driveError = (res && res.message) ? res.message
+            : this.translate.instant('Could not connect to Google Drive');
+          this.connecting = false;
+          return;
+        }
+        const url = res.model;
+        const popup = window.open(
+          url,
+          'gd_oauth',
+          'width=500,height=650,menubar=no,toolbar=no,location=no,status=no',
+        );
+        if (!popup) {
+          // Browser blocked the popup. Tell the user; nothing more we can
+          // do programmatically — they need to allow popups for our origin.
+          this.driveError = this.translate.instant('Could not connect to Google Drive');
+          this.connecting = false;
+          return;
+        }
+
+        // Replace any pre-existing listener (paranoia: same modal opened the
+        // popup twice). The new listener filters on origin so an unrelated
+        // postMessage (extensions, embedded iframes) cannot spoof success.
+        if (this.oauthListener) {
+          window.removeEventListener('message', this.oauthListener);
+        }
+        if (this.oauthPopupWatcher) {
+          clearInterval(this.oauthPopupWatcher);
+          this.oauthPopupWatcher = undefined;
+        }
+        this.oauthListener = (e: MessageEvent) => {
+          if (e.origin !== window.location.origin) return;
+          if (e.source !== popup) return;
+          const data = e.data;
+          if (!data || data.type !== 'gd_oauth_done') return;
+          // Single-shot: tear down the listener whether success or failure.
+          window.removeEventListener('message', this.oauthListener!);
+          this.oauthListener = undefined;
+          if (this.oauthPopupWatcher) {
+            clearInterval(this.oauthPopupWatcher);
+            this.oauthPopupWatcher = undefined;
+          }
+          this.connecting = false;
+          if (data.success) {
+            this.loadAndShowPicker();
+          } else {
+            this.driveError = data.error
+              ? `${this.translate.instant('Could not connect to Google Drive')}: ${data.error}`
+              : this.translate.instant('Could not connect to Google Drive');
+          }
+        };
+        window.addEventListener('message', this.oauthListener);
+
+        // Poll the popup. If the user dismisses the OAuth window without
+        // ever posting back, no `gd_oauth_done` arrives and `connecting`
+        // would otherwise stay true forever, leaving the link hidden.
+        this.oauthPopupWatcher = setInterval(() => {
+          if (popup.closed) {
+            if (this.oauthPopupWatcher) {
+              clearInterval(this.oauthPopupWatcher);
+              this.oauthPopupWatcher = undefined;
+            }
+            if (this.oauthListener) {
+              window.removeEventListener('message', this.oauthListener);
+              this.oauthListener = undefined;
+            }
+            this.connecting = false;
+          }
+        }, 500);
+      },
+      error: () => {
+        this.driveError = this.translate.instant('Could not connect to Google Drive');
+        this.connecting = false;
+      },
+    });
+  }
+
+  /**
+   * Loads the Google Picker JS SDK (cached by element across modal re-opens),
+   * fetches a fresh access token from the backend, then builds and shows the
+   * Picker. Sets `drivePickerLoading` so the link reads "Loading Google
+   * Picker" while we wait — end-to-end this can be ~500-1500ms first time.
+   */
+  private loadAndShowPicker(): void {
+    this.drivePickerLoading = true;
+    this.driveError = null;
+
+    this.ensureGapiLoaded()
+      .then(() => new Promise<void>((resolve, reject) => {
+        try {
+          gapi.load('picker', {callback: resolve, onerror: reject});
+        } catch (err) {
+          reject(err);
+        }
+      }))
+      .then(() => firstValueFrom(this.googleDriveService.getPickerToken()))
+      .then(res => {
+        this.drivePickerLoading = false;
+        if (!res || !res.success || !res.model) {
+          this.driveError = (res && res.message) ? res.message
+            : this.translate.instant('Could not connect to Google Drive');
+          return;
+        }
+        this.buildPicker(res.model.accessToken, res.model.developerKey);
+      })
+      .catch(() => {
+        this.drivePickerLoading = false;
+        this.driveError = this.translate.instant('Could not connect to Google Drive');
+      });
+  }
+
+  /**
+   * Idempotent loader for `https://apis.google.com/js/api.js`. Uses a
+   * `data-google-api-loader` marker on the inserted <script> so subsequent
+   * modal opens don't re-insert. Resolves once the script's `load` event
+   * fires; rejects on `error`.
+   */
+  private ensureGapiLoaded(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (typeof gapi !== 'undefined' && (gapi as any).load) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector(
+        'script[data-google-api-loader="true"]',
+      ) as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), {once: true});
+        existing.addEventListener('error', () => reject(new Error('gapi load failed')), {once: true});
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.async = true;
+      script.defer = true;
+      script.dataset['googleApiLoader'] = 'true';
+      script.addEventListener('load', () => resolve(), {once: true});
+      script.addEventListener('error', () => reject(new Error('gapi load failed')), {once: true});
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Instantiates the Picker with a DocsView limited to the same MIME types
+   * the local-upload path accepts (PDF / PNG / JPEG). The developer key may
+   * be empty — the Picker still works in that mode for OAuth-token-only
+   * configurations.
+   */
+  private buildPicker(accessToken: string, developerKey: string): void {
+    if (typeof google === 'undefined' || !google.picker) {
+      this.driveError = this.translate.instant('Could not connect to Google Drive');
+      return;
+    }
+    const view = new google.picker.DocsView()
+      .setIncludeFolders(false)
+      .setMimeTypes('application/pdf,image/png,image/jpeg');
+    let builder = new google.picker.PickerBuilder()
+      .setOAuthToken(accessToken)
+      .addView(view)
+      .setOrigin(window.location.origin)
+      .setCallback((data: any) => this.onPickerSelection(data));
+    if (developerKey) {
+      builder = builder.setDeveloperKey(developerKey);
+    }
+    const picker = builder.build();
+    picker.setVisible(true);
+  }
+
+  /**
+   * Picker callback. Filters for `picked` (the user clicked Select). Other
+   * actions (`cancel`, `loaded`) are no-ops. On pick: POST /attach with the
+   * Drive file id, append the returned attachment row, and toast.
+   */
+  private onPickerSelection(data: any): void {
+    if (!data || !google || !google.picker) return;
+    if (data.action !== google.picker.Action.PICKED) return;
+    const docs = data.docs || data[google.picker.Response.DOCUMENTS];
+    if (!docs || docs.length === 0) return;
+    const driveFileId = docs[0].id;
+    const taskId = this.data.task?.id;
+    if (!taskId || !driveFileId) return;
+
+    this.googleDriveService.attachFile(taskId, driveFileId).subscribe({
+      next: res => {
+        if (res && res.success && res.model) {
+          this.attachments = [...this.attachments, res.model];
+          // ApiBaseService.extractData already toasts a non-empty .message
+          // for success — don't double-toast.
+        } else {
+          const msg = (res && res.message) ? res.message
+            : this.translate.instant('Could not attach Drive file');
+          this.toastr.error(msg, this.translate.instant('Error'));
+        }
+      },
+      error: err => {
+        const msg = err?.error?.message || err?.message
+          || this.translate.instant('Could not attach Drive file');
+        this.toastr.error(msg, this.translate.instant('Error'));
+      },
+    });
   }
 }

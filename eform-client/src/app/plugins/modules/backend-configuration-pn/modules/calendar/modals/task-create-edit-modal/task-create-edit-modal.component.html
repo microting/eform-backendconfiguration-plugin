@@ -239,14 +239,27 @@
       </div>
     </div>
 
-    <!-- Google Drive file (placeholder — disabled until OAuth + Picker ship) -->
+    <!-- Google Drive file. Same gating as the local-file row below: only
+         enabled once the AreaRulePlanning has an id (i.e. event is saved). -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
-        <a class="gcal-action-link gcal-action-link--disabled"
-           [matTooltip]="'Coming soon' | translate">
+        <a *ngIf="!isReadonly && !!data.task?.id && !drivePickerLoading && !connecting"
+           id="calendarEventDriveAttachLink"
+           class="gcal-action-link"
+           (click)="onPickFromDrive()">
           {{ 'Add Google Drive file' | translate }}
         </a>
+        <span *ngIf="!isReadonly && !data.task?.id"
+              class="gcal-action-link gcal-action-link--disabled"
+              [matTooltip]="'Save event first to attach files' | translate">
+          {{ 'Add Google Drive file' | translate }}
+        </span>
+        <span *ngIf="drivePickerLoading" class="gcal-drive-loading">
+          <mat-progress-spinner [diameter]="16" mode="indeterminate"></mat-progress-spinner>
+          {{ 'Loading Google Picker' | translate }}
+        </span>
+        <div *ngIf="driveError" class="gcal-attachment-error">{{ driveError }}</div>
       </div>
     </div>
 
@@ -254,15 +267,10 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">attach_file</mat-icon>
       <div class="gcal-row-content">
-        <a *ngIf="isEditMode && !isReadonly"
+        <a *ngIf="!isReadonly"
            id="calendarEventAttachLink"
            class="gcal-action-link"
            (click)="fileInput.click()">
-          {{ 'Attach file' | translate }}
-        </a>
-        <a *ngIf="!isEditMode"
-           class="gcal-action-link gcal-action-link--disabled"
-           [matTooltip]="'Save event first to attach files' | translate">
           {{ 'Attach file' | translate }}
         </a>
         <input #fileInput
@@ -287,7 +295,28 @@
             </ng-template>
             <div class="gcal-attachment-meta">
               <a class="gcal-attachment-name" (click)="downloadAttachment(f)">{{ f.originalFileName }}</a>
-              <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+              <div class="gcal-attachment-meta-row">
+                <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+                <span *ngIf="f.driveFileId && !f.driveRevoked"
+                      class="gcal-drive-badge"
+                      [matTooltip]="'Synced from Google Drive' | translate">Drive</span>
+                <span *ngIf="f.driveFileId && f.driveRevoked"
+                      class="gcal-drive-badge gcal-drive-badge--revoked"
+                      [matTooltip]="'Google Drive disconnected — reconnect to resume sync' | translate">{{ 'Google Drive disconnected' | translate }}</span>
+                <span *ngIf="f.driveFileId && f.lastRefreshedAt"
+                      class="gcal-drive-refreshed"
+                      [matTooltip]="('Last refreshed' | translate) + ' ' + (f.lastRefreshedAt | date:'medium')">
+                  {{ 'Last refreshed' | translate }} {{ formatRelativeTime(f.lastRefreshedAt) }}
+                </span>
+                <a *ngIf="f.driveFileId"
+                   class="gcal-drive-link"
+                   [href]="'https://drive.google.com/file/d/' + f.driveFileId + '/view'"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   [matTooltip]="'Open in Google Drive' | translate">
+                  <mat-icon>open_in_new</mat-icon>
+                </a>
+              </div>
             </div>
             <button mat-icon-button
                     *ngIf="!isReadonly"
@@ -298,9 +327,19 @@
             </button>
           </div>
           <div *ngFor="let u of uploadingFiles" class="gcal-attachment-row gcal-attachment-row--uploading">
-            <mat-spinner diameter="20"></mat-spinner>
+            <mat-spinner *ngIf="u.progress === 'uploading'" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="u.progress === 'pending'" class="gcal-attachment-pending-icon">schedule</mat-icon>
+            <mat-icon *ngIf="u.progress === 'error'" class="gcal-attachment-error-icon">error</mat-icon>
             <span class="gcal-attachment-name">{{ u.name }}</span>
+            <span *ngIf="u.progress === 'pending'" class="gcal-attachment-hint">{{ 'Pending save' | translate }}</span>
             <span *ngIf="u.progress === 'error'" class="gcal-attachment-error">{{ u.error }}</span>
+            <button *ngIf="u.progress === 'pending'"
+                    mat-icon-button
+                    class="gcal-attachment-delete"
+                    (click)="removeStagedFile(u.name)"
+                    [attr.aria-label]="'Delete' | translate">
+              <mat-icon>delete</mat-icon>
+            </button>
           </div>
         </div>
       </div>

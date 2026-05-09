@@ -41,7 +41,7 @@ export class BackendConfigurationPnCalendarService {
     });
   }
 
-  createTask(model: CalendarTaskCreateModel): Observable<OperationResult> {
+  createTask(model: CalendarTaskCreateModel): Observable<OperationDataResult<number>> {
     return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.Tasks, model);
   }
 

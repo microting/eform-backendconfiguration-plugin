@@ -215,6 +215,69 @@
   font-size: 12px;
 }
 
+// Drive-mirrored attachments: a small "Drive" pill + a popout-icon link
+// beside the file size on each row.
+.gcal-attachment-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gcal-drive-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #1a73e8;
+  background: rgba(26, 115, 232, 0.12);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 4px);
+
+  // PR-8: revoked variant overrides the regular Drive badge so a row whose
+  // backing token has been disconnected is glanceably-different from a
+  // healthy Drive row.
+  &--revoked {
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.12);
+  }
+}
+
+// PR-8: small "Last refreshed Xm ago" hint shown next to the Drive badge.
+// Hover reveals the absolute timestamp via matTooltip on the parent span.
+.gcal-drive-refreshed {
+  font-size: 11px;
+  color: #5f6368;
+  white-space: nowrap;
+}
+
+.gcal-drive-link {
+  display: inline-flex;
+  align-items: center;
+  color: #1a73e8;
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+  }
+
+  &:hover {
+    color: #1558b0;
+  }
+}
+
+// Inline spinner + label rendered while the Picker JS is loading.
+.gcal-drive-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #5f6368;
+  line-height: 40px;
+}
+
 // Property/Board selector rows
 .gcal-selector-row {
   display: flex;
