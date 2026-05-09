@@ -11,6 +11,7 @@ service Opgaver {
   rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
   rpc ListTavler(ListTavlerRequest) returns (ListTavlerResponse);
   rpc ListOpgaver(ListOpgaverRequest) returns (ListOpgaverResponse);
+  rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
   rpc StreamOpgaveChanges(StreamOpgaveChangesRequest) returns (stream OpgaveChange);
   rpc CompleteOpgave(CompleteOpgaveRequest) returns (CompleteOpgaveResponse);
   rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
@@ -30,6 +31,19 @@ message UploadPhotoMeta {
   int32 slot = 2;
   string content_type = 3;
   int64 client_ts_unix = 4;
+  // Server-assigned PK of the Compliance row this opgave was emitted from
+  // (see Index handler). 0 means "unknown" — legacy clients that pre-date
+  // this field; server falls back to the site-filtered fuzzy lookup in
+  // that case so in-flight outbox payloads keep draining.
+  int64 compliance_id = 5;
+  // Server-assigned PK of the SDK Case row backing this opgave. 0 = legacy.
+  int64 microting_sdk_case_id = 6;
+  // SDK Field.Id — matches FormField.id from ListOpgaver. The server
+  // creates the FieldValue row with this Field.Id so multi-Picture-field
+  // opgaver bind each photo to the correct field. 0 = legacy clients
+  // that pre-date this field; server falls back to BFS-first-Picture
+  // discovery (matches the prior single-Picture assumption).
+  int32 field_id = 7;
 }
 message UploadPhotoResponse {
   string storage_id = 1;
@@ -39,6 +53,9 @@ message RemovePhotoRequest {
   string opgave_id = 1;
   int32 slot = 2;
   int64 client_ts_unix = 3;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 4;
+  int64 microting_sdk_case_id = 5;
 }
 message RemovePhotoResponse {}
 
@@ -47,13 +64,43 @@ message CompleteOpgaveRequest {
   bool completed = 2;
   string completed_by = 3;
   int64 client_ts_unix = 4;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 5;
+  int64 microting_sdk_case_id = 6;
+  // Bundled field-value writes applied AFTER the case is revived
+  // (WorkflowState='created') and BEFORE the closure cascade
+  // (PlanningCase/PlanningCaseSite Status=100 + core.CaseDelete soft-delete).
+  // Empty for legacy clients — server still completes the case the same way.
+  // Each entry corresponds to one prior SetFieldValue RPC; the bundle
+  // collapses worker edits into a single round-trip at Complete time.
+  repeated FieldValueWrite field_values = 7;
+  // Optional comment write applied alongside field_values, same lifecycle
+  // window. Empty string ("") means "no comment change" — the existing
+  // Cases.Custom envelope is left untouched. Non-empty replaces the
+  // OpgaverComment body verbatim, matching SetComment semantics.
+  string comment = 8;
 }
 message CompleteOpgaveResponse { Opgave opgave = 1; }
+
+// One field-value write bundled into CompleteOpgaveRequest.field_values.
+// Mirrors the per-RPC SetFieldValueRequest pair (field_id + value) so the
+// server-side handler can reuse the same lookup + canonicalization helpers.
+message FieldValueWrite {
+  // SDK Field.Id — matches SetFieldValueRequest.field_id and FormField.id.
+  // Server rejects field_id <= 0.
+  int32 field_id = 1;
+  // Raw worker-facing value; canonicalized server-side per the existing
+  // CanonicalizeFieldValueAsync helper (CheckBox + Select normalization).
+  string value = 2;
+}
 
 message SetCommentRequest {
   string opgave_id = 1;
   string text = 2;
   int64 client_ts_unix = 3;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 4;
+  int64 microting_sdk_case_id = 5;
 }
 message SetCommentResponse { Opgave opgave = 1; }
 
@@ -62,6 +109,9 @@ message SetFieldValueRequest {
   int32 field_id = 2;
   string value = 3;
   int64 client_ts_unix = 4;
+  // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
+  int64 compliance_id = 5;
+  int64 microting_sdk_case_id = 6;
 }
 message SetFieldValueResponse { Opgave opgave = 1; }
 
@@ -78,6 +128,16 @@ message ListOpgaverRequest {
   string to_date_key = 4;
 }
 message ListOpgaverResponse { repeated Opgave opgaver = 1; }
+
+// Full property-scoped compliance list for the mobile worker's "task
+// tracker" view (mirror of the angular admin's BackendConfigurationTaskTrackerHelper.Index).
+// No deadline window — actionable + missed + completed rotations are all
+// returned, with per-row status carried on the existing `completed` field
+// and the new `task_is_expired` field (see Opgave below).
+message ListTaskTrackerRequest {
+  int32 property_id = 1;
+}
+message ListTaskTrackerResponse { repeated Opgave opgaver = 1; }
 
 message StreamOpgaveChangesRequest {
   string ejendom_id = 1;
@@ -122,6 +182,23 @@ message Opgave {
   // Form-field structure + current values for the eForm template backing
   // this opgave. Empty when no Case exists yet (recurrence-only tasks).
   repeated FormField fields = 15;
+  // Server-assigned PK of the Compliance row this opgave was emitted from.
+  // Round-tripped through the Flutter Drift cache and back on every write
+  // so the server can resolve compliance + sdk case deterministically
+  // (no fuzzy OrderBy(Deadline).First() lookup). 0 = recurrence-only task
+  // with no backing compliance yet (or legacy server pre-dating this field).
+  int64 compliance_id = 16;
+  // Server-assigned PK of the SDK Case row backing this opgave. 0 means
+  // "no backing case" (recurrence-only) or a legacy server.
+  int64 microting_sdk_case_id = 17;
+  // True when the opgave's deadline has passed AND the underlying case is
+  // either retracted (Case.WorkflowState=Removed AND Status=77) or simply
+  // past its deadline without being completed (Case.Deadline < UtcNow AND
+  // Status != 100). Surfaced primarily by ListTaskTracker so flutter can
+  // render missed rotations in red. The calendar-week view (ListOpgaver)
+  // pre-filters non-actionable rows out and so emits this as false; default
+  // proto3 zero-value remains backwards-compatible with older clients.
+  bool task_is_expired = 18;
 }
 
 message Attachment {

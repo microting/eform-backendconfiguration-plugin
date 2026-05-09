@@ -9,6 +9,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 public interface IBackendConfigurationCalendarService
 {
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(CalendarTaskRequestModel requestModel);
+
+    /// <summary>
+    /// Returns the FULL property-scoped compliance list (no deadline window):
+    /// actionable + missed + completed rotations, each annotated with
+    /// <see cref="CalendarTaskResponseModel.Completed"/> (Case.Status=100)
+    /// and <see cref="CalendarTaskResponseModel.TaskIsExpired"/> (deadline
+    /// passed AND case retracted or not yet completed).
+    ///
+    /// Mirror of <c>BackendConfigurationTaskTrackerHelper.Index</c>
+    /// (Infrastructure/Helpers/BackendConfigurationTaskTrackerHelper.cs:46-351).
+    /// Sibling to <see cref="GetTasksForWeek"/> — does NOT modify the
+    /// calendar-week query path.
+    ///
+    /// When <paramref name="sdkSiteIdForFilter"/> is non-null, only
+    /// compliances whose planning sites include that site are returned —
+    /// parity with the angular per-row Worker filter
+    /// (BackendConfigurationTaskTrackerHelper.cs:178-192). Pass null to
+    /// disable site filtering (admin context).
+    /// </summary>
+    Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
+        int propertyId, int? sdkSiteIdForFilter);
     Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
