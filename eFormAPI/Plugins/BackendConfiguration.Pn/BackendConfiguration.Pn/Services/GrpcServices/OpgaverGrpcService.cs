@@ -199,7 +199,7 @@ public class OpgaverGrpcService(
             PropertyId = propertyId,
             WeekStart = request.FromDateKey ?? string.Empty,
             WeekEnd = request.ToDateKey ?? string.Empty,
-            BoardIds = TryParseBoardIds(request.TavleId),
+            BoardIds = TryParseBoardIds(request.TavleIds),
             TagNames = [],
             SiteIds = [],
             ActionableOnly = true
@@ -777,7 +777,7 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the requested property."));
         }
 
-        var boardFilter = TryParseBoardIds(request.TavleId);
+        var boardFilter = TryParseBoardIds(request.TavleIds);
         var ct = context.CancellationToken;
 
         // Watch window is recomputed on every poll so the day-roll-over case
@@ -2931,20 +2931,54 @@ public class OpgaverGrpcService(
             "ejendom_id must be a numeric property id."));
     }
 
-    private static System.Collections.Generic.List<int> TryParseBoardIds(string raw)
+    /// <summary>
+    /// Parse the repeated <c>tavle_ids</c> wire field into a deduplicated list
+    /// of numeric SDK board ids suitable for the
+    /// <c>CalendarTaskRequestModel.BoardIds</c> filter.
+    /// <para>
+    /// Behavior:
+    /// <list type="bullet">
+    /// <item><description>Empty / null input → empty list (means "no board filter,
+    /// show all boards" downstream in <c>BackendConfigurationCalendarService.ShouldIncludeTask</c>).</description></item>
+    /// <item><description>Each entry is trimmed via <see cref="string.IsNullOrWhiteSpace(string?)"/>;
+    /// blank entries are skipped silently.</description></item>
+    /// <item><description>Each remaining entry is parsed with
+    /// <see cref="int.TryParse(string?, NumberStyles, IFormatProvider?, out int)"/>;
+    /// successful parses are collected, non-numeric entries are skipped (per-entry,
+    /// not all-or-nothing). If every entry is non-numeric the result is an empty list,
+    /// which still means "show all" — matching the prior single-string behavior of
+    /// "non-numeric → empty filter".</description></item>
+    /// <item><description>Duplicate ids are collapsed so the downstream LINQ
+    /// <c>Contains</c> filter does not see redundant values.</description></item>
+    /// </list>
+    /// </para>
+    /// Pure: no side effects, no I/O, deterministic for a given input sequence.
+    /// </summary>
+    private static System.Collections.Generic.List<int> TryParseBoardIds(
+        System.Collections.Generic.IEnumerable<string> raws)
     {
-        if (string.IsNullOrWhiteSpace(raw))
+        if (raws is null)
         {
             return [];
         }
 
-        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+        var seen = new System.Collections.Generic.HashSet<int>();
+        var result = new System.Collections.Generic.List<int>();
+        foreach (var raw in raws)
         {
-            return [id];
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+                && seen.Add(id))
+            {
+                result.Add(id);
+            }
         }
 
-        // Non-numeric tavle_id is treated as "no board filter" rather than a hard failure.
-        return [];
+        return result;
     }
 
     /// <summary>
