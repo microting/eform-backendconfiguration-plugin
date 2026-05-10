@@ -2933,37 +2933,20 @@ public class OpgaverGrpcService(
 
     /// <summary>
     /// Parse the repeated <c>tavle_ids</c> wire field into a deduplicated list
-    /// of numeric SDK board ids suitable for the
-    /// <c>CalendarTaskRequestModel.BoardIds</c> filter.
-    /// <para>
-    /// Behavior:
-    /// <list type="bullet">
-    /// <item><description>Empty / null input → empty list (means "no board filter,
-    /// show all boards" downstream in <c>BackendConfigurationCalendarService.ShouldIncludeTask</c>).</description></item>
-    /// <item><description>Each entry is trimmed via <see cref="string.IsNullOrWhiteSpace(string?)"/>;
-    /// blank entries are skipped silently.</description></item>
-    /// <item><description>Each remaining entry is parsed with
-    /// <see cref="int.TryParse(string?, NumberStyles, IFormatProvider?, out int)"/>;
-    /// successful parses are collected, non-numeric entries are skipped (per-entry,
-    /// not all-or-nothing). If every entry is non-numeric the result is an empty list,
-    /// which still means "show all" — matching the prior single-string behavior of
-    /// "non-numeric → empty filter".</description></item>
-    /// <item><description>Duplicate ids are collapsed so the downstream LINQ
-    /// <c>Contains</c> filter does not see redundant values.</description></item>
-    /// </list>
-    /// </para>
-    /// Pure: no side effects, no I/O, deterministic for a given input sequence.
+    /// of numeric SDK board ids for <c>CalendarTaskRequestModel.BoardIds</c>.
+    /// Blank and non-numeric entries are skipped per-entry (not all-or-nothing);
+    /// an empty result means "no board filter, show all" downstream in
+    /// <c>BackendConfigurationCalendarService.ShouldIncludeTask</c>.
     /// </summary>
-    private static System.Collections.Generic.List<int> TryParseBoardIds(
-        System.Collections.Generic.IEnumerable<string> raws)
+    private static List<int> TryParseBoardIds(IEnumerable<string> raws)
     {
         if (raws is null)
         {
             return [];
         }
 
-        var seen = new System.Collections.Generic.HashSet<int>();
-        var result = new System.Collections.Generic.List<int>();
+        var seen = new HashSet<int>();
+        var result = new List<int>();
         foreach (var raw in raws)
         {
             if (string.IsNullOrWhiteSpace(raw))
