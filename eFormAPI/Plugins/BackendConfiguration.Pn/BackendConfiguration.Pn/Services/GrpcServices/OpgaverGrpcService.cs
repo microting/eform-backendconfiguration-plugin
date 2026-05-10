@@ -199,7 +199,7 @@ public class OpgaverGrpcService(
             PropertyId = propertyId,
             WeekStart = request.FromDateKey ?? string.Empty,
             WeekEnd = request.ToDateKey ?? string.Empty,
-            BoardIds = TryParseBoardIds(request.TavleId),
+            BoardIds = TryParseBoardIds(request.TavleIds),
             TagNames = [],
             SiteIds = [],
             ActionableOnly = true
@@ -777,7 +777,7 @@ public class OpgaverGrpcService(
                 "Caller has no PropertyWorker access to the requested property."));
         }
 
-        var boardFilter = TryParseBoardIds(request.TavleId);
+        var boardFilter = TryParseBoardIds(request.TavleIds);
         var ct = context.CancellationToken;
 
         // Watch window is recomputed on every poll so the day-roll-over case
@@ -2931,20 +2931,37 @@ public class OpgaverGrpcService(
             "ejendom_id must be a numeric property id."));
     }
 
-    private static System.Collections.Generic.List<int> TryParseBoardIds(string raw)
+    /// <summary>
+    /// Parse the repeated <c>tavle_ids</c> wire field into a deduplicated list
+    /// of numeric SDK board ids for <c>CalendarTaskRequestModel.BoardIds</c>.
+    /// Blank and non-numeric entries are skipped per-entry (not all-or-nothing);
+    /// an empty result means "no board filter, show all" downstream in
+    /// <c>BackendConfigurationCalendarService.ShouldIncludeTask</c>.
+    /// </summary>
+    private static List<int> TryParseBoardIds(IEnumerable<string> raws)
     {
-        if (string.IsNullOrWhiteSpace(raw))
+        if (raws is null)
         {
             return [];
         }
 
-        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+        var seen = new HashSet<int>();
+        var result = new List<int>();
+        foreach (var raw in raws)
         {
-            return [id];
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id)
+                && seen.Add(id))
+            {
+                result.Add(id);
+            }
         }
 
-        // Non-numeric tavle_id is treated as "no board filter" rather than a hard failure.
-        return [];
+        return result;
     }
 
     /// <summary>

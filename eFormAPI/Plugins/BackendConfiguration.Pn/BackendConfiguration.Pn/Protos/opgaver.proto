@@ -123,7 +123,7 @@ message ListTavlerResponse { repeated Tavle tavler = 1; }
 
 message ListOpgaverRequest {
   string ejendom_id = 1;
-  string tavle_id = 2;
+  repeated string tavle_ids = 2;
   string from_date_key = 3;
   string to_date_key = 4;
 }
@@ -141,7 +141,7 @@ message ListTaskTrackerResponse { repeated Opgave opgaver = 1; }
 
 message StreamOpgaveChangesRequest {
   string ejendom_id = 1;
-  string tavle_id = 2;
+  repeated string tavle_ids = 2;
 }
 
 message OpgaveChange {
