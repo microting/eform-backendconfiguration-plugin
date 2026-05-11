@@ -66,7 +66,7 @@ public class BackendConfigurationCalendarService(
             //   CalendarGrpcService): emit ALL non-removed compliances in the week, including
             //   missed deadlines and already-completed ones. Bit-identical to pre-c2637800.
             //
-            // * ActionableOnly == true (mobile worker via OpgaverGrpcService): emit only
+            // * ActionableOnly == true (mobile worker via EventsGrpcService): emit only
             //   compliances whose backing SDK Case still exists, is not soft-deleted, and is
             //   not yet completed (Status != 100). Non-actionable compliance rows must NOT be
             //   emitted to the worker because the corresponding write handlers ("complete",

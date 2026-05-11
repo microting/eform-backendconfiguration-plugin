@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Grpc.Documents;
-using BackendConfiguration.Pn.Grpc.Opgaver;
+using BackendConfiguration.Pn.Grpc.Events;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
@@ -99,7 +99,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///     stale.</description></item>
 /// </list>
 /// </summary>
-public class OpgaverGrpcService(
+public class EventsGrpcService(
     IBackendConfigurationCalendarService calendarService,
     IBackendConfigurationPropertiesService propertiesService,
     IBackendConfigurationUserPropertyAccess userPropertyAccess,
@@ -107,8 +107,8 @@ public class OpgaverGrpcService(
     IEFormCoreService coreHelper,
     BackendConfigurationPnDbContext dbContext,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-    ILogger<OpgaverGrpcService> logger)
-    : Opgaver.OpgaverBase
+    ILogger<EventsGrpcService> logger)
+    : Events.EventsBase
 {
     public override async Task<ListEjendommeResponse> ListEjendomme(
         ListEjendommeRequest request,
@@ -181,7 +181,7 @@ public class OpgaverGrpcService(
         return response;
     }
 
-    public override async Task<ListOpgaverResponse> ListOpgaver(
+    public override async Task<ListOpgaverResponse> ListEvents(
         ListOpgaverRequest request,
         ServerCallContext context)
     {
@@ -234,7 +234,7 @@ public class OpgaverGrpcService(
 
             var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
 
-            var opgave = new Opgave
+            var opgave = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -325,7 +325,7 @@ public class OpgaverGrpcService(
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
             var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
 
-            var opgave = new Opgave
+            var opgave = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -374,7 +374,7 @@ public class OpgaverGrpcService(
     /// can index them stably; entries with missing or invalid metadata
     /// are skipped silently.
     /// </summary>
-    private static void PopulateAttachments(Opgave opgave, OpgaverCustomEnvelope? envelope)
+    private static void PopulateAttachments(Event opgave, OpgaverCustomEnvelope? envelope)
     {
         if (envelope?.OpgaverPhotos == null)
         {
@@ -762,9 +762,9 @@ public class OpgaverGrpcService(
     /// server holds no shared subscription registry. v2 with event-bus push
     /// will introduce one.
     /// </summary>
-    public override async Task StreamOpgaveChanges(
+    public override async Task StreamEventChanges(
         StreamOpgaveChangesRequest request,
-        IServerStreamWriter<OpgaveChange> responseStream,
+        IServerStreamWriter<EventChange> responseStream,
         ServerCallContext context)
     {
         var propertyId = ParsePropertyId(request.EjendomId);
@@ -798,7 +798,7 @@ public class OpgaverGrpcService(
             foreach (var op in initial)
             {
                 ct.ThrowIfCancellationRequested();
-                await responseStream.WriteAsync(new OpgaveChange { Upserted = op }, ct)
+                await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                     .ConfigureAwait(false);
                 if (int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
                         out var opgaveId))
@@ -850,7 +850,7 @@ public class OpgaverGrpcService(
                     if (!seen.TryGetValue(opgaveId, out var prevHash) || prevHash != hash)
                     {
                         ct.ThrowIfCancellationRequested();
-                        await responseStream.WriteAsync(new OpgaveChange { Upserted = op }, ct)
+                        await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                             .ConfigureAwait(false);
                         seen[opgaveId] = hash;
                     }
@@ -861,7 +861,7 @@ public class OpgaverGrpcService(
                 foreach (var id in removed)
                 {
                     ct.ThrowIfCancellationRequested();
-                    await responseStream.WriteAsync(new OpgaveChange
+                    await responseStream.WriteAsync(new EventChange
                         {
                             RemovedId = id.ToString(CultureInfo.InvariantCulture)
                         }, ct).ConfigureAwait(false);
@@ -928,7 +928,7 @@ public class OpgaverGrpcService(
     /// is forwarded to the EF compliance + occurrence queries verbatim, so a
     /// month-wide window is supported in a single call.
     /// </summary>
-    private async Task<List<Opgave>> LoadOpgaverAsync(
+    private async Task<List<Event>> LoadOpgaverAsync(
         int propertyId,
         List<int> boardFilter,
         DateTime windowStart,
@@ -946,7 +946,7 @@ public class OpgaverGrpcService(
         };
 
         var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
-        var output = new List<Opgave>();
+        var output = new List<Event>();
 
         if (!result.Success || result.Model == null)
         {
@@ -964,7 +964,7 @@ public class OpgaverGrpcService(
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
             var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
 
-            var opgave = new Opgave
+            var opgave = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1007,14 +1007,14 @@ public class OpgaverGrpcService(
     /// memory footprint small (~44 base64 chars) — the dictionary may hold
     /// a few hundred entries per subscriber.
     /// </summary>
-    private static string ComputeStateHash(Opgave op)
+    private static string ComputeStateHash(Event op)
     {
         var bytes = SHA256.HashData(op.ToByteArray());
         return Convert.ToBase64String(bytes);
     }
 
-    public override async Task<CompleteOpgaveResponse> CompleteOpgave(
-        CompleteOpgaveRequest request,
+    public override async Task<CompleteEventResponse> CompleteEvent(
+        CompleteEventRequest request,
         ServerCallContext context)
     {
         var opgaveId = ParseOpgaveId(request.OpgaveId);
@@ -1428,8 +1428,8 @@ public class OpgaverGrpcService(
             if (!string.IsNullOrEmpty(request.Comment))
             {
                 var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-                var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
-                nextEnvelope.OpgaverComment = new OpgaverCommentBody
+                var nextEnvelope = existingEnvelope ?? new EventrCustomEnvelope();
+                nextEnvelope.OpgaverComment = new EventrCommentBody
                 {
                     Text = request.Comment,
                     TsUnix = ToUnixSeconds(commentAtUtc),
@@ -1549,7 +1549,7 @@ public class OpgaverGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        Opgave opgave;
+        Event opgave;
         if (refreshedTask != null)
         {
             // Reuse the same envelope + eForm field-structure helpers as
@@ -1568,7 +1568,7 @@ public class OpgaverGrpcService(
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
             var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
 
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1600,7 +1600,7 @@ public class OpgaverGrpcService(
             // reconcile local state against the new server truth. Empty
             // Fields / Attachments are correct here: the row is no longer
             // actionable and the client should drop it.
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1616,7 +1616,7 @@ public class OpgaverGrpcService(
             };
         }
 
-        return new CompleteOpgaveResponse { Opgave = opgave };
+        return new CompleteEventResponse { Opgave = opgave };
     }
 
     /// <summary>
@@ -1641,8 +1641,8 @@ public class OpgaverGrpcService(
     ///     calendar query says about that row today. No DB writes.</description></item>
     /// </list>
     /// </summary>
-    private async Task<CompleteOpgaveResponse> BuildIdempotentCompleteOpgaveResponse(
-        int opgaveId, CompleteOpgaveRequest request)
+    private async Task<CompleteEventResponse> BuildIdempotentCompleteOpgaveResponse(
+        int opgaveId, CompleteEventRequest request)
     {
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -1711,9 +1711,9 @@ public class OpgaverGrpcService(
             // No live compliance row — the row was already completed (or never
             // had one). Return Completed=true so the flutter client drops it
             // from Drift via the empty/zero-id "no longer actionable" path.
-            return new CompleteOpgaveResponse
+            return new CompleteEventResponse
             {
-                Opgave = new Opgave
+                Opgave = new Event
                 {
                     Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                     EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1751,7 +1751,7 @@ public class OpgaverGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        Opgave opgave;
+        Event opgave;
         if (refreshedTask != null)
         {
             // Mirror the main CompleteOpgave path: reuse the envelope +
@@ -1770,7 +1770,7 @@ public class OpgaverGrpcService(
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
             var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
 
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1800,7 +1800,7 @@ public class OpgaverGrpcService(
             // Compliance alive but calendar query didn't surface the row
             // (e.g. ActionableOnly filtered it out). Treat the same as
             // "no longer actionable" so the client drops it.
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -1816,7 +1816,7 @@ public class OpgaverGrpcService(
             };
         }
 
-        return new CompleteOpgaveResponse { Opgave = opgave };
+        return new CompleteEventResponse { Opgave = opgave };
     }
 
     /// <summary>
@@ -2008,10 +2008,10 @@ public class OpgaverGrpcService(
         // legacy CompliancesGrpcService.ReadComplianceCase passthrough sees
         // an empty string instead of "{...}".
         var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-        var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
+        var nextEnvelope = existingEnvelope ?? new EventrCustomEnvelope();
         nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
             ? null
-            : new OpgaverCommentBody
+            : new EventrCommentBody
             {
                 Text = trimmed,
                 TsUnix = ToUnixSeconds(commentAtUtc)
@@ -2043,7 +2043,7 @@ public class OpgaverGrpcService(
         // need a follow-up read. GetTasksForWeek does not currently surface
         // Case.Custom, so populating opgave.comment here is the only path.
         var opgave = refreshedTask != null
-            ? new Opgave
+            ? new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -2391,7 +2391,7 @@ public class OpgaverGrpcService(
                 ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
                 : DateTime.UtcNow;
 
-            var envelope = TryParseEnvelope(foundCase.Custom) ?? new OpgaverCustomEnvelope();
+            var envelope = TryParseEnvelope(foundCase.Custom) ?? new EventrCustomEnvelope();
             envelope.OpgaverPhotos ??= new List<OpgaverPhotoBody>();
 
             var existing = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
@@ -2410,7 +2410,7 @@ public class OpgaverGrpcService(
                 envelope.OpgaverPhotos.Remove(existing);
             }
 
-            envelope.OpgaverPhotos.Add(new OpgaverPhotoBody
+            envelope.OpgaverPhotos.Add(new EventrPhotoBody
             {
                 Slot = meta.Slot,
                 UploadedDataId = uploadedData.Id,
@@ -2559,10 +2559,10 @@ public class OpgaverGrpcService(
         return new RemovePhotoResponse();
     }
 
-    private static Opgave SynthesiseMinimalOpgave(
+    private static Event SynthesiseMinimalOpgave(
         int opgaveId, int propertyId, DateTime commentAtUtc, string trimmed)
     {
-        return new Opgave
+        return new Event
         {
             Id = opgaveId.ToString(CultureInfo.InvariantCulture),
             EjendomId = propertyId.ToString(CultureInfo.InvariantCulture),
@@ -2856,10 +2856,10 @@ public class OpgaverGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        Opgave opgave;
+        Event opgave;
         if (refreshedTask != null)
         {
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -2892,7 +2892,7 @@ public class OpgaverGrpcService(
         else
         {
             // Task fell out of the window after update — synthesise minimal Opgave.
-            opgave = new Opgave
+            opgave = new Event
             {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
                 EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),

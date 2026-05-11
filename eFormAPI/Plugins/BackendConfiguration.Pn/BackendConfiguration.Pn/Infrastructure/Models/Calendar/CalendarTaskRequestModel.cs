@@ -15,7 +15,7 @@ public class CalendarTaskRequestModel
     /// When true, the calendar emits only *actionable* compliance rows for the requested
     /// week — i.e. compliances whose backing SDK Case still exists, is not soft-deleted,
     /// and is not yet completed (Status != 100). This is intended for the mobile-worker
-    /// gRPC path (<c>OpgaverGrpcService</c>) where non-actionable rows have no write
+    /// gRPC path (<c>EventsGrpcService</c>) where non-actionable rows have no write
     /// handler to bind to and would just clutter the worker's view.
     ///
     /// Default <c>false</c> preserves the historical behavior used by the angular admin
