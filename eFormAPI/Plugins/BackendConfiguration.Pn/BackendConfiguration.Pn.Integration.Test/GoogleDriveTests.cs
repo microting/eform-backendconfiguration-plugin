@@ -306,10 +306,19 @@ public class GoogleDriveTests : TestBaseSetup
         const string nonce = "abc123";
         var jwt = MintEnvelope("envelope", userId, nonce, "rt");
 
-        // Flip a byte in the signature segment by mangling the last
-        // character. The verifier uses FixedTimeEquals so tiny tampers
-        // still trip the check.
-        var tampered = jwt[..^1] + (jwt[^1] == 'A' ? 'B' : 'A');
+        // Tamper a char in the MIDDLE of the signature segment (not the
+        // last char). For a 32-byte HMAC the encoded signature is 43
+        // base64url chars; the last char carries only 4 significant bits
+        // and 2 unused padding bits that .NET's Convert.FromBase64String
+        // ignores — so flipping the last char between values in {A,B}
+        // (both with low-4-bits = 0000) is a no-op for the decoded byte
+        // ~6% of the time. Middle chars use all 6 bits → any flip
+        // guaranteed to change the decoded signature.
+        var lastDot = jwt.LastIndexOf('.');
+        var midSigIndex = lastDot + 1 + (jwt.Length - lastDot - 1) / 2;
+        var tampered = jwt[..midSigIndex]
+                       + (jwt[midSigIndex] == 'A' ? 'B' : 'A')
+                       + jwt[(midSigIndex + 1)..];
 
         var sut = NewAuthService();
         Assert.ThrowsAsync<InvalidOperationException>(async () =>
