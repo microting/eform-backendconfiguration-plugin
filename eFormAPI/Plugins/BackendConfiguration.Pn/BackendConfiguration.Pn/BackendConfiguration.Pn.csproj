@@ -246,7 +246,7 @@
       <Protobuf Include="Protos\templates.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\compliances.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\documents.proto" GrpcServices="None" ProtoRoot="Protos" />
-      <Protobuf Include="Protos\opgaver.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\events.proto" GrpcServices="Server" ProtoRoot="Protos" />
     </ItemGroup>
 
 </Project>

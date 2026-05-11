@@ -1,19 +1,31 @@
 syntax = "proto3";
 
-package microting.opgaver;
+// Mid-migration: opgave -> event per
+// docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
+//
+// This phase renames the "opgave" noun only: service, package, message
+// types (Opgave/OpgaveChange/CompleteOpgave* -> Event/...), and RPC
+// method names. The Ejendom/Tavle/rode nouns and all field names (e.g.
+// `repeated Event opgaver = 1;`) deliberately stay as-is — keeping the
+// wire identifiers preserves the generated C# accessors
+// (`response.Opgaver.Add(...)`, `new CompleteEventResponse { Opgave =
+// ... }`) and limits this PR to the smallest viable diff. Follow-up
+// phases handle those renames.
 
-option csharp_namespace = "BackendConfiguration.Pn.Grpc.Opgaver";
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Events";
 
 import "google/protobuf/timestamp.proto";
 import "documents.proto";
 
-service Opgaver {
+service Events {
   rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
   rpc ListTavler(ListTavlerRequest) returns (ListTavlerResponse);
-  rpc ListOpgaver(ListOpgaverRequest) returns (ListOpgaverResponse);
+  rpc ListEvents(ListOpgaverRequest) returns (ListOpgaverResponse);
   rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
-  rpc StreamOpgaveChanges(StreamOpgaveChangesRequest) returns (stream OpgaveChange);
-  rpc CompleteOpgave(CompleteOpgaveRequest) returns (CompleteOpgaveResponse);
+  rpc StreamEventChanges(StreamOpgaveChangesRequest) returns (stream EventChange);
+  rpc CompleteEvent(CompleteEventRequest) returns (CompleteEventResponse);
   rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
   rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
   rpc RemovePhoto(RemovePhotoRequest) returns (RemovePhotoResponse);
@@ -31,16 +43,16 @@ message UploadPhotoMeta {
   int32 slot = 2;
   string content_type = 3;
   int64 client_ts_unix = 4;
-  // Server-assigned PK of the Compliance row this opgave was emitted from
+  // Server-assigned PK of the Compliance row this event was emitted from
   // (see Index handler). 0 means "unknown" — legacy clients that pre-date
   // this field; server falls back to the site-filtered fuzzy lookup in
   // that case so in-flight outbox payloads keep draining.
   int64 compliance_id = 5;
-  // Server-assigned PK of the SDK Case row backing this opgave. 0 = legacy.
+  // Server-assigned PK of the SDK Case row backing this event. 0 = legacy.
   int64 microting_sdk_case_id = 6;
-  // SDK Field.Id — matches FormField.id from ListOpgaver. The server
+  // SDK Field.Id — matches FormField.id from ListEvents. The server
   // creates the FieldValue row with this Field.Id so multi-Picture-field
-  // opgaver bind each photo to the correct field. 0 = legacy clients
+  // events bind each photo to the correct field. 0 = legacy clients
   // that pre-date this field; server falls back to BFS-first-Picture
   // discovery (matches the prior single-Picture assumption).
   int32 field_id = 7;
@@ -59,7 +71,7 @@ message RemovePhotoRequest {
 }
 message RemovePhotoResponse {}
 
-message CompleteOpgaveRequest {
+message CompleteEventRequest {
   string opgave_id = 1;
   bool completed = 2;
   string completed_by = 3;
@@ -80,9 +92,9 @@ message CompleteOpgaveRequest {
   // OpgaverComment body verbatim, matching SetComment semantics.
   string comment = 8;
 }
-message CompleteOpgaveResponse { Opgave opgave = 1; }
+message CompleteEventResponse { Event opgave = 1; }
 
-// One field-value write bundled into CompleteOpgaveRequest.field_values.
+// One field-value write bundled into CompleteEventRequest.field_values.
 // Mirrors the per-RPC SetFieldValueRequest pair (field_id + value) so the
 // server-side handler can reuse the same lookup + canonicalization helpers.
 message FieldValueWrite {
@@ -102,7 +114,7 @@ message SetCommentRequest {
   int64 compliance_id = 4;
   int64 microting_sdk_case_id = 5;
 }
-message SetCommentResponse { Opgave opgave = 1; }
+message SetCommentResponse { Event opgave = 1; }
 
 message SetFieldValueRequest {
   string opgave_id = 1;
@@ -113,7 +125,7 @@ message SetFieldValueRequest {
   int64 compliance_id = 5;
   int64 microting_sdk_case_id = 6;
 }
-message SetFieldValueResponse { Opgave opgave = 1; }
+message SetFieldValueResponse { Event opgave = 1; }
 
 message ListEjendommeRequest {}
 message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
@@ -127,26 +139,26 @@ message ListOpgaverRequest {
   string from_date_key = 3;
   string to_date_key = 4;
 }
-message ListOpgaverResponse { repeated Opgave opgaver = 1; }
+message ListOpgaverResponse { repeated Event opgaver = 1; }
 
 // Full property-scoped compliance list for the mobile worker's "task
 // tracker" view (mirror of the angular admin's BackendConfigurationTaskTrackerHelper.Index).
 // No deadline window — actionable + missed + completed rotations are all
 // returned, with per-row status carried on the existing `completed` field
-// and the new `task_is_expired` field (see Opgave below).
+// and the new `task_is_expired` field (see Event below).
 message ListTaskTrackerRequest {
   int32 property_id = 1;
 }
-message ListTaskTrackerResponse { repeated Opgave opgaver = 1; }
+message ListTaskTrackerResponse { repeated Event opgaver = 1; }
 
 message StreamOpgaveChangesRequest {
   string ejendom_id = 1;
   repeated string tavle_ids = 2;
 }
 
-message OpgaveChange {
+message EventChange {
   oneof kind {
-    Opgave upserted = 1;
+    Event upserted = 1;
     string removed_id = 2;
   }
 }
@@ -163,7 +175,7 @@ message Tavle {
   string color_hex = 4;
 }
 
-message Opgave {
+message Event {
   string id = 1;
   string ejendom_id = 2;
   string tavle_id = 3;
@@ -177,25 +189,25 @@ message Opgave {
   google.protobuf.Timestamp updated_at = 11;
   string comment = 12;
   repeated Attachment attachments = 13;
-  // eform template id this opgave is backed by; clients use this to look up template-specific field structure
+  // eform template id this event is backed by; clients use this to look up template-specific field structure
   int32 eform_id = 14;
   // Form-field structure + current values for the eForm template backing
-  // this opgave. Empty when no Case exists yet (recurrence-only tasks).
+  // this event. Empty when no Case exists yet (recurrence-only tasks).
   repeated FormField fields = 15;
-  // Server-assigned PK of the Compliance row this opgave was emitted from.
+  // Server-assigned PK of the Compliance row this event was emitted from.
   // Round-tripped through the Flutter Drift cache and back on every write
   // so the server can resolve compliance + sdk case deterministically
   // (no fuzzy OrderBy(Deadline).First() lookup). 0 = recurrence-only task
   // with no backing compliance yet (or legacy server pre-dating this field).
   int64 compliance_id = 16;
-  // Server-assigned PK of the SDK Case row backing this opgave. 0 means
+  // Server-assigned PK of the SDK Case row backing this event. 0 means
   // "no backing case" (recurrence-only) or a legacy server.
   int64 microting_sdk_case_id = 17;
-  // True when the opgave's deadline has passed AND the underlying case is
+  // True when the event's deadline has passed AND the underlying case is
   // either retracted (Case.WorkflowState=Removed AND Status=77) or simply
   // past its deadline without being completed (Case.Deadline < UtcNow AND
   // Status != 100). Surfaced primarily by ListTaskTracker so flutter can
-  // render missed rotations in red. The calendar-week view (ListOpgaver)
+  // render missed rotations in red. The calendar-week view (ListEvents)
   // pre-filters non-actionable rows out and so emits this as false; default
   // proto3 zero-value remains backwards-compatible with older clients.
   bool task_is_expired = 18;
@@ -206,7 +218,7 @@ message Attachment {
   string name = 2;
 }
 
-// Field of the eForm template that backs an Opgave.
+// Field of the eForm template that backs an Event.
 // Carries both the template definition (label, type, options) and the
 // worker's current answer (value).
 message FormField {
