@@ -1,21 +1,16 @@
 syntax = "proto3";
 
-// NOTE: Intentional mixed Danish/English in this file.
-//
-// This proto is mid-migration per
+// Mid-migration: opgave -> event per
 // docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
-// The current phase renames the "opgave" noun (and its compounds) to
-// "event" — service, package, the Opgave/OpgaveChange/CompleteOpgave*
-// messages, and the matching RPC method names.
 //
-// The "Ejendom", "Tavle", and "rode" domain nouns deliberately STAY
-// Danish in this PR; their rename is tracked in follow-up phases of the
-// same migration spec. Likewise, the proto FIELD names inside renamed
-// messages (e.g. `repeated Event opgaver = 1;`, `Event opgave = 1;`)
-// keep their original wire identifiers so the C# handler's generated
-// property accessors (`response.Opgaver.Add(...)`,
-// `new CompleteEventResponse { Opgave = ... }`) stay unchanged — this
-// is intentional "smallest-viable diff" per the plan.
+// This phase renames the "opgave" noun only: service, package, message
+// types (Opgave/OpgaveChange/CompleteOpgave* -> Event/...), and RPC
+// method names. The Ejendom/Tavle/rode nouns and all field names (e.g.
+// `repeated Event opgaver = 1;`) deliberately stay as-is — keeping the
+// wire identifiers preserves the generated C# accessors
+// (`response.Opgaver.Add(...)`, `new CompleteEventResponse { Opgave =
+// ... }`) and limits this PR to the smallest viable diff. Follow-up
+// phases handle those renames.
 
 package backend_configuration;
 
