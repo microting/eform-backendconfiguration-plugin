@@ -1428,8 +1428,8 @@ public class EventsGrpcService(
             if (!string.IsNullOrEmpty(request.Comment))
             {
                 var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-                var nextEnvelope = existingEnvelope ?? new EventrCustomEnvelope();
-                nextEnvelope.OpgaverComment = new EventrCommentBody
+                var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
+                nextEnvelope.OpgaverComment = new OpgaverCommentBody
                 {
                     Text = request.Comment,
                     TsUnix = ToUnixSeconds(commentAtUtc),
@@ -2008,10 +2008,10 @@ public class EventsGrpcService(
         // legacy CompliancesGrpcService.ReadComplianceCase passthrough sees
         // an empty string instead of "{...}".
         var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-        var nextEnvelope = existingEnvelope ?? new EventrCustomEnvelope();
+        var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
         nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
             ? null
-            : new EventrCommentBody
+            : new OpgaverCommentBody
             {
                 Text = trimmed,
                 TsUnix = ToUnixSeconds(commentAtUtc)
@@ -2391,7 +2391,7 @@ public class EventsGrpcService(
                 ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
                 : DateTime.UtcNow;
 
-            var envelope = TryParseEnvelope(foundCase.Custom) ?? new EventrCustomEnvelope();
+            var envelope = TryParseEnvelope(foundCase.Custom) ?? new OpgaverCustomEnvelope();
             envelope.OpgaverPhotos ??= new List<OpgaverPhotoBody>();
 
             var existing = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
@@ -2410,7 +2410,7 @@ public class EventsGrpcService(
                 envelope.OpgaverPhotos.Remove(existing);
             }
 
-            envelope.OpgaverPhotos.Add(new EventrPhotoBody
+            envelope.OpgaverPhotos.Add(new OpgaverPhotoBody
             {
                 Slot = meta.Slot,
                 UploadedDataId = uploadedData.Id,
