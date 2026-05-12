@@ -1,16 +1,11 @@
 syntax = "proto3";
 
-// Mid-migration: opgave -> event per
+// Mid-migration: opgave -> event, tavle -> board per
 // docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
-//
-// This phase renames the "opgave" noun only: service, package, message
-// types (Opgave/OpgaveChange/CompleteOpgave* -> Event/...), and RPC
-// method names. The Ejendom/Tavle/rode nouns and all field names (e.g.
-// `repeated Event opgaver = 1;`) deliberately stay as-is — keeping the
-// wire identifiers preserves the generated C# accessors
-// (`response.Opgaver.Add(...)`, `new CompleteEventResponse { Opgave =
-// ... }`) and limits this PR to the smallest viable diff. Follow-up
-// phases handle those renames.
+// Wire field names (`opgaver`, `tavler`, `tavle_id`, `tavle_ids`,
+// `ejendom_id`) stay as-is so generated accessors don't churn; only
+// message types and RPC method names move. Ejendom and rode renames
+// land in follow-up phases.
 
 package backend_configuration;
 
@@ -21,7 +16,7 @@ import "documents.proto";
 
 service Events {
   rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
-  rpc ListTavler(ListTavlerRequest) returns (ListTavlerResponse);
+  rpc ListBoards(ListBoardsRequest) returns (ListBoardsResponse);
   rpc ListEvents(ListOpgaverRequest) returns (ListOpgaverResponse);
   rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
   rpc StreamEventChanges(StreamOpgaveChangesRequest) returns (stream EventChange);
@@ -130,8 +125,8 @@ message SetFieldValueResponse { Event opgave = 1; }
 message ListEjendommeRequest {}
 message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
 
-message ListTavlerRequest { string ejendom_id = 1; }
-message ListTavlerResponse { repeated Tavle tavler = 1; }
+message ListBoardsRequest { string ejendom_id = 1; }
+message ListBoardsResponse { repeated Board tavler = 1; }
 
 message ListOpgaverRequest {
   string ejendom_id = 1;
@@ -168,7 +163,7 @@ message Ejendom {
   string name = 2;
 }
 
-message Tavle {
+message Board {
   string id = 1;
   string ejendom_id = 2;
   string name = 3;
