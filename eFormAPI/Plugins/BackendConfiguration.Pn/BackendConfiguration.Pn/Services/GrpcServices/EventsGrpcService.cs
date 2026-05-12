@@ -32,7 +32,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 /// <summary>
 /// gRPC adapter for the mobile "Opgaver" feature.
-/// Read-only RPCs (ListEjendomme / ListBoards / ListOpgaver) reuse the existing
+/// Read-only RPCs (ListProperties / ListBoards / ListEvents) reuse the existing
 /// Properties + Calendar service paths and reshape the result into the
 /// microting.opgaver wire contract. CompleteOpgave performs the SDK-case
 /// completion inline (mirroring CompliancesGrpcService.UpdateComplianceCase,
@@ -110,8 +110,8 @@ public class EventsGrpcService(
     ILogger<EventsGrpcService> logger)
     : Events.EventsBase
 {
-    public override async Task<ListEjendommeResponse> ListEjendomme(
-        ListEjendommeRequest request,
+    public override async Task<ListPropertiesResponse> ListProperties(
+        ListPropertiesRequest request,
         ServerCallContext context)
     {
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
@@ -121,7 +121,7 @@ public class EventsGrpcService(
         // fullNames: false matches the historical mobile call (short name only).
         var result = await propertiesService.GetCommonDictionary(false);
 
-        var response = new ListEjendommeResponse();
+        var response = new ListPropertiesResponse();
 
         if (!result.Success || result.Model == null)
         {
@@ -135,7 +135,7 @@ public class EventsGrpcService(
                 continue;
             }
 
-            response.Ejendomme.Add(new Ejendom
+            response.Ejendomme.Add(new Property
             {
                 Id = item.Id.Value.ToString(CultureInfo.InvariantCulture),
                 Name = item.Name ?? string.Empty
