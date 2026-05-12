@@ -32,7 +32,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 /// <summary>
 /// gRPC adapter for the mobile "Opgaver" feature.
-/// Read-only RPCs (ListEjendomme / ListTavler / ListOpgaver) reuse the existing
+/// Read-only RPCs (ListEjendomme / ListBoards / ListOpgaver) reuse the existing
 /// Properties + Calendar service paths and reshape the result into the
 /// microting.opgaver wire contract. CompleteOpgave performs the SDK-case
 /// completion inline (mirroring CompliancesGrpcService.UpdateComplianceCase,
@@ -145,8 +145,8 @@ public class EventsGrpcService(
         return response;
     }
 
-    public override async Task<ListTavlerResponse> ListTavler(
-        ListTavlerRequest request,
+    public override async Task<ListBoardsResponse> ListBoards(
+        ListBoardsRequest request,
         ServerCallContext context)
     {
         var propertyId = ParsePropertyId(request.EjendomId);
@@ -160,7 +160,7 @@ public class EventsGrpcService(
 
         var result = await calendarService.GetBoards(propertyId);
 
-        var response = new ListTavlerResponse();
+        var response = new ListBoardsResponse();
 
         if (!result.Success || result.Model == null)
         {
@@ -169,7 +169,7 @@ public class EventsGrpcService(
 
         foreach (var board in result.Model)
         {
-            response.Tavler.Add(new Tavle
+            response.Tavler.Add(new Board
             {
                 Id = board.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = board.PropertyId.ToString(CultureInfo.InvariantCulture),
