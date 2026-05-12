@@ -2338,9 +2338,15 @@ public class EventsGrpcService(
                 await core.PutFileToS3Storage(originalMs, fileName).ConfigureAwait(false);
             }
 
-            // Thumbnail generation for raster images, SDK parity.
-            var fileExt = Path.GetExtension(uploadedData.FileName).ToLowerInvariant();
-            if (fileExt is ".jpg" or ".jpeg" or ".png")
+            // Thumbnail generation for raster images, SDK parity. Best-effort:
+            // any failure here is logged but does NOT throw, so the FieldValue /
+            // envelope writes below still run. The original photo is already on
+            // S3 + UploadedData row persisted, so a thumbnail failure means
+            // consumers fall back to the original (acceptable degradation) — far
+            // better than orphaning the row by short-circuiting the rest of the
+            // handler. (uploadedData.Extension is normalized to "jpg"/"png" by
+            // the earlier content-type switch, so we only check those two.)
+            if (uploadedData.Extension is "jpg" or "png")
             {
                 var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}.{uploadedData.Extension}";
                 var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}.{uploadedData.Extension}";
@@ -2349,8 +2355,9 @@ public class EventsGrpcService(
                 {
                     using var image = new MagickImage(photoBytes);
                     image.AutoOrient();
+                    if (image.Width == 0 || image.Height == 0) return;
                     var ratio = image.Height / (decimal)image.Width;
-                    var newHeight = (uint)Math.Round(ratio * targetWidth);
+                    var newHeight = Math.Max(1u, (uint)Math.Round(ratio * targetWidth));
                     image.Resize(targetWidth, newHeight);
                     image.Crop(targetWidth, newHeight);    // SDK parity — Resize may round; Crop pins exact dims
                     using var resizedMs = new MemoryStream();
@@ -2359,8 +2366,17 @@ public class EventsGrpcService(
                     await core.PutFileToS3Storage(resizedMs, targetFilename).ConfigureAwait(false);
                 }
 
-                await WriteResizedAsync(300, smallFilename).ConfigureAwait(false);
-                await WriteResizedAsync(700, bigFilename).ConfigureAwait(false);
+                try
+                {
+                    await WriteResizedAsync(300, smallFilename).ConfigureAwait(false);
+                    await WriteResizedAsync(700, bigFilename).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex,
+                        "Thumbnail generation failed for UploadedData {Id}; original photo persisted, consumers will fall back to it",
+                        uploadedData.Id);
+                }
             }
 
             // 6. Mirror angular's FieldValues row insert.
