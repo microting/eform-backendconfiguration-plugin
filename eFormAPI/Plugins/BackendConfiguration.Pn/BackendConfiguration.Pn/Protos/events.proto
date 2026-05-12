@@ -1,11 +1,10 @@
 syntax = "proto3";
 
-// Mid-migration: opgave -> event, tavle -> board per
+// Mid-migration: opgave -> event, tavle -> board, ejendom -> property per
 // docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
 // Wire field names (`opgaver`, `tavler`, `tavle_id`, `tavle_ids`,
-// `ejendom_id`) stay as-is so generated accessors don't churn; only
-// message types and RPC method names move. Ejendom and rode renames
-// land in follow-up phases.
+// `ejendom_id`, `ejendomme`) stay as-is so generated accessors don't churn;
+// only message types and RPC method names move. Rode rename lands in Phase 4.
 
 package backend_configuration;
 
@@ -15,7 +14,7 @@ import "google/protobuf/timestamp.proto";
 import "documents.proto";
 
 service Events {
-  rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
+  rpc ListProperties(ListPropertiesRequest) returns (ListPropertiesResponse);
   rpc ListBoards(ListBoardsRequest) returns (ListBoardsResponse);
   rpc ListEvents(ListOpgaverRequest) returns (ListOpgaverResponse);
   rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
@@ -122,8 +121,8 @@ message SetFieldValueRequest {
 }
 message SetFieldValueResponse { Event opgave = 1; }
 
-message ListEjendommeRequest {}
-message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
+message ListPropertiesRequest {}
+message ListPropertiesResponse { repeated Property ejendomme = 1; }
 
 message ListBoardsRequest { string ejendom_id = 1; }
 message ListBoardsResponse { repeated Board tavler = 1; }
@@ -158,7 +157,7 @@ message EventChange {
   }
 }
 
-message Ejendom {
+message Property {
   string id = 1;
   string name = 2;
 }
