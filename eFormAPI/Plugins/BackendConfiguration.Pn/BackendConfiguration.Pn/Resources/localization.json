@@ -4624,6 +4624,37 @@
     }
   },
   {
+    "Key": "AtLeastOneWorkerMustBeAssigned",
+    "LocalizedValue": {
+      "da": "Mindst én medarbejder skal tildeles",
+      "de": "Mindestens ein Mitarbeiter muss zugewiesen werden",
+      "en-US": "At least one worker must be assigned",
+      "uk-UA": "Необхідно призначити принаймні одного працівника",
+      "pl-PL": "Co najmniej jeden pracownik musi być przypisany",
+      "no-NO": "Minst én medarbeider må tildeles",
+      "sv-SE": "Minst en arbetare måste tilldelas",
+      "es-ES": "Se debe asignar al menos un trabajador",
+      "fr-FR": "Au moins un travailleur doit être assigné",
+      "it-IT": "Almeno un lavoratore deve essere assegnato",
+      "nl-NL": "Er moet ten minste één medewerker worden toegewezen",
+      "pt-BR": "Pelo menos um trabalhador deve ser atribuído",
+      "pt-PT": "Pelo menos um trabalhador deve ser atribuído",
+      "fi-FI": "Vähintään yksi työntekijä on määritettävä",
+      "et-ET": "Tuleb määrata vähemalt üks töötaja",
+      "lv-LV": "Jābūt piešķirtam vismaz vienam darbiniekam",
+      "lt-LT": "Turi būti priskirtas bent vienas darbuotojas",
+      "ro-RO": "Cel puțin un lucrător trebuie să fie alocat",
+      "hr-HR": "Mora biti dodijeljen najmanje jedan radnik",
+      "sl-SL": "Dodeljen mora biti najmanj en delavec",
+      "cs-CZ": "Musí být přiřazen alespoň jeden pracovník",
+      "sk-SK": "Musí byť priradený aspoň jeden pracovník",
+      "hu-HU": "Legalább egy dolgozót hozzá kell rendelni",
+      "bg-BG": "Трябва да бъде назначен поне един работник",
+      "el-GR": "Πρέπει να ανατεθεί τουλάχιστον ένας εργαζόμενος",
+      "is-IS": "Að minnsta kosti einn starfsmaður verður að vera úthlutaður"
+    }
+  },
+  {
     "Key": "ReportPeriod",
     "LocalizedValue": {
       "da": "Rapport periode",
@@ -4807,6 +4838,141 @@
       "bg-BG": "Номер на служителя",
       "el-GR": "Αριθμός εργαζομένου",
       "is-IS": "Starfsmaður númer"
+    }
+  },
+  {
+    "Key": "GoogleDriveConnectFailed",
+    "LocalizedValue": {
+      "da": "Kunne ikke oprette forbindelse til Google Drev",
+      "de": "Verbindung zu Google Drive konnte nicht hergestellt werden",
+      "en-US": "Could not connect to Google Drive",
+      "uk-UA": "Не вдалося підключитися до Google Диска",
+      "pl-PL": "Nie udało się połączyć z Dyskiem Google",
+      "no-NO": "Kunne ikke koble til Google Disk",
+      "sv-SE": "Det gick inte att ansluta till Google Drive",
+      "fr-FR": "Impossible de se connecter à Google Drive"
+    }
+  },
+  {
+    "Key": "GoogleDriveTokenRevoked",
+    "LocalizedValue": {
+      "da": "Adgangen til Google Drev er tilbagekaldt. Tilslut venligst igen.",
+      "de": "Der Zugriff auf Google Drive wurde widerrufen. Bitte erneut verbinden.",
+      "en-US": "Google Drive access has been revoked. Please reconnect.",
+      "uk-UA": "Доступ до Google Диска відкликано. Будь ласка, підключіться знову.",
+      "pl-PL": "Dostęp do Dysku Google został cofnięty. Połącz się ponownie.",
+      "no-NO": "Tilgangen til Google Disk er trukket tilbake. Koble til på nytt.",
+      "sv-SE": "Åtkomsten till Google Drive har återkallats. Anslut igen.",
+      "fr-FR": "L'accès à Google Drive a été révoqué. Veuillez vous reconnecter."
+    }
+  },
+  {
+    "Key": "DriveFileNotFound",
+    "LocalizedValue": {
+      "da": "Filen kunne ikke findes i Drev.",
+      "de": "Die Datei konnte in Drive nicht gefunden werden.",
+      "en-US": "The file could not be found in Drive.",
+      "uk-UA": "Файл не знайдено на Диску.",
+      "pl-PL": "Nie znaleziono pliku na Dysku.",
+      "no-NO": "Filen ble ikke funnet i Disk.",
+      "sv-SE": "Filen kunde inte hittas i Drive.",
+      "fr-FR": "Le fichier est introuvable dans Drive."
+    }
+  },
+  {
+    "Key": "DriveAttachmentMimeRejected",
+    "LocalizedValue": {
+      "da": "Kun PDF-, PNG-, JPG- og JPEG-filer kan vedhæftes fra Drev.",
+      "de": "Nur PDF-, PNG-, JPG- und JPEG-Dateien können aus Drive angehängt werden.",
+      "en-US": "Only PDF, PNG, JPG, JPEG files can be attached from Drive.",
+      "uk-UA": "З Диска можна додавати лише файли PDF, PNG, JPG, JPEG.",
+      "pl-PL": "Z Dysku można dołączać tylko pliki PDF, PNG, JPG, JPEG.",
+      "no-NO": "Bare PDF-, PNG-, JPG- og JPEG-filer kan legges ved fra Disk.",
+      "sv-SE": "Endast PDF-, PNG-, JPG- och JPEG-filer kan bifogas från Drive.",
+      "fr-FR": "Seuls les fichiers PDF, PNG, JPG, JPEG peuvent être joints depuis Drive."
+    }
+  },
+  {
+    "Key": "AreaRulePlanningNotFound",
+    "LocalizedValue": {
+      "da": "Planlægningen blev ikke fundet",
+      "de": "Planung nicht gefunden",
+      "en-US": "Planning not found",
+      "uk-UA": "Планування не знайдено",
+      "pl-PL": "Nie znaleziono planowania",
+      "no-NO": "Planleggingen ble ikke funnet",
+      "sv-SE": "Planeringen kunde inte hittas",
+      "fr-FR": "Planification introuvable"
+    }
+  },
+  {
+    "Key": "FileTooLarge",
+    "LocalizedValue": {
+      "da": "Filen er for stor",
+      "de": "Die Datei ist zu groß",
+      "en-US": "File is too large",
+      "uk-UA": "Файл занадто великий",
+      "pl-PL": "Plik jest za duży",
+      "no-NO": "Filen er for stor",
+      "sv-SE": "Filen är för stor",
+      "fr-FR": "Le fichier est trop volumineux"
+    }
+  },
+  {
+    "Key": "FieldRequired",
+    "LocalizedValue": {
+      "da": "Dette felt er påkrævet",
+      "de": "Dieses Feld ist erforderlich",
+      "en-US": "This field is required",
+      "uk-UA": "Це поле є обов'язковим",
+      "pl-PL": "To pole jest wymagane",
+      "no-NO": "Dette feltet er påkrevd",
+      "sv-SE": "Detta fält är obligatoriskt",
+      "fr-FR": "Ce champ est obligatoire"
+    }
+  },
+  {
+    "Key": "GenericError",
+    "LocalizedValue": {
+      "da": "Der opstod en uventet fejl. Prøv venligst igen.",
+      "de": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "en-US": "An unexpected error occurred. Please try again.",
+      "uk-UA": "Сталася неочікувана помилка. Будь ласка, спробуйте ще раз.",
+      "pl-PL": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
+      "no-NO": "En uventet feil oppstod. Vennligst prøv igjen.",
+      "sv-SE": "Ett oväntat fel inträffade. Försök igen.",
+      "fr-FR": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    }
+  },
+  {
+    "Key": "Connected Google Drive accounts",
+    "LocalizedValue": {
+      "da": "Tilsluttede Google Drive-konti",
+      "de": "Verbundene Google Drive-Konten",
+      "en-US": "Connected Google Drive accounts",
+      "uk-UA": "Підключені облікові записи Google Drive",
+      "pl-PL": "Połączone konta Google Drive",
+      "no-NO": "Tilkoblede Google Drive-kontoer",
+      "sv-SE": "Anslutna Google Drive-konton",
+      "es-ES": "Cuentas de Google Drive conectadas",
+      "fr-FR": "Comptes Google Drive connectés",
+      "it-IT": "Account Google Drive collegati",
+      "nl-NL": "Verbonden Google Drive-accounts",
+      "pt-BR": "Contas do Google Drive conectadas",
+      "pt-PT": "Contas do Google Drive ligadas",
+      "fi-FI": "Yhdistetyt Google Drive -tilit",
+      "et-ET": "Ühendatud Google Drive'i kontod",
+      "lv-LV": "Savienotie Google Drive konti",
+      "lt-LT": "Prijungtos „Google Drive“ paskyros",
+      "ro-RO": "Conturi Google Drive conectate",
+      "hr-HR": "Povezani Google Drive računi",
+      "sl-SL": "Povezani Google Drive računi",
+      "cs-CZ": "Připojené účty Google Drive",
+      "sk-SK": "Pripojené účty Google Drive",
+      "hu-HU": "Csatlakoztatott Google Drive-fiókok",
+      "bg-BG": "Свързани Google Drive профили",
+      "el-GR": "Συνδεδεμένοι λογαριασμοί Google Drive",
+      "is-IS": "Tengdir Google Drive-reikningar"
     }
   }
 ]

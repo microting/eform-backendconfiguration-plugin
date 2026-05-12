@@ -17,7 +17,7 @@
       font-size: 0.9rem;
       color: #444;
       padding: 4px 0;
-      border-bottom: 2px solid #e0e0e0;
+      border-bottom: 2px solid var(--border, #e0e0e0);
       margin-bottom: 8px;
       text-transform: capitalize;
     }
@@ -30,6 +30,13 @@
       border-left: 4px solid #ccc;
       padding-left: 12px;
       margin-bottom: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+
+      &:hover {
+        background: var(--bg-soft, #f1f3f4);
+      }
 
       .task-time {
         font-size: 0.8rem;

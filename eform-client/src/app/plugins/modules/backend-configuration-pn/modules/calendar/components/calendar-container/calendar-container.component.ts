@@ -57,6 +57,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   get tagNames(): string[] { return this.tags.map(t => t.name); }
 
+  get selectedPropertyName(): string {
+    if (!this.currentPropertyId) return '';
+    const p = this.properties?.find(x => x.id === this.currentPropertyId);
+    return p?.name ?? '';
+  }
+
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
@@ -312,9 +318,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -349,6 +356,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
@@ -356,7 +364,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
@@ -406,7 +417,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   onNavigate(direction: -1 | 1) {
     const d = new Date(this.currentDate);
-    d.setDate(d.getDate() + direction * 7);
+    // Day view advances by one day; week and schedule (list) views both show a
+    // full week of data, so the chevron advances by one full week in those.
+    const step = this.viewMode === 'day' ? 1 : 7;
+    d.setDate(d.getDate() + direction * step);
     this.stateService.updateCurrentDate(this.toLocalDateString(d));
     this.loadTasks();
   }
@@ -417,11 +431,26 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onViewModeChange(viewMode: 'week' | 'day' | 'schedule') {
+    // Switching out of week view: snap currentDate to Monday of the
+    // currently-viewed week so day-view lands on the first day of that
+    // week and schedule-view shows that same week — preserving the
+    // user's navigation context instead of jumping back to today.
+    if (viewMode !== 'week' && this.viewMode === 'week') {
+      const monday = this.getMondayOfWeek(new Date(this.currentDate));
+      this.stateService.updateCurrentDate(this.toLocalDateString(monday));
+    }
     this.stateService.updateViewMode(viewMode);
+    this.loadTasks();
   }
 
   onToggleSidebar() {
     this.stateService.toggleSidebar();
+  }
+
+  onPropertyPillClicked() {
+    if (!this.sidebarOpen) {
+      this.onToggleSidebar();
+    }
   }
 
   onBoardToggled(boardId: number) {
@@ -474,6 +503,39 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Resize commit — calls a dedicated resize endpoint that updates only
+  // StartHour + Duration without touching other fields, mirroring how
+  // onTaskMoved uses the move endpoint. Resize on an existing task is
+  // allowed even when the start is in the past (no past-time check
+  // server-side for this endpoint).
+  onTaskResized(event: {taskId: number; newStartHour: number; newDuration: number; repeatSeriesId?: string; originalDate: string}) {
+    const task = this.tasks.find(t => t.id === event.taskId);
+    const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
+
+    const doResize = (scope: RepeatEditScope) => {
+      this.calendarService
+        .resizeTask(event.taskId, event.newStartHour, event.newDuration, scope, event.originalDate)
+        .subscribe(() => this.loadTasks());
+    };
+
+    if (isRepeating) {
+      const ref = this.dialog.open(
+        RepeatScopeModalComponent,
+        dialogConfigHelper(this.overlay, {mode: 'edit'})
+      );
+      ref.afterClosed().subscribe(scope => {
+        if (scope) {
+          doResize(scope);
+        } else {
+          // Cancelled — refetch so the optimistic local update is undone.
+          this.loadTasks();
+        }
+      });
+    } else {
+      doResize('this');
+    }
+  }
+
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
     this.closePreviewOverlay();
 
@@ -482,9 +544,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.previewOverlayRef = this.overlay.create({
@@ -513,6 +576,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskPreviewModalComponent, null, popoverInjector);
     const componentRef = this.previewOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.previewOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
@@ -552,9 +616,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -590,6 +655,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.timeChanged.pipe(takeUntil(this.destroy$)).subscribe(time => {
@@ -597,7 +663,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
@@ -616,9 +685,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const positionStrategy = this.overlay
       .position()
-      .flexibleConnectedTo({x: anchorX, y: event.slotTop})
+      .flexibleConnectedTo({x: anchorX, y: this.clampAnchorY(event.slotTop)})
       .withPositions(positions)
       .withPush(true)
+      .withFlexibleDimensions(true)
       .withViewportMargin(8);
 
     this.createOverlayRef = this.overlay.create({
@@ -655,11 +725,15 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     const portal = new ComponentPortal(TaskCreateEditModalComponent, null, popoverInjector);
     const componentRef = this.createOverlayRef.attach(portal);
+    this.ensureOverlayInViewport(this.createOverlayRef);
 
     componentRef.instance.usePopoverMode = true;
     componentRef.instance.popoverClose.pipe(takeUntil(this.destroy$)).subscribe(result => {
       this.closeCreateOverlay();
-      if (result) this.loadTasks();
+      if (result) {
+        this.loadTags();
+        this.loadTasks();
+      }
     });
 
     this.createOverlayRef.backdropClick().pipe(takeUntil(this.destroy$)).subscribe(() => {
@@ -686,6 +760,41 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         ];
   }
 
+  private clampAnchorY(y: number): number {
+    return Math.max(8, Math.min(y, window.innerHeight - 8));
+  }
+
+  private ensureOverlayInViewport(overlayRef: OverlayRef) {
+    const apply = () => {
+      const pane = overlayRef.overlayElement;
+      if (!pane) return;
+      const margin = 8;
+      const vh = window.innerHeight;
+      pane.style.maxHeight = `${vh - margin * 2}px`;
+      const rect = pane.getBoundingClientRect();
+      if (rect.height <= 0) return;
+      if (rect.top < margin) {
+        pane.style.top = `${margin}px`;
+      } else if (rect.bottom > vh - margin) {
+        const newTop = Math.max(margin, vh - margin - rect.height);
+        pane.style.top = `${newTop}px`;
+      }
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(apply));
+
+    const pane = overlayRef.overlayElement;
+    if (pane && typeof ResizeObserver !== 'undefined') {
+      const resizeObs = new ResizeObserver(() => apply());
+      resizeObs.observe(pane);
+      overlayRef.detachments().subscribe(() => resizeObs.disconnect());
+    }
+
+    const onWinResize = () => apply();
+    window.addEventListener('resize', onWinResize);
+    overlayRef.detachments().subscribe(() => window.removeEventListener('resize', onWinResize));
+  }
+
   private pickAnchorX(cellLeft: number, cellRight: number): number {
     const modalWidth = 500;
     const spaceRight = window.innerWidth - cellRight;
@@ -696,9 +805,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     if (!repeatType || repeatType === 0) return 'none';
     switch (repeatType) {
       case 1: return repeatEvery === 1 ? 'daily' : 'custom';
-      case 2: return repeatEvery === 1 ? 'weekly' : 'custom';
-      case 3: return repeatEvery === 1 ? 'monthly' : 'custom';
-      default: return 'none';
+      case 2: return repeatEvery === 1 ? 'weeklyOne' : 'custom';
+      case 3: return repeatEvery === 1 ? 'monthlyDom' : 'custom';
+      case 4: return repeatEvery === 1 ? 'yearlyOne' : 'custom';
+      default: return 'custom';
     }
   }
 

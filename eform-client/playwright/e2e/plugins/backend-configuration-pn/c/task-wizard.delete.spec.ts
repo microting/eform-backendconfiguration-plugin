@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { BackendConfigurationPropertiesPage, PropertyCreateUpdate } from '../BackendConfigurationProperties.page';
 import { BackendConfigurationPropertyWorkersPage, PropertyWorker } from '../BackendConfigurationPropertyWorkers.page';
@@ -8,6 +8,20 @@ import {
   selectValueInNgSelectorNoSelector,
   selectDateOnNewDatePicker,
 } from '../../../helper-functions';
+
+// Opens the row action menu then clicks Delete inside it.
+// Two sequential CDK overlays: the menu, then (after delete click) the
+// confirmation dialog. Waiting on visibility each step avoids force-clicks
+// on transitional DOM where the menu has already begun to close.
+async function openActionMenuAndClickDelete(page: Page): Promise<void> {
+  const actionMenu = page.locator('.task-actions').first().locator('#actionMenu');
+  await expect(actionMenu).toBeVisible({ timeout: 10000 });
+  await actionMenu.click();
+
+  const deleteBtn = page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first();
+  await expect(deleteBtn).toBeVisible({ timeout: 10000 });
+  await deleteBtn.click();
+}
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -61,10 +75,9 @@ test.describe('Area rules type 1', () => {
     const bindArea = '00. Logbøger';
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
-    await page.waitForTimeout(3000);
-    await expect(page.locator('#createNewTaskBtn')).toBeEnabled();
+    await expect(page.locator('#createNewTaskBtn')).toBeEnabled({ timeout: 30000 });
     await page.locator('#createNewTaskBtn').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('#createProperty')).toBeVisible({ timeout: 10000 });
 
     const getFoldersResponse = page.waitForResponse(
       r => r.url().includes('/api/backend-configuration-pn/properties/get-folder-dtos?'),
@@ -73,29 +86,33 @@ test.describe('Area rules type 1', () => {
     await page.locator('#createProperty').click();
     await selectValueInNgSelectorNoSelector(page, `${property.name}`);
     await getFoldersResponse;
-    await page.waitForTimeout(500);
 
-    await expect(page.locator('#createFolder mat-select .mat-mdc-select-trigger')).toBeVisible();
-    await page.locator('#createFolder mat-select .mat-mdc-select-trigger').click({ force: true });
-    await page.waitForTimeout(500);
-    await page.locator('mat-tree-node > button').click();
-    await page.waitForTimeout(500);
-    await page.locator('.folder-tree-name').filter({ hasText: bindArea }).first().click();
-    await page.waitForTimeout(500);
+    const folderSelect = page.locator('#createFolder mat-select .mat-mdc-select-trigger');
+    await expect(folderSelect).toBeVisible({ timeout: 10000 });
+    await folderSelect.click({ force: true });
+    const treeNodeButton = page.locator('mat-tree-node > button');
+    await expect(treeNodeButton).toBeVisible({ timeout: 10000 });
+    await treeNodeButton.click();
+    const folderLeaf = page.locator('.folder-tree-name').filter({ hasText: bindArea }).first();
+    await expect(folderLeaf).toBeVisible({ timeout: 10000 });
+    await folderLeaf.click();
 
     await page.locator('#createTableTags').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('.ng-dropdown-panel')).toBeVisible({ timeout: 10000 });
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
+    // Ensure the first dropdown fully closes before opening the second —
+    // otherwise the toBeVisible check below can match the stale closing panel.
+    await expect(page.locator('.ng-dropdown-panel')).toHaveCount(0, { timeout: 5000 });
     await page.locator('#createTags').click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('.ng-dropdown-panel')).toBeVisible({ timeout: 10000 });
     await selectValueInNgSelectorNoSelector(page, '0. ' + property.name + ' - ' + property.address);
-    await page.waitForTimeout(500);
+    await expect(page.locator('.ng-dropdown-panel')).toHaveCount(0, { timeout: 5000 });
 
     for (let i = 0; i < task.translations.length; i++) {
-      await page.locator(`[for='createName${i}']`).scrollIntoViewIfNeeded();
-      await expect(page.locator(`[for='createName${i}']`)).toBeVisible();
-      await page.waitForTimeout(500);
-      await page.locator(`[for='createName${i}']`).fill(task.translations[i]);
+      const nameField = page.locator(`[for='createName${i}']`);
+      await nameField.scrollIntoViewIfNeeded();
+      await expect(nameField).toBeVisible({ timeout: 10000 });
+      await nameField.fill(task.translations[i]);
     }
 
     await selectValueInNgSelector(page, '#createTemplateSelector', task.eformName, true);
@@ -119,39 +136,28 @@ test.describe('Area rules type 1', () => {
     );
     await page.locator('#createTaskBtn').click();
     await createTaskResponse;
-    await page.waitForTimeout(500);
 
-    await expect(page.locator('.cdk-row')).toHaveCount(1);
+    await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 10000 });
 
-    // Open the action menu
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
-
-    // Click the Delete Task button inside the opened menu
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first().click({ force: true });
-
-    // Wait for delete confirmation dialog to appear
-    await expect(page.locator('#taskWizardDeleteCancelBtn')).toBeVisible({ timeout: 30000 });
+    // First round: open action menu, click delete, then cancel the confirmation
+    await openActionMenuAndClickDelete(page);
+    await expect(page.locator('#taskWizardDeleteCancelBtn')).toBeVisible({ timeout: 15000 });
     await page.locator('#taskWizardDeleteCancelBtn').click();
     // Wait for dialog/overlay to fully close before re-opening menu
     await expect(page.locator('#taskWizardDeleteCancelBtn')).toBeHidden({ timeout: 10000 });
-    await page.waitForTimeout(500);
+    await expect(page.locator('.cdk-overlay-backdrop')).toHaveCount(0, { timeout: 10000 });
     await expect(page.locator('.cdk-row')).toHaveCount(1);
 
-    // Open the action menu again
-    await expect(page.locator('.task-actions').first().locator('#actionMenu')).toBeVisible();
-    await page.locator('.task-actions').first().locator('#actionMenu').click({ force: true });
-    await page.waitForTimeout(400);
-
-    // Click the Delete Task button inside the opened menu
-    await expect(page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first()).toBeVisible();
-    await page.locator('.cdk-overlay-container').locator('[id^=deleteTaskBtn]').first().click({ force: true });
-
-    await expect(page.locator('#taskWizardDeleteDeleteBtn')).toBeVisible({ timeout: 30000 });
+    // Second round: confirm delete
+    await openActionMenuAndClickDelete(page);
+    await expect(page.locator('#taskWizardDeleteDeleteBtn')).toBeVisible({ timeout: 15000 });
+    const deleteResponse = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/task-wizard') && r.request().method() === 'DELETE',
+      { timeout: 30000 }
+    );
     await page.locator('#taskWizardDeleteDeleteBtn').click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('.cdk-row')).toHaveCount(0);
+    await deleteResponse;
+    await expect(page.locator('.cdk-row')).toHaveCount(0, { timeout: 10000 });
   });
 
   test.afterAll(async ({ browser }) => {
@@ -161,7 +167,6 @@ test.describe('Area rules type 1', () => {
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
     await propertiesPage.goToProperties();
-    await page.waitForTimeout(500);
     await propertiesPage.clearTable();
     await workersPage.goToPropertyWorkers();
     await workersPage.clearTable();

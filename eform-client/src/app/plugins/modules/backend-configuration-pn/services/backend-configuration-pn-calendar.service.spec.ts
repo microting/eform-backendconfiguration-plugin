@@ -52,4 +52,23 @@ describe('BackendConfigurationPnCalendarService', () => {
       );
     });
   });
+
+  describe('createTask', () => {
+    it('POSTs to Tasks and resolves an OperationDataResult<number> envelope', (done) => {
+      // The pre-save staging flow depends on createTask returning the new
+      // AreaRulePlanning id in the OperationDataResult envelope so the modal
+      // can iterate the staged-files queue against it.
+      apiBaseServiceSpy.post.and.returnValue(of({success: true, model: 4711, message: 'ok'}));
+
+      service.createTask({} as any).subscribe(res => {
+        expect(apiBaseServiceSpy.post).toHaveBeenCalledWith(
+          BackendConfigurationPnCalendarMethods.Tasks,
+          jasmine.anything()
+        );
+        expect(res.success).toBeTrue();
+        expect(res.model).toBe(4711);
+        done();
+      });
+    });
+  });
 });

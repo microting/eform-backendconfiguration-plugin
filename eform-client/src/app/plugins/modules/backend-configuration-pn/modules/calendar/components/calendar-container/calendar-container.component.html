@@ -31,10 +31,12 @@
       [currentDate]="currentDate"
       [viewMode]="viewMode"
       [sidebarOpen]="sidebarOpen"
+      [propertyName]="selectedPropertyName"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
       (viewModeChange)="onViewModeChange($event)"
       (toggleSidebar)="onToggleSidebar()"
+      (propertyPillClicked)="onPropertyPillClicked()"
     ></app-calendar-header>
 
     <ng-container [ngSwitch]="viewMode">
@@ -51,6 +53,7 @@
         (slotClicked)="openCreateModal($event)"
         (taskClicked)="onTaskClickedFromGrid($event)"
         (taskMoved)="onTaskMoved($event)"
+        (taskResized)="onTaskResized($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>
 
@@ -65,6 +68,7 @@
         (slotClicked)="openCreateModal($event)"
         (taskClicked)="onTaskClickedFromGrid($event)"
         (taskMoved)="onTaskMoved($event)"
+        (taskResized)="onTaskResized($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-week-grid>
 
@@ -73,6 +77,7 @@
         [tasksByDay]="tasksByDay"
         [currentDate]="currentDate"
         [boards]="boards"
+        (taskClicked)="onTaskClickedFromGrid($event)"
         (tasksReload)="loadTasks()"
       ></app-calendar-schedule-view>
     </ng-container>

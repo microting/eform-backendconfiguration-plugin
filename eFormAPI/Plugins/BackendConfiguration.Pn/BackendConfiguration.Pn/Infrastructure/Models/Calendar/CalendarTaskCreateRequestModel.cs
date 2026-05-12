@@ -25,4 +25,6 @@ public class CalendarTaskCreateRequestModel
     public int? RepeatEndMode { get; set; }
     public int? RepeatOccurrences { get; set; }
     public DateTime? RepeatUntilDate { get; set; }
+    public string? RepeatWeekdaysCsv { get; set; }
+    public string? DescriptionHtml { get; set; }
 }

@@ -22,21 +22,46 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">schedule</mat-icon>
       <div class="gcal-row-content gcal-datetime-row">
-        <mat-form-field class="gcal-date-field">
-          <mat-label>{{ 'Date' | translate }}</mat-label>
-          <input matInput [matDatepicker]="datepicker" [formControl]="dateControl" [min]="minDate">
-          <mat-datepicker-toggle matIconSuffix [for]="datepicker"></mat-datepicker-toggle>
-          <mat-datepicker #datepicker></mat-datepicker>
-        </mat-form-field>
+        <div class="gcal-date-field" cdkOverlayOrigin #miniPickerOrigin="cdkOverlayOrigin">
+          <mat-form-field>
+            <mat-label>{{ 'Date' | translate }}</mat-label>
+            <input matInput
+                   readonly
+                   [value]="formattedSelectedDate"
+                   (click)="showMiniPicker = !showMiniPicker">
+            <button mat-icon-button matIconSuffix type="button"
+                    (click)="showMiniPicker = !showMiniPicker; $event.stopPropagation()">
+              <mat-icon>calendar_today</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+
+        <ng-template
+          cdkConnectedOverlay
+          [cdkConnectedOverlayOrigin]="miniPickerOrigin"
+          [cdkConnectedOverlayOpen]="showMiniPicker"
+          [cdkConnectedOverlayHasBackdrop]="true"
+          cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+          (backdropClick)="showMiniPicker = false"
+          (overlayOutsideClick)="showMiniPicker = false">
+          <div class="mini-picker-overlay-card">
+            <app-calendar-mini-calendar
+              [selectedDate]="dateControl.value"
+              [minDate]="minDate"
+              (dateSelected)="onMiniDateSelected($event)">
+            </app-calendar-mini-calendar>
+          </div>
+        </ng-template>
 
         <mat-form-field class="gcal-time-field">
           <mtx-select
             [items]="timeSlots"
             [formControl]="startTimeControl"
-            [addTag]="true"
+            [addTag]="addTimeTag"
             [addTagText]="''"
             [clearable]="false"
             [searchable]="true"
+            [selectOnTab]="true"
             appendTo="body"
           ></mtx-select>
         </mat-form-field>
@@ -47,10 +72,11 @@
           <mtx-select
             [items]="timeSlots"
             [formControl]="endTimeControl"
-            [addTag]="true"
+            [addTag]="addTimeTag"
             [addTagText]="''"
             [clearable]="false"
             [searchable]="true"
+            [selectOnTab]="true"
             appendTo="body"
           ></mtx-select>
         </mat-form-field>
@@ -98,6 +124,7 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'Assign to...' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventAssignee"
             [formControl]="assigneeControl"
             [items]="filteredEmployees"
             bindValue="id"
@@ -116,10 +143,11 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'Set tags...' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventTags"
             [formControl]="tagsControl"
             [items]="data.tags"
             [multiple]="true"
-            [addTag]="true"
+            [addTag]="addTagToList"
             [clearable]="true"
           ></mtx-select>
         </mat-form-field>
@@ -128,7 +156,7 @@
 
     <!-- Report headline row -->
     <div class="gcal-row">
-      <mat-icon class="gcal-icon">bookmark</mat-icon>
+      <mat-icon class="gcal-icon">view_compact</mat-icon>
       <div class="gcal-row-content gcal-selector-row">
         <span class="gcal-selector-label">{{ 'Report headline' | translate }}</span>
         <mat-form-field class="gcal-compact-select">
@@ -138,6 +166,8 @@
             [items]="data.planningTags"
             bindValue="id"
             bindLabel="name"
+            [addTag]="addPlanningTag"
+            addTagText="{{ 'Create new' | translate }}"
             [clearable]="true"
             [searchable]="true"
             appendTo="body"
@@ -148,7 +178,7 @@
 
     <!-- eForm row -->
     <div class="gcal-row">
-      <mat-icon class="gcal-icon">description</mat-icon>
+      <mat-icon class="gcal-icon">checklist</mat-icon>
       <div class="gcal-row-content gcal-selector-row">
         <span class="gcal-selector-label">{{ 'eForm' | translate }}</span>
         <mat-form-field class="gcal-compact-select">
@@ -204,25 +234,116 @@
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
           <mat-label>{{ 'Description' | translate }}</mat-label>
-          <textarea matInput [formControl]="descriptionControl" rows="2"></textarea>
+          <textarea id="calendarEventDescription" matInput [formControl]="descriptionControl" rows="2"></textarea>
         </mat-form-field>
       </div>
     </div>
 
-    <!-- Drive link row — hidden for now
+    <!-- Google Drive file. Same gating as the local-file row below: only
+         enabled once the AreaRulePlanning has an id (i.e. event is saved). -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">add_to_drive</mat-icon>
       <div class="gcal-row-content">
-        <a *ngIf="!showDriveInput && !isReadonly" class="gcal-action-link" (click)="showDriveInput = true">
+        <a *ngIf="!isReadonly && !!data.task?.id && !drivePickerLoading && !connecting"
+           id="calendarEventDriveAttachLink"
+           class="gcal-action-link"
+           (click)="onPickFromDrive()">
           {{ 'Add Google Drive file' | translate }}
         </a>
-        <mat-form-field *ngIf="showDriveInput" class="w-100">
-          <mat-label>{{ 'Drive link' | translate }}</mat-label>
-          <input matInput [formControl]="driveLinkControl" type="url">
-        </mat-form-field>
+        <span *ngIf="!isReadonly && !data.task?.id"
+              class="gcal-action-link gcal-action-link--disabled"
+              [matTooltip]="'Save event first to attach files' | translate">
+          {{ 'Add Google Drive file' | translate }}
+        </span>
+        <span *ngIf="drivePickerLoading" class="gcal-drive-loading">
+          <mat-progress-spinner [diameter]="16" mode="indeterminate"></mat-progress-spinner>
+          {{ 'Loading Google Picker' | translate }}
+        </span>
+        <div *ngIf="driveError" class="gcal-attachment-error">{{ driveError }}</div>
       </div>
     </div>
-    -->
+
+    <!-- Local file attachments -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">attach_file</mat-icon>
+      <div class="gcal-row-content">
+        <a *ngIf="!isReadonly"
+           id="calendarEventAttachLink"
+           class="gcal-action-link"
+           (click)="fileInput.click()">
+          {{ 'Attach file' | translate }}
+        </a>
+        <input #fileInput
+               id="calendarEventAttachInput"
+               type="file"
+               accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+               multiple
+               hidden
+               (change)="onFileInputChange($event)">
+
+        <div *ngIf="attachments.length > 0 || uploadingFiles.length > 0" class="gcal-attachments">
+          <div *ngFor="let f of attachments" class="gcal-attachment-row" [attr.data-attachment-id]="f.id">
+            <ng-container *ngIf="isImage(f); else pdfIcon">
+              <img [src]="f.downloadUrl | authImage | async"
+                   loading="lazy"
+                   class="gcal-attachment-thumb"
+                   [alt]="f.originalFileName"
+                   (click)="downloadAttachment(f)">
+            </ng-container>
+            <ng-template #pdfIcon>
+              <mat-icon class="gcal-attachment-icon" (click)="downloadAttachment(f)">picture_as_pdf</mat-icon>
+            </ng-template>
+            <div class="gcal-attachment-meta">
+              <a class="gcal-attachment-name" (click)="downloadAttachment(f)">{{ f.originalFileName }}</a>
+              <div class="gcal-attachment-meta-row">
+                <span class="gcal-attachment-size">{{ formatSize(f.sizeBytes) }}</span>
+                <span *ngIf="f.driveFileId && !f.driveRevoked"
+                      class="gcal-drive-badge"
+                      [matTooltip]="'Synced from Google Drive' | translate">Drive</span>
+                <span *ngIf="f.driveFileId && f.driveRevoked"
+                      class="gcal-drive-badge gcal-drive-badge--revoked"
+                      [matTooltip]="'Google Drive disconnected — reconnect to resume sync' | translate">{{ 'Google Drive disconnected' | translate }}</span>
+                <span *ngIf="f.driveFileId && f.lastRefreshedAt"
+                      class="gcal-drive-refreshed"
+                      [matTooltip]="('Last refreshed' | translate) + ' ' + (f.lastRefreshedAt | date:'medium')">
+                  {{ 'Last refreshed' | translate }} {{ formatRelativeTime(f.lastRefreshedAt) }}
+                </span>
+                <a *ngIf="f.driveFileId"
+                   class="gcal-drive-link"
+                   [href]="'https://drive.google.com/file/d/' + f.driveFileId + '/view'"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   [matTooltip]="'Open in Google Drive' | translate">
+                  <mat-icon>open_in_new</mat-icon>
+                </a>
+              </div>
+            </div>
+            <button mat-icon-button
+                    *ngIf="!isReadonly"
+                    class="gcal-attachment-delete"
+                    [attr.aria-label]="'Delete' | translate"
+                    (click)="deleteAttachment(f)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <div *ngFor="let u of uploadingFiles" class="gcal-attachment-row gcal-attachment-row--uploading">
+            <mat-spinner *ngIf="u.progress === 'uploading'" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="u.progress === 'pending'" class="gcal-attachment-pending-icon">schedule</mat-icon>
+            <mat-icon *ngIf="u.progress === 'error'" class="gcal-attachment-error-icon">error</mat-icon>
+            <span class="gcal-attachment-name">{{ u.name }}</span>
+            <span *ngIf="u.progress === 'pending'" class="gcal-attachment-hint">{{ 'Pending save' | translate }}</span>
+            <span *ngIf="u.progress === 'error'" class="gcal-attachment-error">{{ u.error }}</span>
+            <button *ngIf="u.progress === 'pending'"
+                    mat-icon-button
+                    class="gcal-attachment-delete"
+                    (click)="removeStagedFile(u.name)"
+                    [attr.aria-label]="'Delete' | translate">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <!-- Board row -->
@@ -245,7 +366,10 @@
   </div>
 
   <div class="gcal-actions" *ngIf="!isReadonly">
-    <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left" [disabled]="titleControl.invalid" (click)="onSave()">
+    <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
+            [disabled]="titleControl.invalid || !(assigneeControl.value?.length)"
+            [title]="!(assigneeControl.value?.length) ? ('At least one worker must be assigned' | translate) : ''"
+            (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>
   </div>

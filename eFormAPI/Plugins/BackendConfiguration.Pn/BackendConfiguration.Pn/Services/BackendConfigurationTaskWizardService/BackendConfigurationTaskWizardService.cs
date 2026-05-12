@@ -811,33 +811,38 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             await areaRulePlanning.AreaRule.Update(_backendConfigurationPnDbContext);
 
-            // update area rule translations
-            var translationsToUpdate = areaRulePlanning.AreaRule.AreaRuleTranslations
-                .Where(nt => updateModel.Translates.Any(t => t.Id == nt.Id && t.Name != nt.Name))
-                .ToList();
-            var translationsToAdd = updateModel.Translates
-                .Where(t => t.Id == null)
-                .AsQueryable();
-
-            foreach (var translation in translationsToUpdate)
+            // Update or insert AreaRule translations.
+            // Match by LanguageId rather than primary key — the frontend
+            // doesn't round-trip translation Ids, so every incoming entry
+            // has Id == null. The old code's Id-match therefore never hit
+            // an existing row and inserted duplicates on every edit,
+            // leaving the original row intact (and still fronting reads
+            // because FirstOrDefault returns the lowest-Id row).
+            foreach (var t in updateModel.Translates)
             {
-                translation.Name = updateModel.Translates.Where(x => x.Id == translation.Id).Select(x => x.Name)
-                    .FirstOrDefault();
-                translation.UpdatedByUserId = _userService.UserId;
-                await translation.Update(_backendConfigurationPnDbContext);
-            }
-
-            foreach (var translation in translationsToAdd.Select(t => new AreaRuleTranslation
-                         {
-                             Name = t.Name,
-                             LanguageId = t.LanguageId,
-                             AreaRuleId = areaRulePlanning.AreaRuleId,
-                             CreatedByUserId = _userService.UserId,
-                             UpdatedByUserId = _userService.UserId
-                         })
-                         .ToList())
-            {
-                await translation.Create(_backendConfigurationPnDbContext);
+                var existing = areaRulePlanning.AreaRule.AreaRuleTranslations
+                    .FirstOrDefault(nt => nt.LanguageId == t.LanguageId
+                        && nt.WorkflowState != Constants.WorkflowStates.Removed);
+                if (existing != null)
+                {
+                    if (existing.Name != t.Name)
+                    {
+                        existing.Name = t.Name;
+                        existing.UpdatedByUserId = _userService.UserId;
+                        await existing.Update(_backendConfigurationPnDbContext);
+                    }
+                }
+                else
+                {
+                    await new AreaRuleTranslation
+                    {
+                        Name = t.Name,
+                        LanguageId = t.LanguageId,
+                        AreaRuleId = areaRulePlanning.AreaRuleId,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId
+                    }.Create(_backendConfigurationPnDbContext);
+                }
             }
 
             switch (oldStatus)
@@ -1021,33 +1026,34 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.ShowExpireDate = true;
                     await planning.Update(_itemsPlanningPnDbContext);
 
-                    // update planning names
-                    var planningTranslationsToUpdate = planning.NameTranslations
-                        .Where(nt =>
-                            translationsToUpdate.Any(t => t.LanguageId == nt.LanguageId && t.Name != nt.Name))
-                        .ToList();
-
-                    foreach (var translation in planningTranslationsToUpdate)
+                    // Update or insert planning name translations — mirror
+                    // the AreaRule translation path: match by LanguageId
+                    // instead of by Id (Id is always null from the client).
+                    foreach (var t in updateModel.Translates)
                     {
-                        translation.Name = updateModel.Translates
-                            .Where(t => t.LanguageId == translation.LanguageId)
-                            .Select(x => x.Name)
-                            .FirstOrDefault();
-                        translation.UpdatedByUserId = _userService.UserId;
-                        await translation.Update(_itemsPlanningPnDbContext);
-                    }
-
-                    foreach (var translation in translationsToAdd.Select(t => new PlanningNameTranslation
-                                 {
-                                     Name = t.Name,
-                                     LanguageId = t.LanguageId,
-                                     PlanningId = planning.Id,
-                                     CreatedByUserId = _userService.UserId,
-                                     UpdatedByUserId = _userService.UserId
-                                 })
-                                 .ToList())
-                    {
-                        await translation.Create(_itemsPlanningPnDbContext);
+                        var existing = planning.NameTranslations
+                            .FirstOrDefault(nt => nt.LanguageId == t.LanguageId
+                                && nt.WorkflowState != Constants.WorkflowStates.Removed);
+                        if (existing != null)
+                        {
+                            if (existing.Name != t.Name)
+                            {
+                                existing.Name = t.Name;
+                                existing.UpdatedByUserId = _userService.UserId;
+                                await existing.Update(_itemsPlanningPnDbContext);
+                            }
+                        }
+                        else
+                        {
+                            await new PlanningNameTranslation
+                            {
+                                Name = t.Name,
+                                LanguageId = t.LanguageId,
+                                PlanningId = planning.Id,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId
+                            }.Create(_itemsPlanningPnDbContext);
+                        }
                     }
 
                     // update planning tags

@@ -10,15 +10,18 @@
   </div>
 
   <div class="cal-grid">
+    <div class="day-header week-header">{{ 'Wk' | translate }}</div>
     <div class="day-header" *ngFor="let h of dayHeaders">{{ h }}</div>
 
     <ng-container *ngFor="let week of weeks">
+      <div class="week-num-cell">{{ week.weekNumber }}</div>
       <div
         class="day-cell"
-        *ngFor="let day of week"
+        *ngFor="let day of week.days"
         [class.other-month]="!day.inCurrentMonth"
         [class.today]="day.isToday"
         [class.selected]="day.isSelected"
+        [class.disabled]="day.isDisabled"
         (click)="selectDate(day)"
       >{{ day.dayNum }}</div>
     </ng-container>

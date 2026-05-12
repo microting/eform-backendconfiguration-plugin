@@ -32,7 +32,8 @@ export class CalendarPage {
   }
 
   // Fill the create event modal. Always selects the first Report headline
-  // (planning tag) option because the backend requires one.
+  // (planning tag) option and the first available assignee because the
+  // backend requires both.
   async fillCreateModal(data: {
     title: string;
     eformName?: string;
@@ -42,7 +43,7 @@ export class CalendarPage {
     if (data.eformName) {
       const eformSelect = this.page.locator('#calendarEventEform');
       await eformSelect.click();
-      await this.page.locator('.ng-dropdown-panel input[type="text"]').fill(data.eformName);
+      await this.typeInNgSelect('#calendarEventEform', data.eformName);
       await this.page.waitForTimeout(500);
       await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
@@ -53,6 +54,15 @@ export class CalendarPage {
     await this.page.waitForTimeout(500);
     await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
     await this.page.waitForTimeout(300);
+
+    // Pick the first assignee — backend rejects events with no sites.
+    const assigneeSelect = this.page.locator('#calendarEventAssignee');
+    await assigneeSelect.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    // Close the multi-select dropdown by clicking outside it.
+    await this.page.locator('#calendarEventTitle').click();
+    await this.page.waitForTimeout(300);
   }
 
   // Save the modal
@@ -61,14 +71,29 @@ export class CalendarPage {
     await this.page.waitForTimeout(2000);
   }
 
-  // Find an event by title on the calendar
+  // Find an event by title on the calendar.
+  // Use `.task-block` (the actual rendered class) rather than the Angular
+  // component tag — the latter isn't always matched reliably across builds.
   getEventByTitle(title: string): Locator {
-    return this.page.locator('app-calendar-task-block').filter({ hasText: title });
+    return this.page.locator('.task-block').filter({ hasText: title });
   }
 
-  // Verify event exists on calendar
-  async verifyEventExists(title: string): Promise<boolean> {
-    return await this.getEventByTitle(title).isVisible();
+  // Wait for an event tile to appear on the calendar. Events render async
+  // after the property is selected (GET /tasks/week fires, then Angular
+  // re-renders the week grid), so a sync .isVisible() check would race
+  // that render. Returns true if the event becomes visible within the
+  // timeout, false otherwise — never throws.
+  //
+  // Uses .first() because in copy flows the same title substring matches
+  // both the original and the "Kopi af … " copy, and Playwright's strict
+  // mode rejects locators with multiple matches.
+  async waitForEvent(title: string, timeout = 10000): Promise<boolean> {
+    try {
+      await this.getEventByTitle(title).first().waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Drag an event to a new day/time
@@ -156,5 +181,98 @@ export class CalendarPage {
   async closePreview(): Promise<void> {
     await this.page.locator('#calendarEventCancelBtn').click();
     await this.page.waitForTimeout(500);
+  }
+
+  // Type into an ng-select that may or may not have a selected value.
+  // ng-select keeps the typeahead input in the CONTROL (.ng-input) when no
+  // value is selected, and moves it into the DROPDOWN PANEL once a value
+  // is picked. Caller must have already triggered the open click.
+  private async typeInNgSelect(selectId: string, name: string): Promise<void> {
+    // Wait for the dropdown to actually render before probing for inputs —
+    // otherwise count() returns 0 on a still-animating panel and we'd fall
+    // through to the error path prematurely.
+    await this.page
+      .locator('.ng-dropdown-panel, .ng-select-container.ng-select-opened')
+      .first()
+      .waitFor({ state: 'visible', timeout: 5000 });
+    const panelInput = this.page.locator('.ng-dropdown-panel input[type="text"]');
+    const controlInput = this.page.locator(`${selectId} input[type="text"]`);
+    if (await panelInput.count() > 0) {
+      await panelInput.first().fill(name);
+      return;
+    }
+    if (await controlInput.count() > 0) {
+      await controlInput.first().fill(name);
+      return;
+    }
+    throw new Error(`typeInNgSelect: no typeahead input found for ${selectId}`);
+  }
+
+  // Inline-create a planning tag (Rapportoverskrift) via the new addTag affordance.
+  // After this call, the new tag is selected in the planning-tag control AND
+  // available in BOTH the planning-tag dropdown AND the Set tags multi-select.
+  async inlineCreatePlanningTag(name: string): Promise<void> {
+    const select = this.page.locator('#calendarEventPlanningTag');
+    await select.click();
+    await this.typeInNgSelect('#calendarEventPlanningTag', name);
+    await this.page.waitForTimeout(300);
+    // ng-select renders the addTag pseudo-option with a `.ng-tag-label`
+    // child node — the only option type that has it. This is stable
+    // across already-exists vs new states.
+    const addTagOption = this.page.locator('.ng-dropdown-panel .ng-option:has(.ng-tag-label)');
+    if (await addTagOption.count() > 0) {
+      await addTagOption.first().click();
+    } else {
+      // Tag already exists in the list (re-creation collapses to existing).
+      await this.page.locator('.ng-dropdown-panel .ng-option')
+        .filter({ hasText: new RegExp(`^${name}$`) })
+        .first()
+        .click();
+    }
+    await this.page.waitForTimeout(500); // wait for backend POST + dropdown reset
+  }
+
+  // Pick an EXISTING planning tag (must already exist in the dropdown).
+  async selectExistingPlanningTag(name: string): Promise<void> {
+    const select = this.page.locator('#calendarEventPlanningTag');
+    await select.click();
+    await this.typeInNgSelect('#calendarEventPlanningTag', name);
+    await this.page.waitForTimeout(300);
+    // Pick the option whose text equals the name exactly (avoid the "+ Create" pseudo-option).
+    const option = this.page.locator('.ng-dropdown-panel .ng-option')
+      .filter({ hasText: new RegExp(`^${name}$`) })
+      .first();
+    await option.click();
+    await this.page.waitForTimeout(300);
+  }
+
+  // Add a tag (existing) to the multi-select Set tags field by typing its name and clicking the matching option.
+  async addExistingTag(name: string): Promise<void> {
+    const select = this.page.locator('#calendarEventTags');
+    await select.click();
+    await this.typeInNgSelect('#calendarEventTags', name);
+    await this.page.waitForTimeout(300);
+    const option = this.page.locator('.ng-dropdown-panel .ng-option')
+      .filter({ hasText: new RegExp(`^${name}$`) })
+      .first();
+    await option.click();
+    await this.page.waitForTimeout(200);
+    // Close dropdown by clicking title input
+    await this.page.locator('#calendarEventTitle').click();
+    await this.page.waitForTimeout(200);
+  }
+
+  // Remove a tag chip by name from the Set tags multi-select.
+  async removeTagChip(name: string): Promise<void> {
+    const chip = this.page.locator('#calendarEventTags .ng-value').filter({ hasText: name });
+    await chip.locator('.ng-value-icon').click();
+    await this.page.waitForTimeout(200);
+  }
+
+  // Click Edit in the preview popover to open the edit modal.
+  async clickEditInPreview(): Promise<void> {
+    await this.page.locator('#calendarEventEditBtn').click();
+    await this.page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.waitForTimeout(800); // let form rehydrate
   }
 }

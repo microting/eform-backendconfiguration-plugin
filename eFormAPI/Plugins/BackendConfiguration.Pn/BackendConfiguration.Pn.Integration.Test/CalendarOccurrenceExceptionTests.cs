@@ -382,6 +382,55 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     }
 
     [Test]
+    public async Task MoveTask_ScopeThisAndFollowing_AnchorsPastOccurrencesWithOldValues()
+    {
+        // Series started 4 weeks ago; user drags an upcoming Monday occurrence
+        // to a different day (Wed) at a new time. With 'thisAndFollowing' scope
+        // the past 4 Mondays must keep their original (Mon, 09:00, 1h) state
+        // — without the backfill they'd vanish (planning.StartDate shifts
+        // forward, so the recurrence rule no longer generates them).
+        var monday = GetNextMonday();
+        var seriesStart = monday.AddDays(-28);
+        var arpId = await SeedWeeklyTask(DateTime.SpecifyKind(seriesStart, DateTimeKind.Utc));
+
+        var moveModel = new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = monday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = monday.AddDays(2).ToString("yyyy-MM-dd") + "T00:00:00Z", // Wed
+            NewStartHour = 14.0,
+            Scope = "thisAndFollowing"
+        };
+
+        var result = await _calendarService.MoveTask(moveModel);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var anchors = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.OriginalDate < monday.Date)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(x => x.OriginalDate)
+            .ToListAsync();
+
+        Assert.That(anchors, Has.Count.EqualTo(4));
+        for (var i = 0; i < 4; i++)
+        {
+            var expectedDate = seriesStart.AddDays(i * 7).Date;
+            Assert.That(anchors[i].OriginalDate.Date, Is.EqualTo(expectedDate));
+            Assert.That(anchors[i].StartHour, Is.EqualTo(9.0), "old StartHour preserved");
+            Assert.That(anchors[i].Duration, Is.EqualTo(1.0), "old Duration preserved");
+            Assert.That(anchors[i].IsDeleted, Is.False);
+            Assert.That(anchors[i].NewDate, Is.Null);
+        }
+
+        // Series itself should have shifted forward to the new date.
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings.SingleAsync(x => x.Id == arpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings.SingleAsync(x => x.Id == arp.ItemPlanningId);
+        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(monday.AddDays(2).Date));
+        Assert.That(planning.StartDate.Date, Is.EqualTo(monday.AddDays(2).Date));
+    }
+
+    [Test]
     public async Task DeleteTask_ScopeThis_CreatesDeletedExceptionRow()
     {
         // Arrange

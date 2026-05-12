@@ -16,6 +16,12 @@ public class CalendarTaskResponseModel
     public string Color { get; set; }
     public int RepeatType { get; set; }
     public int RepeatEvery { get; set; }
+    public int? RepeatEndMode { get; set; }
+    public int? RepeatOccurrences { get; set; }
+    public DateTime? RepeatUntilDate { get; set; }
+    public int? DayOfWeek { get; set; }
+    public int? DayOfMonth { get; set; }
+    public string? RepeatWeekdaysCsv { get; set; }
     public bool Completed { get; set; }
     public int PropertyId { get; set; }
     public int? ComplianceId { get; set; }
@@ -26,5 +32,16 @@ public class CalendarTaskResponseModel
     public bool IsAllDay { get; set; }
     public int? ExceptionId { get; set; }
     public int? EformId { get; set; }
+    public int? SdkCaseId { get; set; }
     public int? ItemPlanningTagId { get; set; }
+    public string? DescriptionHtml { get; set; }
+    public List<CalendarTaskAttachmentDto> Attachments { get; set; } = new();
+
+    /// <summary>
+    /// True when the underlying compliance/case is past deadline AND not
+    /// completed (or retracted with SDK Case Status=77). Populated by the
+    /// task-tracker service path; the calendar-week path leaves this as
+    /// false (it pre-filters non-actionable rows out).
+    /// </summary>
+    public bool TaskIsExpired { get; set; }
 }

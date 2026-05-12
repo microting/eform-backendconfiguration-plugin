@@ -12,7 +12,7 @@ import {MatCardModule} from '@angular/material/card';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatChipsModule} from '@angular/material/chips';
 import {MatDatepickerModule} from '@angular/material/datepicker';
-import {MatNativeDateModule} from '@angular/material/core';
+import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -20,6 +20,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatListModule} from '@angular/material/list';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatRadioModule} from '@angular/material/radio';
 import {MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -106,7 +107,6 @@ export {
     MatCheckboxModule,
     MatChipsModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatDialogModule,
     MatExpansionModule,
     MatFormFieldModule,
@@ -114,12 +114,30 @@ export {
     MatInputModule,
     MatListModule,
     MatMenuModule,
+    MatProgressSpinnerModule,
     MatRadioModule,
     MatSelectModule,
     MatTooltipModule,
     MtxSelectModule,
     MtxGridModule,
   ],
-  providers: [],
+  providers: [
+    // Override MAT_DATE_FORMATS only inside this module so the event-modal
+    // date input renders the long Danish form ("Mandag, 21. april") while
+    // other plugins' datepickers keep the global short format. Parsing
+    // stays on the 'P' token so users can still type a short date.
+    {
+      provide: MAT_DATE_FORMATS,
+      useValue: {
+        parse: {dateInput: 'P'},
+        display: {
+          dateInput: 'EEEE, d. MMMM',
+          monthYearLabel: 'LLLL y',
+          dateA11yLabel: 'PPP',
+          monthYearA11yLabel: 'LLLL y',
+        },
+      },
+    },
+  ],
 })
 export class CalendarModule {}

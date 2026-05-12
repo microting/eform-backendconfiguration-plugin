@@ -8,6 +8,16 @@
   </button>
 
   <button
+    type="button"
+    class="property-pill"
+    *ngIf="propertyName"
+    (click)="propertyPillClicked.emit()"
+    [matTooltip]="'Change property' | translate"
+  >
+    {{ propertyName }}
+  </button>
+
+  <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="goToToday.emit()"
     [matTooltip]="'Today' | translate"
@@ -18,19 +28,20 @@
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="navigate.emit(-1)"
-    [matTooltip]="'Previous week' | translate"
+    [matTooltip]="prevTooltipKey | translate"
   >
     <mat-icon color="primary">chevron_left</mat-icon>
   </button>
   <button
     class="btn-secondary btn-secondary--icon-rounded-border"
     (click)="navigate.emit(1)"
-    [matTooltip]="'Next week' | translate"
+    [matTooltip]="nextTooltipKey | translate"
   >
     <mat-icon color="primary">chevron_right</mat-icon>
   </button>
 
   <span class="date-range">{{ displayDate }}</span>
+  <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
 
   <span class="spacer"></span>
 

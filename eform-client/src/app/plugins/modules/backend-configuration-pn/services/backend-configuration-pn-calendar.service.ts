@@ -15,6 +15,7 @@ export let BackendConfigurationPnCalendarMethods = {
   TasksWeek: 'api/backend-configuration-pn/calendar/tasks/week',
   Tasks: 'api/backend-configuration-pn/calendar/tasks',
   MoveTask: 'api/backend-configuration-pn/calendar/tasks/move',
+  ResizeTask: 'api/backend-configuration-pn/calendar/tasks/resize',
   Boards: 'api/backend-configuration-pn/calendar/boards',
 };
 
@@ -40,7 +41,7 @@ export class BackendConfigurationPnCalendarService {
     });
   }
 
-  createTask(model: CalendarTaskCreateModel): Observable<OperationResult> {
+  createTask(model: CalendarTaskCreateModel): Observable<OperationDataResult<number>> {
     return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.Tasks, model);
   }
 
@@ -64,6 +65,16 @@ export class BackendConfigurationPnCalendarService {
     originalDate: string
   ): Observable<OperationResult> {
     return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.MoveTask, {id, newDate, newStartHour, scope, originalDate});
+  }
+
+  resizeTask(
+    id: number,
+    newStartHour: number,
+    newDuration: number,
+    scope: 'this' | 'thisAndFollowing' | 'all',
+    originalDate: string,
+  ): Observable<OperationResult> {
+    return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.ResizeTask, {id, newStartHour, newDuration, scope, originalDate});
   }
 
   toggleComplete(taskId: number, completed: boolean): Observable<OperationResult> {

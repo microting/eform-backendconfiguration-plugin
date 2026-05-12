@@ -1,10 +1,10 @@
 export type CalendarRepeatRule =
   | 'none'
   | 'daily'
-  | 'weekly'
-  | 'weekdays'
-  | 'monthly'
-  | 'yearly'
+  | 'weeklyOne'
+  | 'weeklyAll'
+  | 'monthlyDom'
+  | 'yearlyOne'
   | 'custom';
 
 export interface CalendarTaskModel {
@@ -33,6 +33,52 @@ export interface CalendarTaskModel {
   planningId?: number;
   isAllDay?: boolean;
   exceptionId?: number;
+
+  // Persisted custom-repeat fields surfaced from AreaRulePlanning so the
+  // edit-modal can reconstruct a full CalendarRepeatMeta for an existing row.
+  // All optional/nullable — older backends and rows without a custom rule
+  // simply omit them.
+  repeatType?: number | null;
+  repeatEvery?: number | null;
+  repeatEndMode?: number | null;
+  repeatOccurrences?: number | null;
+  repeatUntilDate?: string | null;
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+  repeatWeekdaysCsv?: string | null;
+
+  // File attachments persisted on the AreaRulePlanning. All occurrences of a
+  // recurring rule share the same attachment list — see
+  // 2026-05-06-calendar-event-attachments-design.md (Q1 master-rule scope).
+  attachments?: CalendarTaskAttachment[];
+}
+
+export interface CalendarTaskAttachment {
+  id: number;
+  originalFileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  downloadUrl: string;
+
+  // Drive-mirrored attachments. Both fields are null/undefined for
+  // regular form-data uploads. The frontend uses `driveFileId` to render the
+  // "Drive" badge and to synthesize the view-source link as
+  // `https://drive.google.com/file/d/{driveFileId}/view` (the link is NOT
+  // returned by the backend — it's deterministic from the id alone).
+  driveFileId?: string;
+  driveModifiedTime?: string;
+
+  // PR-8: timestamp of the most recent successful refresh (the change-
+  // processor advances `driveModifiedTime` on every accepted refetch — the
+  // backend uses that as the proxy for "last refreshed at"). Used by the
+  // attachment row's "Last refreshed N ago" label/tooltip.
+  lastRefreshedAt?: string;
+
+  // PR-8: true when the backing GoogleOAuthToken has been revoked (user
+  // disconnected, or Google reported invalid_grant). The attachment row
+  // renders a red "Google Drive disconnected — reconnect to resume sync"
+  // badge in place of the regular Drive badge when this is set.
+  driveRevoked?: boolean;
 }
 
 export interface CalendarRepeatMeta {

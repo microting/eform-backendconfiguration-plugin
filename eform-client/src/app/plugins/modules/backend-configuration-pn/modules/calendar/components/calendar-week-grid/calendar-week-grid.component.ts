@@ -18,7 +18,7 @@ import {startWith, takeUntil} from 'rxjs/operators';
 import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
-import {HOUR_HEIGHT} from '../calendar-task-block/calendar-task-block.component';
+import {HOUR_HEIGHT, TaskResizePayload} from '../calendar-task-block/calendar-task-block.component';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
@@ -48,6 +48,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Output() slotClicked = new EventEmitter<{date: string; startHour: number; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string; originalDate: string}>();
+  @Output() taskResized = new EventEmitter<{taskId: number; newStartHour: number; newDuration: number; repeatSeriesId?: string; originalDate: string}>();
   @Output() tasksReload = new EventEmitter<void>();
 
   private destroy$ = new Subject<void>();
@@ -114,7 +115,10 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     monday.setHours(0, 0, 0, 0);
 
     if (this.dayViewMode) {
-      this.weekDays = [new Date(monday)];
+      // Day view shows the currentDate itself, not the Monday of its week.
+      const target = new Date(d);
+      target.setHours(0, 0, 0, 0);
+      this.weekDays = [target];
     } else {
       this.weekDays = Array.from({length: 7}, (_, i) => {
         const date = new Date(monday);
@@ -122,6 +126,35 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
         return date;
       });
     }
+  }
+
+  // Map a weekDays index to the 7-element tasksByDay / allDayTasksByDay
+  // arrays produced by the container (always indexed Mon..Sun). In week
+  // view `i` already matches; in day view weekDays[0] may be any weekday,
+  // so compute the offset from its Monday.
+  private allDayIndexFor(i: number): number {
+    const day = this.weekDays[i];
+    if (!day) return -1;
+    const d = new Date(day);
+    const w = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + (w === 0 ? -6 : 1 - w));
+    monday.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - monday.getTime()) / 86_400_000);
+  }
+
+  getAllDayTasksForColumn(i: number): any[] {
+    const idx = this.allDayIndexFor(i);
+    return (idx >= 0 && idx < (this.allDayTasksByDay?.length ?? 0))
+      ? this.allDayTasksByDay[idx]
+      : [];
+  }
+
+  getTasksByDayForColumn(i: number): any[] {
+    const idx = this.allDayIndexFor(i);
+    return (idx >= 0 && idx < (this.tasksByDay?.length ?? 0))
+      ? this.tasksByDay[idx]
+      : [];
   }
 
   get dayDropListIds(): string[] {
@@ -160,7 +193,8 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     }, 100);
   }
 
-  isToday(date: Date): boolean {
+  isToday(date: Date | undefined): boolean {
+    if (!date) return false;
     const today = new Date();
     return (
       date.getDate() === today.getDate() &&
@@ -201,7 +235,10 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     if (!date) return;
     const rect = cell.getBoundingClientRect();
     const relY = event.clientY - rect.top;
-    const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 4) / 4);
+    // Snap click-to-create to 30-minute boundaries. Drag/resize still
+    // uses a finer (15 min) grid, and the edit modal's time input is
+    // unconstrained.
+    const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 2) / 2);
 
     // Reject clicks on past time slots
     const clickDateTime = new Date(date);
@@ -319,18 +356,30 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
           // Reset CDK transform first (element still in original DOM position)
           event.source.reset();
 
-          // Then optimistically move the task in the local array
+          // Then optimistically move the task in the local array.
+          // weekDays indices (0..N) may not align with tasksByDay (always
+          // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
+          // which may map to tasksByDay[2] (Wed). Translate through
+          // allDayIndexFor so the optimistic update targets the right slot.
           const origDayIndex = this.weekDays.findIndex(
             d => this.toLocalDateString(d) === originalDate
           );
           if (origDayIndex >= 0) {
-            const origArr = this.tasksByDay[origDayIndex];
-            const idx = origArr.findIndex(t => t.id === task.id);
-            if (idx >= 0) origArr.splice(idx, 1);
+            const origMappedIdx = this.allDayIndexFor(origDayIndex);
+            if (origMappedIdx >= 0) {
+              const origArr = this.tasksByDay[origMappedIdx];
+              if (origArr) {
+                const idx = origArr.findIndex(t => t.id === task.id);
+                if (idx >= 0) origArr.splice(idx, 1);
+              }
+            }
           }
           task.startHour = newStartHour;
           task.taskDate = newDate;
-          this.tasksByDay[dayIndex].push(task);
+          const targetMappedIdx = this.allDayIndexFor(dayIndex);
+          if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
+            this.tasksByDay[targetMappedIdx].push(task);
+          }
 
           this.taskMoved.emit({
             taskId: task.id,
@@ -346,6 +395,23 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
 
     // Invalid drop or cancel — restore original position
     event.source.reset();
+  }
+
+  // Resize ended — commit the new start/duration into the local
+  // tasksByDay so the UI doesn't flash back to the old size while the
+  // server roundtrip happens, then emit upward so the container can
+  // call updateTask.
+  onTaskResizeEnded(payload: TaskResizePayload) {
+    const {task, newStartHour, newDuration} = payload;
+    task.startHour = newStartHour;
+    task.duration = newDuration;
+    this.taskResized.emit({
+      taskId: task.id,
+      newStartHour,
+      newDuration,
+      repeatSeriesId: task.repeatSeriesId,
+      originalDate: task.taskDate,
+    });
   }
 
   private captureDragSource(task: CalendarTaskLayoutModel): void {

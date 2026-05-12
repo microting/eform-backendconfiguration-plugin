@@ -13,6 +13,42 @@
     font-weight: 500;
   }
 
+  .property-pill {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 18px;
+    background: var(--bg-soft, #f1f3f4);
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: var(--bg-soft-hover, #e4e7ea);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary, #1976d2);
+      outline-offset: 2px;
+    }
+  }
+
+  .week-badge {
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: var(--surface-info-light, #e3f2fd);
+    color: #1976d2;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
   .spacer {
     flex: 1;
   }

@@ -1,32 +1,46 @@
 <div
   class="task-block"
   [class.completed]="task.completed"
+  [class.resizing]="resizing"
   [style.top.px]="topPx"
   [style.height.px]="heightPx"
   [style.left.%]="leftPercent"
   [style.width.%]="widthPercent"
   [style.background-color]="task.color"
-  (click)="clicked.emit(task)"
   cdkDrag
   [cdkDragData]="task"
-  [cdkDragDisabled]="isPast"
+  [cdkDragDisabled]="isPast || resizing"
   (cdkDragMoved)="dragMoved.emit($event)"
   (cdkDragEnded)="dragEnded.emit($event)"
 >
   <ng-template cdkDragPlaceholder></ng-template>
 
-  <button
-    class="completion-btn"
-    [class.done]="task.completed"
-    (click)="onCompletionClick($event)"
-    [disabled]="task.isFromCompliance === true"
-    [title]="task.completed ? ('Mark as not completed' | translate) : ('Mark as completed' | translate)"
-  >
-    <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-  </button>
+  <div
+    *ngIf="!isPast"
+    class="resize-handle resize-handle--top"
+    (mousedown)="startResize($event, 'start')"
+  ></div>
 
-  <div class="task-content">
-    <div class="task-title"><span *ngIf="showId" class="task-id">{{ task.id }} </span>{{ task.title }}</div>
-    <div class="task-time" *ngIf="task.duration >= 0.5">{{ task.startText }} – {{ task.endText }}</div>
+  <div class="task-block-body" cdkDragHandle (click)="clicked.emit(task)">
+    <button
+      class="completion-btn"
+      [class.done]="task.completed"
+      (click)="onCompletionClick($event)"
+      [disabled]="task.isFromCompliance === true"
+      [title]="task.completed ? ('Mark as not completed' | translate) : ('Mark as completed' | translate)"
+    >
+      <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+    </button>
+
+    <div class="task-content">
+      <div class="task-title"><span *ngIf="showId" class="task-id">{{ task.id }} </span>{{ task.title }}</div>
+      <div class="task-time" *ngIf="task.duration >= 0.5">{{ displayStartText }} – {{ displayEndText }}</div>
+    </div>
   </div>
+
+  <div
+    *ngIf="!isPast"
+    class="resize-handle resize-handle--bottom"
+    (mousedown)="startResize($event, 'end')"
+  ></div>
 </div>

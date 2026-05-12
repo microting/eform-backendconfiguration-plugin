@@ -8,8 +8,8 @@
 
 .all-day-row {
   display: flex;
-  border-bottom: 1px solid #e0e0e0;
-  background: #fafafa;
+  border-bottom: 1px solid var(--border, #e0e0e0);
+  background: var(--surface-muted, #fafafa);
   min-height: 32px;
 
   .all-day-label {
@@ -34,7 +34,7 @@
     flex-direction: column;
     gap: 2px;
     padding: 2px 4px;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid var(--border, #e0e0e0);
 
     &.today-col {
       background: rgba(26, 115, 232, 0.04);
@@ -101,7 +101,45 @@
     position: sticky;
     left: 0;
     z-index: 2;
-    background: white;
+    background: var(--bg, #FFFFFF);
+  }
+
+  // Sticky day-of-week header so the date strip ("man. 27/04" etc.) stays
+  // pinned when scrolling down through the time grid.
+  //
+  // mtx-grid stacks several scrolling/clipping containers between
+  // <mat-table> and the outer `.week-grid-wrapper` (see
+  // node_modules/@ng-matero/extensions/grid/grid.scss):
+  //   mtx-grid             — overflow: hidden (line 12)
+  //   .mtx-grid-layout     — overflow: auto   (line 158 — used by both
+  //                          .mtx-grid-main and .mtx-grid-content)
+  //   .mat-table-container — overflow: auto   (line 43)
+  // Each is a scrolling/clipping box that captures sticky positioning, so
+  // sticky resolves to whichever is closest — none of which are the
+  // wrapper the user actually scrolls. Override them all (including mtx-grid
+  // itself, hence `&`) to `visible` so the header sticks to
+  // `.week-grid-wrapper` instead.
+  &,
+  .mtx-grid-layout,
+  .mat-table-container {
+    overflow: visible !important;
+  }
+
+  // z-index 11 wins over task blocks (z 2/3), the now-line current-time
+  // indicator (z 10), and the all-day chips. Drag-ghost-task (z 20) still
+  // draws on top so a moving event doesn't disappear under the header.
+  // The time-axis cell of the header gets z 12 to stay above other header
+  // cells where the row + column sticky overlap.
+  .mat-mdc-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    background: var(--bg, #FFFFFF);
+    box-shadow: 0 1px 0 var(--border, #e0e0e0);
+  }
+
+  .mat-mdc-header-row .mat-column-time-axis {
+    z-index: 12;
   }
 }
 
@@ -151,7 +189,7 @@
 // Static faded overlay at the original task position — stays put while dragging, like Google Calendar
 .drag-source-slot {
   position: absolute;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   opacity: 0.25;
   pointer-events: none;
   z-index: 1;
@@ -166,7 +204,7 @@
 // top/left/width are set via [style] bindings; width comes from the measured column rect
 .drag-ghost-task {
   position: absolute;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   padding: 2px 4px;
   opacity: 0.55;
   pointer-events: none;
@@ -195,7 +233,7 @@
   left: 0;
   right: 0;
   border: 2px solid #1a73e8;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   background: rgba(26, 115, 232, 0.08);
   z-index: 5;
   pointer-events: none;
@@ -206,7 +244,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #ea4335;
+  background: var(--error, #ea4335);
   z-index: 10;
   pointer-events: none;
 
@@ -218,12 +256,12 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #ea4335;
+    background: var(--error, #ea4335);
   }
 }
 
 .past-slot {
-  background-color: #f5f5f5;
+  background-color: var(--surface-muted, #f5f5f5);
   cursor: not-allowed;
   opacity: 0.6;
 }

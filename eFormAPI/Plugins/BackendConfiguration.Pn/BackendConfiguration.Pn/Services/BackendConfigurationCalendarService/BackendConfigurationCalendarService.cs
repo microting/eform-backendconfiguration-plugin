@@ -5,14 +5,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
@@ -21,6 +25,7 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 
 public class BackendConfigurationCalendarService(
     IBackendConfigurationLocalizationService localizationService,
@@ -53,13 +58,122 @@ public class BackendConfigurationCalendarService(
                 .FirstOrDefaultAsync();
             var defaultBoardId = defaultBoard?.Id;
 
-            // Pre-load compliance dates to avoid duplicates between occurrence expansion and compliances
-            var compliancesInWeek = await backendConfigurationPnDbContext.Compliances
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PropertyId == requestModel.PropertyId)
-                .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
-                .ToListAsync();
-            // Build sets for dedup: by exact date and by planningId (any compliance in week)
+            // Pre-load compliance dates to avoid duplicates between occurrence expansion and compliances.
+            //
+            // Two modes, gated on requestModel.ActionableOnly:
+            //
+            // * ActionableOnly == false (default; angular admin REST calendar +
+            //   CalendarGrpcService): emit ALL non-removed compliances in the week, including
+            //   missed deadlines and already-completed ones. Bit-identical to pre-c2637800.
+            //
+            // * ActionableOnly == true (mobile worker via EventsGrpcService): emit only
+            //   compliances whose backing SDK Case still exists, is not soft-deleted, and is
+            //   not yet completed (Status != 100). Non-actionable compliance rows must NOT be
+            //   emitted to the worker because the corresponding write handlers ("complete",
+            //   "comment", etc.) have nothing to bind to and will fail.
+            List<Compliance> compliancesInWeek;
+            // Bug A fix side-dict — see ActionableOnly branch below for rationale.
+            // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
+            // the recurrence-emit lookup below tolerates that as a no-op.
+            Dictionary<(int PlanningId, DateTime Date), (int ComplianceId, int SdkCaseId)> nonActionableByPlanningDate
+                = new();
+            if (!requestModel.ActionableOnly)
+            {
+                // Default branch — bit-identical to the pre-c2637800 prefetch.
+                compliancesInWeek = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == requestModel.PropertyId)
+                    .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                    .ToListAsync();
+            }
+            else
+            {
+                // Mobile-worker branch — actionable subset only.
+                // Treat WorkflowState NULL as "not removed" here (pre-existing project rule
+                // applied across this service); the default branch above keeps its original
+                // strict `!= Removed` semantics so non-mobile callers remain bit-identical.
+                var compliancesInWeekAll = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                    .Where(x => x.PropertyId == requestModel.PropertyId)
+                    .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                    .ToListAsync();
+
+                // Batch-load the SDK Cases backing those compliances so we can decide
+                // actionability without an N+1 round-trip per compliance row.
+                var complianceSdkCaseIds = compliancesInWeekAll
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContextForCalendar = sdkCore.DbContextHelper.GetDbContext();
+                var sdkCasesById = await sdkDbContextForCalendar.Cases
+                    .Where(c => complianceSdkCaseIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id);
+
+                bool IsComplianceActionable(Compliance compliance)
+                {
+                    // 1. Compliance row itself must not be soft-deleted (NULL == not removed).
+                    if (compliance.WorkflowState == Constants.WorkflowStates.Removed)
+                        return false;
+
+                    // 2. Backing SDK Case must exist and not be soft-deleted (NULL == not removed).
+                    if (compliance.MicrotingSdkCaseId <= 0)
+                        return false;
+                    if (!sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase) || sdkCase == null)
+                        return false;
+                    if (sdkCase.WorkflowState == Constants.WorkflowStates.Removed)
+                        return false;
+
+                    // 3. SDK Case must not be already completed.
+                    //    Status == 100 is the canonical "done" code (see e.g.
+                    //    BackendConfigurationCompliancesService.cs:258, BackendConfigurationCaseService.cs:73,
+                    //    BackendConfigurationReportService.cs:84).
+                    if (sdkCase.Status == 100)
+                        return false;
+
+                    return true;
+                }
+
+                // The actionable subset is what we actually emit AND what governs the
+                // recurrence-dedup gate below. If a planning's only in-week compliance is
+                // non-actionable (missed deadline or already completed), the recurrence path
+                // SHOULD still fire so the worker doesn't lose visibility on a NEXT live
+                // rotation in the same week.
+                compliancesInWeek = compliancesInWeekAll
+                    .Where(IsComplianceActionable)
+                    .ToList();
+
+                // Bug A fix (compliance 9810 / case 17701 retracted-rotation parity):
+                // when a compliance is filtered out by IsComplianceActionable (retracted SDK
+                // case, soft-deleted, or status==100), the recurrence-emit loop below STILL
+                // fires for that planning's occurrence date because compliancePlanningIdsInWeek
+                // (built from the filtered actionable subset) no longer contains it. Without
+                // intervention the model emitted by that loop has ComplianceId=null /
+                // SdkCaseId=null, the device caches compliance_id=0 in Drift, and any
+                // subsequent CompleteOpgave / SetComment / SetFieldValue / UploadPhoto write
+                // arrives with compliance_id=0 — which then either fails to resolve (legacy
+                // payloads) or routes through the fallback fuzzy lookup that historically
+                // excluded retracted cases (Bug B).
+                //
+                // Fix: keep the actionable-only filter behavior intact (the row stays
+                // expired / non-actionable in the UI; IsFromCompliance stays false on the
+                // recurrence path) but populate ComplianceId + SdkCaseId from the stripped
+                // compliance so any device-side write round-trips through the PK lookup
+                // branch instead of the fuzzy fallback. See investigator notes for commit
+                // 47f20657 — root cause: ListOpgaver→Drift only ever sees the
+                // recurrence-emit model when actionability stripping removed the compliance.
+                nonActionableByPlanningDate = compliancesInWeekAll
+                    .Where(c => !compliancesInWeek.Contains(c))
+                    .GroupBy(c => (c.PlanningId, c.Deadline.Date))
+                    // GroupBy + first-wins guards against the (unlikely) case of multiple
+                    // non-actionable compliance rows sharing a (planning, day) tuple.
+                    .ToDictionary(g => g.Key, g => (ComplianceId: g.First().Id,
+                        SdkCaseId: g.First().MicrotingSdkCaseId));
+            }
+
+            // Build sets for dedup: by exact date and by planningId (any in-week compliance,
+            // or — when ActionableOnly is set — any *actionable* in-week compliance).
             var complianceDateSet = new HashSet<string>(
                 compliancesInWeek.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
             var compliancePlanningIdsInWeek = new HashSet<int>(
@@ -74,6 +188,8 @@ public class BackendConfigurationCalendarService(
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningTags)
+                .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
 
             // Batch-load plannings to avoid N+1 queries
@@ -129,16 +245,24 @@ public class BackendConfigurationCalendarService(
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
                     continue;
 
-                // Compute all occurrence dates within the requested week
-                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd);
+                // Compute all occurrence dates within the requested week.
+                // Pass arp.RepeatWeekdaysCsv so multi-day weekly rules
+                // (e.g. "1,3,5") expand to multiple occurrences per week.
+                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd, arp.RepeatWeekdaysCsv);
 
                 // Filter by repeat end mode
                 if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
                     occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
                 else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
                 {
-                    var allOccsSince = GetOccurrencesInWeek(planning,
-                        planning.StartDate.Date, weekEnd);
+                    // Use EnumerateOccurrences (week-loop iterator) instead of
+                    // GetOccurrencesInWeek for the cumulative count: the latter's
+                    // multi-day weekly branch emits at most one matching week, so
+                    // the after-cap would never fire for CSV rules. Upper bound
+                    // on EnumerateOccurrences is exclusive — add a day.
+                    var allOccsSince = EnumerateOccurrences(planning,
+                        planning.StartDate.Date, weekEnd.AddDays(1),
+                        arp.RepeatWeekdaysCsv).ToList();
                     var maxOcc = arp.RepeatOccurrences.Value;
                     if (allOccsSince.Count > maxOcc)
                     {
@@ -147,7 +271,17 @@ public class BackendConfigurationCalendarService(
                     }
                 }
 
-                if (occurrences.Count == 0)
+                // Even when the rule generates no occurrences for this week,
+                // we still need to consider per-occurrence exceptions whose
+                // OriginalDate falls inside the requested window — they
+                // render via the orphan-anchor pass below.
+                var hasInWeekExceptions = exceptionsByArp.TryGetValue(arp.Id, out var inWeekArpExceptions)
+                    && inWeekArpExceptions.Values.Any(x =>
+                        !x.IsDeleted
+                        && x.OriginalDate >= weekStart && x.OriginalDate <= weekEnd
+                        && (!x.NewDate.HasValue || x.NewDate.Value.Date == x.OriginalDate.Date));
+
+                if (occurrences.Count == 0 && !hasInWeekExceptions)
                     continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var calConfig);
@@ -208,6 +342,12 @@ public class BackendConfigurationCalendarService(
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
                         RepeatEvery = arp.RepeatEvery ?? 1,
+                        RepeatEndMode = arp.RepeatEndMode,
+                        RepeatOccurrences = arp.RepeatOccurrences,
+                        RepeatUntilDate = arp.RepeatUntilDate,
+                        DayOfWeek = arp.DayOfWeek,
+                        DayOfMonth = arp.DayOfMonth,
+                        RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                         Completed = false,
                         PropertyId = arp.PropertyId,
                         IsFromCompliance = false,
@@ -216,12 +356,92 @@ public class BackendConfigurationCalendarService(
                         IsAllDay = isAllDay,
                         ExceptionId = exception?.Id,
                         EformId = arp.AreaRule?.EformId,
-                        ItemPlanningTagId = arp.ItemPlanningTagId
+                        ItemPlanningTagId = arp.ItemPlanningTagId,
+                        DescriptionHtml = planning.Description,
+                        Attachments = MapAttachments(arp)
                     };
+
+                    // Bug A fix: if a non-actionable compliance was stripped for this
+                    // (planningId, occurrenceDate), propagate its ComplianceId + SdkCaseId
+                    // so any device-side write routes through the PK lookup. Leave
+                    // IsFromCompliance=false (we are on the recurrence path and there is
+                    // no actionable compliance to materialise as a calendar row).
+                    if (nonActionableByPlanningDate.TryGetValue(
+                            (arp.ItemPlanningId, occurrenceDate.Date), out var stripped))
+                    {
+                        model.ComplianceId = stripped.ComplianceId;
+                        model.SdkCaseId = stripped.SdkCaseId;
+                    }
 
                     if (ShouldIncludeTask(model, requestModel))
                     {
                         result.Add(model);
+                    }
+                }
+
+                // Render any in-week exceptions whose OriginalDate is NOT
+                // covered by the recurrence rule (e.g. past anchors created
+                // when a 'thisAndFollowing' move shifted planning.StartDate
+                // forward). Without this, those past occurrences would
+                // silently disappear from the calendar view.
+                if (exceptionsByArp.TryGetValue(arp.Id, out var allArpExceptions))
+                {
+                    var renderedDates = new HashSet<DateTime>(occurrences.Select(o => o.Date));
+                    foreach (var orphan in allArpExceptions.Values)
+                    {
+                        if (orphan.IsDeleted) continue;
+                        if (renderedDates.Contains(orphan.OriginalDate.Date)) continue;
+                        if (orphan.OriginalDate < weekStart || orphan.OriginalDate > weekEnd) continue;
+                        // Skip exceptions whose NewDate moves them to a
+                        // different date — those are handled by the
+                        // movedInExceptions pass at the destination week.
+                        if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
+
+                        var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                        var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
+                        var orphanAssignees = orphan.ExceptionSites is { Count: > 0 }
+                            ? orphan.ExceptionSites
+                                .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Select(s => s.SiteId)
+                                .ToList()
+                            : assigneeIds;
+
+                        var orphanModel = new CalendarTaskResponseModel
+                        {
+                            Id = arp.Id,
+                            Title = title,
+                            StartHour = orphanStartHour,
+                            Duration = orphanDuration,
+                            TaskDate = orphan.OriginalDate.ToString("yyyy-MM-dd"),
+                            Tags = tags,
+                            AssigneeIds = orphanAssignees,
+                            BoardId = calConfig?.BoardId ?? defaultBoardId,
+                            Color = calConfig?.Color,
+                            RepeatType = arp.RepeatType ?? 0,
+                            RepeatEvery = arp.RepeatEvery ?? 1,
+                            RepeatEndMode = arp.RepeatEndMode,
+                            RepeatOccurrences = arp.RepeatOccurrences,
+                            RepeatUntilDate = arp.RepeatUntilDate,
+                            DayOfWeek = arp.DayOfWeek,
+                            DayOfMonth = arp.DayOfMonth,
+                            RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
+                            Completed = false,
+                            PropertyId = arp.PropertyId,
+                            IsFromCompliance = false,
+                            NextExecutionTime = planning.NextExecutionTime,
+                            PlanningId = planning.Id,
+                            IsAllDay = isAllDay,
+                            ExceptionId = orphan.Id,
+                            EformId = arp.AreaRule?.EformId,
+                            ItemPlanningTagId = arp.ItemPlanningTagId,
+                            DescriptionHtml = planning.Description,
+                            Attachments = MapAttachments(arp)
+                        };
+
+                        if (ShouldIncludeTask(orphanModel, requestModel))
+                        {
+                            result.Add(orphanModel);
+                        }
                     }
                 }
             }
@@ -272,6 +492,12 @@ public class BackendConfigurationCalendarService(
                     Color = movedCalConfig?.Color,
                     RepeatType = arp.RepeatType ?? 0,
                     RepeatEvery = arp.RepeatEvery ?? 1,
+                    RepeatEndMode = arp.RepeatEndMode,
+                    RepeatOccurrences = arp.RepeatOccurrences,
+                    RepeatUntilDate = arp.RepeatUntilDate,
+                    DayOfWeek = arp.DayOfWeek,
+                    DayOfMonth = arp.DayOfMonth,
+                    RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                     Completed = false,
                     PropertyId = arp.PropertyId,
                     IsFromCompliance = false,
@@ -280,7 +506,9 @@ public class BackendConfigurationCalendarService(
                     IsAllDay = isAllDay,
                     ExceptionId = movedIn.Id,
                     EformId = arp.AreaRule?.EformId,
-                    ItemPlanningTagId = arp.ItemPlanningTagId
+                    ItemPlanningTagId = arp.ItemPlanningTagId,
+                    DescriptionHtml = movedPlanning.Description,
+                    Attachments = MapAttachments(arp)
                 };
 
                 if (ShouldIncludeTask(movedModel, requestModel))
@@ -300,6 +528,8 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.AreaRule)
                     .ThenInclude(x => x.AreaRuleTranslations)
                 .Include(x => x.PlanningSites)
+                .Include(x => x.AreaRulePlanningFiles)
+                    .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
@@ -320,6 +550,12 @@ public class BackendConfigurationCalendarService(
             var compliancePlanningTagNames = await itemsPlanningPnDbContext.PlanningTags
                 .Where(x => complianceTagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            // Batch-load compliance plannings so we can read description from Planning
+            var compliancePlanningsDict = await itemsPlanningPnDbContext.Plannings
+                .Where(x => compliancePlanningIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.Id);
 
             foreach (var compliance in compliances)
             {
@@ -364,7 +600,13 @@ public class BackendConfigurationCalendarService(
                     Color = calConfig?.Color,
                     RepeatType = arp?.RepeatType ?? 0,
                     RepeatEvery = arp?.RepeatEvery ?? 1,
-                    Completed = compliance.Deadline < DateTime.UtcNow,
+                    RepeatEndMode = arp?.RepeatEndMode,
+                    RepeatOccurrences = arp?.RepeatOccurrences,
+                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    DayOfWeek = arp?.DayOfWeek,
+                    DayOfMonth = arp?.DayOfMonth,
+                    RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
+                    Completed = false,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
@@ -372,7 +614,12 @@ public class BackendConfigurationCalendarService(
                     PlanningId = compliance.PlanningId,
                     IsAllDay = compIsAllDay,
                     EformId = arp?.AreaRule?.EformId,
-                    ItemPlanningTagId = arp?.ItemPlanningTagId
+                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    ItemPlanningTagId = arp?.ItemPlanningTagId,
+                    DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
+                        ? cp.Description
+                        : null,
+                    Attachments = MapAttachments(arp)
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -392,7 +639,7 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationResult> CreateTask(CalendarTaskCreateRequestModel createModel)
+    public async Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel)
     {
         try
         {
@@ -400,8 +647,19 @@ public class BackendConfigurationCalendarService(
             var taskDateTime = createModel.StartDate.AddHours(createModel.StartHour);
             if (taskDateTime < DateTime.UtcNow)
             {
-                return new OperationResult(false,
+                return new OperationDataResult<int>(false,
                     localizationService.GetString("CannotCreateTaskInThePast"));
+            }
+
+            // Validate: at least one worker must be assigned. Events without
+            // an assignee would be downgraded to NotActive by task-wizard and
+            // vanish from the calendar view (GetTasksForWeek filters Status),
+            // so creation is rejected here with a clear error rather than
+            // silently producing an invisible event.
+            if (createModel.Sites is null || createModel.Sites.Count == 0)
+            {
+                return new OperationDataResult<int>(false,
+                    localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
             // Resolve FolderId: if not provided, find or create the "00. Logbøger" folder
@@ -431,7 +689,7 @@ public class BackendConfigurationCalendarService(
             var result = await taskWizardService.CreateTask(wizardModel);
             if (!result.Success)
             {
-                return result;
+                return new OperationDataResult<int>(false, result.Message);
             }
 
             // Find the AreaRulePlanning created by TaskWizard for this specific task
@@ -446,12 +704,28 @@ public class BackendConfigurationCalendarService(
 
             if (latestArp != null)
             {
-                if (createModel.RepeatEndMode.HasValue)
+                // Persist repeat-end and weekday-CSV fields. The CSV column is
+                // always written (including null) so changing a multi-day
+                // weekly back to a single-day rule clears the stale list.
+                var hasRepeatEndChange = createModel.RepeatEndMode.HasValue;
+                latestArp.RepeatWeekdaysCsv = createModel.RepeatWeekdaysCsv;
+                if (hasRepeatEndChange)
                 {
                     latestArp.RepeatEndMode = createModel.RepeatEndMode;
                     latestArp.RepeatOccurrences = createModel.RepeatOccurrences;
                     latestArp.RepeatUntilDate = createModel.RepeatUntilDate;
-                    await latestArp.Update(backendConfigurationPnDbContext);
+                }
+                await latestArp.Update(backendConfigurationPnDbContext);
+
+                // Persist description on the linked Planning row (not on ARP)
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .FirstOrDefaultAsync(x => x.Id == latestArp.ItemPlanningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planning != null)
+                {
+                    planning.Description = createModel.DescriptionHtml ?? string.Empty;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
                 }
 
                 var calConfig = new CalendarConfiguration
@@ -467,14 +741,19 @@ public class BackendConfigurationCalendarService(
                 await calConfig.Create(backendConfigurationPnDbContext);
             }
 
-            return new OperationResult(true,
-                localizationService.GetString("CalendarTaskCreatedSuccessfully"));
+            // latestArp may be null in the rare edge case where TaskWizard
+            // succeeded but did not produce an ARP we can correlate to (e.g.
+            // EformId resolution skew). Return success with id=0 — frontend
+            // treats 0 as "no id, skip post-save uploads".
+            return new OperationDataResult<int>(true,
+                localizationService.GetString("CalendarTaskCreatedSuccessfully"),
+                latestArp?.Id ?? 0);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e, "BackendConfigurationCalendarService.CreateTask: {Message}", e.Message);
-            return new OperationResult(false,
+            return new OperationDataResult<int>(false,
                 $"{localizationService.GetString("ErrorWhileCreatingCalendarTask")}: {e.Message}");
         }
     }
@@ -489,6 +768,15 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("CannotCreateTaskInThePast"));
+            }
+
+            // Validate: at least one worker must remain assigned. Clearing
+            // assignees would downgrade the task to NotActive and hide it
+            // from the calendar view (same as the Create path).
+            if (updateModel.Sites is null || updateModel.Sites.Count == 0)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
             // Delegate to TaskWizard service for full task field updates
@@ -513,6 +801,35 @@ public class BackendConfigurationCalendarService(
             if (!wizardResult.Success)
             {
                 return wizardResult;
+            }
+
+            // Persist description on the linked Planning row (not on ARP),
+            // plus the repeat-end + multi-day-weekday CSV fields on the ARP.
+            // CSV is written unconditionally so switching from a custom
+            // multi-day rule back to a single-day rule clears the stale list.
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .FirstOrDefaultAsync(x => x.Id == updateModel.Id
+                    && x.WorkflowState != Constants.WorkflowStates.Removed);
+            if (arp != null)
+            {
+                // Write end-mode fields unconditionally so switching from
+                // 'after 10' or 'until <date>' back to 'never' clears the
+                // stale cap. Same rationale as RepeatWeekdaysCsv above.
+                arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
+                arp.RepeatEndMode = updateModel.RepeatEndMode;
+                arp.RepeatOccurrences = updateModel.RepeatOccurrences;
+                arp.RepeatUntilDate = updateModel.RepeatUntilDate;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                var planning = await itemsPlanningPnDbContext.Plannings
+                    .FirstOrDefaultAsync(x => x.Id == arp.ItemPlanningId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planning != null)
+                {
+                    planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+                    planning.UpdatedByUserId = userService.UserId;
+                    await planning.Update(itemsPlanningPnDbContext);
+                }
             }
 
             // Update or create CalendarConfiguration for calendar-specific fields
@@ -758,36 +1075,77 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-                arp.StartDate = newDate;
-                arp.UpdatedByUserId = userService.UserId;
-                await arp.Update(backendConfigurationPnDbContext);
-
-                var planning = await itemsPlanningPnDbContext.Plannings
+                // Anchor every PAST occurrence with an exception holding the
+                // OLD calConfig values BEFORE we shift planning.StartDate
+                // forward. Past occurrences are then rendered by
+                // GetTasksForWeek's orphan-exception branch (the recurrence
+                // rule will no longer generate them after the shift).
+                var oldPlanning = await itemsPlanningPnDbContext.Plannings
                     .Where(x => x.Id == arp.ItemPlanningId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
-
-                if (planning != null)
-                {
-                    planning.StartDate = newDate;
-                    planning.UpdatedByUserId = userService.UserId;
-                    await planning.Update(itemsPlanningPnDbContext);
-                }
-
-                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                var oldCalConfig = await backendConfigurationPnDbContext.CalendarConfigurations
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
-                if (calConfig != null)
+                if (oldPlanning != null)
                 {
-                    calConfig.StartHour = moveModel.NewStartHour;
-                    calConfig.UpdatedByUserId = userService.UserId;
-                    await calConfig.Update(backendConfigurationPnDbContext);
+                    var oldStartHour = oldCalConfig?.StartHour ?? 9.0;
+                    var oldDuration = oldCalConfig?.Duration ?? 1.0;
+
+                    var existingPastDates = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                        .Where(x => x.OriginalDate < originalDate)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => x.OriginalDate)
+                        .ToListAsync();
+                    var existingSet = new HashSet<DateTime>(existingPastDates);
+
+                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv))
+                    {
+                        if (existingSet.Contains(occDate)) continue;
+                        var anchor = new CalendarOccurrenceException
+                        {
+                            AreaRulePlanningId = moveModel.Id,
+                            OriginalDate = occDate,
+                            IsDeleted = false,
+                            NewDate = null,
+                            StartHour = oldStartHour,
+                            Duration = oldDuration,
+                            CreatedByUserId = userService.UserId,
+                            UpdatedByUserId = userService.UserId
+                        };
+                        await anchor.Create(backendConfigurationPnDbContext);
+                    }
                 }
                 else
                 {
-                    calConfig = new CalendarConfiguration
+                    logger.LogWarning(
+                        "MoveTask thisAndFollowing backfill skipped: planning {ItemPlanningId} for AreaRulePlanning {ArpId} not found",
+                        arp.ItemPlanningId, moveModel.Id);
+                }
+
+                arp.StartDate = newDate;
+                arp.UpdatedByUserId = userService.UserId;
+                await arp.Update(backendConfigurationPnDbContext);
+
+                if (oldPlanning != null)
+                {
+                    oldPlanning.StartDate = newDate;
+                    oldPlanning.UpdatedByUserId = userService.UserId;
+                    await oldPlanning.Update(itemsPlanningPnDbContext);
+                }
+
+                if (oldCalConfig != null)
+                {
+                    oldCalConfig.StartHour = moveModel.NewStartHour;
+                    oldCalConfig.UpdatedByUserId = userService.UserId;
+                    await oldCalConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    var calConfig = new CalendarConfiguration
                     {
                         AreaRulePlanningId = moveModel.Id,
                         StartHour = moveModel.NewStartHour,
@@ -871,6 +1229,182 @@ public class BackendConfigurationCalendarService(
             logger.LogError(e, "BackendConfigurationCalendarService.MoveTask: {Message}", e.Message);
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileMovingCalendarTask")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationResult> ResizeTask(CalendarTaskResizeRequestModel resizeModel)
+    {
+        try
+        {
+            // No past-time check here on purpose: resize on an existing task
+            // is legitimate even when the start is in the past (e.g. the user
+            // is extending an event that's currently running). The task
+            // already exists; we are not creating a new one.
+
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == resizeModel.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (arp == null)
+            {
+                return new OperationResult(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            var scope = resizeModel.Scope ?? "all";
+
+            if (scope == "this" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+            {
+                var originalDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                    .Where(x => x.OriginalDate == originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (exception != null)
+                {
+                    exception.StartHour = resizeModel.NewStartHour;
+                    exception.Duration = resizeModel.NewDuration;
+                    exception.UpdatedByUserId = userService.UserId;
+                    await exception.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    exception = new CalendarOccurrenceException
+                    {
+                        AreaRulePlanningId = resizeModel.Id,
+                        OriginalDate = originalDate,
+                        IsDeleted = false,
+                        NewDate = null, // resize does not change the date
+                        StartHour = resizeModel.NewStartHour,
+                        Duration = resizeModel.NewDuration,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await exception.Create(backendConfigurationPnDbContext);
+                }
+            }
+            else
+            {
+                // 'thisAndFollowing' and 'all' both update the series-wide
+                // CalendarConfiguration; we deliberately do NOT touch
+                // arp.StartDate or planning.StartDate (resize is not a move).
+                var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                // For 'thisAndFollowing', anchor every PAST occurrence to its
+                // CURRENT (pre-resize) StartHour/Duration before we mutate
+                // calConfig — otherwise past occurrences without their own
+                // exception row would resolve through the new calConfig and
+                // visually shift to the new times. (See GetTasksForWeek's
+                // `exception ?? calConfig ?? defaults` resolution chain.)
+                if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+                {
+                    var anchorDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                    var oldStartHour = calConfig?.StartHour ?? 9.0;
+                    var oldDuration = calConfig?.Duration ?? 1.0;
+
+                    var planning = await itemsPlanningPnDbContext.Plannings
+                        .Where(x => x.Id == arp.ItemPlanningId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+
+                    if (planning == null)
+                    {
+                        // calConfig is about to be updated; without anchors, past
+                        // occurrences will silently shift to the new times. Log so
+                        // the issue is observable rather than invisible.
+                        logger.LogWarning(
+                            "ResizeTask thisAndFollowing backfill skipped: planning {ItemPlanningId} for AreaRulePlanning {ArpId} not found",
+                            arp.ItemPlanningId, resizeModel.Id);
+                    }
+                    else
+                    {
+                        var existingPastDates = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                            .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                            .Where(x => x.OriginalDate < anchorDate)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(x => x.OriginalDate)
+                            .ToListAsync();
+                        var existingSet = new HashSet<DateTime>(existingPastDates);
+
+                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate, arp.RepeatWeekdaysCsv))
+                        {
+                            if (existingSet.Contains(occDate)) continue;
+                            var anchor = new CalendarOccurrenceException
+                            {
+                                AreaRulePlanningId = resizeModel.Id,
+                                OriginalDate = occDate,
+                                IsDeleted = false,
+                                NewDate = null,
+                                StartHour = oldStartHour,
+                                Duration = oldDuration,
+                                CreatedByUserId = userService.UserId,
+                                UpdatedByUserId = userService.UserId
+                            };
+                            await anchor.Create(backendConfigurationPnDbContext);
+                        }
+                    }
+                }
+
+                if (calConfig != null)
+                {
+                    calConfig.StartHour = resizeModel.NewStartHour;
+                    calConfig.Duration = resizeModel.NewDuration;
+                    calConfig.UpdatedByUserId = userService.UserId;
+                    await calConfig.Update(backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    calConfig = new CalendarConfiguration
+                    {
+                        AreaRulePlanningId = resizeModel.Id,
+                        StartHour = resizeModel.NewStartHour,
+                        Duration = resizeModel.NewDuration,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await calConfig.Create(backendConfigurationPnDbContext);
+                }
+
+                // For thisAndFollowing, drop per-occurrence overrides from
+                // OriginalDate forward — they are superseded by the new
+                // series-wide values. For 'all', drop every override.
+                IQueryable<CalendarOccurrenceException> staleQuery =
+                    backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == resizeModel.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(resizeModel.OriginalDate))
+                {
+                    var originalDate = DateTime.Parse(resizeModel.OriginalDate, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                    staleQuery = staleQuery.Where(x => x.OriginalDate >= originalDate);
+                }
+
+                var stales = await staleQuery.ToListAsync();
+                foreach (var stale in stales)
+                {
+                    await stale.Delete(backendConfigurationPnDbContext);
+                }
+            }
+
+            return new OperationResult(true,
+                localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.ResizeTask: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileUpdatingCalendarTask")}: {e.Message}");
         }
     }
 
@@ -1011,9 +1545,148 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    // Parses a comma-separated weekday CSV (e.g. "1,3,5") into a sorted,
+    // de-duplicated array of JS-style weekday ints (0=Sun..6=Sat). Returns
+    // an empty array on null/empty/all-invalid input — callers treat empty
+    // as "no multi-day expansion, fall back to single-day weekly behavior".
+    private static int[] ParseWeekdaysCsv(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return [];
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var n) ? n : -1)
+            .Where(n => n is >= 0 and <= 6)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToArray();
+    }
+
+    // Yields every occurrence of `planning` whose date is in
+    // [fromInclusive, toExclusive). Unlike GetOccurrencesInWeek (which
+    // assumes a week-sized range and caps Month/Year iteration), this is
+    // safe for arbitrary multi-month / multi-year ranges. Used by
+    // ResizeTask's 'thisAndFollowing' past-anchor backfill.
+    //
+    // Returns empty for non-recurring plannings (RepeatType.None / default
+    // branch) — there are no past occurrences to anchor in that case.
+    //
+    // When repeatWeekdaysCsv is non-empty and the planning is RepeatType.Week,
+    // the weekly branch emits one occurrence per matching weekday in each
+    // matching week (anchored to startDate's week, every repeatEvery weeks).
+    // Null/empty CSV preserves the legacy single-day-per-week behavior.
+    private static IEnumerable<DateTime> EnumerateOccurrences(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        DateTime fromInclusive, DateTime toExclusive,
+        string? repeatWeekdaysCsv = null)
+    {
+        var startDate = planning.StartDate.Date;
+        var rangeStart = fromInclusive.Date > startDate ? fromInclusive.Date : startDate;
+        var rangeEnd = toExclusive.Date;
+        if (rangeEnd <= rangeStart) yield break;
+        var repeatEvery = Math.Max(planning.RepeatEvery, 1);
+
+        switch (planning.RepeatType)
+        {
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day:
+            {
+                var step = repeatEvery;
+                var daysSinceStart = (rangeStart - startDate).Days;
+                var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
+                var candidate = startDate.AddDays(skip * step);
+                while (candidate < rangeEnd)
+                {
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidate = candidate.AddDays(step);
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
+            {
+                var weekdays = ParseWeekdaysCsv(repeatWeekdaysCsv);
+                if (weekdays.Length == 0)
+                {
+                    // Legacy single-day path: step 7*repeatEvery from startDate.
+                    var step = repeatEvery * 7;
+                    var daysSinceStart = (rangeStart - startDate).Days;
+                    var skip = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / step) : 0;
+                    var candidate = startDate.AddDays(skip * step);
+                    while (candidate < rangeEnd)
+                    {
+                        if (candidate >= rangeStart) yield return candidate;
+                        candidate = candidate.AddDays(step);
+                    }
+                }
+                else
+                {
+                    // Multi-day path: anchor week is the Sunday-based week
+                    // containing startDate (matches JS getDay() numbering).
+                    // For each candidate day in [rangeStart, rangeEnd), emit
+                    // it iff its weekday is in the CSV AND its week is a
+                    // multiple of repeatEvery weeks from the anchor week.
+                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    var rangeStartWeek = rangeStart.AddDays(-(int)rangeStart.DayOfWeek);
+                    // Align rangeStart back to its week-start so we iterate
+                    // whole-week buckets cleanly.
+                    var weeksFromAnchor = (rangeStartWeek - anchorWeekStart).Days / 7;
+                    if (weeksFromAnchor < 0)
+                    {
+                        // Range begins before the anchor week — clamp.
+                        weeksFromAnchor = 0;
+                        rangeStartWeek = anchorWeekStart;
+                    }
+                    // Skip forward to the next "matching" week (k*repeatEvery
+                    // weeks past the anchor).
+                    var remainder = ((weeksFromAnchor % repeatEvery) + repeatEvery) % repeatEvery;
+                    if (remainder != 0)
+                    {
+                        rangeStartWeek = rangeStartWeek.AddDays((repeatEvery - remainder) * 7);
+                    }
+                    var weekCursor = rangeStartWeek;
+                    while (weekCursor < rangeEnd)
+                    {
+                        foreach (var wd in weekdays)
+                        {
+                            var candidate = weekCursor.AddDays(wd);
+                            if (candidate < startDate) continue;
+                            if (candidate < rangeStart) continue;
+                            if (candidate >= rangeEnd) continue;
+                            yield return candidate;
+                        }
+                        weekCursor = weekCursor.AddDays(repeatEvery * 7);
+                    }
+                }
+                break;
+            }
+            case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
+            {
+                var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                var monthsSinceStart = (rangeStart.Year - startDate.Year) * 12 + rangeStart.Month - startDate.Month;
+                var skip = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
+                var candidateMonth = startDate.AddMonths(skip * repeatEvery);
+                while (true)
+                {
+                    var daysInMonth = DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month);
+                    var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
+                        Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate >= rangeEnd) break;
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                }
+                break;
+            }
+            // NOTE: GetOccurrencesInWeek has a `(RepeatType)4 // Year` branch
+            // but the RepeatType enum only defines Day/Week/Month — the cast
+            // is dead code. Not propagating it here. Add a real Year case
+            // when the enum gains a member.
+            default:
+                // Non-recurring (RepeatType.None) — no past occurrences to anchor.
+                yield break;
+        }
+    }
+
     private static List<DateTime> GetOccurrencesInWeek(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
-        DateTime weekStart, DateTime weekEnd)
+        DateTime weekStart, DateTime weekEnd,
+        string? repeatWeekdaysCsv = null)
     {
         var occurrences = new List<DateTime>();
         var startDate = planning.StartDate.Date;
@@ -1039,15 +1712,39 @@ public class BackendConfigurationCalendarService(
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week:
             {
                 if (startDate > weekEnd) break;
-                var daysBetween = repeatEvery * 7;
-                var daysSinceStart = (weekStart.Date - startDate).Days;
-                var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / daysBetween) : 0;
-                var candidate = startDate.AddDays(periods * daysBetween);
-                while (candidate <= weekEnd)
+                var weekdays = ParseWeekdaysCsv(repeatWeekdaysCsv);
+                if (weekdays.Length == 0)
                 {
-                    if (candidate >= weekStart)
-                        occurrences.Add(candidate);
-                    candidate = candidate.AddDays(daysBetween);
+                    // Legacy single-day path: step 7*repeatEvery from startDate.
+                    var daysBetween = repeatEvery * 7;
+                    var daysSinceStart = (weekStart.Date - startDate).Days;
+                    var periods = daysSinceStart > 0 ? (int)Math.Ceiling((double)daysSinceStart / daysBetween) : 0;
+                    var candidate = startDate.AddDays(periods * daysBetween);
+                    while (candidate <= weekEnd)
+                    {
+                        if (candidate >= weekStart)
+                            occurrences.Add(candidate);
+                        candidate = candidate.AddDays(daysBetween);
+                    }
+                }
+                else
+                {
+                    // Multi-day path: only emit occurrences in this week if
+                    // the requested week is a multiple of repeatEvery weeks
+                    // past the anchor week (Sunday-based, matches JS getDay).
+                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    var weekStartAligned = weekStart.Date.AddDays(-(int)weekStart.Date.DayOfWeek);
+                    var weeksFromAnchor = (weekStartAligned - anchorWeekStart).Days / 7;
+                    if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
+                    {
+                        foreach (var wd in weekdays)
+                        {
+                            var candidate = weekStartAligned.AddDays(wd);
+                            if (candidate < startDate) continue;
+                            if (candidate < weekStart || candidate > weekEnd) continue;
+                            occurrences.Add(candidate);
+                        }
+                    }
                 }
                 break;
             }
@@ -1132,6 +1829,7 @@ public class BackendConfigurationCalendarService(
 
     private async Task<int?> ResolveOrCreateLogbøgerFolderAsync(int propertyId)
     {
+        // 1) Folder already linked to this property? Use it.
         var existingFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
             .Include(f => f.AreaProperty)
             .ThenInclude(a => a.Area)
@@ -1148,37 +1846,718 @@ public class BackendConfigurationCalendarService(
             return existingFolder.FolderId;
         }
 
-        var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
-            .Where(x => x.Name == "00. Logbøger")
-            .FirstOrDefaultAsync();
+        // 2) Resolve the Logbøger Area — if it's missing (or its translations are),
+        // seed from BackendConfigurationSeedAreas — same source the plugin-init
+        // seed loop uses (EformBackendConfigurationPlugin.SeedDatabase).
+        int areaId;
+        List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel> areaFolderTranslations;
 
-        if (areaTranslation == null)
+        var existingAreaTranslations = await backendConfigurationPnDbContext.AreaTranslations
+            .Where(x => x.Name == "00. Logbøger")
+            .ToListAsync();
+
+        if (existingAreaTranslations.Count > 0)
         {
-            return null;
+            var sampleAreaId = existingAreaTranslations[0].AreaId;
+            areaId = sampleAreaId;
+            areaFolderTranslations = await backendConfigurationPnDbContext.AreaTranslations
+                .Where(x => x.AreaId == sampleAreaId)
+                .Select(x => new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                {
+                    Name = x.Name,
+                    LanguageId = x.LanguageId,
+                    Description = ""
+                })
+                .ToListAsync();
+        }
+        else
+        {
+            var seededArea = Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreasSeed
+                .Where(a => a.IsDisabled == false)
+                .FirstOrDefault(a => a.AreaTranslations != null
+                    && a.AreaTranslations.Any(t => t.Name == "00. Logbøger"));
+            if (seededArea == null)
+            {
+                logger.LogError("Logbøger area is missing from seed data — cannot resolve folder for property {PropertyId}", propertyId);
+                return null;
+            }
+
+            var existingArea = await backendConfigurationPnDbContext.Areas
+                .FirstOrDefaultAsync(a => a.Id == seededArea.Id);
+            if (existingArea == null)
+            {
+                // Fresh Area + its translations — cascades via EF navigation.
+                await seededArea.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+                areaId = seededArea.Id;
+            }
+            else
+            {
+                // Area row exists but translations don't — reseed translations only.
+                foreach (var translation in seededArea.AreaTranslations)
+                {
+                    var translationCopy = new AreaTranslation
+                    {
+                        AreaId = existingArea.Id,
+                        LanguageId = translation.LanguageId,
+                        Name = translation.Name,
+                        Description = translation.Description,
+                        InfoBox = translation.InfoBox,
+                        Placeholder = translation.Placeholder,
+                        NewItemName = translation.NewItemName
+                    };
+                    await translationCopy.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+                areaId = existingArea.Id;
+            }
+
+            areaFolderTranslations = seededArea.AreaTranslations
+                .Select(t => new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                {
+                    Name = t.Name,
+                    LanguageId = t.LanguageId,
+                    Description = ""
+                })
+                .ToList();
         }
 
+        // 3) Inline only the creation portion of BackendConfigurationPropertyAreasServiceHelper.Update's
+        // default branch — create AreaProperty + SDK folder + ProperyAreaFolder + seed AreaRules.
+        // We skip the Update(...) call because it also computes assignmentsForDelete, which would
+        // destroy any OTHER active AreaProperties this property already has.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-        var propertyAreaUpdateModel = new Infrastructure.Models.PropertyAreas.PropertyAreasUpdateModel
+        var property = await backendConfigurationPnDbContext.Properties
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.Id == propertyId)
+            .FirstAsync();
+
+        var newAreaProperty = new AreaProperty
         {
-            Areas = [new Infrastructure.Models.PropertyAreas.PropertyAreaModel { AreaId = areaTranslation.AreaId, Activated = true }],
-            PropertyId = propertyId
+            CreatedByUserId = userService.UserId,
+            UpdatedByUserId = userService.UserId,
+            AreaId = areaId,
+            PropertyId = propertyId,
+            Checked = true
         };
+        await newAreaProperty.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        await Infrastructure.Helpers.BackendConfigurationPropertyAreasServiceHelper.Update(
-            propertyAreaUpdateModel, core,
-            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userService.UserId);
+        var folderId = await core.FolderCreate(areaFolderTranslations, property.FolderId).ConfigureAwait(false);
 
-        var newFolder = await backendConfigurationPnDbContext.ProperyAreaFolders
-            .Include(f => f.AreaProperty)
-            .ThenInclude(a => a.Area)
-            .ThenInclude(a => a.AreaTranslations)
-            .Where(f => f.AreaProperty.PropertyId == propertyId)
+        var newAreaFolder = new ProperyAreaFolder
+        {
+            FolderId = folderId,
+            ProperyAreaAsignmentId = newAreaProperty.Id
+        };
+        await newAreaFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+        foreach (var seedRule in Infrastructure.Data.Seed.Data.BackendConfigurationSeedAreas.AreaRules
+                     .Where(x => x.AreaId == areaId))
+        {
+            seedRule.PropertyId = property.Id;
+            seedRule.FolderId = folderId;
+            seedRule.CreatedByUserId = userService.UserId;
+            seedRule.UpdatedByUserId = userService.UserId;
+            seedRule.ComplianceModifiable = true;
+            seedRule.NotificationsModifiable = true;
+            if (!string.IsNullOrEmpty(seedRule.EformName))
+            {
+                var eformId = await sdkDbContext.CheckListTranslations
+                    .Where(x => x.Text == seedRule.EformName)
+                    .Select(x => x.CheckListId)
+                    .FirstOrDefaultAsync();
+                if (eformId != 0)
+                {
+                    seedRule.EformId = eformId;
+                }
+            }
+
+            await seedRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+        }
+
+        return folderId;
+    }
+
+    // ---------------------------------------------------------------------
+    // Attachment-related helpers + endpoints (calendar event-attachments)
+    // ---------------------------------------------------------------------
+
+    private const long MaxAttachmentBytes = 25L * 1024 * 1024;
+    private const int MaxAttachmentsPerPlanning = 10;
+
+    private static readonly Dictionary<string, string[]> AllowedMimeExtensions = new()
+    {
+        ["application/pdf"] = new[] { ".pdf" },
+        ["image/png"] = new[] { ".png" },
+        ["image/jpeg"] = new[] { ".jpg", ".jpeg" }
+    };
+
+    /// <summary>
+    /// Project the eager-loaded AreaRulePlanningFiles collection (filtered to
+    /// non-removed rows) onto the calendar response DTO. Returns an empty
+    /// list when the navigation is null or all rows are soft-deleted.
+    /// </summary>
+    private static List<CalendarTaskAttachmentDto> MapAttachments(AreaRulePlanning? arp)
+    {
+        if (arp?.AreaRulePlanningFiles == null) return new List<CalendarTaskAttachmentDto>();
+        return arp.AreaRulePlanningFiles
             .Where(f => f.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(f => f.AreaProperty.Area.AreaTranslations
-                .Any(t => t.Name == "00. Logbøger"))
-            .FirstOrDefaultAsync();
+            .Select(f => new CalendarTaskAttachmentDto
+            {
+                Id = f.Id,
+                OriginalFileName = f.OriginalFileName ?? string.Empty,
+                MimeType = f.MimeType ?? string.Empty,
+                SizeBytes = f.SizeBytes,
+                DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{arp.Id}/files/{f.Id}",
+                DriveFileId = f.DriveFileId,
+                DriveModifiedTime = f.DriveModifiedTime,
+                // PR-8: only Drive-sourced rows carry refresh/revoke metadata.
+                // Use DriveModifiedTime as the proxy for "last refreshed at"
+                // (the change-processor advances it on every accepted refetch
+                // — see PR-7). For non-Drive rows both fields stay null/false.
+                LastRefreshedAt = f.DriveFileId != null ? f.DriveModifiedTime : null,
+                DriveRevoked = f.DriveFileId != null
+                    && f.GoogleOAuthToken != null
+                    && f.GoogleOAuthToken.RevokedAt != null
+            })
+            .ToList();
+    }
 
-        return newFolder?.FolderId;
+    public async Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int taskId, IFormFile file)
+    {
+        try
+        {
+            // Defensive: reject empty multipart parts immediately so the
+            // remainder of the pipeline can assume a real binary.
+            if (file == null || file.Length == 0)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileNotFound"));
+            }
+
+            if (file.Length > MaxAttachmentBytes)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileTooLarge"));
+            }
+
+            // Browsers may attach a parameter such as ";charset=binary" to the
+            // Content-Type header — strip parameters before comparing against
+            // the allow-list, otherwise legitimate uploads get rejected.
+            var mimeType = (file.ContentType ?? string.Empty)
+                .Split(';')[0]
+                .Trim()
+                .ToLowerInvariant();
+            if (!AllowedMimeExtensions.TryGetValue(mimeType, out var allowedExts))
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileTypeNotAllowed"));
+            }
+
+            // Defence-in-depth: even when the MIME is one we accept, the file
+            // extension must agree — otherwise an attacker could upload an
+            // executable disguised as a PDF and rely on the browser sniffing
+            // the content type back to something dangerous.
+            var ext = Path.GetExtension(file.FileName ?? string.Empty).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext) || !allowedExts.Contains(ext))
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("FileExtensionMimeMismatch"));
+            }
+
+            var planning = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (planning == null)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            var existingCount = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .CountAsync();
+            if (existingCount >= MaxAttachmentsPerPlanning)
+            {
+                return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                    localizationService.GetString("AttachmentLimitReached"));
+            }
+
+            // We stage the upload to an intermediate file first so we can MD5
+            // the on-disk copy — the same pattern used by
+            // BackendConfigurationFilesService.Create and EFormFilesController.
+            // Once we know the checksum we move the bytes to a deterministic
+            // canonical path keyed on the checksum, then hand it to the SDK
+            // for storage. The intermediate (ticks/guid-named) file is
+            // *always* deleted in the finally block — that prevents the
+            // disk leak that the previous implementation produced. The
+            // canonical-named file is what FileLocation records and is what
+            // the S3-disabled fallback in DownloadFile reads from, so it is
+            // intentionally retained.
+            var folder = Path.Combine(Path.GetTempPath(), "calendar-attachments");
+            Directory.CreateDirectory(folder);
+            var intermediatePath = Path.Combine(folder, $"{DateTime.UtcNow.Ticks}_{Guid.NewGuid():N}{ext}");
+
+            try
+            {
+                await using (var stream = new FileStream(intermediatePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                string checksum;
+                using (var md5 = MD5.Create())
+                {
+                    await using var stream = System.IO.File.OpenRead(intermediatePath);
+                    var hashBytes = await md5.ComputeHashAsync(stream);
+                    checksum = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                }
+
+                var storageFileName = $"{checksum}{ext}";
+                var canonicalPath = Path.Combine(folder, storageFileName);
+
+                // Move staged bytes to the canonical path. If the canonical
+                // file already exists (same checksum re-upload) keep it as-is.
+                if (System.IO.File.Exists(canonicalPath))
+                {
+                    System.IO.File.Delete(intermediatePath);
+                }
+                else
+                {
+                    System.IO.File.Move(intermediatePath, canonicalPath);
+                }
+
+                var core = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                // Mirror EFormFilesController.AddNewImage's UploadedData
+                // shape — the SDK UploadedData does NOT carry the audit
+                // fields (those live on the Backend-Configuration-side
+                // UploadedData, a different entity). We attribute the
+                // upload to the user via UploaderId; UploaderType is left
+                // unset to match the canonical platform pattern (the
+                // earlier "system" value mis-reported a user-initiated
+                // upload as a background-system action).
+                var uploadedData = new SdkUploadedData
+                {
+                    Checksum = checksum,
+                    FileName = storageFileName,
+                    FileLocation = canonicalPath,
+                    Extension = ext.TrimStart('.'),
+                    CurrentFile = storageFileName,
+                    UploaderId = userService.UserId
+                };
+                await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
+
+                // SDK PutFileToStorageSystem is a no-op when S3 is disabled.
+                // In that case the canonical file we just moved IS the
+                // persistence layer, and DownloadFile reads it back via
+                // FileLocation. When S3 is enabled the SDK uploads from the
+                // canonical path; the canonical local file is left in place
+                // (matching the existing platform behaviour in
+                // BackendConfigurationFilesService.Create).
+                await core.PutFileToStorageSystem(canonicalPath, storageFileName).ConfigureAwait(false);
+
+                var arpFile = new AreaRulePlanningFile
+                {
+                    AreaRulePlanningId = taskId,
+                    UploadedDataId = uploadedData.Id,
+                    OriginalFileName = file.FileName ?? string.Empty,
+                    MimeType = mimeType,
+                    SizeBytes = file.Length,
+                    CreatedByUserId = userService.UserId,
+                    UpdatedByUserId = userService.UserId
+                };
+                await arpFile.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                return new OperationDataResult<CalendarTaskAttachmentDto>(true, new CalendarTaskAttachmentDto
+                {
+                    Id = arpFile.Id,
+                    OriginalFileName = arpFile.OriginalFileName,
+                    MimeType = arpFile.MimeType,
+                    SizeBytes = arpFile.SizeBytes,
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{arpFile.Id}"
+                });
+            }
+            finally
+            {
+                // Belt-and-braces: ensure the intermediate (ticks/guid-named)
+                // staging file is gone regardless of which code path ran.
+                // The canonical (checksum-named) file is the one we keep.
+                try
+                {
+                    if (System.IO.File.Exists(intermediatePath))
+                    {
+                        System.IO.File.Delete(intermediatePath);
+                    }
+                }
+                catch
+                {
+                    // Cleanup is best-effort — we don't want a stale-handle
+                    // exception masking the original outcome.
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.UploadFile: {Message}", e.Message);
+            return new OperationDataResult<CalendarTaskAttachmentDto>(false,
+                $"{localizationService.GetString("ErrorWhileUploadingAttachment")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationDataResult<List<CalendarTaskAttachmentDto>>> ListFiles(int taskId)
+    {
+        try
+        {
+            var files = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.Id)
+                .Select(x => new CalendarTaskAttachmentDto
+                {
+                    Id = x.Id,
+                    OriginalFileName = x.OriginalFileName ?? string.Empty,
+                    MimeType = x.MimeType ?? string.Empty,
+                    SizeBytes = x.SizeBytes,
+                    DownloadUrl = $"/api/backend-configuration-pn/calendar/tasks/{taskId}/files/{x.Id}",
+                    DriveFileId = x.DriveFileId,
+                    DriveModifiedTime = x.DriveModifiedTime,
+                    // PR-8: same proxy as MapAttachments — DriveModifiedTime
+                    // is what the change-processor bumps on every accepted
+                    // refetch, so it doubles as "last refreshed at" for the UI.
+                    LastRefreshedAt = x.DriveFileId != null ? x.DriveModifiedTime : null,
+                    DriveRevoked = x.DriveFileId != null
+                        && x.GoogleOAuthToken != null
+                        && x.GoogleOAuthToken.RevokedAt != null
+                })
+                .ToListAsync();
+            return new OperationDataResult<List<CalendarTaskAttachmentDto>>(true, files);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.ListFiles: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarTaskAttachmentDto>>(false,
+                $"{localizationService.GetString("ErrorWhileListingAttachments")}: {e.Message}");
+        }
+    }
+
+    public async Task<CalendarFileDownload?> DownloadFile(int taskId, int fileId)
+    {
+        try
+        {
+            var arpFile = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.Id == fileId)
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (arpFile == null) return null;
+
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            var uploadedData = await sdkDbContext.UploadedDatas
+                .Where(x => x.Id == arpFile.UploadedDataId)
+                .FirstOrDefaultAsync();
+            if (uploadedData == null) return null;
+
+            // Determine S3-vs-local through the SAME mechanism the SDK itself
+            // uses for PutFileToStorageSystem (Core.GetSdkSetting). This way
+            // the read path can never disagree with the write path: if the
+            // SDK persisted to S3, we read from S3; if the SDK no-op'd, we
+            // read the canonical local file that UploadFile retained at
+            // FileLocation.
+            var s3Setting = await core.GetSdkSetting(Settings.s3Enabled).ConfigureAwait(false);
+            var s3Enabled = string.Equals(s3Setting, "true", StringComparison.OrdinalIgnoreCase);
+
+            Stream content;
+            if (s3Enabled)
+            {
+                var s3Response = await core.GetFileFromS3Storage(uploadedData.FileName);
+                content = s3Response.ResponseStream;
+            }
+            else
+            {
+                if (!System.IO.File.Exists(uploadedData.FileLocation))
+                {
+                    return null;
+                }
+                content = new FileStream(uploadedData.FileLocation, FileMode.Open, FileAccess.Read);
+            }
+
+            return new CalendarFileDownload
+            {
+                Content = content,
+                MimeType = string.IsNullOrEmpty(arpFile.MimeType) ? "application/octet-stream" : arpFile.MimeType,
+                FileName = arpFile.OriginalFileName ?? string.Empty
+            };
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.DownloadFile: {Message}", e.Message);
+            return null;
+        }
+    }
+
+    public async Task<OperationResult> DeleteFile(int taskId, int fileId)
+    {
+        try
+        {
+            var arpFile = await backendConfigurationPnDbContext.AreaRulePlanningFiles
+                .Where(x => x.Id == fileId)
+                .Where(x => x.AreaRulePlanningId == taskId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            if (arpFile == null)
+            {
+                return new OperationResult(false, localizationService.GetString("FileNotFound"));
+            }
+
+            arpFile.UpdatedByUserId = userService.UserId;
+            // Soft-delete the join row; intentionally do NOT delete the SDK
+            // UploadedData so the audit chain to the original blob survives.
+            await arpFile.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            return new OperationResult(true);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.DeleteFile: {Message}", e.Message);
+            return new OperationResult(false,
+                $"{localizationService.GetString("ErrorWhileDeletingAttachment")}: {e.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Implementation mirrors the compliance branch of
+    /// <see cref="GetTasksForWeek"/> (lines 514-583) AND the angular
+    /// <c>BackendConfigurationTaskTrackerHelper.Index</c> path
+    /// (Infrastructure/Helpers/BackendConfigurationTaskTrackerHelper.cs:46-351),
+    /// but without a deadline window — every non-removed compliance under
+    /// the property is returned. The SDK Case is loaded in one batched IN
+    /// query so we can populate <see cref="CalendarTaskResponseModel.Completed"/>
+    /// (<c>Case.Status == 100</c>) and
+    /// <see cref="CalendarTaskResponseModel.TaskIsExpired"/>
+    /// (<c>(Case.WorkflowState=Removed AND Status=77) OR
+    /// (compliance.Deadline &lt; UtcNow AND Status != 100)</c>).
+    /// </remarks>
+    public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
+        int propertyId, int? sdkSiteIdForFilter)
+    {
+        try
+        {
+            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+            var dateTimeNow = DateTime.UtcNow;
+            var result = new List<CalendarTaskResponseModel>();
+
+            // Default board for missing-board fallback (parity with GetTasksForWeek line 53-59).
+            var defaultBoard = await backendConfigurationPnDbContext.CalendarBoards
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyId == propertyId)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync();
+            var defaultBoardId = defaultBoard?.Id;
+
+            // Full-scope compliance load — no deadline window, property scoped.
+            // Mirrors BackendConfigurationTaskTrackerHelper.cs:59-65 + 67-76.
+            // WorkflowState NULL is treated as "not removed" to match the
+            // ActionableOnly branch convention applied to other mobile-worker
+            // queries on this service.
+            var compliances = await backendConfigurationPnDbContext.Compliances
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .Where(x => x.PropertyId == propertyId)
+                .OrderBy(x => x.Deadline)
+                .ToListAsync();
+
+            if (compliances.Count == 0)
+            {
+                return new OperationDataResult<List<CalendarTaskResponseModel>>(true, result);
+            }
+
+            // Batch-fetch the SDK Cases backing those compliances so we can
+            // derive Completed + TaskIsExpired without an N+1 round-trip.
+            var sdkCaseIds = compliances
+                .Select(c => c.MicrotingSdkCaseId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContextLocal = sdkCore.DbContextHelper.GetDbContext();
+            var sdkCasesById = await sdkDbContextLocal.Cases
+                .Where(c => sdkCaseIds.Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id);
+
+            var planningIds = compliances.Select(x => x.PlanningId).Distinct().ToList();
+
+            // Batch-load AreaRulePlannings (mirrors GetTasksForWeek lines 480-488).
+            var complianceArps = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => planningIds.Contains(x.ItemPlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Include(x => x.AreaRule)
+                    .ThenInclude(x => x.AreaRuleTranslations)
+                .Include(x => x.PlanningSites)
+                .Include(x => x.AreaRulePlanningFiles)
+                .ToListAsync();
+            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+
+            var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
+            var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.AreaRulePlanningId);
+
+            var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            var complianceTagItemIds = complianceArpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            var compliancePlanningTagNames = await itemsPlanningPnDbContext.PlanningTags
+                .Where(x => complianceTagItemIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            var compliancePlanningsDict = await itemsPlanningPnDbContext.Plannings
+                .Where(x => planningIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToDictionaryAsync(x => x.Id);
+
+            // PlanningSite ↔ Site mapping for the per-row Worker filter.
+            // Parity with BackendConfigurationTaskTrackerHelper.cs:166-184.
+            var planningSiteIdsByPlanning = await itemsPlanningPnDbContext.PlanningSites
+                .Where(x => planningIds.Contains(x.PlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.PlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(p => p.SiteId).Distinct().ToList());
+
+            foreach (var compliance in compliances)
+            {
+                complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                CalendarConfiguration calConfig = null;
+                if (arp != null)
+                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+
+                if (!compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var planning))
+                {
+                    // Mirrors TaskTrackerHelper.cs:142-145 — orphan compliance, skip.
+                    continue;
+                }
+
+                // Per-row Worker filter (parity with TaskTrackerHelper.cs:178-192,
+                // collapsed to a single sdk-site check because the mobile worker
+                // call passes exactly one site id; null disables the filter for
+                // admin-style callers).
+                if (sdkSiteIdForFilter.HasValue)
+                {
+                    if (!planningSiteIdsByPlanning.TryGetValue(compliance.PlanningId, out var planningSiteIds)
+                        || !planningSiteIds.Contains(sdkSiteIdForFilter.Value))
+                    {
+                        continue;
+                    }
+                }
+
+                var title = compliance.ItemName ?? "";
+                if (arp?.AreaRule?.AreaRuleTranslations != null)
+                {
+                    title = arp.AreaRule.AreaRuleTranslations
+                        .Where(t => t.LanguageId == userLanguageId)
+                        .Select(t => t.Name)
+                        .FirstOrDefault() ?? title;
+                }
+
+                var tags = arp != null
+                    ? complianceArpTags
+                        .Where(x => x.AreaRulePlanningId == arp.Id)
+                        .Select(x => compliancePlanningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
+                        .Where(x => x != null)
+                        .ToList()
+                    : [];
+
+                var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
+                var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
+                var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+
+                // Per-row Completed + TaskIsExpired derivation. Predicate
+                // matches the spec: completed = Case.Status==100;
+                // task_is_expired = (Case.WorkflowState=Removed AND
+                // Status=77) OR (compliance.Deadline < UtcNow AND
+                // Status != 100). Recurrence-only or missing-Case rows fall
+                // back to the deadline-only check (no Status to consult, so
+                // they are treated as not-completed).
+                bool completed = false;
+                bool taskIsExpired;
+                if (compliance.MicrotingSdkCaseId > 0
+                    && sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase)
+                    && sdkCase != null)
+                {
+                    completed = sdkCase.Status == 100;
+                    var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
+                                    && sdkCase.Status == 77;
+                    var pastDueIncomplete = compliance.Deadline < dateTimeNow
+                                            && sdkCase.Status != 100;
+                    taskIsExpired = retracted || pastDueIncomplete;
+                }
+                else
+                {
+                    taskIsExpired = compliance.Deadline < dateTimeNow;
+                }
+
+                var model = new CalendarTaskResponseModel
+                {
+                    Id = arp?.Id ?? 0,
+                    Title = title,
+                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
+                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    Tags = tags,
+                    AssigneeIds = arp?.PlanningSites?
+                        .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(ps => (int)ps.SiteId)
+                        .ToList() ?? [],
+                    BoardId = calConfig?.BoardId ?? defaultBoardId,
+                    Color = calConfig?.Color,
+                    RepeatType = arp?.RepeatType ?? 0,
+                    RepeatEvery = arp?.RepeatEvery ?? 1,
+                    RepeatEndMode = arp?.RepeatEndMode,
+                    RepeatOccurrences = arp?.RepeatOccurrences,
+                    RepeatUntilDate = arp?.RepeatUntilDate,
+                    DayOfWeek = arp?.DayOfWeek,
+                    DayOfMonth = arp?.DayOfMonth,
+                    RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
+                    Completed = completed,
+                    PropertyId = compliance.PropertyId,
+                    ComplianceId = compliance.Id,
+                    IsFromCompliance = true,
+                    Deadline = compliance.Deadline,
+                    NextExecutionTime = planning.NextExecutionTime,
+                    PlanningId = compliance.PlanningId,
+                    IsAllDay = compIsAllDay,
+                    EformId = arp?.AreaRule?.EformId,
+                    SdkCaseId = compliance.MicrotingSdkCaseId,
+                    ItemPlanningTagId = arp?.ItemPlanningTagId,
+                    DescriptionHtml = planning.Description,
+                    Attachments = MapAttachments(arp),
+                    TaskIsExpired = taskIsExpired
+                };
+
+                result.Add(model);
+            }
+
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(true, result);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.GetTaskTrackerList: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
     }
 }

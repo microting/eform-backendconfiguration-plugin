@@ -207,6 +207,205 @@ LOCK TABLES `AreaRuleInitialFields` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `AreaRulePlanningFiles`
+--
+
+DROP TABLE IF EXISTS `AreaRulePlanningFiles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `AreaRulePlanningFiles` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `AreaRulePlanningId` int(11) NOT NULL,
+  `UploadedDataId` int(11) NOT NULL,
+  `OriginalFileName` varchar(255) DEFAULT NULL,
+  `MimeType` varchar(50) DEFAULT NULL,
+  `SizeBytes` bigint(20) NOT NULL,
+  `DriveFileId` varchar(64) DEFAULT NULL,
+  `DriveModifiedTime` datetime(6) DEFAULT NULL,
+  `GoogleOAuthTokenId` int(11) DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_AreaRulePlanningFiles_AreaRulePlanningId` (`AreaRulePlanningId`),
+  KEY `IX_AreaRulePlanningFiles_GoogleOAuthTokenId` (`GoogleOAuthTokenId`),
+  CONSTRAINT `FK_AreaRulePlanningFiles_AreaRulePlannings_AreaRulePlanningId` FOREIGN KEY (`AreaRulePlanningId`) REFERENCES `AreaRulePlannings` (`Id`),
+  CONSTRAINT `FK_AreaRulePlanningFiles_GoogleOAuthTokens_GoogleOAuthTokenId` FOREIGN KEY (`GoogleOAuthTokenId`) REFERENCES `GoogleOAuthTokens` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `AreaRulePlanningFiles`
+--
+
+LOCK TABLES `AreaRulePlanningFiles` WRITE;
+/*!40000 ALTER TABLE `AreaRulePlanningFiles` DISABLE KEYS */;
+/*!40000 ALTER TABLE `AreaRulePlanningFiles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `AreaRulePlanningFileVersions`
+--
+
+DROP TABLE IF EXISTS `AreaRulePlanningFileVersions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `AreaRulePlanningFileVersions` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `AreaRulePlanningFileId` int(11) NOT NULL,
+  `AreaRulePlanningId` int(11) NOT NULL,
+  `UploadedDataId` int(11) NOT NULL,
+  `OriginalFileName` varchar(255) DEFAULT NULL,
+  `MimeType` varchar(50) DEFAULT NULL,
+  `SizeBytes` bigint(20) NOT NULL,
+  `DriveFileId` varchar(64) DEFAULT NULL,
+  `DriveModifiedTime` datetime(6) DEFAULT NULL,
+  `GoogleOAuthTokenId` int(11) DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `GoogleOAuthTokens`
+--
+
+DROP TABLE IF EXISTS `GoogleOAuthTokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `GoogleOAuthTokens` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `UserId` int(11) NOT NULL,
+  `GoogleAccountEmail` varchar(255) DEFAULT NULL,
+  `EncryptedRefreshToken` varchar(2048) DEFAULT NULL,
+  `ConnectedAt` datetime(6) NOT NULL,
+  `LastUsedAt` datetime(6) DEFAULT NULL,
+  `RevokedAt` datetime(6) DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `GoogleOAuthTokens` WRITE;
+/*!40000 ALTER TABLE `GoogleOAuthTokens` DISABLE KEYS */;
+/*!40000 ALTER TABLE `GoogleOAuthTokens` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `GoogleOAuthTokenVersions`
+--
+
+DROP TABLE IF EXISTS `GoogleOAuthTokenVersions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `GoogleOAuthTokenVersions` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `GoogleOAuthTokenId` int(11) NOT NULL,
+  `UserId` int(11) NOT NULL,
+  `GoogleAccountEmail` varchar(255) DEFAULT NULL,
+  `EncryptedRefreshToken` varchar(2048) DEFAULT NULL,
+  `ConnectedAt` datetime(6) NOT NULL,
+  `LastUsedAt` datetime(6) DEFAULT NULL,
+  `RevokedAt` datetime(6) DEFAULT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `GoogleOAuthTokenVersions` WRITE;
+/*!40000 ALTER TABLE `GoogleOAuthTokenVersions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `GoogleOAuthTokenVersions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `DriveWatchChannels`
+--
+
+DROP TABLE IF EXISTS `DriveWatchChannels`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `DriveWatchChannels` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `GoogleOAuthTokenId` int(11) NOT NULL,
+  `ChannelId` varchar(64) DEFAULT NULL,
+  `ResourceId` varchar(64) DEFAULT NULL,
+  `SignedToken` varchar(2048) DEFAULT NULL,
+  `ExpiresAt` datetime(6) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_DriveWatchChannels_GoogleOAuthTokenId` (`GoogleOAuthTokenId`),
+  CONSTRAINT `FK_DriveWatchChannels_GoogleOAuthTokens_GoogleOAuthTokenId` FOREIGN KEY (`GoogleOAuthTokenId`) REFERENCES `GoogleOAuthTokens` (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `DriveWatchChannels` WRITE;
+/*!40000 ALTER TABLE `DriveWatchChannels` DISABLE KEYS */;
+/*!40000 ALTER TABLE `DriveWatchChannels` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `DriveWatchChannelVersions`
+--
+
+DROP TABLE IF EXISTS `DriveWatchChannelVersions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `DriveWatchChannelVersions` (
+  `Id` int(11) NOT NULL AUTO_INCREMENT,
+  `DriveWatchChannelId` int(11) NOT NULL,
+  `GoogleOAuthTokenId` int(11) NOT NULL,
+  `ChannelId` varchar(64) DEFAULT NULL,
+  `ResourceId` varchar(64) DEFAULT NULL,
+  `SignedToken` varchar(2048) DEFAULT NULL,
+  `ExpiresAt` datetime(6) NOT NULL,
+  `CreatedAt` datetime(6) NOT NULL,
+  `UpdatedAt` datetime(6) DEFAULT NULL,
+  `WorkflowState` varchar(255) DEFAULT NULL,
+  `CreatedByUserId` int(11) NOT NULL,
+  `UpdatedByUserId` int(11) NOT NULL,
+  `Version` int(11) NOT NULL,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `DriveWatchChannelVersions` WRITE;
+/*!40000 ALTER TABLE `DriveWatchChannelVersions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `DriveWatchChannelVersions` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `AreaRulePlanningFileVersions`
+--
+
+LOCK TABLES `AreaRulePlanningFileVersions` WRITE;
+/*!40000 ALTER TABLE `AreaRulePlanningFileVersions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `AreaRulePlanningFileVersions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `AreaRulePlanningTagVersion`
 --
 
@@ -287,6 +486,7 @@ CREATE TABLE `AreaRulePlannings` (
   `RepeatEndMode` int(11) DEFAULT NULL,
   `RepeatOccurrences` int(11) DEFAULT NULL,
   `RepeatUntilDate` datetime(6) DEFAULT NULL,
+  `RepeatWeekdaysCsv` varchar(13) DEFAULT NULL,
   `Status` tinyint(1) NOT NULL,
   `SendNotifications` tinyint(1) NOT NULL,
   `Alarm` int(11) NOT NULL,
@@ -510,6 +710,7 @@ CREATE TABLE `AreaRulesPlanningVersions` (
   `RepeatEndMode` int(11) DEFAULT NULL,
   `RepeatOccurrences` int(11) DEFAULT NULL,
   `RepeatUntilDate` datetime(6) DEFAULT NULL,
+  `RepeatWeekdaysCsv` varchar(13) DEFAULT NULL,
   `Status` tinyint(1) NOT NULL,
   `SendNotifications` tinyint(1) NOT NULL,
   `Alarm` int(11) NOT NULL,

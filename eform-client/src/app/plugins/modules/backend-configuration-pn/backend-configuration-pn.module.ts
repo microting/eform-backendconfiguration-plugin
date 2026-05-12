@@ -22,6 +22,8 @@ import {
   ReportHeaderComponent,
   ReportTableComponent,
   CaseDeleteComponent,
+  GoogleDriveOAuthFinishComponent,
+  GoogleDriveAccountsComponent,
 } from './components';
 import {BackendConfigurationPnLayoutComponent} from './layouts';
 import {
@@ -63,6 +65,8 @@ import {
   taskWorkerAssignmentReducer,
 } from './state';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
+import {MatListModule} from '@angular/material/list';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 
 @NgModule({
@@ -110,6 +114,8 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     MatMenu,
     MatMenuTrigger,
     MatMenuItem,
+    MatListModule,
+    MatProgressSpinnerModule,
   ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
@@ -124,7 +130,9 @@ import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
     ReportContainerComponent,
     ReportHeaderComponent,
     ReportTableComponent,
-    CaseDeleteComponent
+    CaseDeleteComponent,
+    GoogleDriveOAuthFinishComponent,
+    GoogleDriveAccountsComponent,
   ],
   providers: [
     BackendConfigurationPnSettingsService,

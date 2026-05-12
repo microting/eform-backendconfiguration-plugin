@@ -1,6 +1,6 @@
 .mini-calendar {
   user-select: none;
-  width: 224px;
+  width: 252px;
 
   .cal-header {
     display: flex;
@@ -17,7 +17,7 @@
 
   .cal-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: 28px repeat(7, 1fr);
     gap: 2px;
 
     .day-header {
@@ -25,6 +25,19 @@
       font-size: 11px;
       color: #888;
       padding: 2px 0;
+
+      &.week-header {
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+    }
+
+    .week-num-cell {
+      text-align: center;
+      padding: 4px 2px;
+      font-size: 11px;
+      color: #999;
+      border-right: 1px solid #eee;
     }
 
     .day-cell {
@@ -53,6 +66,15 @@
 
         &:hover {
           background: #1558b0;
+        }
+      }
+
+      &.disabled {
+        color: #ddd;
+        cursor: not-allowed;
+
+        &:hover {
+          background: transparent;
         }
       }
     }

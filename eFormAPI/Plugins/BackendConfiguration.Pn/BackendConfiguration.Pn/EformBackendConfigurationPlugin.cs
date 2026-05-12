@@ -49,6 +49,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -84,6 +85,7 @@ using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
 using Services.ChemicalService;
 using Services.ExcelService;
+using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
 using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
@@ -135,9 +137,39 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
+        services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
+        services.AddTransient<IGoogleDriveFileService, GoogleDriveFileService>();
+        // PR-7 change processor — consumed by /notify (fire-and-forget) and
+        // by the daily reconcile cron in eform-service-backendconfiguration-plugin.
+        services.AddTransient<IGoogleDriveChangeProcessor, GoogleDriveChangeProcessor>();
+        // Typed HttpClient for the Microting OAuth proxy. BaseAddress is
+        // configured from IOptions at construction time so the typed
+        // client never needs to know about appsettings directly.
+        services.AddHttpClient<IOAuthProxyClient, OAuthProxyClient>((sp, http) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
+            if (!string.IsNullOrEmpty(opts.MicrotingOAuthProxyUrl))
+            {
+                http.BaseAddress = new Uri(opts.MicrotingOAuthProxyUrl);
+            }
+        });
+        // Used by the GoogleDriveFileService to talk to Drive directly
+        // (separate from the proxy client). Named so the file service can
+        // grab a fresh, header-clean instance without polluting other
+        // typed clients.
+        services.AddHttpClient(nameof(GoogleDriveFileService));
+        // ASP.NET Data Protection backs the gd_nonce cookie used in the
+        // OAuth flow's CSRF defence (see GoogleDriveController).
+        services.AddDataProtection();
+        // GoogleDriveAuthService caches access tokens in IMemoryCache to
+        // avoid hitting /refresh on every Drive call. The host already
+        // wires AddMemoryCache via the ASP.NET defaults but we register
+        // explicitly so the plugin works even if a future host change
+        // removes the implicit registration.
+        services.AddMemoryCache();
         services.AddControllers();
         SeedEForms(services);
-        QuestPDF.Settings.License = LicenseType.Community;
+        // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
     }
 
     public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -156,6 +188,15 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     {
         services.ConfigurePluginDbOptions<BackendConfigurationBaseSettings>(
             configuration.GetSection("BackendConfigurationSettings"));
+
+        // Google Drive integration. ValidateDataAnnotations covers the
+        // required-string contract today; we don't want a hard ValidateOnStart
+        // because not every deployment opts into the integration yet — when
+        // the section is absent the proxy URL is empty and the controller
+        // surfaces a "not configured" message instead of preventing boot.
+        services.AddOptions<Infrastructure.Models.Settings.GoogleDriveOptions>()
+            .Bind(configuration.GetSection("GoogleDrive"))
+            .ValidateDataAnnotations();
     }
 
     private static async void SeedEForms(IServiceCollection services)
@@ -740,13 +781,13 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
         backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
 
-        appBuilder.UseRouting();
         appBuilder.UseEndpoints(endpoints =>
         {
             endpoints.MapGrpcService<Services.GrpcServices.CalendarGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.PropertiesGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.TemplatesGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.CompliancesGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.EventsGrpcService>();
         });
     }
 
@@ -1425,6 +1466,85 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     {
                         LocaleName = LocaleNames.Ukrainian,
                         Name = "Дашборд",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
+            },
+            new()
+            {
+                // PR-8: Settings UI for managing connected Google Drive
+                // accounts. Sits as a peer to the other plugin pages (no
+                // existing settings sub-tree to nest under) — restructuring
+                // the menu just for this entry would be out of scope.
+                Name = "Connected Google Drive accounts",
+                E2EId = "backend-configuration-pn-google-drive-accounts",
+                Link = "/plugins/backend-configuration-pn/google-drive-accounts",
+                Type = MenuItemTypeEnum.Link,
+                Position = 9,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Connected Google Drive accounts",
+                    E2EId = "backend-configuration-pn-google-drive-accounts",
+                    DefaultLink = "/plugins/backend-configuration-pn/google-drive-accounts",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Connected Google Drive accounts",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Verbundene Google Drive-Konten",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Tilsluttede Google Drive-konti",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Підключені облікові записи Google Drive",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Connected Google Drive accounts",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Verbundene Google Drive-Konten",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Tilsluttede Google Drive-konti",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Підключені облікові записи Google Drive",
                         Language = LanguageNames.Ukrainian
                     }
                 ]
