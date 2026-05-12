@@ -15,6 +15,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Google.Protobuf;
 using Grpc.Core;
+using ImageMagick;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -592,7 +593,7 @@ public class EventsGrpcService(
             case Date d:
                 field.Value = d.DefaultValue ?? string.Empty;
                 break;
-            case Number n:
+            case Microting.eForm.Infrastructure.Models.Number n:
                 field.Value = n.DefaultValue.ToString(CultureInfo.InvariantCulture);
                 break;
             case NumberStepper ns:
@@ -2324,7 +2325,59 @@ public class EventsGrpcService(
             uploadedData.FileName = fileName;
             await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
 
-            await core.PutFileToS3Storage(ms, fileName).ConfigureAwait(false);
+            // Materialise bytes once: AWS SDK v4 sets AutoCloseStream=true on
+            // PutObjectRequest, so each PutFileToS3Storage call disposes the
+            // stream it receives. We re-use the bytes for the original + both
+            // thumbnails by handing each upload a fresh MemoryStream over the
+            // same byte[] (mirrors BackendConfigurationTaskManagementService.cs:530-534).
+            ms.Position = 0;
+            var photoBytes = ms.ToArray();
+
+            using (var originalMs = new MemoryStream(photoBytes))
+            {
+                await core.PutFileToS3Storage(originalMs, fileName).ConfigureAwait(false);
+            }
+
+            // Thumbnail generation for raster images, SDK parity. Best-effort:
+            // any failure here is logged but does NOT throw, so the FieldValue /
+            // envelope writes below still run. The original photo is already on
+            // S3 + UploadedData row persisted, so a thumbnail failure means
+            // consumers fall back to the original (acceptable degradation) — far
+            // better than orphaning the row by short-circuiting the rest of the
+            // handler. (uploadedData.Extension is normalized to "jpg"/"png" by
+            // the earlier content-type switch, so we only check those two.)
+            if (uploadedData.Extension is "jpg" or "png")
+            {
+                var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}.{uploadedData.Extension}";
+                var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}.{uploadedData.Extension}";
+
+                async Task WriteResizedAsync(uint targetWidth, string targetFilename)
+                {
+                    using var image = new MagickImage(photoBytes);
+                    image.AutoOrient();
+                    if (image.Width == 0 || image.Height == 0) return;
+                    var ratio = image.Height / (decimal)image.Width;
+                    var newHeight = Math.Max(1u, (uint)Math.Round(ratio * targetWidth));
+                    image.Resize(targetWidth, newHeight);
+                    image.Crop(targetWidth, newHeight);    // SDK parity — Resize may round; Crop pins exact dims
+                    using var resizedMs = new MemoryStream();
+                    await image.WriteAsync(resizedMs).ConfigureAwait(false);
+                    resizedMs.Position = 0;
+                    await core.PutFileToS3Storage(resizedMs, targetFilename).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    await WriteResizedAsync(300, smallFilename).ConfigureAwait(false);
+                    await WriteResizedAsync(700, bigFilename).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex,
+                        "Thumbnail generation failed for UploadedData {Id}; original photo persisted, consumers will fall back to it",
+                        uploadedData.Id);
+                }
+            }
 
             // 6. Mirror angular's FieldValues row insert.
             // EFormFilesController.AddNewImage at line 306-316 creates a NEW
