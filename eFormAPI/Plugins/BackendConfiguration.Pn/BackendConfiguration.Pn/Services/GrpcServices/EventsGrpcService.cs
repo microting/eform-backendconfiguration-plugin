@@ -135,7 +135,12 @@ public class EventsGrpcService(
                 continue;
             }
 
-            response.Ejendomme.Add(new Property
+            // Fully-qualify the gRPC Property to disambiguate from
+            // EformBackendConfigurationBase.*.Entities.Property which the
+            // outer `using` import also pulls into scope (the Tavle→Board
+            // rename in Phase 2 didn't hit this because the base package
+            // has no Board entity).
+            response.Ejendomme.Add(new BackendConfiguration.Pn.Grpc.Events.Property
             {
                 Id = item.Id.Value.ToString(CultureInfo.InvariantCulture),
                 Name = item.Name ?? string.Empty
