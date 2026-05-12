@@ -615,10 +615,14 @@ public class EventsGrpcService(
                 field.Value = sb.Value ?? string.Empty;
                 break;
             case SingleSelect ss:
-                AppendKeyValuePairOptions(ss.KeyValuePairList, field);
+                // Template-only path (dead in practice — CheckRead always wraps
+                // fields as Models.Field, not as SingleSelect — but kept for
+                // defensive completeness). No per-case selection available here,
+                // so fall back to the kvp.Selected flag.
+                AppendKeyValuePairOptions(ss.KeyValuePairList, field, Array.Empty<string>());
                 break;
             case MultiSelect ms:
-                AppendKeyValuePairOptions(ms.KeyValuePairList, field);
+                AppendKeyValuePairOptions(ms.KeyValuePairList, field, Array.Empty<string>());
                 break;
             case EntitySearch es:
                 field.Value = es.DefaultValue.ToString(CultureInfo.InvariantCulture);
@@ -631,7 +635,24 @@ public class EventsGrpcService(
                 // and the canonical FieldType string (e.g. "Text", "Number", "CheckBox", ...).
                 if (f.KeyValuePairList?.Count > 0)
                 {
-                    AppendKeyValuePairOptions(f.KeyValuePairList, field);
+                    // SingleSelect / MultiSelect path. KeyValuePairList carries
+                    // option definitions but its Selected flag is ALWAYS false
+                    // here — SDK's DbFieldToField (eform-sdk/.../SqlController.cs
+                    // lines 1948-1959 / 1974-1985) projects only Key/Value/
+                    // DisplayOrder and leaves Selected at its default. The
+                    // worker's actual selection lives in f.FieldValues[0].Value
+                    // as the canonical FieldOption.Key (pipe-joined for
+                    // MultiSelect); we extract those keys and pass them
+                    // explicitly so AppendKeyValuePairOptions can emit the
+                    // corresponding INDICES into the ordered options list.
+                    // (Wire format symmetry with the write-side
+                    // ResolveFieldOptionKeyAsync: read emits index, write
+                    // accepts index.)
+                    var rawSelectedValue = f.FieldValues?.FirstOrDefault()?.Value;
+                    var selectedKeys = string.IsNullOrEmpty(rawSelectedValue)
+                        ? Array.Empty<string>()
+                        : rawSelectedValue.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                    AppendKeyValuePairOptions(f.KeyValuePairList, field, selectedKeys);
                 }
                 else
                 {
@@ -664,12 +685,31 @@ public class EventsGrpcService(
 
     /// <summary>
     /// Populates <see cref="FormField.Options"/> in display order and sets
-    /// <see cref="FormField.Value"/> to the comma-joined values of the
-    /// currently-selected entries (mirroring SDK convention for
-    /// MultiSelect / SingleSelect).
+    /// <see cref="FormField.Value"/> to the <c>"|"</c>-joined INDICES of the
+    /// currently-selected entries (positions in the ordered list).
+    /// <para>
+    /// Wire format is symmetric with what Flutter sends in
+    /// <c>CompleteEventRequest.field_values</c> for MultiSelect and
+    /// SingleSelect: see <c>_MultiSelectFieldState._parse</c> /
+    /// <c>_encode</c> in <c>form_fields_block.dart</c>, which splits on
+    /// <c>"|"</c> only and expects integer indices into <c>field.options</c>.
+    /// SingleSelect uses the same encoding (at most one index).
+    /// </para>
+    /// <para>
+    /// <paramref name="selectedKeys"/> carries the per-case FieldOption.Key
+    /// values for the worker's current selection (extracted from
+    /// <c>FieldValues[0].Value</c> upstream). When non-empty it takes
+    /// precedence over the kvp.Selected flag — necessary because SDK's
+    /// <c>DbFieldToField</c> populates KeyValuePairList without ever setting
+    /// Selected, so without an explicit selection set every read would emit
+    /// an empty value and the worker's previously-stored choice would
+    /// disappear on the next stream poll.
+    /// </para>
     /// </summary>
     private static void AppendKeyValuePairOptions(
-        List<Microting.eForm.Dto.KeyValuePair>? source, FormField field)
+        List<Microting.eForm.Dto.KeyValuePair>? source,
+        FormField field,
+        IReadOnlyCollection<string> selectedKeys)
     {
         if (source == null) return;
 
@@ -678,19 +718,31 @@ public class EventsGrpcService(
                 CultureInfo.InvariantCulture, out var n) ? n : int.MaxValue)
             .ToList();
 
+        var selectedKeySet = selectedKeys.Count > 0
+            ? new HashSet<string>(selectedKeys, StringComparer.Ordinal)
+            : null;
+
         var selected = new List<string>();
-        foreach (var kvp in ordered)
+        for (var i = 0; i < ordered.Count; i++)
         {
+            var kvp = ordered[i];
             field.Options.Add(kvp.Value ?? string.Empty);
-            if (kvp.Selected)
+            // Prefer the explicit per-case key set; only fall back to the
+            // kvp.Selected flag when the caller couldn't supply one (template-
+            // only path, e.g. the dead SingleSelect/MultiSelect DataItem
+            // branch above).
+            var isSelected = selectedKeySet != null
+                ? !string.IsNullOrEmpty(kvp.Key) && selectedKeySet.Contains(kvp.Key)
+                : kvp.Selected;
+            if (isSelected)
             {
-                selected.Add(kvp.Value ?? string.Empty);
+                selected.Add(i.ToString(CultureInfo.InvariantCulture));
             }
         }
 
         if (selected.Count > 0)
         {
-            field.Value = string.Join(",", selected);
+            field.Value = string.Join("|", selected);
         }
     }
 
@@ -1127,37 +1179,46 @@ public class EventsGrpcService(
                 $"Opgave {opgaveId} has no pending compliance — there is no SDK case to complete."));
         }
 
-        // DoneAt is set to compliance.Deadline (the rotation's scheduled
-        // date), NOT the server wall clock. When a worker completes a
-        // missed-deadline rotation, the report should be dated the rotation's
-        // actual scheduled deadline rather than today — otherwise a worker
-        // closing a Monday rotation on Wednesday produces Wednesday-dated
-        // reports, which misaligns with the angular admin "filled cases" view
-        // (queries PlanningCases WHERE MicrotingSdkCaseDoneAt >= fromDate)
-        // and breaks per-rotation history.
+        // DoneAt is composed: the DATE comes from compliance.Deadline (the
+        // rotation's scheduled date) so missed-rotation reports stay dated to
+        // the scheduled rotation day — a worker closing a Monday rotation on
+        // Wednesday must still produce a Monday-dated report so the angular
+        // admin "filled cases" view (queries PlanningCases WHERE
+        // MicrotingSdkCaseDoneAt >= fromDate) and per-rotation history line
+        // up. The TIME is restored from the client's wall-clock tap
+        // (request.ClientTsUnix); previously the value was truncated to
+        // midnight UTC, but the worker's actual time-of-completion is the
+        // more informative signal for reports and is what BackendConfiguration
+        // CompliancesService.Update preserves on the angular side. Falls back
+        // to DateTime.UtcNow if ClientTsUnix is 0 (legacy clients pre-dating
+        // the field).
         //
         // Compliance.Deadline is non-nullable (DateTime, not DateTime?) but
         // can be default(DateTime) on legacy / partially-populated rows; the
         // != default guard mirrors lines 1681 / 1938 / 2734 in this file.
         // Falling back to DateTime.UtcNow keeps the previous behaviour for
-        // those edge cases. request.ClientTsUnix is now ignored for DoneAt
-        // purposes — it is preserved only for the comment TsUnix audit trail
-        // (when the comment was authored on the device), distinct from when
-        // the rotation was scheduled.
-        DateTime doneAtUtc = compliance.Deadline != default
+        // those edge cases.
+        var deadlineDate = compliance.Deadline != default
             ? compliance.Deadline
             : DateTime.UtcNow;
-        // BackendConfigurationCompliancesService.Update truncates DoneAt to
-        // midnight UTC of that calendar date — keep parity.
-        var dayDoneAt = new DateTime(doneAtUtc.Year, doneAtUtc.Month, doneAtUtc.Day,
-            0, 0, 0, DateTimeKind.Utc);
-        // Wall-clock "when the worker actually closed this on the device" —
-        // distinct from doneAtUtc (the deadline). Used only for the comment
-        // TsUnix audit trail below; DoneAt fields all use dayDoneAt /
-        // doneAtUtc per the user directive (DoneAt = Deadline).
-        DateTime commentAtUtc = request.ClientTsUnix > 0
+
+        // Restore wall-clock time from the client's tap timestamp; previously
+        // truncated to midnight, but the worker's exact time-of-completion is
+        // the more informative signal for reports. The DATE still comes from
+        // compliance.Deadline so missed-rotation reports stay dated to the
+        // scheduled rotation day. Falls back to UtcNow if ClientTsUnix is 0
+        // (legacy clients pre-dating the field).
+        var wall = request.ClientTsUnix > 0
             ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
             : DateTime.UtcNow;
+        var dayDoneAt = new DateTime(
+            deadlineDate.Year, deadlineDate.Month, deadlineDate.Day,
+            wall.Hour, wall.Minute, wall.Second,
+            DateTimeKind.Utc);
+        // Wall-clock "when the worker actually closed this on the device" —
+        // still used for the comment TsUnix audit trail below. DoneAt fields
+        // now combine deadline DATE + wall TIME (see dayDoneAt above).
+        DateTime commentAtUtc = wall;
 
         var caseId = compliance.MicrotingSdkCaseId;
 
@@ -1532,6 +1593,49 @@ public class EventsGrpcService(
                     + "case completion otherwise succeeded; the row will linger as "
                     + "WorkflowState=Created on the SDK side until reconciliation.",
                     foundCase.Id, foundCase.MicrotingUid);
+            }
+
+            // Re-affirm DoneAt / DoneAtUserModifiable after the SDK helper
+            // sequence (CaseUpdate / CaseUpdateFieldValues / CaseDelete). Each
+            // loads the Case in a fresh DbContext and calls Update or Delete,
+            // which preserves whatever was on the row when loaded — but the
+            // user reported the persisted DoneAtUserModifiable diverging from
+            // DoneAt after on-device completion despite both being set
+            // identically at the primary assignment above. This
+            // belt-and-suspenders re-load + re-write reads the row back
+            // through a fresh sdkDbContext (so the change tracker is empty),
+            // sets both columns to dayDoneAt, and calls Update only when at
+            // least one diverges. Logged at Debug level — divergence is
+            // expected steady-state until the upstream mutator is identified;
+            // a Warning here would spam prod logs.
+            try
+            {
+                var sdkDbContextReread = core.DbContextHelper.GetDbContext();
+                var reaffirmCase = await sdkDbContextReread.Cases
+                    .FirstOrDefaultAsync(x => x.Id == foundCase.Id)
+                    .ConfigureAwait(false);
+                if (reaffirmCase != null
+                    && (reaffirmCase.DoneAt != dayDoneAt
+                        || reaffirmCase.DoneAtUserModifiable != dayDoneAt))
+                {
+                    logger.LogDebug(
+                        "CompleteOpgave: re-affirm correcting DoneAt/DoneAtUserModifiable "
+                        + "for caseId={CaseId}: DoneAt was {DoneAt} expected {DayDoneAt}, "
+                        + "DoneAtUserModifiable was {DoneAtUserModifiable} expected {DayDoneAt}.",
+                        reaffirmCase.Id, reaffirmCase.DoneAt, dayDoneAt,
+                        reaffirmCase.DoneAtUserModifiable, dayDoneAt);
+                    reaffirmCase.DoneAt = dayDoneAt;
+                    reaffirmCase.DoneAtUserModifiable = dayDoneAt;
+                    await reaffirmCase.Update(sdkDbContextReread).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "CompleteOpgave: DoneAt re-affirm failed for caseId={CaseId} — "
+                    + "the values written at the primary assignment above should still be in place; "
+                    + "this is a defensive no-op step.",
+                    foundCase.Id);
             }
         }
 
@@ -2149,12 +2253,26 @@ public class EventsGrpcService(
         }
 
         var contentType = meta.ContentType?.Trim() ?? string.Empty;
-        // Extension is stored without a leading dot to match angular's
-        // EFormFilesController.AddNewImage at line 299:
-        //     Extension = newFile.FileName.Split(".").Last()
-        // which yields e.g. "png" / "jpg". The flutter-eform parity harness
-        // photo scenario flagged the prior ".png"/".jpg" form as a column-level
-        // divergence on UploadedDatas / UploadedDataVersions.
+        // Extension is stored WITH a leading dot to align with the in-plugin
+        // precedent BackendConfigurationTaskManagementService.CreateTask
+        // (line 521: Extension = $".{picture.ContentType.Split("/")[1]}"),
+        // which produces ".png" / ".jpg". The SDK + plugin consumer code that
+        // builds thumbnail URLs uses the template
+        //     $"{Id}_700_{Checksum}{Extension}"
+        // (no dot literal — see TaskManagementService line 527, the worker
+        // app's image URL builders, etc.). With Extension="png" (no dot) the
+        // consumer URL becomes "_700_<hash>png" which 404s against our actual
+        // thumbnail keys "_700_<hash>.png" (template below has explicit dot).
+        // Switching Extension to ".png" / ".jpg" + dropping the dot literal
+        // in our thumbnail templates restores parity with both producer +
+        // consumer conventions and fixes the thumbnail-not-found bug
+        // reported on-device.
+        //
+        // The angular admin's EFormFilesController.AddNewImage (line 299:
+        // Extension = newFile.FileName.Split(".").Last()) stores Extension
+        // without a leading dot — this is a column-level divergence the
+        // parity harness already accepts in exchange for matching the
+        // consumer URL template that ships everywhere in the SDK + plugin.
         var extension = contentType switch
         {
             "image/jpeg" or "image/jpg" => "jpg",
@@ -2317,7 +2435,14 @@ public class EventsGrpcService(
                 Checksum = checksum,
                 FileName = $"{checksum}.{extension}",
                 FileLocation = fileLocation,
-                Extension = extension
+                // Stored WITH leading dot (".png" / ".jpg") to match the
+                // SDK + plugin thumbnail-URL template convention
+                // ($"{Id}_700_{Checksum}{Extension}"). See the contract block
+                // at the top of this method for the full rationale.
+                // FileName / fileLocation above keep the explicit "." literal
+                // because they use the local `extension` variable (no dot),
+                // not uploadedData.Extension.
+                Extension = $".{extension}"
             };
             await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
 
@@ -2344,12 +2469,20 @@ public class EventsGrpcService(
             // S3 + UploadedData row persisted, so a thumbnail failure means
             // consumers fall back to the original (acceptable degradation) — far
             // better than orphaning the row by short-circuiting the rest of the
-            // handler. (uploadedData.Extension is normalized to "jpg"/"png" by
-            // the earlier content-type switch, so we only check those two.)
-            if (uploadedData.Extension is "jpg" or "png")
+            // handler. (uploadedData.Extension is normalized to ".jpg"/".png"
+            // by the earlier content-type switch + ".{ext}" stored form, so we
+            // only check those two literal values.)
+            //
+            // Thumbnail templates intentionally have NO dot literal because
+            // uploadedData.Extension already carries the leading "." — this
+            // matches BackendConfigurationTaskManagementService.cs:526-527 and
+            // the consumer-side URL template
+            // ($"{Id}_700_{Checksum}{Extension}") that SDK + plugin clients
+            // build to fetch our thumbnails.
+            if (uploadedData.Extension is ".jpg" or ".png")
             {
-                var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}.{uploadedData.Extension}";
-                var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}.{uploadedData.Extension}";
+                var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}{uploadedData.Extension}";
+                var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}";
 
                 async Task WriteResizedAsync(uint targetWidth, string targetFilename)
                 {
@@ -3117,17 +3250,34 @@ public class EventsGrpcService(
     /// <summary>
     /// Map a single SingleSelect/MultiSelect input value back to the
     /// canonical <c>FieldOption.Key</c>. Order of resolution:
-    ///   1. If <paramref name="rawValue"/> exactly matches an existing
-    ///      FieldOption.Key for this field, return it as-is (caller already
-    ///      sent the canonical form).
-    ///   2. Otherwise, look up FieldOptionTranslations by Text == rawValue
+    ///   1. If <paramref name="rawValue"/> parses as a non-negative integer,
+    ///      treat it as an index into the ordered options list (FieldOptions
+    ///      for this field, ordered by DisplayOrder ascending — same ordering
+    ///      the read side uses in <see cref="AppendKeyValuePairOptions"/>).
+    ///      This is the Flutter wire format produced by
+    ///      <c>_MultiSelectFieldState._encode</c> /
+    ///      <c>_SingleSelectFieldState._encode</c> in
+    ///      <c>form_fields_block.dart</c>. Index resolution runs FIRST
+    ///      because option keys frequently look like small integers
+    ///      ("1", "2", "3" — see SqlController CheckListCreate seeding) and
+    ///      a naive "is this an existing Key?" check at step 1 would
+    ///      ambiguously consume the Flutter index "1" as Key="1" (the
+    ///      FIRST option) when the worker actually tapped the SECOND option
+    ///      (index 1). Putting indices first is unambiguous because mobile
+    ///      callers (the only ones routed through this gRPC service) ALWAYS
+    ///      send indices.
+    ///   2. Otherwise, if <paramref name="rawValue"/> matches an existing
+    ///      FieldOption.Key for this field, return it as-is — non-mobile
+    ///      callers (e.g. tooling exercising SetFieldValue directly) that
+    ///      send non-integer keys fall through here.
+    ///   3. Otherwise, look up FieldOptionTranslations by Text == rawValue
     ///      for this field. Match on the requested language first; if no
     ///      hit, fall back to any language (translations of the same option
     ///      across languages are mutually exclusive at the Key level).
-    ///   3. If no translation matches, return the raw value unchanged so the
-    ///      SDK's existing not-found behaviour (newValue stays empty) is
-    ///      preserved — diagnosing the failure shifts to the
-    ///      CaseUpdateFieldValues read path rather than corrupting writes.
+    ///   4. If nothing matched, return the raw value unchanged so the SDK's
+    ///      existing not-found behaviour (newValue stays empty) is preserved —
+    ///      diagnosing the failure shifts to the CaseUpdateFieldValues read
+    ///      path rather than corrupting writes.
     /// </summary>
     private static async Task<string> ResolveFieldOptionKeyAsync(
         Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext,
@@ -3135,7 +3285,42 @@ public class EventsGrpcService(
         string rawValue,
         int languageId)
     {
-        // Step 1 — caller already sent a key.
+        // Step 1 — Flutter index-based encoding. The mobile client emits
+        // positions in the ordered options list (see AppendKeyValuePairOptions
+        // for the read-side symmetric encoding). FieldOption.DisplayOrder is
+        // a string in the SDK schema; parse defensively with int.MaxValue
+        // fallback so unparseable rows sort last — mirroring the read path.
+        // Indices take precedence over direct key matches to avoid the
+        // collision documented in the contract block above.
+        if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture,
+                out var index) && index >= 0)
+        {
+            var orderedKeys = await sdkDbContext.FieldOptions
+                .Where(fo => fo.FieldId == fieldId
+                             && fo.WorkflowState !=
+                                Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Select(fo => new { fo.Key, fo.DisplayOrder })
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            var ordered = orderedKeys
+                .OrderBy(x => int.TryParse(x.DisplayOrder, NumberStyles.Integer,
+                    CultureInfo.InvariantCulture, out var n) ? n : int.MaxValue)
+                .Select(x => x.Key)
+                .ToList();
+
+            if (index < ordered.Count)
+            {
+                var keyAtIndex = ordered[index];
+                if (!string.IsNullOrEmpty(keyAtIndex))
+                {
+                    return keyAtIndex;
+                }
+            }
+        }
+
+        // Step 2 — caller already sent a key (non-integer, or integer that
+        // didn't resolve as an index above).
         var keyMatch = await sdkDbContext.FieldOptions
             .Where(fo => fo.FieldId == fieldId
                          && fo.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
@@ -3148,7 +3333,7 @@ public class EventsGrpcService(
             return keyMatch;
         }
 
-        // Step 2a — translate label → key, prefer the requested language.
+        // Step 3a — translate label → key, prefer the requested language.
         var preferred = await (
             from fo in sdkDbContext.FieldOptions
             join fot in sdkDbContext.FieldOptionTranslations
@@ -3165,7 +3350,7 @@ public class EventsGrpcService(
             return preferred;
         }
 
-        // Step 2b — fall back to any language (handles flutter clients that
+        // Step 3b — fall back to any language (handles flutter clients that
         // request a different locale than the worker's primary).
         var anyLang = await (
             from fo in sdkDbContext.FieldOptions
@@ -3182,7 +3367,7 @@ public class EventsGrpcService(
             return anyLang;
         }
 
-        // Step 3 — no match; pass through.
+        // Step 4 — no match; pass through.
         return rawValue;
     }
 
