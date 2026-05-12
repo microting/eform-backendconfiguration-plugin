@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-// Mid-migration: opgave -> event, tavle -> board, ejendom -> property per
+// Post-migration: opgave -> event, tavle -> board, ejendom -> property per
 // docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
 // Wire field names (`opgaver`, `tavler`, `tavle_id`, `tavle_ids`,
 // `ejendom_id`, `ejendomme`) stay as-is so generated accessors don't churn;
-// only message types and RPC method names move. Rode rename lands in Phase 4.
+// only message types and RPC method names move.
 
 package backend_configuration;
 
