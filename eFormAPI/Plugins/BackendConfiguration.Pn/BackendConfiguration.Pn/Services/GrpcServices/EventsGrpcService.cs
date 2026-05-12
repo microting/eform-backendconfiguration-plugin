@@ -593,7 +593,7 @@ public class EventsGrpcService(
             case Date d:
                 field.Value = d.DefaultValue ?? string.Empty;
                 break;
-            case Number n:
+            case Microting.eForm.Infrastructure.Models.Number n:
                 field.Value = n.DefaultValue.ToString(CultureInfo.InvariantCulture);
                 break;
             case NumberStepper ns:
