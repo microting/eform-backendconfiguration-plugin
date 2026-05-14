@@ -365,18 +365,11 @@ public class EventDeployService(
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
-        // Re-check inside the same logical step (the outer guard runs before
-        // the SDK case create; another worker on the same site could have
-        // raced past here in theory). Mirrors EformParsedByServerHandler.cs:157.
-        var existing = await dbContext.Compliances
-            .AsNoTracking()
-            .AnyAsync(c =>
-                    c.PlanningId == planning.Id
-                    && c.Deadline.Date == rotationDate
-                    && c.WorkflowState != Constants.WorkflowStates.Removed,
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (existing) return;
+        // Race protection lives in the duplicate-key catch below (mirrors
+        // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
+        // in EnsureDeployedAsync already filters out the common case before
+        // any writes happen, so a second AnyAsync here would only add a DB
+        // round-trip without changing behaviour.
 
         // The handler uses `planning.LastExecutedTime` for StartDate. For an
         // eager deploy that has not actually run yet, LastExecutedTime is the

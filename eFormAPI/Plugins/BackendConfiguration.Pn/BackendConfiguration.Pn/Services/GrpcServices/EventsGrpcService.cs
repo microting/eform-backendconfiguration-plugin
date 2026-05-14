@@ -204,8 +204,7 @@ public class EventsGrpcService(
 
         // Eagerly deploy SDK cases + Compliance rows for rotations inside the
         // requested window so flutter-eform can complete future events
-        // (today+1, today+2) via the existing CompleteEvent path. First slice
-        // is a log-only stub; real deploy pipeline lands in a follow-up.
+        // (today+1, today+2) via the existing CompleteEvent path.
         await eventDeployService.EnsureDeployedAsync(
             request.EjendomId ?? string.Empty,
             request.TavleIds,
