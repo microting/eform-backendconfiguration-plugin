@@ -115,6 +115,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,
             Services.GrpcServices.GrpcSiteResolver>();
+        services.AddTransient<Services.EventDeployService.IEventDeployService,
+            Services.EventDeployService.EventDeployService>();
         services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
         services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
         services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();

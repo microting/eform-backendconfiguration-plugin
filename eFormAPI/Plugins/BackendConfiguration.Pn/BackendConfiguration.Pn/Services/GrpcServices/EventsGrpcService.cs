@@ -12,6 +12,7 @@ using BackendConfiguration.Pn.Grpc.Events;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
+using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Google.Protobuf;
 using Grpc.Core;
@@ -108,6 +109,7 @@ public class EventsGrpcService(
     IEFormCoreService coreHelper,
     BackendConfigurationPnDbContext dbContext,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+    IEventDeployService eventDeployService,
     ILogger<EventsGrpcService> logger)
     : Events.EventsBase
 {
@@ -199,6 +201,17 @@ public class EventsGrpcService(
             throw new RpcException(new Status(StatusCode.PermissionDenied,
                 "Caller has no PropertyWorker access to the requested property."));
         }
+
+        // Eagerly deploy SDK cases + Compliance rows for rotations inside the
+        // requested window so flutter-eform can complete future events
+        // (today+1, today+2) via the existing CompleteEvent path.
+        await eventDeployService.EnsureDeployedAsync(
+            request.EjendomId ?? string.Empty,
+            request.TavleIds,
+            request.FromDateKey ?? string.Empty,
+            request.ToDateKey ?? string.Empty,
+            sdkSiteId,
+            context.CancellationToken);
 
         var model = new CalendarTaskRequestModel
         {
