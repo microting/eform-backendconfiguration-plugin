@@ -313,10 +313,14 @@ public class EventDeployService(
                 }
 
                 mainElement.CheckListFolderName = folderId;
-                // EndDate = the rotation date itself. Compare with the handler
-                // which uses planning.NextExecutionTime — here we want the
-                // deploy bounded to the rotation we're filling.
-                mainElement.EndDate = rotationDate;
+                // Use end-of-rotation-day UTC so the SDK Case is created any time during the
+                // deadline day, not only when the deploy fires BEFORE 00:00 UTC.
+                // rotationDate is parsed at line 123-128 with
+                // AssumeUniversal | AdjustToUniversal then .Date, so it lands at 00:00 UTC.
+                // The downstream guard at line 325 (`mainElement.EndDate > DateTime.UtcNow`)
+                // otherwise silently skips CaseCreate for any same-day deploy, leaving
+                // Compliance rows with MicrotingSdkCaseId=0.
+                mainElement.EndDate = rotationDate.AddDays(1).AddTicks(-1);
 
                 // 7. Only call CaseCreate when EndDate is in the future
                 //    (mirrors ItemCaseCreateHandler.cs:236). Defensive — our

@@ -341,6 +341,89 @@ public class EventDeployServiceTest : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
+    // 7b. EnsureDeployedAsync_TodayRotation_DoesNotShortCircuitOnEndDateGuard
+    //
+    // Regression for the bug where mainElement.EndDate was set to
+    // rotationDate (00:00 UTC). The downstream guard
+    // `if (mainElement.EndDate > DateTime.UtcNow)` then silently skipped
+    // _sdkCore.CaseCreate for any today-rotation deploy that ran after 00:00
+    // UTC, leaving Compliance rows with MicrotingSdkCaseId=0. The fix sets
+    // EndDate to end-of-rotation-day UTC (rotationDate.AddDays(1).AddTicks(-1)).
+    //
+    // Direct unit coverage of the EndDate guard would require seeding the full
+    // Planning + AreaRulePlanning + Area + Property + eForm template graph
+    // (see the SKIPPED test 8 below). What we CAN pin here with the existing
+    // partial fixture is the broader contract: a today-rotation must enter
+    // the deploy pipeline at all (not be silently filtered out by the
+    // candidate filter at EventDeployService.cs:131
+    // `rotationDate >= todayUtc`). Observed via the warning emitted at
+    // EventDeployService.cs:208-210 when planning is missing. Without the
+    // candidate filter accepting today, that warning would never fire.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_TodayRotation_DoesNotShortCircuitOnEndDateGuard()
+    {
+        // Arrange — a today rotation. Pre-fix this could be silently skipped
+        // by the EndDate guard; the candidate filter (>= todayUtc) admits it.
+        // We do NOT seed a Planning, so the pipeline must reach line 208's
+        // "planning ... not found" warning — which proves the rotation passed
+        // both the candidate filter AND the idempotence guard for today's
+        // date. If a future regression re-introduces a strict `> todayUtc`
+        // filter or otherwise excludes today, this test fails.
+        var core = await GetCore();
+
+        // GetCore() seeds the SDK's default languages; reuse one.
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var site = new Site
+        {
+            Name = "test-site-today",
+            MicrotingUid = 43,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var today = DateTime.UtcNow.Date;
+        const int planningId = 900;
+        var rotation = MakeRotation(
+            id: 104,
+            date: today,
+            planningId: planningId,
+            eformId: 901);
+
+        var logger = new TestLogger<EventDeployService>();
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper, logger);
+
+        var todayKey = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        // Act
+        await service.EnsureDeployedAsync(
+            PropertyId, BoardIds, todayKey, todayKey, site.Id, CancellationToken.None);
+
+        // Assert — the today rotation reached the planning lookup at
+        // EventDeployService.cs:200-212, proving it was admitted by the
+        // candidate filter. The "planning ... not found" warning is the
+        // observable canary. If the test fails, today rotations are being
+        // silently filtered out before the deploy work begins.
+        Assert.That(
+            logger.Entries.Any(e =>
+                e.Level == LogLevel.Warning
+                && e.Message.Contains("planning")
+                && e.Message.Contains("not found")),
+            Is.True,
+            "Today rotation must reach the planning-lookup step at "
+            + "EventDeployService.cs:200-212. If this fails, today's "
+            + "rotations are being silently excluded from the deploy path.");
+
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        Assert.That(complianceCount, Is.EqualTo(0),
+            "Missing-planning path must not leave any Compliance rows behind.");
+    }
+
+    // ------------------------------------------------------------------
     // 8. EnsureDeployedAsync_HappyPath_CreatesPlanningCaseSiteAndCompliance
     // SKIPPED (deferred). The end-to-end deploy needs:
     //   - real Planning + PlanningNameTranslation
