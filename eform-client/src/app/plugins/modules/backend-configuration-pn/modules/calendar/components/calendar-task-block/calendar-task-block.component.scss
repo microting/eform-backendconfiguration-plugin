@@ -1,6 +1,7 @@
 .task-block {
   user-select: none;
   position: absolute;
+  box-sizing: border-box;
   border-radius: var(--radius-sm, 4px);
   overflow: hidden;
   cursor: pointer;
