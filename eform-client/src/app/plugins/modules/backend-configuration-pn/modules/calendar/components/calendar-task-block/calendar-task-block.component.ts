@@ -56,12 +56,17 @@ export class CalendarTaskBlockComponent {
     return Math.max(dur * this.hourHeight - 4, 20);
   }
 
-  get leftPercent(): number {
-    return (this.task._colIndex / this.task._colCount) * 100;
+  // 4px horizontal gutter inside the sub-column. Using calc(% ± px) keeps
+  // the gap visually constant across viewport widths; with N overlapping
+  // events this gives 4px outside + 8px between adjacent events.
+  get leftStyle(): string {
+    const colWidth = 100 / this.task._colCount;
+    return `calc(${this.task._colIndex * colWidth}% + 4px)`;
   }
 
-  get widthPercent(): number {
-    return (1 / this.task._colCount) * 100 - 1;
+  get widthStyle(): string {
+    const colWidth = 100 / this.task._colCount;
+    return `calc(${colWidth}% - 8px)`;
   }
 
   // Live time labels — show the preview values during a resize so the user
