@@ -61,6 +61,66 @@ public class EventDeployServiceTest : TestBaseSetup
     private const int SdkSiteId = 1;
     private static readonly IReadOnlyCollection<string> BoardIds = ["10"];
 
+    /// <summary>
+    /// Build the two mocks every test needs: <see cref="IBackendConfigurationCalendarService"/>
+    /// pinned to return <paramref name="rotations"/>, plus
+    /// <see cref="IEFormCoreService"/>. When <paramref name="core"/> is supplied
+    /// the mock's <c>GetCore()</c> is wired; otherwise it's left unstubbed so the
+    /// no-op fast-path tests can assert via <c>DidNotReceive().GetCore()</c>.
+    /// </summary>
+    private static (IBackendConfigurationCalendarService Calendar, IEFormCoreService CoreHelper)
+        MakeMocks(IEnumerable<CalendarTaskResponseModel> rotations, eFormCore.Core? core = null)
+    {
+        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
+        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(
+                true, rotations.ToList()));
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        if (core != null)
+        {
+            coreHelper.GetCore().Returns(Task.FromResult(core));
+        }
+        return (calendar, coreHelper);
+    }
+
+    /// <summary>
+    /// Build the SUT against the contexts inherited from <see cref="TestBaseSetup"/>.
+    /// Pass a custom <paramref name="logger"/> when the test needs to inspect log
+    /// output (idempotence-guard test); otherwise defaults to
+    /// <see cref="NullLogger{T}.Instance"/>.
+    /// </summary>
+    private EventDeployService MakeService(
+        IBackendConfigurationCalendarService calendar,
+        IEFormCoreService coreHelper,
+        ILogger<EventDeployService>? logger = null)
+        => new(
+            BackendConfigurationPnDbContext!,
+            ItemsPlanningPnDbContext!,
+            coreHelper,
+            calendar,
+            logger ?? NullLogger<EventDeployService>.Instance);
+
+    /// <summary>
+    /// Factory for the rotation DTO that every test arranges. Defaults match the
+    /// shape the existing tests used pre-refactor (planningId=200, eformId=300);
+    /// callers override per case.
+    /// </summary>
+    private static CalendarTaskResponseModel MakeRotation(
+        int id,
+        DateTime date,
+        bool isFromCompliance = false,
+        int planningId = 200,
+        int eformId = 300)
+        => new()
+        {
+            Id = id,
+            PlanningId = planningId,
+            EformId = eformId,
+            TaskDate = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            IsFromCompliance = isFromCompliance
+        };
+
     // ------------------------------------------------------------------
     // 1. EnsureDeployedAsync_NoRotationsInWindow_DoesNothing
     // ------------------------------------------------------------------
@@ -68,17 +128,8 @@ public class EventDeployServiceTest : TestBaseSetup
     public async Task EnsureDeployedAsync_NoRotationsInWindow_DoesNothing()
     {
         // Arrange — calendar returns zero rotations for the window.
-        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
-        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
-            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, []));
-
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        var service = new EventDeployService(
-            BackendConfigurationPnDbContext!,
-            ItemsPlanningPnDbContext!,
-            coreHelper,
-            calendar,
-            NullLogger<EventDeployService>.Instance);
+        var (calendar, coreHelper) = MakeMocks([]);
+        var service = MakeService(calendar, coreHelper);
 
         // Act
         await service.EnsureDeployedAsync(
@@ -98,27 +149,9 @@ public class EventDeployServiceTest : TestBaseSetup
     {
         // Arrange — yesterday's rotation. EventDeployService should refuse
         // to back-deploy historical rows (the scheduler owns those).
-        var yesterday = DateTime.UtcNow.Date.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var pastRotation = new CalendarTaskResponseModel
-        {
-            Id = 100,
-            PlanningId = 200,
-            EformId = 300,
-            TaskDate = yesterday,
-            IsFromCompliance = false
-        };
-
-        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
-        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
-            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, [pastRotation]));
-
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        var service = new EventDeployService(
-            BackendConfigurationPnDbContext!,
-            ItemsPlanningPnDbContext!,
-            coreHelper,
-            calendar,
-            NullLogger<EventDeployService>.Instance);
+        var pastRotation = MakeRotation(id: 100, date: DateTime.UtcNow.Date.AddDays(-1));
+        var (calendar, coreHelper) = MakeMocks([pastRotation]);
+        var service = MakeService(calendar, coreHelper);
 
         // Act
         await service.EnsureDeployedAsync(
@@ -139,27 +172,14 @@ public class EventDeployServiceTest : TestBaseSetup
         // Arrange — a future rotation that is already backed by a Compliance
         // (IsFromCompliance=true). EventDeployService should filter these out
         // because they need no deploy.
-        var future = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var complianceBackedRotation = new CalendarTaskResponseModel
-        {
-            Id = 101,
-            PlanningId = 201,
-            EformId = 301,
-            TaskDate = future,
-            IsFromCompliance = true
-        };
-
-        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
-        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
-            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, [complianceBackedRotation]));
-
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        var service = new EventDeployService(
-            BackendConfigurationPnDbContext!,
-            ItemsPlanningPnDbContext!,
-            coreHelper,
-            calendar,
-            NullLogger<EventDeployService>.Instance);
+        var complianceBackedRotation = MakeRotation(
+            id: 101,
+            date: DateTime.UtcNow.Date.AddDays(2),
+            isFromCompliance: true,
+            planningId: 201,
+            eformId: 301);
+        var (calendar, coreHelper) = MakeMocks([complianceBackedRotation]);
+        var service = MakeService(calendar, coreHelper);
 
         // Act
         await service.EnsureDeployedAsync(
@@ -185,7 +205,6 @@ public class EventDeployServiceTest : TestBaseSetup
         // Boot a real Core so the SDK schema is materialised against the
         // testcontainer; we'll seed a Site/Language directly.
         var core = await GetCore();
-        Assert.That(core, Is.Not.Null);
 
         // GetCore() seeds the SDK's default languages (Language.AddDefaultLanguages);
         // grab any one of them rather than inserting a duplicate.
@@ -215,20 +234,11 @@ public class EventDeployServiceTest : TestBaseSetup
         await BackendConfigurationPnDbContext!.Compliances.AddAsync(existingCompliance);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        var rotation = new CalendarTaskResponseModel
-        {
-            Id = 102,
-            PlanningId = planningId,
-            EformId = 400,
-            TaskDate = rotationDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            IsFromCompliance = false
-        };
-        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
-        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
-            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, [rotation]));
-
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        coreHelper.GetCore().Returns(Task.FromResult(core));
+        var rotation = MakeRotation(
+            id: 102,
+            date: rotationDate,
+            planningId: planningId,
+            eformId: 400);
 
         // Use a capturing TestLogger so we can prove the idempotence guard
         // (EventDeployService.cs:184-195) short-circuited. Asserting only
@@ -241,12 +251,8 @@ public class EventDeployServiceTest : TestBaseSetup
         // emitted, we pin that the guard fired before either downstream
         // null-fallthrough.
         var logger = new TestLogger<EventDeployService>();
-        var service = new EventDeployService(
-            BackendConfigurationPnDbContext!,
-            ItemsPlanningPnDbContext!,
-            coreHelper,
-            calendar,
-            logger);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper, logger);
 
         // Act
         await service.EnsureDeployedAsync(
@@ -306,30 +312,14 @@ public class EventDeployServiceTest : TestBaseSetup
         // pipeline gets past the candidate filter and into the SDK Sites
         // EF query, which honours the token.
         var core = await GetCore();
-        Assert.That(core, Is.Not.Null);
 
-        var future = DateTime.UtcNow.Date.AddDays(2).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var rotation = new CalendarTaskResponseModel
-        {
-            Id = 103,
-            PlanningId = 700,
-            EformId = 800,
-            TaskDate = future,
-            IsFromCompliance = false
-        };
-        var calendar = Substitute.For<IBackendConfigurationCalendarService>();
-        calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
-            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, [rotation]));
-
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        coreHelper.GetCore().Returns(Task.FromResult(core));
-
-        var service = new EventDeployService(
-            BackendConfigurationPnDbContext!,
-            ItemsPlanningPnDbContext!,
-            coreHelper,
-            calendar,
-            NullLogger<EventDeployService>.Instance);
+        var rotation = MakeRotation(
+            id: 103,
+            date: DateTime.UtcNow.Date.AddDays(2),
+            planningId: 700,
+            eformId: 800);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper);
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
