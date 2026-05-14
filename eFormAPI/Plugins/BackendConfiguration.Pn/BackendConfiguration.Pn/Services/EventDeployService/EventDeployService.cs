@@ -323,9 +323,11 @@ public class EventDeployService(
                 mainElement.EndDate = rotationDate.AddDays(1).AddTicks(-1);
 
                 // 7. Only call CaseCreate when EndDate is in the future
-                //    (mirrors ItemCaseCreateHandler.cs:236). Defensive — our
-                //    `rotationDate >= todayUtc` filter already covers this for
-                //    same-day rotations, but a clock-skew check costs nothing.
+                //    (mirrors ItemCaseCreateHandler.cs:236). The EndDate value
+                //    itself — end-of-rotation-day UTC (23:59:59.9999999) — is
+                //    what makes the guard pass for same-day deploys; this is
+                //    now a clock-skew belt + safety net for future changes to
+                //    rotationDate semantics.
                 if (mainElement.EndDate > DateTime.UtcNow)
                 {
                     var caseId = await sdkCore.CaseCreate(

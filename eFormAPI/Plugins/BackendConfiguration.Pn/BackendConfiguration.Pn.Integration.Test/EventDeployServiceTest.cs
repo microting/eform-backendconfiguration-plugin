@@ -341,35 +341,30 @@ public class EventDeployServiceTest : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
-    // 7b. EnsureDeployedAsync_TodayRotation_DoesNotShortCircuitOnEndDateGuard
+    // 7b. EnsureDeployedAsync_TodayRotation_AdmittedByCandidateFilter
     //
-    // Regression for the bug where mainElement.EndDate was set to
-    // rotationDate (00:00 UTC). The downstream guard
-    // `if (mainElement.EndDate > DateTime.UtcNow)` then silently skipped
-    // _sdkCore.CaseCreate for any today-rotation deploy that ran after 00:00
-    // UTC, leaving Compliance rows with MicrotingSdkCaseId=0. The fix sets
-    // EndDate to end-of-rotation-day UTC (rotationDate.AddDays(1).AddTicks(-1)).
+    // Pins that the candidate filter at EventDeployService.cs:131
+    // (`rotationDate >= todayUtc`) admits today's rotation. A refactor that
+    // narrows this to `> todayUtc` would silently exclude today's rotations
+    // from eager deploy.
     //
-    // Direct unit coverage of the EndDate guard would require seeding the full
-    // Planning + AreaRulePlanning + Area + Property + eForm template graph
-    // (see the SKIPPED test 8 below). What we CAN pin here with the existing
-    // partial fixture is the broader contract: a today-rotation must enter
-    // the deploy pipeline at all (not be silently filtered out by the
-    // candidate filter at EventDeployService.cs:131
-    // `rotationDate >= todayUtc`). Observed via the warning emitted at
-    // EventDeployService.cs:208-210 when planning is missing. Without the
-    // candidate filter accepting today, that warning would never fire.
+    // This is NOT a regression test for the EndDate end-of-day fix from this
+    // commit. The assertion below fires at step 2 (planning lookup) of the
+    // deploy pipeline; the EndDate guard lives at step 7. Pre-fix and
+    // post-fix code emit the same planning-not-found warning for this
+    // fixture. Direct regression coverage of the EndDate guard requires a
+    // full Planning + AreaRulePlanning + Area + Property + eForm template
+    // graph (already deferred in the SKIPPED comments for tests #5/#6/#8
+    // below).
     // ------------------------------------------------------------------
     [Test]
-    public async Task EnsureDeployedAsync_TodayRotation_DoesNotShortCircuitOnEndDateGuard()
+    public async Task EnsureDeployedAsync_TodayRotation_AdmittedByCandidateFilter()
     {
-        // Arrange — a today rotation. Pre-fix this could be silently skipped
-        // by the EndDate guard; the candidate filter (>= todayUtc) admits it.
-        // We do NOT seed a Planning, so the pipeline must reach line 208's
-        // "planning ... not found" warning — which proves the rotation passed
-        // both the candidate filter AND the idempotence guard for today's
-        // date. If a future regression re-introduces a strict `> todayUtc`
-        // filter or otherwise excludes today, this test fails.
+        // Arrange — a today rotation. We do NOT seed a Planning, so when
+        // the rotation is admitted by the candidate filter the pipeline
+        // reaches the planning lookup and emits a "planning ... not found"
+        // warning. That warning is the observable canary that the filter
+        // admitted today's date.
         var core = await GetCore();
 
         // GetCore() seeds the SDK's default languages; reuse one.
@@ -399,13 +394,16 @@ public class EventDeployServiceTest : TestBaseSetup
 
         var todayKey = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-        // Act
+        // Act — drive the deploy pipeline with a today-keyed range. If the
+        // candidate filter at line ~131 admits today, control reaches the
+        // planning lookup (step 2). If a future refactor narrows the filter
+        // to `> todayUtc`, the rotation is dropped before step 2 fires.
         await service.EnsureDeployedAsync(
             PropertyId, BoardIds, todayKey, todayKey, site.Id, CancellationToken.None);
 
         // Assert — the today rotation reached the planning lookup at
-        // EventDeployService.cs:200-212, proving it was admitted by the
-        // candidate filter. The "planning ... not found" warning is the
+        // EventDeployService.cs:200-212, proving the candidate filter
+        // admitted it. The "planning ... not found" warning is the
         // observable canary. If the test fails, today rotations are being
         // silently filtered out before the deploy work begins.
         Assert.That(
