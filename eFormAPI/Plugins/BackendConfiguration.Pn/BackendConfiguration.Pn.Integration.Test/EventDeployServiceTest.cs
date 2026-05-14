@@ -29,6 +29,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
@@ -229,18 +230,42 @@ public class EventDeployServiceTest : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
+        // Use a capturing TestLogger so we can prove the idempotence guard
+        // (EventDeployService.cs:184-195) short-circuited. Asserting only
+        // Count==1 is tautological: if the guard silently broke,
+        // execution would fall through to the planning lookup at line 200,
+        // find nothing for planningId=500, log a "planning ... not found"
+        // warning at line 208, hit `continue` at line 211, and STILL leave
+        // Compliance count at 1. By asserting that NEITHER the
+        // planning-not-found NOR areaRulePlanning-not-found warnings were
+        // emitted, we pin that the guard fired before either downstream
+        // null-fallthrough.
+        var logger = new TestLogger<EventDeployService>();
         var service = new EventDeployService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
             coreHelper,
             calendar,
-            NullLogger<EventDeployService>.Instance);
+            logger);
 
         // Act
         await service.EnsureDeployedAsync(
             PropertyId, BoardIds, "2026-05-14", "2026-05-20", site.Id, CancellationToken.None);
 
-        // Assert — still exactly 1 Compliance row, no duplicate from the deploy pass.
+        // Assert — guard fired (no downstream null-fallthrough warnings)
+        // AND no duplicate Compliance row was created.
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                logger.Entries.Any(e => e.Message.Contains("planning") && e.Message.Contains("not found")),
+                Is.False,
+                "Guard should have short-circuited before the planning lookup at EventDeployService.cs:200-212.");
+            Assert.That(
+                logger.Entries.Any(e => e.Message.Contains("areaRulePlanning") && e.Message.Contains("not found")),
+                Is.False,
+                "Guard should have short-circuited before the areaRulePlanning lookup at EventDeployService.cs:214-227.");
+        });
+
         var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
         Assert.That(complianceCount, Is.EqualTo(1));
     }
@@ -309,24 +334,19 @@ public class EventDeployServiceTest : TestBaseSetup
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        // Act + Assert — either the cancellation token cascades into an
-        // OperationCanceledException (preferred) or the call returns
-        // without writing. Both shapes honour the contract.
-        var beforeCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        // Act + Assert — the future-day rotation passes the candidate
+        // filter, so the pipeline reaches the SDK Sites EF query at
+        // EventDeployService.cs:145 which is passed the cancelled token
+        // and is GUARANTEED to throw OperationCanceledException (or its
+        // TaskCanceledException subclass). A previous swallowing try/catch
+        // would have masked a regression that accidentally drops the token
+        // (e.g. passes CancellationToken.None to the EF call).
+        Assert.ThrowsAsync<OperationCanceledException>(
+            () => service.EnsureDeployedAsync(
+                PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, cts.Token));
 
-        try
-        {
-            await service.EnsureDeployedAsync(
-                PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected path — the EF query in the foreach loop (or the
-            // sdkSite lookup) sees the cancelled token and throws.
-        }
-
-        var afterCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
-        Assert.That(afterCount, Is.EqualTo(beforeCount),
+        var afterCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        Assert.That(afterCount, Is.EqualTo(0),
             "Cancellation must not produce any Compliance writes.");
     }
 
@@ -346,4 +366,34 @@ public class EventDeployServiceTest : TestBaseSetup
     // column-name quirk (PlanningCaseSiteId = PlanningCase.Id; see
     // EventDeployService.cs:392-395).
     // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Captures every <see cref="ILogger.Log"/> invocation into an in-memory
+    /// list so tests can pin "this log line was (or wasn't) emitted". Used
+    /// by the idempotence-guard test to distinguish "guard fired" from
+    /// "guard missed but a downstream null-fallthrough produced the same
+    /// observable Compliance count". Asserting on
+    /// <see cref="ILogger"/> via NSubstitute against the underlying
+    /// <c>Log(LogLevel, EventId, TState, Exception?, Func&lt;TState,Exception?,string&gt;)</c>
+    /// overload is brittle because <c>TState</c> is the runtime
+    /// <c>FormattedLogValues</c> struct; a plain capture is more robust.
+    /// </summary>
+    private sealed class TestLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        IDisposable? ILogger.BeginScope<TState>(TState state) => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Entries.Add((logLevel, formatter(state, exception)));
+        }
+    }
 }
