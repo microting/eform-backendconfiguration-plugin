@@ -3,11 +3,10 @@ import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
-import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
+import {CalendarBoardModel, CalendarTaskModel, RepeatDeleteScope} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TaskDeleteModalComponent} from '../task-delete-modal/task-delete-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
-import {RepeatDeleteScope} from '../../../../models/calendar';
 import {TranslateService} from '@ngx-translate/core';
 
 export interface TaskPreviewModalData {
