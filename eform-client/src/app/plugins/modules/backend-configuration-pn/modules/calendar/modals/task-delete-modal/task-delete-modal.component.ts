@@ -1,11 +1,10 @@
 import {Component, Inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
-import {CalendarTaskModel, RepeatDeleteScope} from '../../../../models/calendar';
+import {CalendarTaskModel} from '../../../../models/calendar';
 
 export interface TaskDeleteModalData {
   task: CalendarTaskModel;
-  hasSeries: boolean;
 }
 
 @Component({
@@ -14,8 +13,6 @@ export interface TaskDeleteModalData {
   templateUrl: './task-delete-modal.component.html',
 })
 export class TaskDeleteModalComponent {
-  scope: RepeatDeleteScope = 'this';
-
   constructor(
     private dialogRef: MatDialogRef<TaskDeleteModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: TaskDeleteModalData,
@@ -23,7 +20,7 @@ export class TaskDeleteModalComponent {
   ) {}
 
   onConfirm() {
-    this.calendarService.deleteTask(this.data.task.id, this.scope, this.data.task.taskDate).subscribe(res => {
+    this.calendarService.deleteTask(this.data.task.id, 'this', this.data.task.taskDate).subscribe(res => {
       if (res && res.success) this.dialogRef.close(true);
     });
   }

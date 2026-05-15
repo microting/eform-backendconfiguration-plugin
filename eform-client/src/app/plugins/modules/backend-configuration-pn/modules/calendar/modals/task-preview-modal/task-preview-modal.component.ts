@@ -6,6 +6,8 @@ import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TaskDeleteModalComponent} from '../task-delete-modal/task-delete-modal.component';
+import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
+import {RepeatDeleteScope} from '../../../../models/calendar';
 import {TranslateService} from '@ngx-translate/core';
 
 export interface TaskPreviewModalData {
@@ -87,12 +89,26 @@ export class TaskPreviewModalComponent {
   }
 
   onDelete() {
+    const task = this.data.task;
+    const isRepeating = !!task.repeatRule && task.repeatRule !== 'none';
+    if (isRepeating) {
+      const scopeRef = this.dialog.open(
+        RepeatScopeModalComponent,
+        dialogConfigHelper(this.overlay, {mode: 'delete'})
+      );
+      scopeRef.afterClosed().subscribe((scope: RepeatDeleteScope | null) => {
+        if (!scope) return;
+        this.calendarService
+          .deleteTask(task.id, scope, task.taskDate)
+          .subscribe(res => {
+            if (res && res.success) this.close('reload');
+          });
+      });
+      return;
+    }
     const ref = this.dialog.open(
       TaskDeleteModalComponent,
-      dialogConfigHelper(this.overlay, {
-        task: this.data.task,
-        hasSeries: !!this.data.task.repeatSeriesId,
-      })
+      dialogConfigHelper(this.overlay, {task})
     );
     ref.afterClosed().subscribe(result => {
       if (result) this.close('reload');

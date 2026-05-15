@@ -2,12 +2,6 @@
 
 <div mat-dialog-content>
   <p>{{ 'Are you sure you want to delete' | translate }} <strong>{{ data.task.title }}</strong>?</p>
-
-  <mat-radio-group [(ngModel)]="scope" *ngIf="data.hasSeries" class="scope-group">
-    <mat-radio-button value="this">{{ 'Only this' | translate }}</mat-radio-button>
-    <mat-radio-button value="thisAndFollowing">{{ 'This and following' | translate }}</mat-radio-button>
-    <mat-radio-button value="all">{{ 'All in series' | translate }}</mat-radio-button>
-  </mat-radio-group>
 </div>
 
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
