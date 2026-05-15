@@ -1228,6 +1228,21 @@ public class EventsGrpcService(
             deadlineDate.Year, deadlineDate.Month, deadlineDate.Day,
             wall.Hour, wall.Minute, wall.Second,
             DateTimeKind.Utc);
+        // User-overridable variant: the client may override the DATE while wall-clock TIME is preserved.
+        // DoneAt stays deadline-dated (load-bearing for the angular "filled cases" admin view, see 1195-1216);
+        // only DoneAtUserModifiable picks up the override.
+        var userModifiable = dayDoneAt;
+        if (!string.IsNullOrEmpty(request.DoneAtUserModifiable)
+            && DateTime.TryParseExact(
+                request.DoneAtUserModifiable, "yyyy-MM-dd",
+                CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out var overrideDate))
+        {
+            userModifiable = new DateTime(
+                overrideDate.Year, overrideDate.Month, overrideDate.Day,
+                wall.Hour, wall.Minute, wall.Second,
+                DateTimeKind.Utc);
+        }
         // Wall-clock "when the worker actually closed this on the device" —
         // still used for the comment TsUnix audit trail below. DoneAt fields
         // now combine deadline DATE + wall TIME (see dayDoneAt above).
@@ -1348,7 +1363,7 @@ public class EventsGrpcService(
                     .ConfigureAwait(false);
             }
 
-            foundCase.DoneAtUserModifiable = dayDoneAt;
+            foundCase.DoneAtUserModifiable = userModifiable;
             foundCase.DoneAt = dayDoneAt;
             foundCase.SiteId = sdkSiteId;
             foundCase.Status = 100;
@@ -1617,8 +1632,9 @@ public class EventsGrpcService(
             // identically at the primary assignment above. This
             // belt-and-suspenders re-load + re-write reads the row back
             // through a fresh sdkDbContext (so the change tracker is empty),
-            // sets both columns to dayDoneAt, and calls Update only when at
-            // least one diverges. Logged at Debug level — divergence is
+            // sets each column to its expected value (DoneAt → dayDoneAt;
+            // DoneAtUserModifiable → userModifiable), and calls Update only
+            // when at least one diverges. Logged at Debug level — divergence is
             // expected steady-state until the upstream mutator is identified;
             // a Warning here would spam prod logs.
             try
@@ -1629,16 +1645,16 @@ public class EventsGrpcService(
                     .ConfigureAwait(false);
                 if (reaffirmCase != null
                     && (reaffirmCase.DoneAt != dayDoneAt
-                        || reaffirmCase.DoneAtUserModifiable != dayDoneAt))
+                        || reaffirmCase.DoneAtUserModifiable != userModifiable))
                 {
                     logger.LogDebug(
                         "CompleteOpgave: re-affirm correcting DoneAt/DoneAtUserModifiable "
                         + "for caseId={CaseId}: DoneAt was {DoneAt} expected {DayDoneAt}, "
-                        + "DoneAtUserModifiable was {DoneAtUserModifiable} expected {DayDoneAt}.",
+                        + "DoneAtUserModifiable was {DoneAtUserModifiable} expected {UserModifiable}.",
                         reaffirmCase.Id, reaffirmCase.DoneAt, dayDoneAt,
-                        reaffirmCase.DoneAtUserModifiable, dayDoneAt);
+                        reaffirmCase.DoneAtUserModifiable, userModifiable);
                     reaffirmCase.DoneAt = dayDoneAt;
-                    reaffirmCase.DoneAtUserModifiable = dayDoneAt;
+                    reaffirmCase.DoneAtUserModifiable = userModifiable;
                     await reaffirmCase.Update(sdkDbContextReread).ConfigureAwait(false);
                 }
             }

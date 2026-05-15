@@ -85,6 +85,8 @@ message CompleteEventRequest {
   // Cases.Custom envelope is left untouched. Non-empty replaces the
   // OpgaverComment body verbatim, matching SetComment semantics.
   string comment = 8;
+  // ISO-8601 date (yyyy-MM-dd); empty = fall back to deadline date
+  string done_at_user_modifiable = 9;
 }
 message CompleteEventResponse { Event opgave = 1; }
 
