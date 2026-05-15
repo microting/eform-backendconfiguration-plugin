@@ -1090,6 +1090,18 @@ public class EventsGrpcService(
     {
         var opgaveId = ParseOpgaveId(request.OpgaveId);
 
+        // Permanent entry trace: captures the raw wire payload so we can tell
+        // whether a client-side override (done_at_user_modifiable) actually
+        // reached the server. Logged before any branching so idempotent
+        // re-taps, legacy fallbacks, and the happy path all leave a record.
+        logger.LogInformation(
+            "CompleteEvent entry: opgaveId={OpgaveId} completed={Completed} " +
+            "complianceId={ComplianceId} microtingSdkCaseId={SdkCaseId} " +
+            "doneAtUserModifiable=\"{DoneAtUserModifiable}\" clientTsUnix={ClientTsUnix}",
+            request.OpgaveId, request.Completed,
+            request.ComplianceId, request.MicrotingSdkCaseId,
+            request.DoneAtUserModifiable, request.ClientTsUnix);
+
         // Idempotent re-tap path. The flutter UI sends `!o.completed` when a
         // worker re-taps a row, so a row whose local state already says
         // "completed" arrives here as Completed=false. There is nothing to
