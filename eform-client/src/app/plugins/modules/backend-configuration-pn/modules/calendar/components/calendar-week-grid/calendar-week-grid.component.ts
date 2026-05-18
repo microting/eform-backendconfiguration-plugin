@@ -348,9 +348,33 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       if (date) {
         const newDate = this.toLocalDateString(date);
         const targetDateTime = new Date(date);
-        targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
+        targetDateTime.setHours(
+          Math.floor(newStartHour),
+          Math.round((newStartHour % 1) * 60),
+          0,
+          0,
+        );
 
-        if (targetDateTime >= new Date()) {
+        // Past, uncompleted events move anywhere. Future events must stay
+        // future — dropping a future event before "now" makes no scheduling
+        // sense and would corrupt the historical record.
+        //
+        // `task.taskDate` is "YYYY-MM-DD". `new Date("YYYY-MM-DD")` parses as
+        // midnight UTC, which is the wrong baseline in any non-UTC tz —
+        // append "T00:00:00" to force local-time parsing so the comparison
+        // matches the user's wall-clock perception.
+        const now = new Date();
+        const sourceDateTime = new Date(`${task.taskDate}T00:00:00`);
+        sourceDateTime.setHours(
+          Math.floor(task.startHour),
+          Math.round((task.startHour % 1) * 60),
+          0,
+          0,
+        );
+        const sourceIsPast = sourceDateTime < now;
+        const targetIsPast = targetDateTime < now;
+
+        if (sourceIsPast || !targetIsPast) {
           const originalDate = task.taskDate;
 
           // Reset CDK transform first (element still in original DOM position)
