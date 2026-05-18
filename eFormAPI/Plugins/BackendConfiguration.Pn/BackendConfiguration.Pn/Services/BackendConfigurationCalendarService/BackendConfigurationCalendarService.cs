@@ -1010,6 +1010,35 @@ public class BackendConfigurationCalendarService(
             localizationService.GetString("CalendarTaskDeletedSuccessfully"));
     }
 
+    // True iff the (planning, day) occurrence is backed by an SDK Case whose
+    // Status == 100 (canonical "done" code; see e.g. line ~2500 in this file
+    // and BackendConfigurationCompliancesService.cs). Non-compliance recurring
+    // events have no backing case and always return false.
+    //
+    // Compliance.Deadline is a non-Kind DateTime; occurrenceDate arrives Kind=Utc
+    // from the request parser. To avoid Kind-drift around UTC offsets / DST, we
+    // pull a 3-day window around the target day and filter the exact match
+    // in-memory by `Deadline.Date == occurrenceDate.Date`.
+    private async Task<bool> IsTaskOccurrenceCompleted(int planningId, DateTime occurrenceDate)
+    {
+        var windowStart = occurrenceDate.Date.AddDays(-1);
+        var windowEnd = occurrenceDate.Date.AddDays(2);
+        var candidates = await backendConfigurationPnDbContext.Compliances
+            .Where(c => c.PlanningId == planningId)
+            .Where(c => c.Deadline >= windowStart && c.Deadline < windowEnd)
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        var compliance = candidates.FirstOrDefault(c => c.Deadline.Date == occurrenceDate.Date);
+        if (compliance == null || compliance.MicrotingSdkCaseId <= 0) return false;
+
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        var sdkCase = await sdkDbContext.Cases
+            .Where(c => c.Id == compliance.MicrotingSdkCaseId)
+            .FirstOrDefaultAsync();
+        return sdkCase?.Status == 100;
+    }
+
     public async Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel)
     {
         try
@@ -1018,11 +1047,6 @@ public class BackendConfigurationCalendarService(
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
             var taskDateTime = newDate.AddHours(moveModel.NewStartHour);
-            if (taskDateTime < DateTime.UtcNow)
-            {
-                return new OperationResult(false,
-                    localizationService.GetString("CannotCreateTaskInThePast"));
-            }
 
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == moveModel.Id)
@@ -1033,6 +1057,36 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            // Defence-in-depth move guards. The frontend already prevents
+            // both cases (drag handle hidden on completed tasks, drop
+            // rejected when a future task is dropped before now), but a
+            // direct API call could bypass that.
+            if (!string.IsNullOrEmpty(moveModel.OriginalDate))
+            {
+                var origDate = DateTime.Parse(moveModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                if (await IsTaskOccurrenceCompleted(arp.ItemPlanningId, origDate))
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveCompletedTask"));
+                }
+
+                var oldCalConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+                var origStartHour = oldCalConfig?.StartHour ?? 9.0;
+                var origDateTime = origDate.AddHours(origStartHour);
+                var nowUtc = DateTime.UtcNow;
+                if (origDateTime >= nowUtc && taskDateTime < nowUtc)
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveFutureTaskToPast"));
+                }
             }
 
             var scope = moveModel.Scope ?? "all";
@@ -1236,10 +1290,10 @@ public class BackendConfigurationCalendarService(
     {
         try
         {
-            // No past-time check here on purpose: resize on an existing task
-            // is legitimate even when the start is in the past (e.g. the user
-            // is extending an event that's currently running). The task
-            // already exists; we are not creating a new one.
+            // Resize is allowed on past events (extending a currently-running
+            // task is legitimate). The block is on completed tasks — their
+            // outcome is already recorded and the duration should not shift
+            // retroactively.
 
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == resizeModel.Id)
@@ -1250,6 +1304,18 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            if (!string.IsNullOrEmpty(resizeModel.OriginalDate))
+            {
+                var origDate = DateTime.Parse(resizeModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                if (await IsTaskOccurrenceCompleted(arp.ItemPlanningId, origDate))
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveCompletedTask"));
+                }
             }
 
             var scope = resizeModel.Scope ?? "all";

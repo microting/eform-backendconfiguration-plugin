@@ -4906,6 +4906,18 @@
     }
   },
   {
+    "Key": "CannotMoveCompletedTask",
+    "LocalizedValue": {
+      "en-US": "Cannot move a completed task"
+    }
+  },
+  {
+    "Key": "CannotMoveFutureTaskToPast",
+    "LocalizedValue": {
+      "en-US": "Cannot move a future task into the past"
+    }
+  },
+  {
     "Key": "FileTooLarge",
     "LocalizedValue": {
       "da": "Filen er for stor",

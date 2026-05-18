@@ -38,13 +38,6 @@ export class CalendarTaskBlockComponent {
   private startPointerY = 0;
   private cleanupListeners: (() => void) | null = null;
 
-  get isPast(): boolean {
-    const d = new Date(this.task.taskDate);
-    const endHour = this.task.startHour + this.task.duration;
-    d.setHours(Math.floor(endHour), Math.round((endHour % 1) * 60), 0, 0);
-    return d < new Date();
-  }
-
   // Position/size getters use the resize preview when active so the block
   // grows or shrinks live during the drag without committing yet.
   get topPx(): number {
@@ -91,7 +84,7 @@ export class CalendarTaskBlockComponent {
   }
 
   startResize(ev: MouseEvent, edge: 'start' | 'end') {
-    if (this.isPast) return;
+    if (this.task.completed) return;
     // Stop propagation so cdkDrag's pointer-down listener (on the same
     // outer element) does not also activate a move-drag.
     ev.stopPropagation();
