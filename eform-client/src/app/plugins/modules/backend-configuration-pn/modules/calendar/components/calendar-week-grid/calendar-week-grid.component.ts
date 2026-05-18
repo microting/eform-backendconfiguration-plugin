@@ -374,46 +374,56 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
         const sourceIsPast = sourceDateTime < now;
         const targetIsPast = targetDateTime < now;
 
-        if (sourceIsPast || !targetIsPast) {
-          const originalDate = task.taskDate;
-
-          // Reset CDK transform first (element still in original DOM position)
+        if (!sourceIsPast && targetIsPast) {
+          // Future task dropped before now: rejected. Reset the CDK
+          // transform and force a tasks reload so the parent re-renders
+          // the task at its original slot from server state — a bare
+          // reset() alone has been observed to leave the dragged block
+          // invisible when the drop target was in a past slot.
           event.source.reset();
-
-          // Then optimistically move the task in the local array.
-          // weekDays indices (0..N) may not align with tasksByDay (always
-          // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
-          // which may map to tasksByDay[2] (Wed). Translate through
-          // allDayIndexFor so the optimistic update targets the right slot.
-          const origDayIndex = this.weekDays.findIndex(
-            d => this.toLocalDateString(d) === originalDate
-          );
-          if (origDayIndex >= 0) {
-            const origMappedIdx = this.allDayIndexFor(origDayIndex);
-            if (origMappedIdx >= 0) {
-              const origArr = this.tasksByDay[origMappedIdx];
-              if (origArr) {
-                const idx = origArr.findIndex(t => t.id === task.id);
-                if (idx >= 0) origArr.splice(idx, 1);
-              }
-            }
-          }
-          task.startHour = newStartHour;
-          task.taskDate = newDate;
-          const targetMappedIdx = this.allDayIndexFor(dayIndex);
-          if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
-            this.tasksByDay[targetMappedIdx].push(task);
-          }
-
-          this.taskMoved.emit({
-            taskId: task.id,
-            newDate,
-            newStartHour,
-            repeatSeriesId: task.repeatSeriesId,
-            originalDate,
-          });
+          this.tasksReload.emit();
           return;
         }
+
+        // Allowed: past→anywhere, or future→future. Optimistically move
+        // the task locally so the UI doesn't flash, then emit upward.
+        const originalDate = task.taskDate;
+
+        // Reset CDK transform first (element still in original DOM position)
+        event.source.reset();
+
+        // weekDays indices (0..N) may not align with tasksByDay (always
+        // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
+        // which may map to tasksByDay[2] (Wed). Translate through
+        // allDayIndexFor so the optimistic update targets the right slot.
+        const origDayIndex = this.weekDays.findIndex(
+          d => this.toLocalDateString(d) === originalDate
+        );
+        if (origDayIndex >= 0) {
+          const origMappedIdx = this.allDayIndexFor(origDayIndex);
+          if (origMappedIdx >= 0) {
+            const origArr = this.tasksByDay[origMappedIdx];
+            if (origArr) {
+              const idx = origArr.findIndex(t => t.id === task.id);
+              if (idx >= 0) origArr.splice(idx, 1);
+            }
+          }
+        }
+        task.startHour = newStartHour;
+        task.taskDate = newDate;
+        const targetMappedIdx = this.allDayIndexFor(dayIndex);
+        if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
+          this.tasksByDay[targetMappedIdx].push(task);
+        }
+
+        this.taskMoved.emit({
+          taskId: task.id,
+          newDate,
+          newStartHour,
+          repeatSeriesId: task.repeatSeriesId,
+          originalDate,
+        });
+        return;
       }
     }
 
