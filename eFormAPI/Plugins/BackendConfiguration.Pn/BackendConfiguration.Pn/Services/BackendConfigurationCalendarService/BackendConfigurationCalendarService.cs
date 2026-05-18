@@ -610,13 +610,40 @@ public class BackendConfigurationCalendarService(
                     && weekComplianceCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var weekSdkCase)
                     && weekSdkCase.Status == 100;
 
+                // Apply any "this"-scope move/resize exception that overrides this past
+                // compliance occurrence's date / start-hour. Without this consultation, a
+                // user-applied move via MoveTask scope='this' would write an exception that
+                // the compliance loop never reads, and the event would snap back to
+                // compliance.Deadline on the next fetch. Mirrors the recurrence-expansion
+                // loop's exception handling above (around line 313).
+                CalendarOccurrenceException complianceException = null;
+                if (arp != null
+                    && exceptionsByArp.TryGetValue(arp.Id, out var complianceArpExceptions))
+                {
+                    complianceArpExceptions.TryGetValue(compliance.Deadline.Date, out complianceException);
+                }
+
+                // Soft-deleted occurrence: hide it.
+                if (complianceException?.IsDeleted == true) continue;
+
+                // Moved out of the current week: hide it here (the destination week's
+                // movedInExceptions pass at line ~387 renders it).
+                if (complianceException?.NewDate is { } movedDate
+                    && (movedDate < weekStart || movedDate > weekEnd))
+                {
+                    continue;
+                }
+
+                var effectiveTaskDate = complianceException?.NewDate?.Date ?? compliance.Deadline.Date;
+                var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    StartHour = compIsAllDay ? 0 : effectiveStartHour,
                     Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
-                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
@@ -645,7 +672,8 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
                         : null,
-                    Attachments = MapAttachments(arp)
+                    Attachments = MapAttachments(arp),
+                    ExceptionId = complianceException?.Id,
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
