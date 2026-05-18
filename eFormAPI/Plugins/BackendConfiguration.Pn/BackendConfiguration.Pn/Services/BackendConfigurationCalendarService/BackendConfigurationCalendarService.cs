@@ -557,6 +557,27 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.Id);
 
+            // Batch-load the SDK Cases backing these compliance rows so the
+            // response can report Completed = (case.Status == 100) per
+            // occurrence. Without this lookup the calendar UI's drag/resize
+            // gate on task.completed would never fire and completed
+            // compliance occurrences would remain visually editable until
+            // rejected by the backend guards in MoveTask/ResizeTask.
+            var weekComplianceCaseIds = compliances
+                .Select(c => c.MicrotingSdkCaseId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            var weekComplianceCasesById = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
+            if (weekComplianceCaseIds.Count > 0)
+            {
+                var sdkCoreForCompletion = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContextForCompletion = sdkCoreForCompletion.DbContextHelper.GetDbContext();
+                weekComplianceCasesById = await sdkDbContextForCompletion.Cases
+                    .Where(c => weekComplianceCaseIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id);
+            }
+
             foreach (var compliance in compliances)
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
@@ -584,6 +605,11 @@ public class BackendConfigurationCalendarService(
                 var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
                 var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
                 var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+
+                var complianceCompleted = compliance.MicrotingSdkCaseId > 0
+                    && weekComplianceCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var weekSdkCase)
+                    && weekSdkCase.Status == 100;
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
@@ -606,7 +632,7 @@ public class BackendConfigurationCalendarService(
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
-                    Completed = false,
+                    Completed = complianceCompleted,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,

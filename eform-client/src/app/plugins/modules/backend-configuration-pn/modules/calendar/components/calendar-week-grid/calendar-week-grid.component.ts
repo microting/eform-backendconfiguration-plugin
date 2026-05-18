@@ -348,7 +348,12 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       if (date) {
         const newDate = this.toLocalDateString(date);
         const targetDateTime = new Date(date);
-        targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
+        targetDateTime.setHours(
+          Math.floor(newStartHour),
+          Math.round((newStartHour % 1) * 60),
+          0,
+          0,
+        );
 
         // Past, uncompleted events move anywhere. Future events must stay
         // future — dropping a future event before "now" makes no scheduling
