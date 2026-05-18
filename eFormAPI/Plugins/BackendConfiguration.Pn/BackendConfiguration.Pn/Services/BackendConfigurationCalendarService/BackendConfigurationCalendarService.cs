@@ -540,6 +540,33 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
+            // Top up exceptionsByArp with any exceptions for compliance ARPs not
+            // already covered. The earlier exceptionsInWeek query (line ~210) filtered
+            // by arpIds — which are only Status=true plannings. Compliance rows can
+            // exist for Status=false plannings too, and their move/resize exceptions
+            // must reach the compliance loop below.
+            var complianceOnlyArpIds = complianceArpIds.Except(arpIds).ToList();
+            if (complianceOnlyArpIds.Count > 0)
+            {
+                var extraExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => complianceOnlyArpIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x =>
+                        (x.OriginalDate >= weekStart && x.OriginalDate <= weekEnd) ||
+                        (x.NewDate.HasValue && x.NewDate.Value >= weekStart && x.NewDate.Value <= weekEnd))
+                    .Include(x => x.ExceptionSites)
+                    .ToListAsync();
+                foreach (var ex in extraExceptions)
+                {
+                    if (!exceptionsByArp.TryGetValue(ex.AreaRulePlanningId, out var perArpDict))
+                    {
+                        perArpDict = new Dictionary<DateTime, CalendarOccurrenceException>();
+                        exceptionsByArp[ex.AreaRulePlanningId] = perArpDict;
+                    }
+                    perArpDict[ex.OriginalDate.Date] = ex;
+                }
+            }
+
             // Batch-load tags for compliance ARPs
             var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
@@ -636,13 +663,14 @@ public class BackendConfigurationCalendarService(
 
                 var effectiveTaskDate = complianceException?.NewDate?.Date ?? compliance.Deadline.Date;
                 var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+                var effectiveDuration = complianceException?.Duration ?? calConfig?.Duration ?? 1.0;
 
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
                     StartHour = compIsAllDay ? 0 : effectiveStartHour,
-                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
+                    Duration = compIsAllDay ? 0 : effectiveDuration,
                     TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
