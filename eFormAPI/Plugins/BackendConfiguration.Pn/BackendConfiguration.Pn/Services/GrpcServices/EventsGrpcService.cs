@@ -56,10 +56,13 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// <c>BackendConfigurationTaskManagementService.CreateTask</c>); a row in the
 /// SDK <c>uploaded_data</c> table tracks file metadata. RemovePhoto soft-
 /// deletes the <c>UploadedData</c> row (<c>WorkflowState=Removed</c>) and
-/// drops the slot entry from the envelope. ListOpgaver replays the envelope
-/// and surfaces photos as <see cref="Attachment"/> messages. No new EF
-/// entity / migration is introduced; the photo-upload pipeline reuses the
-/// existing TaskManagement S3 / UploadedData pattern.
+/// drops the slot entry from the envelope. Mobile clients consume those
+/// photos via the dedicated photos-sync stream and render them in the
+/// PhotoGrid surface; the <c>Event.attachments</c> wire field is reserved
+/// for web-uploaded calendar files (see the 2026-05-19 design spec) and
+/// is empty on this path. No new EF entity / migration is introduced; the
+/// photo-upload pipeline reuses the existing TaskManagement S3 /
+/// UploadedData pattern.
 /// StreamOpgaveChanges is a poll-based server stream: the server emits a
 /// snapshot at subscribe time, then re-queries every ~5s and diffs against
 /// the previous result by JSON state-hash to emit <c>upserted</c> for
@@ -280,7 +283,6 @@ public class EventsGrpcService(
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -369,7 +371,6 @@ public class EventsGrpcService(
                 TaskIsExpired = task.TaskIsExpired
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -379,40 +380,6 @@ public class EventsGrpcService(
         }
 
         return response;
-    }
-
-    /// <summary>
-    /// Translates the <c>opgaver_photos</c> entries from the Case.Custom
-    /// envelope into <see cref="Attachment"/> wire messages on the response
-    /// Opgave. Internal storage is signalled with
-    /// <see cref="AttachmentSource.Unspecified"/>; the <c>name</c> field
-    /// carries the SDK <c>UploadedData.Id</c> as a string so clients can
-    /// later request the bytes via Documents.GetAttachment (whose contract
-    /// is opaque about what <c>name</c> is — internal id vs cloud-storage
-    /// path — both are valid). Photos are emitted in slot order so clients
-    /// can index them stably; entries with missing or invalid metadata
-    /// are skipped silently.
-    /// </summary>
-    private static void PopulateAttachments(Event opgave, OpgaverCustomEnvelope? envelope)
-    {
-        if (envelope?.OpgaverPhotos == null)
-        {
-            return;
-        }
-
-        foreach (var photo in envelope.OpgaverPhotos.OrderBy(p => p.Slot))
-        {
-            if (photo.UploadedDataId <= 0)
-            {
-                continue;
-            }
-
-            opgave.Attachments.Add(new Attachment
-            {
-                Source = AttachmentSource.Unspecified,
-                Name = photo.UploadedDataId.ToString(CultureInfo.InvariantCulture)
-            });
-        }
     }
 
     /// <summary>
@@ -991,7 +958,7 @@ public class EventsGrpcService(
     /// existing calendar service path. Reuses the
     /// <see cref="LoadEnvelopeByTaskIdAsync"/> helper from
     /// <see cref="ListOpgaver"/> so streamed Opgave messages carry the same
-    /// comment + attachments shape as a one-shot list.
+    /// comment shape as a one-shot list.
     ///
     /// Despite its name, <c>GetTasksForWeek</c> accepts arbitrary
     /// <c>WeekStart</c>/<c>WeekEnd</c> date strings (see
@@ -1055,7 +1022,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = task.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -1711,8 +1677,8 @@ public class EventsGrpcService(
             // Reuse the same envelope + eForm field-structure helpers as
             // ListOpgaver / LoadOpgaverAsync so the response mirrors the
             // shape clients persist to Drift on a regular fetch. Without
-            // this, the client merges an empty Fields/Attachments list and
-            // the form fields appear to "disappear" after completion.
+            // this, the client merges an empty Fields list and the form
+            // fields appear to "disappear" after completion.
             // The helpers run AFTER the bundled CaseUpdate above so values
             // reflect the current (post-bundle) case state.
             var refreshedSingleton = new[] { refreshedTask };
@@ -1743,7 +1709,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -1912,11 +1877,10 @@ public class EventsGrpcService(
         {
             // Mirror the main CompleteOpgave path: reuse the envelope +
             // eForm field-structure helpers so the response carries Fields,
-            // Attachments, Comment, and EformId. Without this, an outbox
-            // retry (which lands here on the second attempt because the
-            // first call already flipped the row to completed) returns an
-            // empty-shape Opgave that wipes Drift's cached field/photo
-            // state for the row.
+            // Comment, and EformId. Without this, an outbox retry (which
+            // lands here on the second attempt because the first call
+            // already flipped the row to completed) returns an empty-shape
+            // Opgave that wipes Drift's cached field state for the row.
             var refreshedSingleton = new[] { refreshedTask };
             var envelopeByTaskId =
                 await LoadEnvelopeByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
@@ -1945,7 +1909,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -2159,10 +2122,11 @@ public class EventsGrpcService(
         }
 
         // Write — preserve any existing photo metadata in the envelope so a
-        // SetComment call doesn't accidentally drop attachments. An empty
-        // comment with no photos collapses the envelope back to "" so the
-        // legacy CompliancesGrpcService.ReadComplianceCase passthrough sees
-        // an empty string instead of "{...}".
+        // SetComment call doesn't accidentally drop the photos-sync stream's
+        // backing rows. An empty comment with no photos collapses the
+        // envelope back to "" so the legacy CompliancesGrpcService.
+        // ReadComplianceCase passthrough sees an empty string instead of
+        // "{...}".
         var existingEnvelope = TryParseEnvelope(foundCase.Custom);
         var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
         nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
@@ -3112,11 +3076,10 @@ public class EventsGrpcService(
                 EformId = refreshedTask.EformId ?? 0
             };
 
-            // Reload envelope for comment + photos.
+            // Reload envelope for the worker-supplied comment text.
             var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
             opgave.Comment = envelope?.OpgaverComment?.Text ?? string.Empty;
-            PopulateAttachments(opgave, envelope);
 
             // Reload fields — CaseUpdateFieldValues has committed by now, so
             // this read returns the just-written value.
