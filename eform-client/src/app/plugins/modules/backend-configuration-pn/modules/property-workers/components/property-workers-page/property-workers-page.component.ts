@@ -345,10 +345,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         name,
         site.workerEmail ?? '',
         site.phoneNumber ?? '',
-        site.taskManagementEnabled ? 'Active' : 'Not active',
-        site.timeRegistrationEnabled ? 'Active' : 'Not active',
-        site.webAccessEnabled ? 'Active' : 'Not active',
-        site.archiveEnabled ? 'Active' : 'Not active',
+        site.taskManagementEnabled ? 'Yes' : 'No',
+        site.timeRegistrationEnabled ? 'Yes' : 'No',
+        site.webAccessEnabled ? 'Yes' : 'No',
+        site.archiveEnabled ? 'Yes' : 'No',
         site.language ?? ''
       ];
     });

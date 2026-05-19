@@ -4,7 +4,6 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Si
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
-import {TaskWizardStatusesEnum} from '../../../../enums';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
 import {Subject, Subscription} from 'rxjs';
@@ -81,11 +80,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
-
-  get TaskWizardStatusesEnum() {
-    return TaskWizardStatusesEnum;
-  }
-
 
 
   ngOnChanges(changes: SimpleChanges): void {
