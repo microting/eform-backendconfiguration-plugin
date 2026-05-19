@@ -177,30 +177,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
         formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,
       },
-      {
-        header: this.translateService.stream('Task management'),
-        sortProp: {id: 'TaskManagementEnabled'},
-        field: 'taskManagementEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Timeregistration'),
-        sortProp: {id: 'TimeRegistrationEnabled'},
-        field: 'timeRegistrationEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Web'),
-        sortProp: {id: 'WebAccessEnabled'},
-        field: 'webAccessEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Archive'),
-        sortProp: {id: 'ArchiveEnabled'},
-        field: 'archiveEnabled',
-        sortable: true,
-      },
+      {header: this.translateService.stream('Tags'), field: 'tags',},
       {
         header: this.translateService.stream('Language'),
         field: 'language',
@@ -208,8 +185,28 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortProp: {id: 'LanguageId'},
       },
       {
-        header: this.translateService.stream('Customer no & OTP'),
-        field: 'customerOtp',
+        header: this.translateService.stream('eForm'),
+        sortProp: {id: 'WebAccessEnabled'},
+        field: 'webAccessEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Ad hoc'),
+        sortProp: {id: 'TaskManagementEnabled'},
+        field: 'taskManagementEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Time'),
+        sortProp: {id: 'TimeRegistrationEnabled'},
+        field: 'timeRegistrationEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Arkiv'),
+        sortProp: {id: 'ArchiveEnabled'},
+        field: 'archiveEnabled',
+        sortable: true,
       },
       {
         header: this.translateService.stream('Model & OS version'),
@@ -218,12 +215,15 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortProp: {id: 'Manufacturer'},
       },
       {
+        header: this.translateService.stream('Customer no & OTP'),
+        field: 'customerOtp',
+      },
+      {
         header: this.translateService.stream('Software version'),
         field: 'version',
         sortable: true,
         sortProp: {id: 'Version'},
       },
-      {header: this.translateService.stream('Tags'), field: 'tags',},
       {
         header: this.translateService.stream('Actions'),
         field: 'actions',
