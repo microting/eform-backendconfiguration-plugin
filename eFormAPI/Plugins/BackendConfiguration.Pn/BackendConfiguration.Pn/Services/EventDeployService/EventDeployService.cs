@@ -116,7 +116,8 @@ public class EventDeployService(
         var candidates = calendarResult.Model
             .Where(t => t.PlanningId.HasValue)
             .Where(t => t.EformId.HasValue && t.EformId.Value > 0)
-            .Where(t => !t.IsFromCompliance) // rows already backed by a Compliance need no deploy
+            .Where(t => !t.IsFromCompliance
+                        || t.SdkCaseId.GetValueOrDefault() == 0) // recurrence-only OR stuck Compliance (SdkCaseId not yet assigned)
             .Select(t => new
             {
                 Task = t,
