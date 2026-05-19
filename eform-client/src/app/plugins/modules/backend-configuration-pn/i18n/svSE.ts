@@ -300,6 +300,8 @@ export const svSE = {
   'Show expired task on mobile': 'Visa utgången uppgift på mobilen',
   Web: 'Web',
   Archive: 'Arkiv',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tid',
   'Mobile timeregistration': 'Mobil tidregistrering',
   'Phone number': 'Telefonnummer',
   'QR Code': 'QR-kod',

@@ -203,7 +203,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
       },
       {
-        header: this.translateService.stream('Arkiv'),
+        header: this.translateService.stream('Archive'),
         sortProp: {id: 'ArchiveEnabled'},
         field: 'archiveEnabled',
         sortable: true,
