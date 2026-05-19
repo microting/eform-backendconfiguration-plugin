@@ -330,18 +330,14 @@ public class EventDeployService(
                 //    rotationDate semantics.
                 if (mainElement.EndDate > DateTime.UtcNow)
                 {
-                    var caseId = await sdkCore.CaseCreate(
+                    var caseId = await sdkCore.CaseCreateLocalOnly(
                         mainElement, "", (int)sdkSite.MicrotingUid!, null)
                         .ConfigureAwait(false);
 
                     if (caseId != null)
                     {
-                        var caseDto = await sdkCore.CaseLookupMUId((int)caseId).ConfigureAwait(false);
-                        if (caseDto?.CaseId != null)
-                        {
-                            planningCaseSite.MicrotingSdkCaseId = (int)caseDto.CaseId;
-                            await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-                        }
+                        planningCaseSite.MicrotingSdkCaseId = (int)caseId;
+                        await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
                 }
 
