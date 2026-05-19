@@ -319,6 +319,8 @@ export const enUS= {
   'Show expired task on mobile': 'Show expired task on mobile',
   'Web': 'Web',
   'Archive': 'Archive',
+  'Ad hoc': 'Ad hoc',
+  'Time': 'Time',
   'Mobile timeregistration': 'Mobile timeregistration',
   'Phone number': 'Phone number',
   'QR Code': 'QR Code',

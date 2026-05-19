@@ -56,10 +56,13 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// <c>BackendConfigurationTaskManagementService.CreateTask</c>); a row in the
 /// SDK <c>uploaded_data</c> table tracks file metadata. RemovePhoto soft-
 /// deletes the <c>UploadedData</c> row (<c>WorkflowState=Removed</c>) and
-/// drops the slot entry from the envelope. ListOpgaver replays the envelope
-/// and surfaces photos as <see cref="Attachment"/> messages. No new EF
-/// entity / migration is introduced; the photo-upload pipeline reuses the
-/// existing TaskManagement S3 / UploadedData pattern.
+/// drops the slot entry from the envelope. Mobile clients consume those
+/// photos via the dedicated photos-sync stream and render them in the
+/// PhotoGrid surface; the <c>Event.attachments</c> wire field is reserved
+/// for web-uploaded calendar files (see the 2026-05-19 design spec) and
+/// is empty on this path. No new EF entity / migration is introduced; the
+/// photo-upload pipeline reuses the existing TaskManagement S3 /
+/// UploadedData pattern.
 /// StreamOpgaveChanges is a poll-based server stream: the server emits a
 /// snapshot at subscribe time, then re-queries every ~5s and diffs against
 /// the previous result by JSON state-hash to emit <c>upserted</c> for
@@ -280,7 +283,6 @@ public class EventsGrpcService(
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -369,7 +371,6 @@ public class EventsGrpcService(
                 TaskIsExpired = task.TaskIsExpired
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -379,40 +380,6 @@ public class EventsGrpcService(
         }
 
         return response;
-    }
-
-    /// <summary>
-    /// Translates the <c>opgaver_photos</c> entries from the Case.Custom
-    /// envelope into <see cref="Attachment"/> wire messages on the response
-    /// Opgave. Internal storage is signalled with
-    /// <see cref="AttachmentSource.Unspecified"/>; the <c>name</c> field
-    /// carries the SDK <c>UploadedData.Id</c> as a string so clients can
-    /// later request the bytes via Documents.GetAttachment (whose contract
-    /// is opaque about what <c>name</c> is — internal id vs cloud-storage
-    /// path — both are valid). Photos are emitted in slot order so clients
-    /// can index them stably; entries with missing or invalid metadata
-    /// are skipped silently.
-    /// </summary>
-    private static void PopulateAttachments(Event opgave, OpgaverCustomEnvelope? envelope)
-    {
-        if (envelope?.OpgaverPhotos == null)
-        {
-            return;
-        }
-
-        foreach (var photo in envelope.OpgaverPhotos.OrderBy(p => p.Slot))
-        {
-            if (photo.UploadedDataId <= 0)
-            {
-                continue;
-            }
-
-            opgave.Attachments.Add(new Attachment
-            {
-                Source = AttachmentSource.Unspecified,
-                Name = photo.UploadedDataId.ToString(CultureInfo.InvariantCulture)
-            });
-        }
     }
 
     /// <summary>
@@ -991,7 +958,7 @@ public class EventsGrpcService(
     /// existing calendar service path. Reuses the
     /// <see cref="LoadEnvelopeByTaskIdAsync"/> helper from
     /// <see cref="ListOpgaver"/> so streamed Opgave messages carry the same
-    /// comment + attachments shape as a one-shot list.
+    /// comment shape as a one-shot list.
     ///
     /// Despite its name, <c>GetTasksForWeek</c> accepts arbitrary
     /// <c>WeekStart</c>/<c>WeekEnd</c> date strings (see
@@ -1055,7 +1022,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = task.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -1204,25 +1170,29 @@ public class EventsGrpcService(
                 $"Opgave {opgaveId} has no pending compliance — there is no SDK case to complete."));
         }
 
-        // DoneAt is composed: the DATE comes from compliance.Deadline (the
-        // rotation's scheduled date) so missed-rotation reports stay dated to
-        // the scheduled rotation day — a worker closing a Monday rotation on
-        // Wednesday must still produce a Monday-dated report so the angular
-        // admin "filled cases" view (queries PlanningCases WHERE
-        // MicrotingSdkCaseDoneAt >= fromDate) and per-rotation history line
-        // up. The TIME is restored from the client's wall-clock tap
-        // (request.ClientTsUnix); previously the value was truncated to
-        // midnight UTC, but the worker's actual time-of-completion is the
-        // more informative signal for reports and is what BackendConfiguration
-        // CompliancesService.Update preserves on the angular side. Falls back
-        // to DateTime.UtcNow if ClientTsUnix is 0 (legacy clients pre-dating
-        // the field).
+        // DoneAt and DoneAtUserModifiable both track the same target value:
         //
-        // Compliance.Deadline is non-nullable (DateTime, not DateTime?) but
-        // can be default(DateTime) on legacy / partially-populated rows; the
+        //   • If the client sends an explicit `done_at_user_modifiable` override
+        //     (the worker tapped the chip and picked a different date), both
+        //     fields receive that override date combined with the wall-clock
+        //     time-of-day. The worker's explicit choice trumps the auto
+        //     deadline-dating.
+        //
+        //   • If no override is sent (worker tapped Complete without touching
+        //     the chip), `userModifiable` falls back to `dayDoneAt`, which is
+        //     composed from `compliance.Deadline` (date) + `request.ClientTsUnix`
+        //     (wall-clock time). Missed-rotation reports therefore stay dated to
+        //     the scheduled rotation day in this default path — a Monday closed
+        //     on Wednesday produces a Monday-dated report so the angular admin
+        //     "filled cases" view (queries PlanningCases WHERE
+        //     MicrotingSdkCaseDoneAt >= fromDate) and per-rotation history line
+        //     up.
+        //
+        // Compliance.Deadline is non-nullable (DateTime, not DateTime?) but can
+        // be default(DateTime) on legacy / partially-populated rows; the
         // != default guard mirrors lines 1681 / 1938 / 2734 in this file.
-        // Falling back to DateTime.UtcNow keeps the previous behaviour for
-        // those edge cases.
+        // Falling back to DateTime.UtcNow keeps the previous behaviour for those
+        // edge cases.
         var deadlineDate = compliance.Deadline != default
             ? compliance.Deadline
             : DateTime.UtcNow;
@@ -1240,9 +1210,10 @@ public class EventsGrpcService(
             deadlineDate.Year, deadlineDate.Month, deadlineDate.Day,
             wall.Hour, wall.Minute, wall.Second,
             DateTimeKind.Utc);
-        // User-overridable variant: the client may override the DATE while wall-clock TIME is preserved.
-        // DoneAt stays deadline-dated (load-bearing for the angular "filled cases" admin view, see 1195-1216);
-        // only DoneAtUserModifiable picks up the override.
+        // User-overridable variant: the client may override the DATE while
+        // wall-clock TIME is preserved. Both DoneAt and DoneAtUserModifiable
+        // track this value (see rationale block above); when no override is
+        // sent it falls back to dayDoneAt so the default path is unchanged.
         var userModifiable = dayDoneAt;
         if (!string.IsNullOrEmpty(request.DoneAtUserModifiable)
             && DateTime.TryParseExact(
@@ -1376,7 +1347,7 @@ public class EventsGrpcService(
             }
 
             foundCase.DoneAtUserModifiable = userModifiable;
-            foundCase.DoneAt = dayDoneAt;
+            foundCase.DoneAt = userModifiable;
             foundCase.SiteId = sdkSiteId;
             foundCase.Status = 100;
             // Direct WorkflowState assignment (not entity.Delete) is the
@@ -1644,11 +1615,11 @@ public class EventsGrpcService(
             // identically at the primary assignment above. This
             // belt-and-suspenders re-load + re-write reads the row back
             // through a fresh sdkDbContext (so the change tracker is empty),
-            // sets each column to its expected value (DoneAt → dayDoneAt;
-            // DoneAtUserModifiable → userModifiable), and calls Update only
-            // when at least one diverges. Logged at Debug level — divergence is
-            // expected steady-state until the upstream mutator is identified;
-            // a Warning here would spam prod logs.
+            // sets each column to userModifiable (which equals dayDoneAt when
+            // no override is sent), and calls Update only when at least one
+            // diverges. Logged at Debug level — divergence is expected
+            // steady-state until the upstream mutator is identified; a Warning
+            // here would spam prod logs.
             try
             {
                 var sdkDbContextReread = core.DbContextHelper.GetDbContext();
@@ -1656,16 +1627,16 @@ public class EventsGrpcService(
                     .FirstOrDefaultAsync(x => x.Id == foundCase.Id)
                     .ConfigureAwait(false);
                 if (reaffirmCase != null
-                    && (reaffirmCase.DoneAt != dayDoneAt
+                    && (reaffirmCase.DoneAt != userModifiable
                         || reaffirmCase.DoneAtUserModifiable != userModifiable))
                 {
                     logger.LogDebug(
                         "CompleteOpgave: re-affirm correcting DoneAt/DoneAtUserModifiable "
-                        + "for caseId={CaseId}: DoneAt was {DoneAt} expected {DayDoneAt}, "
+                        + "for caseId={CaseId}: DoneAt was {DoneAt} expected {UserModifiable}, "
                         + "DoneAtUserModifiable was {DoneAtUserModifiable} expected {UserModifiable}.",
-                        reaffirmCase.Id, reaffirmCase.DoneAt, dayDoneAt,
+                        reaffirmCase.Id, reaffirmCase.DoneAt, userModifiable,
                         reaffirmCase.DoneAtUserModifiable, userModifiable);
-                    reaffirmCase.DoneAt = dayDoneAt;
+                    reaffirmCase.DoneAt = userModifiable;
                     reaffirmCase.DoneAtUserModifiable = userModifiable;
                     await reaffirmCase.Update(sdkDbContextReread).ConfigureAwait(false);
                 }
@@ -1706,8 +1677,8 @@ public class EventsGrpcService(
             // Reuse the same envelope + eForm field-structure helpers as
             // ListOpgaver / LoadOpgaverAsync so the response mirrors the
             // shape clients persist to Drift on a regular fetch. Without
-            // this, the client merges an empty Fields/Attachments list and
-            // the form fields appear to "disappear" after completion.
+            // this, the client merges an empty Fields list and the form
+            // fields appear to "disappear" after completion.
             // The helpers run AFTER the bundled CaseUpdate above so values
             // reflect the current (post-bundle) case state.
             var refreshedSingleton = new[] { refreshedTask };
@@ -1738,7 +1709,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -1907,11 +1877,10 @@ public class EventsGrpcService(
         {
             // Mirror the main CompleteOpgave path: reuse the envelope +
             // eForm field-structure helpers so the response carries Fields,
-            // Attachments, Comment, and EformId. Without this, an outbox
-            // retry (which lands here on the second attempt because the
-            // first call already flipped the row to completed) returns an
-            // empty-shape Opgave that wipes Drift's cached field/photo
-            // state for the row.
+            // Comment, and EformId. Without this, an outbox retry (which
+            // lands here on the second attempt because the first call
+            // already flipped the row to completed) returns an empty-shape
+            // Opgave that wipes Drift's cached field state for the row.
             var refreshedSingleton = new[] { refreshedTask };
             var envelopeByTaskId =
                 await LoadEnvelopeByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
@@ -1940,7 +1909,6 @@ public class EventsGrpcService(
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
-            PopulateAttachments(opgave, envelope);
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
                 opgave.Fields.AddRange(fields);
@@ -2154,10 +2122,11 @@ public class EventsGrpcService(
         }
 
         // Write — preserve any existing photo metadata in the envelope so a
-        // SetComment call doesn't accidentally drop attachments. An empty
-        // comment with no photos collapses the envelope back to "" so the
-        // legacy CompliancesGrpcService.ReadComplianceCase passthrough sees
-        // an empty string instead of "{...}".
+        // SetComment call doesn't accidentally drop the photos-sync stream's
+        // backing rows. An empty comment with no photos collapses the
+        // envelope back to "" so the legacy CompliancesGrpcService.
+        // ReadComplianceCase passthrough sees an empty string instead of
+        // "{...}".
         var existingEnvelope = TryParseEnvelope(foundCase.Custom);
         var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
         nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
@@ -3107,11 +3076,10 @@ public class EventsGrpcService(
                 EformId = refreshedTask.EformId ?? 0
             };
 
-            // Reload envelope for comment + photos.
+            // Reload envelope for the worker-supplied comment text.
             var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
             opgave.Comment = envelope?.OpgaverComment?.Text ?? string.Empty;
-            PopulateAttachments(opgave, envelope);
 
             // Reload fields — CaseUpdateFieldValues has committed by now, so
             // this read returns the just-written value.

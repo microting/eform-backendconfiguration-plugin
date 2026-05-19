@@ -540,6 +540,33 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
+            // Top up exceptionsByArp with any exceptions for compliance ARPs not
+            // already covered. The earlier exceptionsInWeek query (line ~210) filtered
+            // by arpIds — which are only Status=true plannings. Compliance rows can
+            // exist for Status=false plannings too, and their move/resize exceptions
+            // must reach the compliance loop below.
+            var complianceOnlyArpIds = complianceArpIds.Except(arpIds).ToList();
+            if (complianceOnlyArpIds.Count > 0)
+            {
+                var extraExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => complianceOnlyArpIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x =>
+                        (x.OriginalDate >= weekStart && x.OriginalDate <= weekEnd) ||
+                        (x.NewDate.HasValue && x.NewDate.Value >= weekStart && x.NewDate.Value <= weekEnd))
+                    .Include(x => x.ExceptionSites)
+                    .ToListAsync();
+                foreach (var ex in extraExceptions)
+                {
+                    if (!exceptionsByArp.TryGetValue(ex.AreaRulePlanningId, out var perArpDict))
+                    {
+                        perArpDict = new Dictionary<DateTime, CalendarOccurrenceException>();
+                        exceptionsByArp[ex.AreaRulePlanningId] = perArpDict;
+                    }
+                    perArpDict[ex.OriginalDate.Date] = ex;
+                }
+            }
+
             // Batch-load tags for compliance ARPs
             var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
@@ -556,6 +583,27 @@ public class BackendConfigurationCalendarService(
                 .Where(x => compliancePlanningIds.Contains(x.Id))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.Id);
+
+            // Batch-load the SDK Cases backing these compliance rows so the
+            // response can report Completed = (case.Status == 100) per
+            // occurrence. Without this lookup the calendar UI's drag/resize
+            // gate on task.completed would never fire and completed
+            // compliance occurrences would remain visually editable until
+            // rejected by the backend guards in MoveTask/ResizeTask.
+            var weekComplianceCaseIds = compliances
+                .Select(c => c.MicrotingSdkCaseId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            var weekComplianceCasesById = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
+            if (weekComplianceCaseIds.Count > 0)
+            {
+                var sdkCoreForCompletion = await coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContextForCompletion = sdkCoreForCompletion.DbContextHelper.GetDbContext();
+                weekComplianceCasesById = await sdkDbContextForCompletion.Cases
+                    .Where(c => weekComplianceCaseIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id);
+            }
 
             foreach (var compliance in compliances)
             {
@@ -584,13 +632,46 @@ public class BackendConfigurationCalendarService(
                 var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
                 var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
                 var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+
+                var complianceCompleted = compliance.MicrotingSdkCaseId > 0
+                    && weekComplianceCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var weekSdkCase)
+                    && weekSdkCase.Status == 100;
+
+                // Apply any "this"-scope move/resize exception that overrides this past
+                // compliance occurrence's date / start-hour. Without this consultation, a
+                // user-applied move via MoveTask scope='this' would write an exception that
+                // the compliance loop never reads, and the event would snap back to
+                // compliance.Deadline on the next fetch. Mirrors the recurrence-expansion
+                // loop's exception handling above (around line 313).
+                CalendarOccurrenceException complianceException = null;
+                if (arp != null
+                    && exceptionsByArp.TryGetValue(arp.Id, out var complianceArpExceptions))
+                {
+                    complianceArpExceptions.TryGetValue(compliance.Deadline.Date, out complianceException);
+                }
+
+                // Soft-deleted occurrence: hide it.
+                if (complianceException?.IsDeleted == true) continue;
+
+                // Moved out of the current week: hide it here (the destination week's
+                // movedInExceptions pass at line ~387 renders it).
+                if (complianceException?.NewDate is { } movedDate
+                    && (movedDate < weekStart || movedDate > weekEnd))
+                {
+                    continue;
+                }
+
+                var effectiveTaskDate = complianceException?.NewDate?.Date ?? compliance.Deadline.Date;
+                var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+                var effectiveDuration = complianceException?.Duration ?? calConfig?.Duration ?? 1.0;
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
-                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
-                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    StartHour = compIsAllDay ? 0 : effectiveStartHour,
+                    Duration = compIsAllDay ? 0 : effectiveDuration,
+                    TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
@@ -606,7 +687,7 @@ public class BackendConfigurationCalendarService(
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
-                    Completed = false,
+                    Completed = complianceCompleted,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
@@ -619,7 +700,8 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
                         : null,
-                    Attachments = MapAttachments(arp)
+                    Attachments = MapAttachments(arp),
+                    ExceptionId = complianceException?.Id,
                 };
 
                 if (ShouldIncludeTask(model, requestModel))
@@ -1010,6 +1092,35 @@ public class BackendConfigurationCalendarService(
             localizationService.GetString("CalendarTaskDeletedSuccessfully"));
     }
 
+    // True iff the (planning, day) occurrence is backed by an SDK Case whose
+    // Status == 100 (canonical "done" code; see e.g. line ~2500 in this file
+    // and BackendConfigurationCompliancesService.cs). Non-compliance recurring
+    // events have no backing case and always return false.
+    //
+    // Compliance.Deadline is a non-Kind DateTime; occurrenceDate arrives Kind=Utc
+    // from the request parser. To avoid Kind-drift around UTC offsets / DST, we
+    // pull a 3-day window around the target day and filter the exact match
+    // in-memory by `Deadline.Date == occurrenceDate.Date`.
+    private async Task<bool> IsTaskOccurrenceCompleted(int planningId, DateTime occurrenceDate)
+    {
+        var windowStart = occurrenceDate.Date.AddDays(-1);
+        var windowEnd = occurrenceDate.Date.AddDays(2);
+        var candidates = await backendConfigurationPnDbContext.Compliances
+            .Where(c => c.PlanningId == planningId)
+            .Where(c => c.Deadline >= windowStart && c.Deadline < windowEnd)
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        var compliance = candidates.FirstOrDefault(c => c.Deadline.Date == occurrenceDate.Date);
+        if (compliance == null || compliance.MicrotingSdkCaseId <= 0) return false;
+
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        var sdkCase = await sdkDbContext.Cases
+            .Where(c => c.Id == compliance.MicrotingSdkCaseId)
+            .FirstOrDefaultAsync();
+        return sdkCase?.Status == 100;
+    }
+
     public async Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel)
     {
         try
@@ -1018,11 +1129,6 @@ public class BackendConfigurationCalendarService(
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
             var taskDateTime = newDate.AddHours(moveModel.NewStartHour);
-            if (taskDateTime < DateTime.UtcNow)
-            {
-                return new OperationResult(false,
-                    localizationService.GetString("CannotCreateTaskInThePast"));
-            }
 
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == moveModel.Id)
@@ -1033,6 +1139,36 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            // Defence-in-depth move guards. The frontend already prevents
+            // both cases (drag handle hidden on completed tasks, drop
+            // rejected when a future task is dropped before now), but a
+            // direct API call could bypass that.
+            if (!string.IsNullOrEmpty(moveModel.OriginalDate))
+            {
+                var origDate = DateTime.Parse(moveModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+                if (await IsTaskOccurrenceCompleted(arp.ItemPlanningId, origDate))
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveCompletedTask"));
+                }
+
+                var oldCalConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+                var origStartHour = oldCalConfig?.StartHour ?? 9.0;
+                var origDateTime = origDate.AddHours(origStartHour);
+                var nowUtc = DateTime.UtcNow;
+                if (origDateTime >= nowUtc && taskDateTime < nowUtc)
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveFutureTaskToPast"));
+                }
             }
 
             var scope = moveModel.Scope ?? "all";
@@ -1236,10 +1372,10 @@ public class BackendConfigurationCalendarService(
     {
         try
         {
-            // No past-time check here on purpose: resize on an existing task
-            // is legitimate even when the start is in the past (e.g. the user
-            // is extending an event that's currently running). The task
-            // already exists; we are not creating a new one.
+            // Resize is allowed on past events (extending a currently-running
+            // task is legitimate). The block is on completed tasks — their
+            // outcome is already recorded and the duration should not shift
+            // retroactively.
 
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == resizeModel.Id)
@@ -1250,6 +1386,18 @@ public class BackendConfigurationCalendarService(
             {
                 return new OperationResult(false,
                     localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            if (!string.IsNullOrEmpty(resizeModel.OriginalDate))
+            {
+                var origDate = DateTime.Parse(resizeModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                if (await IsTaskOccurrenceCompleted(arp.ItemPlanningId, origDate))
+                {
+                    return new OperationResult(false,
+                        localizationService.GetString("CannotMoveCompletedTask"));
+                }
             }
 
             var scope = resizeModel.Scope ?? "all";

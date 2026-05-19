@@ -348,48 +348,82 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
       if (date) {
         const newDate = this.toLocalDateString(date);
         const targetDateTime = new Date(date);
-        targetDateTime.setHours(Math.floor(newStartHour), (newStartHour % 1) * 60, 0, 0);
+        targetDateTime.setHours(
+          Math.floor(newStartHour),
+          Math.round((newStartHour % 1) * 60),
+          0,
+          0,
+        );
 
-        if (targetDateTime >= new Date()) {
-          const originalDate = task.taskDate;
+        // Past, uncompleted events move anywhere. Future events must stay
+        // future — dropping a future event before "now" makes no scheduling
+        // sense and would corrupt the historical record.
+        //
+        // `task.taskDate` is "YYYY-MM-DD". `new Date("YYYY-MM-DD")` parses as
+        // midnight UTC, which is the wrong baseline in any non-UTC tz —
+        // append "T00:00:00" to force local-time parsing so the comparison
+        // matches the user's wall-clock perception.
+        const now = new Date();
+        const sourceDateTime = new Date(`${task.taskDate}T00:00:00`);
+        sourceDateTime.setHours(
+          Math.floor(task.startHour),
+          Math.round((task.startHour % 1) * 60),
+          0,
+          0,
+        );
+        const sourceIsPast = sourceDateTime < now;
+        const targetIsPast = targetDateTime < now;
 
-          // Reset CDK transform first (element still in original DOM position)
+        if (!sourceIsPast && targetIsPast) {
+          // Future task dropped before now: rejected. Reset the CDK
+          // transform and force a tasks reload so the parent re-renders
+          // the task at its original slot from server state — a bare
+          // reset() alone has been observed to leave the dragged block
+          // invisible when the drop target was in a past slot.
           event.source.reset();
-
-          // Then optimistically move the task in the local array.
-          // weekDays indices (0..N) may not align with tasksByDay (always
-          // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
-          // which may map to tasksByDay[2] (Wed). Translate through
-          // allDayIndexFor so the optimistic update targets the right slot.
-          const origDayIndex = this.weekDays.findIndex(
-            d => this.toLocalDateString(d) === originalDate
-          );
-          if (origDayIndex >= 0) {
-            const origMappedIdx = this.allDayIndexFor(origDayIndex);
-            if (origMappedIdx >= 0) {
-              const origArr = this.tasksByDay[origMappedIdx];
-              if (origArr) {
-                const idx = origArr.findIndex(t => t.id === task.id);
-                if (idx >= 0) origArr.splice(idx, 1);
-              }
-            }
-          }
-          task.startHour = newStartHour;
-          task.taskDate = newDate;
-          const targetMappedIdx = this.allDayIndexFor(dayIndex);
-          if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
-            this.tasksByDay[targetMappedIdx].push(task);
-          }
-
-          this.taskMoved.emit({
-            taskId: task.id,
-            newDate,
-            newStartHour,
-            repeatSeriesId: task.repeatSeriesId,
-            originalDate,
-          });
+          this.tasksReload.emit();
           return;
         }
+
+        // Allowed: past→anywhere, or future→future. Optimistically move
+        // the task locally so the UI doesn't flash, then emit upward.
+        const originalDate = task.taskDate;
+
+        // Reset CDK transform first (element still in original DOM position)
+        event.source.reset();
+
+        // weekDays indices (0..N) may not align with tasksByDay (always
+        // Mon..Sun, 0..6) — e.g. day view has weekDays=[currentDate]
+        // which may map to tasksByDay[2] (Wed). Translate through
+        // allDayIndexFor so the optimistic update targets the right slot.
+        const origDayIndex = this.weekDays.findIndex(
+          d => this.toLocalDateString(d) === originalDate
+        );
+        if (origDayIndex >= 0) {
+          const origMappedIdx = this.allDayIndexFor(origDayIndex);
+          if (origMappedIdx >= 0) {
+            const origArr = this.tasksByDay[origMappedIdx];
+            if (origArr) {
+              const idx = origArr.findIndex(t => t.id === task.id);
+              if (idx >= 0) origArr.splice(idx, 1);
+            }
+          }
+        }
+        task.startHour = newStartHour;
+        task.taskDate = newDate;
+        const targetMappedIdx = this.allDayIndexFor(dayIndex);
+        if (targetMappedIdx >= 0 && this.tasksByDay[targetMappedIdx]) {
+          this.tasksByDay[targetMappedIdx].push(task);
+        }
+
+        this.taskMoved.emit({
+          taskId: task.id,
+          newDate,
+          newStartHour,
+          repeatSeriesId: task.repeatSeriesId,
+          originalDate,
+        });
+        return;
       }
     }
 

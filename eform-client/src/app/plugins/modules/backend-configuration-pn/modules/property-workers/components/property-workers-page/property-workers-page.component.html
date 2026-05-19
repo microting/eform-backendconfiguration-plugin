@@ -1,5 +1,5 @@
 <eform-new-subheader>
-  <div class="d-flex flex-row align-items-center gap-12">
+  <div class="d-flex flex-row flex-wrap align-items-center gap-12">
     <div class="text-field--rounded mt-4">
       <mat-form-field>
         <mat-label>{{ 'Search' | translate }}</mat-label>
@@ -30,19 +30,21 @@
     </div>
     <div class="line-vert"></div>
     <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
+      class="btn-secondary btn-secondary--icon-left"
       id="sitesManageTagsBtn"
       (click)="openEditTagsModal()"
       matTooltip="{{ 'Manage tags' | translate }}"
     >
-      <mat-icon>discount</mat-icon>
+      <mat-icon>label</mat-icon>
+      <span>{{ 'Tags' | translate }}</span>
     </button>
     <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
+      class="btn-primary btn-primary--icon-left"
       (click)="exportCsv()"
       matTooltip="{{ 'Export CSV' | translate }}"
     >
-      <mat-icon>text_snippet</mat-icon>
+      <mat-icon>download</mat-icon>
+      <span>{{ 'Export CSV' | translate }}</span>
     </button>
     <div class="line-vert"></div>
     <button

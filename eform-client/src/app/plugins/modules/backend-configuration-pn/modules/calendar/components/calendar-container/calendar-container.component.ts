@@ -478,9 +478,17 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
 
     const doMove = (scope?: RepeatEditScope) => {
-      const obs = isRepeating
-        ? this.calendarService.moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope ?? 'this', event.originalDate)
-        : this.calendarService.moveTask(event.taskId, event.newDate, event.newStartHour);
+      // Always go through moveTaskWithScope so the backend receives
+      // originalDate — the new completed-task and future→past guards
+      // rely on it. Non-recurring tasks use scope 'all' (no series to
+      // partition, so 'all' just updates the single occurrence).
+      const obs = this.calendarService.moveTaskWithScope(
+        event.taskId,
+        event.newDate,
+        event.newStartHour,
+        isRepeating ? scope ?? 'this' : 'all',
+        event.originalDate,
+      );
       obs.subscribe(res => {
         if (res && res.success) this.loadTasks();
       });

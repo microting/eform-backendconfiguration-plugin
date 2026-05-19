@@ -302,6 +302,8 @@ export const da = {
   'Show expired task on mobile': 'Vis overskredet opgave på mobil',
   Web: 'Web',
   Archive: 'Arkiv',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tid',
   'Mobile timeregistration': 'Mobil tidsregistrering',
   'Phone number': 'Telefonnummer',
   'QR Code': 'QR-kode',

@@ -4,7 +4,6 @@ import {Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Si
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
-import {TaskWizardStatusesEnum} from '../../../../enums';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
 import {Subject, Subscription} from 'rxjs';
@@ -81,11 +80,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
-
-  get TaskWizardStatusesEnum() {
-    return TaskWizardStatusesEnum;
-  }
-
 
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -177,22 +171,29 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
         formatter: (rowData: DeviceUserModel) => rowData.phoneNumber ? `${rowData.phoneNumber}` : `N/A`,
       },
+      {header: this.translateService.stream('Tags'), field: 'tags',},
       {
-        header: this.translateService.stream('Task management'),
+        header: this.translateService.stream('Language'),
+        field: 'language',
+        sortable: true,
+        sortProp: {id: 'LanguageId'},
+      },
+      {
+        header: this.translateService.stream('eForm'),
+        sortProp: {id: 'WebAccessEnabled'},
+        field: 'webAccessEnabled',
+        sortable: true,
+      },
+      {
+        header: this.translateService.stream('Ad hoc'),
         sortProp: {id: 'TaskManagementEnabled'},
         field: 'taskManagementEnabled',
         sortable: true,
       },
       {
-        header: this.translateService.stream('Timeregistration'),
+        header: this.translateService.stream('Time'),
         sortProp: {id: 'TimeRegistrationEnabled'},
         field: 'timeRegistrationEnabled',
-        sortable: true,
-      },
-      {
-        header: this.translateService.stream('Web'),
-        sortProp: {id: 'WebAccessEnabled'},
-        field: 'webAccessEnabled',
         sortable: true,
       },
       {
@@ -202,20 +203,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
       },
       {
-        header: this.translateService.stream('Language'),
-        field: 'language',
-        sortable: true,
-        sortProp: {id: 'LanguageId'},
-      },
-      {
-        header: this.translateService.stream('Customer no & OTP'),
-        field: 'customerOtp',
-      },
-      {
         header: this.translateService.stream('Model & OS version'),
         field: 'manufacturer',
         sortable: true,
         sortProp: {id: 'Manufacturer'},
+      },
+      {
+        header: this.translateService.stream('Customer no & OTP'),
+        field: 'customerOtp',
       },
       {
         header: this.translateService.stream('Software version'),
@@ -223,7 +218,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy, OnChange
         sortable: true,
         sortProp: {id: 'Version'},
       },
-      {header: this.translateService.stream('Tags'), field: 'tags',},
       {
         header: this.translateService.stream('Actions'),
         field: 'actions',

@@ -9,14 +9,14 @@
   [style.background-color]="task.color"
   cdkDrag
   [cdkDragData]="task"
-  [cdkDragDisabled]="isPast || resizing"
+  [cdkDragDisabled]="task.completed || resizing"
   (cdkDragMoved)="dragMoved.emit($event)"
   (cdkDragEnded)="dragEnded.emit($event)"
 >
   <ng-template cdkDragPlaceholder></ng-template>
 
   <div
-    *ngIf="!isPast"
+    *ngIf="!task.completed"
     class="resize-handle resize-handle--top"
     (mousedown)="startResize($event, 'start')"
   ></div>
@@ -39,7 +39,7 @@
   </div>
 
   <div
-    *ngIf="!isPast"
+    *ngIf="!task.completed"
     class="resize-handle resize-handle--bottom"
     (mousedown)="startResize($event, 'end')"
   ></div>

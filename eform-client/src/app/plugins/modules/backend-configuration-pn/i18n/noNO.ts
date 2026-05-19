@@ -300,6 +300,8 @@ export const noNO = {
   'Show expired task on mobile': 'Vis utløpt oppgave på mobil',
   Web: 'Nett',
   Archive: 'Arkiv',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tid',
   'Mobile timeregistration': 'Mobil timeregistrering',
   'Phone number': 'Telefonnummer',
   'QR Code': 'QR-kode',
