@@ -164,43 +164,57 @@ public class EventDeployServiceTest : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
-    // 3. EnsureDeployedAsync_RotationIsFromCompliance_SkippedNotDeployed
+    // 3. EnsureDeployedAsync_FullyDeployedComplianceRotation_SkippedNotDeployed
     // ------------------------------------------------------------------
     [Test]
-    public async Task EnsureDeployedAsync_RotationIsFromCompliance_SkippedNotDeployed()
+    public async Task EnsureDeployedAsync_FullyDeployedComplianceRotation_SkippedNotDeployed()
     {
-        // Arrange — a future rotation that is already backed by a Compliance
-        // (IsFromCompliance=true). EventDeployService should filter these out
-        // because they need no deploy.
-        var complianceBackedRotation = MakeRotation(
+        // Arrange — a future rotation that is already fully backed by a
+        // Compliance row AND an SDK Case (IsFromCompliance=true, SdkCaseId>0).
+        //
+        // NEW CONTRACT (PR #829): the candidate-enumeration filter at
+        // EventDeployService.cs:119-120 drops Compliance-backed rotations
+        // ONLY when SdkCaseId > 0 — i.e. fully deployed. Compliance-backed
+        // rotations with SdkCaseId == 0 are the "stuck" shape and MUST fall
+        // through to the revive path (covered by test #9). This test pins
+        // the fully-deployed branch of the filter.
+        var fullyDeployedRotation = MakeRotation(
             id: 101,
             date: DateTime.UtcNow.Date.AddDays(2),
             isFromCompliance: true,
             planningId: 201,
             eformId: 301);
-        var (calendar, coreHelper) = MakeMocks([complianceBackedRotation]);
+        fullyDeployedRotation.SdkCaseId = 999_999;
+        var (calendar, coreHelper) = MakeMocks([fullyDeployedRotation]);
         var service = MakeService(calendar, coreHelper);
 
         // Act
         await service.EnsureDeployedAsync(
             PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, CancellationToken.None);
 
-        // Assert — no Compliance row created, SDK Core never fetched.
+        // Assert — no Compliance row created, SDK Core never fetched
+        // (filter dropped the rotation before the SDK path).
         var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
         Assert.That(complianceCount, Is.EqualTo(0));
         await coreHelper.DidNotReceive().GetCore();
     }
 
     // ------------------------------------------------------------------
-    // 4. EnsureDeployedAsync_ComplianceAlreadyExists_SkipsRotation
+    // 4. EnsureDeployedAsync_DeployedComplianceExists_SkipsRotation
     // ------------------------------------------------------------------
     [Test]
-    public async Task EnsureDeployedAsync_ComplianceAlreadyExists_SkipsRotation()
+    public async Task EnsureDeployedAsync_DeployedComplianceExists_SkipsRotation()
     {
-        // Arrange — a Compliance row already exists for
-        // (planningId, rotationDate). The pipeline's idempotence guard
-        // (EventDeployService.cs:184-195) must short-circuit before any
-        // PlanningCase / CaseCreate is attempted.
+        // Arrange — a fully-deployed Compliance row already exists for
+        // (planningId, rotationDate) with MicrotingSdkCaseId > 0. The
+        // pipeline's idempotence guard (EventDeployService.cs:194-206) must
+        // short-circuit before any PlanningCase / CaseCreate is attempted.
+        //
+        // NEW CONTRACT (PR #829): the guard short-circuits only when the
+        // existing slot is either soft-Removed OR fully deployed
+        // (MicrotingSdkCaseId > 0). A Created row with MicrotingSdkCaseId == 0
+        // is the genuine "stuck" shape (see test #9) and must fall through
+        // to the revive path, so this test pins the fully-deployed branch.
 
         // Boot a real Core so the SDK schema is materialised against the
         // testcontainer; we'll seed a Site/Language directly.
@@ -221,6 +235,7 @@ public class EventDeployServiceTest : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
 
         const int planningId = 500;
+        const int existingSdkCaseId = 12_345;
         var rotationDate = DateTime.UtcNow.Date.AddDays(3);
         var existingCompliance = new Compliance
         {
@@ -229,6 +244,7 @@ public class EventDeployServiceTest : TestBaseSetup
             AreaId = 1,
             Deadline = rotationDate,
             StartDate = rotationDate.AddDays(-7),
+            MicrotingSdkCaseId = existingSdkCaseId,
             WorkflowState = Constants.WorkflowStates.Created
         };
         await BackendConfigurationPnDbContext!.Compliances.AddAsync(existingCompliance);
@@ -241,11 +257,11 @@ public class EventDeployServiceTest : TestBaseSetup
             eformId: 400);
 
         // Use a capturing TestLogger so we can prove the idempotence guard
-        // (EventDeployService.cs:184-195) short-circuited. Asserting only
+        // (EventDeployService.cs:194-206) short-circuited. Asserting only
         // Count==1 is tautological: if the guard silently broke,
-        // execution would fall through to the planning lookup at line 200,
+        // execution would fall through to the planning lookup at line 211,
         // find nothing for planningId=500, log a "planning ... not found"
-        // warning at line 208, hit `continue` at line 211, and STILL leave
+        // warning at line 219, hit `continue` at line 222, and STILL leave
         // Compliance count at 1. By asserting that NEITHER the
         // planning-not-found NOR areaRulePlanning-not-found warnings were
         // emitted, we pin that the guard fired before either downstream
@@ -265,11 +281,11 @@ public class EventDeployServiceTest : TestBaseSetup
             Assert.That(
                 logger.Entries.Any(e => e.Message.Contains("planning") && e.Message.Contains("not found")),
                 Is.False,
-                "Guard should have short-circuited before the planning lookup at EventDeployService.cs:200-212.");
+                "Guard should have short-circuited before the planning lookup at EventDeployService.cs:211-223.");
             Assert.That(
                 logger.Entries.Any(e => e.Message.Contains("areaRulePlanning") && e.Message.Contains("not found")),
                 Is.False,
-                "Guard should have short-circuited before the areaRulePlanning lookup at EventDeployService.cs:214-227.");
+                "Guard should have short-circuited before the areaRulePlanning lookup at EventDeployService.cs:225-238.");
         });
 
         var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
@@ -419,6 +435,204 @@ public class EventDeployServiceTest : TestBaseSetup
         var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
         Assert.That(complianceCount, Is.EqualTo(0),
             "Missing-planning path must not leave any Compliance rows behind.");
+    }
+
+    // ------------------------------------------------------------------
+    // 9. EnsureDeployedAsync_StuckCompliance_FallsThroughToDeploy
+    //
+    // Pins the NEW contract introduced in PR #829: a Compliance row at
+    // (PlanningId, Deadline) with WorkflowState=Created AND
+    // MicrotingSdkCaseId == 0 is a STUCK row (earlier deploy persisted the
+    // Compliance but failed CaseCreate — see the SDK 10.0.27 EndDate bug).
+    // The idempotence guard at EventDeployService.cs:194-206 must NOT
+    // short-circuit on this shape; the rotation must fall through to the
+    // deploy / revive path so EnsureComplianceRowAsync can attach the
+    // missing MicrotingSdkCaseId.
+    //
+    // Driving the pipeline all the way through CaseCreate requires a full
+    // Planning + AreaRulePlanning + Area + Property + eForm template graph
+    // (already deferred at tests #5/#6/#8). What we CAN pin here is the
+    // observable canary: the stuck row reaches the planning lookup at
+    // EventDeployService.cs:211-223 and emits the "planning ... not found"
+    // warning — proof that the guard did NOT short-circuit. A regression
+    // that re-tightens the guard to "any Compliance row exists → skip"
+    // would suppress that warning and this test would fail.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_StuckCompliance_FallsThroughToDeploy()
+    {
+        // Arrange — boot a real Core so the SDK schema is materialised
+        // against the testcontainer; seed Site/Language directly.
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var site = new Site
+        {
+            Name = "test-site-stuck",
+            MicrotingUid = 44,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        const int planningId = 600;
+        var rotationDate = DateTime.UtcNow.Date.AddDays(4);
+
+        // The stuck shape: Created + MicrotingSdkCaseId == 0. Default int
+        // is 0 so the property is left at its default to make the intent
+        // explicit (also asserted below before the act).
+        var stuckCompliance = new Compliance
+        {
+            PlanningId = planningId,
+            PropertyId = 1,
+            AreaId = 1,
+            Deadline = rotationDate,
+            StartDate = rotationDate.AddDays(-7),
+            MicrotingSdkCaseId = 0,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(stuckCompliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var rotation = MakeRotation(
+            id: 105,
+            date: rotationDate,
+            planningId: planningId,
+            eformId: 601);
+
+        var logger = new TestLogger<EventDeployService>();
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper, logger);
+
+        // Act
+        await service.EnsureDeployedAsync(
+            PropertyId, BoardIds, "2026-05-14", "2026-05-20", site.Id, CancellationToken.None);
+
+        // Assert — the stuck row fell through to the planning-lookup step.
+        // The "planning ... not found" warning is the observable canary
+        // that the guard did NOT short-circuit. A regression that
+        // re-tightens the guard to "any Compliance row exists → skip"
+        // would suppress this warning and this test would fail.
+        Assert.That(
+            logger.Entries.Any(e =>
+                e.Level == LogLevel.Warning
+                && e.Message.Contains("planning")
+                && e.Message.Contains("not found")),
+            Is.True,
+            "Stuck Compliance (Created + MicrotingSdkCaseId==0) must fall "
+            + "through to the deploy/revive path at "
+            + "EventDeployService.cs:211-223. If this fails, the guard "
+            + "is silently treating stuck rows as fully deployed.");
+
+        // The stuck row is still present (we did not reach the revive
+        // step because no Planning was seeded; that's the unavoidable
+        // limit of integration coverage without the full entity graph,
+        // already documented at tests #5/#6/#8). No new Compliance row
+        // was INSERTed because the pipeline `continue`d at line 222
+        // before reaching EnsureComplianceRowAsync.
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        Assert.That(complianceCount, Is.EqualTo(1),
+            "Falling through to the missing-planning path must not "
+            + "INSERT a duplicate Compliance row.");
+    }
+
+    // ------------------------------------------------------------------
+    // 10. EnsureDeployedAsync_RemovedCompliance_SkipsRotation
+    //
+    // Pins the NEW contract introduced in PR #829: a Compliance row at
+    // (PlanningId, Deadline) with WorkflowState=Removed represents a
+    // user-completed event whose Compliance was retracted (the SDK Case
+    // still exists). The idempotence guard at
+    // EventDeployService.cs:194-206 MUST short-circuit on this shape so
+    // we do not phantom-uncomplete that event by re-deploying. Mirrors
+    // the structure of test #4 (fully-deployed branch).
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_RemovedCompliance_SkipsRotation()
+    {
+        // Arrange — boot a real Core so the SDK schema exists; seed
+        // Site/Language directly.
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var site = new Site
+        {
+            Name = "test-site-removed",
+            MicrotingUid = 45,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        const int planningId = 700;
+        var rotationDate = DateTime.UtcNow.Date.AddDays(5);
+
+        // The completed-then-retracted shape: WorkflowState=Removed.
+        // MicrotingSdkCaseId is left as 0 here ON PURPOSE — if a future
+        // refactor accidentally narrows the guard to only "Removed AND
+        // MicrotingSdkCaseId > 0", this test would still pass with a
+        // non-zero MicrotingSdkCaseId and silently mask the regression.
+        // By keeping MicrotingSdkCaseId == 0 we pin that the Removed
+        // branch alone short-circuits.
+        var removedCompliance = new Compliance
+        {
+            PlanningId = planningId,
+            PropertyId = 1,
+            AreaId = 1,
+            Deadline = rotationDate,
+            StartDate = rotationDate.AddDays(-7),
+            MicrotingSdkCaseId = 0,
+            WorkflowState = Constants.WorkflowStates.Removed
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(removedCompliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var rotation = MakeRotation(
+            id: 106,
+            date: rotationDate,
+            planningId: planningId,
+            eformId: 701);
+
+        var logger = new TestLogger<EventDeployService>();
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper, logger);
+
+        // Act
+        await service.EnsureDeployedAsync(
+            PropertyId, BoardIds, "2026-05-14", "2026-05-20", site.Id, CancellationToken.None);
+
+        // Assert — guard short-circuited on the Removed branch BEFORE
+        // either of the downstream null-fallthrough warnings could fire.
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                logger.Entries.Any(e => e.Message.Contains("planning") && e.Message.Contains("not found")),
+                Is.False,
+                "Removed Compliance must short-circuit before the "
+                + "planning lookup at EventDeployService.cs:211-223.");
+            Assert.That(
+                logger.Entries.Any(e => e.Message.Contains("areaRulePlanning") && e.Message.Contains("not found")),
+                Is.False,
+                "Removed Compliance must short-circuit before the "
+                + "areaRulePlanning lookup at EventDeployService.cs:225-238.");
+        });
+
+        // No duplicate Compliance row was INSERTed and the existing
+        // Removed row was not flipped back to Created (which would
+        // phantom-uncomplete the underlying event).
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        Assert.That(complianceCount, Is.EqualTo(1));
+
+        var preservedRow = await BackendConfigurationPnDbContext.Compliances
+            .AsNoTracking()
+            .SingleAsync(c => c.PlanningId == planningId);
+        Assert.That(preservedRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+            "Removed Compliance must NOT be revived — flipping it back to "
+            + "Created would phantom-uncomplete a user-completed event.");
+        Assert.That(preservedRow.MicrotingSdkCaseId, Is.EqualTo(0),
+            "Removed Compliance must NOT have its MicrotingSdkCaseId mutated.");
     }
 
     // ------------------------------------------------------------------
