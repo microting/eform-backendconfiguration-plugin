@@ -181,12 +181,22 @@ public class EventDeployService(
                 //    is keyed on PlanningId + Deadline; we additionally scope
                 //    to the requested sdk site below when locating the
                 //    PlanningCaseSite).
+                //    The slot is "taken — skip" if it's soft-removed (user
+                //    already completed this rotation; the SDK Case still
+                //    exists, just the Compliance was retracted) OR fully
+                //    deployed (MicrotingSdkCaseId > 0). We re-deploy ONLY for
+                //    the genuine stuck-row shape: Created + MicrotingSdkCaseId
+                //    == 0, where an earlier deploy left a Compliance row
+                //    behind without an SDK Case (e.g. the SDK 10.0.27 EndDate
+                //    validation bug). EnsureComplianceRowAsync revives that
+                //    row in place.
                 var alreadyDeployed = await dbContext.Compliances
                     .AsNoTracking()
                     .AnyAsync(c =>
                             c.PlanningId == planningId
                             && c.Deadline.Date == rotationDate
-                            && c.WorkflowState != Constants.WorkflowStates.Removed,
+                            && (c.WorkflowState == Constants.WorkflowStates.Removed
+                                || c.MicrotingSdkCaseId > 0),
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (alreadyDeployed)
@@ -367,11 +377,43 @@ public class EventDeployService(
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
-        // Race protection lives in the duplicate-key catch below (mirrors
-        // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
-        // in EnsureDeployedAsync already filters out the common case before
-        // any writes happen, so a second AnyAsync here would only add a DB
-        // round-trip without changing behaviour.
+        // Check-first / revive-if-found / INSERT-if-not. The UNIQUE index
+        // IX_PlanningId_Deadline on Compliances is on (PlanningId, Deadline)
+        // ONLY — it does NOT include WorkflowState. That means a soft-removed
+        // row still occupies the natural-key slot, and a blind INSERT after a
+        // prior failed deploy collides on the unique key.
+        //
+        // Revive ONLY the genuine stuck-row shape: Created + MicrotingSdkCaseId
+        // == 0 (earlier deploy persisted Compliance but failed CaseCreate,
+        // e.g. the SDK 10.0.27 EndDate validation bug). A soft-removed row in
+        // the slot belongs to a completed event — flipping it back to Created
+        // would phantom-uncomplete that event and orphan its SDK Case. The
+        // outer guard above already prevents us from reaching here for the
+        // Removed shape; this predicate is the defensive belt: if a Removed
+        // row ever falls through, the SELECT returns null, the INSERT below
+        // collides on the UNIQUE index, and the narrow catch logs and skips.
+        var existing = await dbContext.Compliances
+            .FirstOrDefaultAsync(c =>
+                    c.PlanningId == planning.Id
+                    && c.Deadline.Date == rotationDate.Date
+                    && c.WorkflowState == Constants.WorkflowStates.Created
+                    && c.MicrotingSdkCaseId == 0,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existing != null)
+        {
+            existing.WorkflowState = Constants.WorkflowStates.Created;
+            existing.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+            existing.MicrotingSdkeFormId = planning.RelatedEFormId;
+            // The handler mistakenly stores PlanningCaseId in the
+            // PlanningCaseSiteId column — see EformParsedByServerHandler.cs:179.
+            // Preserve that convention so the round-trip matches the JSON
+            // oracle path.
+            existing.PlanningCaseSiteId = planningCaseSite.PlanningCaseId;
+            await existing.Update(dbContext).ConfigureAwait(false);
+            return;
+        }
 
         // The handler uses `planning.LastExecutedTime` for StartDate. For an
         // eager deploy that has not actually run yet, LastExecutedTime is the
@@ -379,37 +421,34 @@ public class EventDeployService(
         // is null so the StartDate column stays populated.
         var startDate = planning.LastExecutedTime ?? DateTime.UtcNow;
 
+        var compliance = new Compliance
+        {
+            PropertyId = areaRulePlanning.PropertyId,
+            PlanningId = planning.Id,
+            AreaId = areaRulePlanning.AreaId,
+            Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
+            StartDate = startDate,
+            MicrotingSdkeFormId = planning.RelatedEFormId,
+            MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
+            // The handler mistakenly stores PlanningCaseId here (named
+            // PlanningCaseSiteId on the column) — see
+            // EformParsedByServerHandler.cs:179. Preserve that convention
+            // so the round-trip matches the JSON oracle path.
+            PlanningCaseSiteId = planningCaseSite.PlanningCaseId
+        };
         try
         {
-            var compliance = new Compliance
-            {
-                PropertyId = areaRulePlanning.PropertyId,
-                PlanningId = planning.Id,
-                AreaId = areaRulePlanning.AreaId,
-                Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
-                StartDate = startDate,
-                MicrotingSdkeFormId = planning.RelatedEFormId,
-                MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
-                // The handler mistakenly stores PlanningCaseId here (named
-                // PlanningCaseSiteId on the column) — see
-                // EformParsedByServerHandler.cs:179. Preserve that convention
-                // so the round-trip matches the JSON oracle path.
-                PlanningCaseSiteId = planningCaseSite.PlanningCaseId
-            };
             await compliance.Create(dbContext).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (DbUpdateException ex) when (ex.InnerException is { HResult: -2147467259 })
         {
-            // Duplicate-key races are tolerated — mirrors
-            // EformParsedByServerHandler.cs:185-196.
-            if (ex.InnerException is { HResult: -2147467259 })
-            {
-                logger.LogInformation(
-                    "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists (race) — skipping",
-                    planning.Id, rotationDate);
-                return;
-            }
-            throw;
+            // UNIQUE index IX_PlanningId_Deadline collision — another
+            // concurrent ListEvents deploy beat us to the INSERT (both
+            // SELECTed null, both INSERTed). Benign: the other deploy
+            // produced a valid row. Log informational and skip.
+            logger.LogInformation(
+                "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} created by a concurrent deploy — skipping",
+                planning.Id, rotationDate);
         }
     }
 
