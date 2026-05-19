@@ -619,6 +619,22 @@ export class CalendarRepeatService {
     }
   }
 
+  /**
+   * Wire-format CSV for the request payload's `repeatWeekdaysCsv` field.
+   * Single-weekday rules store the chosen day in `meta.weekday` (singular),
+   * multi-day rules in `meta.weekdays` (plural array); the request payload
+   * has only the CSV field, so collapse both shapes here. Returns null for
+   * non-weekly metas (no weekday info to ship) and for null input.
+   */
+  metaToWeekdaysCsv(meta: CalendarRepeatMeta | null | undefined): string | null {
+    if (!meta) return null;
+    if (meta.weekdays?.length) return meta.weekdays.join(',');
+    if (meta.kind === 'weeklyOne' || meta.kind === 'everyNWeekOne') {
+      return meta.weekday != null ? `${meta.weekday}` : null;
+    }
+    return null;
+  }
+
   /** Convert a custom repeat config to a CalendarRepeatMeta */
   buildMetaFromCustomConfig(
     step: number,

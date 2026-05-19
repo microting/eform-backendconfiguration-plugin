@@ -658,12 +658,18 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       repeatEndMode,
       repeatOccurrences,
       repeatUntilDate,
-      // CSV of JS getDay() weekday indices for multi-day weekly custom rules.
-      // Sent as null for any non-custom rule (isCustomRule=false), which
-      // unconditionally clears any stale CSV the row may carry from a prior
-      // custom selection. See spec — Layer 3 / "explicit clearing rule".
-      repeatWeekdaysCsv: (isCustomRule && this.customRepeatMeta?.weekdays?.length)
-        ? this.customRepeatMeta.weekdays.join(',')
+      // CSV of JS getDay() weekday indices for weekly custom rules.
+      // Single-weekday rules (weeklyOne / everyNWeekOne) live in
+      // meta.weekday (singular); multi-day rules in meta.weekdays (plural).
+      // The service helper collapses both shapes into the wire format so
+      // a Tuesday-only pick doesn't ship as null (which would otherwise let
+      // the server-stored DayOfWeek default of 0 win on reload, showing
+      // "Sunday" instead of the picked weekday). Sent as null for any
+      // non-custom rule (isCustomRule=false), which unconditionally clears
+      // any stale CSV the row may carry from a prior custom selection.
+      // See spec — Layer 3 / "explicit clearing rule".
+      repeatWeekdaysCsv: isCustomRule
+        ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
         : null,
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
