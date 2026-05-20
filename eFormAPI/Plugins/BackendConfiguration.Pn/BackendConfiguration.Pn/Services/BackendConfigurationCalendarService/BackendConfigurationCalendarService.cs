@@ -320,8 +320,8 @@ public class BackendConfigurationCalendarService(
                         continue;
 
                     var effectiveDate = exception?.NewDate?.Date ?? occurrenceDate;
-                    var effectiveStartHour = exception?.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
-                    var effectiveDuration = exception?.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
+                    var effectiveStartHour = exception?.StartHour ?? calConfig?.StartHour ?? 9.0;
+                    var effectiveDuration = exception?.Duration ?? calConfig?.Duration ?? 1.0;
                     var effectiveAssignees = exception?.ExceptionSites is { Count: > 0 }
                         ? exception.ExceptionSites
                             .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -397,8 +397,8 @@ public class BackendConfigurationCalendarService(
                         // movedInExceptions pass at the destination week.
                         if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
 
-                        var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
-                        var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
+                        var orphanStartHour = orphan.StartHour ?? calConfig?.StartHour ?? 9.0;
+                        var orphanDuration = orphan.Duration ?? calConfig?.Duration ?? 1.0;
                         var orphanAssignees = orphan.ExceptionSites is { Count: > 0 }
                             ? orphan.ExceptionSites
                                 .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -483,8 +483,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp.Id,
                     Title = title,
-                    StartHour = movedIn.StartHour ?? (isAllDay ? 0 : movedCalConfig?.StartHour ?? 9.0),
-                    Duration = movedIn.Duration ?? (isAllDay ? 0 : movedCalConfig?.Duration ?? 1.0),
+                    StartHour = movedIn.StartHour ?? movedCalConfig?.StartHour ?? 9.0,
+                    Duration = movedIn.Duration ?? movedCalConfig?.Duration ?? 1.0,
                     TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
                     Tags = movedTags,
                     AssigneeIds = movedAssignees,
@@ -669,8 +669,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = compIsAllDay ? 0 : effectiveStartHour,
-                    Duration = compIsAllDay ? 0 : effectiveDuration,
+                    StartHour = effectiveStartHour,
+                    Duration = effectiveDuration,
                     TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
@@ -2661,8 +2661,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
-                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
+                    StartHour = calConfig?.StartHour ?? 9.0,
+                    Duration = calConfig?.Duration ?? 1.0,
                     TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
