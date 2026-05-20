@@ -262,7 +262,7 @@ public class EventsGrpcService(
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = task.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(task.StartHour),
                 TaskText = task.Title ?? string.Empty,
                 CalendarColor = task.Color ?? string.Empty,
                 Completed = task.Completed,
@@ -358,7 +358,7 @@ public class EventsGrpcService(
                 // mutating an old row in place. This matches the calendar
                 // path, which also fills plan_day_key with the row's date.
                 PlanDayKey = task.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(task.StartHour),
                 TaskText = task.Title ?? string.Empty,
                 CalendarColor = task.Color ?? string.Empty,
                 Completed = task.Completed,
@@ -1008,7 +1008,7 @@ public class EventsGrpcService(
                 EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = task.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(task.StartHour),
                 TaskText = task.Title ?? string.Empty,
                 CalendarColor = task.Color ?? string.Empty,
                 Completed = task.Completed,
@@ -1215,16 +1215,38 @@ public class EventsGrpcService(
         // track this value (see rationale block above); when no override is
         // sent it falls back to dayDoneAt so the default path is unchanged.
         var userModifiable = dayDoneAt;
-        if (!string.IsNullOrEmpty(request.DoneAtUserModifiable)
-            && DateTime.TryParseExact(
-                request.DoneAtUserModifiable, "yyyy-MM-dd",
-                CultureInfo.InvariantCulture, DateTimeStyles.None,
-                out var overrideDate))
+        if (!string.IsNullOrEmpty(request.DoneAtUserModifiable))
         {
-            userModifiable = new DateTime(
-                overrideDate.Year, overrideDate.Month, overrideDate.Day,
-                wall.Hour, wall.Minute, wall.Second,
-                DateTimeKind.Utc);
+            // Try full ISO datetime first: yyyy-MM-ddTHH:mm:ssZ.
+            // Worker-picked datetime overrides the wall-clock time too —
+            // this is the path used by the new editable planned-time chip
+            // (flutter-eform) which sends a full UTC datetime when the
+            // worker explicitly sets a time-of-day.
+            if (DateTime.TryParseExact(
+                    request.DoneAtUserModifiable,
+                    "yyyy-MM-ddTHH:mm:ssZ",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var overrideDateTime))
+            {
+                userModifiable = DateTime.SpecifyKind(overrideDateTime, DateTimeKind.Utc);
+            }
+            // Fall back to date-only: combine with wall-clock time-of-day
+            // for backward compatibility with older clients that send only
+            // the override DATE and expect the server to pick up the TIME
+            // from ClientTsUnix.
+            else if (DateTime.TryParseExact(
+                    request.DoneAtUserModifiable,
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var overrideDate))
+            {
+                userModifiable = new DateTime(
+                    overrideDate.Year, overrideDate.Month, overrideDate.Day,
+                    wall.Hour, wall.Minute, wall.Second,
+                    DateTimeKind.Utc);
+            }
         }
         // Wall-clock "when the worker actually closed this on the device" —
         // still used for the comment TsUnix audit trail below. DoneAt fields
@@ -1696,7 +1718,7 @@ public class EventsGrpcService(
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
                 CalendarColor = refreshedTask.Color ?? string.Empty,
                 Completed = true,
@@ -1896,7 +1918,7 @@ public class EventsGrpcService(
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
                 CalendarColor = refreshedTask.Color ?? string.Empty,
                 Completed = refreshedTask.Completed,
@@ -2169,7 +2191,7 @@ public class EventsGrpcService(
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
                 CalendarColor = refreshedTask.Color ?? string.Empty,
                 Completed = refreshedTask.Completed,
@@ -2760,6 +2782,18 @@ public class EventsGrpcService(
         return new RemovePhotoResponse();
     }
 
+    /// <summary>
+    /// Formats StartHour (fractional hour-of-day) as HH:mm; empty for NaN/Infinity/negative; hours wrap modulo 24.
+    /// </summary>
+    private static string FormatStartHour(double startHour)
+    {
+        if (double.IsNaN(startHour) || double.IsInfinity(startHour) || startHour < 0) return string.Empty;
+        var totalMinutes = (int)Math.Round(startHour * 60.0, MidpointRounding.AwayFromZero);
+        var hours = (totalMinutes / 60) % 24;
+        var minutes = totalMinutes % 60;
+        return $"{hours:D2}:{minutes:D2}";
+    }
+
     private static Event SynthesiseMinimalOpgave(
         int opgaveId, int propertyId, DateTime commentAtUtc, string trimmed)
     {
@@ -3066,7 +3100,7 @@ public class EventsGrpcService(
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
                 TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
-                PlannedAt = string.Empty,
+                PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
                 CalendarColor = refreshedTask.Color ?? string.Empty,
                 Completed = refreshedTask.Completed,
