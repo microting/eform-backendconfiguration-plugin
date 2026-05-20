@@ -1,0 +1,4 @@
+// display:contents lets the two controls join the parent toolbar's flex row
+// instead of forming a nested row (host + wrapper both bypass layout).
+:host { display: contents; }
+.filters-inline { display: contents; }

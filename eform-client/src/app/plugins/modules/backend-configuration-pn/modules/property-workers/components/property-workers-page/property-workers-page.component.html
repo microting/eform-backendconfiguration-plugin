@@ -1,54 +1,57 @@
 <eform-new-subheader>
-  <div class="d-flex flex-row flex-wrap align-items-center gap-12">
-    <div class="text-field--rounded mt-4">
-      <mat-form-field>
-        <mat-label>{{ 'Search' | translate }}</mat-label>
-        <input
-          matInput
-          type="text"
-          (ngModelChange)="onSearchChanged($event)"
-          [ngModel]="selectPropertyWorkersNameFilters$ | async"
-          id="labelInput"
-        />
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
+  <div class="d-flex flex-row align-items-end gap-12" style="flex: 99 1 0; min-width: 0;">
+    <div class="d-flex flex-row flex-wrap align-items-end gap-12" style="flex: 1 1 auto; min-width: 0;">
+      <div class="text-field--rounded mt-4">
+        <mat-form-field>
+          <mat-label>{{ 'Search' | translate }}</mat-label>
+          <input
+            matInput
+            type="text"
+            (ngModelChange)="onSearchChanged($event)"
+            [ngModel]="selectPropertyWorkersNameFilters$ | async"
+            id="labelInput"
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+      <div class="text-field--rounded mt-4">
+        <mat-form-field style="flex: 0 0 25%; min-width: 150px;">
+          <mat-label>{{ 'Tags' | translate }}</mat-label>
+          <mtx-select
+            [items]="availableTags"
+            bindLabel="name"
+            bindValue="id"
+            [multiple]="true"
+            [ngModel]="selectedTagIds"
+            (ngModelChange)="onTagsChanged($event)"
+            id="planningTags">
+          </mtx-select>
+        </mat-form-field>
+      </div>
+      <app-property-worker-filters
+        [properties]="availableProperties">
+      </app-property-worker-filters>
+      <button
+        class="btn-secondary btn-secondary--icon-left"
+        id="sitesManageTagsBtn"
+        (click)="openEditTagsModal()"
+        matTooltip="{{ 'Manage tags' | translate }}"
+      >
+        <mat-icon>label</mat-icon>
+        <span>{{ 'Tags' | translate }}</span>
+      </button>
+      <button
+        class="btn-primary btn-primary--icon-left"
+        (click)="exportCsv()"
+        matTooltip="{{ 'Export CSV' | translate }}"
+      >
+        <mat-icon>download</mat-icon>
+        <span>{{ 'Export CSV' | translate }}</span>
+      </button>
     </div>
-    <div class="line-vert"></div>
-    <div class="text-field--rounded mt-4">
-      <mat-form-field style="flex: 0 0 25%; min-width: 150px;">
-        <mat-label>{{ 'Tags' | translate }}</mat-label>
-        <mtx-select
-          [items]="availableTags"
-          bindLabel="name"
-          bindValue="id"
-          [multiple]="true"
-          [ngModel]="selectedTagIds"
-          (ngModelChange)="onTagsChanged($event)"
-          id="planningTags">
-        </mtx-select>
-      </mat-form-field>
-    </div>
-    <div class="line-vert"></div>
-    <button
-      class="btn-secondary btn-secondary--icon-left"
-      id="sitesManageTagsBtn"
-      (click)="openEditTagsModal()"
-      matTooltip="{{ 'Manage tags' | translate }}"
-    >
-      <mat-icon>label</mat-icon>
-      <span>{{ 'Tags' | translate }}</span>
-    </button>
     <button
       class="btn-primary btn-primary--icon-left"
-      (click)="exportCsv()"
-      matTooltip="{{ 'Export CSV' | translate }}"
-    >
-      <mat-icon>download</mat-icon>
-      <span>{{ 'Export CSV' | translate }}</span>
-    </button>
-    <div class="line-vert"></div>
-    <button
-      class="btn-primary btn-primary--icon-left"
+      style="flex-shrink: 0;"
       id="newDeviceUserBtn"
       *ngIf="selectCurrentUserClaimsDeviceUsersCreate$ | async"
       matTooltip="{{ 'Create new employee' | translate }}"
@@ -60,10 +63,6 @@
     </button>
   </div>
 </eform-new-subheader>
-
-<app-property-worker-filters
-  [properties]="availableProperties">
-</app-property-worker-filters>
 
 <app-property-worker-table
   (updateTable)="updateTable()"
