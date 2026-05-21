@@ -234,12 +234,6 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     return this.weekDays[this.getDayIndex(field)];
   }
 
-  isPastSlot(dayIndex: number, hour: number): boolean {
-    const slotDate = new Date(this.weekDays[dayIndex]);
-    slotDate.setHours(hour, 0, 0, 0);
-    return slotDate < new Date();
-  }
-
   onCellClick(event: MouseEvent) {
     if ((event.target as HTMLElement).closest('app-calendar-task-block')) return;
     const cell = event.currentTarget as HTMLElement;
