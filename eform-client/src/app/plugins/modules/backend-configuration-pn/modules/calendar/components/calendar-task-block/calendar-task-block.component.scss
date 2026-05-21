@@ -102,7 +102,8 @@
     // green so users can spot completion at a glance. The block also
     // dims to opacity 0.6 + line-through via .task-block.completed above,
     // but at 16px on the red background those are easy to miss.
-    // Hex from $eform-green in eform-client/src/scss/utilities/_colors.scss.
+    // #61BA5B matches the project's $eform-green palette token (used
+    // elsewhere in the frontend); grep $eform-green to find the source.
     &.done mat-icon {
       color: #61BA5B;
     }
