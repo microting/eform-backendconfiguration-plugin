@@ -3,6 +3,7 @@ using System.Text;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -96,6 +97,7 @@ public class CalendarAttachmentTests : TestBaseSetup
             _userService,
             BackendConfigurationPnDbContext!,
             new EFormCoreService(_sdkConnectionString),
+            Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             NullLogger<BackendConfigurationCalendarService>.Instance
