@@ -1701,25 +1701,20 @@ public class BackendConfigurationCalendarService(
             {
                 if (AnyMandatoryDataItem(dataElement.DataItemList)) return true;
 
-                if (AnyMandatoryInGroups(dataElement.DataItemGroupList)) return true;
+                // DataItemGroup in this SDK doesn't nest further groups
+                // (it has only DataItemList; groups-inside-groups isn't
+                // representable in the type), so a single-level walk
+                // covers every group-scoped field.
+                if (dataElement.DataItemGroupList != null)
+                {
+                    foreach (var group in dataElement.DataItemGroupList)
+                    {
+                        if (AnyMandatoryDataItem(group?.DataItemList)) return true;
+                    }
+                }
             }
         }
 
-        return false;
-    }
-
-    // Recursive group walk: a DataItemGroup can contain its own nested
-    // DataItemGroupList (groups inside groups). Without this recursion a
-    // mandatory field one level deep would be silently treated as absent.
-    private static bool AnyMandatoryInGroups(List<DataItemGroup> groups)
-    {
-        if (groups == null) return false;
-        foreach (var group in groups)
-        {
-            if (group == null) continue;
-            if (AnyMandatoryDataItem(group.DataItemList)) return true;
-            if (AnyMandatoryInGroups(group.DataItemGroupList)) return true;
-        }
         return false;
     }
 
