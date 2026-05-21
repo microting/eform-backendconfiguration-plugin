@@ -320,8 +320,8 @@ public class BackendConfigurationCalendarService(
                         continue;
 
                     var effectiveDate = exception?.NewDate?.Date ?? occurrenceDate;
-                    var effectiveStartHour = exception?.StartHour ?? calConfig?.StartHour ?? 9.0;
-                    var effectiveDuration = exception?.Duration ?? calConfig?.Duration ?? 1.0;
+                    var effectiveStartHour = exception?.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                    var effectiveDuration = exception?.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
                     var effectiveAssignees = exception?.ExceptionSites is { Count: > 0 }
                         ? exception.ExceptionSites
                             .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -397,8 +397,8 @@ public class BackendConfigurationCalendarService(
                         // movedInExceptions pass at the destination week.
                         if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
 
-                        var orphanStartHour = orphan.StartHour ?? calConfig?.StartHour ?? 9.0;
-                        var orphanDuration = orphan.Duration ?? calConfig?.Duration ?? 1.0;
+                        var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                        var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
                         var orphanAssignees = orphan.ExceptionSites is { Count: > 0 }
                             ? orphan.ExceptionSites
                                 .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -483,8 +483,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp.Id,
                     Title = title,
-                    StartHour = movedIn.StartHour ?? movedCalConfig?.StartHour ?? 9.0,
-                    Duration = movedIn.Duration ?? movedCalConfig?.Duration ?? 1.0,
+                    StartHour = movedIn.StartHour ?? (isAllDay ? 0 : movedCalConfig?.StartHour ?? 9.0),
+                    Duration = movedIn.Duration ?? (isAllDay ? 0 : movedCalConfig?.Duration ?? 1.0),
                     TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
                     Tags = movedTags,
                     AssigneeIds = movedAssignees,
@@ -669,8 +669,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = effectiveStartHour,
-                    Duration = effectiveDuration,
+                    StartHour = compIsAllDay ? 0 : effectiveStartHour,
+                    Duration = compIsAllDay ? 0 : effectiveDuration,
                     TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
@@ -788,9 +788,14 @@ public class BackendConfigurationCalendarService(
             {
                 // Persist repeat-end and weekday-CSV fields. The CSV column is
                 // always written (including null) so changing a multi-day
-                // weekly back to a single-day rule clears the stale list.
+                // weekly back to a single-day rule clears the stale list. The
+                // DayOfMonth column follows the same "always clear stale"
+                // rule — switching from monthly back to weekly nukes the
+                // previously-saved DOM, so a future switch-back-to-monthly
+                // doesn't silently resurrect a stale value.
                 var hasRepeatEndChange = createModel.RepeatEndMode.HasValue;
                 latestArp.RepeatWeekdaysCsv = createModel.RepeatWeekdaysCsv;
+                latestArp.DayOfMonth = createModel.DayOfMonth ?? 0;
                 if (hasRepeatEndChange)
                 {
                     latestArp.RepeatEndMode = createModel.RepeatEndMode;
@@ -894,10 +899,11 @@ public class BackendConfigurationCalendarService(
                     && x.WorkflowState != Constants.WorkflowStates.Removed);
             if (arp != null)
             {
-                // Write end-mode fields unconditionally so switching from
-                // 'after 10' or 'until <date>' back to 'never' clears the
-                // stale cap. Same rationale as RepeatWeekdaysCsv above.
+                // Write end-mode + recurrence fields unconditionally so
+                // switching kinds clears stale state. Same rationale as
+                // RepeatWeekdaysCsv above; DayOfMonth follows the same rule.
                 arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
+                arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
                 arp.RepeatEndMode = updateModel.RepeatEndMode;
                 arp.RepeatOccurrences = updateModel.RepeatOccurrences;
                 arp.RepeatUntilDate = updateModel.RepeatUntilDate;
@@ -1556,10 +1562,191 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationResult> ToggleComplete(int id, bool completed)
+    public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(int id, bool completed, int? complianceId)
     {
-        // TODO: Implement completion toggle via Compliance system
-        return new OperationResult(true);
+        // Calendar "complete from indicator" — resolves the specific Compliance
+        // occurrence the user clicked (via complianceId from the calendar
+        // response), then either completes the SDK case in place (no mandatory
+        // fields) or returns RequiresForm=true with the route params the
+        // frontend needs to open the compliance form.
+        // See spec: docs/superpowers/specs/2026-05-21-calendar-complete-case-from-indicator-design.md
+        try
+        {
+            if (!completed)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("UncompleteNotSupported"));
+            }
+
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (arp == null)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            // Non-compliance events have no Compliance row to target; bail
+            // before the lookup so the frontend gets a deterministic "no-op"
+            // result without scanning the table.
+            if (complianceId == null || complianceId.Value <= 0)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("TaskHasNoComplianceCase"));
+            }
+
+            // Look up the SPECIFIC compliance row the user clicked. Previously
+            // this queried by PlanningId and took "latest by Deadline" — that
+            // silently picked the wrong week when a planning had multiple
+            // compliance occurrences (e.g. an overdue January row alongside a
+            // pending May row), completing or navigating to the wrong case.
+            var compliance = await backendConfigurationPnDbContext.Compliances
+                .Where(c => c.Id == complianceId.Value
+                         && c.PlanningId == arp.ItemPlanningId
+                         && c.WorkflowState != Constants.WorkflowStates.Removed
+                         && c.MicrotingSdkCaseId > 0)
+                .FirstOrDefaultAsync();
+
+            if (compliance == null)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("TaskHasNoComplianceCase"));
+            }
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+
+            var sdkCase = await sdkDbContext.Cases
+                .FirstOrDefaultAsync(c => c.Id == compliance.MicrotingSdkCaseId);
+
+            if (sdkCase == null)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("SdkCaseNotFound"));
+            }
+
+            // No CheckListId → no template to inspect; treat as form-required so the
+            // user opens the case form path (which has its own error handling).
+            if (sdkCase.CheckListId == null)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                    localizationService.GetString("SdkCaseNotFound"));
+            }
+
+            var hasMandatory = await HasMandatoryFields(sdkCore, sdkCase.CheckListId.Value)
+                .ConfigureAwait(false);
+
+            if (hasMandatory)
+            {
+                return new OperationDataResult<CalendarToggleCompleteResult>(true,
+                    new CalendarToggleCompleteResult
+                    {
+                        RequiresForm = true,
+                        SdkCaseId = sdkCase.Id,
+                        TemplateId = sdkCase.CheckListId,
+                        PropertyId = compliance.PropertyId,
+                        ComplianceId = compliance.Id,
+                        WorkerId = sdkCase.SiteId,
+                        // ISO 8601 with millisecond precision to match the format
+                        // the task-tracker uses (`task.deadlineTask.toISOString()`
+                        // at task-tracker-table.component.ts:187). The
+                        // compliance-case route resolver expects this shape.
+                        //
+                        // Compliance.Deadline is persisted as DateTimeKind.Unspecified
+                        // but semantically holds a UTC instant (matches how the
+                        // existing code in this file treats it — e.g. the week-range
+                        // filter at line 86). Calling ToUniversalTime() on an
+                        // Unspecified-kind would *shift* by the server's local
+                        // offset; SpecifyKind(..., Utc) re-tags without shifting,
+                        // then ToString("…Z") just emits the raw clock value as UTC.
+                        Deadline = DateTime.SpecifyKind(compliance.Deadline, DateTimeKind.Utc)
+                            .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture)
+                    });
+            }
+
+            // No mandatory fields → complete the SDK case in place. Mirrors
+            // CompliancesGrpcService:159-174 (the form-submit path).
+            sdkCase.Status = 100;
+            sdkCase.WorkflowState = Constants.WorkflowStates.Created;
+            await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
+
+            return new OperationDataResult<CalendarToggleCompleteResult>(true,
+                new CalendarToggleCompleteResult
+                {
+                    RequiresForm = false
+                });
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.ToggleComplete: {Message}", e.Message);
+            return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                $"{localizationService.GetString("ErrorWhileUpdatingCalendarTask")}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Returns true iff the eForm template referenced by <paramref name="checkListId"/>
+    /// contains at least one mandatory <see cref="Field"/>. Recurses through
+    /// <see cref="FieldContainer"/> so grouped/container-nested fields are inspected too.
+    /// Used by <see cref="ToggleComplete"/> to decide whether the calendar can complete
+    /// the case in place or must hand the user off to the form route.
+    /// </summary>
+    private async Task<bool> HasMandatoryFields(eFormCore.Core core, int checkListId)
+    {
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
+        var mainElement = await core.ReadeForm(checkListId, language).ConfigureAwait(false);
+
+        if (mainElement?.ElementList == null) return false;
+
+        foreach (var element in mainElement.ElementList)
+        {
+            if (element is DataElement dataElement)
+            {
+                if (AnyMandatoryDataItem(dataElement.DataItemList)) return true;
+
+                // DataItemGroup in this SDK doesn't nest further groups
+                // (it has only DataItemList; groups-inside-groups isn't
+                // representable in the type), so a single-level walk
+                // covers every group-scoped field.
+                if (dataElement.DataItemGroupList != null)
+                {
+                    foreach (var group in dataElement.DataItemGroupList)
+                    {
+                        if (AnyMandatoryDataItem(group?.DataItemList)) return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool AnyMandatoryDataItem(List<DataItem> items)
+    {
+        if (items == null) return false;
+
+        foreach (var item in items)
+        {
+            if (item == null) continue;
+
+            // Containers (FieldContainer / group-as-container) hold nested items; recurse
+            // before checking Mandatory so a container itself with Mandatory=false doesn't
+            // mask a mandatory child.
+            if (item is FieldContainer container)
+            {
+                if (AnyMandatoryDataItem(container.DataItemList)) return true;
+                continue;
+            }
+
+            if (item.Mandatory) return true;
+        }
+
+        return false;
     }
 
     public async Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId)
@@ -2661,8 +2848,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = calConfig?.StartHour ?? 9.0,
-                    Duration = calConfig?.Duration ?? 1.0,
+                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
                     TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
