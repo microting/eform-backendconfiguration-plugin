@@ -122,7 +122,8 @@ public class EventDeployService(
         var candidates = calendarResult.Model
             .Where(t => t.PlanningId.HasValue)
             .Where(t => t.EformId.HasValue && t.EformId.Value > 0)
-            .Where(t => !t.IsFromCompliance) // rows already backed by a Compliance need no deploy
+            .Where(t => !t.IsFromCompliance
+                        || t.SdkCaseId.GetValueOrDefault() == 0) // recurrence-only OR stuck Compliance (SdkCaseId not yet assigned)
             .Select(t => new
             {
                 Task = t,
@@ -187,12 +188,22 @@ public class EventDeployService(
                 //    is keyed on PlanningId + Deadline; we additionally scope
                 //    to the requested sdk site below when locating the
                 //    PlanningCaseSite).
+                //    The slot is "taken — skip" if it's soft-removed (user
+                //    already completed this rotation; the SDK Case still
+                //    exists, just the Compliance was retracted) OR fully
+                //    deployed (MicrotingSdkCaseId > 0). We re-deploy ONLY for
+                //    the genuine stuck-row shape: Created + MicrotingSdkCaseId
+                //    == 0, where an earlier deploy left a Compliance row
+                //    behind without an SDK Case (e.g. the SDK 10.0.27 EndDate
+                //    validation bug). EnsureComplianceRowAsync revives that
+                //    row in place via the duplicate-key catch.
                 var alreadyDeployed = await dbContext.Compliances
                     .AsNoTracking()
                     .AnyAsync(c =>
                             c.PlanningId == planningId
                             && c.Deadline.Date == rotationDate
-                            && c.WorkflowState != Constants.WorkflowStates.Removed,
+                            && (c.WorkflowState == Constants.WorkflowStates.Removed
+                                || c.MicrotingSdkCaseId > 0),
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (alreadyDeployed)
@@ -391,18 +402,18 @@ public class EventDeployService(
         //    rotationDate semantics.
         if (mainElement.EndDate > DateTime.UtcNow)
         {
-            var caseId = await sdkCore.CaseCreate(
+            // CaseCreateLocalOnly returns the SDK Case.Id directly (no
+            // MicrotingUid → Id lookup needed) AND skips the cloud XML
+            // deploy that the standard CaseCreate path performs. Mirrors
+            // the fix from PR #829.
+            var caseId = await sdkCore.CaseCreateLocalOnly(
                 mainElement, "", (int)sdkSite.MicrotingUid!, null)
                 .ConfigureAwait(false);
 
             if (caseId != null)
             {
-                var caseDto = await sdkCore.CaseLookupMUId((int)caseId).ConfigureAwait(false);
-                if (caseDto?.CaseId != null)
-                {
-                    planningCaseSite.MicrotingSdkCaseId = (int)caseDto.CaseId;
-                    await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
+                planningCaseSite.MicrotingSdkCaseId = (int)caseId;
+                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
         }
 
