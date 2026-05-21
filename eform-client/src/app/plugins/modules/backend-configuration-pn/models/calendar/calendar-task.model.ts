@@ -98,12 +98,18 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _colCount: number;
 }
 
-// Result returned by `PUT /calendar/tasks/{id}/complete`. When the indicator
-// is clicked on a compliance-backed event the backend cannot complete the
-// case server-side — it returns `requiresForm: true` plus the routing
-// payload so the frontend can navigate to the compliance/case form. For a
-// regular (non-compliance) toggle the backend just persists the state and
-// returns `requiresForm: false`.
+// Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the
+// frontend has to handle:
+//  1) success && requiresForm === true — the linked eForm has mandatory
+//     fields; the rest of the fields carry the route params for the
+//     compliance/case form. Frontend navigates.
+//  2) success && requiresForm === false — the eForm has no mandatory
+//     fields; the backend already set Case.Status = 100 in place.
+//     Frontend reloads the calendar so the event re-renders as completed.
+//  3) success === false (carried on the wrapping OperationDataResult, not
+//     this model) — covers non-compliance taps (TaskHasNoComplianceCase),
+//     missing planning, uncomplete attempt, etc. Frontend silently no-ops
+//     today; existing failure-path UX.
 export interface CalendarToggleCompleteResult {
   requiresForm: boolean;
   sdkCaseId?: number;

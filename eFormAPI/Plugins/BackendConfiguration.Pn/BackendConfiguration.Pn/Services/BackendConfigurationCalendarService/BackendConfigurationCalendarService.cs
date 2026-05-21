@@ -1654,7 +1654,15 @@ public class BackendConfigurationCalendarService(
                         // the task-tracker uses (`task.deadlineTask.toISOString()`
                         // at task-tracker-table.component.ts:187). The
                         // compliance-case route resolver expects this shape.
-                        Deadline = compliance.Deadline.ToUniversalTime()
+                        //
+                        // Compliance.Deadline is persisted as DateTimeKind.Unspecified
+                        // but semantically holds a UTC instant (matches how the
+                        // existing code in this file treats it — e.g. the week-range
+                        // filter at line 86). Calling ToUniversalTime() on an
+                        // Unspecified-kind would *shift* by the server's local
+                        // offset; SpecifyKind(..., Utc) re-tags without shifting,
+                        // then ToString("…Z") just emits the raw clock value as UTC.
+                        Deadline = DateTime.SpecifyKind(compliance.Deadline, DateTimeKind.Utc)
                             .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture)
                     });
             }

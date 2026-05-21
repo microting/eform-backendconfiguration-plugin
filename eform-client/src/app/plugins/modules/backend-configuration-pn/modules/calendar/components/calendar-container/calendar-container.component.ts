@@ -554,6 +554,14 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // case route used by the task-tracker (see
   // task-tracker-table.component.ts:179 for the canonical shape).
   onCompleteRequiresForm(p: CalendarToggleCompleteResult) {
+    // Guard against the backend returning requiresForm=true without all
+    // route params populated. Angular's Router serialises undefined segments
+    // literally ("…/undefined/…") and the form would 404; better to bail
+    // and let the user retry than to ship a broken URL.
+    if (p.sdkCaseId == null || p.templateId == null || p.propertyId == null
+        || p.complianceId == null || p.workerId == null || !p.deadline) {
+      return;
+    }
     this.router.navigate([
       '/plugins/backend-configuration-pn/compliances/case',
       p.sdkCaseId, p.templateId, p.propertyId, p.deadline, false,
