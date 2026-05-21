@@ -52,4 +52,14 @@
   .spacer {
     flex: 1;
   }
+
+  // The view-mode dropdown (Dag / Uge / Tidsplan) — the global mtx-select
+  // form-field cap makes the trigger shrink to the currently-selected
+  // label's width, which leaves the arrow overlapping "Uge". Pin a
+  // min-width sized for the longest option ("Tidsplan" renders ~66 px;
+  // plus arrow + form-field padding ≈ 120 px) so the trigger fits every
+  // option label without re-flowing as the user switches views.
+  .text-field--rounded {
+    min-width: 120px;
+  }
 }
