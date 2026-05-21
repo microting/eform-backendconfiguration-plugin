@@ -80,6 +80,11 @@ export class CalendarTaskBlockComponent {
 
   onCompletionClick(event: MouseEvent) {
     event.stopPropagation();
+    // Once completed, the indicator becomes inert — uncompletion is not
+    // supported (the SDK case status is one-way; mirrors the backend
+    // UncompleteNotSupported guard) and a click should be a no-op rather
+    // than firing a doomed HTTP round-trip.
+    if (this.task.completed) return;
     this.toggleComplete.emit(this.task);
   }
 

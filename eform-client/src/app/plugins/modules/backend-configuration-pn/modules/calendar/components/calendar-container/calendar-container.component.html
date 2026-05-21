@@ -81,6 +81,7 @@
         [boards]="boards"
         (taskClicked)="onTaskClickedFromGrid($event)"
         (tasksReload)="loadTasks()"
+        (completeRequiresForm)="onCompleteRequiresForm($event)"
       ></app-calendar-schedule-view>
     </ng-container>
   </div>

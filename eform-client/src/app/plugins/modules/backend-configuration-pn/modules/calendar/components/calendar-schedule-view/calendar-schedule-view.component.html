@@ -12,6 +12,14 @@
       [style.border-left-color]="task.color"
       (click)="onTaskClicked(task, $event)"
     >
+      <button
+        class="completion-btn"
+        [class.done]="task.completed"
+        (click)="onCompletionClick(task, $event)"
+        [title]="task.completed ? ('Completed' | translate) : ('Mark as completed' | translate)"
+      >
+        <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+      </button>
       <div class="task-time">{{ task.startText }} – {{ task.endText }}</div>
       <div class="task-info">
         <span class="task-title" [class.completed]="task.completed">{{ task.title }}</span>

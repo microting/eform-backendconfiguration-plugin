@@ -29,6 +29,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -94,12 +95,17 @@ public class EventDeployServiceTest : TestBaseSetup
         IBackendConfigurationCalendarService calendar,
         IEFormCoreService coreHelper,
         ILogger<EventDeployService>? logger = null)
-        => new(
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(calendar);
+        var sp = services.BuildServiceProvider();
+        return new EventDeployService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
             coreHelper,
-            calendar,
+            sp,
             logger ?? NullLogger<EventDeployService>.Instance);
+    }
 
     /// <summary>
     /// Factory for the rotation DTO that every test arranges. Defaults match the

@@ -86,7 +86,8 @@ public class CalendarController : Controller
     [HttpPut("tasks/{id:int}/complete")]
     public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(int id, [FromBody] CalendarToggleCompleteModel model)
     {
-        return await _backendConfigurationCalendarService.ToggleComplete(id, model.Completed, model.ComplianceId);
+        return await _backendConfigurationCalendarService.ToggleComplete(
+            id, model.Completed, model.ComplianceId, model.OccurrenceDate);
     }
 
     [HttpPost("tasks/{id:int}/files")]

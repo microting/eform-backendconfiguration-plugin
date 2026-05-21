@@ -512,7 +512,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     // the rule, the ComplianceId to pick the exact occurrence the user
     // clicked (multiple compliance rows can share a planning when the
     // event recurs).
-    this.calendarService.toggleComplete(task.id, !task.completed, task.complianceId).subscribe(res => {
+    this.calendarService.toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate).subscribe(res => {
       if (!res?.success) return;
       if (res.model?.requiresForm) {
         this.completeRequiresForm.emit(res.model);

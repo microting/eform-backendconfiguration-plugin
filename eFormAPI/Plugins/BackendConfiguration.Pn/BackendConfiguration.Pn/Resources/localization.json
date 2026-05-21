@@ -5027,6 +5027,37 @@
     }
   },
   {
+    "Key": "NoAssignedWorker",
+    "LocalizedValue": {
+      "en-US": "This event has no assigned worker",
+      "da": "Denne begivenhed har ingen tildelt medarbejder",
+      "de": "Für diese Veranstaltung ist kein Mitarbeiter zugewiesen.",
+      "uk-UA": "Для цієї події не призначено жодного працівника",
+      "pl-PL": "To wydarzenie nie ma przypisanego pracownika",
+      "no-NO": "Denne hendelsen har ingen tildelt arbeider",
+      "sv-SE": "Denna händelse har ingen tilldelad arbetare",
+      "es-ES": "Este evento no tiene ningún trabajador asignado.",
+      "fr-FR": "Aucun travailleur n&#39;est assigné à cet événement.",
+      "it-IT": "A questo evento non è stato assegnato alcun lavoratore.",
+      "nl-NL": "Aan dit evenement is geen medewerker toegewezen.",
+      "pt-BR": "Este evento não tem nenhum trabalhador atribuído.",
+      "pt-PT": "Este evento não tem nenhum trabalhador atribuído.",
+      "fi-FI": "Tälle tapahtumalle ei ole määritetty työntekijää",
+      "et-ET": "Sellel sündmusel pole määratud töötajat",
+      "lv-LV": "Šim notikumam nav piešķirts darbinieks",
+      "lt-LT": "Šiam įvykiui nėra priskirto darbuotojo",
+      "ro-RO": "Acest eveniment nu are niciun lucrător atribuit",
+      "hr-HR": "Ovaj događaj nema dodijeljenog radnika",
+      "sl-SL": "Ta dogodek nima dodeljenega delavca",
+      "cs-CZ": "Tato událost nemá přiřazeného pracovníka.",
+      "sk-SK": "Táto udalosť nemá priradeného pracovníka",
+      "hu-HU": "Ehhez az eseményhez nincs hozzárendelve dolgozó",
+      "bg-BG": "Това събитие няма назначен служител",
+      "el-GR": "Αυτό το συμβάν δεν έχει ανατεθειμένο εργαζόμενο",
+      "is-IS": "Þessi viðburður hefur engan úthlutaðan starfsmann"
+    }
+  },
+  {
     "Key": "SdkCaseNotFound",
     "LocalizedValue": {
       "en-US": "The compliance case could not be found",
