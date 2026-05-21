@@ -1,6 +1,7 @@
 import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
+import {Router} from '@angular/router';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
@@ -14,6 +15,7 @@ import {
   CalendarRepeatRule,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
+  CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
@@ -85,6 +87,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private eformService: EFormService,
     private dialog: MatDialog,
     private store: Store,
+    private router: Router,
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => this.isAdmin = isAdmin);
@@ -542,6 +545,20 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     } else {
       doResize('this');
     }
+  }
+
+  // Compliance-backed events can't be completed via the calendar indicator
+  // alone — the underlying SDK case still needs the form submitted. The
+  // backend signals this with `requiresForm: true` on the toggle response
+  // and includes the routing payload; we navigate to the same compliance/
+  // case route used by the task-tracker (see
+  // task-tracker-table.component.ts:179 for the canonical shape).
+  onCompleteRequiresForm(p: CalendarToggleCompleteResult) {
+    this.router.navigate([
+      '/plugins/backend-configuration-pn/compliances/case',
+      p.sdkCaseId, p.templateId, p.propertyId, p.deadline, false,
+      p.complianceId, p.workerId,
+    ]);
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

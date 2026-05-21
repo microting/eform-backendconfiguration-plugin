@@ -26,7 +26,6 @@
       class="completion-btn"
       [class.done]="task.completed"
       (click)="onCompletionClick($event)"
-      [disabled]="task.isFromCompliance === true"
       [title]="task.completed ? ('Mark as not completed' | translate) : ('Mark as completed' | translate)"
     >
       <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>

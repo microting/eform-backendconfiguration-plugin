@@ -97,3 +97,19 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _colIndex: number;
   _colCount: number;
 }
+
+// Result returned by `PUT /calendar/tasks/{id}/complete`. When the indicator
+// is clicked on a compliance-backed event the backend cannot complete the
+// case server-side — it returns `requiresForm: true` plus the routing
+// payload so the frontend can navigate to the compliance/case form. For a
+// regular (non-compliance) toggle the backend just persists the state and
+// returns `requiresForm: false`.
+export interface CalendarToggleCompleteResult {
+  requiresForm: boolean;
+  sdkCaseId?: number;
+  templateId?: number;
+  propertyId?: number;
+  complianceId?: number;
+  workerId?: number;
+  deadline?: string;
+}

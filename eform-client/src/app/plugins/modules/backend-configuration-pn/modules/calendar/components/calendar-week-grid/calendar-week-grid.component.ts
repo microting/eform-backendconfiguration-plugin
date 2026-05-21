@@ -15,7 +15,7 @@ import {
 import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
-import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
+import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel, CalendarToggleCompleteResult} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {BackendConfigurationPnCalendarService} from '../../../../services';
 import {HOUR_HEIGHT, TaskResizePayload} from '../calendar-task-block/calendar-task-block.component';
@@ -50,6 +50,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Output() taskMoved = new EventEmitter<{taskId: number; newDate: string; newStartHour: number; repeatSeriesId?: string; originalDate: string}>();
   @Output() taskResized = new EventEmitter<{taskId: number; newStartHour: number; newDuration: number; repeatSeriesId?: string; originalDate: string}>();
   @Output() tasksReload = new EventEmitter<void>();
+  @Output() completeRequiresForm = new EventEmitter<CalendarToggleCompleteResult>();
 
   private destroy$ = new Subject<void>();
   readonly hourHeight = HOUR_HEIGHT;
@@ -500,8 +501,18 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   }
 
   onTaskToggleComplete(task: CalendarTaskLayoutModel) {
-    this.calendarService.toggleComplete(task.id, !task.completed).subscribe(res => {
-      if (res && res.success) this.tasksReload.emit();
+    // Pass the SPECIFIC compliance row's id along with the planning's
+    // task id. The backend needs both: the AreaRulePlanning to locate
+    // the rule, the ComplianceId to pick the exact occurrence the user
+    // clicked (multiple compliance rows can share a planning when the
+    // event recurs).
+    this.calendarService.toggleComplete(task.id, !task.completed, task.complianceId).subscribe(res => {
+      if (!res?.success) return;
+      if (res.model?.requiresForm) {
+        this.completeRequiresForm.emit(res.model);
+        return;
+      }
+      this.tasksReload.emit();
     });
   }
 
