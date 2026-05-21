@@ -353,7 +353,6 @@ export const hrHR = {
   Yearly: 'Godišnje',
   Custom: 'Običaj',
   'Custom…': 'Običaj…',
-  'Repeat': 'Ponovi',
   'Does not repeat': 'Ne ponavlja se',
   'Weekly on {{day}}': 'Tjedno u {{day}}',
   'Monthly on day {{day}}': 'Mjesečno, na dan {{day}}',

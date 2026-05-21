@@ -353,7 +353,6 @@ export const ltLT = {
   Yearly: 'Metinis',
   Custom: 'Pasirinktinis',
   'Custom…': 'Pasirinktinis…',
-  'Repeat': 'Kartoti',
   'Does not repeat': 'Nesikartoja',
   'Weekly on {{day}}': 'Kas savaitę, {{day}} dieną',
   'Monthly on day {{day}}': 'Mėnesio {{day}} dieną',

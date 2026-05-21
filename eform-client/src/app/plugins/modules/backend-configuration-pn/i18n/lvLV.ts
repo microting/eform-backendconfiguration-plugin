@@ -353,7 +353,6 @@ export const lvLV = {
   Yearly: 'Katru gadu',
   Custom: 'Pielāgots',
   'Custom…': 'Pielāgots…',
-  'Repeat': 'Atkārtot',
   'Does not repeat': 'Neatkārtojas',
   'Weekly on {{day}}': 'Katru nedēļu {{day}} dienā',
   'Monthly on day {{day}}': 'Mēneša {{day}}. dienā',

@@ -353,7 +353,6 @@ export const ptBR = {
   Yearly: 'Anual',
   Custom: 'Personalizado',
   'Custom…': 'Personalizado…',
-  'Repeat': 'Repetir',
   'Does not repeat': 'Não se repete',
   'Weekly on {{day}}': 'Semanalmente em {{day}}',
   'Monthly on day {{day}}': 'Mensalmente no dia {{day}}',

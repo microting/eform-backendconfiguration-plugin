@@ -355,7 +355,6 @@ export const noNO = {
   Yearly: 'Årlig',
   Custom: 'Skikk',
   'Custom…': 'Skikk…',
-  'Repeat': 'Gjenta',
   'Does not repeat': 'Gjentas ikke',
   'Weekly on {{day}}': 'Ukentlig på {{day}}',
   'Monthly on day {{day}}': 'Månedlig på dag {{day}}',

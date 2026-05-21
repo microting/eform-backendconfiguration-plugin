@@ -353,7 +353,6 @@ export const bgBG = {
   Yearly: 'Годишно',
   Custom: 'Персонализирано',
   'Custom…': 'Персонализирано…',
-  'Repeat': 'Повтори',
   'Does not repeat': 'Не се повтаря',
   'Weekly on {{day}}': 'Седмично на {{day}}',
   'Monthly on day {{day}}': 'Месечно на ден {{day}}',

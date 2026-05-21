@@ -356,7 +356,6 @@ export const da = {
   Yearly: 'Årligt',
   Custom: 'Tilpasset',
   'Custom…': 'Tilpasset…',
-  'Repeat': 'Gentag',
   'Does not repeat': 'Gentages ikke',
   'Weekly on {{day}}': 'Ugentligt på {{day}}',
   'Monthly on day {{day}}': 'Månedligt på dag {{day}}',

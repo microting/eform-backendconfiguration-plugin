@@ -333,7 +333,6 @@ export const frFR = {
   Yearly: 'Annuel',
   Custom: 'Coutume',
   'Custom…': 'Coutume…',
-  'Repeat': 'Répéter',
   'Does not repeat': 'Ne se répète pas',
   'Weekly on {{day}}': 'Hebdomadaire le {{day}}',
   'Monthly on day {{day}}': 'Mensuellement le jour {{day}}',

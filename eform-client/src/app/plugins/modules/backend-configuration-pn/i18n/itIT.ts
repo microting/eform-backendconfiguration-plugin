@@ -337,7 +337,6 @@ export const itIT = {
   Yearly: 'Annuale',
   Custom: 'Costume',
   'Custom…': 'Costume…',
-  'Repeat': 'Ripeti',
   'Does not repeat': 'Non si ripete',
   'Weekly on {{day}}': 'Settimanalmente il {{day}}',
   'Monthly on day {{day}}': 'Mensile il giorno {{day}}',

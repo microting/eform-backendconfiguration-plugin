@@ -353,7 +353,6 @@ export const huHU = {
   Yearly: 'Évi',
   Custom: 'Szokás',
   'Custom…': 'Szokás…',
-  'Repeat': 'Ismétlés',
   'Does not repeat': 'Nem ismétlődik',
   'Weekly on {{day}}': 'Heti {{day}} napon',
   'Monthly on day {{day}}': 'Havonta a {{day}}. napon',
