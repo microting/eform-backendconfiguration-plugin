@@ -204,13 +204,25 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     );
   }
 
+  // Accessible label used as the column header text (mtx-grid falls back to
+  // this string when the visual headerTemplate isn't rendered, and screen
+  // readers announce it). The visual is a two-line stack rendered by the
+  // dayHeaderTpl template — today is signaled by a circular pill, so we no
+  // longer collapse today's label to "I dag" here.
   getDateLabel(date: Date): string {
-    if (this.isToday(date)) return this.translate.instant('Today');
     const locale = getCurrentLocale(this.translate);
-    const weekday = date.toLocaleDateString(locale, {weekday: 'short'});
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    return `${weekday} ${day}/${month}`;
+    const weekday = date.toLocaleDateString(locale, {weekday: 'long'});
+    const month = date.toLocaleDateString(locale, {month: 'long'});
+    const label = `${weekday} ${date.getDate()}. ${month} ${date.getFullYear()}`;
+    return this.isToday(date)
+      ? `${label}, ${this.translate.instant('Today')}`
+      : label;
+  }
+
+  getWeekdayShort(date: Date): string {
+    if (!date) return '';
+    const locale = getCurrentLocale(this.translate);
+    return date.toLocaleDateString(locale, {weekday: 'short'});
   }
 
   getDayIndex(field: string): number {

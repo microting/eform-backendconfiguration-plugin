@@ -20,7 +20,8 @@
     [pageOnFront]="false"
     [rowStriped]="false"
     [showToolbar]="false"
-    [columnResizable]="false">
+    [columnResizable]="false"
+    [headerTemplate]="dayHeaderTpl">
   </mtx-grid>
   <div
     class="selection-indicator"
@@ -54,6 +55,20 @@
     </div>
   </div>
 </div>
+
+<ng-template #dayHeaderTpl let-col="colDef">
+  <div class="calendar-day-header"
+       *ngIf="col && col.field !== 'time-axis'"
+       [class.calendar-day-header--today]="isToday(getDayDate(col.field))">
+    <span class="cdk-visually-hidden">{{ getDateLabel(getDayDate(col.field)) }}</span>
+    <span class="day-header-weekday" aria-hidden="true">{{ getWeekdayShort(getDayDate(col.field)) | uppercase }}</span>
+    <span class="day-header-number"
+          aria-hidden="true"
+          [class.day-header-number--today]="isToday(getDayDate(col.field))">
+      {{ getDayDate(col.field).getDate() }}
+    </span>
+  </div>
+</ng-template>
 
 <ng-template #timeAxisTpl>
   <div class="time-body" [style.height.px]="hourHeight * 24">
