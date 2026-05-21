@@ -353,6 +353,7 @@ export const etET = {
   Yearly: 'Aastas',
   Custom: 'Kohandatud',
   'Custom…': 'Kohandatud…',
+  'Repeat': 'Korda',
   'Does not repeat': 'Ei kordu',
   'Weekly on {{day}}': 'Iganädalaselt {{day}} päeval',
   'Monthly on day {{day}}': 'Iga kuu {{day}} päeval',

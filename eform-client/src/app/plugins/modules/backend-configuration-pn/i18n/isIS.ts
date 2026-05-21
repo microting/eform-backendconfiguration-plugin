@@ -353,6 +353,7 @@ export const isIS = {
   Yearly: 'Árlega',
   Custom: 'Sérsniðin',
   'Custom…': 'Sérsniðin…',
+  'Repeat': 'Endurtaka',
   'Does not repeat': 'Endurtekur sig ekki',
   'Weekly on {{day}}': 'Vikulega á {{day}}',
   'Monthly on day {{day}}': 'Mánaðarlega á degi {{day}}',

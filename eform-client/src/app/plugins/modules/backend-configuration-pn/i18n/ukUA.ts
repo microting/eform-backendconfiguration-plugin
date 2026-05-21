@@ -348,6 +348,7 @@ export const ukUA = {
   Yearly: 'Щорічно',
   Custom: 'Користувацька',
   'Custom…': 'Користувацький…',
+  'Repeat': 'Повторити',
   'Does not repeat': 'Не повторюється',
   'Weekly on {{day}}': 'Щотижня у {{day}}',
   'Monthly on day {{day}}': 'Щомісяця, {{day}} числа',

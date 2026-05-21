@@ -353,6 +353,7 @@ export const elGR = {
   Yearly: 'Ετήσια',
   Custom: 'Εθιμο',
   'Custom…': 'Εθιμο…',
+  'Repeat': 'Επανάληψη',
   'Does not repeat': 'Δεν επαναλαμβάνεται',
   'Weekly on {{day}}': 'Εβδομαδιαία κάθε {{ημέρα}}',
   'Monthly on day {{day}}': 'Μηνιαία την ημέρα {{ημέρα}}',

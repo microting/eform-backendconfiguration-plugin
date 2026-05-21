@@ -353,6 +353,7 @@ export const plPL = {
   Yearly: 'Rocznie',
   Custom: 'Zwyczaj',
   'Custom…': 'Zwyczaj…',
+  'Repeat': 'Powtórz',
   'Does not repeat': 'Nie powtarza się',
   'Weekly on {{day}}': 'Tygodniowo w {{dzień}}',
   'Monthly on day {{day}}': 'Miesięcznie w dniu {{day}}',

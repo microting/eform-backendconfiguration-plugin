@@ -353,6 +353,7 @@ export const roRO = {
   Yearly: 'Anual',
   Custom: 'Personalizat',
   'Custom…': 'Personalizat…',
+  'Repeat': 'Repetă',
   'Does not repeat': 'Nu se repetă',
   'Weekly on {{day}}': 'Săptămânal în data de {{day}}',
   'Monthly on day {{day}}': 'Lunar în ziua {{day}}',

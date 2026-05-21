@@ -353,6 +353,7 @@ export const fiFI = {
   Yearly: 'Vuosittain',
   Custom: 'Mukautettu',
   'Custom…': 'Mukautettu…',
+  'Repeat': 'Toista',
   'Does not repeat': 'Ei toistu',
   'Weekly on {{day}}': 'Viikoittain {{day}} päivänä',
   'Monthly on day {{day}}': 'Kuukausittain päivänä {{day}}',

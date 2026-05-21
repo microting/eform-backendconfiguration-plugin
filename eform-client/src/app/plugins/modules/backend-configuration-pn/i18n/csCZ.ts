@@ -353,6 +353,7 @@ export const csCZ = {
   Yearly: 'Roční',
   Custom: 'Zvyk',
   'Custom…': 'Zvyk…',
+  'Repeat': 'Opakovat',
   'Does not repeat': 'Neopakuje se',
   'Weekly on {{day}}': 'Týdně v {{day}}',
   'Monthly on day {{day}}': 'Měsíčně v den {{day}}',

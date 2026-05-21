@@ -414,6 +414,7 @@ export const deDE = {
   Yearly: 'Jährlich',
   Custom: 'Brauch',
   'Custom…': 'Brauch…',
+  'Repeat': 'Wiederholen',
   'Does not repeat': 'Wird nicht wiederholt',
   'Weekly on {{day}}': 'Wöchentlich am {{day}}',
   'Monthly on day {{day}}': 'Monatlich am Tag {{day}}',

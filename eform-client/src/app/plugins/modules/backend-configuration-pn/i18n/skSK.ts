@@ -353,6 +353,7 @@ export const skSK = {
   Yearly: 'Ročne',
   Custom: 'Vlastné',
   'Custom…': 'Vlastné…',
+  'Repeat': 'Opakovať',
   'Does not repeat': 'Neopakuje sa',
   'Weekly on {{day}}': 'Týždenne v {{day}}',
   'Monthly on day {{day}}': 'Mesačne v deň {{day}}',

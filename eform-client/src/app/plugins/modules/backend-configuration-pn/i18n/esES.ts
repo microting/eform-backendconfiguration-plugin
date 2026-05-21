@@ -353,6 +353,7 @@ export const esES = {
   Yearly: 'Anual',
   Custom: 'Costumbre',
   'Custom…': 'Costumbre…',
+  'Repeat': 'Repetir',
   'Does not repeat': 'No se repite',
   'Weekly on {{day}}': 'Semanalmente el {{day}}',
   'Monthly on day {{day}}': 'Mensualmente el día {{day}}',

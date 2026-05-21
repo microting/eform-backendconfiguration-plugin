@@ -353,6 +353,7 @@ export const slSL = {
   Yearly: 'Letno',
   Custom: 'Po meri',
   'Custom…': 'Po meri…',
+  'Repeat': 'Ponovi',
   'Does not repeat': 'Ne ponavlja se',
   'Weekly on {{day}}': 'Tedensko na {{day}}',
   'Monthly on day {{day}}': 'Mesečno na dan {{day}}',
