@@ -63,10 +63,14 @@
   max-width: 500px;
 }
 
-// Center icon against the field midpoint (label-above-input mat-form-field).
+// Rows top-anchor the icon and nudge it 30px down so it sits at the
+// input's vertical centre (the mat-label sits stacked above the input
+// per iter 1e). Attachment/drive-error rows fall back to a 10px nudge
+// below so the icon stays beside the action-link header instead of
+// sliding down to the input position.
 .gcal-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-height: 40px;
   margin-bottom: 4px;
 }
@@ -77,6 +81,7 @@
   width: 20px;
   height: 20px;
   margin-right: 16px;
+  margin-top: 30px;
   flex-shrink: 0;
 
   &--hidden {
@@ -84,13 +89,10 @@
   }
 }
 
-// Rows whose content grows vertically (attachments list, drive/upload
-// errors) must keep the icon top-anchored alongside the action link/header
-// rather than drifting to the centre of a tall block.
-.gcal-row:has(> .gcal-row-content > .gcal-attachments),
-.gcal-row:has(> .gcal-row-content > .gcal-attachment-error) {
-  align-items: flex-start;
-
+// Attach-file and Drive rows lead with a one-line action link (Attach
+// file / Add Google Drive file), not a label-above-input field, so the
+// icon needs a smaller nudge to sit beside the link rather than below it.
+.gcal-row:has(> .gcal-row-content > .gcal-action-link) {
   .gcal-icon {
     margin-top: 10px;
   }
