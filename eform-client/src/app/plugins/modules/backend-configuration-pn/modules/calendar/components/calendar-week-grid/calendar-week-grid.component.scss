@@ -82,6 +82,15 @@
     border-right: 1px solid var(--md-surface-variant, #c4c7c5);
   }
 
+  // Centre the weekday/date pair in each header column. mtx-grid wraps
+  // the header content in `.mat-header-cell-inner` (display: inline-flex,
+  // intrinsic width), which sits at the cell's left edge by default;
+  // text-align: center on the cell pushes the inline-flex wrapper to
+  // the cell's horizontal centre.
+  th.mat-mdc-header-cell {
+    text-align: center;
+  }
+
   // Today is indicated by the circular pill on the day number (see
   // .day-header-number--today below). The full-column tint that used to
   // sit on the today header and body cells has been removed per the DM
