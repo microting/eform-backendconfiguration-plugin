@@ -81,12 +81,48 @@ public class BackendConfigurationCalendarService(
                 = new();
             if (!requestModel.ActionableOnly)
             {
-                // Default branch — bit-identical to the pre-c2637800 prefetch.
-                compliancesInWeek = await backendConfigurationPnDbContext.Compliances
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                // Load both:
+                //   * non-removed compliances (the live week view).
+                //   * removed-but-COMPLETED compliances. The canonical compliance
+                //     Update path (CompliancesService.Update + mobile gRPC) soft-
+                //     deletes the Compliance row after setting the backing SDK
+                //     Case to Status=100. Without including these here, the
+                //     recurrence-expansion loop below would emit a fresh
+                //     uncompleted task for the same date (because its dedup set
+                //     is built from `compliancesInWeek`), and the user would
+                //     see the just-completed event "snap back" to uncompleted.
+                //
+                //     The Where below still excludes removed compliances that
+                //     never deployed (SdkCaseId == 0 — retracted-without-case
+                //     shape) so genuinely missed/retracted rotations stay
+                //     hidden. The post-load filter further narrows
+                //     removed rows to those whose SDK case is Status=100.
+                var loadedCompliances = await backendConfigurationPnDbContext.Compliances
                     .Where(x => x.PropertyId == requestModel.PropertyId)
                     .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                || x.MicrotingSdkCaseId > 0)
                     .ToListAsync();
+
+                var loadedCaseIds = loadedCompliances
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var loadedCases = new Dictionary<int, Microting.eForm.Infrastructure.Data.Entities.Case>();
+                if (loadedCaseIds.Count > 0)
+                {
+                    var sdkCoreForPrefilter = await coreHelper.GetCore().ConfigureAwait(false);
+                    await using var sdkDbContextForPrefilter = sdkCoreForPrefilter.DbContextHelper.GetDbContext();
+                    loadedCases = await sdkDbContextForPrefilter.Cases
+                        .Where(c => loadedCaseIds.Contains(c.Id))
+                        .ToDictionaryAsync(c => c.Id);
+                }
+
+                compliancesInWeek = loadedCompliances
+                    .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed
+                            || (loadedCases.TryGetValue(c.MicrotingSdkCaseId, out var sdk) && sdk.Status == 100))
+                    .ToList();
             }
             else
             {
@@ -1732,9 +1768,13 @@ public class BackendConfigurationCalendarService(
             }
 
             // No mandatory fields → complete the SDK case in place. Mirrors
-            // CompliancesGrpcService:159-174 (the form-submit path).
+            // CompliancesGrpcService:159-174 (the form-submit path) — set
+            // Status=100 + done-at timestamps so subsequent reads of the SDK
+            // case report the case as fully completed.
             sdkCase.Status = 100;
             sdkCase.WorkflowState = Constants.WorkflowStates.Created;
+            sdkCase.DoneAt = DateTime.UtcNow;
+            sdkCase.DoneAtUserModifiable = DateTime.UtcNow;
             await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
 
             return new OperationDataResult<CalendarToggleCompleteResult>(true,

@@ -30,6 +30,7 @@ import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
+import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/compliance-case-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
 
@@ -562,11 +563,26 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         || p.complianceId == null || p.workerId == null || !p.deadline) {
       return;
     }
-    this.router.navigate([
-      '/plugins/backend-configuration-pn/compliances/case',
-      p.sdkCaseId, p.templateId, p.propertyId, p.deadline, false,
-      p.complianceId, p.workerId,
-    ]);
+    const ref = this.dialog.open(ComplianceCaseModalComponent, {
+      data: {
+        sdkCaseId: p.sdkCaseId,
+        templateId: p.templateId,
+        propertyId: p.propertyId,
+        deadline: p.deadline,
+        complianceId: p.complianceId,
+        workerId: p.workerId,
+      },
+      width: 'min(90vw, 1080px)',
+      maxWidth: '95vw',
+      autoFocus: false,
+      restoreFocus: false,
+    });
+    ref.afterClosed().subscribe((result) => {
+      // Always reload — even on cancel — so any partial state (the
+      // freshly-materialised Compliance row, route timing, etc.) re-renders
+      // from the canonical server view.
+      this.loadTasks();
+    });
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

@@ -385,36 +385,31 @@ public class EventDeployService(
         }
 
         mainElement.CheckListFolderName = folderId;
-        // Use end-of-rotation-day UTC so the SDK Case is created any time during the
-        // deadline day, not only when the deploy fires BEFORE 00:00 UTC.
-        // rotationDate is parsed by EnsureDeployedAsync with
-        // AssumeUniversal | AdjustToUniversal then .Date, so it lands at 00:00 UTC.
-        // The downstream guard (`mainElement.EndDate > DateTime.UtcNow`)
-        // otherwise silently skips CaseCreate for any same-day deploy, leaving
-        // Compliance rows with MicrotingSdkCaseId=0.
-        mainElement.EndDate = rotationDate.AddDays(1).AddTicks(-1);
+        // EndDate must be in the future for CaseCreate to be accepted.
+        // For nightly deploys, rotationDate is always today-or-later (the
+        // candidate filter at line 132-ish enforces that). For on-demand
+        // calendar materialisation (EnsureComplianceForOccurrenceAsync),
+        // the user may click an event whose rotation date is in the past
+        // — in that case clamp the EndDate to end-of-tomorrow UTC so the
+        // SDK accepts the case, while keeping Compliance.Deadline at the
+        // true rotationDate (the column is set inside
+        // EnsureComplianceRowAsync independently of mainElement.EndDate).
+        var endOfRotationDay = rotationDate.AddDays(1).AddTicks(-1);
+        var endOfTomorrow = DateTime.UtcNow.Date.AddDays(2).AddTicks(-1);
+        mainElement.EndDate = endOfRotationDay > endOfTomorrow ? endOfRotationDay : endOfTomorrow;
 
-        // 7. Only call CaseCreate when EndDate is in the future
-        //    (mirrors ItemCaseCreateHandler.cs:236). The EndDate value
-        //    itself — end-of-rotation-day UTC (23:59:59.9999999) — is
-        //    what makes the guard pass for same-day deploys; this is
-        //    now a clock-skew belt + safety net for future changes to
-        //    rotationDate semantics.
-        if (mainElement.EndDate > DateTime.UtcNow)
+        // CaseCreateLocalOnly returns the SDK Case.Id directly (no
+        // MicrotingUid → Id lookup needed) AND skips the cloud XML
+        // deploy that the standard CaseCreate path performs. Mirrors
+        // the fix from PR #829.
+        var caseId = await sdkCore.CaseCreateLocalOnly(
+            mainElement, "", (int)sdkSite.MicrotingUid!, null)
+            .ConfigureAwait(false);
+
+        if (caseId != null)
         {
-            // CaseCreateLocalOnly returns the SDK Case.Id directly (no
-            // MicrotingUid → Id lookup needed) AND skips the cloud XML
-            // deploy that the standard CaseCreate path performs. Mirrors
-            // the fix from PR #829.
-            var caseId = await sdkCore.CaseCreateLocalOnly(
-                mainElement, "", (int)sdkSite.MicrotingUid!, null)
-                .ConfigureAwait(false);
-
-            if (caseId != null)
-            {
-                planningCaseSite.MicrotingSdkCaseId = (int)caseId;
-                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
+            planningCaseSite.MicrotingSdkCaseId = (int)caseId;
+            await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
         }
 
         // 8. Compliance row. Mirrors EformParsedByServerHandler.cs:170-182.
@@ -566,23 +561,24 @@ public class EventDeployService(
         // is null so the StartDate column stays populated.
         var startDate = planning.LastExecutedTime ?? DateTime.UtcNow;
 
+        var compliance = new Compliance
+        {
+            PropertyId = areaRulePlanning.PropertyId,
+            PlanningId = planning.Id,
+            AreaId = areaRulePlanning.AreaId,
+            Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
+            StartDate = startDate,
+            MicrotingSdkeFormId = planning.RelatedEFormId,
+            MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
+            // The handler mistakenly stores PlanningCaseId here (named
+            // PlanningCaseSiteId on the column) — see
+            // EformParsedByServerHandler.cs:179. Preserve that convention
+            // so the round-trip matches the JSON oracle path.
+            PlanningCaseSiteId = planningCaseSite.PlanningCaseId
+        };
+
         try
         {
-            var compliance = new Compliance
-            {
-                PropertyId = areaRulePlanning.PropertyId,
-                PlanningId = planning.Id,
-                AreaId = areaRulePlanning.AreaId,
-                Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
-                StartDate = startDate,
-                MicrotingSdkeFormId = planning.RelatedEFormId,
-                MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
-                // The handler mistakenly stores PlanningCaseId here (named
-                // PlanningCaseSiteId on the column) — see
-                // EformParsedByServerHandler.cs:179. Preserve that convention
-                // so the round-trip matches the JSON oracle path.
-                PlanningCaseSiteId = planningCaseSite.PlanningCaseId
-            };
             await compliance.Create(dbContext).ConfigureAwait(false);
             return compliance;
         }
@@ -595,6 +591,17 @@ public class EventDeployService(
                 logger.LogInformation(
                     "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists (race) — fetching winning row",
                     planning.Id, rotationDate);
+
+                // Detach the failed-INSERT entity so the SaveChanges that
+                // happens inside the revive's existing.Update(...) below
+                // does not retry the same INSERT and re-hit the duplicate
+                // key. EF Core leaves a failed Add tracked as Added until
+                // explicitly detached.
+                var addedEntry = dbContext.Entry(compliance);
+                if (addedEntry.State == EntityState.Added)
+                {
+                    addedEntry.State = EntityState.Detached;
+                }
 
                 // Tracked (NOT AsNoTracking) so we can revive a half-deployed
                 // row in place when this call has just produced a fresh SDK case.
