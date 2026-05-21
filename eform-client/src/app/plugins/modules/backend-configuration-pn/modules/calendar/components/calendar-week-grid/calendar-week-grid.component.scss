@@ -130,12 +130,17 @@
     position: sticky;
     top: 0;
     z-index: 11;
-    background: var(--bg, #FFFFFF);
+    background: var(--md-surface-container);
     box-shadow: 0 1px 0 var(--border, #e0e0e0);
   }
 
+  // Time-axis header cell needs an explicit bg because the calendar's own
+  // .mat-column-time-axis rule (above) wins source order against the
+  // workspace .mat-mdc-header-cell bg, and would otherwise paint this
+  // header cell white instead of matching the rest of the strip.
   .mat-mdc-header-row .mat-column-time-axis {
     z-index: 12;
+    background: var(--md-surface-container);
   }
 
   // Two-line day header per the Design Manual timeregistrering spec.
@@ -148,7 +153,7 @@
     justify-items: center;
     align-content: center;
     padding: 8px 10px;
-    background: var(--md-surface);
+    background: var(--md-surface-container);
   }
 
   .day-header-weekday {
