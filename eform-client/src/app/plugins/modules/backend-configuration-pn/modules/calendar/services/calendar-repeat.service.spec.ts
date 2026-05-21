@@ -891,6 +891,21 @@ describe('CalendarRepeatService', () => {
       expect(service.metaToDayOfMonth(meta)).toBeNull();
     });
 
+    it('monthlyDom with dom=0 → null (would render "day 0")', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 0, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('monthlyDom with dom=32 → null (out of range)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 32, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('monthlyDom with dom=-5 → null (negative)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: -5, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
     it('non-DOM kind: daily → null', () => {
       const meta: CalendarRepeatMeta = {kind: 'daily', endMode: 'never'};
       expect(service.metaToDayOfMonth(meta)).toBeNull();
