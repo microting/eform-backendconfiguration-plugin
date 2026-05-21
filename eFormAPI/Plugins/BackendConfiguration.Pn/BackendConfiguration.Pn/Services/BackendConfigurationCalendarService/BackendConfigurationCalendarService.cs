@@ -1669,7 +1669,9 @@ public class BackendConfigurationCalendarService(
                 }
 
                 compliance = await backendConfigurationPnDbContext.Compliances
-                    .FirstOrDefaultAsync(c => c.Id == ensure.ComplianceId);
+                    .FirstOrDefaultAsync(c => c.Id == ensure.ComplianceId
+                                           && c.WorkflowState != Constants.WorkflowStates.Removed
+                                           && c.MicrotingSdkCaseId > 0);
 
                 if (compliance == null)
                 {

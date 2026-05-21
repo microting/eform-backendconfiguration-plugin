@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -57,7 +58,7 @@ public class EventDeployService(
     BackendConfigurationPnDbContext dbContext,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IEFormCoreService coreHelper,
-    IBackendConfigurationCalendarService calendarService,
+    IServiceProvider serviceProvider,
     ILogger<EventDeployService> logger) : IEventDeployService
 {
     public async Task EnsureDeployedAsync(
@@ -101,6 +102,7 @@ public class EventDeployService(
             ActionableOnly = false
         };
 
+        var calendarService = serviceProvider.GetRequiredService<IBackendConfigurationCalendarService>();
         var calendarResult = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
         if (!calendarResult.Success || calendarResult.Model == null)
         {
@@ -582,14 +584,31 @@ public class EventDeployService(
                 logger.LogInformation(
                     "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists (race) — fetching winning row",
                     planning.Id, rotationDate);
-                return await dbContext.Compliances
-                    .AsNoTracking()
+
+                // Tracked (NOT AsNoTracking) so we can revive a half-deployed
+                // row in place when this call has just produced a fresh SDK case.
+                var existing = await dbContext.Compliances
                     .FirstOrDefaultAsync(c =>
                             c.PlanningId == planning.Id
                             && c.Deadline.Date == rotationDate.Date
                             && c.WorkflowState != Constants.WorkflowStates.Removed,
                         cancellationToken)
                     .ConfigureAwait(false);
+
+                if (existing != null
+                    && existing.MicrotingSdkCaseId <= 0
+                    && planningCaseSite.MicrotingSdkCaseId > 0)
+                {
+                    // Half-deployed row found AND we have a fresh SDK case from this
+                    // call. Adopt the new SDK case to avoid orphaning it. Never
+                    // overwrite a row that already has a valid SDK case id (that
+                    // would be a real race winner; let them keep it).
+                    existing.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                    existing.MicrotingSdkeFormId = planning.RelatedEFormId;
+                    await existing.Update(dbContext).ConfigureAwait(false);
+                }
+
+                return existing;
             }
             throw;
         }
