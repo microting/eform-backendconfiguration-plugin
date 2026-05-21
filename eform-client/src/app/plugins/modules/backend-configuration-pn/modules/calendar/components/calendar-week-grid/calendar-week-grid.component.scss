@@ -194,6 +194,12 @@
   color: #888;
   transform: translateY(-50%);
   white-space: nowrap;
+
+  // First label sits at top:0; translateY(-50%) escapes the body cell
+  // into the sticky header (transform creates a stacking context).
+  &:first-child {
+    transform: none;
+  }
 }
 
 .day-cell-content {
