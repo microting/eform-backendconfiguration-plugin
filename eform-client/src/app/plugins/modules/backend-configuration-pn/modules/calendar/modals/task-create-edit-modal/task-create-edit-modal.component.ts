@@ -671,6 +671,23 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       repeatWeekdaysCsv: isCustomRule
         ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
         : null,
+      // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
+      // ship this field at all, the request model had no DayOfMonth
+      // property, and AreaRulePlanning.DayOfMonth defaulted to its int 0
+      // on insert — so reopening "Månedlig på dag 21" read back as
+      // "dag 0". Two source paths feed this:
+      //  * Custom rule → customRepeatMeta has the user's picked dom.
+      //  * Built-in dropdown ("Månedligt på dag {today}" / "Yearly on
+      //    {today.day} {today.month}") → the selected option's
+      //    embedded meta carries it (buildRepeatSelectOptions:266-280).
+      // Both flows funnel through metaToDayOfMonth, which returns null
+      // for non-DOM kinds — so weekly/daily saves don't ship a stale
+      // value.
+      dayOfMonth: isCustomRule
+        ? this.repeatService.metaToDayOfMonth(this.customRepeatMeta)
+        : this.repeatService.metaToDayOfMonth(
+            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+          ),
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
       status: 1,

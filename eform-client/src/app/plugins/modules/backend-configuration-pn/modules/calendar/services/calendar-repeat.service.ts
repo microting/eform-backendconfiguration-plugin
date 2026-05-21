@@ -620,6 +620,21 @@ export class CalendarRepeatService {
   }
 
   /**
+   * Wire-format value for the request payload's `dayOfMonth` field.
+   * monthly + yearly kinds carry the chosen day in `meta.dom`; returns null
+   * for any other kind (and for null/undefined input) so non-monthly rules
+   * don't ship a stale value.
+   */
+  metaToDayOfMonth(meta: CalendarRepeatMeta | null | undefined): number | null {
+    if (!meta) return null;
+    if (meta.kind === 'monthlyDom' || meta.kind === 'everyNMonthDom'
+        || meta.kind === 'yearlyOne' || meta.kind === 'everyNYear') {
+      return meta.dom ?? null;
+    }
+    return null;
+  }
+
+  /**
    * Wire-format CSV for the request payload's `repeatWeekdaysCsv` field.
    * Single-weekday rules store the chosen day in `meta.weekday` (singular),
    * multi-day rules in `meta.weekdays` (plural array); the request payload
