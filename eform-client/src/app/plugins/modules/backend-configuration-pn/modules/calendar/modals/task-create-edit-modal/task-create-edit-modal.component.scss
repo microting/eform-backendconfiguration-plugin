@@ -104,7 +104,12 @@
 }
 
 .gcal-time-field {
-  width: 90px;
+  // !important is required: the workspace theme's
+  // `.mat-mdc-form-field.mat-mdc-form-field-type-mtx-select { width: 100% }`
+  // default (2-class specificity) would otherwise win against this 1-class
+  // rule and stretch the time pickers to fill the row, wrapping the
+  // datetime row's flex children.
+  width: 90px !important;
   flex-shrink: 0;
 }
 
