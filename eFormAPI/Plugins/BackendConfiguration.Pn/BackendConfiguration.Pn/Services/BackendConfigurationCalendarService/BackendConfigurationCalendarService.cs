@@ -320,8 +320,8 @@ public class BackendConfigurationCalendarService(
                         continue;
 
                     var effectiveDate = exception?.NewDate?.Date ?? occurrenceDate;
-                    var effectiveStartHour = exception?.StartHour ?? calConfig?.StartHour ?? 9.0;
-                    var effectiveDuration = exception?.Duration ?? calConfig?.Duration ?? 1.0;
+                    var effectiveStartHour = exception?.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                    var effectiveDuration = exception?.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
                     var effectiveAssignees = exception?.ExceptionSites is { Count: > 0 }
                         ? exception.ExceptionSites
                             .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -397,8 +397,8 @@ public class BackendConfigurationCalendarService(
                         // movedInExceptions pass at the destination week.
                         if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
 
-                        var orphanStartHour = orphan.StartHour ?? calConfig?.StartHour ?? 9.0;
-                        var orphanDuration = orphan.Duration ?? calConfig?.Duration ?? 1.0;
+                        var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
+                        var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
                         var orphanAssignees = orphan.ExceptionSites is { Count: > 0 }
                             ? orphan.ExceptionSites
                                 .Where(s => s.WorkflowState != Constants.WorkflowStates.Removed)
@@ -483,8 +483,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp.Id,
                     Title = title,
-                    StartHour = movedIn.StartHour ?? movedCalConfig?.StartHour ?? 9.0,
-                    Duration = movedIn.Duration ?? movedCalConfig?.Duration ?? 1.0,
+                    StartHour = movedIn.StartHour ?? (isAllDay ? 0 : movedCalConfig?.StartHour ?? 9.0),
+                    Duration = movedIn.Duration ?? (isAllDay ? 0 : movedCalConfig?.Duration ?? 1.0),
                     TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
                     Tags = movedTags,
                     AssigneeIds = movedAssignees,
@@ -669,8 +669,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = effectiveStartHour,
-                    Duration = effectiveDuration,
+                    StartHour = compIsAllDay ? 0 : effectiveStartHour,
+                    Duration = compIsAllDay ? 0 : effectiveDuration,
                     TaskDate = effectiveTaskDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
@@ -788,9 +788,14 @@ public class BackendConfigurationCalendarService(
             {
                 // Persist repeat-end and weekday-CSV fields. The CSV column is
                 // always written (including null) so changing a multi-day
-                // weekly back to a single-day rule clears the stale list.
+                // weekly back to a single-day rule clears the stale list. The
+                // DayOfMonth column follows the same "always clear stale"
+                // rule — switching from monthly back to weekly nukes the
+                // previously-saved DOM, so a future switch-back-to-monthly
+                // doesn't silently resurrect a stale value.
                 var hasRepeatEndChange = createModel.RepeatEndMode.HasValue;
                 latestArp.RepeatWeekdaysCsv = createModel.RepeatWeekdaysCsv;
+                latestArp.DayOfMonth = createModel.DayOfMonth ?? 0;
                 if (hasRepeatEndChange)
                 {
                     latestArp.RepeatEndMode = createModel.RepeatEndMode;
@@ -894,10 +899,11 @@ public class BackendConfigurationCalendarService(
                     && x.WorkflowState != Constants.WorkflowStates.Removed);
             if (arp != null)
             {
-                // Write end-mode fields unconditionally so switching from
-                // 'after 10' or 'until <date>' back to 'never' clears the
-                // stale cap. Same rationale as RepeatWeekdaysCsv above.
+                // Write end-mode + recurrence fields unconditionally so
+                // switching kinds clears stale state. Same rationale as
+                // RepeatWeekdaysCsv above; DayOfMonth follows the same rule.
                 arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
+                arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
                 arp.RepeatEndMode = updateModel.RepeatEndMode;
                 arp.RepeatOccurrences = updateModel.RepeatOccurrences;
                 arp.RepeatUntilDate = updateModel.RepeatUntilDate;
@@ -2661,8 +2667,8 @@ public class BackendConfigurationCalendarService(
                 {
                     Id = arp?.Id ?? 0,
                     Title = title,
-                    StartHour = calConfig?.StartHour ?? 9.0,
-                    Duration = calConfig?.Duration ?? 1.0,
+                    StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
                     TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
