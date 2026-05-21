@@ -7,6 +7,7 @@ import {
   CalendarTaskCreateModel,
   CalendarTaskModel,
   CalendarTaskUpdateModel,
+  CalendarToggleCompleteResult,
   RepeatDeleteScope,
   RepeatEditScope,
 } from '../models';
@@ -77,10 +78,14 @@ export class BackendConfigurationPnCalendarService {
     return this.apiBaseService.put(BackendConfigurationPnCalendarMethods.ResizeTask, {id, newStartHour, newDuration, scope, originalDate});
   }
 
-  toggleComplete(taskId: number, completed: boolean): Observable<OperationResult> {
+  toggleComplete(
+    taskId: number,
+    completed: boolean,
+    complianceId: number | null | undefined,
+  ): Observable<OperationDataResult<CalendarToggleCompleteResult>> {
     return this.apiBaseService.put(
       `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
-      {completed}
+      {completed, complianceId: complianceId ?? null}
     );
   }
 

@@ -97,3 +97,25 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _colIndex: number;
   _colCount: number;
 }
+
+// Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the
+// frontend has to handle:
+//  1) success && requiresForm === true — the linked eForm has mandatory
+//     fields; the rest of the fields carry the route params for the
+//     compliance/case form. Frontend navigates.
+//  2) success && requiresForm === false — the eForm has no mandatory
+//     fields; the backend already set Case.Status = 100 in place.
+//     Frontend reloads the calendar so the event re-renders as completed.
+//  3) success === false (carried on the wrapping OperationDataResult, not
+//     this model) — covers non-compliance taps (TaskHasNoComplianceCase),
+//     missing planning, uncomplete attempt, etc. Frontend silently no-ops
+//     today; existing failure-path UX.
+export interface CalendarToggleCompleteResult {
+  requiresForm: boolean;
+  sdkCaseId?: number;
+  templateId?: number;
+  propertyId?: number;
+  complianceId?: number;
+  workerId?: number;
+  deadline?: string;
+}
