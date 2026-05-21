@@ -63,10 +63,10 @@
   max-width: 500px;
 }
 
-// Rows
+// Center icon against the field midpoint (label-above-input mat-form-field).
 .gcal-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   min-height: 40px;
   margin-bottom: 4px;
 }
@@ -77,11 +77,22 @@
   width: 20px;
   height: 20px;
   margin-right: 16px;
-  margin-top: 10px;
   flex-shrink: 0;
 
   &--hidden {
     visibility: hidden;
+  }
+}
+
+// Rows whose content grows vertically (attachments list, drive/upload
+// errors) must keep the icon top-anchored alongside the action link/header
+// rather than drifting to the centre of a tall block.
+.gcal-row:has(> .gcal-row-content > .gcal-attachments),
+.gcal-row:has(> .gcal-row-content > .gcal-attachment-error) {
+  align-items: flex-start;
+
+  .gcal-icon {
+    margin-top: 10px;
   }
 }
 
