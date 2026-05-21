@@ -124,23 +124,14 @@
   // z-index 11 wins over task blocks (z 2/3), the now-line current-time
   // indicator (z 10), and the all-day chips. Drag-ghost-task (z 20) still
   // draws on top so a moving event doesn't disappear under the header.
-  // The time-axis cell of the header gets z 12 to stay above other header
-  // cells where the row + column sticky overlap.
+  // The top-left corner cell (time-axis header) sticky-stacks at z 100
+  // via Material's .mat-mdc-table-sticky class.
   .mat-mdc-header-row {
     position: sticky;
     top: 0;
     z-index: 11;
     background: var(--md-surface-container);
     box-shadow: 0 1px 0 var(--border, #e0e0e0);
-  }
-
-  // Time-axis header cell needs an explicit bg because the calendar's own
-  // .mat-column-time-axis rule (above) wins source order against the
-  // workspace .mat-mdc-header-cell bg, and would otherwise paint this
-  // header cell white instead of matching the rest of the strip.
-  .mat-mdc-header-row .mat-column-time-axis {
-    z-index: 12;
-    background: var(--md-surface-container);
   }
 
   // Two-line day header per the Design Manual timeregistrering spec.
