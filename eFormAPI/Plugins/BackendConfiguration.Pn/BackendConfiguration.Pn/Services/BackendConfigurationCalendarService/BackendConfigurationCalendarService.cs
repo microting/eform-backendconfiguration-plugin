@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
+using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,7 @@ public class BackendConfigurationCalendarService(
     IUserService userService,
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
     IEFormCoreService coreHelper,
+    IEventDeployService eventDeployService,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationTaskWizardService taskWizardService,
     ILogger<BackendConfigurationCalendarService> logger)
@@ -1562,14 +1564,22 @@ public class BackendConfigurationCalendarService(
         }
     }
 
-    public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(int id, bool completed, int? complianceId)
+    public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(
+        int id, bool completed, int? complianceId, string? occurrenceDate)
     {
         // Calendar "complete from indicator" — resolves the specific Compliance
         // occurrence the user clicked (via complianceId from the calendar
         // response), then either completes the SDK case in place (no mandatory
         // fields) or returns RequiresForm=true with the route params the
         // frontend needs to open the compliance form.
+        //
+        // When the nightly batch has not yet deployed the occurrence (no
+        // complianceId in the row, or the lookup misses), we materialise it
+        // on demand via IEventDeployService so the user does not have to
+        // wait until the next morning to complete a future event.
+        //
         // See spec: docs/superpowers/specs/2026-05-21-calendar-complete-case-from-indicator-design.md
+        //           docs/superpowers/specs/2026-05-21-calendar-ensure-compliance-on-complete-design.md
         try
         {
             if (!completed)
@@ -1579,6 +1589,8 @@ public class BackendConfigurationCalendarService(
             }
 
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Include(x => x.AreaRule)
+                .Include(x => x.PlanningSites)
                 .Where(x => x.Id == id)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync();
@@ -1589,35 +1601,85 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AreaRulePlanningNotFound"));
             }
 
-            // Non-compliance events have no Compliance row to target; bail
-            // before the lookup so the frontend gets a deterministic "no-op"
-            // result without scanning the table.
-            if (complianceId == null || complianceId.Value <= 0)
-            {
-                return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                    localizationService.GetString("TaskHasNoComplianceCase"));
-            }
-
             // Look up the SPECIFIC compliance row the user clicked. Previously
             // this queried by PlanningId and took "latest by Deadline" — that
             // silently picked the wrong week when a planning had multiple
             // compliance occurrences (e.g. an overdue January row alongside a
             // pending May row), completing or navigating to the wrong case.
-            var compliance = await backendConfigurationPnDbContext.Compliances
-                .Where(c => c.Id == complianceId.Value
-                         && c.PlanningId == arp.ItemPlanningId
-                         && c.WorkflowState != Constants.WorkflowStates.Removed
-                         && c.MicrotingSdkCaseId > 0)
-                .FirstOrDefaultAsync();
+            Compliance? compliance = null;
+            if (complianceId is > 0)
+            {
+                compliance = await backendConfigurationPnDbContext.Compliances
+                    .Where(c => c.Id == complianceId.Value
+                             && c.PlanningId == arp.ItemPlanningId
+                             && c.WorkflowState != Constants.WorkflowStates.Removed
+                             && c.MicrotingSdkCaseId > 0)
+                    .FirstOrDefaultAsync();
+            }
 
             if (compliance == null)
             {
-                return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                    localizationService.GetString("TaskHasNoComplianceCase"));
+                // The user clicked an occurrence whose Compliance row has not
+                // yet been materialised (nightly batch has not run, or this
+                // is a future-day recurrence). Try to materialise on demand.
+                //
+                // Genuinely non-compliance events (no EformId on the AreaRule)
+                // still get the deterministic "no-op" result — there is
+                // nothing to complete for those.
+                if (arp.AreaRule == null
+                    || arp.AreaRule.EformId == null
+                    || arp.AreaRule.EformId == 0)
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                var planningSite = arp.PlanningSites?
+                    .FirstOrDefault(s => s.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planningSite == null)
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("NoAssignedWorker"));
+                }
+
+                if (string.IsNullOrWhiteSpace(occurrenceDate))
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                // Compliance.Deadline is persisted as DateTimeKind.Unspecified
+                // 00:00 calendar-day — parse strictly so we never end up
+                // with an off-by-one across the UTC/local boundary.
+                if (!DateTime.TryParseExact(occurrenceDate, "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+                var deadline = parsedDate.Date;
+
+                var ensure = await eventDeployService
+                    .EnsureComplianceForOccurrenceAsync(arp, deadline, planningSite.SiteId)
+                    .ConfigureAwait(false);
+                if (ensure == null || ensure.ComplianceId <= 0)
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                compliance = await backendConfigurationPnDbContext.Compliances
+                    .FirstOrDefaultAsync(c => c.Id == ensure.ComplianceId);
+
+                if (compliance == null)
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
             }
 
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
-            var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
 
             var sdkCase = await sdkDbContext.Cases
                 .FirstOrDefaultAsync(c => c.Id == compliance.MicrotingSdkCaseId);

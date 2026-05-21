@@ -82,10 +82,11 @@ export class BackendConfigurationPnCalendarService {
     taskId: number,
     completed: boolean,
     complianceId: number | null | undefined,
+    occurrenceDate: string | null | undefined,
   ): Observable<OperationDataResult<CalendarToggleCompleteResult>> {
     return this.apiBaseService.put(
       `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
-      {completed, complianceId: complianceId ?? null}
+      {completed, complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null}
     );
   }
 

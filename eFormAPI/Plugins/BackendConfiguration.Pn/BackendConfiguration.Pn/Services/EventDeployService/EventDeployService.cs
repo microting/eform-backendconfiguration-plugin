@@ -14,6 +14,10 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using SdkCore = eFormCore.Core;
+using SdkDbContext = Microting.eForm.Infrastructure.MicrotingDbContext;
+using SdkSite = Microting.eForm.Infrastructure.Data.Entities.Site;
+using SdkLanguage = Microting.eForm.Infrastructure.Data.Entities.Language;
 
 namespace BackendConfiguration.Pn.Services.EventDeployService;
 
@@ -116,8 +120,7 @@ public class EventDeployService(
         var candidates = calendarResult.Model
             .Where(t => t.PlanningId.HasValue)
             .Where(t => t.EformId.HasValue && t.EformId.Value > 0)
-            .Where(t => !t.IsFromCompliance
-                        || t.SdkCaseId.GetValueOrDefault() == 0) // recurrence-only OR stuck Compliance (SdkCaseId not yet assigned)
+            .Where(t => !t.IsFromCompliance) // rows already backed by a Compliance need no deploy
             .Select(t => new
             {
                 Task = t,
@@ -182,22 +185,12 @@ public class EventDeployService(
                 //    is keyed on PlanningId + Deadline; we additionally scope
                 //    to the requested sdk site below when locating the
                 //    PlanningCaseSite).
-                //    The slot is "taken — skip" if it's soft-removed (user
-                //    already completed this rotation; the SDK Case still
-                //    exists, just the Compliance was retracted) OR fully
-                //    deployed (MicrotingSdkCaseId > 0). We re-deploy ONLY for
-                //    the genuine stuck-row shape: Created + MicrotingSdkCaseId
-                //    == 0, where an earlier deploy left a Compliance row
-                //    behind without an SDK Case (e.g. the SDK 10.0.27 EndDate
-                //    validation bug). EnsureComplianceRowAsync revives that
-                //    row in place.
                 var alreadyDeployed = await dbContext.Compliances
                     .AsNoTracking()
                     .AnyAsync(c =>
                             c.PlanningId == planningId
                             && c.Deadline.Date == rotationDate
-                            && (c.WorkflowState == Constants.WorkflowStates.Removed
-                                || c.MicrotingSdkCaseId > 0),
+                            && c.WorkflowState != Constants.WorkflowStates.Removed,
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (alreadyDeployed)
@@ -237,127 +230,20 @@ public class EventDeployService(
                     continue;
                 }
 
-                // 3. Resolve / create PlanningCase.
-                //    Mirrors ItemCaseCreateHandler.cs:83-89, scoped to the
-                //    rotation we're deploying (one PlanningCase per
-                //    rotation deploy). We do NOT retract sibling PlanningCases
-                //    here because we're filling a future-day gap, not
-                //    re-deploying — the scheduler microservice owns that.
-                var planningCase = new PlanningCase
-                {
-                    PlanningId = planning.Id,
-                    Status = 66,
-                    MicrotingSdkeFormId = eformId
-                };
-                await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                // 4. Resolve / create PlanningCaseSite.
-                //    Mirrors ItemCaseCreateHandler.cs:179-194.
-                var planningCaseSite = new PlanningCaseSite
-                {
-                    MicrotingSdkSiteId = sdkSiteId,
-                    MicrotingSdkeFormId = eformId,
-                    Status = 66,
-                    PlanningId = planning.Id,
-                    PlanningCaseId = planningCase.Id
-                };
-                await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                // 5. SDK case idempotence guard — mirrors
-                //    ItemCaseCreateHandler.cs:205. A freshly-created
-                //    PlanningCaseSite has MicrotingSdkCaseId == 0, so this
-                //    branch is taken on the deploy path.
-                if (planningCaseSite.MicrotingSdkCaseId >= 1)
-                {
-                    // Still ensure the Compliance row exists for this rotation
-                    // before continuing.
-                    await EnsureComplianceRowAsync(
-                            areaRulePlanning,
-                            planning,
-                            rotationDate,
-                            planningCaseSite,
-                            cancellationToken)
-                        .ConfigureAwait(false);
-                    continue;
-                }
-
-                // 6. Build mainElement. Mirrors ItemCaseCreateHandler.cs:113-153.
-                //    KEY DIFFERENCE: EndDate is the rotation we're deploying
-                //    (not planning.NextExecutionTime), so backfill of a future
-                //    rotation date stays bounded to that day.
-                var mainElement = await sdkCore.ReadeForm(eformId, language).ConfigureAwait(false);
-
-                var planningNameTranslation = await itemsPlanningPnDbContext.PlanningNameTranslation
-                    .FirstOrDefaultAsync(x =>
-                            x.LanguageId == language.Id && x.PlanningId == planning.Id,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                var translation = planningNameTranslation?.Name;
-
-                string folderId = string.Empty;
-                if (planning.SdkFolderId.HasValue)
-                {
-                    var folder = await sdkDbContext.Folders
-                        .FirstOrDefaultAsync(x => x.Id == planning.SdkFolderId.Value, cancellationToken)
-                        .ConfigureAwait(false);
-                    folderId = folder?.MicrotingUid?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-                }
-
-                mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber) ? "" : planning.PlanningNumber;
-                mainElement.StartDate = DateTime.UtcNow;
-                if (!string.IsNullOrEmpty(translation))
-                {
-                    mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{translation}" : $" - {translation}";
-                }
-                if (!string.IsNullOrEmpty(planning.BuildYear))
-                {
-                    mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{planning.BuildYear}" : $" - {planning.BuildYear}";
-                }
-                if (!string.IsNullOrEmpty(planning.Type))
-                {
-                    mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{planning.Type}" : $" - {planning.Type}";
-                }
-
-                if (mainElement.ElementList.Count == 1)
-                {
-                    mainElement.ElementList[0].Label = mainElement.Label;
-                }
-
-                mainElement.CheckListFolderName = folderId;
-                // Use end-of-rotation-day UTC so the SDK Case is created any time during the
-                // deadline day, not only when the deploy fires BEFORE 00:00 UTC.
-                // rotationDate is parsed at line 123-128 with
-                // AssumeUniversal | AdjustToUniversal then .Date, so it lands at 00:00 UTC.
-                // The downstream guard at line 325 (`mainElement.EndDate > DateTime.UtcNow`)
-                // otherwise silently skips CaseCreate for any same-day deploy, leaving
-                // Compliance rows with MicrotingSdkCaseId=0.
-                mainElement.EndDate = rotationDate.AddDays(1).AddTicks(-1);
-
-                // 7. Only call CaseCreate when EndDate is in the future
-                //    (mirrors ItemCaseCreateHandler.cs:236). The EndDate value
-                //    itself — end-of-rotation-day UTC (23:59:59.9999999) — is
-                //    what makes the guard pass for same-day deploys; this is
-                //    now a clock-skew belt + safety net for future changes to
-                //    rotationDate semantics.
-                if (mainElement.EndDate > DateTime.UtcNow)
-                {
-                    var caseId = await sdkCore.CaseCreateLocalOnly(
-                        mainElement, "", (int)sdkSite.MicrotingUid!, null)
-                        .ConfigureAwait(false);
-
-                    if (caseId != null)
-                    {
-                        planningCaseSite.MicrotingSdkCaseId = (int)caseId;
-                        await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
-                }
-
-                // 8. Compliance row. Mirrors EformParsedByServerHandler.cs:170-182.
-                await EnsureComplianceRowAsync(
+                // 3-8. PlanningCase + PlanningCaseSite + SDK Case + Compliance.
+                //      Extracted so the on-demand calendar materialisation path
+                //      (EnsureComplianceForOccurrenceAsync) reuses byte-for-byte
+                //      the same writes in the same order.
+                await DeployForRotationAsync(
                         areaRulePlanning,
                         planning,
                         rotationDate,
-                        planningCaseSite,
+                        eformId,
+                        sdkSiteId,
+                        sdkCore,
+                        sdkDbContext,
+                        sdkSite,
+                        language,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -371,50 +257,295 @@ public class EventDeployService(
         }
     }
 
-    private async Task EnsureComplianceRowAsync(
+    /// <summary>
+    /// Single source of truth for "create PlanningCase + PlanningCaseSite +
+    /// SDK Case + Compliance row for one (planning, rotationDate, sdkSite)
+    /// tuple". Used by both the nightly window deploy
+    /// (<see cref="EnsureDeployedAsync"/>) and the on-demand calendar
+    /// materialisation path
+    /// (<see cref="EnsureComplianceForOccurrenceAsync"/>).
+    ///
+    /// Preserves the historical write order: PlanningCase → PlanningCaseSite
+    /// → CaseCreate → Update PlanningCaseSite → EnsureComplianceRowAsync.
+    /// Returns the ids of the created compliance + SDK case so the on-demand
+    /// caller can hand them back to the calendar UI without a re-query.
+    /// </summary>
+    private async Task<(int ComplianceId, int SdkCaseId, int TemplateId)> DeployForRotationAsync(
+        AreaRulePlanning areaRulePlanning,
+        Planning planning,
+        DateTime rotationDate,
+        int eformId,
+        int sdkSiteId,
+        SdkCore sdkCore,
+        SdkDbContext sdkDbContext,
+        SdkSite sdkSite,
+        SdkLanguage language,
+        CancellationToken ct)
+    {
+        // 3. Resolve / create PlanningCase.
+        //    Mirrors ItemCaseCreateHandler.cs:83-89, scoped to the
+        //    rotation we're deploying (one PlanningCase per
+        //    rotation deploy). We do NOT retract sibling PlanningCases
+        //    here because we're filling a future-day gap, not
+        //    re-deploying — the scheduler microservice owns that.
+        var planningCase = new PlanningCase
+        {
+            PlanningId = planning.Id,
+            Status = 66,
+            MicrotingSdkeFormId = eformId
+        };
+        await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+        // 4. Resolve / create PlanningCaseSite.
+        //    Mirrors ItemCaseCreateHandler.cs:179-194.
+        var planningCaseSite = new PlanningCaseSite
+        {
+            MicrotingSdkSiteId = sdkSiteId,
+            MicrotingSdkeFormId = eformId,
+            Status = 66,
+            PlanningId = planning.Id,
+            PlanningCaseId = planningCase.Id
+        };
+        await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+        // 5. SDK case idempotence guard — mirrors
+        //    ItemCaseCreateHandler.cs:205. A freshly-created
+        //    PlanningCaseSite has MicrotingSdkCaseId == 0, so this
+        //    branch is taken on the deploy path.
+        if (planningCaseSite.MicrotingSdkCaseId >= 1)
+        {
+            // Still ensure the Compliance row exists for this rotation
+            // before returning.
+            var existingRow = await EnsureComplianceRowAsync(
+                    areaRulePlanning,
+                    planning,
+                    rotationDate,
+                    planningCaseSite,
+                    ct)
+                .ConfigureAwait(false);
+            return (
+                existingRow?.Id ?? 0,
+                planningCaseSite.MicrotingSdkCaseId,
+                eformId);
+        }
+
+        // 6. Build mainElement. Mirrors ItemCaseCreateHandler.cs:113-153.
+        //    KEY DIFFERENCE: EndDate is the rotation we're deploying
+        //    (not planning.NextExecutionTime), so backfill of a future
+        //    rotation date stays bounded to that day.
+        var mainElement = await sdkCore.ReadeForm(eformId, language).ConfigureAwait(false);
+
+        var planningNameTranslation = await itemsPlanningPnDbContext.PlanningNameTranslation
+            .FirstOrDefaultAsync(x =>
+                    x.LanguageId == language.Id && x.PlanningId == planning.Id,
+                ct)
+            .ConfigureAwait(false);
+        var translation = planningNameTranslation?.Name;
+
+        string folderId = string.Empty;
+        if (planning.SdkFolderId.HasValue)
+        {
+            var folder = await sdkDbContext.Folders
+                .FirstOrDefaultAsync(x => x.Id == planning.SdkFolderId.Value, ct)
+                .ConfigureAwait(false);
+            folderId = folder?.MicrotingUid?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        }
+
+        mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber) ? "" : planning.PlanningNumber;
+        mainElement.StartDate = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(translation))
+        {
+            mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{translation}" : $" - {translation}";
+        }
+        if (!string.IsNullOrEmpty(planning.BuildYear))
+        {
+            mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{planning.BuildYear}" : $" - {planning.BuildYear}";
+        }
+        if (!string.IsNullOrEmpty(planning.Type))
+        {
+            mainElement.Label += string.IsNullOrEmpty(mainElement.Label) ? $"{planning.Type}" : $" - {planning.Type}";
+        }
+
+        if (mainElement.ElementList.Count == 1)
+        {
+            mainElement.ElementList[0].Label = mainElement.Label;
+        }
+
+        mainElement.CheckListFolderName = folderId;
+        // Use end-of-rotation-day UTC so the SDK Case is created any time during the
+        // deadline day, not only when the deploy fires BEFORE 00:00 UTC.
+        // rotationDate is parsed by EnsureDeployedAsync with
+        // AssumeUniversal | AdjustToUniversal then .Date, so it lands at 00:00 UTC.
+        // The downstream guard (`mainElement.EndDate > DateTime.UtcNow`)
+        // otherwise silently skips CaseCreate for any same-day deploy, leaving
+        // Compliance rows with MicrotingSdkCaseId=0.
+        mainElement.EndDate = rotationDate.AddDays(1).AddTicks(-1);
+
+        // 7. Only call CaseCreate when EndDate is in the future
+        //    (mirrors ItemCaseCreateHandler.cs:236). The EndDate value
+        //    itself — end-of-rotation-day UTC (23:59:59.9999999) — is
+        //    what makes the guard pass for same-day deploys; this is
+        //    now a clock-skew belt + safety net for future changes to
+        //    rotationDate semantics.
+        if (mainElement.EndDate > DateTime.UtcNow)
+        {
+            var caseId = await sdkCore.CaseCreate(
+                mainElement, "", (int)sdkSite.MicrotingUid!, null)
+                .ConfigureAwait(false);
+
+            if (caseId != null)
+            {
+                var caseDto = await sdkCore.CaseLookupMUId((int)caseId).ConfigureAwait(false);
+                if (caseDto?.CaseId != null)
+                {
+                    planningCaseSite.MicrotingSdkCaseId = (int)caseDto.CaseId;
+                    await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+            }
+        }
+
+        // 8. Compliance row. Mirrors EformParsedByServerHandler.cs:170-182.
+        var created = await EnsureComplianceRowAsync(
+                areaRulePlanning,
+                planning,
+                rotationDate,
+                planningCaseSite,
+                ct)
+            .ConfigureAwait(false);
+
+        return (
+            created?.Id ?? 0,
+            planningCaseSite.MicrotingSdkCaseId,
+            eformId);
+    }
+
+    public async Task<EnsureComplianceResult?> EnsureComplianceForOccurrenceAsync(
+        AreaRulePlanning areaRulePlanning,
+        DateTime deadline,
+        int sdkSiteId,
+        CancellationToken cancellationToken = default)
+    {
+        if (areaRulePlanning == null)
+        {
+            return null;
+        }
+
+        var deadlineDate = deadline.Date;
+
+        // Idempotence guard: another caller (nightly batch, parallel request)
+        // may already have materialised this occurrence. Match the natural
+        // key the nightly path uses (PlanningId + Deadline.Date, non-removed)
+        // plus the canonical "case actually exists" filter
+        // (MicrotingSdkCaseId > 0) so we never hand back a half-deployed row.
+        var existing = await dbContext.Compliances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c =>
+                    c.PlanningId == areaRulePlanning.ItemPlanningId
+                    && c.Deadline.Date == deadlineDate
+                    && c.WorkflowState != Constants.WorkflowStates.Removed
+                    && c.MicrotingSdkCaseId > 0,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (existing != null)
+        {
+            return new EnsureComplianceResult
+            {
+                Created = false,
+                ComplianceId = existing.Id,
+                SdkCaseId = existing.MicrotingSdkCaseId,
+                TemplateId = existing.MicrotingSdkeFormId
+            };
+        }
+
+        var planning = await itemsPlanningPnDbContext.Plannings
+            .FirstOrDefaultAsync(p =>
+                    p.Id == areaRulePlanning.ItemPlanningId
+                    && p.WorkflowState != Constants.WorkflowStates.Removed,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (planning == null)
+        {
+            logger.LogWarning(
+                "EventDeployService.EnsureComplianceForOccurrenceAsync: planning {PlanningId} not found for ARP {AreaRulePlanningId}",
+                areaRulePlanning.ItemPlanningId, areaRulePlanning.Id);
+            return null;
+        }
+
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+
+        var sdkSite = await sdkDbContext.Sites
+            .FirstOrDefaultAsync(s => s.Id == sdkSiteId, cancellationToken)
+            .ConfigureAwait(false);
+        if (sdkSite == null)
+        {
+            logger.LogWarning(
+                "EventDeployService.EnsureComplianceForOccurrenceAsync: SDK site {SdkSiteId} not found",
+                sdkSiteId);
+            return null;
+        }
+
+        var language = await sdkDbContext.Languages
+            .FirstOrDefaultAsync(l => l.Id == sdkSite.LanguageId, cancellationToken)
+            .ConfigureAwait(false);
+        if (language == null)
+        {
+            logger.LogWarning(
+                "EventDeployService.EnsureComplianceForOccurrenceAsync: language {LanguageId} for sdk site {SdkSiteId} not found",
+                sdkSite.LanguageId, sdkSiteId);
+            return null;
+        }
+
+        // EformId source matches the nightly path's task.EformId (which is
+        // arp.AreaRule.EformId) — when AreaRule is loaded prefer that,
+        // otherwise fall back to planning.RelatedEFormId. Both are set from
+        // the same upstream value at task-wizard creation.
+        var eformId = areaRulePlanning.AreaRule?.EformId is { } eid && eid > 0
+            ? eid
+            : planning.RelatedEFormId;
+
+        if (eformId <= 0)
+        {
+            logger.LogWarning(
+                "EventDeployService.EnsureComplianceForOccurrenceAsync: no usable EformId for ARP {AreaRulePlanningId} (planning {PlanningId}); skipping deploy",
+                areaRulePlanning.Id, planning.Id);
+            return null;
+        }
+
+        var (complianceId, sdkCaseId, templateId) = await DeployForRotationAsync(
+                areaRulePlanning,
+                planning,
+                deadlineDate,
+                eformId,
+                sdkSiteId,
+                sdkCore,
+                sdkDbContext,
+                sdkSite,
+                language,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return new EnsureComplianceResult
+        {
+            Created = true,
+            ComplianceId = complianceId,
+            SdkCaseId = sdkCaseId,
+            TemplateId = templateId
+        };
+    }
+
+    private async Task<Compliance?> EnsureComplianceRowAsync(
         AreaRulePlanning areaRulePlanning,
         Planning planning,
         DateTime rotationDate,
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
-        // Check-first / revive-if-found / INSERT-if-not. The UNIQUE index
-        // IX_PlanningId_Deadline on Compliances is on (PlanningId, Deadline)
-        // ONLY — it does NOT include WorkflowState. That means a soft-removed
-        // row still occupies the natural-key slot, and a blind INSERT after a
-        // prior failed deploy collides on the unique key.
-        //
-        // Revive ONLY the genuine stuck-row shape: Created + MicrotingSdkCaseId
-        // == 0 (earlier deploy persisted Compliance but failed CaseCreate,
-        // e.g. the SDK 10.0.27 EndDate validation bug). A soft-removed row in
-        // the slot belongs to a completed event — flipping it back to Created
-        // would phantom-uncomplete that event and orphan its SDK Case. The
-        // outer guard above already prevents us from reaching here for the
-        // Removed shape; this predicate is the defensive belt: if a Removed
-        // row ever falls through, the SELECT returns null, the INSERT below
-        // collides on the UNIQUE index, and the narrow catch logs and skips.
-        var existing = await dbContext.Compliances
-            .FirstOrDefaultAsync(c =>
-                    c.PlanningId == planning.Id
-                    && c.Deadline.Date == rotationDate.Date
-                    && c.WorkflowState == Constants.WorkflowStates.Created
-                    && c.MicrotingSdkCaseId == 0,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (existing != null)
-        {
-            existing.WorkflowState = Constants.WorkflowStates.Created;
-            existing.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-            existing.MicrotingSdkeFormId = planning.RelatedEFormId;
-            // The handler mistakenly stores PlanningCaseId in the
-            // PlanningCaseSiteId column — see EformParsedByServerHandler.cs:179.
-            // Preserve that convention so the round-trip matches the JSON
-            // oracle path.
-            existing.PlanningCaseSiteId = planningCaseSite.PlanningCaseId;
-            await existing.Update(dbContext).ConfigureAwait(false);
-            return;
-        }
+        // Race protection lives in the duplicate-key catch below (mirrors
+        // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
+        // in EnsureDeployedAsync already filters out the common case before
+        // any writes happen, so a second AnyAsync here would only add a DB
+        // round-trip without changing behaviour.
 
         // The handler uses `planning.LastExecutedTime` for StartDate. For an
         // eager deploy that has not actually run yet, LastExecutedTime is the
@@ -422,34 +553,45 @@ public class EventDeployService(
         // is null so the StartDate column stays populated.
         var startDate = planning.LastExecutedTime ?? DateTime.UtcNow;
 
-        var compliance = new Compliance
-        {
-            PropertyId = areaRulePlanning.PropertyId,
-            PlanningId = planning.Id,
-            AreaId = areaRulePlanning.AreaId,
-            Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
-            StartDate = startDate,
-            MicrotingSdkeFormId = planning.RelatedEFormId,
-            MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
-            // The handler mistakenly stores PlanningCaseId here (named
-            // PlanningCaseSiteId on the column) — see
-            // EformParsedByServerHandler.cs:179. Preserve that convention
-            // so the round-trip matches the JSON oracle path.
-            PlanningCaseSiteId = planningCaseSite.PlanningCaseId
-        };
         try
         {
+            var compliance = new Compliance
+            {
+                PropertyId = areaRulePlanning.PropertyId,
+                PlanningId = planning.Id,
+                AreaId = areaRulePlanning.AreaId,
+                Deadline = new DateTime(rotationDate.Year, rotationDate.Month, rotationDate.Day, 0, 0, 0),
+                StartDate = startDate,
+                MicrotingSdkeFormId = planning.RelatedEFormId,
+                MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId,
+                // The handler mistakenly stores PlanningCaseId here (named
+                // PlanningCaseSiteId on the column) — see
+                // EformParsedByServerHandler.cs:179. Preserve that convention
+                // so the round-trip matches the JSON oracle path.
+                PlanningCaseSiteId = planningCaseSite.PlanningCaseId
+            };
             await compliance.Create(dbContext).ConfigureAwait(false);
+            return compliance;
         }
-        catch (DbUpdateException ex) when (ex.InnerException is { HResult: -2147467259 })
+        catch (Exception ex)
         {
-            // UNIQUE index IX_PlanningId_Deadline collision — another
-            // concurrent ListEvents deploy beat us to the INSERT (both
-            // SELECTed null, both INSERTed). Benign: the other deploy
-            // produced a valid row. Log informational and skip.
-            logger.LogInformation(
-                "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} created by a concurrent deploy — skipping",
-                planning.Id, rotationDate);
+            // Duplicate-key races are tolerated — mirrors
+            // EformParsedByServerHandler.cs:185-196.
+            if (ex.InnerException is { HResult: -2147467259 })
+            {
+                logger.LogInformation(
+                    "EventDeployService: compliance for planning {PlanningId} deadline {Deadline} already exists (race) — fetching winning row",
+                    planning.Id, rotationDate);
+                return await dbContext.Compliances
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(c =>
+                            c.PlanningId == planning.Id
+                            && c.Deadline.Date == rotationDate.Date
+                            && c.WorkflowState != Constants.WorkflowStates.Removed,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            throw;
         }
     }
 
