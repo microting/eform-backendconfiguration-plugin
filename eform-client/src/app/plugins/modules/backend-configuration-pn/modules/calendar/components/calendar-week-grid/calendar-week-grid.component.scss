@@ -187,19 +187,16 @@
   position: relative;
 }
 
+// No translateY: transform creates a stacking context that escaped the
+// sticky time-axis cell's z:2, causing labels to paint above the z:100
+// header when scrolling. Labels now sit at the top of each hour block
+// (top: i * hourHeight) instead of centered on the hour line.
 .time-label {
   position: absolute;
   right: 4px;
   font-size: 10px;
   color: #888;
-  transform: translateY(-50%);
   white-space: nowrap;
-
-  // First label sits at top:0; translateY(-50%) escapes the body cell
-  // into the sticky header (transform creates a stacking context).
-  &:first-child {
-    transform: none;
-  }
 }
 
 .day-cell-content {
