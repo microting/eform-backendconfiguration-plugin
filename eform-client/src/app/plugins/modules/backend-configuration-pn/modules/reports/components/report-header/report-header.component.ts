@@ -17,6 +17,8 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
+import {AppMenuStateService} from 'src/app/common/store';
+import {Router} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
@@ -28,6 +30,8 @@ import {format, parse} from 'date-fns';
 // REPORTS V2
 export class ReportHeaderComponent implements OnInit, OnDestroy {
   private reportStateService = inject(ReportStateService);
+  private appMenuStateService = inject(AppMenuStateService);
+  private router = inject(Router);
 
   @Output()
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
@@ -36,8 +40,16 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
+  titleSub$: Subscription;
+  // Page title rendered inside the filter card header. Resolved from the
+  // menu store (same pattern as property-workers-page) so the in-card
+  // title stays in sync with the sidebar entry.
+  public pageTitle: string = '';
 
   ngOnInit() {
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
 
     const reportPnGenerateModel = this.reportStateService.extractData();
     this.generateForm = new FormGroup(
