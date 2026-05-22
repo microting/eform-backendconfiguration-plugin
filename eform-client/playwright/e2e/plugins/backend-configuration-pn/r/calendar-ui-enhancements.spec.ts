@@ -611,18 +611,26 @@ test.describe.serial('Calendar UI enhancements', () => {
       expect(actualHeader).toBe(expectedHeader);
 
       // The single day-grid column header should also show that Monday's date.
-      // Selector skips the time-axis column. Post-redesign the header is a
-      // two-line stack: uppercase short Danish weekday ("MAN.") on line 1 and
-      // the bare day-of-month on line 2 (see calendar-week-grid.component.html
-      // dayHeaderTpl). Asserting both the weekday token AND the day number is
-      // a tight anchor — Day view always renders Monday, and combined with
-      // the day number a neighbour-week off-by-one would not collide.
+      // Post-redesign the header is a two-line stack: uppercase locale short
+      // weekday in .day-header-weekday on line 1, bare day-of-month in
+      // .day-header-number on line 2 (see calendar-week-grid.component.html
+      // dayHeaderTpl). Query both sub-elements directly so the assertion
+      // isn't coupled to innerText line-break behaviour, and derive the
+      // expected weekday via toLocaleDateString({weekday: 'short'}) — same
+      // call production's getWeekdayShort uses — so a future Intl/locale
+      // change updates expected + actual in lockstep instead of failing
+      // here on a hard-coded "MAN.". Locale follows the rest of this suite
+      // (formatLongDate, line 575) which the test environment runs as 'da-DK'.
       const dayCol = page
         .locator('app-calendar-week-grid .mat-mdc-header-cell:not(.mat-column-time-axis)')
         .first();
-      const colText = (await dayCol.innerText()).trim();
-      expect(colText).toContain('MAN.');
-      expect(colText).toMatch(new RegExp(`(^|\\n)\\s*${expectedMonday.getDate()}\\s*(\\n|$)`));
+      const expectedWeekdayShort = expectedMonday
+        .toLocaleDateString('da-DK', { weekday: 'short' })
+        .toUpperCase();
+      await expect(dayCol.locator('.day-header-weekday')).toHaveText(expectedWeekdayShort);
+      await expect(dayCol.locator('.day-header-number')).toHaveText(
+        String(expectedMonday.getDate())
+      );
     });
 
     test('H3: schedule chevron advances one week per click', async ({ page }) => {
