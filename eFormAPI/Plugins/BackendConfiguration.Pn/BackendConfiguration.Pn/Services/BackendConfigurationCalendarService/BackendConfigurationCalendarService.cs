@@ -250,9 +250,13 @@ public class BackendConfigurationCalendarService(
                             && removedSdkCase.Status == 100)
                     .ToList();
                 var removedCompletedIds = new HashSet<int>(removedCompletedInWeek.Select(c => c.Id));
+                // ID-based HashSet membership (vs `List.Contains` on the Compliance
+                // object) keeps the GroupBy filter below O(n) — addresses
+                // Copilot's L256 perf note on PR 847.
+                var compliancesInWeekIds = new HashSet<int>(compliancesInWeek.Select(c => c.Id));
 
                 nonActionableByPlanningDate = compliancesInWeekAll
-                    .Where(c => !compliancesInWeek.Contains(c) && !removedCompletedIds.Contains(c.Id))
+                    .Where(c => !compliancesInWeekIds.Contains(c.Id) && !removedCompletedIds.Contains(c.Id))
                     .GroupBy(c => (c.PlanningId, c.Deadline.Date))
                     // GroupBy + first-wins guards against the (unlikely) case of multiple
                     // non-actionable compliance rows sharing a (planning, day) tuple.
