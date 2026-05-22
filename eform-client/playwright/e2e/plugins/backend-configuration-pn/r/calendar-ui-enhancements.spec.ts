@@ -611,17 +611,18 @@ test.describe.serial('Calendar UI enhancements', () => {
       expect(actualHeader).toBe(expectedHeader);
 
       // The single day-grid column header should also show that Monday's date.
-      // Selector skips the time-axis column. The grid label format is
-      // "weekdayShort. dd/mm" (e.g. "man. 11/05"), so the dd/mm pair is a
-      // tighter anchor than the bare day number — a neighbour-week off-by-one
-      // would not collide.
+      // Selector skips the time-axis column. Post-redesign the header is a
+      // two-line stack: uppercase short Danish weekday ("MAN.") on line 1 and
+      // the bare day-of-month on line 2 (see calendar-week-grid.component.html
+      // dayHeaderTpl). Asserting both the weekday token AND the day number is
+      // a tight anchor — Day view always renders Monday, and combined with
+      // the day number a neighbour-week off-by-one would not collide.
       const dayCol = page
         .locator('app-calendar-week-grid .mat-mdc-header-cell:not(.mat-column-time-axis)')
         .first();
       const colText = (await dayCol.innerText()).trim();
-      const dd = String(expectedMonday.getDate()).padStart(2, '0');
-      const mm = String(expectedMonday.getMonth() + 1).padStart(2, '0');
-      expect(colText).toContain(`${dd}/${mm}`);
+      expect(colText).toContain('MAN.');
+      expect(colText).toMatch(new RegExp(`(^|\\n)\\s*${expectedMonday.getDate()}\\s*(\\n|$)`));
     });
 
     test('H3: schedule chevron advances one week per click', async ({ page }) => {
