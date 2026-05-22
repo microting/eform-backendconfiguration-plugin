@@ -29,6 +29,14 @@ export interface ComplianceCaseModalData {
   deadline: string;
   complianceId: number;
   workerId: number;
+  /**
+   * Optional event-start ISO string (Compliance.Deadline day +
+   * CalendarConfiguration.StartHour, UTC). When supplied the modal pre-fills
+   * the doneAt picker with this moment so Case.DoneAt records the scheduled
+   * event-start rather than the deadline's midnight. Falls back to
+   * `deadline` when absent.
+   */
+  eventStart?: string;
 }
 
 @Component({
@@ -50,6 +58,7 @@ export class ComplianceCaseModalComponent implements OnInit {
   propertyId: number;
   eFormId: number;
   deadline: string;
+  eventStart?: string;
   complianceId: number;
   workerId: number;
   currenteForm: TemplateDto = new TemplateDto();
@@ -64,6 +73,7 @@ export class ComplianceCaseModalComponent implements OnInit {
     this.propertyId = data.propertyId;
     this.eFormId = data.templateId;
     this.deadline = data.deadline;
+    this.eventStart = data.eventStart;
     this.complianceId = data.complianceId;
     this.workerId = data.workerId;
   }
@@ -82,9 +92,27 @@ export class ComplianceCaseModalComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = operation.model;
-          this.replyElement.doneAt = parseISO(this.deadline);
+          // Default the doneAt picker to the calendar event start
+          // (Compliance.Deadline + CalendarConfiguration.StartHour) so the
+          // submitted Case.DoneAt / DoneAtUserModifiable reflect the scheduled
+          // moment rather than midnight. Fall back to `deadline` (midnight UTC)
+          // when the backend didn't supply an eventStart — older response
+          // shapes or non-compliance flows.
+          //
+          // The HTTP layer auto-parses ISO strings in response bodies into
+          // Date instances, so `eventStart` / `deadline` arrive as Date
+          // objects despite the `string` typing on the interface — handle
+          // both shapes defensively.
+          this.replyElement.doneAt = this.toDate(this.eventStart) ?? this.toDate(this.deadline) ?? new Date();
         }
       });
+  }
+
+  private toDate(value: string | Date | undefined | null): Date | null {
+    if (value == null) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' && value.length > 0) return parseISO(value);
+    return null;
   }
 
   loadTemplateInfo() {

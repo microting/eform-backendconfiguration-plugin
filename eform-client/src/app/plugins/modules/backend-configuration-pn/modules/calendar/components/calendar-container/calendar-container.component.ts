@@ -571,6 +571,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         deadline: p.deadline,
         complianceId: p.complianceId,
         workerId: p.workerId,
+        // Optional — backend supplies Compliance.Deadline day + the calendar's
+        // configured StartHour so the modal can default the doneAt picker to
+        // the scheduled event-start moment rather than the deadline's
+        // midnight or "now".
+        eventStart: p.eventStart,
       },
       width: 'min(90vw, 1080px)',
       maxWidth: '95vw',

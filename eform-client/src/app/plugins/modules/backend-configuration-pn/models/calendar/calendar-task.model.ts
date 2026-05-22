@@ -118,4 +118,11 @@ export interface CalendarToggleCompleteResult {
   complianceId?: number;
   workerId?: number;
   deadline?: string;
+  /**
+   * Calendar event start (Compliance.Deadline day + CalendarConfiguration.StartHour),
+   * ISO 8601 UTC with millisecond precision. The compliance modal defaults its
+   * doneAt picker to this value so Case.DoneAt records the scheduled moment
+   * rather than when the user happened to click Save.
+   */
+  eventStart?: string;
 }
