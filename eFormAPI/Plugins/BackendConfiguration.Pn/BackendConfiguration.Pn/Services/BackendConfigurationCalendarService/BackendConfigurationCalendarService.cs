@@ -79,6 +79,17 @@ public class BackendConfigurationCalendarService(
             // the recurrence-emit lookup below tolerates that as a no-op.
             Dictionary<(int PlanningId, DateTime Date), (int ComplianceId, int SdkCaseId)> nonActionableByPlanningDate
                 = new();
+            // The set of compliances whose (PlanningId, Deadline) tuples should
+            // suppress recurrence-expansion emit for that date. Default branch
+            // populates this with compliancesInWeek (which already includes
+            // removed-but-completed rows, see line 100-104). The ActionableOnly
+            // branch builds the union of compliancesInWeek + removed-completed
+            // separately so the mobile worker doesn't see a phantom uncompleted
+            // task for a date they just completed (the canonical compliance
+            // Update + gRPC mobile complete both soft-delete Compliance after
+            // setting Status=100, so without this suppression the
+            // recurrence-expansion loop happily re-emits the date).
+            List<Compliance> compliancesForDedup;
             if (!requestModel.ActionableOnly)
             {
                 // Load both:
@@ -123,6 +134,9 @@ public class BackendConfigurationCalendarService(
                     .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed
                             || (loadedCases.TryGetValue(c.MicrotingSdkCaseId, out var sdk) && sdk.Status == 100))
                     .ToList();
+                // Default branch already includes removed-completed rows in
+                // compliancesInWeek (filter above), so the dedup set is identical.
+                compliancesForDedup = compliancesInWeek;
             }
             else
             {
@@ -130,8 +144,20 @@ public class BackendConfigurationCalendarService(
                 // Treat WorkflowState NULL as "not removed" here (pre-existing project rule
                 // applied across this service); the default branch above keeps its original
                 // strict `!= Removed` semantics so non-mobile callers remain bit-identical.
+                //
+                // Include removed-but-deployed rows in the load so the post-load
+                // pass can pull out the removed-COMPLETED subset (Status=100 on
+                // backing SDK case) for recurrence-dedup. Without this, the
+                // recurrence-emit loop would happily re-emit a date the user
+                // just completed — the canonical complete path
+                // (CompliancesGrpcService.UpdateComplianceCase / web modal
+                // Save) soft-deletes the Compliance row after setting
+                // Status=100, leaving no live row in the actionable subset
+                // to seed the dedup set with.
                 var compliancesInWeekAll = await backendConfigurationPnDbContext.Compliances
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                || x.WorkflowState == null
+                                || x.MicrotingSdkCaseId > 0)
                     .Where(x => x.PropertyId == requestModel.PropertyId)
                     .Where(x => x.Deadline >= weekStart && x.Deadline <= weekEnd)
                     .ToListAsync();
@@ -144,7 +170,7 @@ public class BackendConfigurationCalendarService(
                     .Distinct()
                     .ToList();
                 var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
-                var sdkDbContextForCalendar = sdkCore.DbContextHelper.GetDbContext();
+                await using var sdkDbContextForCalendar = sdkCore.DbContextHelper.GetDbContext();
                 var sdkCasesById = await sdkDbContextForCalendar.Cases
                     .Where(c => complianceSdkCaseIds.Contains(c.Id))
                     .ToDictionaryAsync(c => c.Id);
@@ -201,21 +227,60 @@ public class BackendConfigurationCalendarService(
                 // branch instead of the fuzzy fallback. See investigator notes for commit
                 // 47f20657 — root cause: ListOpgaver→Drift only ever sees the
                 // recurrence-emit model when actionability stripping removed the compliance.
+                // Compute the removed-COMPLETED subset (WorkflowState=Removed +
+                // backing case Status=100) up-front so we can both:
+                //  (a) use it to expand the recurrence-dedup set below
+                //      (`compliancesForDedup`), suppressing phantom uncompleted
+                //      re-emission for dates the worker just completed.
+                //  (b) EXCLUDE it from `nonActionableByPlanningDate` (the Bug A
+                //      device-write routing slot). A removed-completed row
+                //      points at a closed Status=100 SDK Case; if it shared a
+                //      (PlanningId, Deadline.Date) with a separately-retracted
+                //      row, GroupBy's first-wins ordering could non-
+                //      deterministically route a device write to the closed
+                //      case instead of the live retracted one. Keep
+                //      nonActionableByPlanningDate focused on the original
+                //      Bug A scope (retracted SDK case / soft-deleted /
+                //      Status==100 inline-rotation) by stripping removed-
+                //      completed before the GroupBy.
+                var removedCompletedInWeek = compliancesInWeekAll
+                    .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                            && c.MicrotingSdkCaseId > 0
+                            && sdkCasesById.TryGetValue(c.MicrotingSdkCaseId, out var removedSdkCase)
+                            && removedSdkCase.Status == 100)
+                    .ToList();
+                var removedCompletedIds = new HashSet<int>(removedCompletedInWeek.Select(c => c.Id));
+                // ID-based HashSet membership (vs `List.Contains` on the Compliance
+                // object) keeps the GroupBy filter below O(n) — addresses
+                // Copilot's L256 perf note on PR 847.
+                var compliancesInWeekIds = new HashSet<int>(compliancesInWeek.Select(c => c.Id));
+
                 nonActionableByPlanningDate = compliancesInWeekAll
-                    .Where(c => !compliancesInWeek.Contains(c))
+                    .Where(c => !compliancesInWeekIds.Contains(c.Id) && !removedCompletedIds.Contains(c.Id))
                     .GroupBy(c => (c.PlanningId, c.Deadline.Date))
                     // GroupBy + first-wins guards against the (unlikely) case of multiple
                     // non-actionable compliance rows sharing a (planning, day) tuple.
                     .ToDictionary(g => g.Key, g => (ComplianceId: g.First().Id,
                         SdkCaseId: g.First().MicrotingSdkCaseId));
+
+                // Recurrence-dedup union: the actionable subset (compliancesInWeek)
+                // PLUS the removed-COMPLETED subset. The latter doesn't render to
+                // mobile workers (IsComplianceActionable strips them), but their
+                // (PlanningId, Deadline) tuples must still suppress recurrence-
+                // expansion emit for that date — otherwise the worker sees a
+                // phantom uncompleted task right after completing it.
+                compliancesForDedup = compliancesInWeek.Concat(removedCompletedInWeek).ToList();
             }
 
-            // Build sets for dedup: by exact date and by planningId (any in-week compliance,
-            // or — when ActionableOnly is set — any *actionable* in-week compliance).
+            // Build sets for dedup: by exact date and by planningId. compliancesForDedup
+            // is the actionable subset for non-ActionableOnly callers (already includes
+            // removed-completed rows per the broadened query at line 100-104), and for
+            // ActionableOnly callers is actionable ∪ removed-completed so the recurrence-
+            // emit loop doesn't double-fire a date the worker just completed.
             var complianceDateSet = new HashSet<string>(
-                compliancesInWeek.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
+                compliancesForDedup.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
             var compliancePlanningIdsInWeek = new HashSet<int>(
-                compliancesInWeek.Select(c => c.PlanningId));
+                compliancesForDedup.Select(c => c.PlanningId));
 
             // 1. Query AreaRulePlannings (future/active tasks)
             var areaRulePlannings = await backendConfigurationPnDbContext.AreaRulePlannings
