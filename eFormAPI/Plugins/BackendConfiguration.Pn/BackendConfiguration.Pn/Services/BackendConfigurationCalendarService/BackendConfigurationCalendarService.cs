@@ -1736,6 +1736,31 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("SdkCaseNotFound"));
             }
 
+            // Canonical event start (UTC) for this occurrence — Compliance.Deadline
+            // gives the calendar day (Kind=Unspecified, semantically UTC midnight
+            // per the rest of this file's convention); CalendarConfiguration.StartHour
+            // gives the hour-of-day the calendar shows for the ARP, and any "this"-
+            // scope CalendarOccurrenceException overrides per-rotation. Same triple
+            // the read path uses to project StartHour at line 703.
+            //
+            // We default to 9.0 (matches the read path's calConfig?.StartHour ?? 9.0
+            // fallback) when no CalendarConfiguration exists for the ARP.
+            var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.AreaRulePlanningId == arp.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            var complianceException = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                .Where(x => x.AreaRulePlanningId == arp.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.OriginalDate.Date == compliance.Deadline.Date)
+                .FirstOrDefaultAsync();
+            var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+            var startHourWhole = (int)Math.Floor(effectiveStartHour);
+            var startMinuteWhole = (int)Math.Round((effectiveStartHour - startHourWhole) * 60);
+            var deadlineDayUtc = DateTime.SpecifyKind(compliance.Deadline.Date, DateTimeKind.Utc);
+            var eventStart = deadlineDayUtc.AddHours(startHourWhole).AddMinutes(startMinuteWhole);
+            var eventStartIso = eventStart.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+
             var hasMandatory = await HasMandatoryFields(sdkCore, sdkCase.CheckListId.Value)
                 .ConfigureAwait(false);
 
@@ -1763,18 +1788,25 @@ public class BackendConfigurationCalendarService(
                         // offset; SpecifyKind(..., Utc) re-tags without shifting,
                         // then ToString("…Z") just emits the raw clock value as UTC.
                         Deadline = DateTime.SpecifyKind(compliance.Deadline, DateTimeKind.Utc)
-                            .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture)
+                            .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
+                        // event.start (Deadline day + calendar-config StartHour, UTC) so the
+                        // modal can default Case.DoneAt / DoneAtUserModifiable to the scheduled
+                        // moment rather than "now".
+                        EventStart = eventStartIso
                     });
             }
 
             // No mandatory fields → complete the SDK case in place. Mirrors
             // CompliancesGrpcService:159-174 (the form-submit path) — set
             // Status=100 + done-at timestamps so subsequent reads of the SDK
-            // case report the case as fully completed.
+            // case report the case as fully completed. DoneAt mirrors the
+            // calendar's scheduled event-start moment (Deadline day + StartHour)
+            // rather than "now" so reports reflect when the work was scheduled,
+            // not when the user happened to tap Complete.
             sdkCase.Status = 100;
             sdkCase.WorkflowState = Constants.WorkflowStates.Created;
-            sdkCase.DoneAt = DateTime.UtcNow;
-            sdkCase.DoneAtUserModifiable = DateTime.UtcNow;
+            sdkCase.DoneAt = eventStart;
+            sdkCase.DoneAtUserModifiable = eventStart;
             await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
 
             return new OperationDataResult<CalendarToggleCompleteResult>(true,

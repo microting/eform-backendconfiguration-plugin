@@ -22,4 +22,13 @@ public class CalendarToggleCompleteResult
     public int? ComplianceId { get; set; }
     public int? WorkerId { get; set; }
     public string? Deadline { get; set; }
+
+    /// <summary>
+    /// Calendar event start — Compliance.Deadline day + CalendarConfiguration.StartHour
+    /// (or any per-occurrence exception override), UTC, ISO 8601 with millisecond
+    /// precision. The compliance modal defaults Case.DoneAt /
+    /// Case.DoneAtUserModifiable to this value so the completion timestamp reflects
+    /// when the work was scheduled rather than when the user happened to click.
+    /// </summary>
+    public string? EventStart { get; set; }
 }

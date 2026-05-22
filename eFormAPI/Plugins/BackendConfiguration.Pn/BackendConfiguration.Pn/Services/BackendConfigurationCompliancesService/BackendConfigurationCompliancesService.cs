@@ -230,10 +230,16 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
             if(foundCase != null) {
-                // var now = DateTime.UtcNow;
-                var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month,
-                    model.DoneAt.Day, 0, 0,
-                    0, DateTimeKind.Utc);
+                // Preserve the caller-supplied time-of-day so calendar
+                // event.start (Deadline day + CalendarConfiguration.StartHour)
+                // survives the round-trip. Existing consumers (task-tracker,
+                // compliance-list) keep submitting their previous values —
+                // task-tracker uses `task.deadlineTask.toISOString()` and
+                // Compliance.Deadline is stored as midnight UTC, so their
+                // observable behaviour is unchanged. SpecifyKind re-tags
+                // without shifting (model.DoneAt arrives as Unspecified-kind
+                // from the JSON binder).
+                var newDoneAt = DateTime.SpecifyKind(model.DoneAt, DateTimeKind.Utc);
                 foundCase.DoneAtUserModifiable = newDoneAt;
                 foundCase.DoneAt = newDoneAt;
 
