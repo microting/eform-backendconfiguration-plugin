@@ -98,9 +98,21 @@ export class ComplianceCaseModalComponent implements OnInit {
           // moment rather than midnight. Fall back to `deadline` (midnight UTC)
           // when the backend didn't supply an eventStart — older response
           // shapes or non-compliance flows.
-          this.replyElement.doneAt = parseISO(this.eventStart ?? this.deadline);
+          //
+          // The HTTP layer auto-parses ISO strings in response bodies into
+          // Date instances, so `eventStart` / `deadline` arrive as Date
+          // objects despite the `string` typing on the interface — handle
+          // both shapes defensively.
+          this.replyElement.doneAt = this.toDate(this.eventStart) ?? this.toDate(this.deadline) ?? new Date();
         }
       });
+  }
+
+  private toDate(value: string | Date | undefined | null): Date | null {
+    if (value == null) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' && value.length > 0) return parseISO(value);
+    return null;
   }
 
   loadTemplateInfo() {
