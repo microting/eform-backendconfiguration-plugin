@@ -2,10 +2,12 @@
   class="task-block"
   [class.completed]="task.completed"
   [class.resizing]="resizing"
+  [class.raised]="raised"
   [style.top.px]="topPx"
   [style.height.px]="heightPx"
   [style.left]="leftStyle"
   [style.width]="widthStyle"
+  [style.z-index]="zIndexStyle"
   [style.background-color]="task.color"
   cdkDrag
   [cdkDragData]="task"
@@ -21,7 +23,7 @@
     (mousedown)="startResize($event, 'start')"
   ></div>
 
-  <div class="task-block-body" cdkDragHandle (click)="clicked.emit(task)">
+  <div class="task-block-body" cdkDragHandle (click)="onBodyClick($event)">
     <button
       class="completion-btn"
       [class.done]="task.completed"

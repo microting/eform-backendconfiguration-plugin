@@ -301,7 +301,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         if (task.isAllDay) {
           this.allDayTasksByDay[dayIdx].push({...task, color, startText, endText});
         } else {
-          this.tasksByDay[dayIdx].push({...task, color, startText, endText, _colIndex: 0, _colCount: 1});
+          this.tasksByDay[dayIdx].push({...task, color, startText, endText, _left: 0, _width: 100, _zIndex: 10});
         }
       }
     });

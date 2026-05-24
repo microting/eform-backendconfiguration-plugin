@@ -94,8 +94,15 @@ export interface CalendarRepeatMeta {
 }
 
 export interface CalendarTaskLayoutModel extends CalendarTaskModel {
-  _colIndex: number;
-  _colCount: number;
+  // Google-Calendar-style equal-divide-with-overlap layout.
+  // For N tasks in a conflict group:
+  //   _width  = 100 * 1.8 / N  (overlap factor 1.8; cards overlap their neighbours)
+  //   _left   = i * (100 - _width) / (N - 1)
+  //   _zIndex = 10 + i  (later cards layer on top)
+  // For N == 1, _left=0, _width=100, _zIndex=10.
+  _left: number;    // left edge in % of day-column usable width
+  _width: number;   // width in % of day-column usable width
+  _zIndex: number;  // default stacking order within the conflict group
 }
 
 // Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the

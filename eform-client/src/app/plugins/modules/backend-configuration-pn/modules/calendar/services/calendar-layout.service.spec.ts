@@ -5,7 +5,7 @@ function makeTask(id: number, startHour: number, dur: number): CalendarTaskModel
   return {
     id,
     startHour,
-    dur,
+    duration: dur,
     title: `Task ${id}`,
     tags: [],
     assigneeIds: [],
@@ -20,6 +20,8 @@ function makeTask(id: number, startHour: number, dur: number): CalendarTaskModel
     endText: '',
   } as CalendarTaskModel;
 }
+
+const OVERLAP_FACTOR = 1.8;
 
 describe('CalendarLayoutService', () => {
   let service: CalendarLayoutService;
@@ -37,37 +39,42 @@ describe('CalendarLayoutService', () => {
     expect(service.computeLayout(undefined as any)).toEqual([]);
   });
 
-  it('single task gets _colIndex=0 and _colCount=1', () => {
+  it('single task gets full width and base z-index', () => {
     const result = service.computeLayout([makeTask(1, 9, 1)]);
     expect(result).toHaveLength(1);
-    expect(result[0]._colIndex).toBe(0);
-    expect(result[0]._colCount).toBe(1);
+    expect(result[0]._left).toBe(0);
+    expect(result[0]._width).toBe(100);
+    expect(result[0]._zIndex).toBe(10);
   });
 
-  it('two non-overlapping tasks each get _colCount=1', () => {
-    // 09:00–10:00 and 11:00–12:00 — no overlap
+  it('two non-overlapping tasks each get full width', () => {
     const result = service.computeLayout([makeTask(1, 9, 1), makeTask(2, 11, 1)]);
-    expect(result.every(t => t._colCount === 1)).toBe(true);
-    expect(result.every(t => t._colIndex === 0)).toBe(true);
+    expect(result.every(t => t._width === 100)).toBe(true);
+    expect(result.every(t => t._left === 0)).toBe(true);
   });
 
-  it('two overlapping tasks split into two columns with _colCount=2', () => {
-    // Both 09:00–10:00 — full overlap
+  it('two overlapping tasks: equal-divide-with-overlap geometry', () => {
     const result = service.computeLayout([makeTask(1, 9, 1), makeTask(2, 9, 1)]);
-    const colIndexes = result.map(t => t._colIndex).sort((a, b) => a - b);
-    expect(colIndexes).toEqual([0, 1]);
-    expect(result.every(t => t._colCount === 2)).toBe(true);
+    const expectedWidth = 100 * OVERLAP_FACTOR / 2; // 90
+    const expectedStep = (100 - expectedWidth) / (2 - 1); // 10
+    expect(result.every(t => t._width === expectedWidth)).toBe(true);
+    expect(result[0]._left).toBe(0);
+    expect(result[1]._left).toBe(expectedStep);
+    expect(result[0]._zIndex).toBe(10);
+    expect(result[1]._zIndex).toBe(11);
   });
 
-  it('three mutually overlapping tasks split into three columns', () => {
+  it('three mutually overlapping tasks: evenly distributed left offsets', () => {
     const result = service.computeLayout([
       makeTask(1, 9, 2),
       makeTask(2, 9, 2),
       makeTask(3, 9, 2),
     ]);
-    const colIndexes = result.map(t => t._colIndex).sort((a, b) => a - b);
-    expect(colIndexes).toEqual([0, 1, 2]);
-    expect(result.every(t => t._colCount === 3)).toBe(true);
+    const expectedWidth = 100 * OVERLAP_FACTOR / 3; // 60
+    const expectedStep = (100 - expectedWidth) / (3 - 1); // 20
+    expect(result.every(t => t._width === expectedWidth)).toBe(true);
+    expect(result.map(t => t._left)).toEqual([0, expectedStep, expectedStep * 2]);
+    expect(result.map(t => t._zIndex)).toEqual([10, 11, 12]);
   });
 
   it('partially overlapping group: two tasks overlap, third is separate', () => {
@@ -78,10 +85,11 @@ describe('CalendarLayoutService', () => {
       makeTask(3, 13, 1),
     ]);
     const standalone = result.find(t => t.id === 3)!;
-    expect(standalone._colCount).toBe(1);
-    expect(standalone._colIndex).toBe(0);
+    expect(standalone._width).toBe(100);
+    expect(standalone._left).toBe(0);
     const overlapping = result.filter(t => t.id !== 3);
-    expect(overlapping.every(t => t._colCount === 2)).toBe(true);
+    const expectedWidth = 100 * OVERLAP_FACTOR / 2;
+    expect(overlapping.every(t => t._width === expectedWidth)).toBe(true);
   });
 
   it('output is sorted by startHour ascending', () => {
@@ -92,22 +100,33 @@ describe('CalendarLayoutService', () => {
     expect(result[2].startHour).toBe(11);
   });
 
-  it('tasks with fractional hours (quarter-hour precision) are handled correctly', () => {
-    // 09:00–09:30 and 09:30–10:00 — touching but NOT overlapping
+  it('touching-but-not-overlapping tasks each get full width', () => {
+    // 09:00–09:30 and 09:30–10:00 — touching boundary, no overlap
     const result = service.computeLayout([makeTask(1, 9, 0.5), makeTask(2, 9.5, 0.5)]);
-    expect(result.every(t => t._colCount === 1)).toBe(true);
+    expect(result.every(t => t._width === 100)).toBe(true);
   });
 
-  it('task using colIndex can reuse a freed column slot', () => {
-    // Task A: 09:00–10:00 (col 0), Task B: 09:00–10:00 (col 1), Task C: 10:00–11:00 (should reuse col 0)
+  it('task whose start is at the end of a prior conflict group starts a new group', () => {
+    // Task A: 09:00–10:00, Task B: 09:00–10:00, Task C: 10:00–11:00
     const result = service.computeLayout([
       makeTask(1, 9, 1),
       makeTask(2, 9, 1),
       makeTask(3, 10, 1),
     ]);
     const taskC = result.find(t => t.id === 3)!;
-    // C should be in its own conflict group (no overlap with A or B at 10:00)
-    expect(taskC._colCount).toBe(1);
-    expect(taskC._colIndex).toBe(0);
+    expect(taskC._width).toBe(100);
+    expect(taskC._left).toBe(0);
+  });
+
+  it('rightmost cascaded card sits on top of its conflict group by default', () => {
+    const result = service.computeLayout([
+      makeTask(1, 9, 1),
+      makeTask(2, 9, 1),
+      makeTask(3, 9, 1),
+      makeTask(4, 9, 1),
+    ]);
+    const zIndexes = result.map(t => t._zIndex);
+    // Default stacking: later index (in sort order) → higher z-index.
+    expect(zIndexes).toEqual([10, 11, 12, 13]);
   });
 });
