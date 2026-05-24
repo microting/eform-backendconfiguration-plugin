@@ -21,8 +21,10 @@ export class CalendarTaskBlockComponent {
   @Input() task!: CalendarTaskLayoutModel;
   @Input() hourHeight = HOUR_HEIGHT;
   @Input() showId = false;
+  @Input() raised = false;
 
   @Output() clicked = new EventEmitter<CalendarTaskLayoutModel>();
+  @Output() raiseRequested = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() toggleComplete = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() dragMoved = new EventEmitter<CdkDragMove<CalendarTaskLayoutModel>>();
   @Output() dragEnded = new EventEmitter<CdkDragEnd>();
@@ -49,17 +51,38 @@ export class CalendarTaskBlockComponent {
     return Math.max(dur * this.hourHeight - 4, 20);
   }
 
-  // 4px horizontal gutter inside the sub-column. Using calc(% ± px) keeps
-  // the gap visually constant across viewport widths; with N overlapping
-  // events this gives 4px outside + 8px between adjacent events.
+  // Google-Calendar-style cascade-with-overlap. When raised, the card jumps
+  // above all others in its conflict group and its right edge extends to
+  // the column's right edge (the left edge stays put — see design spec
+  // 2026-05-24-calendar-overlapping-events-stacking-design.md).
   get leftStyle(): string {
-    const colWidth = 100 / this.task._colCount;
-    return `calc(${this.task._colIndex * colWidth}% + 4px)`;
+    return `${this.task._left}%`;
   }
 
   get widthStyle(): string {
-    const colWidth = 100 / this.task._colCount;
-    return `calc(${colWidth}% - 8px)`;
+    if (this.raised) return `${100 - this.task._left}%`;
+    return `${this.task._width}%`;
+  }
+
+  get zIndexStyle(): number {
+    if (this.raised) return 999;
+    return this.task._zIndex;
+  }
+
+  get isInCascade(): boolean {
+    return this.task._width < 100;
+  }
+
+  // Click on the card body: always open the detail. For cascaded cards
+  // that aren't already raised, also raise them so the visual state
+  // reflects which card opened. stopPropagation prevents the day-cell's
+  // onCellClick from also firing and creating a new event in the slot.
+  onBodyClick(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.isInCascade && !this.raised) {
+      this.raiseRequested.emit(this.task);
+    }
+    this.clicked.emit(this.task);
   }
 
   // Live time labels — show the preview values during a resize so the user

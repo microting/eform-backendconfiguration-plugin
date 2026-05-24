@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostListener,
   Input,
   OnChanges,
   OnDestroy,
@@ -79,10 +80,30 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   private selectionBaseTop: number = 0; // top of the day column in scroll coords
   private selectionDayIndex: number = -1;
 
+  // Cascade raise state: id of the cascaded task currently brought to the
+  // front. Cleared on click outside any task-block. See
+  // 2026-05-24-calendar-overlapping-events-stacking-design.md.
+  raisedTaskId: number | null = null;
+
   constructor(
     private calendarService: BackendConfigurationPnCalendarService,
     private translate: TranslateService,
+    private el: ElementRef<HTMLElement>,
   ) {}
+
+  onTaskRaiseRequested(task: CalendarTaskLayoutModel) {
+    this.raisedTaskId = task.id;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.raisedTaskId === null) return;
+    const target = event.target as HTMLElement;
+    const taskBlock = target.closest('.task-block');
+    if (!taskBlock || !this.el.nativeElement.contains(taskBlock)) {
+      this.raisedTaskId = null;
+    }
+  }
 
   ngOnInit() {
     this.rebuildWeekDays();
@@ -574,7 +595,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     const chipEl = event.currentTarget as HTMLElement;
     const chipRect = chipEl.getBoundingClientRect();
     this.taskClicked.emit({
-      task: {...task, _colIndex: 0, _colCount: 1} as CalendarTaskLayoutModel,
+      task: {...task, _left: 0, _width: 100, _zIndex: 10} as CalendarTaskLayoutModel,
       cellLeft: chipRect.left,
       cellRight: chipRect.right,
       slotTop: chipRect.bottom,
