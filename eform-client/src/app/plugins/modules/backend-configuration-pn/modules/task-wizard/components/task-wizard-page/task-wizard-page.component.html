@@ -1,14 +1,45 @@
-<eform-new-subheader>
-  <button
-    class="btn-primary btn-primary--icon-left"
-    [matTooltip]="'Create new task' | translate"
-    (click)="onCreateTask()"
-    id="createNewTaskBtn"
-  >
-    <mat-icon>add</mat-icon>
-    <span>{{ 'Create new task' | translate }}</span>
-  </button>
-</eform-new-subheader>
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
+    <app-task-wizard-filters
+      [properties]="properties"
+      [folders]="folders"
+      [sites]="sites"
+      [tags]="tags"
+      (updateTable)="updateTable()"
+    />
+    <button
+      *ngIf="selectAuthIsAdmin$ | async;"
+      class="btn-warning"
+      [disabled]="
+      !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
+    "
+      id="deleteMultiplePluginsBtn"
+      matTooltip="{{ 'Deactivate selected' | translate }}"
+      (click)="showDeactivateMultipleTasksModal()"
+    >
+      {{ 'Deactivate selected' | translate }}
+    </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      (click)="exportCsv()"
+      id="exportTasksBtn"
+      matTooltip="{{ 'Export CSV' | translate }}"
+    >
+      <mat-icon>download</mat-icon>
+      <span>{{ 'Export CSV' | translate }}</span>
+    </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      [matTooltip]="'Create new task' | translate"
+      (click)="onCreateTask()"
+      id="createNewTaskBtn"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'Create new task' | translate }}</span>
+    </button>
+  </div>
+</mat-card>
 
 <app-planned-task-workers
   *ngIf="showDiagram"
@@ -17,37 +48,6 @@
   [view]="view"
   class="mb-2 w-100"
 />
-
-<app-task-wizard-filters
-  [properties]="properties"
-  [folders]="folders"
-  [sites]="sites"
-  [tags]="tags"
-  (updateTable)="updateTable()"
-/>
-<div class="d-flex flex-row align-items-center gap-12 mb-4 ml-3">
-  <button
-    *ngIf="selectAuthIsAdmin$ | async;"
-    class="btn-warning"
-    [disabled]="
-    !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
-  "
-    id="deleteMultiplePluginsBtn"
-    matTooltip="{{ 'Deactivate selected' | translate }}"
-    (click)="showDeactivateMultipleTasksModal()"
-  >
-    {{ 'Deactivate selected' | translate }}
-  </button>
-
-  <button
-    class="btn-primary btn-primary--icon-left ml-2"
-    (click)="exportCsv()"
-    id="exportTasksBtn"
-  >
-    <mat-icon>download</mat-icon>
-    <span>Export CSV</span>
-  </button>
-</div>
 <app-task-wizard-table
   [tasks]="tasks"
   [highlightId]="highlightIdAfterEdit"

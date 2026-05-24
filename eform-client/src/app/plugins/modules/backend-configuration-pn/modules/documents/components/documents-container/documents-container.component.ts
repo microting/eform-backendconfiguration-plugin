@@ -27,7 +27,8 @@ import {
 } from '../../../../services';
 import {TranslateService} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
+import {AppMenuStateService} from 'src/app/common/store';
 import {StatisticsStateService} from '../../../statistics/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
@@ -52,7 +53,14 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   public documentsStateService = inject(DocumentsStateService);
   public localeService = inject(LocaleService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
   private statisticsStateService = inject(StatisticsStateService);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
   folders: DocumentSimpleFolderModel[];
   documents: Paged<DocumentModel> = new Paged<DocumentModel>();
@@ -71,6 +79,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   getActiveSortDirectionSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
+  titleSub$: Subscription;
   private selectCurrentUserLanguageId$ = this.store.select(selectCurrentUserLanguageId);
   private selectDocumentsFiltersPropertyId$ = this.store.select(selectDocumentsFiltersPropertyId);
   private selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
@@ -112,6 +121,12 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     this.getProperties();
     this.getActiveSortDirectionSub$ = this.selectDocumentsPaginationIsSortDsc$
       .pipe(
@@ -135,6 +150,10 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Class has no @AutoUnsubscribe() decorator — explicit cleanup for the
+    // one subscription we own. Other Sub$ fields in this class predate this
+    // session and are out of scope.
+    this.titleSub$?.unsubscribe();
   }
 
   openCreateModal() {

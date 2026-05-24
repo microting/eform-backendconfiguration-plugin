@@ -1,5 +1,4 @@
-<div [formGroup]="filtersForm">
-  <div class="align-items-center d-flex flex-row need-wrapper px-3">
+<div class="filters-inline" [formGroup]="filtersForm">
     <mat-form-field>
       <mat-label>{{'Property' | translate}}</mat-label>
       <mtx-select
@@ -24,8 +23,6 @@
       >
       </mtx-select>
     </mat-form-field>
-<!--  </div>-->
-<!--  <div class="align-items-center d-flex flex-row need-wrapper">-->
     <mat-form-field>
       <mat-label>{{'Document name' | translate}}</mat-label>
       <mtx-select
@@ -53,13 +50,10 @@
       </mtx-select>
     </mat-form-field>
     <button
-      class="btn-primary btn-primary--icon-left mb-4 ml-3"
+      class="btn-primary btn-primary--icon-left"
       id="showReportBtn"
       (click)="updateTable.emit()"
     >
       <span>{{ 'Show' | translate }}</span>
     </button>
-  </div>
-
-
 </div>

@@ -1,5 +1,11 @@
-<eform-new-subheader>
-  <div class="d-flex flex-row align-items-center gap-24">
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
+    <app-task-tracker-filters
+      (updateTable)="updateTable()"
+      [properties]="properties"
+      [tags]="tags"
+    />
     <button
       class="btn-secondary btn-secondary--icon-rounded-border"
       id="excelReportBtn"
@@ -8,7 +14,6 @@
     >
       <mat-icon svgIcon="file-excel"></mat-icon>
     </button>
-    <div class="line-vert"></div>
     <button
       class="btn-primary btn-primary--icon-left"
       id="createNewTaskBtn"
@@ -19,7 +24,7 @@
       <span>{{ 'Create new task' | translate }}</span>
     </button>
   </div>
-</eform-new-subheader>
+</mat-card>
 
 <div class="d-flex flex-column">
   <div class="px-3 mb-4">
@@ -32,11 +37,6 @@
     />
   </div>
 
-  <app-task-tracker-filters
-    (updateTable)="updateTable()"
-    [properties]="properties"
-    [tags]="tags"
-  />
   <!--  <div class="d-flex flex-row justify-content-start mb-4 px-3">-->
   <!--    <button-->
   <!--      mat-raised-button-->
