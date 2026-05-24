@@ -22,8 +22,8 @@ import {
   TaskWizardUpdateModalComponent
 } from '../../components';
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
-import {AuthStateService} from 'src/app/common/store';
-import {ActivatedRoute} from '@angular/router';
+import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
+import {ActivatedRoute, Router} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
 import * as R from 'ramda';
 import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state';
@@ -53,7 +53,14 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   private appSettingsStateService = inject(AppSettingsStateService);
   public authStateService = inject(AuthStateService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
   private statisticsStateService = inject(StatisticsStateService);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
   @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   properties: CommonDictionaryModel[] = [];
@@ -86,6 +93,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   getPropertyIdsAsyncSub$: Subscription;
   changePropertySub$: Subscription;
   getPlannedTaskWorkersSub$: Subscription;
+  titleSub$: Subscription;
   selectedPlanningsCheckboxes: number[] = [];
   public isAuth$ = this.store.select(selectAuthIsAuth);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
@@ -121,6 +129,12 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
 
 
   ngOnInit(): void {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     let propertyIds: number[] = [];
     this.getProperties();
     this.getTags();

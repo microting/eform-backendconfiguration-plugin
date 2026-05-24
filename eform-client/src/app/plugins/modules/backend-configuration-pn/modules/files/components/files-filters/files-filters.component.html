@@ -1,5 +1,4 @@
-<div [formGroup]="filtersForm">
-  <div class="align-items-center d-flex flex-row need-wrapper px-3">
+<div class="filters-inline" [formGroup]="filtersForm">
     <mat-form-field>
       <mat-label>{{'Property' | translate}}</mat-label>
       <mtx-select
@@ -30,8 +29,6 @@
         <mat-icon>close</mat-icon>
       </button>
     </mat-form-field>
-<!--  </div>-->
-<!--  <div class="align-items-center d-flex flex-row need-wrapper px-3">-->
     <mat-form-field>
       <mat-label>{{'File name' | translate}}</mat-label>
       <input
@@ -58,5 +55,4 @@
       >
       </mtx-select>
     </mat-form-field>
-  </div>
 </div>

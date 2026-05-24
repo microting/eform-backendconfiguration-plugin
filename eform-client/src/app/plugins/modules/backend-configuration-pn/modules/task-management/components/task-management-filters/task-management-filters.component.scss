@@ -1,0 +1,22 @@
+// display:contents lets the filter controls join the parent toolbar's flex row
+// instead of forming a nested row (host + wrapper both bypass layout).
+:host,
+.filters-inline {
+  display: contents;
+}
+
+// With 7 filter fields plus action buttons sharing the sub-header row, the
+// Material default ~320px width forces wrapping. Constrain each field so 5-6
+// fit per row alongside the buttons. Naming `.mat-mdc-form-field` in the
+// selector outranks the global `.mat-mdc-form-field { width: 100% }` rule in
+// scss/components/_form.scss.
+:host ::ng-deep .filters-inline mat-form-field.mat-mdc-form-field {
+  width: 180px;
+  min-width: 180px;
+
+  // Date range has two stacked inputs and needs slightly more room.
+  &[formGroupName='date'] {
+    width: 220px;
+    min-width: 220px;
+  }
+}

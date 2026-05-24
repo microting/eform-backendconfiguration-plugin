@@ -4,7 +4,8 @@ import {Component, OnDestroy, OnInit,
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subject, Subscription} from 'rxjs';
 import {EntityItemModel, Paged} from 'src/app/common/models';
-import {AuthStateService} from 'src/app/common/store';
+import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
+import {Router} from '@angular/router';
 import {
   PropertyCreateModalComponent,
   PropertyDeleteModalComponent,
@@ -45,7 +46,14 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
   public selectPropertiesNameFilters$ = this.store.select(selectPropertiesNameFilters);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
   isFarms: boolean = false;
   tableHeaders: MtxGridColumn[] = [
@@ -140,14 +148,15 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   getEntitySelectableGroupSub$: Subscription;
   updateEntitySelectableGroupSub$: Subscription;
   nameSearchSubjectSub$: Subscription;
-
-
-
-  // get backendConfigurationPnClaims() {
-  //   return BackendConfigurationPnClaims;
-  // }
+  titleSub$: Subscription;
 
   ngOnInit() {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     this.nameSearchSubjectSub$ = this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertiesStateService.updateNameFilter(val.toString());
       this.getProperties();

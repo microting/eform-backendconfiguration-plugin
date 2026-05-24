@@ -1,6 +1,4 @@
-import {Component, OnDestroy, OnInit, ViewChild,
-  inject
-} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild, inject} from '@angular/core';
 import {DownloadFilesNameArchiveComponent, FileNameEditComponent, FileTagsComponent, FileTagsEditComponent} from '../';
 import {FilesModel} from '../../../../models';
 import {
@@ -18,6 +16,8 @@ import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/componen
 import {TranslateService} from '@ngx-translate/core';
 import {saveAs} from 'file-saver';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {AppMenuStateService} from 'src/app/common/store';
+import {Router} from '@angular/router';
 import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
@@ -35,6 +35,13 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   private tagsService = inject(BackendConfigurationPnFileTagsService);
   private translateService = inject(TranslateService);
   private filesService = inject(BackendConfigurationPnFilesService);
+  private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
   @ViewChild('tagsModal') tagsModal: FileTagsComponent;
   availableTags: SharedTagModel[] = [];
@@ -50,10 +57,15 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   fileTagsUpdatedSub$: Subscription;
   downloadFilesSub$: Subscription;
   clickDownloadFilesSub$: Subscription;
-
-
+  titleSub$: Subscription;
 
   ngOnInit(): void {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     this.getTags();
     this.getFiles();
     // this.filesStateService.getFiltersAsync().subscribe(() => this.updateTable());
