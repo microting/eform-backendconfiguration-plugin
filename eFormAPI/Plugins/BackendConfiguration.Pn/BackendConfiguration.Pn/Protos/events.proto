@@ -211,7 +211,11 @@ message Event {
 
 message Attachment {
   microting.documents.AttachmentSource source = 1;
-  string name = 2;
+  string name = 2;                  // legacy / fallback display label
+  int32 id = 3;                     // AreaRulePlanningFile.Id (CALENDAR_FILE only)
+  string original_file_name = 4;    // e.g. "report.pdf"
+  string mime_type = 5;             // e.g. "application/pdf"
+  int64 size_bytes = 6;
 }
 
 // Field of the eForm template that backs an Event.
