@@ -789,6 +789,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.PropertiesGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.TemplatesGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.CompliancesGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.DocumentsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.EventsGrpcService>();
         });
     }
