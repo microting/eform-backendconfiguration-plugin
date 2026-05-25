@@ -288,6 +288,10 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, task.Id, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+
             response.Opgaver.Add(opgave);
         }
 
@@ -376,6 +380,9 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, task.Id, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
 
             response.Opgaver.Add(opgave);
         }
@@ -833,7 +840,7 @@ public class EventsGrpcService(
         {
             var (initialStart, initialEnd) = ComputeWatchWindow();
             var initial = await LoadOpgaverAsync(
-                propertyId, boardFilter, initialStart, initialEnd).ConfigureAwait(false);
+                propertyId, boardFilter, initialStart, initialEnd, ct).ConfigureAwait(false);
             foreach (var op in initial)
             {
                 ct.ThrowIfCancellationRequested();
@@ -872,7 +879,7 @@ public class EventsGrpcService(
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
                 var current = await LoadOpgaverAsync(
-                    propertyId, boardFilter, windowStart, windowEnd).ConfigureAwait(false);
+                    propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
                 var currentIds = new HashSet<int>();
 
@@ -971,7 +978,8 @@ public class EventsGrpcService(
         int propertyId,
         List<int> boardFilter,
         DateTime windowStart,
-        DateTime windowEnd)
+        DateTime windowEnd,
+        CancellationToken ct = default)
     {
         var model = new CalendarTaskRequestModel
         {
@@ -1027,6 +1035,10 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, task.Id, dbContext, ct)
+                .ConfigureAwait(false);
+
             output.Add(opgave);
         }
 
@@ -1080,7 +1092,7 @@ public class EventsGrpcService(
         // because StatusCode.Unimplemented is not in its permanent-error set.
         if (!request.Completed)
         {
-            return await BuildIdempotentCompleteOpgaveResponse(opgaveId, request)
+            return await BuildIdempotentCompleteOpgaveResponse(opgaveId, request, context)
                 .ConfigureAwait(false);
         }
 
@@ -1736,14 +1748,17 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
             // Compliance row is gone and no recurrence covered today —
             // synthesize a minimal "completed" Opgave so the client can
-            // reconcile local state against the new server truth. Empty
-            // Fields / Attachments are correct here: the row is no longer
-            // actionable and the client should drop it.
+            // reconcile local state against the new server truth. Attachments
+            // are still populated if available, though the task is no longer
+            // actionable after completion.
             opgave = new Event
             {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
@@ -1758,6 +1773,9 @@ public class EventsGrpcService(
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
 
         return new CompleteEventResponse { Opgave = opgave };
@@ -1786,7 +1804,7 @@ public class EventsGrpcService(
     /// </list>
     /// </summary>
     private async Task<CompleteEventResponse> BuildIdempotentCompleteOpgaveResponse(
-        int opgaveId, CompleteEventRequest request)
+        int opgaveId, CompleteEventRequest request, ServerCallContext context)
     {
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -1850,28 +1868,31 @@ public class EventsGrpcService(
             ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
             : DateTime.UtcNow;
 
+        Event opgave;
         if (compliance == null)
         {
             // No live compliance row — the row was already completed (or never
             // had one). Return Completed=true so the flutter client drops it
             // from Drift via the empty/zero-id "no longer actionable" path.
-            return new CompleteEventResponse
+            opgave = new Event
             {
-                Opgave = new Event
-                {
-                    Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                    EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                    TavleId = string.Empty,
-                    PlanDayKey = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    PlannedAt = string.Empty,
-                    TaskText = string.Empty,
-                    CalendarColor = string.Empty,
-                    Completed = true,
-                    CompletedBy = request.CompletedBy ?? string.Empty,
-                    DescriptionHtml = string.Empty,
-                    Comment = string.Empty
-                }
+                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
+                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                TavleId = string.Empty,
+                PlanDayKey = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                PlannedAt = string.Empty,
+                TaskText = string.Empty,
+                CalendarColor = string.Empty,
+                Completed = true,
+                CompletedBy = request.CompletedBy ?? string.Empty,
+                DescriptionHtml = string.Empty,
+                Comment = string.Empty
             };
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+
+            return new CompleteEventResponse { Opgave = opgave };
         }
 
         // Compliance still alive — anomaly: a still-actionable row is being
@@ -1895,7 +1916,6 @@ public class EventsGrpcService(
             ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
             : null;
 
-        Event opgave;
         if (refreshedTask != null)
         {
             // Mirror the main CompleteOpgave path: reuse the envelope +
@@ -1936,12 +1956,16 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
             // Compliance alive but calendar query didn't surface the row
             // (e.g. ActionableOnly filtered it out). Treat the same as
-            // "no longer actionable" so the client drops it.
+            // "no longer actionable" so the client drops it. Attachments may
+            // still be available if the planning had files.
             opgave = new Event
             {
                 Id = opgaveId.ToString(CultureInfo.InvariantCulture),
@@ -1956,6 +1980,9 @@ public class EventsGrpcService(
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
 
         return new CompleteEventResponse { Opgave = opgave };
@@ -2185,8 +2212,10 @@ public class EventsGrpcService(
         // Echo the just-written text on the way out so the client doesn't
         // need a follow-up read. GetTasksForWeek does not currently surface
         // Case.Custom, so populating opgave.comment here is the only path.
-        var opgave = refreshedTask != null
-            ? new Event
+        Event opgave;
+        if (refreshedTask != null)
+        {
+            opgave = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
                 EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
@@ -2199,8 +2228,16 @@ public class EventsGrpcService(
                 CompletedBy = string.Empty,
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
                 Comment = trimmed
-            }
-            : SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed);
+            };
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            opgave = SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed);
+            // No attachments for synthesized minimal Event — it's for orphaned tasks with no planning.
+        }
 
         return new SetCommentResponse { Opgave = opgave };
     }
@@ -3123,6 +3160,9 @@ public class EventsGrpcService(
             {
                 opgave.Fields.AddRange(fields);
             }
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
@@ -3141,6 +3181,9 @@ public class EventsGrpcService(
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
+
+            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+                .ConfigureAwait(false);
         }
 
         return new SetFieldValueResponse { Opgave = opgave };
