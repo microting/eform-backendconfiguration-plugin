@@ -47,11 +47,11 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///     is no real implementation to delegate to.
 /// SetComment stores worker-supplied comment text on the SDK case row's
 /// existing free-form <c>Custom</c> column, JSON-encoded under an
-/// <c>opgaver_comment</c> envelope (see <see cref="SetComment"/> docs for the
+/// <c>event_comment</c> envelope (see <see cref="SetComment"/> docs for the
 /// rationale and collision analysis). No new EF entity / migration is
 /// introduced.
 /// UploadPhoto / RemovePhoto extend the same <c>Custom</c> envelope with an
-/// <c>opgaver_photos</c> array carrying <c>{slot, uploaded_data_id, ts_unix,
+/// <c>event_photos</c> array carrying <c>{slot, uploaded_data_id, ts_unix,
 /// content_type}</c> per slot. Bytes are written to S3 via the eFormCore SDK's
 /// <c>core.PutFileToS3Storage</c> (same path as
 /// <c>BackendConfigurationTaskManagementService.CreateTask</c>); a row in the
@@ -1991,7 +1991,7 @@ public class EventsGrpcService(
     ///
     /// Storage path: SDK <c>Case.Custom</c> (free-form string column on the
     /// SDK eFormCore Cases table), JSON-encoded as
-    /// <c>{"opgaver_comment":{"text":...,"ts_unix":...}}</c>.
+    /// <c>{"event_comment":{"text":...,"ts_unix":...}}</c>.
     ///
     /// Rationale (Path A from the design exploration; see PR description):
     /// <list type="bullet">
@@ -2273,9 +2273,9 @@ public class EventsGrpcService(
     /// the TaskManagement convention: <c>{uploaded_data_id}_{checksum}{ext}</c>.
     ///
     /// Slot tracking: the (slot, uploaded_data_id, ts_unix, content_type)
-    /// tuple is appended to the <c>opgaver_photos</c> array in the
+    /// tuple is appended to the <c>event_photos</c> array in the
     /// <c>Case.Custom</c> JSON envelope (the same envelope SetComment uses
-    /// for <c>opgaver_comment</c>). Re-uploading to a slot that already
+    /// for <c>event_comment</c>). Re-uploading to a slot that already
     /// contains a photo soft-deletes the previous <c>UploadedData</c> row
     /// and replaces the entry, so the slot acts as a stable per-event
     /// identifier.
@@ -2882,10 +2882,10 @@ public class EventsGrpcService(
         // option below in the writer (System.Text.Json defaults omit nulls
         // only when explicitly opted in, but we accept the trailing null
         // here since the absence on read is what matters).
-        [JsonPropertyName("opgaver_comment")]
+        [JsonPropertyName("event_comment")]
         public EventCommentBody? EventComment { get; set; }
 
-        [JsonPropertyName("opgaver_photos")]
+        [JsonPropertyName("event_photos")]
         public List<EventPhotoBody>? EventPhotos { get; set; }
     }
 
