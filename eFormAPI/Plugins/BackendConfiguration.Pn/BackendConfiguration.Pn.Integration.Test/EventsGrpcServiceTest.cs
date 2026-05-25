@@ -244,4 +244,95 @@ public class EventsGrpcServiceTest : TestBaseSetup
         Assert.That(response.Opgaver, Has.Count.EqualTo(1));
         Assert.That(response.Opgaver[0].PlannedAt, Is.EqualTo(expected));
     }
+
+    [Test]
+    public async Task PopulateCalendarAttachments_LoadsRowsForPlanning()
+    {
+        // Arrange: seed an AreaRulePlanning + 2 AreaRulePlanningFile rows, one
+        // active and one soft-removed. The helper should return only the active
+        // row, projected with id/originalFileName/mimeType/sizeBytes set.
+        var area = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Area
+        {
+            Type = Microting.EformBackendConfigurationBase.Infrastructure.Enum.AreaTypesEnum.Type1,
+            ItemPlanningTagId = 0,
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        BackendConfigurationPnDbContext!.Areas.Add(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // AreaRule requires a Property FK reference
+        var property = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Property
+        {
+            Name = "Test Property",
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        BackendConfigurationPnDbContext.Properties.Add(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var rule = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRule
+        {
+            AreaId = area.Id,
+            PropertyId = property.Id,
+            EformName = "x",
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        BackendConfigurationPnDbContext.AreaRules.Add(rule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var planning = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanning
+        {
+            AreaRuleId = rule.Id,
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        BackendConfigurationPnDbContext.AreaRulePlannings.Add(planning);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var active = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanningFile
+        {
+            AreaRulePlanningId = planning.Id,
+            OriginalFileName = "report.pdf",
+            MimeType = "application/pdf",
+            SizeBytes = 12345,
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        var removed = new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanningFile
+        {
+            AreaRulePlanningId = planning.Id,
+            OriginalFileName = "old.pdf",
+            MimeType = "application/pdf",
+            SizeBytes = 99,
+            WorkflowState = Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1,
+        };
+        BackendConfigurationPnDbContext.AreaRulePlanningFiles.AddRange(active, removed);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var proto = new BackendConfiguration.Pn.Grpc.Events.Event();
+
+        // Act
+        await EventsGrpcService.PopulateCalendarAttachments(
+            proto, planning.Id, BackendConfigurationPnDbContext, CancellationToken.None);
+
+        // Assert
+        Assert.That(proto.Attachments, Has.Count.EqualTo(1));
+        var a = proto.Attachments[0];
+        Assert.That(a.Source, Is.EqualTo(
+            BackendConfiguration.Pn.Grpc.Documents.AttachmentSource.CalendarFile));
+        Assert.That(a.Id, Is.EqualTo(active.Id));
+        Assert.That(a.OriginalFileName, Is.EqualTo("report.pdf"));
+        Assert.That(a.MimeType, Is.EqualTo("application/pdf"));
+        Assert.That(a.SizeBytes, Is.EqualTo(12345));
+        Assert.That(a.Name, Is.EqualTo("report.pdf"));
+    }
 }

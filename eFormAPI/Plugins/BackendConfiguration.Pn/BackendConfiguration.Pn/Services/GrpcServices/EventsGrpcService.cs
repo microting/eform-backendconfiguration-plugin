@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Grpc.Documents;
 using BackendConfiguration.Pn.Grpc.Events;
@@ -3412,6 +3413,40 @@ public class EventsGrpcService(
 
         // Step 4 — no match; pass through.
         return rawValue;
+    }
+
+    /// <summary>
+    /// Load <c>AreaRulePlanningFile</c> rows for a given <paramref name="areaRulePlanningId"/>,
+    /// filtering out soft-removed rows, and project them into the <paramref name="proto"/>
+    /// <c>Attachments</c> repeated field as <c>AttachmentSource.CalendarFile</c> entries.
+    /// Each file is projected with id/originalFileName/mimeType/sizeBytes from the DB row.
+    /// </summary>
+    internal static async Task PopulateCalendarAttachments(
+        Event proto,
+        int areaRulePlanningId,
+        BackendConfigurationPnDbContext dbContext,
+        CancellationToken ct)
+    {
+        var files = await dbContext.AreaRulePlanningFiles
+            .Where(f => f.AreaRulePlanningId == areaRulePlanningId
+                     && f.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            .OrderBy(f => f.Id)
+            .Select(f => new { f.Id, f.OriginalFileName, f.MimeType, f.SizeBytes })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        foreach (var f in files)
+        {
+            proto.Attachments.Add(new Attachment
+            {
+                Source = BackendConfiguration.Pn.Grpc.Documents.AttachmentSource.CalendarFile,
+                Id = f.Id,
+                OriginalFileName = f.OriginalFileName ?? string.Empty,
+                MimeType = f.MimeType ?? string.Empty,
+                SizeBytes = f.SizeBytes,
+                Name = f.OriginalFileName ?? f.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            });
+        }
     }
 
     /// <summary>
