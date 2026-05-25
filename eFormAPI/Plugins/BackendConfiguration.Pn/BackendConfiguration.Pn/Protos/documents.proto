@@ -17,6 +17,7 @@ enum AttachmentSource {
   ATTACHMENT_SOURCE_UNSPECIFIED = 0;
   GDRIVE = 1;
   ONEDRIVE = 2;
+  CALENDAR_FILE = 3;
 }
 
 message GetAttachmentResponse {
