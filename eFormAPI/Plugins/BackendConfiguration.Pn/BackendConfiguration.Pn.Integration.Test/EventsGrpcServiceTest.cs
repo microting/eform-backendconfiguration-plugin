@@ -159,14 +159,14 @@ public class EventsGrpcServiceTest : TestBaseSetup
     }
 
     /// <summary>
-    /// Canonical ListOpgaverRequest literal used by every read-path test
+    /// Canonical ListEventsRequest literal used by every read-path test
     /// in this fixture. The window spans the same week as the seeded
     /// task's TaskDate.
     /// </summary>
-    private static ListOpgaverRequest MakeListRequest() =>
+    private static ListEventsRequest MakeListRequest() =>
         new()
         {
-            EjendomId = PropertyIdString,
+            PropertyId = PropertyIdString,
             FromDateKey = "2026-05-18",
             ToDateKey = "2026-05-24"
         };
@@ -204,9 +204,9 @@ public class EventsGrpcServiceTest : TestBaseSetup
         // Assert — exactly one event, planned_at formatted from StartHour.
         Assert.Multiple(() =>
         {
-            Assert.That(response.Opgaver, Has.Count.EqualTo(1));
-            Assert.That(response.Opgaver[0].PlannedAt, Is.EqualTo("08:30"));
-            Assert.That(response.Opgaver[0].Id, Is.EqualTo("42"));
+            Assert.That(response.Events, Has.Count.EqualTo(1));
+            Assert.That(response.Events[0].PlannedAt, Is.EqualTo("08:30"));
+            Assert.That(response.Events[0].Id, Is.EqualTo("42"));
         });
     }
 
@@ -241,8 +241,8 @@ public class EventsGrpcServiceTest : TestBaseSetup
 
         var response = await service.ListEvents(MakeListRequest(), new TestServerCallContext());
 
-        Assert.That(response.Opgaver, Has.Count.EqualTo(1));
-        Assert.That(response.Opgaver[0].PlannedAt, Is.EqualTo(expected));
+        Assert.That(response.Events, Has.Count.EqualTo(1));
+        Assert.That(response.Events[0].PlannedAt, Is.EqualTo(expected));
     }
 
     [Test]
