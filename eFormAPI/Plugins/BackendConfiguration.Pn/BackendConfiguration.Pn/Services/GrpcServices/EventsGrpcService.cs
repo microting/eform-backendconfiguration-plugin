@@ -34,13 +34,13 @@ using SdkElement = Microting.eForm.Infrastructure.Models.Element;
 namespace BackendConfiguration.Pn.Services.GrpcServices;
 
 /// <summary>
-/// gRPC adapter for the mobile "Opgaver" feature.
+/// gRPC adapter for the mobile "Event" feature.
 /// Read-only RPCs (ListProperties / ListBoards / ListEvents) reuse the existing
 /// Properties + Calendar service paths and reshape the result into the
-/// microting.opgaver wire contract. CompleteOpgave performs the SDK-case
+/// microting.events wire contract. CompleteEvent performs the SDK-case
 /// completion inline (mirroring CompliancesGrpcService.UpdateComplianceCase,
 /// lines 159-174) for two reasons:
-/// (1) the Opgaver flow has no form data, so <c>core.CaseUpdate</c> with empty
+/// (1) the Event flow has no form data, so <c>core.CaseUpdate</c> with empty
 ///     field/checklist lists would be a no-op anyway; and
 /// (2) the JSON-side parity, <c>BackendConfigurationCalendarService.ToggleComplete</c>
 ///     (line 1272), is a TODO stub returning <c>OperationResult(true)</c> — there
@@ -64,17 +64,17 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// is empty on this path. No new EF entity / migration is introduced; the
 /// photo-upload pipeline reuses the existing TaskManagement S3 /
 /// UploadedData pattern.
-/// StreamOpgaveChanges is a poll-based server stream: the server emits a
+/// StreamEventChanges is a poll-based server stream: the server emits a
 /// snapshot at subscribe time, then re-queries every ~5s and diffs against
 /// the previous result by JSON state-hash to emit <c>upserted</c> for
 /// new/changed tasks and <c>removed_id</c> for tasks that fell out of the
 /// watch window. v2 will likely replace this with an event-bus push model
 /// once the JSON write paths emit change notifications. See
-/// <see cref="StreamOpgaveChanges"/> for poll-window semantics.
+/// <see cref="StreamEventChanges"/> for poll-window semantics.
 ///
 /// Known divergences from the canonical
 /// <c>BackendConfigurationCompliancesService.Update</c> JSON path.
-/// CompleteOpgave NOW performs (added in this PR):
+/// CompleteEvent NOW performs (added in this PR):
 /// <list type="bullet">
 ///   <item><description>SDK <c>Case</c> row update (DoneAt, DoneAtUserModifiable,
 ///     SiteId, Status=100, WorkflowState=Created — the latter REVIVES a
@@ -144,10 +144,8 @@ public class EventsGrpcService(
 
             // Fully-qualify the gRPC Property to disambiguate from
             // EformBackendConfigurationBase.*.Entities.Property which the
-            // outer `using` import also pulls into scope (the Tavle→Board
-            // rename in Phase 2 didn't hit this because the base package
-            // has no Board entity).
-            response.Ejendomme.Add(new BackendConfiguration.Pn.Grpc.Events.Property
+            // outer `using` import also pulls into scope.
+            response.Properties.Add(new BackendConfiguration.Pn.Grpc.Events.Property
             {
                 Id = item.Id.Value.ToString(CultureInfo.InvariantCulture),
                 Name = item.Name ?? string.Empty
@@ -161,7 +159,7 @@ public class EventsGrpcService(
         ListBoardsRequest request,
         ServerCallContext context)
     {
-        var propertyId = ParsePropertyId(request.EjendomId);
+        var propertyId = ParsePropertyId(request.PropertyId);
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
         if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, propertyId))
@@ -181,10 +179,10 @@ public class EventsGrpcService(
 
         foreach (var board in result.Model)
         {
-            response.Tavler.Add(new Board
+            response.Boards.Add(new Board
             {
                 Id = board.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = board.PropertyId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = board.PropertyId.ToString(CultureInfo.InvariantCulture),
                 Name = board.Name ?? string.Empty,
                 ColorHex = board.Color ?? string.Empty
             });
@@ -193,11 +191,11 @@ public class EventsGrpcService(
         return response;
     }
 
-    public override async Task<ListOpgaverResponse> ListEvents(
-        ListOpgaverRequest request,
+    public override async Task<ListEventsResponse> ListEvents(
+        ListEventsRequest request,
         ServerCallContext context)
     {
-        var propertyId = ParsePropertyId(request.EjendomId);
+        var propertyId = ParsePropertyId(request.PropertyId);
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync();
         if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, propertyId))
@@ -210,8 +208,8 @@ public class EventsGrpcService(
         // requested window so flutter-eform can complete future events
         // (today+1, today+2) via the existing CompleteEvent path.
         await eventDeployService.EnsureDeployedAsync(
-            request.EjendomId ?? string.Empty,
-            request.TavleIds,
+            request.PropertyId ?? string.Empty,
+            request.BoardIds,
             request.FromDateKey ?? string.Empty,
             request.ToDateKey ?? string.Empty,
             sdkSiteId,
@@ -222,7 +220,7 @@ public class EventsGrpcService(
             PropertyId = propertyId,
             WeekStart = request.FromDateKey ?? string.Empty,
             WeekEnd = request.ToDateKey ?? string.Empty,
-            BoardIds = TryParseBoardIds(request.TavleIds),
+            BoardIds = TryParseBoardIds(request.BoardIds),
             TagNames = [],
             SiteIds = [],
             ActionableOnly = true
@@ -230,7 +228,7 @@ public class EventsGrpcService(
 
         var result = await calendarService.GetTasksForWeek(model);
 
-        var response = new ListOpgaverResponse();
+        var response = new ListEventsResponse();
 
         if (!result.Success || result.Model == null)
         {
@@ -255,13 +253,13 @@ public class EventsGrpcService(
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
 
-            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            var comment = envelope?.EventComment?.Text ?? string.Empty;
 
-            var opgave = new Event
+            var evt = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = task.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(task.StartHour),
                 TaskText = task.Title ?? string.Empty,
@@ -286,20 +284,20 @@ public class EventsGrpcService(
 
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, task.Id, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, task.Id, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            response.Opgaver.Add(opgave);
+            response.Events.Add(evt);
         }
 
         return response;
     }
 
     /// <summary>
-    /// Full property-scoped opgaver list for the mobile worker's "task
+    /// Full property-scoped events list for the mobile worker's "task
     /// tracker" view. Mirror of the angular admin's
     /// <c>BackendConfigurationTaskTrackerHelper.Index</c> (no deadline
     /// window — actionable + missed + completed rotations all returned),
@@ -308,12 +306,12 @@ public class EventsGrpcService(
     /// collapsed to a single sdk-site check on this RPC since the mobile
     /// worker passes exactly one site).
     ///
-    /// Permission gate is identical to <see cref="ListOpgaver"/>: the
+    /// Permission gate is identical to <see cref="ListEvents"/>: the
     /// caller must hold a PropertyWorker access entry for
     /// <c>request.PropertyId</c> on the resolved sdk site. Per-row Worker
-    /// filtering then narrows the result set to opgaver whose planning
+    /// filtering then narrows the result set to events whose planning
     /// sites include the same sdk site (so a worker who has access to a
-    /// property still only sees opgaver that target their site).
+    /// property still only sees events that target their site).
     /// </summary>
     public override async Task<ListTaskTrackerResponse> ListTaskTracker(
         ListTaskTrackerRequest request,
@@ -339,7 +337,7 @@ public class EventsGrpcService(
         }
 
         // Reuse the same Case.Custom envelope + eForm field-structure
-        // helpers as ListOpgaver so writes (comments, photos, field values)
+        // helpers as ListEvents so writes (comments, photos, field values)
         // round-trip identically across both views.
         var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
@@ -349,13 +347,13 @@ public class EventsGrpcService(
         foreach (var task in result.Model)
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
-            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            var comment = envelope?.EventComment?.Text ?? string.Empty;
 
-            var opgave = new Event
+            var evt = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 // plan_day_key is reused for the compliance deadline (yyyy-MM-dd)
                 // so the existing flutter Drift composite PK (id, planDayKey)
                 // remains stable per-rotation: a planning whose deadline rolls
@@ -378,13 +376,13 @@ public class EventsGrpcService(
 
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, task.Id, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, task.Id, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            response.Opgaver.Add(opgave);
+            response.Events.Add(evt);
         }
 
         return response;
@@ -400,7 +398,7 @@ public class EventsGrpcService(
     /// Non-envelope or malformed Custom values degrade silently to a null
     /// entry (the caller treats that as "no comment, no photos").
     /// </summary>
-    private async Task<Dictionary<int, OpgaverCustomEnvelope?>> LoadEnvelopeByTaskIdAsync(
+    private async Task<Dictionary<int, EventCustomEnvelope?>> LoadEnvelopeByTaskIdAsync(
         IReadOnlyCollection<CalendarTaskResponseModel> tasks)
     {
         // Distinct (task.Id → SdkCaseId). Tasks with no SdkCaseId are
@@ -412,7 +410,7 @@ public class EventsGrpcService(
 
         if (taskIdToCaseId.Count == 0)
         {
-            return new Dictionary<int, OpgaverCustomEnvelope?>();
+            return new Dictionary<int, EventCustomEnvelope?>();
         }
 
         var caseIds = taskIdToCaseId.Values.Distinct().ToList();
@@ -427,7 +425,7 @@ public class EventsGrpcService(
             .ToDictionaryAsync(c => c.Id, c => c.Custom)
             .ConfigureAwait(false);
 
-        var result = new Dictionary<int, OpgaverCustomEnvelope?>(taskIdToCaseId.Count);
+        var result = new Dictionary<int, EventCustomEnvelope?>(taskIdToCaseId.Count);
         foreach (var (taskId, caseId) in taskIdToCaseId)
         {
             if (!customByCaseId.TryGetValue(caseId, out var customJson))
@@ -500,7 +498,7 @@ public class EventsGrpcService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex,
-                    "OpgaverGrpcService.LoadFieldsByTaskIdAsync: failed to load FormField for task {TaskId} (SdkCaseId={CaseId})",
+                    "EventsGrpcService.LoadFieldsByTaskIdAsync: failed to load FormField for task {TaskId} (SdkCaseId={CaseId})",
                     taskId, caseId);
             }
         }
@@ -739,7 +737,7 @@ public class EventsGrpcService(
     /// <c>null</c> if the value is missing, empty, or not in the expected
     /// shape (legacy free-form strings, garbage).
     /// </summary>
-    private static OpgaverCustomEnvelope? TryParseEnvelope(string customJson)
+    private static EventCustomEnvelope? TryParseEnvelope(string customJson)
     {
         if (string.IsNullOrWhiteSpace(customJson))
         {
@@ -748,7 +746,7 @@ public class EventsGrpcService(
 
         try
         {
-            return JsonSerializer.Deserialize<OpgaverCustomEnvelope>(customJson);
+            return JsonSerializer.Deserialize<EventCustomEnvelope>(customJson);
         }
         catch (JsonException)
         {
@@ -769,7 +767,7 @@ public class EventsGrpcService(
     private const int StreamWatchFutureDays = 30;
 
     /// <summary>
-    /// Poll cadence for <see cref="StreamOpgaveChanges"/>. Five seconds is a
+    /// Poll cadence for <see cref="StreamEventChanges"/>. Five seconds is a
     /// trade-off: tight enough that workers see each other's edits before
     /// they're confused by stale UI, loose enough not to hammer the DB
     /// across hundreds of concurrent kiosk subscribers. The value is constant
@@ -779,11 +777,11 @@ public class EventsGrpcService(
 
     /// <summary>
     /// Server-streaming RPC. Initial behaviour: emit one
-    /// <c>OpgaveChange{upserted}</c> per opgave currently in the watch window
+    /// <c>EventChange{upserted}</c> per event currently in the watch window
     /// so the client gets a baseline; then poll the same window every
     /// <see cref="StreamPollInterval"/> and emit deltas.
     ///
-    /// Delta detection is a JSON-hash diff over the proto Opgave's serialised
+    /// Delta detection is a JSON-hash diff over the proto Event's serialised
     /// form: any observable field change (comment, completion status, photo
     /// list, color, ...) flips the hash and produces a fresh
     /// <c>upserted</c> event. Tasks that disappear from the result set
@@ -809,11 +807,11 @@ public class EventsGrpcService(
     /// will introduce one.
     /// </summary>
     public override async Task StreamEventChanges(
-        StreamOpgaveChangesRequest request,
+        StreamEventChangesRequest request,
         IServerStreamWriter<EventChange> responseStream,
         ServerCallContext context)
     {
-        var propertyId = ParsePropertyId(request.EjendomId);
+        var propertyId = ParsePropertyId(request.PropertyId);
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
         if (!await userPropertyAccess.HasAccessAsync(sdkSiteId, propertyId)
@@ -823,7 +821,7 @@ public class EventsGrpcService(
                 "Caller has no PropertyWorker access to the requested property."));
         }
 
-        var boardFilter = TryParseBoardIds(request.TavleIds);
+        var boardFilter = TryParseBoardIds(request.BoardIds);
         var ct = context.CancellationToken;
 
         // Watch window is recomputed on every poll so the day-roll-over case
@@ -831,7 +829,7 @@ public class EventsGrpcService(
         // window forward without dropping the subscription.
         // ComputeWatchWindow uses today-N..today+M relative to UTC.
 
-        // seen: opgave_id (numeric) → state-hash. Tracks every Opgave we have
+        // seen: event_id (numeric) → state-hash. Tracks every Event we have
         // already emitted, so subsequent polls only re-emit on real changes.
         var seen = new Dictionary<int, string>();
 
@@ -839,7 +837,7 @@ public class EventsGrpcService(
         try
         {
             var (initialStart, initialEnd) = ComputeWatchWindow();
-            var initial = await LoadOpgaverAsync(
+            var initial = await LoadEventsAsync(
                 propertyId, boardFilter, initialStart, initialEnd, ct).ConfigureAwait(false);
             foreach (var op in initial)
             {
@@ -847,9 +845,9 @@ public class EventsGrpcService(
                 await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                     .ConfigureAwait(false);
                 if (int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                        out var opgaveId))
+                        out var eventId))
                 {
-                    seen[opgaveId] = ComputeStateHash(op);
+                    seen[eventId] = ComputeStateHash(op);
                 }
             }
         }
@@ -878,7 +876,7 @@ public class EventsGrpcService(
             try
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
-                var current = await LoadOpgaverAsync(
+                var current = await LoadEventsAsync(
                     propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
                 var currentIds = new HashSet<int>();
@@ -886,19 +884,19 @@ public class EventsGrpcService(
                 foreach (var op in current)
                 {
                     if (!int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                            out var opgaveId))
+                            out var eventId))
                     {
                         continue;
                     }
-                    currentIds.Add(opgaveId);
+                    currentIds.Add(eventId);
 
                     var hash = ComputeStateHash(op);
-                    if (!seen.TryGetValue(opgaveId, out var prevHash) || prevHash != hash)
+                    if (!seen.TryGetValue(eventId, out var prevHash) || prevHash != hash)
                     {
                         ct.ThrowIfCancellationRequested();
                         await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                             .ConfigureAwait(false);
-                        seen[opgaveId] = hash;
+                        seen[eventId] = hash;
                     }
                 }
 
@@ -935,14 +933,14 @@ public class EventsGrpcService(
                 if (lastErrorType != ex.GetType())
                 {
                     logger.LogError(ex,
-                        "OpgaverGrpcService.StreamOpgaveChanges poll failed for sdkSiteId={SdkSiteId} property={PropertyId}; suppressing further full stack traces until error class changes",
+                        "EventsGrpcService.StreamEventChanges poll failed for sdkSiteId={SdkSiteId} property={PropertyId}; suppressing further full stack traces until error class changes",
                         sdkSiteId, propertyId);
                     lastErrorType = ex.GetType();
                 }
                 else
                 {
                     logger.LogWarning(
-                        "OpgaverGrpcService.StreamOpgaveChanges poll failed (repeating): {ExType}: {ExMessage}",
+                        "EventsGrpcService.StreamEventChanges poll failed (repeating): {ExType}: {ExMessage}",
                         ex.GetType().Name, ex.Message);
                 }
             }
@@ -962,10 +960,10 @@ public class EventsGrpcService(
     }
 
     /// <summary>
-    /// Loads the current Opgave set within the given window through the
+    /// Loads the current Event set within the given window through the
     /// existing calendar service path. Reuses the
     /// <see cref="LoadEnvelopeByTaskIdAsync"/> helper from
-    /// <see cref="ListOpgaver"/> so streamed Opgave messages carry the same
+    /// <see cref="ListEvents"/> so streamed Event messages carry the same
     /// comment shape as a one-shot list.
     ///
     /// Despite its name, <c>GetTasksForWeek</c> accepts arbitrary
@@ -974,7 +972,7 @@ public class EventsGrpcService(
     /// is forwarded to the EF compliance + occurrence queries verbatim, so a
     /// month-wide window is supported in a single call.
     /// </summary>
-    private async Task<List<Event>> LoadOpgaverAsync(
+    private async Task<List<Event>> LoadEventsAsync(
         int propertyId,
         List<int> boardFilter,
         DateTime windowStart,
@@ -1009,13 +1007,13 @@ public class EventsGrpcService(
         foreach (var task in result.Model)
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
-            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            var comment = envelope?.EventComment?.Text ?? string.Empty;
 
-            var opgave = new Event
+            var evt = new Event
             {
                 Id = task.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = task.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = task.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = task.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(task.StartHour),
                 TaskText = task.Title ?? string.Empty,
@@ -1025,7 +1023,7 @@ public class EventsGrpcService(
                 DescriptionHtml = task.DescriptionHtml ?? string.Empty,
                 Comment = comment,
                 EformId = task.EformId ?? 0,
-                // See comment in ListOpgaver: stable-identity round-trip so
+                // See comment in ListEvents: stable-identity round-trip so
                 // write handlers can resolve compliance + sdk case directly.
                 ComplianceId = task.ComplianceId ?? 0,
                 MicrotingSdkCaseId = task.SdkCaseId ?? 0
@@ -1033,13 +1031,13 @@ public class EventsGrpcService(
 
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, task.Id, dbContext, ct)
+            await PopulateCalendarAttachments(evt, task.Id, dbContext, ct)
                 .ConfigureAwait(false);
 
-            output.Add(opgave);
+            output.Add(evt);
         }
 
         return output;
@@ -1047,10 +1045,10 @@ public class EventsGrpcService(
 
     /// <summary>
     /// Stable SHA256 hash over the canonical protobuf wire-format bytes of
-    /// the Opgave. <c>ToByteArray</c> emits a deterministic byte sequence
+    /// the Event. <c>ToByteArray</c> emits a deterministic byte sequence
     /// for all current scalar/message field types, including future-added
     /// fields, so this is robust against schema evolution. (JSON-based
-    /// hashing was sufficient for the present Opgave shape but would
+    /// hashing was sufficient for the present Event shape but would
     /// silently break the moment a <c>map&lt;...&gt;</c> field is added,
     /// since proto map-field serialisation is not order-stable.) We hash
     /// the bytes (instead of storing them directly) to keep the per-entry
@@ -1067,17 +1065,17 @@ public class EventsGrpcService(
         CompleteEventRequest request,
         ServerCallContext context)
     {
-        var opgaveId = ParseOpgaveId(request.OpgaveId);
+        var eventId = ParseEventId(request.EventId);
 
         // Permanent entry trace: captures the raw wire payload so we can tell
         // whether a client-side override (done_at_user_modifiable) actually
         // reached the server. Logged before any branching so idempotent
         // re-taps, legacy fallbacks, and the happy path all leave a record.
         logger.LogInformation(
-            "CompleteEvent entry: opgaveId={OpgaveId} completed={Completed} " +
+            "CompleteEvent entry: eventId={EventId} completed={Completed} " +
             "complianceId={ComplianceId} microtingSdkCaseId={SdkCaseId} " +
             "doneAtUserModifiable=\"{DoneAtUserModifiable}\" clientTsUnix={ClientTsUnix}",
-            request.OpgaveId, request.Completed,
+            request.EventId, request.Completed,
             request.ComplianceId, request.MicrotingSdkCaseId,
             request.DoneAtUserModifiable, request.ClientTsUnix);
 
@@ -1092,7 +1090,7 @@ public class EventsGrpcService(
         // because StatusCode.Unimplemented is not in its permanent-error set.
         if (!request.Completed)
         {
-            return await BuildIdempotentCompleteOpgaveResponse(opgaveId, request, context)
+            return await BuildIdempotentCompleteEventResponse(eventId, request, context)
                 .ConfigureAwait(false);
         }
 
@@ -1100,13 +1098,13 @@ public class EventsGrpcService(
         // ItemPlanningId is the join key into Compliances.PlanningId.
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -1114,7 +1112,7 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // Resolve the Compliance row that links this ARP to a real SDK Case.
@@ -1123,7 +1121,7 @@ public class EventsGrpcService(
         // absence of a compliance row is a hard error here.
         //
         // Stable-identity path: when the client echoes the compliance_id from
-        // the Opgave it received, look the row up by PK directly. This is
+        // the Event it received, look the row up by PK directly. This is
         // 100% deterministic — no OrderBy(Deadline).First() ambiguity when
         // one planning has multiple compliances on the same site (recurring
         // tasks, historical rows, overlapping windows). We still validate
@@ -1180,7 +1178,7 @@ public class EventsGrpcService(
         if (compliance == null)
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId} has no pending compliance — there is no SDK case to complete."));
+                $"Event {eventId} has no pending compliance — there is no SDK case to complete."));
         }
 
         // DoneAt and DoneAtUserModifiable both track the same target value:
@@ -1271,7 +1269,7 @@ public class EventsGrpcService(
         // Soft-delete the compliance row so it disappears from outstanding
         // lists, then mark the SDK Case row as completed. This mirrors the
         // shape of CompliancesGrpcService.UpdateComplianceCase but skips the
-        // core.CaseUpdate / CaseUpdateFieldValues calls — the Opgaver flow has
+        // core.CaseUpdate / CaseUpdateFieldValues calls — the Event flow has
         // no form fields, so those calls would just iterate empty lists.
         // Reuse the core/sdkDbContext already obtained for the compliance lookup above.
         var core = coreForCompliance;
@@ -1315,7 +1313,7 @@ public class EventsGrpcService(
             //     matching FieldValue and PnBase.Update emits a Version row.
             //
             // Net: only Number / NumberStepper FieldValues whose Value is
-            // NULL get rewritten to "". Mobile's CompleteOpgave previously
+            // NULL get rewritten to "". Mobile's CompleteEvent previously
             // skipped FieldValues entirely on empty-complete, so the angular
             // delta included a FieldValueVersion row plus an updated
             // FieldValue.Value="" that mobile didn't emit.
@@ -1414,7 +1412,7 @@ public class EventsGrpcService(
             }
 
             // ---------------------------------------------------------------
-            // Bundled field-value + comment writes (CompleteOpgave bundle).
+            // Bundled field-value + comment writes (CompleteEvent bundle).
             //
             // Applied AFTER revival (foundCase.WorkflowState = Created) so
             // the case is alive for FieldValue writes, and BEFORE the
@@ -1425,7 +1423,7 @@ public class EventsGrpcService(
             // pass, against an alive case).
             //
             // Mobile previously emitted N-many SetFieldValue RPCs followed by
-            // CompleteOpgave; the bundle collapses that to a single round-
+            // CompleteEvent; the bundle collapses that to a single round-
             // trip. Legacy clients (no field_values, comment="") fall through
             // unchanged. SetFieldValue / SetComment RPCs remain available for
             // legacy outbox rows still in flight.
@@ -1463,7 +1461,7 @@ public class EventsGrpcService(
                 // row is created via fieldValue.Create(db)). Without this call,
                 // the per-field row lookup below returns 0 (no row) for cases that
                 // have never been read by an admin browser session — as is the
-                // case for ListTaskTracker-fetched opgaver — and every typed
+                // case for ListTaskTracker-fetched events — and every typed
                 // value silently drops.
                 //
                 // Uses the (int id, Language) CaseRead overload (Core.cs:1132 →
@@ -1521,11 +1519,11 @@ public class EventsGrpcService(
                     if (!ok)
                     {
                         logger.LogError(
-                            "OpgaverGrpcService.CompleteOpgave (bundle): "
-                            + "Core.CaseUpdate returned false for opgave {OpgaveId} caseId {CaseId} bundleSize {N}",
-                            opgaveId, caseId, pipePairs.Count);
+                            "EventsGrpcService.CompleteEvent (bundle): "
+                            + "Core.CaseUpdate returned false for event {EventId} caseId {CaseId} bundleSize {N}",
+                            eventId, caseId, pipePairs.Count);
                         throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                            "CompleteOpgave bundle: field-value persistence failed in SDK CaseUpdate"));
+                            "CompleteEvent bundle: field-value persistence failed in SDK CaseUpdate"));
                     }
                     await core.CaseUpdateFieldValues(caseId, bundleLanguage)
                         .ConfigureAwait(false);
@@ -1534,15 +1532,15 @@ public class EventsGrpcService(
 
             // Bundled comment write — empty string means "no change", matching
             // proto3 default-value semantics. Non-empty replaces the
-            // OpgaverComment body verbatim (same shape SetComment writes at
+            // EventComment body verbatim (same shape SetComment writes at
             // line 1786-1796 above). We intentionally do NOT trim the empty
             // case to "" → null here: an explicit comment-clear is queued by
             // the legacy SetComment outbox path, not by the bundle.
             if (!string.IsNullOrEmpty(request.Comment))
             {
                 var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-                var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
-                nextEnvelope.OpgaverComment = new OpgaverCommentBody
+                var nextEnvelope = existingEnvelope ?? new EventCustomEnvelope();
+                nextEnvelope.EventComment = new EventCommentBody
                 {
                     Text = request.Comment,
                     TsUnix = ToUnixSeconds(commentAtUtc),
@@ -1611,7 +1609,7 @@ public class EventsGrpcService(
             //
             // Wrapped in the same try/catch shape as the angular code so a
             // server-side failure (e.g. transient XML rejection) is logged and
-            // doesn't fail the whole CompleteOpgave RPC. We use the
+            // doesn't fail the whole CompleteEvent RPC. We use the
             // Core.CaseDelete helper (NOT a manual aCase.Delete) — same call,
             // same side effects, same retry-on-"Parsing in progress" handling.
             try
@@ -1666,7 +1664,7 @@ public class EventsGrpcService(
                         || reaffirmCase.DoneAtUserModifiable != userModifiable))
                 {
                     logger.LogDebug(
-                        "CompleteOpgave: re-affirm correcting DoneAt/DoneAtUserModifiable "
+                        "CompleteEvent: re-affirm correcting DoneAt/DoneAtUserModifiable "
                         + "for caseId={CaseId}: DoneAt was {DoneAt} expected {UserModifiable}, "
                         + "DoneAtUserModifiable was {DoneAtUserModifiable} expected {UserModifiable}.",
                         reaffirmCase.Id, reaffirmCase.DoneAt, userModifiable,
@@ -1679,7 +1677,7 @@ public class EventsGrpcService(
             catch (Exception ex)
             {
                 logger.LogError(ex,
-                    "CompleteOpgave: DoneAt re-affirm failed for caseId={CaseId} — "
+                    "CompleteEvent: DoneAt re-affirm failed for caseId={CaseId} — "
                     + "the values written at the primary assignment above should still be in place; "
                     + "this is a defensive no-op step.",
                     foundCase.Id);
@@ -1687,7 +1685,7 @@ public class EventsGrpcService(
         }
 
         // Re-read the calendar tasks for the day in question so we can return
-        // the freshly-completed Opgave in its new shape (now compliance-less,
+        // the freshly-completed Event in its new shape (now compliance-less,
         // so it will fall out of the recurrence/compliance branches — we look
         // it up by ARP id and synthesize a minimal mapping if it's gone).
         var dayKey = dayDoneAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -1703,14 +1701,14 @@ public class EventsGrpcService(
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
-            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            ? refreshed.Model.FirstOrDefault(t => t.Id == eventId)
             : null;
 
-        Event opgave;
+        Event evt;
         if (refreshedTask != null)
         {
             // Reuse the same envelope + eForm field-structure helpers as
-            // ListOpgaver / LoadOpgaverAsync so the response mirrors the
+            // ListEvents / LoadEventsAsync so the response mirrors the
             // shape clients persist to Drift on a regular fetch. Without
             // this, the client merges an empty Fields list and the form
             // fields appear to "disappear" after completion.
@@ -1723,13 +1721,13 @@ public class EventsGrpcService(
                 await LoadFieldsByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
 
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
-            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            var comment = envelope?.EventComment?.Text ?? string.Empty;
 
-            opgave = new Event
+            evt = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
@@ -1739,31 +1737,31 @@ public class EventsGrpcService(
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
                 Comment = comment,
                 EformId = refreshedTask.EformId ?? 0,
-                // Stable-identity round-trip — see ListOpgaver for rationale.
+                // Stable-identity round-trip — see ListEvents for rationale.
                 ComplianceId = refreshedTask.ComplianceId ?? 0,
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
         {
             // Compliance row is gone and no recurrence covered today —
-            // synthesize a minimal "completed" Opgave so the client can
+            // synthesize a minimal "completed" Event so the client can
             // reconcile local state against the new server truth. Attachments
             // are still populated if available, though the task is no longer
             // actionable after completion.
-            opgave = new Event
+            evt = new Event
             {
-                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = string.Empty,
+                Id = eventId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = string.Empty,
                 PlanDayKey = dayKey,
                 PlannedAt = string.Empty,
                 TaskText = string.Empty,
@@ -1774,15 +1772,15 @@ public class EventsGrpcService(
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
 
-        return new CompleteEventResponse { Opgave = opgave };
+        return new CompleteEventResponse { Event = evt };
     }
 
     /// <summary>
-    /// Idempotent no-op handler for <c>CompleteOpgave</c> when the client
+    /// Idempotent no-op handler for <c>CompleteEvent</c> when the client
     /// sends <c>completed=false</c>. This happens when the flutter UI re-taps
     /// an already-completed row (it sends <c>!o.completed</c>). Returns the
     /// current authoritative state so the client can reconcile its optimistic
@@ -1795,7 +1793,7 @@ public class EventsGrpcService(
     ///     <c>_isPermanent</c> set already handles this — the row drops out
     ///     of the outbox and into the conflict modal).</description></item>
     ///   <item><description>Compliance gone (row was already normally
-    ///     completed) → return a synthesized minimal Opgave with
+    ///     completed) → return a synthesized minimal Event with
     ///     <c>Completed=true</c>; the client treats that as "no longer
     ///     actionable" and removes the row from Drift.</description></item>
     ///   <item><description>Compliance + Case both alive (anomaly: a still-
@@ -1803,12 +1801,12 @@ public class EventsGrpcService(
     ///     calendar query says about that row today. No DB writes.</description></item>
     /// </list>
     /// </summary>
-    private async Task<CompleteEventResponse> BuildIdempotentCompleteOpgaveResponse(
-        int opgaveId, CompleteEventRequest request, ServerCallContext context)
+    private async Task<CompleteEventResponse> BuildIdempotentCompleteEventResponse(
+        int eventId, CompleteEventRequest request, ServerCallContext context)
     {
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
@@ -1817,7 +1815,7 @@ public class EventsGrpcService(
             // permanent so the outbox row resolves into the conflict modal
             // rather than looping.
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -1825,11 +1823,11 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // Resolve the Compliance row using the same PK / fallback pattern as
-        // the main CompleteOpgave path so behaviour is consistent. Filter on
+        // the main CompleteEvent path so behaviour is consistent. Filter on
         // not-removed: a soft-deleted compliance is the signal that the row
         // was already completed via the canonical path.
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
@@ -1846,10 +1844,10 @@ public class EventsGrpcService(
         }
         else
         {
-            // Legacy fuzzy lookup — same shape as main CompleteOpgave.
+            // Legacy fuzzy lookup — same shape as main CompleteEvent.
             // Bug B fix: drop the c.WorkflowState != Removed filter so a payload
             // with compliance_id=0 can still resolve a retracted/missed-deadline
-            // compliance. See CompleteOpgave's fallback for the full rationale.
+            // compliance. See CompleteEvent's fallback for the full rationale.
             var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
                 .Where(c => c.SiteId == sdkSiteId)
                 .Select(c => c.Id)
@@ -1868,17 +1866,17 @@ public class EventsGrpcService(
             ? DateTimeOffset.FromUnixTimeSeconds(request.ClientTsUnix).UtcDateTime
             : DateTime.UtcNow;
 
-        Event opgave;
+        Event evt;
         if (compliance == null)
         {
             // No live compliance row — the row was already completed (or never
             // had one). Return Completed=true so the flutter client drops it
             // from Drift via the empty/zero-id "no longer actionable" path.
-            opgave = new Event
+            evt = new Event
             {
-                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = string.Empty,
+                Id = eventId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = string.Empty,
                 PlanDayKey = nowUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 PlannedAt = string.Empty,
                 TaskText = string.Empty,
@@ -1889,10 +1887,10 @@ public class EventsGrpcService(
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            return new CompleteEventResponse { Opgave = opgave };
+            return new CompleteEventResponse { Event = evt };
         }
 
         // Compliance still alive — anomaly: a still-actionable row is being
@@ -1913,17 +1911,17 @@ public class EventsGrpcService(
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
-            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            ? refreshed.Model.FirstOrDefault(t => t.Id == eventId)
             : null;
 
         if (refreshedTask != null)
         {
-            // Mirror the main CompleteOpgave path: reuse the envelope +
+            // Mirror the main CompleteEvent path: reuse the envelope +
             // eForm field-structure helpers so the response carries Fields,
             // Comment, and EformId. Without this, an outbox retry (which
             // lands here on the second attempt because the first call
             // already flipped the row to completed) returns an empty-shape
-            // Opgave that wipes Drift's cached field state for the row.
+            // Event that wipes Drift's cached field state for the row.
             var refreshedSingleton = new[] { refreshedTask };
             var envelopeByTaskId =
                 await LoadEnvelopeByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
@@ -1931,13 +1929,13 @@ public class EventsGrpcService(
                 await LoadFieldsByTaskIdAsync(refreshedSingleton).ConfigureAwait(false);
 
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
-            var comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            var comment = envelope?.EventComment?.Text ?? string.Empty;
 
-            opgave = new Event
+            evt = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
@@ -1947,17 +1945,17 @@ public class EventsGrpcService(
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
                 Comment = comment,
                 EformId = refreshedTask.EformId ?? 0,
-                // Stable-identity round-trip — see ListOpgaver for rationale.
+                // Stable-identity round-trip — see ListEvents for rationale.
                 ComplianceId = refreshedTask.ComplianceId ?? 0,
                 MicrotingSdkCaseId = refreshedTask.SdkCaseId ?? 0
             };
 
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -1966,11 +1964,11 @@ public class EventsGrpcService(
             // (e.g. ActionableOnly filtered it out). Treat the same as
             // "no longer actionable" so the client drops it. Attachments may
             // still be available if the planning had files.
-            opgave = new Event
+            evt = new Event
             {
-                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = string.Empty,
+                Id = eventId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = string.Empty,
                 PlanDayKey = dayKey,
                 PlannedAt = string.Empty,
                 TaskText = string.Empty,
@@ -1981,15 +1979,15 @@ public class EventsGrpcService(
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
 
-        return new CompleteEventResponse { Opgave = opgave };
+        return new CompleteEventResponse { Event = evt };
     }
 
     /// <summary>
-    /// Stores the worker's comment for an opgave on the underlying SDK Case row.
+    /// Stores the worker's comment for an event on the underlying SDK Case row.
     ///
     /// Storage path: SDK <c>Case.Custom</c> (free-form string column on the
     /// SDK eFormCore Cases table), JSON-encoded as
@@ -2036,19 +2034,19 @@ public class EventsGrpcService(
     ///     worker remarks, not free-form essay storage.</description></item>
     ///   <item><description><c>client_ts_unix == 0</c>: server-side
     ///     <c>DateTime.UtcNow</c> is recorded instead (same fallback as
-    ///     CompleteOpgave).</description></item>
+    ///     CompleteEvent).</description></item>
     /// </list>
     ///
     /// Compliance lookup deliberately includes <c>WorkflowState=Removed</c>
-    /// rows so that workers can still attach a comment after CompleteOpgave
+    /// rows so that workers can still attach a comment after CompleteEvent
     /// has soft-deleted the compliance (e.g. "noticed leak, scheduled
     /// repair"). The Case row and its <c>Custom</c> slot survive
-    /// completion. CompleteOpgave keeps its own not-removed filter — that
+    /// completion. CompleteEvent keeps its own not-removed filter — that
     /// path doesn't make sense to re-run.
     ///
-    /// Pure-recurrence opgaver without a backing Case (no compliance row at
+    /// Pure-recurrence events without a backing Case (no compliance row at
     /// all) cannot be persisted today; the response echoes the comment back
-    /// in a synthesised minimal Opgave so the client's optimistic write is
+    /// in a synthesised minimal Event so the client's optimistic write is
     /// preserved, but no SDK write occurs. Materialising the case early or
     /// adopting Path B/C is out of scope here.
     /// </summary>
@@ -2065,17 +2063,17 @@ public class EventsGrpcService(
                 $"Comment text exceeds {MaxCommentLength}-character limit."));
         }
 
-        var opgaveId = ParseOpgaveId(request.OpgaveId);
+        var eventId = ParseEventId(request.EventId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -2083,7 +2081,7 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // Trim only the right end so leading whitespace in legitimate worker
@@ -2100,16 +2098,16 @@ public class EventsGrpcService(
 
         // Find the Compliance row → SDK Case. Comments must be writable
         // regardless of completion status, so we deliberately do NOT filter
-        // out WorkflowState=Removed rows: CompleteOpgave soft-deletes the
+        // out WorkflowState=Removed rows: CompleteEvent soft-deletes the
         // compliance, but the Case row (and its Custom slot) survives, so a
         // worker can still attach a post-completion remark like
-        // "noticed leak, scheduled repair". CompleteOpgave keeps the
+        // "noticed leak, scheduled repair". CompleteEvent keeps the
         // not-removed filter on its own lookup — re-completing an already
         // completed task makes no sense there.
         //
         // Stable-identity path: when the client echoes the compliance_id
-        // from the Opgave, look up by PK directly (deterministic — see
-        // CompleteOpgave for full rationale). Legacy fallback (compliance_id
+        // from the Event, look up by PK directly (deterministic — see
+        // CompleteEvent for full rationale). Legacy fallback (compliance_id
         // == 0) keeps the existing site-filtered fuzzy lookup so older
         // outbox payloads still drain.
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
@@ -2125,7 +2123,7 @@ public class EventsGrpcService(
         }
         else
         {
-            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
             var validCaseIdsForSite = await sdkDbContextForCompliance.Cases
@@ -2142,16 +2140,16 @@ public class EventsGrpcService(
         }
 
         // Truly orphaned task (no compliance row at all → no SDK Case ever
-        // existed). Echo the comment back in a synthesised minimal Opgave so
+        // existed). Echo the comment back in a synthesised minimal Event so
         // the client can keep its local optimistic write, but skip the SDK
         // write because there is nowhere to store it. This mirrors the
         // synthesise-on-miss fallback used in the success branch below and
-        // matches CompleteOpgave's behaviour for the same edge case.
+        // matches CompleteEvent's behaviour for the same edge case.
         if (compliance == null)
         {
             return new SetCommentResponse
             {
-                Opgave = SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed)
+                Event = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, trimmed)
             };
         }
 
@@ -2168,7 +2166,7 @@ public class EventsGrpcService(
             // Compliance points at an SDK Case that no longer exists —
             // genuinely broken state, not a "soft" miss. Fail loudly.
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
+                $"Event {eventId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
         }
 
         // Write — preserve any existing photo metadata in the envelope so a
@@ -2178,10 +2176,10 @@ public class EventsGrpcService(
         // ReadComplianceCase passthrough sees an empty string instead of
         // "{...}".
         var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-        var nextEnvelope = existingEnvelope ?? new OpgaverCustomEnvelope();
-        nextEnvelope.OpgaverComment = string.IsNullOrEmpty(trimmed)
+        var nextEnvelope = existingEnvelope ?? new EventCustomEnvelope();
+        nextEnvelope.EventComment = string.IsNullOrEmpty(trimmed)
             ? null
-            : new OpgaverCommentBody
+            : new EventCommentBody
             {
                 Text = trimmed,
                 TsUnix = ToUnixSeconds(commentAtUtc)
@@ -2189,8 +2187,8 @@ public class EventsGrpcService(
         foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
         await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
-        // Refresh the opgave for the day in question so the response shape
-        // matches CompleteOpgave (same synthesise-on-miss fallback).
+        // Refresh the event for the day in question so the response shape
+        // matches CompleteEvent (same synthesise-on-miss fallback).
         var dayKey = (compliance.Deadline != default ? compliance.Deadline : commentAtUtc)
             .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -2206,20 +2204,20 @@ public class EventsGrpcService(
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
-            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            ? refreshed.Model.FirstOrDefault(t => t.Id == eventId)
             : null;
 
         // Echo the just-written text on the way out so the client doesn't
         // need a follow-up read. GetTasksForWeek does not currently surface
-        // Case.Custom, so populating opgave.comment here is the only path.
-        Event opgave;
+        // Case.Custom, so populating evt.comment here is the only path.
+        Event evt;
         if (refreshedTask != null)
         {
-            opgave = new Event
+            evt = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
@@ -2230,16 +2228,16 @@ public class EventsGrpcService(
                 Comment = trimmed
             };
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
         {
-            opgave = SynthesiseMinimalOpgave(opgaveId, arp.PropertyId, commentAtUtc, trimmed);
+            evt = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, trimmed);
             // No attachments for synthesized minimal Event — it's for orphaned tasks with no planning.
         }
 
-        return new SetCommentResponse { Opgave = opgave };
+        return new SetCommentResponse { Event = evt };
     }
 
     /// <summary>
@@ -2251,7 +2249,7 @@ public class EventsGrpcService(
     private const int MaxPhotoBytes = 20 * 1024 * 1024;
 
     /// <summary>
-    /// Maximum number of photo slots per opgave. Slots are addressed
+    /// Maximum number of photo slots per event. Slots are addressed
     /// 0..MaxPhotoSlots-1. The bound is enforced both by the proto's
     /// <c>slot</c> validation in UploadPhoto and by the clients' UI.
     /// </summary>
@@ -2270,7 +2268,7 @@ public class EventsGrpcService(
     /// <c>uploaded_data</c> table to track checksum / extension / filename;
     /// no resizing or thumbnail variants are produced (the existing
     /// TaskManagement code creates 300px / 700px variants via ImageMagick;
-    /// for the Opgaver flow the mobile clients work with the original
+    /// for the Event flow the mobile clients work with the original
     /// image, so we keep this v1 storage path simple). Filename mirrors
     /// the TaskManagement convention: <c>{uploaded_data_id}_{checksum}{ext}</c>.
     ///
@@ -2279,7 +2277,7 @@ public class EventsGrpcService(
     /// <c>Case.Custom</c> JSON envelope (the same envelope SetComment uses
     /// for <c>opgaver_comment</c>). Re-uploading to a slot that already
     /// contains a photo soft-deletes the previous <c>UploadedData</c> row
-    /// and replaces the entry, so the slot acts as a stable per-opgave
+    /// and replaces the entry, so the slot acts as a stable per-event
     /// identifier.
     ///
     /// Validation: <c>content_type</c> must be image/jpeg or image/png,
@@ -2287,10 +2285,10 @@ public class EventsGrpcService(
     /// capped at <see cref="MaxPhotoBytes"/>. Empty payloads are rejected
     /// to prevent zero-byte files from polluting storage.
     ///
-    /// Recurrence-only opgaver (no compliance row, no SDK Case) cannot
+    /// Recurrence-only events (no compliance row, no SDK Case) cannot
     /// store photos — there is no Case.Custom slot to write to. Returns
     /// <c>FailedPrecondition</c> in that branch (vs. SetComment's "echo
-    /// back the synthesised opgave" approach: a comment is metadata the
+    /// back the synthesised event" approach: a comment is metadata the
     /// client can replay later, but uploaded bytes have nowhere to go and
     /// silently discarding them would lose user content).
     /// </summary>
@@ -2315,7 +2313,7 @@ public class EventsGrpcService(
         var meta = firstChunk.Meta;
 
         // 2. Validate metadata up front so we don't waste the upload.
-        var opgaveId = ParseOpgaveId(meta.OpgaveId);
+        var eventId = ParseEventId(meta.EventId);
         if (meta.Slot < 0 || meta.Slot >= MaxPhotoSlots)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument,
@@ -2351,16 +2349,16 @@ public class EventsGrpcService(
                 "content_type must be image/jpeg, image/jpg, or image/png."))
         };
 
-        // 3. Auth + property access. Mirrors CompleteOpgave / SetComment.
+        // 3. Auth + property access. Mirrors CompleteEvent / SetComment.
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -2368,17 +2366,17 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // SetComment includes Removed compliance rows so post-completion
         // edits are possible; do the same here so a worker can attach a
-        // photo to a just-completed opgave.
+        // photo to a just-completed event.
         //
         // Stable-identity path: client echoes the compliance_id from the
-        // Opgave it received; we look up by PK directly. Legacy fallback
+        // Event it received; we look up by PK directly. Legacy fallback
         // (compliance_id == 0) keeps the site-filtered fuzzy lookup so
-        // older outbox payloads still drain. See CompleteOpgave for the
+        // older outbox payloads still drain. See CompleteEvent for the
         // full rationale.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -2393,7 +2391,7 @@ public class EventsGrpcService(
         }
         else
         {
-            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
             var validCaseIdsForSite = await sdkDbContext.Cases
@@ -2412,7 +2410,7 @@ public class EventsGrpcService(
         if (compliance == null)
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId}: no SDK case to attach a photo to (recurrence-only opgaver are not supported in v1)."));
+                $"Event {eventId}: no SDK case to attach a photo to (recurrence-only events are not supported in v1)."));
         }
 
         var foundCase = await sdkDbContext.Cases
@@ -2422,7 +2420,7 @@ public class EventsGrpcService(
         if (foundCase == null)
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
+                $"Event {eventId}: compliance {compliance.Id} references missing SDK case {compliance.MicrotingSdkCaseId}."));
         }
 
         // 4. Reassemble bytes from subsequent chunks. We allocate to
@@ -2652,10 +2650,10 @@ public class EventsGrpcService(
                 ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
                 : DateTime.UtcNow;
 
-            var envelope = TryParseEnvelope(foundCase.Custom) ?? new OpgaverCustomEnvelope();
-            envelope.OpgaverPhotos ??= new List<OpgaverPhotoBody>();
+            var envelope = TryParseEnvelope(foundCase.Custom) ?? new EventCustomEnvelope();
+            envelope.EventPhotos ??= new List<EventPhotoBody>();
 
-            var existing = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
+            var existing = envelope.EventPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
             if (existing != null)
             {
                 if (existing.UploadedDataId > 0)
@@ -2668,10 +2666,10 @@ public class EventsGrpcService(
                         await stale.Delete(sdkDbContext).ConfigureAwait(false);
                     }
                 }
-                envelope.OpgaverPhotos.Remove(existing);
+                envelope.EventPhotos.Remove(existing);
             }
 
-            envelope.OpgaverPhotos.Add(new OpgaverPhotoBody
+            envelope.EventPhotos.Add(new EventPhotoBody
             {
                 Slot = meta.Slot,
                 UploadedDataId = uploadedData.Id,
@@ -2696,7 +2694,7 @@ public class EventsGrpcService(
     }
 
     /// <summary>
-    /// Soft-deletes the photo at the requested slot for an opgave.
+    /// Soft-deletes the photo at the requested slot for an event.
     /// "Soft" = the SDK <c>UploadedData</c> row is marked
     /// <c>WorkflowState=Removed</c> via <c>UploadedData.Delete()</c>; the
     /// S3 object is intentionally left in place because the eFormCore SDK
@@ -2704,7 +2702,7 @@ public class EventsGrpcService(
     /// already produced elsewhere in the pipeline (e.g.
     /// <c>BackendConfigurationFilesService</c> only soft-deletes the row).
     /// The slot entry is removed from the envelope so subsequent
-    /// ListOpgaver reads won't surface it.
+    /// ListEvents reads won't surface it.
     ///
     /// Idempotent: removing a slot that doesn't currently hold a photo
     /// returns OK with no error — the client may retry after a partial
@@ -2714,7 +2712,7 @@ public class EventsGrpcService(
         RemovePhotoRequest request,
         ServerCallContext context)
     {
-        var opgaveId = ParseOpgaveId(request.OpgaveId);
+        var eventId = ParseEventId(request.EventId);
         if (request.Slot < 0 || request.Slot >= MaxPhotoSlots)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument,
@@ -2723,13 +2721,13 @@ public class EventsGrpcService(
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -2737,13 +2735,13 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // Stable-identity path: client echoes the compliance_id from the
-        // Opgave; PK lookup is deterministic. Legacy fallback (== 0) keeps
+        // Event; PK lookup is deterministic. Legacy fallback (== 0) keeps
         // the site-filtered fuzzy lookup so older outbox payloads still
-        // drain. See CompleteOpgave for full rationale.
+        // drain. See CompleteEvent for full rationale.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         Compliance? compliance;
@@ -2757,7 +2755,7 @@ public class EventsGrpcService(
         }
         else
         {
-            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
             var validCaseIdsForSite = await sdkDbContext.Cases
@@ -2790,12 +2788,12 @@ public class EventsGrpcService(
         }
 
         var envelope = TryParseEnvelope(foundCase.Custom);
-        if (envelope?.OpgaverPhotos == null || envelope.OpgaverPhotos.Count == 0)
+        if (envelope?.EventPhotos == null || envelope.EventPhotos.Count == 0)
         {
             return new RemovePhotoResponse();
         }
 
-        var photo = envelope.OpgaverPhotos.FirstOrDefault(p => p.Slot == request.Slot);
+        var photo = envelope.EventPhotos.FirstOrDefault(p => p.Slot == request.Slot);
         if (photo == null)
         {
             return new RemovePhotoResponse();
@@ -2813,7 +2811,7 @@ public class EventsGrpcService(
             }
         }
 
-        envelope.OpgaverPhotos.Remove(photo);
+        envelope.EventPhotos.Remove(photo);
         foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
         await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
@@ -2832,14 +2830,14 @@ public class EventsGrpcService(
         return $"{hours:D2}:{minutes:D2}";
     }
 
-    private static Event SynthesiseMinimalOpgave(
-        int opgaveId, int propertyId, DateTime commentAtUtc, string trimmed)
+    private static Event SynthesiseMinimalEvent(
+        int eventId, int propertyId, DateTime commentAtUtc, string trimmed)
     {
         return new Event
         {
-            Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-            EjendomId = propertyId.ToString(CultureInfo.InvariantCulture),
-            TavleId = string.Empty,
+            Id = eventId.ToString(CultureInfo.InvariantCulture),
+            PropertyId = propertyId.ToString(CultureInfo.InvariantCulture),
+            BoardId = string.Empty,
             PlanDayKey = commentAtUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             PlannedAt = string.Empty,
             TaskText = string.Empty,
@@ -2860,11 +2858,11 @@ public class EventsGrpcService(
     /// value instead of <c>{}</c> after the worker clears the comment and
     /// removes the last photo.
     /// </summary>
-    private static string SerializeEnvelopeOrEmpty(OpgaverCustomEnvelope envelope)
+    private static string SerializeEnvelopeOrEmpty(EventCustomEnvelope envelope)
     {
-        var hasComment = envelope.OpgaverComment != null
-            && !string.IsNullOrEmpty(envelope.OpgaverComment.Text);
-        var hasPhotos = envelope.OpgaverPhotos is { Count: > 0 };
+        var hasComment = envelope.EventComment != null
+            && !string.IsNullOrEmpty(envelope.EventComment.Text);
+        var hasPhotos = envelope.EventPhotos is { Count: > 0 };
         if (!hasComment && !hasPhotos)
         {
             return string.Empty;
@@ -2877,7 +2875,7 @@ public class EventsGrpcService(
         return new DateTimeOffset(utc, TimeSpan.Zero).ToUnixTimeSeconds();
     }
 
-    private sealed class OpgaverCustomEnvelope
+    private sealed class EventCustomEnvelope
     {
         // Nullable: SetComment with empty text clears the comment slot; a
         // null entry survives serialisation because of the null-handling
@@ -2885,13 +2883,13 @@ public class EventsGrpcService(
         // only when explicitly opted in, but we accept the trailing null
         // here since the absence on read is what matters).
         [JsonPropertyName("opgaver_comment")]
-        public OpgaverCommentBody? OpgaverComment { get; set; }
+        public EventCommentBody? EventComment { get; set; }
 
         [JsonPropertyName("opgaver_photos")]
-        public List<OpgaverPhotoBody>? OpgaverPhotos { get; set; }
+        public List<EventPhotoBody>? EventPhotos { get; set; }
     }
 
-    private sealed class OpgaverCommentBody
+    private sealed class EventCommentBody
     {
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
@@ -2900,7 +2898,7 @@ public class EventsGrpcService(
         public long TsUnix { get; set; }
     }
 
-    private sealed class OpgaverPhotoBody
+    private sealed class EventPhotoBody
     {
         [JsonPropertyName("slot")]
         public int Slot { get; set; }
@@ -2917,7 +2915,7 @@ public class EventsGrpcService(
 
     /// <summary>
     /// Updates a single eForm field value on the backing SDK Case and returns
-    /// the refreshed Opgave so the Flutter client can reconcile in one round
+    /// the refreshed Event so the Flutter client can reconcile in one round
     /// trip.
     ///
     /// Field-value wire format: the SDK <c>core.CaseUpdate</c> method accepts a
@@ -2932,7 +2930,7 @@ public class EventsGrpcService(
     /// <c>BackendConfigurationCaseService.Update</c> and
     /// <c>CompliancesGrpcService.UpdateComplianceCase</c>.
     ///
-    /// The response Opgave is assembled by re-reading the calendar task and
+    /// The response Event is assembled by re-reading the calendar task and
     /// reloading fields via <c>LoadFieldsByTaskIdAsync</c>, identical to
     /// the pattern used in <c>SetComment</c>. An envelope read is included so
     /// any comment / photos already written remain visible in the response.
@@ -2952,17 +2950,17 @@ public class EventsGrpcService(
                 "field_id must be a positive integer."));
         }
 
-        var opgaveId = ParseOpgaveId(request.OpgaveId);
+        var eventId = ParseEventId(request.EventId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-            .FirstOrDefaultAsync(x => x.Id == opgaveId)
+            .FirstOrDefaultAsync(x => x.Id == eventId)
             .ConfigureAwait(false);
 
         if (arp == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound,
-                $"Opgave {opgaveId} not found."));
+                $"Event {eventId} not found."));
         }
 
         var sdkSiteId = await siteResolver.GetSdkSiteIdAsync().ConfigureAwait(false);
@@ -2970,14 +2968,14 @@ public class EventsGrpcService(
                 .ConfigureAwait(false))
         {
             throw new RpcException(new Status(StatusCode.PermissionDenied,
-                "Caller has no PropertyWorker access to the opgave's property."));
+                "Caller has no PropertyWorker access to the event's property."));
         }
 
         // Resolve the compliance for this ARP's planning.
         //
         // Stable-identity path: client echoes the compliance_id from the
-        // Opgave it received; we look up by PK directly (deterministic —
-        // see CompleteOpgave for the full rationale). Legacy fallback
+        // Event it received; we look up by PK directly (deterministic —
+        // see CompleteEvent for the full rationale). Legacy fallback
         // (compliance_id == 0) preserves the existing site-filtered fuzzy
         // lookup so older outbox payloads still drain.
         //
@@ -2999,12 +2997,12 @@ public class EventsGrpcService(
         }
         else
         {
-            // Legacy fuzzy lookup — DO NOT remove. See CompleteOpgave.
+            // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
             // TODO: if a worker has a very large number of cases this list
             // could grow; consider a JOIN-based query if perf becomes an issue.
             // Bug B fix: drop the c.WorkflowState != Removed filter so a payload
             // with compliance_id=0 can still resolve a retracted/missed-deadline
-            // compliance. See CompleteOpgave's fallback for the full rationale.
+            // compliance. See CompleteEvent's fallback for the full rationale.
             var validCaseIdsForSite = await sdkDbContext.Cases
                 .Where(c => c.SiteId == sdkSiteId)
                 .Select(c => c.Id)
@@ -3022,7 +3020,7 @@ public class EventsGrpcService(
         if (compliance == null)
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Opgave {opgaveId} has no backing Case — field values cannot be persisted yet."));
+                $"Event {eventId} has no backing Case — field values cannot be persisted yet."));
         }
 
         var caseId = compliance.MicrotingSdkCaseId;
@@ -3089,8 +3087,8 @@ public class EventsGrpcService(
             if (!ok)
             {
                 logger.LogError(
-                    "OpgaverGrpcService.SetFieldValue: Core.CaseUpdate returned false for opgave {OpgaveId} field {FieldId} caseId {CaseId}",
-                    opgaveId, request.FieldId, caseId);
+                    "EventsGrpcService.SetFieldValue: Core.CaseUpdate returned false for event {EventId} field {FieldId} caseId {CaseId}",
+                    eventId, request.FieldId, caseId);
                 throw new RpcException(new Status(StatusCode.FailedPrecondition,
                     "Field value persistence failed in SDK CaseUpdate"));
             }
@@ -3103,13 +3101,13 @@ public class EventsGrpcService(
         catch (Exception ex)
         {
             logger.LogError(ex,
-                "OpgaverGrpcService.SetFieldValue: CaseUpdate failed for opgave {OpgaveId} field {FieldId}",
-                opgaveId, request.FieldId);
+                "EventsGrpcService.SetFieldValue: CaseUpdate failed for event {EventId} field {FieldId}",
+                eventId, request.FieldId);
             throw new RpcException(new Status(StatusCode.Internal,
                 $"Field value update failed: {ex.Message}"));
         }
 
-        // Reload the opgave for the response — preserve comment + photos from
+        // Reload the event for the response — preserve comment + photos from
         // the envelope exactly as SetComment does.
         var dayKey = (compliance.Deadline != default ? compliance.Deadline : DateTime.UtcNow)
             .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -3126,17 +3124,17 @@ public class EventsGrpcService(
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
-            ? refreshed.Model.FirstOrDefault(t => t.Id == opgaveId)
+            ? refreshed.Model.FirstOrDefault(t => t.Id == eventId)
             : null;
 
-        Event opgave;
+        Event evt;
         if (refreshedTask != null)
         {
-            opgave = new Event
+            evt = new Event
             {
                 Id = refreshedTask.Id.ToString(CultureInfo.InvariantCulture),
-                EjendomId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                PropertyId = refreshedTask.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = refreshedTask.BoardId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 PlanDayKey = refreshedTask.TaskDate ?? string.Empty,
                 PlannedAt = FormatStartHour(refreshedTask.StartHour),
                 TaskText = refreshedTask.Title ?? string.Empty,
@@ -3151,27 +3149,27 @@ public class EventsGrpcService(
             // Reload envelope for the worker-supplied comment text.
             var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
             envelopeByTaskId.TryGetValue(refreshedTask.Id, out var envelope);
-            opgave.Comment = envelope?.OpgaverComment?.Text ?? string.Empty;
+            evt.Comment = envelope?.EventComment?.Text ?? string.Empty;
 
             // Reload fields — CaseUpdateFieldValues has committed by now, so
             // this read returns the just-written value.
             var fieldsByTaskId = await LoadFieldsByTaskIdAsync(refreshed.Model!).ConfigureAwait(false);
             if (fieldsByTaskId.TryGetValue(refreshedTask.Id, out var fields))
             {
-                opgave.Fields.AddRange(fields);
+                evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
         {
-            // Task fell out of the window after update — synthesise minimal Opgave.
-            opgave = new Event
+            // Task fell out of the window after update — synthesise minimal Event.
+            evt = new Event
             {
-                Id = opgaveId.ToString(CultureInfo.InvariantCulture),
-                EjendomId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
-                TavleId = string.Empty,
+                Id = eventId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                BoardId = string.Empty,
                 PlanDayKey = dayKey,
                 PlannedAt = string.Empty,
                 TaskText = string.Empty,
@@ -3182,21 +3180,21 @@ public class EventsGrpcService(
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(opgave, opgaveId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
 
-        return new SetFieldValueResponse { Opgave = opgave };
+        return new SetFieldValueResponse { Event = evt };
     }
 
-    private static int ParseOpgaveId(string raw)
+    private static int ParseEventId(string raw)
     {
         if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
         {
             return id;
         }
         throw new RpcException(new Status(StatusCode.InvalidArgument,
-            "opgave_id must be a numeric AreaRulePlanning id."));
+            "event_id must be a numeric AreaRulePlanning id."));
     }
 
     private static int ParsePropertyId(string raw)
@@ -3206,11 +3204,11 @@ public class EventsGrpcService(
             return id;
         }
         throw new RpcException(new Status(StatusCode.InvalidArgument,
-            "ejendom_id must be a numeric property id."));
+            "property_id must be a numeric property id."));
     }
 
     /// <summary>
-    /// Parse the repeated <c>tavle_ids</c> wire field into a deduplicated list
+    /// Parse the repeated <c>board_ids</c> wire field into a deduplicated list
     /// of numeric SDK board ids for <c>CalendarTaskRequestModel.BoardIds</c>.
     /// Blank and non-numeric entries are skipped per-entry (not all-or-nothing);
     /// an empty result means "no board filter, show all" downstream in

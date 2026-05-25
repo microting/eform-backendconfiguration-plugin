@@ -238,7 +238,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
         // Call GetAttachment with CALENDAR_FILE source
         var request = new GetAttachmentRequest
         {
-            OpgaveId = arpId.ToString(),
+            EventId = arpId.ToString(),
             Source = AttachmentSource.CalendarFile,
             Index = 0  // First (and only) file
         };
@@ -271,7 +271,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
         // Try to get index 5 (out of range — only 1 file exists)
         var request = new GetAttachmentRequest
         {
-            OpgaveId = arpId.ToString(),
+            EventId = arpId.ToString(),
             Source = AttachmentSource.CalendarFile,
             Index = 5
         };
@@ -304,7 +304,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
         // Act: try to get the attachment as a user without property access
         var request = new GetAttachmentRequest
         {
-            OpgaveId = arpId.ToString(),
+            EventId = arpId.ToString(),
             Source = AttachmentSource.CalendarFile,
             Index = 0
         };

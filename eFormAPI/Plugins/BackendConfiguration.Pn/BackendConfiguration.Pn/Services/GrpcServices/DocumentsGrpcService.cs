@@ -36,11 +36,11 @@ public class DocumentsGrpcService(
     private async Task<GetAttachmentResponse> GetAttachmentCalendarFile(
         GetAttachmentRequest request)
     {
-        // Parse OpgaveId as int — this is the AreaRulePlanning.Id per proto contract
-        if (!int.TryParse(request.OpgaveId, out var planningId))
+        // Parse EventId as int — this is the AreaRulePlanning.Id per proto contract
+        if (!int.TryParse(request.EventId, out var planningId))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument,
-                "OpgaveId must be a valid integer for CALENDAR_FILE attachments"));
+                "EventId must be a valid integer for CALENDAR_FILE attachments"));
         }
 
         // Get SDK site ID for permission check (same pattern as CalendarGrpcService)
