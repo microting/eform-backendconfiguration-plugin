@@ -42,6 +42,7 @@ export interface TaskCreateEditModalData {
   date: string;
   startHour: number;
   boards: CalendarBoardModel[];
+  selectedBoardId?: number;
   employees: CommonDictionaryModel[];
   tags: string[];
   propertyId: number;
@@ -278,10 +279,17 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(startHour + 1));
       this.propertyControl.setValue(this.data.propertyId);
-      const defaultBoard = this.data.boards.length > 0
+      // Prefer the sidebar-selected board when exactly one is active and it
+      // still exists in the available boards list; otherwise fall back to
+      // the smallest-ID board.
+      const sidebarSelected = this.data.selectedBoardId != null
+        ? this.data.boards.find(b => b.id === this.data.selectedBoardId) ?? null
+        : null;
+      const fallbackBoard = this.data.boards.length > 0
         ? this.data.boards.reduce((min, b) => b.id < min.id ? b : min)
         : null;
-      this.boardControl.setValue(defaultBoard?.id ?? null);
+      const initialBoard = sidebarSelected ?? fallbackBoard;
+      this.boardControl.setValue(initialBoard?.id ?? null);
       const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
       this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
     }

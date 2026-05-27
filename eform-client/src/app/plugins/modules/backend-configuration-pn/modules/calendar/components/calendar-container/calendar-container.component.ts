@@ -341,6 +341,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       date: event.date,
       startHour: event.startHour,
       boards: this.boards,
+      selectedBoardId: this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
