@@ -268,11 +268,6 @@ export class CalendarRepeatService {
         meta: {kind: 'weeklyOne', weekday, endMode: 'never'},
       },
       {
-        value: 'weeklyAll',
-        label: this.translate.instant('Every weekday'),
-        meta: {kind: 'weeklyAll', endMode: 'never'},
-      },
-      {
         value: 'monthlyDom',
         label: this.translate.instant('Monthly on day {{day}}', {day: dom}),
         meta: {kind: 'monthlyDom', dom, endMode: 'never'},
@@ -281,6 +276,11 @@ export class CalendarRepeatService {
         value: 'yearlyOne',
         label: this.translate.instant('Yearly on {{day}} {{month}}', {day: dom, month: monthName}),
         meta: {kind: 'yearlyOne', dom, month, endMode: 'never'},
+      },
+      {
+        value: 'weekdays',
+        label: this.translate.instant('All weekdays (Monday to Friday)'),
+        meta: {kind: 'weeklyMulti', weekdays: [1, 2, 3, 4, 5], endMode: 'never'},
       },
     ];
 
@@ -340,6 +340,16 @@ export class CalendarRepeatService {
           return isWeekly
             ? this.translate.instant('Weekly on all days')
             : this.translate.instant('Every {{n}} weeks: all days', {n});
+        }
+
+        // Recognise the Mon-Fri (1..5) shorthand so the customCurrent label
+        // matches the "All weekdays (Monday to Friday)" dropdown option a
+        // user picked, rather than expanding to the full weekday list.
+        const isMonFriOnly = isWeekly
+          && sortedDays.length === 5
+          && sortedDays[0] === 1 && sortedDays[4] === 5;
+        if (isMonFriOnly) {
+          return this.translate.instant('All weekdays (Monday to Friday)');
         }
 
         const days = this.formatWeekdayList(sortedDays, locale);
@@ -501,15 +511,7 @@ export class CalendarRepeatService {
    * rather than collapsing to "all days".
    */
   reconstructMetaFromTask(task: CalendarTaskModel): CalendarRepeatMeta | null {
-    // Cast to string so the switch can include `'weekdays'` even though it
-    // isn't currently in the CalendarRepeatRule union — the backend may
-    // start emitting it once the controller maps RepeatType=5 explicitly,
-    // and the helper stays forward-compatible.
-    // Cast to string so the switch can include `'weekdays'` even though it
-    // isn't currently in the CalendarRepeatRule union — the backend may
-    // start emitting it once the controller maps RepeatType=5 explicitly,
-    // and the helper stays forward-compatible.
-    const r = task.repeatRule as string | undefined;
+    const r = task.repeatRule;
     // Defensive coalesce: backend should never send 0 or negative, but guard
     // anyway so a bogus value doesn't cascade into an iterator with step=0.
     const n = (task.repeatEvery ?? 0) > 0 ? task.repeatEvery! : 1;
@@ -568,7 +570,11 @@ export class CalendarRepeatService {
       case 'weeklyAll':
         // Same promotion path: CSV wins if present.
         if (csvDays.length > 0) return weeklyFromCsv();
-        return {kind: n === 1 ? 'weeklyAll' : 'everyNWeekAll', n, endMode, afterCount, untilTs};
+        // Legacy weeklyAll (every week, all 7 days) is functionally identical to
+        // daily, so display as daily. The everyNWeekAll case (step > 1) is NOT
+        // equivalent to "every N days" and falls through to Custom on display.
+        if (n === 1) return {kind: 'daily', n: 1, endMode, afterCount, untilTs};
+        return {kind: 'everyNWeekAll', n, endMode, afterCount, untilTs};
 
       case 'weekdays':
         // Mon-Fri. Map to weeklyMulti so the formatter renders the explicit list

@@ -460,4 +460,7 @@ export const roRO = {
   'Last refreshed': 'Ultima actualizare',
   'Google Drive disconnected': 'Google Drive deconectat',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive deconectat — reconectați-vă pentru a relua sincronizarea',
+  'Ad hoc': 'Ad-hoc',
+  Time: 'Timp',
+  'All weekdays (Monday to Friday)': 'Toate zilele lucrătoare (luni până vineri)',
 };

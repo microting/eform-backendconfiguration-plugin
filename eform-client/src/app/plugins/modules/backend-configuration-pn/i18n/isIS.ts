@@ -460,4 +460,7 @@ export const isIS = {
   'Last refreshed': 'Síðast endurnýjað',
   'Google Drive disconnected': 'Google Drive ótengdur',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive aftengdur — endurtengdu aftur til að halda samstillingu áfram',
+  'Ad hoc': 'Sérstakt',
+  Time: 'Tími',
+  'All weekdays (Monday to Friday)': 'Alla virka daga (mánudaga til föstudaga)',
 };

@@ -462,4 +462,5 @@ export const svSE = {
   'Last refreshed': 'Senast uppdaterad',
   'Google Drive disconnected': 'Google Drive frånkopplad',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive frånkopplad — återanslut för att återuppta synkroniseringen',
+  'All weekdays (Monday to Friday)': 'Alla vardagar (måndag till fredag)',
 };

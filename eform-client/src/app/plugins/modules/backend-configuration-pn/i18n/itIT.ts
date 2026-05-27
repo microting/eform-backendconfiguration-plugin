@@ -460,4 +460,7 @@ export const itIT = {
   'Last refreshed': 'Ultimo aggiornamento',
   'Google Drive disconnected': 'Google Drive disconnesso',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive disconnesso: riconnettiti per riprendere la sincronizzazione.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tempo',
+  'All weekdays (Monday to Friday)': 'Tutti i giorni feriali (dal lunedì al venerdì)',
 };

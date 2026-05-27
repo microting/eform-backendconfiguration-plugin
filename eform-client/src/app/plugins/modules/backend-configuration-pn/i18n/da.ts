@@ -360,6 +360,7 @@ export const da = {
   'Weekly on {{day}}': 'Ugentligt hver {{day}}',
   'Monthly on day {{day}}': 'Månedligt på dag {{day}}',
   'Yearly on {{day}} {{month}}': 'Årligt den {{day}}. {{month}}',
+  'All weekdays (Monday to Friday)': 'Alle hverdage (mandag til fredag)',
   Mon: 'man',
   Tue: 'Tirsdag',
   Wed: 'Ons',

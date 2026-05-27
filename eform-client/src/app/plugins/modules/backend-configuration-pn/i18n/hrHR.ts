@@ -460,4 +460,7 @@ export const hrHR = {
   'Last refreshed': 'Zadnje osvježeno',
   'Google Drive disconnected': 'Google disk je isključen',
   'Google Drive disconnected — reconnect to resume sync': 'Google disk je isključen — ponovno se povežite da biste nastavili sinkronizaciju',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Vrijeme',
+  'All weekdays (Monday to Friday)': 'Svi radni dani (od ponedjeljka do petka)',
 };

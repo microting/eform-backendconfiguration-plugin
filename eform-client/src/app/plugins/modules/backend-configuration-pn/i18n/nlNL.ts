@@ -460,4 +460,7 @@ export const nlNL = {
   'Last refreshed': 'Laatst vernieuwd',
   'Google Drive disconnected': 'Google Drive is losgekoppeld',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive is losgekoppeld — maak opnieuw verbinding om de synchronisatie te hervatten.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tijd',
+  'All weekdays (Monday to Friday)': 'Alle werkdagen (maandag tot en met vrijdag)',
 };

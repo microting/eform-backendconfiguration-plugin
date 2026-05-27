@@ -379,6 +379,7 @@ export const enUS= {
   'Weekly on {{day}}': 'Weekly on {{day}}',
   'Monthly on day {{day}}': 'Monthly on day {{day}}',
   'Yearly on {{day}} {{month}}': 'Yearly on {{day}} {{month}}',
+  'All weekdays (Monday to Friday)': 'All weekdays (Monday to Friday)',
   'Weekly every {{days}}': 'Weekly every {{days}}',
   'Weekly on all days': 'Weekly on all days',
   'Every {{n}} weeks: {{days}}': 'Every {{n}} weeks: {{days}}',
