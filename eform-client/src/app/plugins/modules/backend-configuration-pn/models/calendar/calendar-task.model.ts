@@ -3,6 +3,7 @@ export type CalendarRepeatRule =
   | 'daily'
   | 'weeklyOne'
   | 'weeklyAll'
+  | 'weekdays'
   | 'monthlyDom'
   | 'yearlyOne'
   | 'custom';

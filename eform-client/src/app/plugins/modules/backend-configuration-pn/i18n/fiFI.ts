@@ -460,4 +460,7 @@ export const fiFI = {
   'Last refreshed': 'Viimeksi päivitetty',
   'Google Drive disconnected': 'Google Driven yhteys katkaistu',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive katkaistu – yhdistä uudelleen jatkaaksesi synkronointia',
+  'Ad hoc': 'Ad hoc -palvelu',
+  Time: 'Aika',
+  'All weekdays (Monday to Friday)': 'Kaikki arkipäivät (maanantaista perjantaihin)',
 };

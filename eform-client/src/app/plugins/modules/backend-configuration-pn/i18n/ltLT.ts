@@ -460,4 +460,7 @@ export const ltLT = {
   'Last refreshed': 'Paskutinį kartą atnaujinta',
   'Google Drive disconnected': '„Google“ diskas atjungtas',
   'Google Drive disconnected — reconnect to resume sync': '„Google“ diskas atjungtas – prijunkite dar kartą, kad tęstumėte sinchronizavimą.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Laikas',
+  'All weekdays (Monday to Friday)': 'Visomis darbo dienomis (nuo pirmadienio iki penktadienio)',
 };

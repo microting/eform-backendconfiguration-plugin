@@ -460,4 +460,7 @@ export const skSK = {
   'Last refreshed': 'Naposledy obnovené',
   'Google Drive disconnected': 'Disk Google sa odpojil',
   'Google Drive disconnected — reconnect to resume sync': 'Disk Google odpojený – znova pripojte, aby ste obnovili synchronizáciu',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Čas',
+  'All weekdays (Monday to Friday)': 'Všetky pracovné dni (pondelok až piatok)',
 };

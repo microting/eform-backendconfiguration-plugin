@@ -460,4 +460,7 @@ export const slSL = {
   'Last refreshed': 'Nazadnje osveženo',
   'Google Drive disconnected': 'Google Drive prekinjen',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive prekinjen – znova vzpostavite povezavo za nadaljevanje sinhronizacije',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Čas',
+  'All weekdays (Monday to Friday)': 'Vse delavnike (od ponedeljka do petka)',
 };

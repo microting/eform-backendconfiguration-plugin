@@ -460,4 +460,7 @@ export const esES = {
   'Last refreshed': 'Última actualización',
   'Google Drive disconnected': 'Google Drive desconectado',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive se ha desconectado; vuelva a conectarse para reanudar la sincronización.',
+  'Ad hoc': 'A propósito',
+  Time: 'Tiempo',
+  'All weekdays (Monday to Friday)': 'Todos los días laborables (de lunes a viernes)',
 };

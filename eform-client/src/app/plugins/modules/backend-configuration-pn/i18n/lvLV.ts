@@ -460,4 +460,7 @@ export const lvLV = {
   'Last refreshed': 'Pēdējoreiz atsvaidzināts',
   'Google Drive disconnected': 'Google disks ir atvienots',
   'Google Drive disconnected — reconnect to resume sync': 'Google disks atvienots — atkārtoti izveidojiet savienojumu, lai atsāktu sinhronizāciju.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Laiks',
+  'All weekdays (Monday to Friday)': 'Visas darba dienas (no pirmdienas līdz piektdienai)',
 };

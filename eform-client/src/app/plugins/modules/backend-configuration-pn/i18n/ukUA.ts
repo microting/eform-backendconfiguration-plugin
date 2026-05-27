@@ -460,4 +460,7 @@ export const ukUA = {
   'Last refreshed': 'Останнє оновлення',
   'Google Drive disconnected': 'Google Диск відключено',
   'Google Drive disconnected — reconnect to resume sync': 'Диск Google відключено — підключіть його, щоб відновити синхронізацію',
+  'Ad hoc': 'Спеціально',
+  Time: 'Час',
+  'All weekdays (Monday to Friday)': 'Усі будні (з понеділка по п&#39;ятницю)',
 };

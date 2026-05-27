@@ -460,4 +460,7 @@ export const plPL = {
   'Last refreshed': 'Ostatnio odświeżono',
   'Google Drive disconnected': 'Dysk Google odłączony',
   'Google Drive disconnected — reconnect to resume sync': 'Dysk Google rozłączony — połącz ponownie, aby wznowić synchronizację',
+  'Ad hoc': 'Doraźnie',
+  Time: 'Czas',
+  'All weekdays (Monday to Friday)': 'Wszystkie dni powszednie (od poniedziałku do piątku)',
 };

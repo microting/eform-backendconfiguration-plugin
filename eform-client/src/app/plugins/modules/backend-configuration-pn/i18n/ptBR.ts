@@ -460,4 +460,7 @@ export const ptBR = {
   'Last refreshed': 'Última atualização',
   'Google Drive disconnected': 'Google Drive desconectado',
   'Google Drive disconnected — reconnect to resume sync': 'O Google Drive foi desconectado — reconecte para retomar a sincronização.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tempo',
+  'All weekdays (Monday to Friday)': 'Todos os dias da semana (de segunda a sexta-feira)',
 };

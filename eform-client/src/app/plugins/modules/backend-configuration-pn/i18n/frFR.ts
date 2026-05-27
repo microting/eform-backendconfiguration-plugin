@@ -459,4 +459,7 @@ export const frFR = {
   'Last refreshed': 'Dernière mise à jour',
   'Google Drive disconnected': 'Google Drive déconnecté',
   'Google Drive disconnected — reconnect to resume sync': 'Déconnexion de Google Drive — reconnectez-vous pour reprendre la synchronisation',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Temps',
+  'All weekdays (Monday to Friday)': 'Tous les jours de la semaine (du lundi au vendredi)',
 };

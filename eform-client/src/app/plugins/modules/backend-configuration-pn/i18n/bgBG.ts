@@ -460,4 +460,7 @@ export const bgBG = {
   'Last refreshed': 'Последно обновяване',
   'Google Drive disconnected': 'Google Диск е прекъснат',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive е прекъснат — свържете го отново, за да възобновите синхронизирането',
+  'Ad hoc': 'Специално',
+  Time: 'Време',
+  'All weekdays (Monday to Friday)': 'Всички делнични дни (от понеделник до петък)',
 };
