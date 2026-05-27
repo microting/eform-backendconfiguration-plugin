@@ -250,6 +250,10 @@ export class CalendarRepeatService {
     // dayNames is Monday-indexed (Mon=0..Sun=6); JS getDay() is Sunday-indexed.
     const dayName = dayNames[(weekday + 6) % 7];
     const monthName = monthNames[month];
+    // Danish convention is lowercase weekday names mid-sentence; English and
+    // other locales keep their translated casing.
+    const currentLang = this.translate.currentLang || this.translate.defaultLang;
+    const weeklyDayName = currentLang === 'da' ? dayName.toLowerCase() : dayName;
 
     const options: RepeatSelectOption[] = [
       {value: 'none', label: this.translate.instant('Does not repeat')},
@@ -260,7 +264,7 @@ export class CalendarRepeatService {
       },
       {
         value: 'weeklyOne',
-        label: this.translate.instant('Weekly on {{day}}', {day: dayName}),
+        label: this.translate.instant('Weekly on {{day}}', {day: weeklyDayName}),
         meta: {kind: 'weeklyOne', weekday, endMode: 'never'},
       },
       {
