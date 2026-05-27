@@ -463,4 +463,6 @@ export const ltLT = {
   'Ad hoc': 'Ad hoc',
   Time: 'Laikas',
   'All weekdays (Monday to Friday)': 'Visomis darbo dienomis (nuo pirmadienio iki penktadienio)',
+  'Monthly on the {{ordinal}} {{day}}': 'Kas mėnesį {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Kas {{n}} mėnesius {{ordinal}} {{day}}',
 };

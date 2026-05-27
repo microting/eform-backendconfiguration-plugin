@@ -463,4 +463,6 @@ export const nlNL = {
   'Ad hoc': 'Ad hoc',
   Time: 'Tijd',
   'All weekdays (Monday to Friday)': 'Alle werkdagen (maandag tot en met vrijdag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Maandelijks op de {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Elke {{n}} maanden op de {{ordinal}} {{day}}',
 };

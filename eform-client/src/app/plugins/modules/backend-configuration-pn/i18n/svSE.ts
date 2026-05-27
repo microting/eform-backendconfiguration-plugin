@@ -463,4 +463,6 @@ export const svSE = {
   'Google Drive disconnected': 'Google Drive frånkopplad',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive frånkopplad — återanslut för att återuppta synkroniseringen',
   'All weekdays (Monday to Friday)': 'Alla vardagar (måndag till fredag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Månadsvis på den {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Var {{n}} månad på den {{ordinal}} {{day}}',
 };

@@ -463,4 +463,6 @@ export const huHU = {
   'Ad hoc': 'Ad hoc',
   Time: 'Idő',
   'All weekdays (Monday to Friday)': 'Minden hétköznap (hétfőtől péntekig)',
+  'Monthly on the {{ordinal}} {{day}}': 'Havonta a {{ordinal}} {{day}} napon',
+  'Every {{n}} months on the {{ordinal}} {{day}}': '{{n}} havonta, a {{ordinal}} {{day}} napon',
 };

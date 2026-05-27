@@ -463,4 +463,6 @@ export const csCZ = {
   'Ad hoc': 'Ad hoc',
   Time: 'Čas',
   'All weekdays (Monday to Friday)': 'Všechny všední dny (pondělí až pátek)',
+  'Monthly on the {{ordinal}} {{day}}': 'Měsíčně v {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Každých {{n}} měsíců v {{ordinal}} {{day}}',
 };

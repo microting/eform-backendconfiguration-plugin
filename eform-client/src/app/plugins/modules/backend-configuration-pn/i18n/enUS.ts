@@ -378,6 +378,8 @@ export const enUS= {
   'Does not repeat': 'Does not repeat',
   'Weekly on {{day}}': 'Weekly on {{day}}',
   'Monthly on day {{day}}': 'Monthly on day {{day}}',
+  'Monthly on the {{ordinal}} {{day}}': 'Monthly on the {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Every {{n}} months on the {{ordinal}} {{day}}',
   'Yearly on {{day}} {{month}}': 'Yearly on {{day}} {{month}}',
   'All weekdays (Monday to Friday)': 'All weekdays (Monday to Friday)',
   'Weekly every {{days}}': 'Weekly every {{days}}',

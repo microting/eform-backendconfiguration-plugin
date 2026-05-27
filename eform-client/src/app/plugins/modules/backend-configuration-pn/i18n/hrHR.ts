@@ -463,4 +463,6 @@ export const hrHR = {
   'Ad hoc': 'Ad hoc',
   Time: 'Vrijeme',
   'All weekdays (Monday to Friday)': 'Svi radni dani (od ponedjeljka do petka)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mjesečno na {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Svakih {{n}} mjeseci na {{ordinal}} {{day}}',
 };

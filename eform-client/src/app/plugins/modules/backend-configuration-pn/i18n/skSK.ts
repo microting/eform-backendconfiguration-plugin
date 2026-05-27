@@ -463,4 +463,6 @@ export const skSK = {
   'Ad hoc': 'Ad hoc',
   Time: 'Čas',
   'All weekdays (Monday to Friday)': 'Všetky pracovné dni (pondelok až piatok)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mesačne v {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Každých {{n}} mesiacov v {{ordinal}} {{day}}',
 };

@@ -463,4 +463,6 @@ export const lvLV = {
   'Ad hoc': 'Ad hoc',
   Time: 'Laiks',
   'All weekdays (Monday to Friday)': 'Visas darba dienas (no pirmdienas līdz piektdienai)',
+  'Monthly on the {{ordinal}} {{day}}': 'Katru mēnesi {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Ik pēc {{n}} mēnešiem {{ordinal}} {{day}}',
 };

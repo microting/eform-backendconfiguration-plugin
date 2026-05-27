@@ -48,6 +48,21 @@ export class CalendarRepeatService {
     ];
   }
 
+  /**
+   * Format an ordinal number (1–5) for a given locale.
+   * Danish: "1.", "2.", "3.", "4.", "5."
+   * English: "1st", "2nd", "3rd", "4th", "5th"
+   * Other locales: fall back to "N." (acceptable until per-locale ordinals exist).
+   */
+  private formatOrdinal(n: number, lang: string): string {
+    if (lang === 'da') return `${n}.`;
+    if (lang === 'en' || !lang || lang.startsWith('en')) {
+      const suffixes: Record<number, string> = {1: 'st', 2: 'nd', 3: 'rd', 4: 'th', 5: 'th'};
+      return `${n}${suffixes[n] ?? 'th'}`;
+    }
+    return `${n}.`;
+  }
+
   private getMondayOfWeek(d: Date): Date {
     const date = new Date(d);
     const day = date.getDay();
@@ -199,6 +214,28 @@ export class CalendarRepeatService {
         break;
       }
 
+      case 'monthlyByDay':
+      case 'everyNMonthByDay': {
+        const ordinal = meta.ordinalWeek ?? 1;  // 1..5
+        const targetWeekday = meta.weekday ?? 0;
+        const step = meta.n ?? 1;
+        let iter = new Date(start.getFullYear(), start.getMonth(), 1);
+        for (let i = 0; i < 120; i++) {
+          // Find the Nth occurrence of targetWeekday in this month.
+          // Start at day 1 of the month, advance to the first matching weekday.
+          const firstDay = new Date(iter.getFullYear(), iter.getMonth(), 1);
+          const dayOffset = (targetWeekday - firstDay.getDay() + 7) % 7;
+          const nthDay = 1 + dayOffset + (ordinal - 1) * 7;
+          const daysInMonth = new Date(iter.getFullYear(), iter.getMonth() + 1, 0).getDate();
+          if (nthDay <= daysInMonth) {
+            const t = new Date(iter.getFullYear(), iter.getMonth(), nthDay);
+            if (t.getTime() >= start.getTime()) raw.push(t.getTime());
+          }
+          iter.setMonth(iter.getMonth() + step);
+        }
+        break;
+      }
+
       case 'yearlyOne': {
         const mo = meta.month ?? 0;
         const dom = meta.dom ?? 1;
@@ -268,9 +305,17 @@ export class CalendarRepeatService {
         meta: {kind: 'weeklyOne', weekday, endMode: 'never'},
       },
       {
-        value: 'monthlyDom',
-        label: this.translate.instant('Monthly on day {{day}}', {day: dom}),
-        meta: {kind: 'monthlyDom', dom, endMode: 'never'},
+        value: 'monthlyByDay',
+        label: this.translate.instant('Monthly on the {{ordinal}} {{day}}', {
+          ordinal: this.formatOrdinal(Math.ceil(dom / 7), currentLang),
+          day: currentLang === 'da' ? dayName.toLowerCase() : dayName,
+        }),
+        meta: {
+          kind: 'monthlyByDay',
+          ordinalWeek: Math.ceil(dom / 7),
+          weekday,
+          endMode: 'never',
+        },
       },
       {
         value: 'yearlyOne',
@@ -366,6 +411,26 @@ export class CalendarRepeatService {
       case 'everyNMonthDom': {
         const dom = meta.dom ?? 1;
         return this.translate.instant('Every {{n}} months on day {{dom}}', {n, dom});
+      }
+
+      case 'monthlyByDay':
+      case 'everyNMonthByDay': {
+        const ordinal = meta.ordinalWeek ?? 1;
+        const wd = meta.weekday ?? 0;
+        const currentLang = this.translate.currentLang || this.translate.defaultLang;
+        const ordinalLabel = this.formatOrdinal(ordinal, currentLang);
+        // Derive localised weekday name via toLocaleDateString — consistent
+        // with formatWeekdayList, no extra translation keys needed.
+        const monday = new Date(2024, 0, 1);  // 2024-01-01 is a Monday
+        const offset = this.dayOffsetFromMonday(wd);
+        const tgt = new Date(monday);
+        tgt.setDate(monday.getDate() + offset);
+        const wdName = tgt.toLocaleDateString(locale, {weekday: 'long'});
+        const dayLabel = currentLang === 'da' ? wdName.toLowerCase() : wdName;
+        if (n === 1) {
+          return this.translate.instant('Monthly on the {{ordinal}} {{day}}', {ordinal: ordinalLabel, day: dayLabel});
+        }
+        return this.translate.instant('Every {{n}} months on the {{ordinal}} {{day}}', {n, ordinal: ordinalLabel, day: dayLabel});
       }
 
       case 'yearlyOne': {
@@ -473,6 +538,12 @@ export class CalendarRepeatService {
         step = 1; unit = 'month'; weekdays = [];
         break;
       case 'everyNMonthDom':
+        step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        break;
+      case 'monthlyByDay':
+        step = 1; unit = 'month'; weekdays = [];
+        break;
+      case 'everyNMonthByDay':
         step = meta.n ?? 1; unit = 'month'; weekdays = [];
         break;
       case 'yearlyOne':
@@ -585,6 +656,15 @@ export class CalendarRepeatService {
         };
 
       case 'monthlyDom':
+        // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
+        if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+          return {
+            kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
+            ordinalWeek: task.repeatOrdinalWeek,
+            weekday: task.dayOfWeek,
+            endMode, afterCount, untilTs,
+          } as CalendarRepeatMeta;
+        }
         if (task.dayOfMonth == null) return null;
         return {
           kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
@@ -607,6 +687,15 @@ export class CalendarRepeatService {
             // Pre-migration row with no CSV → weeklyAll/everyNWeekAll fallback.
             return weeklyFromCsv();
           case 3:
+            // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
+            if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+              return {
+                kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
+                ordinalWeek: task.repeatOrdinalWeek,
+                weekday: task.dayOfWeek,
+                endMode, afterCount, untilTs,
+              } as CalendarRepeatMeta;
+            }
             if (task.dayOfMonth == null) return null;
             return {
               kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
@@ -647,6 +736,23 @@ export class CalendarRepeatService {
       const dom = meta.dom;
       if (dom == null || dom < 1 || dom > 31) return null;
       return dom;
+    }
+    // New monthly-by-weekday rule: dayOfMonth is 0 (the "no DOM" sentinel).
+    if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
+      return 0;
+    }
+    return null;
+  }
+
+  /**
+   * Wire-format value for the request payload's `repeatOrdinalWeek` field.
+   * Returns the ordinal (1–5) for `monthlyByDay`/`everyNMonthByDay` metas;
+   * null for all other kinds.
+   */
+  metaToRepeatOrdinalWeek(meta: CalendarRepeatMeta | null | undefined): number | null {
+    if (!meta) return null;
+    if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
+      return meta.ordinalWeek ?? null;
     }
     return null;
   }

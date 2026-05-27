@@ -462,4 +462,6 @@ export const frFR = {
   'Ad hoc': 'Ad hoc',
   Time: 'Temps',
   'All weekdays (Monday to Friday)': 'Tous les jours de la semaine (du lundi au vendredi)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mensuellement le {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Tous les {{n}} mois, le {{ordinal}} {{day}}',
 };
