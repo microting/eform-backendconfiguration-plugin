@@ -463,4 +463,6 @@ export const fiFI = {
   'Ad hoc': 'Ad hoc -palvelu',
   Time: 'Aika',
   'All weekdays (Monday to Friday)': 'Kaikki arkipäivät (maanantaista perjantaihin)',
+  'Monthly on the {{ordinal}} {{day}}': 'Kuukausittain {{ordinal}} {{day}} -päivänä',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Joka {{n}} kuukausi {{ordinal}} {{day}} -päivänä',
 };

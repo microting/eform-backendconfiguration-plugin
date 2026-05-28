@@ -463,4 +463,6 @@ export const roRO = {
   'Ad hoc': 'Ad-hoc',
   Time: 'Timp',
   'All weekdays (Monday to Friday)': 'Toate zilele lucrătoare (luni până vineri)',
+  'Monthly on the {{ordinal}} {{day}}': 'Lunar în ziua {{ordinală}} {{zi}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'La fiecare {{n}} luni, în ziua {{ordinală}} {{zi}}',
 };

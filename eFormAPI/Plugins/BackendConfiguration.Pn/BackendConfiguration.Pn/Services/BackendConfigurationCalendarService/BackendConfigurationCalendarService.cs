@@ -351,7 +351,8 @@ public class BackendConfigurationCalendarService(
                 // Compute all occurrence dates within the requested week.
                 // Pass arp.RepeatWeekdaysCsv so multi-day weekly rules
                 // (e.g. "1,3,5") expand to multiple occurrences per week.
-                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd, arp.RepeatWeekdaysCsv);
+                var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd, arp.RepeatWeekdaysCsv,
+                    arp.RepeatOrdinalWeek, arp.DayOfWeek);
 
                 // Filter by repeat end mode
                 if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
@@ -365,7 +366,7 @@ public class BackendConfigurationCalendarService(
                     // on EnumerateOccurrences is exclusive — add a day.
                     var allOccsSince = EnumerateOccurrences(planning,
                         planning.StartDate.Date, weekEnd.AddDays(1),
-                        arp.RepeatWeekdaysCsv).ToList();
+                        arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek).ToList();
                     var maxOcc = arp.RepeatOccurrences.Value;
                     if (allOccsSince.Count > maxOcc)
                     {
@@ -450,6 +451,7 @@ public class BackendConfigurationCalendarService(
                         RepeatUntilDate = arp.RepeatUntilDate,
                         DayOfWeek = arp.DayOfWeek,
                         DayOfMonth = arp.DayOfMonth,
+                        RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                         RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                         Completed = false,
                         PropertyId = arp.PropertyId,
@@ -527,6 +529,7 @@ public class BackendConfigurationCalendarService(
                             RepeatUntilDate = arp.RepeatUntilDate,
                             DayOfWeek = arp.DayOfWeek,
                             DayOfMonth = arp.DayOfMonth,
+                            RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                             RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                             Completed = false,
                             PropertyId = arp.PropertyId,
@@ -600,6 +603,7 @@ public class BackendConfigurationCalendarService(
                     RepeatUntilDate = arp.RepeatUntilDate,
                     DayOfWeek = arp.DayOfWeek,
                     DayOfMonth = arp.DayOfMonth,
+                    RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                     Completed = false,
                     PropertyId = arp.PropertyId,
@@ -789,6 +793,7 @@ public class BackendConfigurationCalendarService(
                     RepeatUntilDate = arp?.RepeatUntilDate,
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
+                    RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = complianceCompleted,
                     PropertyId = compliance.PropertyId,
@@ -899,6 +904,16 @@ public class BackendConfigurationCalendarService(
                 var hasRepeatEndChange = createModel.RepeatEndMode.HasValue;
                 latestArp.RepeatWeekdaysCsv = createModel.RepeatWeekdaysCsv;
                 latestArp.DayOfMonth = createModel.DayOfMonth ?? 0;
+                latestArp.RepeatOrdinalWeek = createModel.RepeatOrdinalWeek;
+                // Capture the planned weekday from the start date so the
+                // monthlyByDay iterator (Nth weekday of month) has the target
+                // weekday available. Scoped to monthlyByDay rules to avoid
+                // disturbing the column for other rule kinds, where it is
+                // unused but may be read by adjacent Area Rule Planning UI.
+                if (createModel.RepeatOrdinalWeek.HasValue)
+                {
+                    latestArp.DayOfWeek = (int)createModel.StartDate.DayOfWeek;
+                }
                 if (hasRepeatEndChange)
                 {
                     latestArp.RepeatEndMode = createModel.RepeatEndMode;
@@ -1007,6 +1022,16 @@ public class BackendConfigurationCalendarService(
                 // RepeatWeekdaysCsv above; DayOfMonth follows the same rule.
                 arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
                 arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
+                arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
+                // Mirror the create handler: keep DayOfWeek in sync with the
+                // start date so the monthlyByDay iterator reads the right
+                // target weekday after edits that move the anchor date.
+                // Scoped to monthlyByDay rules per the same rationale as
+                // create.
+                if (updateModel.RepeatOrdinalWeek.HasValue)
+                {
+                    arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
+                }
                 arp.RepeatEndMode = updateModel.RepeatEndMode;
                 arp.RepeatOccurrences = updateModel.RepeatOccurrences;
                 arp.RepeatUntilDate = updateModel.RepeatUntilDate;
@@ -1347,7 +1372,7 @@ public class BackendConfigurationCalendarService(
                         .ToListAsync();
                     var existingSet = new HashSet<DateTime>(existingPastDates);
 
-                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv))
+                    foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
                     {
                         if (existingSet.Contains(occDate)) continue;
                         var anchor = new CalendarOccurrenceException
@@ -1592,7 +1617,7 @@ public class BackendConfigurationCalendarService(
                             .ToListAsync();
                         var existingSet = new HashSet<DateTime>(existingPastDates);
 
-                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate, arp.RepeatWeekdaysCsv))
+                        foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, anchorDate, arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
                         {
                             if (existingSet.Contains(occDate)) continue;
                             var anchor = new CalendarOccurrenceException
@@ -2112,7 +2137,9 @@ public class BackendConfigurationCalendarService(
     private static IEnumerable<DateTime> EnumerateOccurrences(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         DateTime fromInclusive, DateTime toExclusive,
-        string? repeatWeekdaysCsv = null)
+        string? repeatWeekdaysCsv = null,
+        int? repeatOrdinalWeek = null,
+        int? dayOfWeekOverride = null)
     {
         var startDate = planning.StartDate.Date;
         var rangeStart = fromInclusive.Date > startDate ? fromInclusive.Date : startDate;
@@ -2194,18 +2221,44 @@ public class BackendConfigurationCalendarService(
             }
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
-                var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
                 var monthsSinceStart = (rangeStart.Year - startDate.Year) * 12 + rangeStart.Month - startDate.Month;
                 var skip = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
                 var candidateMonth = startDate.AddMonths(skip * repeatEvery);
-                while (true)
+                if (repeatOrdinalWeek.HasValue)
                 {
-                    var daysInMonth = DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month);
-                    var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
-                        Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
-                    if (candidate >= rangeEnd) break;
-                    if (candidate >= rangeStart) yield return candidate;
-                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    // Nth-weekday-of-month path (e.g. "2nd Tuesday of each month").
+                    int ordinal = repeatOrdinalWeek.Value; // 1..5
+                    int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
+                    while (true)
+                    {
+                        var firstOfMonth = new DateTime(candidateMonth.Year, candidateMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                        int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
+                        var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+                        // If ordinal spills into the next month (e.g. 5th occurrence
+                        // in a month that only has 4), skip this month.
+                        if (candidate.Month != candidateMonth.Month)
+                        {
+                            candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                            continue;
+                        }
+                        if (candidate >= rangeEnd) break;
+                        if (candidate >= rangeStart) yield return candidate;
+                        candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    }
+                }
+                else
+                {
+                    // Legacy day-of-month path.
+                    var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                    while (true)
+                    {
+                        var daysInMonth = DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month);
+                        var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
+                            Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                        if (candidate >= rangeEnd) break;
+                        if (candidate >= rangeStart) yield return candidate;
+                        candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    }
                 }
                 break;
             }
@@ -2222,7 +2275,9 @@ public class BackendConfigurationCalendarService(
     private static List<DateTime> GetOccurrencesInWeek(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         DateTime weekStart, DateTime weekEnd,
-        string? repeatWeekdaysCsv = null)
+        string? repeatWeekdaysCsv = null,
+        int? repeatOrdinalWeek = null,
+        int? dayOfWeekOverride = null)
     {
         var occurrences = new List<DateTime>();
         var startDate = planning.StartDate.Date;
@@ -2287,20 +2342,47 @@ public class BackendConfigurationCalendarService(
             case Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month:
             {
                 if (startDate > weekEnd) break;
-                var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
                 // Find starting month
                 var monthsSinceStart = (weekStart.Year - startDate.Year) * 12 + weekStart.Month - startDate.Month;
                 var periods = monthsSinceStart > 0 ? (int)Math.Ceiling((double)monthsSinceStart / repeatEvery) : 0;
                 var candidateMonth = startDate.AddMonths(periods * repeatEvery);
-                for (var i = 0; i < 3; i++) // at most 3 months can overlap a week
+                if (repeatOrdinalWeek.HasValue)
                 {
-                    var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
-                        Math.Min(dom, DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month)),
-                        0, 0, 0, DateTimeKind.Utc);
-                    if (candidate > weekEnd) break;
-                    if (candidate >= weekStart)
-                        occurrences.Add(candidate);
-                    candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    // Nth-weekday-of-month path (e.g. "2nd Tuesday of each month").
+                    // At most 3 candidate months can overlap a 7-day window.
+                    int ordinal = repeatOrdinalWeek.Value; // 1..5
+                    int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
+                    for (var i = 0; i < 3; i++)
+                    {
+                        var firstOfMonth = new DateTime(candidateMonth.Year, candidateMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                        int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
+                        var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+                        // Skip months where the ordinal spills into the next month.
+                        if (candidate.Month != candidateMonth.Month)
+                        {
+                            candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                            continue;
+                        }
+                        if (candidate > weekEnd) break;
+                        if (candidate >= weekStart)
+                            occurrences.Add(candidate);
+                        candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    }
+                }
+                else
+                {
+                    // Legacy day-of-month path.
+                    var dom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                    for (var i = 0; i < 3; i++) // at most 3 months can overlap a week
+                    {
+                        var candidate = new DateTime(candidateMonth.Year, candidateMonth.Month,
+                            Math.Min(dom, DateTime.DaysInMonth(candidateMonth.Year, candidateMonth.Month)),
+                            0, 0, 0, DateTimeKind.Utc);
+                        if (candidate > weekEnd) break;
+                        if (candidate >= weekStart)
+                            occurrences.Add(candidate);
+                        candidateMonth = candidateMonth.AddMonths(repeatEvery);
+                    }
                 }
                 break;
             }
@@ -3066,6 +3148,7 @@ public class BackendConfigurationCalendarService(
                     RepeatUntilDate = arp?.RepeatUntilDate,
                     DayOfWeek = arp?.DayOfWeek,
                     DayOfMonth = arp?.DayOfMonth,
+                    RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = completed,
                     PropertyId = compliance.PropertyId,

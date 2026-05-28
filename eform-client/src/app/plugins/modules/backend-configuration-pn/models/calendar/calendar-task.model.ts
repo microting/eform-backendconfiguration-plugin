@@ -5,6 +5,7 @@ export type CalendarRepeatRule =
   | 'weeklyAll'
   | 'weekdays'
   | 'monthlyDom'
+  | 'monthlyByDay'
   | 'yearlyOne'
   | 'custom';
 
@@ -47,6 +48,7 @@ export interface CalendarTaskModel {
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
   repeatWeekdaysCsv?: string | null;
+  repeatOrdinalWeek?: number | null;
 
   // File attachments persisted on the AreaRulePlanning. All occurrences of a
   // recurring rule share the same attachment list — see
@@ -89,6 +91,7 @@ export interface CalendarRepeatMeta {
   weekdays?: number[];
   dom?: number;
   month?: number;
+  ordinalWeek?: number;
   endMode: 'never' | 'after' | 'until';
   afterCount?: number;
   untilTs?: number;

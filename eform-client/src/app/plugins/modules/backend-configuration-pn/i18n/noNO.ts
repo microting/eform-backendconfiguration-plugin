@@ -463,4 +463,6 @@ export const noNO = {
   'Google Drive disconnected': 'Google Disk frakoblet',
   'Google Drive disconnected — reconnect to resume sync': 'Google Disk frakoblet – koble til på nytt for å gjenoppta synkroniseringen',
   'All weekdays (Monday to Friday)': 'Alle hverdager (mandag til fredag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Månedlig på den {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Hver {{n}} måned på den {{ordinal}} {{day}}',
 };

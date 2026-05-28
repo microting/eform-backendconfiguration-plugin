@@ -463,4 +463,6 @@ export const bgBG = {
   'Ad hoc': 'Специално',
   Time: 'Време',
   'All weekdays (Monday to Friday)': 'Всички делнични дни (от понеделник до петък)',
+  'Monthly on the {{ordinal}} {{day}}': 'Месечно на {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'На всеки {{n}} месеца на {{ordinal}} {{day}}',
 };

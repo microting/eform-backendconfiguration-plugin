@@ -463,4 +463,6 @@ export const plPL = {
   'Ad hoc': 'Doraźnie',
   Time: 'Czas',
   'All weekdays (Monday to Friday)': 'Wszystkie dni powszednie (od poniedziałku do piątku)',
+  'Monthly on the {{ordinal}} {{day}}': 'Miesięcznie w {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Co {{n}} miesięcy w {{porządkowym}} {{dniu}}',
 };

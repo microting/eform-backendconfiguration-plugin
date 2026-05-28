@@ -463,4 +463,6 @@ export const ptPT = {
   'Ad hoc': 'Ad hoc',
   Time: 'Tempo',
   'All weekdays (Monday to Friday)': 'Todos os dias da semana (de segunda a sexta-feira)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mensalmente no {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'A cada {{n}} meses no {{ordinal}} {{day}}',
 };

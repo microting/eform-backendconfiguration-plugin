@@ -463,4 +463,6 @@ export const etET = {
   'Ad hoc': 'Juhuslik',
   Time: 'Aeg',
   'All weekdays (Monday to Friday)': 'Kõik nädalapäevad (esmaspäevast reedeni)',
+  'Monthly on the {{ordinal}} {{day}}': 'Iga kuu {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Iga {{n}} kuu tagant {{ordinal}} {{day}}-l',
 };

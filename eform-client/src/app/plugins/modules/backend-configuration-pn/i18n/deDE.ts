@@ -517,4 +517,6 @@ export const deDE = {
   'Ad hoc': 'Ad hoc',
   Time: 'Zeit',
   'All weekdays (Monday to Friday)': 'An allen Wochentagen (Montag bis Freitag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Monatlich am {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Alle {{n}} Monate am {{ordinal}} {{day}}',
 };

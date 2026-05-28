@@ -463,4 +463,6 @@ export const ukUA = {
   'Ad hoc': 'Спеціально',
   Time: 'Час',
   'All weekdays (Monday to Friday)': 'Усі будні (з понеділка по п&#39;ятницю)',
+  'Monthly on the {{ordinal}} {{day}}': 'Щомісяця {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Кожні {{n}} місяців у {{ordinal}} {{day}}',
 };

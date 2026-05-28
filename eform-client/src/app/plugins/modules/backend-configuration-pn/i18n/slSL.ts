@@ -463,4 +463,6 @@ export const slSL = {
   'Ad hoc': 'Ad hoc',
   Time: 'Čas',
   'All weekdays (Monday to Friday)': 'Vse delavnike (od ponedeljka do petka)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mesečno na {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Vsakih {{n}} mesecev na {{ordinal}} {{day}}',
 };

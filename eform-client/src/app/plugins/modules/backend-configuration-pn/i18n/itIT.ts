@@ -463,4 +463,6 @@ export const itIT = {
   'Ad hoc': 'Ad hoc',
   Time: 'Tempo',
   'All weekdays (Monday to Friday)': 'Tutti i giorni feriali (dal lunedì al venerdì)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mensilmente il {{ordinale}} {{giorno}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Ogni {{n}} mesi nel {{giorno}} ordinale',
 };

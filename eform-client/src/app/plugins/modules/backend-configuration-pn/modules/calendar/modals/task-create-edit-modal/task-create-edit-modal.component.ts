@@ -609,7 +609,7 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       'none': 0,
       'daily': 1,
       'weekly': 2, 'weeklyOne': 2, 'weeklyAll': 2,
-      'monthly': 3, 'monthlyDom': 3,
+      'monthly': 3, 'monthlyDom': 3, 'monthlyByDay': 3,
       'yearly': 4, 'yearlyOne': 4,
       'weekdays': 5,
       'custom': 6,
@@ -631,7 +631,7 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       const kindMap: Record<string, number> = {
         'daily': 1, 'everyNd': 1,
         'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
-        'monthlyDom': 3, 'everyNMonthDom': 3,
+        'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
         'yearlyOne': 4, 'everyNYear': 4,
       };
       resolvedRepeatType = kindMap[meta.kind] ?? 0;
@@ -694,6 +694,11 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       dayOfMonth: isCustomRule
         ? this.repeatService.metaToDayOfMonth(this.customRepeatMeta)
         : this.repeatService.metaToDayOfMonth(
+            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+          ),
+      repeatOrdinalWeek: isCustomRule
+        ? this.repeatService.metaToRepeatOrdinalWeek(this.customRepeatMeta)
+        : this.repeatService.metaToRepeatOrdinalWeek(
             this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
           ),
       driveLink: this.driveLinkControl.value ?? '',
