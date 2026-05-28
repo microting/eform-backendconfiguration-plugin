@@ -2487,10 +2487,12 @@ public class BackendConfigurationCalendarService(
                 // Per-row Completed + TaskIsExpired derivation. Predicate
                 // matches the spec: completed = Case.Status==100;
                 // task_is_expired = (Case.WorkflowState=Removed AND
-                // Status=77) OR (compliance.Deadline < UtcNow AND
-                // Status != 100). Recurrence-only or missing-Case rows fall
-                // back to the deadline-only check (no Status to consult, so
-                // they are treated as not-completed).
+                // Status=77) OR (compliance.Deadline.Date < UtcNow.Date AND
+                // Status != 100). Date-only so an event scheduled for today
+                // is not flagged expired once its time-of-day passes.
+                // Recurrence-only or missing-Case rows fall back to the
+                // deadline-only check (no Status to consult, so they are
+                // treated as not-completed).
                 bool completed = false;
                 bool taskIsExpired;
                 if (compliance.MicrotingSdkCaseId > 0
@@ -2500,13 +2502,13 @@ public class BackendConfigurationCalendarService(
                     completed = sdkCase.Status == 100;
                     var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
                                     && sdkCase.Status == 77;
-                    var pastDueIncomplete = compliance.Deadline < dateTimeNow
+                    var pastDueIncomplete = compliance.Deadline.Date < dateTimeNow.Date
                                             && sdkCase.Status != 100;
                     taskIsExpired = retracted || pastDueIncomplete;
                 }
                 else
                 {
-                    taskIsExpired = compliance.Deadline < dateTimeNow;
+                    taskIsExpired = compliance.Deadline.Date < dateTimeNow.Date;
                 }
 
                 var model = new CalendarTaskResponseModel
