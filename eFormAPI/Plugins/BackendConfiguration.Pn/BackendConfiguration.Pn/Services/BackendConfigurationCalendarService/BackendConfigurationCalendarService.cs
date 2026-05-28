@@ -2500,13 +2500,13 @@ public class BackendConfigurationCalendarService(
                     completed = sdkCase.Status == 100;
                     var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
                                     && sdkCase.Status == 77;
-                    var pastDueIncomplete = compliance.Deadline < dateTimeNow
+                    var pastDueIncomplete = compliance.Deadline.Date < dateTimeNow.Date
                                             && sdkCase.Status != 100;
                     taskIsExpired = retracted || pastDueIncomplete;
                 }
                 else
                 {
-                    taskIsExpired = compliance.Deadline < dateTimeNow;
+                    taskIsExpired = compliance.Deadline.Date < dateTimeNow.Date;
                 }
 
                 var model = new CalendarTaskResponseModel
