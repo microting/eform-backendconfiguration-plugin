@@ -24,6 +24,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -52,6 +53,7 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
 {
     private IUserService _userService = null!;
     private IBackendConfigurationTaskWizardService _taskWizardService = null!;
+    private IEventDeployService _eventDeployService = null!;
     private BackendConfigurationCalendarService _calendarService = null!;
 
     [SetUp]
@@ -96,11 +98,14 @@ public class BackendConfigurationCalendarServiceTaskTrackerListTest : TestBaseSe
         _taskWizardService.DeleteTask(Arg.Any<int>())
             .Returns(Task.FromResult(new OperationResult(true)));
 
+        _eventDeployService = Substitute.For<IEventDeployService>();
+
         _calendarService = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
             _userService,
             BackendConfigurationPnDbContext!,
             new EFormCoreService(sdkConnectionString),
+            _eventDeployService,
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             NullLogger<BackendConfigurationCalendarService>.Instance
