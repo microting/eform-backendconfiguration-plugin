@@ -460,4 +460,9 @@ export const ptPT = {
   'Last refreshed': 'Última atualização',
   'Google Drive disconnected': 'Google Drive desconectado',
   'Google Drive disconnected — reconnect to resume sync': 'O Google Drive foi desconectado — reconecte para retomar a sincronização.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tempo',
+  'All weekdays (Monday to Friday)': 'Todos os dias da semana (de segunda a sexta-feira)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mensalmente no {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'A cada {{n}} meses no {{ordinal}} {{day}}',
 };

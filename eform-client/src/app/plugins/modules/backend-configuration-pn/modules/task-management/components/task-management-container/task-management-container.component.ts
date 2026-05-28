@@ -17,7 +17,8 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
 import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
+import {AppMenuStateService} from 'src/app/common/store';
 import {Store} from '@ngrx/store';
 import {
   selectTaskManagementFilters,
@@ -42,6 +43,13 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private overlay = inject(Overlay);
   private statisticsStateService = inject(StatisticsStateService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -60,6 +68,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   getAllWorkOrderCasesSub$: Subscription;
   taskCreatedSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
+  titleSub$: Subscription;
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -76,6 +85,12 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
 
   ngOnInit() {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;

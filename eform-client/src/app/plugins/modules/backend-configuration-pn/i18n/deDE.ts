@@ -514,4 +514,9 @@ export const deDE = {
   'Last refreshed': 'Zuletzt aktualisiert',
   'Google Drive disconnected': 'Google Drive-Verbindung getrennt',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive-Verbindung unterbrochen – stellen Sie die Verbindung wieder her, um die Synchronisierung fortzusetzen.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Zeit',
+  'All weekdays (Monday to Friday)': 'An allen Wochentagen (Montag bis Freitag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Monatlich am {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Alle {{n}} Monate am {{ordinal}} {{day}}',
 };

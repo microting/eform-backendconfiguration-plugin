@@ -21,8 +21,10 @@ export class CalendarTaskBlockComponent {
   @Input() task!: CalendarTaskLayoutModel;
   @Input() hourHeight = HOUR_HEIGHT;
   @Input() showId = false;
+  @Input() raised = false;
 
   @Output() clicked = new EventEmitter<CalendarTaskLayoutModel>();
+  @Output() raiseRequested = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() toggleComplete = new EventEmitter<CalendarTaskLayoutModel>();
   @Output() dragMoved = new EventEmitter<CdkDragMove<CalendarTaskLayoutModel>>();
   @Output() dragEnded = new EventEmitter<CdkDragEnd>();
@@ -38,13 +40,6 @@ export class CalendarTaskBlockComponent {
   private startPointerY = 0;
   private cleanupListeners: (() => void) | null = null;
 
-  get isPast(): boolean {
-    const d = new Date(this.task.taskDate);
-    const endHour = this.task.startHour + this.task.duration;
-    d.setHours(Math.floor(endHour), Math.round((endHour % 1) * 60), 0, 0);
-    return d < new Date();
-  }
-
   // Position/size getters use the resize preview when active so the block
   // grows or shrinks live during the drag without committing yet.
   get topPx(): number {
@@ -56,12 +51,38 @@ export class CalendarTaskBlockComponent {
     return Math.max(dur * this.hourHeight - 4, 20);
   }
 
-  get leftPercent(): number {
-    return (this.task._colIndex / this.task._colCount) * 100;
+  // Google-Calendar-style cascade-with-overlap. When raised, the card jumps
+  // above all others in its conflict group and its right edge extends to
+  // the column's right edge (the left edge stays put — see design spec
+  // 2026-05-24-calendar-overlapping-events-stacking-design.md).
+  get leftStyle(): string {
+    return `${this.task._left}%`;
   }
 
-  get widthPercent(): number {
-    return (1 / this.task._colCount) * 100 - 1;
+  get widthStyle(): string {
+    if (this.raised) return `${100 - this.task._left}%`;
+    return `${this.task._width}%`;
+  }
+
+  get zIndexStyle(): number {
+    if (this.raised) return 999;
+    return this.task._zIndex;
+  }
+
+  get isInCascade(): boolean {
+    return this.task._width < 100;
+  }
+
+  // Click on the card body: always open the detail. For cascaded cards
+  // that aren't already raised, also raise them so the visual state
+  // reflects which card opened. stopPropagation prevents the day-cell's
+  // onCellClick from also firing and creating a new event in the slot.
+  onBodyClick(event: MouseEvent) {
+    event.stopPropagation();
+    if (this.isInCascade && !this.raised) {
+      this.raiseRequested.emit(this.task);
+    }
+    this.clicked.emit(this.task);
   }
 
   // Live time labels — show the preview values during a resize so the user
@@ -82,11 +103,16 @@ export class CalendarTaskBlockComponent {
 
   onCompletionClick(event: MouseEvent) {
     event.stopPropagation();
+    // Once completed, the indicator becomes inert — uncompletion is not
+    // supported (the SDK case status is one-way; mirrors the backend
+    // UncompleteNotSupported guard) and a click should be a no-op rather
+    // than firing a doomed HTTP round-trip.
+    if (this.task.completed) return;
     this.toggleComplete.emit(this.task);
   }
 
   startResize(ev: MouseEvent, edge: 'start' | 'end') {
-    if (this.isPast) return;
+    if (this.task.completed) return;
     // Stop propagation so cdkDrag's pointer-down listener (on the same
     // outer element) does not also activate a move-drag.
     ev.stopPropagation();

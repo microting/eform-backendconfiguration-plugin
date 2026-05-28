@@ -155,7 +155,7 @@ export const fiFI = {
   '96 (8 years)': '96 (8 vuotta)',
   '108 (9 years)': '108 (9 vuotta)',
   '120 (10 years)': '120 (10 vuotta)',
-  Repeat: 'Toistaa',
+  Repeat: 'Toista',
   Deadline: 'Määräaika',
   'Show/hide columns': 'Näytä/piilota sarakkeet',
   GenerateWithTypeDoc: 'Luo {{tyyppi}}',
@@ -460,4 +460,9 @@ export const fiFI = {
   'Last refreshed': 'Viimeksi päivitetty',
   'Google Drive disconnected': 'Google Driven yhteys katkaistu',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive katkaistu – yhdistä uudelleen jatkaaksesi synkronointia',
+  'Ad hoc': 'Ad hoc -palvelu',
+  Time: 'Aika',
+  'All weekdays (Monday to Friday)': 'Kaikki arkipäivät (maanantaista perjantaihin)',
+  'Monthly on the {{ordinal}} {{day}}': 'Kuukausittain {{ordinal}} {{day}} -päivänä',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Joka {{n}} kuukausi {{ordinal}} {{day}} -päivänä',
 };

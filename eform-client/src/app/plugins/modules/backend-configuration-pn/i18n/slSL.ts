@@ -155,7 +155,7 @@ export const slSL = {
   '96 (8 years)': '96 (8 let)',
   '108 (9 years)': '108 (9 let)',
   '120 (10 years)': '120 (10 let)',
-  Repeat: 'ponovi',
+  Repeat: 'Ponovi',
   Deadline: 'Rok',
   'Show/hide columns': 'Pokaži/skrij stolpce',
   GenerateWithTypeDoc: 'Ustvari {{type}}',
@@ -460,4 +460,9 @@ export const slSL = {
   'Last refreshed': 'Nazadnje osveženo',
   'Google Drive disconnected': 'Google Drive prekinjen',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive prekinjen – znova vzpostavite povezavo za nadaljevanje sinhronizacije',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Čas',
+  'All weekdays (Monday to Friday)': 'Vse delavnike (od ponedeljka do petka)',
+  'Monthly on the {{ordinal}} {{day}}': 'Mesečno na {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Vsakih {{n}} mesecev na {{ordinal}} {{day}}',
 };

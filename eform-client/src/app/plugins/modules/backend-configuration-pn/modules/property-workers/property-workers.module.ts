@@ -23,9 +23,6 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatRadioModule} from '@angular/material/radio';
 import {MatMenuModule} from '@angular/material/menu';
-import {
-  PropertyWorkerFiltersComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/property-worker-filters/property-worker-filters.component';
 import {MatChip} from "@angular/material/chips";
 import {MatDatepicker, MatDatepickerInput, MatDatepickerToggle} from "@angular/material/datepicker";
 import {MatTab, MatTabGroup} from "@angular/material/tabs";
@@ -65,8 +62,7 @@ import {NgxMaterialTimepickerModule} from 'ngx-material-timepicker';
     PropertyWorkerDeleteModalComponent,
     PropertyWorkerCreateEditModalComponent,
     PropertyWorkerTableComponent,
-    PropertyWorkerQrModalComponent,
-    PropertyWorkerFiltersComponent
+    PropertyWorkerQrModalComponent
   ],
 })
 export class PropertyWorkersModule {

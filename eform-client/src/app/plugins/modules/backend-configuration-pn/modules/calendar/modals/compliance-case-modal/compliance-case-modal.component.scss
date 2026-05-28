@@ -1,0 +1,11 @@
+.compliance-case-modal {
+  &__content {
+    min-width: min(90vw, 960px);
+    max-height: 75vh;
+  }
+
+  &__nav {
+    flex-shrink: 0;
+    width: 240px;
+  }
+}

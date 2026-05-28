@@ -300,6 +300,8 @@ export const noNO = {
   'Show expired task on mobile': 'Vis utløpt oppgave på mobil',
   Web: 'Nett',
   Archive: 'Arkiv',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tid',
   'Mobile timeregistration': 'Mobil timeregistrering',
   'Phone number': 'Telefonnummer',
   'QR Code': 'QR-kode',
@@ -460,4 +462,7 @@ export const noNO = {
   'Last refreshed': 'Sist oppdatert',
   'Google Drive disconnected': 'Google Disk frakoblet',
   'Google Drive disconnected — reconnect to resume sync': 'Google Disk frakoblet – koble til på nytt for å gjenoppta synkroniseringen',
+  'All weekdays (Monday to Friday)': 'Alle hverdager (mandag til fredag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Månedlig på den {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Hver {{n}} måned på den {{ordinal}} {{day}}',
 };

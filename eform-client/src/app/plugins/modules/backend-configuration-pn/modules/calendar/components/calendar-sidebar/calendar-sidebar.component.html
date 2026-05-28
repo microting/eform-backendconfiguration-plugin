@@ -14,7 +14,7 @@
         {{ prop.name }}
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="createProperty.emit()">+ {{ 'Create property' | translate }}</a>
+    <!-- "+ Create property" link removed: properties aren't created from this sidebar. -->
   </mat-expansion-panel>
 
   <mat-expansion-panel [expanded]="true">
@@ -54,9 +54,13 @@
         </mat-menu>
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="createBoard.emit()">+ {{ 'Opret tavle' | translate }}</a>
+    <a class="sidebar-action-link" (click)="createBoard.emit()">
+      <mat-icon class="sidebar-action-icon">add</mat-icon>
+      <span>{{ 'Opret tavle' | translate }}</span>
+    </a>
   </mat-expansion-panel>
 
+  <!-- My teams — hidden for now, will be re-enabled later
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My teams' | translate }}</mat-panel-title>
@@ -83,7 +87,9 @@
     </div>
     <a class="sidebar-action-link" (click)="openCreateTeamDialog()">+ {{ 'Opret team' | translate }}</a>
   </mat-expansion-panel>
+  -->
 
+  <!-- My employees — hidden for now, will be re-enabled later
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
       <mat-panel-title>{{ 'My employees' | translate }}</mat-panel-title>
@@ -100,6 +106,7 @@
     </div>
     <a class="sidebar-action-link" (click)="createEmployee.emit()">+ {{ 'Create employee' | translate }}</a>
   </mat-expansion-panel>
+  -->
 
   <!-- My tags — hidden for now, will be re-enabled later
   <mat-expansion-panel [expanded]="true">

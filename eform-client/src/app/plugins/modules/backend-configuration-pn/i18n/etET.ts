@@ -460,4 +460,9 @@ export const etET = {
   'Last refreshed': 'Viimati värskendatud',
   'Google Drive disconnected': 'Google Drive&#39;i ühendus katkes',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive&#39;i ühendus katkes – sünkroonimise jätkamiseks looge uuesti ühendus.',
+  'Ad hoc': 'Juhuslik',
+  Time: 'Aeg',
+  'All weekdays (Monday to Friday)': 'Kõik nädalapäevad (esmaspäevast reedeni)',
+  'Monthly on the {{ordinal}} {{day}}': 'Iga kuu {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Iga {{n}} kuu tagant {{ordinal}} {{day}}-l',
 };

@@ -46,6 +46,7 @@ import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/servi
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute, Router} from '@angular/router';
+import {AppMenuStateService} from 'src/app/common/store';
 import {Store} from '@ngrx/store';
 import {
   selectTaskTrackerFilters,
@@ -78,7 +79,13 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
   public statisticsStateService = inject(StatisticsStateService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private appMenuStateService = inject(AppMenuStateService);
   private ngZone = inject(NgZone);
+
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
 
 
 
@@ -126,6 +133,7 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
   createTaskInModalSub$: Subscription;
   getPlannedTaskDaysSub$: Subscription;
   getPropertyIdAsyncSub$: Subscription;
+  titleSub$: Subscription;
   highlightIdFromRoute?: number;
 
   get propertyName(): string {
@@ -150,6 +158,12 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
   }
 
   ngOnInit() {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     // Subscribe to highlightId query param early (before first change detection)
     this.route.queryParamMap.subscribe(params => {
       const id = params.get('highlightId');

@@ -460,4 +460,9 @@ export const elGR = {
   'Last refreshed': 'Τελευταία ανανέωση',
   'Google Drive disconnected': 'Το Google Drive αποσυνδέθηκε',
   'Google Drive disconnected — reconnect to resume sync': 'Το Google Drive αποσυνδέθηκε — επανασυνδεθείτε για να συνεχίσετε τον συγχρονισμό.',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Φορά',
+  'All weekdays (Monday to Friday)': 'Όλες τις καθημερινές (Δευτέρα έως Παρασκευή)',
+  'Monthly on the {{ordinal}} {{day}}': 'Μηνιαίως την {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Κάθε {{n}} μήνες την {{ordinal}} {{day}}',
 };

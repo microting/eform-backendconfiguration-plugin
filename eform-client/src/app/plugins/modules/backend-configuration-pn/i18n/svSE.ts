@@ -300,6 +300,8 @@ export const svSE = {
   'Show expired task on mobile': 'Visa utgången uppgift på mobilen',
   Web: 'Web',
   Archive: 'Arkiv',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Tid',
   'Mobile timeregistration': 'Mobil tidregistrering',
   'Phone number': 'Telefonnummer',
   'QR Code': 'QR-kod',
@@ -460,4 +462,7 @@ export const svSE = {
   'Last refreshed': 'Senast uppdaterad',
   'Google Drive disconnected': 'Google Drive frånkopplad',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive frånkopplad — återanslut för att återuppta synkroniseringen',
+  'All weekdays (Monday to Friday)': 'Alla vardagar (måndag till fredag)',
+  'Monthly on the {{ordinal}} {{day}}': 'Månadsvis på den {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Var {{n}} månad på den {{ordinal}} {{day}}',
 };

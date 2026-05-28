@@ -1,43 +1,97 @@
+// Flat sidebar — no card chrome. Section headers and list items sit
+// directly on the sidebar background; sections are separated by the
+// header typography and the natural gap between expansion panels, not
+// by enclosing boxes. Material's default panel bg / border / shadow /
+// header-bg are all overridden so the panels read as plain stacks.
+:host ::ng-deep {
+  .mat-expansion-panel,
+  .mat-expansion-panel:not([class*="mat-elevation-z"]) {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .mat-expansion-panel-header,
+  .mat-expansion-panel-header.mat-expanded,
+  .mat-expansion-panel-header:hover {
+    background: transparent !important;
+    padding: 0 10px;
+    height: 36px;
+  }
+
+  .mat-expansion-panel-header .mat-content .mat-expansion-panel-header-title {
+    font-family: var(--font-family);
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--md-on-surface, #1f1f1f);
+    margin: 0;
+  }
+
+  .mat-expansion-panel-header .mat-expansion-indicator::after {
+    color: var(--md-on-surface-variant, #444746);
+  }
+
+  .mat-expansion-panel-body {
+    padding: 0;
+  }
+}
+
 .calendar-sidebar {
-  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  font-family: var(--font-family);
 
   .property-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
     .property-item {
-      padding: 6px 16px;
-      font-size: 0.875rem;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--md-on-surface, #1f1f1f);
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 8px;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.04);
+        background: var(--md-surface-variant, #e1e7ef);
       }
 
       &.active {
-        background: rgba(26, 115, 232, 0.08);
+        background: color-mix(in srgb, var(--md-primary, #0b57d0) 10%, transparent);
+        color: var(--md-primary, #0b57d0);
         font-weight: 500;
-        color: #1a73e8;
       }
     }
   }
 
   .board-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
     .board-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
+      gap: 10px;
+      padding: 8px 10px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 8px;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.04);
+        background: var(--md-surface-variant, #e1e7ef);
       }
 
       .board-checkbox {
         width: 18px;
         height: 18px;
         border-radius: 3px;
-        border: 2px solid #9e9e9e;
+        border: 2px solid var(--md-outline, #c4c7c5);
+        background: transparent;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -54,14 +108,17 @@
 
       .board-name {
         flex: 1;
-        font-size: 0.875rem;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--md-on-surface, #1f1f1f);
       }
 
       .board-menu-btn {
         opacity: 0;
-        width: 28px;
-        height: 28px;
-        line-height: 28px;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        color: var(--md-on-surface-variant, #444746);
 
         mat-icon {
           font-size: 18px;
@@ -122,16 +179,31 @@
     padding: 8px 16px;
   }
 
+  // Ghost-action footer ("+ Opret tavle") — DM .btn-text pattern adapted
+  // as a full-row link with a leading `add` Material icon.
   .sidebar-action-link {
-    display: block;
-    padding: 4px 16px 8px;
-    font-size: 0.875rem;
-    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    margin-top: 2px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--md-primary, #0b57d0);
     cursor: pointer;
     text-decoration: none;
 
     &:hover {
-      text-decoration: underline;
+      background: var(--md-surface-variant, #e1e7ef);
+      text-decoration: none;
+    }
+
+    .sidebar-action-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
     }
   }
 

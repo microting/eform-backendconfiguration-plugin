@@ -1,32 +1,7 @@
-<eform-new-subheader>
-  <button
-    class="btn-primary btn-primary--icon-left"
-    id="createNewTaskBtn"
-    matTooltip="{{ 'Create new task' | translate }}"
-    (click)="openCreateModal()"
-  >
-    <mat-icon>add</mat-icon>
-    <span>{{ 'Create new task' | translate }}</span>
-  </button>
-</eform-new-subheader>
-
-<div class="d-flex flex-column">
-  <app-ad-hoc-task-priorities
-    *ngIf="diagramForShow === 'ad-hoc-task-priorities'"
-    [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
-    [selectedPropertyName]="propertyName"
-    [view]="view"
-    class="mb-2 w-100"
-  />
-  <app-ad-hoc-task-workers
-    *ngIf="diagramForShow === 'ad-hoc-task-workers'"
-    [adHocTaskWorkers]="adHocTaskWorkers"
-    [selectedPropertyName]="propertyName"
-    [view]="view"
-    class="mb-2 w-100"
-  />
-  <app-task-management-filters/>
-  <div class="d-flex flex-row align-items-center pl-3 gap-12">
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
+    <app-task-management-filters/>
     <button
       class="btn-primary btn-primary--icon-left"
       id="showReportBtn"
@@ -35,7 +10,6 @@
     >
       {{ 'Show' | translate }}
     </button>
-    <div *ngIf="(selectTaskManagementPropertyId$ | async) !== null" class="line-vert"></div>
     <button
       *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
       class="btn-secondary btn-secondary--icon-rounded-border"
@@ -55,8 +29,33 @@
     >
       <mat-icon svgIcon="file-excel"></mat-icon>
     </button>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      id="createNewTaskBtn"
+      matTooltip="{{ 'Create new task' | translate }}"
+      (click)="openCreateModal()"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'Create new task' | translate }}</span>
+    </button>
   </div>
-  <br>
+</mat-card>
+
+<div class="d-flex flex-column">
+  <app-ad-hoc-task-priorities
+    *ngIf="diagramForShow === 'ad-hoc-task-priorities'"
+    [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+    [selectedPropertyName]="propertyName"
+    [view]="view"
+    class="mb-2 w-100"
+  />
+  <app-ad-hoc-task-workers
+    *ngIf="diagramForShow === 'ad-hoc-task-workers'"
+    [adHocTaskWorkers]="adHocTaskWorkers"
+    [selectedPropertyName]="propertyName"
+    [view]="view"
+    class="mb-2 w-100"
+  />
   <app-task-management-table
     [workOrderCases]="workOrderCases"
     [highlightedId]="highlightedId"

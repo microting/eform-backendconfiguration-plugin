@@ -1,5 +1,6 @@
-<eform-new-subheader>
-  <div class="d-flex flex-row align-items-center gap-12">
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
     <div class="text-field--rounded mt-4">
       <mat-form-field>
         <mat-label>{{ 'Search' | translate }}</mat-label>
@@ -13,7 +14,6 @@
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
     </div>
-    <div class="line-vert"></div>
     <button
       *ngIf="authStateService.checkClaim('properties_create')"
       class="btn-primary btn-primary--icon-left"
@@ -26,7 +26,7 @@
       <span>{{ 'New property' | translate }}</span>
     </button>
   </div>
-</eform-new-subheader>
+</mat-card>
 
 <app-properties-table
   [propertiesModel]="propertiesModel"

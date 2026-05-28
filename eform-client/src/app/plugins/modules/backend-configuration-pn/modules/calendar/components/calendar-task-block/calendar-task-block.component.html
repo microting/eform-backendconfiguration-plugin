@@ -2,31 +2,32 @@
   class="task-block"
   [class.completed]="task.completed"
   [class.resizing]="resizing"
+  [class.raised]="raised"
   [style.top.px]="topPx"
   [style.height.px]="heightPx"
-  [style.left.%]="leftPercent"
-  [style.width.%]="widthPercent"
+  [style.left]="leftStyle"
+  [style.width]="widthStyle"
+  [style.z-index]="zIndexStyle"
   [style.background-color]="task.color"
   cdkDrag
   [cdkDragData]="task"
-  [cdkDragDisabled]="isPast || resizing"
+  [cdkDragDisabled]="task.completed || resizing"
   (cdkDragMoved)="dragMoved.emit($event)"
   (cdkDragEnded)="dragEnded.emit($event)"
 >
   <ng-template cdkDragPlaceholder></ng-template>
 
   <div
-    *ngIf="!isPast"
+    *ngIf="!task.completed"
     class="resize-handle resize-handle--top"
     (mousedown)="startResize($event, 'start')"
   ></div>
 
-  <div class="task-block-body" cdkDragHandle (click)="clicked.emit(task)">
+  <div class="task-block-body" cdkDragHandle (click)="onBodyClick($event)">
     <button
       class="completion-btn"
       [class.done]="task.completed"
       (click)="onCompletionClick($event)"
-      [disabled]="task.isFromCompliance === true"
       [title]="task.completed ? ('Mark as not completed' | translate) : ('Mark as completed' | translate)"
     >
       <mat-icon>{{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
@@ -39,7 +40,7 @@
   </div>
 
   <div
-    *ngIf="!isPast"
+    *ngIf="!task.completed"
     class="resize-handle resize-handle--bottom"
     (mousedown)="startResize($event, 'end')"
   ></div>

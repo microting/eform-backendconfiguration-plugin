@@ -155,7 +155,7 @@ export const roRO = {
   '96 (8 years)': '96 (8 ani)',
   '108 (9 years)': '108 (9 ani)',
   '120 (10 years)': '120 (10 ani)',
-  Repeat: 'Repeta',
+  Repeat: 'Repetă',
   Deadline: 'Termen limită',
   'Show/hide columns': 'Afișați/ascundeți coloanele',
   GenerateWithTypeDoc: 'Generați {{type}}',
@@ -460,4 +460,9 @@ export const roRO = {
   'Last refreshed': 'Ultima actualizare',
   'Google Drive disconnected': 'Google Drive deconectat',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive deconectat — reconectați-vă pentru a relua sincronizarea',
+  'Ad hoc': 'Ad-hoc',
+  Time: 'Timp',
+  'All weekdays (Monday to Friday)': 'Toate zilele lucrătoare (luni până vineri)',
+  'Monthly on the {{ordinal}} {{day}}': 'Lunar în ziua {{ordinală}} {{zi}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'La fiecare {{n}} luni, în ziua {{ordinală}} {{zi}}',
 };

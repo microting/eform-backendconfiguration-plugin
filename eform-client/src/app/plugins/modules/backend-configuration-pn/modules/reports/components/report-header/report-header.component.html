@@ -1,5 +1,6 @@
-<form [formGroup]="generateForm">
-  <div class="d-flex flex-row need-wrapper align-items-start justify-content-between gap-12 px-3" style="max-width: 81vw; width: 100%">
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;" [formGroup]="generateForm">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
     <mat-form-field>
       <mat-label>{{'Select filter' | translate}}</mat-label>
       <mtx-select
@@ -17,7 +18,7 @@
       >
       </mtx-select>
     </mat-form-field>
-    <mat-form-field formGroupName="dateRange">
+    <mat-form-field formGroupName="dateRange" style="max-width: 320px;">
       <mat-label>{{ 'Select date range' | translate }}</mat-label>
       <mat-datepicker-toggle matPrefix [for]="picker"></mat-datepicker-toggle>
       <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
@@ -26,42 +27,40 @@
       </mat-date-range-input>
       <mat-date-range-picker #picker></mat-date-range-picker>
     </mat-form-field>
-    <div class="d-flex flex-row align-items-center gap-12 mt-1">
-      <button
-        class="btn-primary btn-primary--icon-left"
-        [disabled]="generateForm.invalid"
-        (click)="onSubmit()"
-        id="generateTableBtn"
-      >
-        <span>{{ 'Generate report' | translate }}</span>
-      </button>
-      <button
-        class="btn-secondary btn-secondary--icon-rounded-border"
-        [disabled]="generateForm.invalid"
-        (click)="onWordSave()"
-        id="generateWordBtn"
-        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Word'}"
-      >
-        <mat-icon svgIcon="file-word"></mat-icon>
-      </button>
-      <button
-        class="btn-secondary btn-secondary--icon-rounded-border"
-        [disabled]="generateForm.invalid"
-        (click)="onExcelSave()"
-        id="generateExcelBtn"
-        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Excel'}"
-      >
-        <mat-icon svgIcon="file-excel"></mat-icon>
-      </button>
-      <button
-        class="btn-secondary btn-secondary--icon-rounded-border"
-        [disabled]="generateForm.invalid"
-        (click)="onPdfSave()"
-        id="generatePdfBtn"
-        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'PDF'}"
-      >
-        <mat-icon svgIcon="file-pdf"></mat-icon>
-      </button>
-    </div>
+    <button
+      class="btn-primary btn-primary--icon-left"
+      [disabled]="generateForm.invalid"
+      (click)="onSubmit()"
+      id="generateTableBtn"
+    >
+      <span>{{ 'Generate report' | translate }}</span>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      [disabled]="generateForm.invalid"
+      (click)="onWordSave()"
+      id="generateWordBtn"
+      [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Word'}"
+    >
+      <mat-icon svgIcon="file-word"></mat-icon>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      [disabled]="generateForm.invalid"
+      (click)="onExcelSave()"
+      id="generateExcelBtn"
+      [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Excel'}"
+    >
+      <mat-icon svgIcon="file-excel"></mat-icon>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      [disabled]="generateForm.invalid"
+      (click)="onPdfSave()"
+      id="generatePdfBtn"
+      [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'PDF'}"
+    >
+      <mat-icon svgIcon="file-pdf"></mat-icon>
+    </button>
   </div>
-</form>
+</mat-card>

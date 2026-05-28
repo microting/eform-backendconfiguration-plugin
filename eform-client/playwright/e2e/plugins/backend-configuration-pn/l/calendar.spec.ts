@@ -145,14 +145,22 @@ test.describe('Calendar E2E Tests', () => {
     await weekTasksResponsePromise;
 
     // Test 1 saved the event in the NEXT week (to avoid past-time click
-    // rejection); advance the week view so we can see it.
-    await page.locator('mat-icon:has-text("chevron_right")').first().click();
+    // rejection); advance the week view so we can see it. Two fixes vs
+    // the previous flaky version:
+    // 1. Scope the chevron_right selector to `.calendar-header` so it
+    //    can't match the mini-calendar widget's chevron_right (which
+    //    navigates the mini-month and doesn't fire /calendar/tasks/week).
+    // 2. Set the waitForResponse listener up BEFORE the click —
+    //    Playwright only catches responses received after the listener
+    //    attaches, and the week-tasks POST fires fast enough on click
+    //    that an after-the-click listener races and times out.
     const nextWeekTasksPromise = page.waitForResponse(
       r =>
         r.url().includes('/api/backend-configuration-pn/calendar/tasks/week') &&
         r.request().method() === 'POST',
       { timeout: 60000 }
     );
+    await page.locator('.calendar-header mat-icon:has-text("chevron_right")').click();
     await nextWeekTasksPromise;
 
     // The event from the previous test should be visible.

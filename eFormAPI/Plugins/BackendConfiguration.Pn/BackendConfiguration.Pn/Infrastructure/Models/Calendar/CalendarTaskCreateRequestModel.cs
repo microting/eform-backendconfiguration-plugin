@@ -26,5 +26,15 @@ public class CalendarTaskCreateRequestModel
     public int? RepeatOccurrences { get; set; }
     public DateTime? RepeatUntilDate { get; set; }
     public string? RepeatWeekdaysCsv { get; set; }
+    // Day-of-month for monthly + yearly rules. Nullable: null means "no DOM
+    // for this rule" (e.g. weekly / daily). The backend writes
+    // `arp.DayOfMonth = createModel.DayOfMonth ?? 0`, mirroring how
+    // RepeatWeekdaysCsv is always written: switching kinds clears the stale
+    // value (e.g. moving from monthly back to weekly resets DayOfMonth to 0).
+    public int? DayOfMonth { get; set; }
+    // Nth-weekday-of-month ordinal (1..5). Non-null selects the "Nth <weekday>
+    // of each month" rule. When non-null, DayOfWeek is the target weekday
+    // (0=Sun..6=Sat). When null, DayOfMonth is used (legacy day-of-month rule).
+    public int? RepeatOrdinalWeek { get; set; }
     public string? DescriptionHtml { get; set; }
 }

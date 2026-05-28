@@ -48,6 +48,21 @@ export class CalendarRepeatService {
     ];
   }
 
+  /**
+   * Format an ordinal number (1–5) for a given locale.
+   * Danish: "1.", "2.", "3.", "4.", "5."
+   * English: "1st", "2nd", "3rd", "4th", "5th"
+   * Other locales: fall back to "N." (acceptable until per-locale ordinals exist).
+   */
+  private formatOrdinal(n: number, lang: string): string {
+    if (lang === 'da') return `${n}.`;
+    if (lang === 'en' || !lang || lang.startsWith('en')) {
+      const suffixes: Record<number, string> = {1: 'st', 2: 'nd', 3: 'rd', 4: 'th', 5: 'th'};
+      return `${n}${suffixes[n] ?? 'th'}`;
+    }
+    return `${n}.`;
+  }
+
   private getMondayOfWeek(d: Date): Date {
     const date = new Date(d);
     const day = date.getDay();
@@ -199,6 +214,28 @@ export class CalendarRepeatService {
         break;
       }
 
+      case 'monthlyByDay':
+      case 'everyNMonthByDay': {
+        const ordinal = meta.ordinalWeek ?? 1;  // 1..5
+        const targetWeekday = meta.weekday ?? 0;
+        const step = meta.n ?? 1;
+        let iter = new Date(start.getFullYear(), start.getMonth(), 1);
+        for (let i = 0; i < 120; i++) {
+          // Find the Nth occurrence of targetWeekday in this month.
+          // Start at day 1 of the month, advance to the first matching weekday.
+          const firstDay = new Date(iter.getFullYear(), iter.getMonth(), 1);
+          const dayOffset = (targetWeekday - firstDay.getDay() + 7) % 7;
+          const nthDay = 1 + dayOffset + (ordinal - 1) * 7;
+          const daysInMonth = new Date(iter.getFullYear(), iter.getMonth() + 1, 0).getDate();
+          if (nthDay <= daysInMonth) {
+            const t = new Date(iter.getFullYear(), iter.getMonth(), nthDay);
+            if (t.getTime() >= start.getTime()) raw.push(t.getTime());
+          }
+          iter.setMonth(iter.getMonth() + step);
+        }
+        break;
+      }
+
       case 'yearlyOne': {
         const mo = meta.month ?? 0;
         const dom = meta.dom ?? 1;
@@ -250,6 +287,10 @@ export class CalendarRepeatService {
     // dayNames is Monday-indexed (Mon=0..Sun=6); JS getDay() is Sunday-indexed.
     const dayName = dayNames[(weekday + 6) % 7];
     const monthName = monthNames[month];
+    // Danish convention is lowercase weekday names mid-sentence; English and
+    // other locales keep their translated casing.
+    const currentLang = this.translate.currentLang || this.translate.defaultLang;
+    const weeklyDayName = currentLang === 'da' ? dayName.toLowerCase() : dayName;
 
     const options: RepeatSelectOption[] = [
       {value: 'none', label: this.translate.instant('Does not repeat')},
@@ -260,23 +301,31 @@ export class CalendarRepeatService {
       },
       {
         value: 'weeklyOne',
-        label: this.translate.instant('Weekly on {{day}}', {day: dayName}),
+        label: this.translate.instant('Weekly on {{day}}', {day: weeklyDayName}),
         meta: {kind: 'weeklyOne', weekday, endMode: 'never'},
       },
       {
-        value: 'weeklyAll',
-        label: this.translate.instant('Every weekday'),
-        meta: {kind: 'weeklyAll', endMode: 'never'},
-      },
-      {
-        value: 'monthlyDom',
-        label: this.translate.instant('Monthly on day {{day}}', {day: dom}),
-        meta: {kind: 'monthlyDom', dom, endMode: 'never'},
+        value: 'monthlyByDay',
+        label: this.translate.instant('Monthly on the {{ordinal}} {{day}}', {
+          ordinal: this.formatOrdinal(Math.ceil(dom / 7), currentLang),
+          day: currentLang === 'da' ? dayName.toLowerCase() : dayName,
+        }),
+        meta: {
+          kind: 'monthlyByDay',
+          ordinalWeek: Math.ceil(dom / 7),
+          weekday,
+          endMode: 'never',
+        },
       },
       {
         value: 'yearlyOne',
         label: this.translate.instant('Yearly on {{day}} {{month}}', {day: dom, month: monthName}),
         meta: {kind: 'yearlyOne', dom, month, endMode: 'never'},
+      },
+      {
+        value: 'weekdays',
+        label: this.translate.instant('All weekdays (Monday to Friday)'),
+        meta: {kind: 'weeklyMulti', weekdays: [1, 2, 3, 4, 5], endMode: 'never'},
       },
     ];
 
@@ -338,6 +387,16 @@ export class CalendarRepeatService {
             : this.translate.instant('Every {{n}} weeks: all days', {n});
         }
 
+        // Recognise the Mon-Fri (1..5) shorthand so the customCurrent label
+        // matches the "All weekdays (Monday to Friday)" dropdown option a
+        // user picked, rather than expanding to the full weekday list.
+        const isMonFriOnly = isWeekly
+          && sortedDays.length === 5
+          && sortedDays[0] === 1 && sortedDays[4] === 5;
+        if (isMonFriOnly) {
+          return this.translate.instant('All weekdays (Monday to Friday)');
+        }
+
         const days = this.formatWeekdayList(sortedDays, locale);
         return isWeekly
           ? this.translate.instant('Weekly every {{days}}', {days})
@@ -352,6 +411,26 @@ export class CalendarRepeatService {
       case 'everyNMonthDom': {
         const dom = meta.dom ?? 1;
         return this.translate.instant('Every {{n}} months on day {{dom}}', {n, dom});
+      }
+
+      case 'monthlyByDay':
+      case 'everyNMonthByDay': {
+        const ordinal = meta.ordinalWeek ?? 1;
+        const wd = meta.weekday ?? 0;
+        const currentLang = this.translate.currentLang || this.translate.defaultLang;
+        const ordinalLabel = this.formatOrdinal(ordinal, currentLang);
+        // Derive localised weekday name via toLocaleDateString — consistent
+        // with formatWeekdayList, no extra translation keys needed.
+        const monday = new Date(2024, 0, 1);  // 2024-01-01 is a Monday
+        const offset = this.dayOffsetFromMonday(wd);
+        const tgt = new Date(monday);
+        tgt.setDate(monday.getDate() + offset);
+        const wdName = tgt.toLocaleDateString(locale, {weekday: 'long'});
+        const dayLabel = currentLang === 'da' ? wdName.toLowerCase() : wdName;
+        if (n === 1) {
+          return this.translate.instant('Monthly on the {{ordinal}} {{day}}', {ordinal: ordinalLabel, day: dayLabel});
+        }
+        return this.translate.instant('Every {{n}} months on the {{ordinal}} {{day}}', {n, ordinal: ordinalLabel, day: dayLabel});
       }
 
       case 'yearlyOne': {
@@ -461,6 +540,12 @@ export class CalendarRepeatService {
       case 'everyNMonthDom':
         step = meta.n ?? 1; unit = 'month'; weekdays = [];
         break;
+      case 'monthlyByDay':
+        step = 1; unit = 'month'; weekdays = [];
+        break;
+      case 'everyNMonthByDay':
+        step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        break;
       case 'yearlyOne':
         step = 1; unit = 'year'; weekdays = [];
         break;
@@ -497,15 +582,7 @@ export class CalendarRepeatService {
    * rather than collapsing to "all days".
    */
   reconstructMetaFromTask(task: CalendarTaskModel): CalendarRepeatMeta | null {
-    // Cast to string so the switch can include `'weekdays'` even though it
-    // isn't currently in the CalendarRepeatRule union — the backend may
-    // start emitting it once the controller maps RepeatType=5 explicitly,
-    // and the helper stays forward-compatible.
-    // Cast to string so the switch can include `'weekdays'` even though it
-    // isn't currently in the CalendarRepeatRule union — the backend may
-    // start emitting it once the controller maps RepeatType=5 explicitly,
-    // and the helper stays forward-compatible.
-    const r = task.repeatRule as string | undefined;
+    const r = task.repeatRule;
     // Defensive coalesce: backend should never send 0 or negative, but guard
     // anyway so a bogus value doesn't cascade into an iterator with step=0.
     const n = (task.repeatEvery ?? 0) > 0 ? task.repeatEvery! : 1;
@@ -564,7 +641,11 @@ export class CalendarRepeatService {
       case 'weeklyAll':
         // Same promotion path: CSV wins if present.
         if (csvDays.length > 0) return weeklyFromCsv();
-        return {kind: n === 1 ? 'weeklyAll' : 'everyNWeekAll', n, endMode, afterCount, untilTs};
+        // Legacy weeklyAll (every week, all 7 days) is functionally identical to
+        // daily, so display as daily. The everyNWeekAll case (step > 1) is NOT
+        // equivalent to "every N days" and falls through to Custom on display.
+        if (n === 1) return {kind: 'daily', n: 1, endMode, afterCount, untilTs};
+        return {kind: 'everyNWeekAll', n, endMode, afterCount, untilTs};
 
       case 'weekdays':
         // Mon-Fri. Map to weeklyMulti so the formatter renders the explicit list
@@ -575,6 +656,15 @@ export class CalendarRepeatService {
         };
 
       case 'monthlyDom':
+        // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
+        if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+          return {
+            kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
+            ordinalWeek: task.repeatOrdinalWeek,
+            weekday: task.dayOfWeek,
+            endMode, afterCount, untilTs,
+          } as CalendarRepeatMeta;
+        }
         if (task.dayOfMonth == null) return null;
         return {
           kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
@@ -597,6 +687,15 @@ export class CalendarRepeatService {
             // Pre-migration row with no CSV → weeklyAll/everyNWeekAll fallback.
             return weeklyFromCsv();
           case 3:
+            // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
+            if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+              return {
+                kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
+                ordinalWeek: task.repeatOrdinalWeek,
+                weekday: task.dayOfWeek,
+                endMode, afterCount, untilTs,
+              } as CalendarRepeatMeta;
+            }
             if (task.dayOfMonth == null) return null;
             return {
               kind: n === 1 ? 'monthlyDom' : 'everyNMonthDom', n,
@@ -617,6 +716,61 @@ export class CalendarRepeatService {
       default:
         return null;
     }
+  }
+
+  /**
+   * Wire-format value for the request payload's `dayOfMonth` field.
+   * monthly + yearly kinds carry the chosen day in `meta.dom`; returns null
+   * for any other kind (and for null/undefined input) so non-monthly rules
+   * don't ship a stale value.
+   *
+   * Also clamps to the 1–31 valid range: `0` is the backend's "no DOM"
+   * sentinel and would render as "day 0" if it slipped through; anything
+   * outside 1–31 isn't a real day-of-month either. Reject defensively
+   * rather than ship garbage.
+   */
+  metaToDayOfMonth(meta: CalendarRepeatMeta | null | undefined): number | null {
+    if (!meta) return null;
+    if (meta.kind === 'monthlyDom' || meta.kind === 'everyNMonthDom'
+        || meta.kind === 'yearlyOne' || meta.kind === 'everyNYear') {
+      const dom = meta.dom;
+      if (dom == null || dom < 1 || dom > 31) return null;
+      return dom;
+    }
+    // New monthly-by-weekday rule: dayOfMonth is 0 (the "no DOM" sentinel).
+    if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
+      return 0;
+    }
+    return null;
+  }
+
+  /**
+   * Wire-format value for the request payload's `repeatOrdinalWeek` field.
+   * Returns the ordinal (1–5) for `monthlyByDay`/`everyNMonthByDay` metas;
+   * null for all other kinds.
+   */
+  metaToRepeatOrdinalWeek(meta: CalendarRepeatMeta | null | undefined): number | null {
+    if (!meta) return null;
+    if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
+      return meta.ordinalWeek ?? null;
+    }
+    return null;
+  }
+
+  /**
+   * Wire-format CSV for the request payload's `repeatWeekdaysCsv` field.
+   * Single-weekday rules store the chosen day in `meta.weekday` (singular),
+   * multi-day rules in `meta.weekdays` (plural array); the request payload
+   * has only the CSV field, so collapse both shapes here. Returns null for
+   * non-weekly metas (no weekday info to ship) and for null input.
+   */
+  metaToWeekdaysCsv(meta: CalendarRepeatMeta | null | undefined): string | null {
+    if (!meta) return null;
+    if (meta.weekdays?.length) return meta.weekdays.join(',');
+    if (meta.kind === 'weeklyOne' || meta.kind === 'everyNWeekOne') {
+      return meta.weekday != null ? `${meta.weekday}` : null;
+    }
+    return null;
   }
 
   /** Convert a custom repeat config to a CalendarRepeatMeta */

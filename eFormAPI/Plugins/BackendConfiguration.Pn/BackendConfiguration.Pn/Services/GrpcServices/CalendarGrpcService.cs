@@ -77,7 +77,9 @@ public class CalendarGrpcService(
                 IsAllDay = task.IsAllDay,
                 ExceptionId = task.ExceptionId ?? 0,
                 EformId = task.EformId ?? 0,
-                SdkCaseId = task.SdkCaseId ?? 0
+                SdkCaseId = task.SdkCaseId ?? 0,
+                RepeatOrdinalWeek = task.RepeatOrdinalWeek ?? 0,
+                DayOfWeek = task.DayOfWeek ?? 0
             });
         }
 

@@ -79,17 +79,22 @@
     padding: 0 !important;
     vertical-align: top;
     overflow: visible;
+    border-right: 1px solid var(--md-surface-variant, #c4c7c5);
   }
 
-  .today-col.mat-mdc-header-cell {
-    color: #1a73e8;
-    font-weight: 600;
-    background: rgba(66, 133, 244, 0.06);
+  // Centre the weekday/date pair in each header column. mtx-grid wraps
+  // the header content in `.mat-header-cell-inner` (display: inline-flex,
+  // intrinsic width), which sits at the cell's left edge by default;
+  // text-align: center on the cell pushes the inline-flex wrapper to
+  // the cell's horizontal centre.
+  th.mat-mdc-header-cell {
+    text-align: center;
   }
 
-  .today-col.mat-mdc-cell {
-    background: rgba(66, 133, 244, 0.03);
-  }
+  // Today is indicated by the circular pill on the day number (see
+  // .day-header-number--today below). The full-column tint that used to
+  // sit on the today header and body cells has been removed per the DM
+  // timeregistrering spec.
 
   .mat-mdc-row:hover .mat-mdc-cell {
     background: transparent;
@@ -128,18 +133,53 @@
   // z-index 11 wins over task blocks (z 2/3), the now-line current-time
   // indicator (z 10), and the all-day chips. Drag-ghost-task (z 20) still
   // draws on top so a moving event doesn't disappear under the header.
-  // The time-axis cell of the header gets z 12 to stay above other header
-  // cells where the row + column sticky overlap.
+  // The top-left corner cell (time-axis header) sticky-stacks at z 100
+  // via Material's .mat-mdc-table-sticky class.
   .mat-mdc-header-row {
     position: sticky;
     top: 0;
     z-index: 11;
-    background: var(--bg, #FFFFFF);
+    background: var(--md-surface-container);
     box-shadow: 0 1px 0 var(--border, #e0e0e0);
   }
 
-  .mat-mdc-header-row .mat-column-time-axis {
-    z-index: 12;
+  // Two-line day header per the Design Manual timeregistrering spec.
+  // Uppercase weekday tag stacked above a large day-of-month number;
+  // when the column is today, the number wears a circular primary-blue
+  // pill in place of the previous full-column tint.
+  .calendar-day-header {
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    align-content: center;
+    padding: 8px 10px;
+    background: var(--md-surface-container);
+  }
+
+  .day-header-weekday {
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--md-on-surface-variant);
+  }
+
+  .day-header-number {
+    font-size: 1.85rem;
+    line-height: 1;
+    font-weight: 400;
+    color: var(--md-on-surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &--today {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      font-size: 1.55rem;
+    }
   }
 }
 
@@ -147,18 +187,20 @@
   position: relative;
 }
 
+// No translateY: transform creates a stacking context that escaped the
+// sticky time-axis cell's z:2, causing labels to paint above the z:100
+// header when scrolling. Labels now sit at the top of each hour block
+// (top: i * hourHeight) instead of centered on the hour line.
 .time-label {
   position: absolute;
   right: 4px;
   font-size: 10px;
   color: #888;
-  transform: translateY(-50%);
   white-space: nowrap;
 }
 
 .day-cell-content {
   display: block;
-  cursor: pointer;
   position: relative;
   border-left: 1px solid #dadce0;
   overflow: visible;
@@ -260,8 +302,3 @@
   }
 }
 
-.past-slot {
-  background-color: var(--surface-muted, #f5f5f5);
-  cursor: not-allowed;
-  opacity: 0.6;
-}

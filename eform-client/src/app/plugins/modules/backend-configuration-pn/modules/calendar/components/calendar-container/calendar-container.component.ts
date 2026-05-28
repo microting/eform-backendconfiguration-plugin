@@ -1,6 +1,7 @@
 import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
+import {Router} from '@angular/router';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
@@ -14,6 +15,7 @@ import {
   CalendarRepeatRule,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
+  CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
@@ -28,6 +30,7 @@ import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
+import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/compliance-case-modal.component';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
 
@@ -85,6 +88,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private eformService: EFormService,
     private dialog: MatDialog,
     private store: Store,
+    private router: Router,
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => this.isAdmin = isAdmin);
@@ -297,7 +301,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         if (task.isAllDay) {
           this.allDayTasksByDay[dayIdx].push({...task, color, startText, endText});
         } else {
-          this.tasksByDay[dayIdx].push({...task, color, startText, endText, _colIndex: 0, _colCount: 1});
+          this.tasksByDay[dayIdx].push({...task, color, startText, endText, _left: 0, _width: 100, _zIndex: 10});
         }
       }
     });
@@ -337,6 +341,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       date: event.date,
       startHour: event.startHour,
       boards: this.boards,
+      selectedBoardId: this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
@@ -478,9 +483,17 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
 
     const doMove = (scope?: RepeatEditScope) => {
-      const obs = isRepeating
-        ? this.calendarService.moveTaskWithScope(event.taskId, event.newDate, event.newStartHour, scope ?? 'this', event.originalDate)
-        : this.calendarService.moveTask(event.taskId, event.newDate, event.newStartHour);
+      // Always go through moveTaskWithScope so the backend receives
+      // originalDate — the new completed-task and future→past guards
+      // rely on it. Non-recurring tasks use scope 'all' (no series to
+      // partition, so 'all' just updates the single occurrence).
+      const obs = this.calendarService.moveTaskWithScope(
+        event.taskId,
+        event.newDate,
+        event.newStartHour,
+        isRepeating ? scope ?? 'this' : 'all',
+        event.originalDate,
+      );
       obs.subscribe(res => {
         if (res && res.success) this.loadTasks();
       });
@@ -534,6 +547,48 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     } else {
       doResize('this');
     }
+  }
+
+  // Compliance-backed events can't be completed via the calendar indicator
+  // alone — the underlying SDK case still needs the form submitted. The
+  // backend signals this with `requiresForm: true` on the toggle response
+  // and includes the routing payload; we navigate to the same compliance/
+  // case route used by the task-tracker (see
+  // task-tracker-table.component.ts:179 for the canonical shape).
+  onCompleteRequiresForm(p: CalendarToggleCompleteResult) {
+    // Guard against the backend returning requiresForm=true without all
+    // route params populated. Angular's Router serialises undefined segments
+    // literally ("…/undefined/…") and the form would 404; better to bail
+    // and let the user retry than to ship a broken URL.
+    if (p.sdkCaseId == null || p.templateId == null || p.propertyId == null
+        || p.complianceId == null || p.workerId == null || !p.deadline) {
+      return;
+    }
+    const ref = this.dialog.open(ComplianceCaseModalComponent, {
+      data: {
+        sdkCaseId: p.sdkCaseId,
+        templateId: p.templateId,
+        propertyId: p.propertyId,
+        deadline: p.deadline,
+        complianceId: p.complianceId,
+        workerId: p.workerId,
+        // Optional — backend supplies Compliance.Deadline day + the calendar's
+        // configured StartHour so the modal can default the doneAt picker to
+        // the scheduled event-start moment rather than the deadline's
+        // midnight or "now".
+        eventStart: p.eventStart,
+      },
+      width: 'min(90vw, 1080px)',
+      maxWidth: '95vw',
+      autoFocus: false,
+      restoreFocus: false,
+    });
+    ref.afterClosed().subscribe((result) => {
+      // Always reload — even on cancel — so any partial state (the
+      // freshly-materialised Compliance row, route timing, etc.) re-renders
+      // from the canonical server view.
+      this.loadTasks();
+    });
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

@@ -1,11 +1,10 @@
 syntax = "proto3";
 
-// Mid-migration: opgave -> event, tavle -> board per
-// docs/superpowers/specs/2026-05-11-opgave-to-event-migration.md.
-// Wire field names (`opgaver`, `tavler`, `tavle_id`, `tavle_ids`,
-// `ejendom_id`) stay as-is so generated accessors don't churn; only
-// message types and RPC method names move. Ejendom and rode renames
-// land in follow-up phases.
+// English wire contract per
+// docs/superpowers/specs/2026-05-25-lift-danish-carve-outs-design.md.
+// All previously-Danish wire fields, message types, and RPC method names
+// have been renamed to English (event/board/property). Field numbers are
+// preserved across the rename.
 
 package backend_configuration;
 
@@ -15,11 +14,11 @@ import "google/protobuf/timestamp.proto";
 import "documents.proto";
 
 service Events {
-  rpc ListEjendomme(ListEjendommeRequest) returns (ListEjendommeResponse);
+  rpc ListProperties(ListPropertiesRequest) returns (ListPropertiesResponse);
   rpc ListBoards(ListBoardsRequest) returns (ListBoardsResponse);
-  rpc ListEvents(ListOpgaverRequest) returns (ListOpgaverResponse);
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
   rpc ListTaskTracker(ListTaskTrackerRequest) returns (ListTaskTrackerResponse);
-  rpc StreamEventChanges(StreamOpgaveChangesRequest) returns (stream EventChange);
+  rpc StreamEventChanges(StreamEventChangesRequest) returns (stream EventChange);
   rpc CompleteEvent(CompleteEventRequest) returns (CompleteEventResponse);
   rpc SetComment(SetCommentRequest) returns (SetCommentResponse);
   rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
@@ -34,7 +33,7 @@ message UploadPhotoChunk {
   }
 }
 message UploadPhotoMeta {
-  string opgave_id = 1;
+  string event_id = 1;
   int32 slot = 2;
   string content_type = 3;
   int64 client_ts_unix = 4;
@@ -57,7 +56,7 @@ message UploadPhotoResponse {
 }
 
 message RemovePhotoRequest {
-  string opgave_id = 1;
+  string event_id = 1;
   int32 slot = 2;
   int64 client_ts_unix = 3;
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
@@ -67,7 +66,7 @@ message RemovePhotoRequest {
 message RemovePhotoResponse {}
 
 message CompleteEventRequest {
-  string opgave_id = 1;
+  string event_id = 1;
   bool completed = 2;
   string completed_by = 3;
   int64 client_ts_unix = 4;
@@ -84,10 +83,12 @@ message CompleteEventRequest {
   // Optional comment write applied alongside field_values, same lifecycle
   // window. Empty string ("") means "no comment change" — the existing
   // Cases.Custom envelope is left untouched. Non-empty replaces the
-  // OpgaverComment body verbatim, matching SetComment semantics.
+  // event comment body verbatim, matching SetComment semantics.
   string comment = 8;
+  // ISO-8601 date (yyyy-MM-dd); empty = fall back to deadline date
+  string done_at_user_modifiable = 9;
 }
-message CompleteEventResponse { Event opgave = 1; }
+message CompleteEventResponse { Event event = 1; }
 
 // One field-value write bundled into CompleteEventRequest.field_values.
 // Mirrors the per-RPC SetFieldValueRequest pair (field_id + value) so the
@@ -102,17 +103,17 @@ message FieldValueWrite {
 }
 
 message SetCommentRequest {
-  string opgave_id = 1;
+  string event_id = 1;
   string text = 2;
   int64 client_ts_unix = 3;
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
   int64 compliance_id = 4;
   int64 microting_sdk_case_id = 5;
 }
-message SetCommentResponse { Event opgave = 1; }
+message SetCommentResponse { Event event = 1; }
 
 message SetFieldValueRequest {
-  string opgave_id = 1;
+  string event_id = 1;
   int32 field_id = 2;
   string value = 3;
   int64 client_ts_unix = 4;
@@ -120,21 +121,21 @@ message SetFieldValueRequest {
   int64 compliance_id = 5;
   int64 microting_sdk_case_id = 6;
 }
-message SetFieldValueResponse { Event opgave = 1; }
+message SetFieldValueResponse { Event event = 1; }
 
-message ListEjendommeRequest {}
-message ListEjendommeResponse { repeated Ejendom ejendomme = 1; }
+message ListPropertiesRequest {}
+message ListPropertiesResponse { repeated Property properties = 1; }
 
-message ListBoardsRequest { string ejendom_id = 1; }
-message ListBoardsResponse { repeated Board tavler = 1; }
+message ListBoardsRequest { string property_id = 1; }
+message ListBoardsResponse { repeated Board boards = 1; }
 
-message ListOpgaverRequest {
-  string ejendom_id = 1;
-  repeated string tavle_ids = 2;
+message ListEventsRequest {
+  string property_id = 1;
+  repeated string board_ids = 2;
   string from_date_key = 3;
   string to_date_key = 4;
 }
-message ListOpgaverResponse { repeated Event opgaver = 1; }
+message ListEventsResponse { repeated Event events = 1; }
 
 // Full property-scoped compliance list for the mobile worker's "task
 // tracker" view (mirror of the angular admin's BackendConfigurationTaskTrackerHelper.Index).
@@ -144,11 +145,11 @@ message ListOpgaverResponse { repeated Event opgaver = 1; }
 message ListTaskTrackerRequest {
   int32 property_id = 1;
 }
-message ListTaskTrackerResponse { repeated Event opgaver = 1; }
+message ListTaskTrackerResponse { repeated Event events = 1; }
 
-message StreamOpgaveChangesRequest {
-  string ejendom_id = 1;
-  repeated string tavle_ids = 2;
+message StreamEventChangesRequest {
+  string property_id = 1;
+  repeated string board_ids = 2;
 }
 
 message EventChange {
@@ -158,22 +159,22 @@ message EventChange {
   }
 }
 
-message Ejendom {
+message Property {
   string id = 1;
   string name = 2;
 }
 
 message Board {
   string id = 1;
-  string ejendom_id = 2;
+  string property_id = 2;
   string name = 3;
   string color_hex = 4;
 }
 
 message Event {
   string id = 1;
-  string ejendom_id = 2;
-  string tavle_id = 3;
+  string property_id = 2;
+  string board_id = 3;
   string plan_day_key = 4;
   string planned_at = 5;
   string task_text = 6;
@@ -210,7 +211,11 @@ message Event {
 
 message Attachment {
   microting.documents.AttachmentSource source = 1;
-  string name = 2;
+  string name = 2;                  // legacy / fallback display label
+  int32 id = 3;                     // AreaRulePlanningFile.Id (CALENDAR_FILE only)
+  string original_file_name = 4;    // e.g. "report.pdf"
+  string mime_type = 5;             // e.g. "application/pdf"
+  int64 size_bytes = 6;
 }
 
 // Field of the eForm template that backs an Event.

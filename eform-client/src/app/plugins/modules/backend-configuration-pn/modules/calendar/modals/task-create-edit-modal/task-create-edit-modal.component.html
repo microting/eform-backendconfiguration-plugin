@@ -88,6 +88,7 @@
       <mat-icon class="gcal-icon">sync</mat-icon>
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
+          <mat-label>{{ 'Repeat' | translate }}</mat-label>
           <mtx-select
             [formControl]="repeatControl"
             [items]="repeatOptions"
@@ -103,9 +104,9 @@
     <!-- Property row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">business</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'Select property' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
+      <div class="gcal-row-content">
+        <mat-form-field class="w-100">
+          <mat-label>{{ 'Select property' | translate }}</mat-label>
           <mtx-select
             [formControl]="propertyControl"
             [items]="data.properties"
@@ -157,9 +158,9 @@
     <!-- Report headline row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">view_compact</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'Report headline' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
+      <div class="gcal-row-content">
+        <mat-form-field class="w-100">
+          <mat-label>{{ 'Report headline' | translate }}</mat-label>
           <mtx-select
             id="calendarEventPlanningTag"
             [formControl]="planningTagControl"
@@ -179,9 +180,9 @@
     <!-- eForm row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">checklist</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'eForm' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
+      <div class="gcal-row-content">
+        <mat-form-field class="w-100">
+          <mat-label>{{ 'eForm' | translate }}</mat-label>
           <mtx-select
             id="calendarEventEform"
             [formControl]="eformControl"
@@ -349,9 +350,9 @@
     <!-- Board row -->
     <div class="gcal-row" *ngIf="filteredBoards.length > 0">
       <mat-icon class="gcal-icon">calendar_today</mat-icon>
-      <div class="gcal-row-content gcal-selector-row">
-        <span class="gcal-selector-label">{{ 'My boards' | translate }}</span>
-        <mat-form-field class="gcal-compact-select">
+      <div class="gcal-row-content">
+        <mat-form-field class="w-100">
+          <mat-label>{{ 'My boards' | translate }}</mat-label>
           <mtx-select
             [formControl]="boardControl"
             [items]="filteredBoards"

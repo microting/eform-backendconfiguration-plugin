@@ -1,5 +1,4 @@
-<div class="d-flex flex-column px-3" [formGroup]="filtersForm">
-  <div class="d-flex flex-row need-wrapper">
+<div class="filters-inline" [formGroup]="filtersForm">
     <mat-form-field>
       <mat-label>{{'Property' | translate}}</mat-label>
       <mtx-select
@@ -40,9 +39,4 @@
       >
       </mtx-select>
     </mat-form-field>
-
-  </div>
-
 </div>
-
-

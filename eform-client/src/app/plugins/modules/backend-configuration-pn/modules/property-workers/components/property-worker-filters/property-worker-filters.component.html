@@ -1,34 +1,21 @@
-<div class="d-flex flex-row gap-12 px-3" [formGroup]="filtersForm">
-<!--  <div class="d-flex need-wrapper">-->
-    <mat-form-field>
-      <mat-label>{{'Location' | translate}}</mat-label>
-      <mtx-select
-        formControlName="propertyIds"
-        multiple="true"
-        clearable="true"
-        [items]="properties"
-        [bindValue]="'id'"
-        [bindLabel]="'name'"
-      />
-    </mat-form-field>
-    <mat-slide-toggle
-      formControlName="showResigned"
-      color="primary"
-      class="mt-2"
-      id="showCalculationsAsNumberToggle"
-    >
-      {{ 'Show resigned' | translate }}
-    </mat-slide-toggle>
-<!--    <mat-form-field>-->
-<!--      <mat-label>{{'Workers' | translate}}</mat-label>-->
-<!--      <mtx-select-->
-<!--        bindLabel="siteName"-->
-<!--        bindValue="siteId"-->
-<!--        formControlName="workerIds"-->
-<!--        [items]="availableSites"-->
-<!--        id="createdByFilter"-->
-<!--      >-->
-<!--      </mtx-select>-->
-<!--    </mat-form-field>-->
-<!--  </div>-->
+<div class="filters-inline" [formGroup]="filtersForm">
+  <mat-form-field>
+    <mat-label>{{'Location' | translate}}</mat-label>
+    <mtx-select
+      formControlName="propertyIds"
+      multiple="true"
+      clearable="true"
+      [items]="properties"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+    />
+  </mat-form-field>
+  <mat-slide-toggle
+    formControlName="showResigned"
+    color="primary"
+    class="mt-2"
+    id="showCalculationsAsNumberToggle"
+  >
+    {{ 'Show resigned' | translate }}
+  </mat-slide-toggle>
 </div>

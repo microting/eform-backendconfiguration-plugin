@@ -460,4 +460,9 @@ export const csCZ = {
   'Last refreshed': 'Naposledy aktualizováno',
   'Google Drive disconnected': 'Disk Google odpojen',
   'Google Drive disconnected — reconnect to resume sync': 'Disk Google odpojen – pro obnovení synchronizace znovu připojte zařízení',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Čas',
+  'All weekdays (Monday to Friday)': 'Všechny všední dny (pondělí až pátek)',
+  'Monthly on the {{ordinal}} {{day}}': 'Měsíčně v {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Každých {{n}} měsíců v {{ordinal}} {{day}}',
 };

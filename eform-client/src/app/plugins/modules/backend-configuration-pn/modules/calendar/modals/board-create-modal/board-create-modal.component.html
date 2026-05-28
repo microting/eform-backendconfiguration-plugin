@@ -22,6 +22,8 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>{{ 'Annuller' | translate }}</button>
-  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="onSave()">{{ 'Opret' | translate }}</button>
+  <button class="btn-cancel" mat-dialog-close>{{ 'Annuller' | translate }}</button>
+  <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">
+    <span>{{ 'Opret' | translate }}</span>
+  </button>
 </mat-dialog-actions>

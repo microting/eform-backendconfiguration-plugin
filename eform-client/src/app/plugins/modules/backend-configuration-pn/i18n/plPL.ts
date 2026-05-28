@@ -155,7 +155,7 @@ export const plPL = {
   '96 (8 years)': '96 (8 lat)',
   '108 (9 years)': '108 (9 lat)',
   '120 (10 years)': '120 (10 lat)',
-  Repeat: 'Powtarzać',
+  Repeat: 'Powtarzaj',
   Deadline: 'Termin',
   'Show/hide columns': 'Pokaż/ukryj kolumny',
   GenerateWithTypeDoc: 'Generuj z typem dokumentu {{type}}',
@@ -460,4 +460,9 @@ export const plPL = {
   'Last refreshed': 'Ostatnio odświeżono',
   'Google Drive disconnected': 'Dysk Google odłączony',
   'Google Drive disconnected — reconnect to resume sync': 'Dysk Google rozłączony — połącz ponownie, aby wznowić synchronizację',
+  'Ad hoc': 'Doraźnie',
+  Time: 'Czas',
+  'All weekdays (Monday to Friday)': 'Wszystkie dni powszednie (od poniedziałku do piątku)',
+  'Monthly on the {{ordinal}} {{day}}': 'Miesięcznie w {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Co {{n}} miesięcy w {{porządkowym}} {{dniu}}',
 };

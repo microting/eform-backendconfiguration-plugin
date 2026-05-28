@@ -3,7 +3,9 @@ export type CalendarRepeatRule =
   | 'daily'
   | 'weeklyOne'
   | 'weeklyAll'
+  | 'weekdays'
   | 'monthlyDom'
+  | 'monthlyByDay'
   | 'yearlyOne'
   | 'custom';
 
@@ -46,6 +48,7 @@ export interface CalendarTaskModel {
   dayOfWeek?: number | null;
   dayOfMonth?: number | null;
   repeatWeekdaysCsv?: string | null;
+  repeatOrdinalWeek?: number | null;
 
   // File attachments persisted on the AreaRulePlanning. All occurrences of a
   // recurring rule share the same attachment list — see
@@ -88,12 +91,49 @@ export interface CalendarRepeatMeta {
   weekdays?: number[];
   dom?: number;
   month?: number;
+  ordinalWeek?: number;
   endMode: 'never' | 'after' | 'until';
   afterCount?: number;
   untilTs?: number;
 }
 
 export interface CalendarTaskLayoutModel extends CalendarTaskModel {
-  _colIndex: number;
-  _colCount: number;
+  // Google-Calendar-style equal-divide-with-overlap layout.
+  // For N tasks in a conflict group:
+  //   _width  = 100 * 1.8 / N  (overlap factor 1.8; cards overlap their neighbours)
+  //   _left   = i * (100 - _width) / (N - 1)
+  //   _zIndex = 10 + i  (later cards layer on top)
+  // For N == 1, _left=0, _width=100, _zIndex=10.
+  _left: number;    // left edge in % of day-column usable width
+  _width: number;   // width in % of day-column usable width
+  _zIndex: number;  // default stacking order within the conflict group
+}
+
+// Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the
+// frontend has to handle:
+//  1) success && requiresForm === true — the linked eForm has mandatory
+//     fields; the rest of the fields carry the route params for the
+//     compliance/case form. Frontend navigates.
+//  2) success && requiresForm === false — the eForm has no mandatory
+//     fields; the backend already set Case.Status = 100 in place.
+//     Frontend reloads the calendar so the event re-renders as completed.
+//  3) success === false (carried on the wrapping OperationDataResult, not
+//     this model) — covers non-compliance taps (TaskHasNoComplianceCase),
+//     missing planning, uncomplete attempt, etc. Frontend silently no-ops
+//     today; existing failure-path UX.
+export interface CalendarToggleCompleteResult {
+  requiresForm: boolean;
+  sdkCaseId?: number;
+  templateId?: number;
+  propertyId?: number;
+  complianceId?: number;
+  workerId?: number;
+  deadline?: string;
+  /**
+   * Calendar event start (Compliance.Deadline day + CalendarConfiguration.StartHour),
+   * ISO 8601 UTC with millisecond precision. The compliance modal defaults its
+   * doneAt picker to this value so Case.DoneAt records the scheduled moment
+   * rather than when the user happened to click Save.
+   */
+  eventStart?: string;
 }

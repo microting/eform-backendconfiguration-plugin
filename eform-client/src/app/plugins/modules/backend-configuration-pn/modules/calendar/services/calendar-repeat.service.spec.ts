@@ -770,4 +770,243 @@ describe('CalendarRepeatService', () => {
       expect(r?.untilTs).toBe(ts);
     });
   });
+
+  // ─── metaToWeekdaysCsv ───────────────────────────────────────────────────
+  // Wire-format serializer used by the modal's save flow to produce the
+  // request payload's `repeatWeekdaysCsv` field. Pre-fix the modal inlined a
+  // `meta.weekdays?.length ? meta.weekdays.join(',') : null` ternary, which
+  // shipped `null` for single-weekday rules — those store the chosen day in
+  // `meta.weekday` (singular). The server's AreaRulePlanning.DayOfWeek then
+  // kept its `int` default of 0, so reopening a Tuesday-only event read
+  // back as "Sunday". This suite + the regression test below pin the
+  // wire-format down so that class of bug can't regress unnoticed.
+  describe('metaToWeekdaysCsv', () => {
+    it('null meta → null', () => {
+      expect(service.metaToWeekdaysCsv(null)).toBeNull();
+    });
+
+    it('undefined meta → null', () => {
+      expect(service.metaToWeekdaysCsv(undefined)).toBeNull();
+    });
+
+    it('weeklyOne with weekday=2 (Tuesday) → "2"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyOne', weekday: 2, endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('2');
+    });
+
+    it('weeklyOne with weekday=0 (Sunday) → "0"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyOne', weekday: 0, endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('0');
+    });
+
+    it('everyNWeekOne with weekday=5 (Friday) → "5"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNWeekOne', weekday: 5, endMode: 'never', n: 3};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('5');
+    });
+
+    it('weeklyMulti with weekdays=[1,3,5] → "1,3,5"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyMulti', weekdays: [1, 3, 5], endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('1,3,5');
+    });
+
+    it('everyNWeekMulti with weekdays=[0,6] → "0,6"', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNWeekMulti', weekdays: [0, 6], endMode: 'never', n: 2};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('0,6');
+    });
+
+    it('weeklyOne with no weekday → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyOne', endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBeNull();
+    });
+
+    it('non-weekly: monthlyDom → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 15, endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBeNull();
+    });
+
+    it('non-weekly: daily → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'daily', endMode: 'never'};
+      expect(service.metaToWeekdaysCsv(meta)).toBeNull();
+    });
+
+    it('non-weekly: yearlyOne → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'yearlyOne', dom: 1, month: 0, endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBeNull();
+    });
+
+    it('weeklyMulti where weekdays=[] (empty) → null (no plural shape)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyMulti', weekdays: [], endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBeNull();
+    });
+  });
+
+  // ─── metaToDayOfMonth ────────────────────────────────────────────────────
+  // Wire-format serializer for the request payload's `dayOfMonth` field.
+  // Pre-fix the modal didn't ship this field, the request model had no
+  // DayOfMonth property, and AreaRulePlanning.DayOfMonth defaulted to its
+  // int 0 — so "Månedlig på dag 21" read back as "dag 0". This suite pins
+  // the wire-format down and the regression test below catches a future
+  // regression even if the round-trip mocking accidentally hides it.
+  describe('metaToDayOfMonth', () => {
+    it('null meta → null', () => {
+      expect(service.metaToDayOfMonth(null)).toBeNull();
+    });
+
+    it('undefined meta → null', () => {
+      expect(service.metaToDayOfMonth(undefined)).toBeNull();
+    });
+
+    it('monthlyDom with dom=21 → 21', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 21, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBe(21);
+    });
+
+    it('monthlyDom with dom=1 → 1', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 1, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBe(1);
+    });
+
+    it('monthlyDom with dom=31 → 31', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 31, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBe(31);
+    });
+
+    it('everyNMonthDom with dom=15, n=2 → 15', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNMonthDom', dom: 15, endMode: 'never', n: 2};
+      expect(service.metaToDayOfMonth(meta)).toBe(15);
+    });
+
+    it('yearlyOne carries dom for the picked day → 25', () => {
+      const meta: CalendarRepeatMeta = {kind: 'yearlyOne', dom: 25, month: 11, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBe(25);
+    });
+
+    it('everyNYear carries dom too → 10', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNYear', dom: 10, month: 5, endMode: 'never', n: 3};
+      expect(service.metaToDayOfMonth(meta)).toBe(10);
+    });
+
+    it('monthlyDom with no dom (undefined) → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('monthlyDom with dom=0 → null (would render "day 0")', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 0, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('monthlyDom with dom=32 → null (out of range)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 32, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('monthlyDom with dom=-5 → null (negative)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: -5, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('non-DOM kind: daily → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'daily', endMode: 'never'};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('non-DOM kind: weeklyOne → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyOne', weekday: 2, endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('non-DOM kind: weeklyMulti → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyMulti', weekdays: [1, 3, 5], endMode: 'never', n: 1};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+
+    it('non-DOM kind: everyNd → null', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNd', endMode: 'never', n: 3};
+      expect(service.metaToDayOfMonth(meta)).toBeNull();
+    });
+  });
+
+  // Regression test for the "Månedlig på dag 0" bug:
+  // build a monthlyDom rule for day 21 via the same path the modal uses,
+  // serialise via metaToDayOfMonth, then feed the resulting payload back
+  // into reconstructMetaFromTask. The dom must come back as 21, not 0.
+  // Pre-fix the helper didn't exist, the request model had no DayOfMonth
+  // field, the backend defaulted DayOfMonth to 0 on save, and the
+  // reconstruction read back 0 → label "Månedlig på dag 0".
+  //
+  // Coverage gap acknowledged: this test calls `metaToDayOfMonth` directly,
+  // so if the modal's onSave were refactored to stop calling the helper or
+  // to ship `null` unconditionally, this spec would still pass while the
+  // user-visible bug returned. A modal-component test of the emitted
+  // payload would close that gap; tracked as a follow-up.
+  describe('monthly day-21 round-trip (regression)', () => {
+    it('monthlyDom dom=21 survives metaToDayOfMonth → reconstructMetaFromTask', () => {
+      // 1. Build the meta the way buildMetaFromCustomConfig would. The
+      //    "Månedligt på dag 21" option in buildRepeatSelectOptions feeds
+      //    monthlyDom + dom=21 directly; the custom modal builds month-
+      //    unit metas through buildMetaFromCustomConfig which sets
+      //    dom: 1 by default — both paths funnel through this helper.
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 21, endMode: 'never', n: 1};
+
+      // 2. Modal's save path now flows through this helper.
+      const dayOfMonth = service.metaToDayOfMonth(meta);
+      expect(dayOfMonth).toBe(21);
+
+      // 3. Simulate the backend response: DayOfMonth is now persisted
+      //    correctly (after the request-model + write-path fixes).
+      //    Reconstruction reads it back as 21, not 0.
+      const task: CalendarTaskModel = {
+        id: 1, title: 't', startHour: 9, duration: 1, startText: '09:00',
+        endText: '10:00', tags: [], assigneeIds: [], boardId: 1, color: '',
+        descriptionHtml: '', taskDate: '2026-05-21', completed: false,
+        propertyId: 1, repeatRule: 'monthlyDom', repeatEvery: 1, repeatEndMode: 0,
+        dayOfMonth: dayOfMonth ?? 0,
+      } as CalendarTaskModel;
+
+      const reconstructed = service.reconstructMetaFromTask(task);
+      expect(reconstructed?.kind).toBe('monthlyDom');
+      expect(reconstructed?.dom).toBe(21);
+    });
+  });
+
+  // Regression test for the "Ugentligt hver søndag" bug:
+  // build a single-weekday Tuesday rule via the same path the modal uses,
+  // serialise via metaToWeekdaysCsv, then feed the resulting payload back
+  // into reconstructMetaFromTask while simulating the backend's broken
+  // DayOfWeek = 0 default. The CSV must win and the weekday must come back
+  // as Tuesday (2), not Sunday (0). Pre-fix this would have failed because
+  // the modal serialised the same meta as `null` and the dayOfWeek=0
+  // fallback rewrote it to Sunday.
+  describe('custom-repeat Tuesday round-trip (regression)', () => {
+    it('weeklyOne Tuesday survives metaToWeekdaysCsv → reconstructMetaFromTask even when dayOfWeek is the server default 0', () => {
+      // 1. Build the meta the way buildMetaFromCustomConfig would for
+      //    "Tilpasset" → "Gentag på" T (Tuesday) → step 1 → no end.
+      const meta = service.buildMetaFromCustomConfig(1, 'week', [2], 'never');
+      expect(meta.kind).toBe('weeklyOne');
+      expect(meta.weekday).toBe(2);
+
+      // 2. Modal's save path now flows through this helper.
+      const csv = service.metaToWeekdaysCsv(meta);
+      expect(csv).toBe('2');
+
+      // 3. Simulate the backend response: CSV is persisted correctly, but
+      //    arp.DayOfWeek defaults to 0 because Create/Update don't write
+      //    it. The reconstruction must prefer the CSV. (Use csv directly —
+      //    the field's type accepts string | null, and we want the fixture
+      //    to surface a string-vs-null mismatch if the helper ever regresses
+      //    to null for this kind.)
+      const task: CalendarTaskModel = {
+        id: 1, title: 't', startHour: 9, duration: 1, startText: '09:00',
+        endText: '10:00', tags: [], assigneeIds: [], boardId: 1, color: '',
+        descriptionHtml: '', taskDate: '2026-05-19', completed: false,
+        propertyId: 1, repeatRule: 'weeklyOne', repeatEvery: 1, repeatEndMode: 0,
+        repeatWeekdaysCsv: csv, dayOfWeek: 0,
+      } as CalendarTaskModel;
+
+      const reconstructed = service.reconstructMetaFromTask(task);
+      expect(reconstructed?.kind).toBe('weeklyOne');
+      expect(reconstructed?.weekday).toBe(2);
+    });
+  });
 });

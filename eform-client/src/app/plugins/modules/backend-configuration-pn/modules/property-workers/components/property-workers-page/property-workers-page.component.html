@@ -1,5 +1,6 @@
-<eform-new-subheader>
-  <div class="d-flex flex-row align-items-center gap-12">
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;" [formGroup]="filtersForm">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <div class="d-flex flex-row flex-wrap align-items-end justify-content-end gap-12">
     <div class="text-field--rounded mt-4">
       <mat-form-field>
         <mat-label>{{ 'Search' | translate }}</mat-label>
@@ -8,12 +9,12 @@
           type="text"
           (ngModelChange)="onSearchChanged($event)"
           [ngModel]="selectPropertyWorkersNameFilters$ | async"
+          [ngModelOptions]="{standalone: true}"
           id="labelInput"
         />
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
     </div>
-    <div class="line-vert"></div>
     <div class="text-field--rounded mt-4">
       <mat-form-field style="flex: 0 0 25%; min-width: 150px;">
         <mat-label>{{ 'Tags' | translate }}</mat-label>
@@ -24,27 +25,47 @@
           [multiple]="true"
           [ngModel]="selectedTagIds"
           (ngModelChange)="onTagsChanged($event)"
+          [ngModelOptions]="{standalone: true}"
           id="planningTags">
         </mtx-select>
       </mat-form-field>
     </div>
-    <div class="line-vert"></div>
+    <mat-form-field>
+      <mat-label>{{ 'Location' | translate }}</mat-label>
+      <mtx-select
+        formControlName="propertyIds"
+        multiple="true"
+        clearable="true"
+        [items]="availableProperties"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+    <mat-slide-toggle
+      formControlName="showResigned"
+      color="primary"
+      class="mt-2"
+      id="showCalculationsAsNumberToggle"
+    >
+      {{ 'Show resigned' | translate }}
+    </mat-slide-toggle>
     <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
+      class="btn-secondary btn-secondary--icon-left"
       id="sitesManageTagsBtn"
       (click)="openEditTagsModal()"
       matTooltip="{{ 'Manage tags' | translate }}"
     >
-      <mat-icon>discount</mat-icon>
+      <mat-icon>label</mat-icon>
+      <span>{{ 'Tags' | translate }}</span>
     </button>
     <button
-      class="btn-secondary btn-secondary--icon-rounded-border"
+      class="btn-primary btn-primary--icon-left"
       (click)="exportCsv()"
       matTooltip="{{ 'Export CSV' | translate }}"
     >
-      <mat-icon>text_snippet</mat-icon>
+      <mat-icon>download</mat-icon>
+      <span>{{ 'Export CSV' | translate }}</span>
     </button>
-    <div class="line-vert"></div>
     <button
       class="btn-primary btn-primary--icon-left"
       id="newDeviceUserBtn"
@@ -57,11 +78,7 @@
       <span>{{ 'Create new employee' | translate }}</span>
     </button>
   </div>
-</eform-new-subheader>
-
-<app-property-worker-filters
-  [properties]="availableProperties">
-</app-property-worker-filters>
+</mat-card>
 
 <app-property-worker-table
   (updateTable)="updateTable()"

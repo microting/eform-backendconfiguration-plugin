@@ -2,6 +2,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -69,6 +70,7 @@ public class CalendarResizeTests : TestBaseSetup
             _userService,
             BackendConfigurationPnDbContext!,
             null,
+            Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             NullLogger<BackendConfigurationCalendarService>.Instance

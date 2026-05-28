@@ -3,11 +3,12 @@ import {
   inject, ViewChild
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {forkJoin, Subscription} from 'rxjs';
+import {FormControl, FormGroup} from '@angular/forms';
+import {forkJoin, Subscription, take} from 'rxjs';
 import {
   CommonDictionaryModel,
 } from 'src/app/common/models';
-import {AuthStateService} from 'src/app/common/store';
+import {AppMenuStateService, AuthStateService} from 'src/app/common/store';
 import {PropertyAssignWorkersModel, DeviceUserModel, TaskWizardModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {
@@ -43,9 +44,15 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   public propertyWorkersStateService = inject(PropertyWorkersStateService);
+  private appMenuStateService = inject(AppMenuStateService);
+  private router = inject(Router);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
   private eFormTagService = inject(EformTagService);
+  // Resolved once in ngOnInit — getTitleByUrl subscribes to the store
+  // internally without unsubscribing, so calling it from the template would
+  // leak one subscription per change-detection tick.
+  public pageTitle: string = '';
   @ViewChild('modalTags', {static: true}) modalSiteTags: EformsTagsComponent;
 
   sitesDto: Array<DeviceUserModel>;
@@ -57,6 +64,14 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
+  filtersInitSub$: Subscription;
+  valueChangesPropertyIdsSub$: Subscription;
+  valueChangesShowResignedSub$: Subscription;
+  titleSub$: Subscription;
+  filtersForm = new FormGroup({
+    propertyIds: new FormControl<number[]>([]),
+    showResigned: new FormControl<boolean>(false),
+  });
   showResigned: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
   selectedTagIds: number[] = [];
@@ -68,6 +83,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    // Resolve the page title once menus hydrate; recompute when they emit.
+    // getTitleByUrl reads from the menu store internally — we drive it from
+    // the menu emission instead of calling it per template change-detection.
+    this.titleSub$ = this.appMenuStateService.leftAppMenus$.subscribe(() => {
+      this.pageTitle = this.appMenuStateService.getTitleByUrl(this.router.url);
+    });
     let propertyIds: number[] = [];
     this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
       .pipe(
@@ -89,6 +110,23 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe();
+    // Hydrate Lokation filter from store (previously handled in
+    // app-property-worker-filters; consolidated into the page).
+    this.filtersInitSub$ = this.selectPropertyWorkersFilters$
+      .pipe(take(1))
+      .subscribe(filters => {
+        this.filtersForm.get('propertyIds').patchValue(filters.propertyIds);
+      });
+    this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
+      .subscribe((value: number[]) => {
+        this.propertyWorkersStateService.updatePropertyIds(value);
+        this.updateTable();
+      });
+    this.valueChangesShowResignedSub$ = this.filtersForm.get('showResigned').valueChanges
+      .subscribe((value: boolean) => {
+        this.propertyWorkersStateService.updateShowResigned(value);
+        this.updateTable();
+      });
     this.loadAllTags();
     //this.getWorkerPropertiesAssignments();
   }
@@ -345,10 +383,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         name,
         site.workerEmail ?? '',
         site.phoneNumber ?? '',
-        site.taskManagementEnabled ? 'Active' : 'Not active',
-        site.timeRegistrationEnabled ? 'Active' : 'Not active',
-        site.webAccessEnabled ? 'Active' : 'Not active',
-        site.archiveEnabled ? 'Active' : 'Not active',
+        site.taskManagementEnabled ? 'Yes' : 'No',
+        site.timeRegistrationEnabled ? 'Yes' : 'No',
+        site.webAccessEnabled ? 'Yes' : 'No',
+        site.archiveEnabled ? 'Yes' : 'No',
         site.language ?? ''
       ];
     });

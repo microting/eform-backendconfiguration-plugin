@@ -152,7 +152,7 @@ export const ukUA = {
   '96 (8 years)': '96 (8 pоків)',
   '108 (9 years)': '108 (9 pоків)',
   '120 (10 years)': '120 (10 pоків)',
-  Repeat: 'Повторіть',
+  Repeat: 'Повторити',
   Deadline: 'Крайній термін',
   'Show/hide columns': 'Показати/приховати стовпці',
   GenerateWithTypeDoc: 'Згенерувати {{type}}ий документ',
@@ -460,4 +460,9 @@ export const ukUA = {
   'Last refreshed': 'Останнє оновлення',
   'Google Drive disconnected': 'Google Диск відключено',
   'Google Drive disconnected — reconnect to resume sync': 'Диск Google відключено — підключіть його, щоб відновити синхронізацію',
+  'Ad hoc': 'Спеціально',
+  Time: 'Час',
+  'All weekdays (Monday to Friday)': 'Усі будні (з понеділка по п&#39;ятницю)',
+  'Monthly on the {{ordinal}} {{day}}': 'Щомісяця {{ordinal}} {{day}}',
+  'Every {{n}} months on the {{ordinal}} {{day}}': 'Кожні {{n}} місяців у {{ordinal}} {{day}}',
 };

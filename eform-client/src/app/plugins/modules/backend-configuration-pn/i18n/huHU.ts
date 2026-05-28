@@ -460,4 +460,9 @@ export const huHU = {
   'Last refreshed': 'Utolsó frissítés',
   'Google Drive disconnected': 'A Google Drive le van választva',
   'Google Drive disconnected — reconnect to resume sync': 'A Google Drive le van választva – a szinkronizálás folytatásához újra kell csatlakoztatni',
+  'Ad hoc': 'Ad hoc',
+  Time: 'Idő',
+  'All weekdays (Monday to Friday)': 'Minden hétköznap (hétfőtől péntekig)',
+  'Monthly on the {{ordinal}} {{day}}': 'Havonta a {{ordinal}} {{day}} napon',
+  'Every {{n}} months on the {{ordinal}} {{day}}': '{{n}} havonta, a {{ordinal}} {{day}} napon',
 };

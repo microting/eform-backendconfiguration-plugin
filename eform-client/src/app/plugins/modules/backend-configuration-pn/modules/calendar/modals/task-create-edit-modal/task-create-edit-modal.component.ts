@@ -42,6 +42,7 @@ export interface TaskCreateEditModalData {
   date: string;
   startHour: number;
   boards: CalendarBoardModel[];
+  selectedBoardId?: number;
   employees: CommonDictionaryModel[];
   tags: string[];
   propertyId: number;
@@ -278,10 +279,17 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(startHour + 1));
       this.propertyControl.setValue(this.data.propertyId);
-      const defaultBoard = this.data.boards.length > 0
+      // Prefer the sidebar-selected board when exactly one is active and it
+      // still exists in the available boards list; otherwise fall back to
+      // the smallest-ID board.
+      const sidebarSelected = this.data.selectedBoardId != null
+        ? this.data.boards.find(b => b.id === this.data.selectedBoardId) ?? null
+        : null;
+      const fallbackBoard = this.data.boards.length > 0
         ? this.data.boards.reduce((min, b) => b.id < min.id ? b : min)
         : null;
-      this.boardControl.setValue(defaultBoard?.id ?? null);
+      const initialBoard = sidebarSelected ?? fallbackBoard;
+      this.boardControl.setValue(initialBoard?.id ?? null);
       const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
       this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
     }
@@ -601,7 +609,7 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       'none': 0,
       'daily': 1,
       'weekly': 2, 'weeklyOne': 2, 'weeklyAll': 2,
-      'monthly': 3, 'monthlyDom': 3,
+      'monthly': 3, 'monthlyDom': 3, 'monthlyByDay': 3,
       'yearly': 4, 'yearlyOne': 4,
       'weekdays': 5,
       'custom': 6,
@@ -623,7 +631,7 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       const kindMap: Record<string, number> = {
         'daily': 1, 'everyNd': 1,
         'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
-        'monthlyDom': 3, 'everyNMonthDom': 3,
+        'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
         'yearlyOne': 4, 'everyNYear': 4,
       };
       resolvedRepeatType = kindMap[meta.kind] ?? 0;
@@ -658,13 +666,41 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       repeatEndMode,
       repeatOccurrences,
       repeatUntilDate,
-      // CSV of JS getDay() weekday indices for multi-day weekly custom rules.
-      // Sent as null for any non-custom rule (isCustomRule=false), which
-      // unconditionally clears any stale CSV the row may carry from a prior
-      // custom selection. See spec — Layer 3 / "explicit clearing rule".
-      repeatWeekdaysCsv: (isCustomRule && this.customRepeatMeta?.weekdays?.length)
-        ? this.customRepeatMeta.weekdays.join(',')
+      // CSV of JS getDay() weekday indices for weekly custom rules.
+      // Single-weekday rules (weeklyOne / everyNWeekOne) live in
+      // meta.weekday (singular); multi-day rules in meta.weekdays (plural).
+      // The service helper collapses both shapes into the wire format so
+      // a Tuesday-only pick doesn't ship as null (which would otherwise let
+      // the server-stored DayOfWeek default of 0 win on reload, showing
+      // "Sunday" instead of the picked weekday). Sent as null for any
+      // non-custom rule (isCustomRule=false), which unconditionally clears
+      // any stale CSV the row may carry from a prior custom selection.
+      // See spec — Layer 3 / "explicit clearing rule".
+      repeatWeekdaysCsv: isCustomRule
+        ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
         : null,
+      // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
+      // ship this field at all, the request model had no DayOfMonth
+      // property, and AreaRulePlanning.DayOfMonth defaulted to its int 0
+      // on insert — so reopening "Månedlig på dag 21" read back as
+      // "dag 0". Two source paths feed this:
+      //  * Custom rule → customRepeatMeta has the user's picked dom.
+      //  * Built-in dropdown ("Månedligt på dag {today}" / "Yearly on
+      //    {today.day} {today.month}") → the selected option's
+      //    embedded meta carries it (buildRepeatSelectOptions:266-280).
+      // Both flows funnel through metaToDayOfMonth, which returns null
+      // for non-DOM kinds — so weekly/daily saves don't ship a stale
+      // value.
+      dayOfMonth: isCustomRule
+        ? this.repeatService.metaToDayOfMonth(this.customRepeatMeta)
+        : this.repeatService.metaToDayOfMonth(
+            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+          ),
+      repeatOrdinalWeek: isCustomRule
+        ? this.repeatService.metaToRepeatOrdinalWeek(this.customRepeatMeta)
+        : this.repeatService.metaToRepeatOrdinalWeek(
+            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+          ),
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
       status: 1,

@@ -28,6 +28,8 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
+import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
+import {CasesModule} from 'src/app/modules';
 import {TeamCreateDialogComponent} from './components/calendar-sidebar/team-create-dialog.component';
 import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-delete-dialog.component';
 import {TagCreateDialogComponent} from './components/calendar-sidebar/tag-create-dialog.component';
@@ -52,6 +54,7 @@ import {
   CustomRepeatModalComponent,
   BoardCreateModalComponent,
   BoardDeleteModalComponent,
+  ComplianceCaseModalComponent,
 } from './modals';
 
 // Re-export modal components for barrel
@@ -63,6 +66,7 @@ export {
   CustomRepeatModalComponent,
   BoardCreateModalComponent,
   BoardDeleteModalComponent,
+  ComplianceCaseModalComponent,
 };
 
 @NgModule({
@@ -84,6 +88,7 @@ export {
     CustomRepeatModalComponent,
     BoardCreateModalComponent,
     BoardDeleteModalComponent,
+    ComplianceCaseModalComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
     TagCreateDialogComponent,
@@ -101,6 +106,8 @@ export {
     PortalModule,
     EformSharedModule,
     EformImportedModule,
+    EformCasesModule,
+    CasesModule,
     MatButtonModule,
     MatButtonToggleModule,
     MatCardModule,

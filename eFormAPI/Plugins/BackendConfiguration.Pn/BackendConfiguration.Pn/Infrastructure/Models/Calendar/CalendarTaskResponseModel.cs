@@ -21,6 +21,9 @@ public class CalendarTaskResponseModel
     public DateTime? RepeatUntilDate { get; set; }
     public int? DayOfWeek { get; set; }
     public int? DayOfMonth { get; set; }
+    // Nth-weekday-of-month ordinal (1..5). Non-null when the rule uses
+    // "Nth <weekday> of each month". Null for legacy day-of-month rules.
+    public int? RepeatOrdinalWeek { get; set; }
     public string? RepeatWeekdaysCsv { get; set; }
     public bool Completed { get; set; }
     public int PropertyId { get; set; }
