@@ -2,7 +2,7 @@ import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Router} from '@angular/router';
-import {Subject} from 'rxjs';
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
@@ -55,7 +55,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
   allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
 
-  eforms: {id: number; label: string}[] = [];
+  private eformsSubject = new BehaviorSubject<{id: number; label: string}[]>([]);
+  eforms$: Observable<{id: number; label: string}[]> = this.eformsSubject.asObservable();
   logboegerFolderId: number | null = null;
 
   get tagNames(): string[] { return this.tags.map(t => t.name); }
@@ -136,7 +137,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     req.pageSize = 1000;
     this.eformService.getAll(req).subscribe(res => {
       if (res && res.success && res.model) {
-        this.eforms = res.model.templates.map(t => ({id: t.id, label: t.label}));
+        this.eformsSubject.next(res.model.templates.map(t => ({id: t.id, label: t.label})));
       }
     });
   }
@@ -317,6 +318,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.createOverlayRef = null;
     }
 
+    this.loadEforms();
+
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
@@ -346,7 +349,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
       properties: this.properties,
-      eforms: this.eforms,
+      eforms: this.eforms$,
       folderId: this.logboegerFolderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
@@ -666,6 +669,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.createOverlayRef = null;
     }
 
+    this.loadEforms();
+
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
@@ -695,7 +700,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       tags: this.tags.map(t => t.name),
       propertyId: task.propertyId,
       properties: this.properties,
-      eforms: this.eforms,
+      eforms: this.eforms$,
       folderId: this.logboegerFolderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
@@ -735,6 +740,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.createOverlayRef = null;
     }
 
+    this.loadEforms();
+
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
@@ -765,7 +772,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       tags: this.tags.map(t => t.name),
       propertyId: sourceTask.propertyId,
       properties: this.properties,
-      eforms: this.eforms,
+      eforms: this.eforms$,
       folderId: this.logboegerFolderId,
       planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };

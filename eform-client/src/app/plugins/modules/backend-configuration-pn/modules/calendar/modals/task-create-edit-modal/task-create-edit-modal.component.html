@@ -186,7 +186,7 @@
           <mtx-select
             id="calendarEventEform"
             [formControl]="eformControl"
-            [items]="data.eforms"
+            [items]="data.eforms | async"
             bindValue="id"
             bindLabel="label"
             [clearable]="false"
