@@ -31,6 +31,11 @@
     text-decoration: line-through;
   }
 
+  &.gcal-task--inactive {
+    opacity: 0.45;
+    filter: grayscale(0.7);
+  }
+
   &.resizing {
     opacity: 0.85;
     cursor: ns-resize;

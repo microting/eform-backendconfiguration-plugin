@@ -465,4 +465,8 @@ export const itIT = {
   'All weekdays (Monday to Friday)': 'Tutti i giorni feriali (dal lunedì al venerdì)',
   'Monthly on the {{ordinal}} {{day}}': 'Mensilmente il {{ordinale}} {{giorno}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Ogni {{n}} mesi nel {{giorno}} ordinale',
+  'Task visible on board and shown in app': 'Attività visibile a bordo e mostrata nell&#39;app',
+  'Task dimmed on board and not shown in app': 'Attività disattivata sulla scheda e non visualizzata nell&#39;app',
+  'Overdue task shown in app': 'Attività scadute visualizzate nell&#39;app',
+  'Overdue task not shown in app': 'Attività scadute non visualizzate nell&#39;app',
 };

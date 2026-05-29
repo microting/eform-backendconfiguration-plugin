@@ -465,4 +465,8 @@ export const svSE = {
   'All weekdays (Monday to Friday)': 'Alla vardagar (måndag till fredag)',
   'Monthly on the {{ordinal}} {{day}}': 'Månadsvis på den {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Var {{n}} månad på den {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Uppgift synlig på tavlan och visas i appen',
+  'Task dimmed on board and not shown in app': 'Uppgiften är nedtonad på kortet och visas inte i appen',
+  'Overdue task shown in app': 'Försenad uppgift visas i appen',
+  'Overdue task not shown in app': 'Försenad uppgift visas inte i appen',
 };

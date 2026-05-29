@@ -465,4 +465,8 @@ export const roRO = {
   'All weekdays (Monday to Friday)': 'Toate zilele lucrătoare (luni până vineri)',
   'Monthly on the {{ordinal}} {{day}}': 'Lunar în ziua {{ordinală}} {{zi}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'La fiecare {{n}} luni, în ziua {{ordinală}} {{zi}}',
+  'Task visible on board and shown in app': 'Sarcină vizibilă pe tablă și afișată în aplicație',
+  'Task dimmed on board and not shown in app': 'Sarcina este estompată pe tablă și nu este afișată în aplicație',
+  'Overdue task shown in app': 'Sarcina restantă este afișată în aplicație',
+  'Overdue task not shown in app': 'Sarcina restantă nu este afișată în aplicație',
 };

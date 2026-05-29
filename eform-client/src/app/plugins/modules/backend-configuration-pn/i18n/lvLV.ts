@@ -465,4 +465,8 @@ export const lvLV = {
   'All weekdays (Monday to Friday)': 'Visas darba dienas (no pirmdienas līdz piektdienai)',
   'Monthly on the {{ordinal}} {{day}}': 'Katru mēnesi {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Ik pēc {{n}} mēnešiem {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Uzdevums ir redzams uz tāfeles un lietotnē',
+  'Task dimmed on board and not shown in app': 'Uzdevums ir aptumšots uz tāfeles un netiek rādīts lietotnē',
+  'Overdue task shown in app': 'Nokavēts uzdevums tiek parādīts lietotnē',
+  'Overdue task not shown in app': 'Nokavēts uzdevums lietotnē netiek rādīts',
 };

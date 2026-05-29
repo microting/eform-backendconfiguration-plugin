@@ -282,10 +282,11 @@ public class BackendConfigurationCalendarService(
             var compliancePlanningIdsInWeek = new HashSet<int>(
                 compliancesForDedup.Select(c => c.PlanningId));
 
-            // 1. Query AreaRulePlannings (future/active tasks)
+            // 1. Query AreaRulePlannings (future/active and inactive tasks).
+            // Inactive (Status=false) plannings are included so the calendar can
+            // render them dimmed; the frontend keys the dim style off Status.
             var areaRulePlannings = await backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Status)
                 .Where(x => x.PropertyId == requestModel.PropertyId)
                 .Include(x => x.AreaRule)
                     .ThenInclude(x => x.AreaRuleTranslations)
@@ -454,6 +455,8 @@ public class BackendConfigurationCalendarService(
                         RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                         RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                         Completed = false,
+                        Status = arp.Status,
+                        ComplianceEnabled = arp.ComplianceEnabled,
                         PropertyId = arp.PropertyId,
                         IsFromCompliance = false,
                         NextExecutionTime = planning.NextExecutionTime,
@@ -532,6 +535,8 @@ public class BackendConfigurationCalendarService(
                             RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                             RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                             Completed = false,
+                            Status = arp.Status,
+                            ComplianceEnabled = arp.ComplianceEnabled,
                             PropertyId = arp.PropertyId,
                             IsFromCompliance = false,
                             NextExecutionTime = planning.NextExecutionTime,
@@ -606,6 +611,8 @@ public class BackendConfigurationCalendarService(
                     RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
                     Completed = false,
+                    Status = arp.Status,
+                    ComplianceEnabled = arp.ComplianceEnabled,
                     PropertyId = arp.PropertyId,
                     IsFromCompliance = false,
                     NextExecutionTime = movedPlanning.NextExecutionTime,
@@ -648,10 +655,10 @@ public class BackendConfigurationCalendarService(
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
             // Top up exceptionsByArp with any exceptions for compliance ARPs not
-            // already covered. The earlier exceptionsInWeek query (line ~210) filtered
-            // by arpIds — which are only Status=true plannings. Compliance rows can
-            // exist for Status=false plannings too, and their move/resize exceptions
-            // must reach the compliance loop below.
+            // already covered. arpIds now contains all non-Removed plannings
+            // (Status filter dropped at line 288); this top-up therefore only
+            // fires for compliance rows whose ARP has WorkflowState=Removed —
+            // a narrow edge case kept for safety.
             var complianceOnlyArpIds = complianceArpIds.Except(arpIds).ToList();
             if (complianceOnlyArpIds.Count > 0)
             {
@@ -796,6 +803,10 @@ public class BackendConfigurationCalendarService(
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = complianceCompleted,
+                    // Orphan compliance rows (no live ARP) render as dimmed
+                    // inactive — visually distinct from a healthy active row.
+                    Status = arp?.Status ?? false,
+                    ComplianceEnabled = arp?.ComplianceEnabled ?? false,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,
@@ -843,9 +854,9 @@ public class BackendConfigurationCalendarService(
 
             // Validate: at least one worker must be assigned. Events without
             // an assignee would be downgraded to NotActive by task-wizard and
-            // vanish from the calendar view (GetTasksForWeek filters Status),
-            // so creation is rejected here with a clear error rather than
-            // silently producing an invisible event.
+            // render as a dimmed inactive task with no one to perform it.
+            // Reject here with a clear error rather than silently creating
+            // an orphan event.
             if (createModel.Sites is null || createModel.Sites.Count == 0)
             {
                 return new OperationDataResult<int>(false,
@@ -976,8 +987,9 @@ public class BackendConfigurationCalendarService(
             }
 
             // Validate: at least one worker must remain assigned. Clearing
-            // assignees would downgrade the task to NotActive and hide it
-            // from the calendar view (same as the Create path).
+            // assignees would downgrade the task to NotActive (same as the
+            // Create path); reject rather than silently producing an
+            // inactive task with no one to perform it.
             if (updateModel.Sites is null || updateModel.Sites.Count == 0)
             {
                 return new OperationResult(false,
@@ -3105,12 +3117,10 @@ public class BackendConfigurationCalendarService(
                 // Per-row Completed + TaskIsExpired derivation. Predicate
                 // matches the spec: completed = Case.Status==100;
                 // task_is_expired = (Case.WorkflowState=Removed AND
-                // Status=77) OR (compliance.Deadline.Date < UtcNow.Date AND
-                // Status != 100). Date-only so an event scheduled for today
-                // is not flagged expired once its time-of-day passes.
-                // Recurrence-only or missing-Case rows fall back to the
-                // deadline-only check (no Status to consult, so they are
-                // treated as not-completed).
+                // Status=77) OR (compliance.Deadline < UtcNow AND
+                // Status != 100). Recurrence-only or missing-Case rows fall
+                // back to the deadline-only check (no Status to consult, so
+                // they are treated as not-completed).
                 bool completed = false;
                 bool taskIsExpired;
                 if (compliance.MicrotingSdkCaseId > 0
@@ -3120,13 +3130,13 @@ public class BackendConfigurationCalendarService(
                     completed = sdkCase.Status == 100;
                     var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
                                     && sdkCase.Status == 77;
-                    var pastDueIncomplete = compliance.Deadline.Date < dateTimeNow.Date
+                    var pastDueIncomplete = compliance.Deadline < dateTimeNow
                                             && sdkCase.Status != 100;
                     taskIsExpired = retracted || pastDueIncomplete;
                 }
                 else
                 {
-                    taskIsExpired = compliance.Deadline.Date < dateTimeNow.Date;
+                    taskIsExpired = compliance.Deadline < dateTimeNow;
                 }
 
                 var model = new CalendarTaskResponseModel
@@ -3153,6 +3163,8 @@ public class BackendConfigurationCalendarService(
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = completed,
+                    Status = arp?.Status ?? false,
+                    ComplianceEnabled = arp?.ComplianceEnabled ?? false,
                     PropertyId = compliance.PropertyId,
                     ComplianceId = compliance.Id,
                     IsFromCompliance = true,

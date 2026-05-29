@@ -121,6 +121,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
   boardControl = new FormControl<number | null>(null);
   eformControl = new FormControl<number | null>(null);
   planningTagControl = new FormControl<number | null>(null);
+  statusControl = new FormControl<boolean>(true, {nonNullable: true});
+  complianceEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
 
   constructor(
     @Optional() private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
@@ -244,6 +246,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+      this.statusControl.setValue(task.status ?? true);
+      this.complianceEnabledControl.setValue(task.complianceEnabled ?? true);
       // Seed attachments from the task DTO. The backend mapper populates
       // `attachments` for every occurrence of a recurring rule (master-rule
       // scope) — copy mode intentionally does NOT carry attachments forward.
@@ -274,6 +278,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(sourceTask['eformId'] ?? null);
       this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
+      this.statusControl.setValue(sourceTask.status ?? true);
+      this.complianceEnabledControl.setValue(sourceTask.complianceEnabled ?? true);
     } else {
       const startHour = this.data.startHour ?? 9;
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
@@ -316,6 +322,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
         this.boardControl.disable();
         this.eformControl.disable();
         this.planningTagControl.disable();
+        this.statusControl.disable();
+        this.complianceEnabledControl.disable();
       }
     }
 
@@ -706,8 +714,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
           ),
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
-      status: 1,
-      complianceEnabled: true,
+      status: this.statusControl.value ? 1 : 2,
+      complianceEnabled: this.complianceEnabledControl.value,
       folderId: this.data.folderId,
       eformId: this.eformControl.value,
       itemPlanningTagId: this.planningTagControl.value,
