@@ -484,4 +484,8 @@ export const enUS= {
   'Last used': 'Last used',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive disconnected — reconnect to resume sync',
   'Last refreshed': 'Last refreshed',
+  'Task visible on board and shown in app': 'Task visible on board and shown in app',
+  'Task dimmed on board and not shown in app': 'Task dimmed on board and not shown in app',
+  'Overdue task shown in app': 'Overdue task shown in app',
+  'Overdue task not shown in app': 'Overdue task not shown in app',
 };

@@ -465,4 +465,8 @@ export const ptBR = {
   'All weekdays (Monday to Friday)': 'Todos os dias da semana (de segunda a sexta-feira)',
   'Monthly on the {{ordinal}} {{day}}': 'Mensalmente no {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'A cada {{n}} meses no {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Tarefa visível no quadro e exibida no aplicativo.',
+  'Task dimmed on board and not shown in app': 'A tarefa ficou esmaecida na tela e não é exibida no aplicativo.',
+  'Overdue task shown in app': 'Tarefa atrasada exibida no aplicativo',
+  'Overdue task not shown in app': 'Tarefa atrasada não exibida no aplicativo',
 };

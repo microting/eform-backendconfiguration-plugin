@@ -347,6 +347,44 @@
     </div>
 
 
+    <!-- Active / inactive (paired view) -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">visibility</mat-icon>
+      <div class="gcal-row-content gcal-toggle-stack">
+        <mat-slide-toggle
+          id="calendarEventStatusActive"
+          [checked]="statusControl.value"
+          (change)="statusControl.setValue(true)">
+          {{ 'Task visible on board and shown in app' | translate }}
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          id="calendarEventStatusInactive"
+          [checked]="!statusControl.value"
+          (change)="statusControl.setValue(false)">
+          {{ 'Task dimmed on board and not shown in app' | translate }}
+        </mat-slide-toggle>
+      </div>
+    </div>
+
+    <!-- Overdue visibility (paired view) -->
+    <div class="gcal-row">
+      <mat-icon class="gcal-icon">schedule</mat-icon>
+      <div class="gcal-row-content gcal-toggle-stack">
+        <mat-slide-toggle
+          id="calendarEventComplianceOn"
+          [checked]="complianceEnabledControl.value"
+          (change)="complianceEnabledControl.setValue(true)">
+          {{ 'Overdue task shown in app' | translate }}
+        </mat-slide-toggle>
+        <mat-slide-toggle
+          id="calendarEventComplianceOff"
+          [checked]="!complianceEnabledControl.value"
+          (change)="complianceEnabledControl.setValue(false)">
+          {{ 'Overdue task not shown in app' | translate }}
+        </mat-slide-toggle>
+      </div>
+    </div>
+
     <!-- Board row -->
     <div class="gcal-row" *ngIf="filteredBoards.length > 0">
       <mat-icon class="gcal-icon">calendar_today</mat-icon>

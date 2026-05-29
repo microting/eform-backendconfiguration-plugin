@@ -464,4 +464,8 @@ export const frFR = {
   'All weekdays (Monday to Friday)': 'Tous les jours de la semaine (du lundi au vendredi)',
   'Monthly on the {{ordinal}} {{day}}': 'Mensuellement le {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Tous les {{n}} mois, le {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Tâche visible sur le tableau de bord et affichée dans l&#39;application',
+  'Task dimmed on board and not shown in app': 'Tâche désactivée sur le tableau de bord et non affichée dans l&#39;application',
+  'Overdue task shown in app': 'Tâche en retard affichée dans l&#39;application',
+  'Overdue task not shown in app': 'La tâche en retard n&#39;apparaît pas dans l&#39;application.',
 };

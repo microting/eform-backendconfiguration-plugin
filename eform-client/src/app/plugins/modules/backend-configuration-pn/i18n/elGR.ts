@@ -465,4 +465,8 @@ export const elGR = {
   'All weekdays (Monday to Friday)': 'Όλες τις καθημερινές (Δευτέρα έως Παρασκευή)',
   'Monthly on the {{ordinal}} {{day}}': 'Μηνιαίως την {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Κάθε {{n}} μήνες την {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Η εργασία είναι ορατή στον πίνακα και εμφανίζεται στην εφαρμογή',
+  'Task dimmed on board and not shown in app': 'Η εργασία είναι απενεργοποιημένη στην πλακέτα και δεν εμφανίζεται στην εφαρμογή',
+  'Overdue task shown in app': 'Η εκπρόθεσμη εργασία εμφανίζεται στην εφαρμογή',
+  'Overdue task not shown in app': 'Η εκπρόθεσμη εργασία δεν εμφανίζεται στην εφαρμογή.',
 };

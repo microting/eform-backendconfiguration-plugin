@@ -465,4 +465,8 @@ export const huHU = {
   'All weekdays (Monday to Friday)': 'Minden hétköznap (hétfőtől péntekig)',
   'Monthly on the {{ordinal}} {{day}}': 'Havonta a {{ordinal}} {{day}} napon',
   'Every {{n}} months on the {{ordinal}} {{day}}': '{{n}} havonta, a {{ordinal}} {{day}} napon',
+  'Task visible on board and shown in app': 'A feladat látható a táblán és az alkalmazásban is',
+  'Task dimmed on board and not shown in app': 'A feladat szürkén jelenik meg a táblán, és nem jelenik meg az alkalmazásban',
+  'Overdue task shown in app': 'Lejárt feladat látható az alkalmazásban',
+  'Overdue task not shown in app': 'A lejárt feladat nem jelenik meg az alkalmazásban',
 };

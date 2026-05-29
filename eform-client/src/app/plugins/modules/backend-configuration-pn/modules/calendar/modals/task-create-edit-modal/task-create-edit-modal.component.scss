@@ -103,6 +103,12 @@
   min-width: 0;
 }
 
+.gcal-toggle-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 // Date + Time row
 .gcal-datetime-row {
   display: flex;

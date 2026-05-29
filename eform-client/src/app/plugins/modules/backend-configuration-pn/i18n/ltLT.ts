@@ -465,4 +465,8 @@ export const ltLT = {
   'All weekdays (Monday to Friday)': 'Visomis darbo dienomis (nuo pirmadienio iki penktadienio)',
   'Monthly on the {{ordinal}} {{day}}': 'Kas mėnesį {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Kas {{n}} mėnesius {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Užduotis matoma lentoje ir rodoma programėlėje',
+  'Task dimmed on board and not shown in app': 'Užduotis lentoje rodoma blankiai ir nerodoma programėlėje',
+  'Overdue task shown in app': 'Programėlėje rodoma vėluojanti užduotis',
+  'Overdue task not shown in app': 'Uždelsta užduotis nerodoma programėlėje',
 };

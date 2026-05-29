@@ -26,6 +26,8 @@ export interface CalendarTaskModel {
   taskDate: string;          // ISO "YYYY-MM-DD"
   repeatSeriesId?: string;
   completed: boolean;
+  status: boolean;
+  complianceEnabled: boolean;
   driveLink?: string;
   propertyId: number;
   isFromCompliance?: boolean;

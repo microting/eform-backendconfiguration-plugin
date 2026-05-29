@@ -465,4 +465,8 @@ export const esES = {
   'All weekdays (Monday to Friday)': 'Todos los días laborables (de lunes a viernes)',
   'Monthly on the {{ordinal}} {{day}}': 'Mensualmente en el {{ordinal}} {{día}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Cada {{n}} meses en el {{ordinal}} {{día}}',
+  'Task visible on board and shown in app': 'La tarea es visible en el tablero y se muestra en la aplicación.',
+  'Task dimmed on board and not shown in app': 'La tarea aparece atenuada en el tablero y no se muestra en la aplicación.',
+  'Overdue task shown in app': 'Tarea vencida mostrada en la aplicación',
+  'Overdue task not shown in app': 'Las tareas vencidas no se muestran en la aplicación.',
 };
