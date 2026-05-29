@@ -33,7 +33,7 @@ import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-m
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {firstValueFrom, of} from 'rxjs';
+import {firstValueFrom, Observable, of} from 'rxjs';
 import {switchMap, take} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 
@@ -47,7 +47,7 @@ export interface TaskCreateEditModalData {
   tags: string[];
   propertyId: number;
   properties: CommonDictionaryModel[];
-  eforms: {id: number; label: string}[];
+  eforms: Observable<{id: number; label: string}[]>;
   folderId: number | null;
   planningTags: {id: number; name: string}[];
   sourceTask?: CalendarTaskModel | null;  // present in copy mode
@@ -290,8 +290,11 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
         : null;
       const initialBoard = sidebarSelected ?? fallbackBoard;
       this.boardControl.setValue(initialBoard?.id ?? null);
-      const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
-      this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
+      // take(1): seed default once; later refresh emissions must not overwrite the user's selection.
+      this.data.eforms.pipe(take(1)).subscribe(list => {
+        const kvittering = list.find(e => e.label === 'Kvittering');
+        this.eformControl.setValue(kvittering?.id ?? list[0]?.id ?? null);
+      });
     }
 
     // Disable all controls for past tasks
