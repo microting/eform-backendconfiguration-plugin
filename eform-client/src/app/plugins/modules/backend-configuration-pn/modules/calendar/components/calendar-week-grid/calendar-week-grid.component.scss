@@ -130,15 +130,16 @@
     overflow: visible !important;
   }
 
-  // z-index 11 wins over task blocks (z 2/3), the now-line current-time
-  // indicator (z 10), and the all-day chips. Drag-ghost-task (z 20) still
-  // draws on top so a moving event doesn't disappear under the header.
-  // The top-left corner cell (time-axis header) sticky-stacks at z 100
-  // via Material's .mat-mdc-table-sticky class.
+  // z-index 50 sits well above the overlapping-events stacking range
+  // (events get `_zIndex = 10 + i` per the calendar-layout service; conflict
+  // groups of 2+ would otherwise land at 11/12/13 and bleed through the
+  // header). Drag-ghost-task (z 100) still draws on top so a moving event
+  // doesn't disappear under the header. The top-left corner cell (time-axis
+  // header) sticky-stacks at z 100 via Material's .mat-mdc-table-sticky.
   .mat-mdc-header-row {
     position: sticky;
     top: 0;
-    z-index: 11;
+    z-index: 50;
     background: var(--md-surface-container);
     box-shadow: 0 1px 0 var(--border, #e0e0e0);
   }
@@ -250,7 +251,7 @@
   padding: 2px 4px;
   opacity: 0.55;
   pointer-events: none;
-  z-index: 20;
+  z-index: 100;
   color: white;
   font-size: 12px;
   overflow: hidden;

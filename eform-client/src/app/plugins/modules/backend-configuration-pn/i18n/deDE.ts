@@ -519,4 +519,8 @@ export const deDE = {
   'All weekdays (Monday to Friday)': 'An allen Wochentagen (Montag bis Freitag)',
   'Monthly on the {{ordinal}} {{day}}': 'Monatlich am {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Alle {{n}} Monate am {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Aufgabe auf dem Board sichtbar und in der App angezeigt',
+  'Task dimmed on board and not shown in app': 'Die Aufgabe wird auf dem Board ausgegraut und in der App nicht angezeigt.',
+  'Overdue task shown in app': 'Überfällige Aufgabe wird in der App angezeigt',
+  'Overdue task not shown in app': 'Überfällige Aufgabe wird in der App nicht angezeigt.',
 };

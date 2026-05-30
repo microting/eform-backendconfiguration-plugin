@@ -465,4 +465,8 @@ export const bgBG = {
   'All weekdays (Monday to Friday)': 'Всички делнични дни (от понеделник до петък)',
   'Monthly on the {{ordinal}} {{day}}': 'Месечно на {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'На всеки {{n}} месеца на {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Задачата е видима на борда и се показва в приложението',
+  'Task dimmed on board and not shown in app': 'Задачата е затъмнена на таблото и не се показва в приложението',
+  'Overdue task shown in app': 'Просрочена задача, показана в приложението',
+  'Overdue task not shown in app': 'Просрочената задача не се показва в приложението',
 };

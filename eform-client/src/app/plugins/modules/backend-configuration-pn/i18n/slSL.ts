@@ -465,4 +465,8 @@ export const slSL = {
   'All weekdays (Monday to Friday)': 'Vse delavnike (od ponedeljka do petka)',
   'Monthly on the {{ordinal}} {{day}}': 'Mesečno na {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Vsakih {{n}} mesecev na {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Naloga je vidna na tabli in prikazana v aplikaciji',
+  'Task dimmed on board and not shown in app': 'Naloga je na tabli zatemnjena in ni prikazana v aplikaciji',
+  'Overdue task shown in app': 'Zamujena naloga prikazana v aplikaciji',
+  'Overdue task not shown in app': 'Zamujena naloga ni prikazana v aplikaciji',
 };

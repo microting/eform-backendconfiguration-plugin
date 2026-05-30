@@ -465,4 +465,8 @@ export const noNO = {
   'All weekdays (Monday to Friday)': 'Alle hverdager (mandag til fredag)',
   'Monthly on the {{ordinal}} {{day}}': 'Månedlig på den {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Hver {{n}} måned på den {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Oppgave synlig på tavlen og vist i appen',
+  'Task dimmed on board and not shown in app': 'Oppgaven er nedtonet på tavlen og vises ikke i appen',
+  'Overdue task shown in app': 'Forfalt oppgave vises i appen',
+  'Overdue task not shown in app': 'Forfalt oppgave vises ikke i appen',
 };

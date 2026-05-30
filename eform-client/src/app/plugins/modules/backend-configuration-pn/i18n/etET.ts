@@ -465,4 +465,8 @@ export const etET = {
   'All weekdays (Monday to Friday)': 'Kõik nädalapäevad (esmaspäevast reedeni)',
   'Monthly on the {{ordinal}} {{day}}': 'Iga kuu {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Iga {{n}} kuu tagant {{ordinal}} {{day}}-l',
+  'Task visible on board and shown in app': 'Ülesanne on nähtav tahvlil ja rakenduses',
+  'Task dimmed on board and not shown in app': 'Ülesanne on tahvlil tuhm ja rakenduses seda ei kuvata',
+  'Overdue task shown in app': 'Rakenduses kuvatakse tähtaega ületanud ülesanne',
+  'Overdue task not shown in app': 'Rakenduses ei kuvata tähtaega ületanud ülesannet',
 };

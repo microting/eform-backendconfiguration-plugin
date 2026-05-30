@@ -465,4 +465,8 @@ export const plPL = {
   'All weekdays (Monday to Friday)': 'Wszystkie dni powszednie (od poniedziałku do piątku)',
   'Monthly on the {{ordinal}} {{day}}': 'Miesięcznie w {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Co {{n}} miesięcy w {{porządkowym}} {{dniu}}',
+  'Task visible on board and shown in app': 'Zadanie widoczne na pokładzie i wyświetlane w aplikacji',
+  'Task dimmed on board and not shown in app': 'Zadanie jest przyciemnione na pokładzie i nie jest wyświetlane w aplikacji',
+  'Overdue task shown in app': 'Przeterminowane zadanie wyświetlane w aplikacji',
+  'Overdue task not shown in app': 'Przeterminowane zadanie nie jest wyświetlane w aplikacji',
 };

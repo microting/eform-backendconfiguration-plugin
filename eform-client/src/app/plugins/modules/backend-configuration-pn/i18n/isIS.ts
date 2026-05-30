@@ -465,4 +465,8 @@ export const isIS = {
   'All weekdays (Monday to Friday)': 'Alla virka daga (mánudaga til föstudaga)',
   'Monthly on the {{ordinal}} {{day}}': 'Mánaðarlega á {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Á {{n}} mánaða fresti á {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Verkefni sýnilegt á borðinu og sýnt í appinu',
+  'Task dimmed on board and not shown in app': 'Verkefni dimmt á borðinu og birtist ekki í forritinu',
+  'Overdue task shown in app': 'Vanskilað verkefni birtist í appinu',
+  'Overdue task not shown in app': 'Vanskilaverkefni birtist ekki í appinu',
 };

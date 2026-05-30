@@ -465,4 +465,8 @@ export const nlNL = {
   'All weekdays (Monday to Friday)': 'Alle werkdagen (maandag tot en met vrijdag)',
   'Monthly on the {{ordinal}} {{day}}': 'Maandelijks op de {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Elke {{n}} maanden op de {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Taak zichtbaar op het bord en weergegeven in de app.',
+  'Task dimmed on board and not shown in app': 'Taak wordt op het bord weergegeven, maar niet in de app.',
+  'Overdue task shown in app': 'Achterstallige taak weergegeven in de app',
+  'Overdue task not shown in app': 'Achterstallige taak wordt niet weergegeven in de app.',
 };

@@ -466,4 +466,8 @@ export const da = {
   'Last refreshed': 'Sidst opdateret',
   'Google Drive disconnected': 'Google Drive afbrudt',
   'Google Drive disconnected — reconnect to resume sync': 'Google Drive afbrudt – genopret forbindelse for at genoptage synkronisering',
+  'Task visible on board and shown in app': 'Opgave synlig på tavlen og vist i appen',
+  'Task dimmed on board and not shown in app': 'Opgaven er nedtonet på tavlen og vises ikke i appen',
+  'Overdue task shown in app': 'Forfalden opgave vist i appen',
+  'Overdue task not shown in app': 'Forfalden opgave vises ikke i appen',
 };

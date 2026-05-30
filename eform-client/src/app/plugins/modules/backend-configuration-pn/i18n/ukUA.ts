@@ -465,4 +465,8 @@ export const ukUA = {
   'All weekdays (Monday to Friday)': 'Усі будні (з понеділка по п&#39;ятницю)',
   'Monthly on the {{ordinal}} {{day}}': 'Щомісяця {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Кожні {{n}} місяців у {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Завдання відображається на дошці та в додатку',
+  'Task dimmed on board and not shown in app': 'Завдання затемнене на дошці та не відображається в додатку',
+  'Overdue task shown in app': 'Прострочене завдання відображається в додатку',
+  'Overdue task not shown in app': 'Прострочене завдання не відображається в додатку',
 };

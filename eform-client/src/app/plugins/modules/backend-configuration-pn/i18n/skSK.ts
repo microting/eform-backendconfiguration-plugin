@@ -465,4 +465,8 @@ export const skSK = {
   'All weekdays (Monday to Friday)': 'Všetky pracovné dni (pondelok až piatok)',
   'Monthly on the {{ordinal}} {{day}}': 'Mesačne v {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Každých {{n}} mesiacov v {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Úloha viditeľná na palube a zobrazená v aplikácii',
+  'Task dimmed on board and not shown in app': 'Úloha je na tabuli zobrazená stmavená a nezobrazuje sa v aplikácii',
+  'Overdue task shown in app': 'V aplikácii sa zobrazuje oneskorená úloha',
+  'Overdue task not shown in app': 'Oneskorená úloha sa v aplikácii nezobrazuje',
 };

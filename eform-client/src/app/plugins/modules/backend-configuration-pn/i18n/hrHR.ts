@@ -465,4 +465,8 @@ export const hrHR = {
   'All weekdays (Monday to Friday)': 'Svi radni dani (od ponedjeljka do petka)',
   'Monthly on the {{ordinal}} {{day}}': 'Mjesečno na {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Svakih {{n}} mjeseci na {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Zadatak vidljiv na ploči i prikazan u aplikaciji',
+  'Task dimmed on board and not shown in app': 'Zadatak je zatamnjen na ploči i nije prikazan u aplikaciji',
+  'Overdue task shown in app': 'Zakašnjeli zadatak prikazan je u aplikaciji',
+  'Overdue task not shown in app': 'Zakašnjeli zadatak nije prikazan u aplikaciji',
 };

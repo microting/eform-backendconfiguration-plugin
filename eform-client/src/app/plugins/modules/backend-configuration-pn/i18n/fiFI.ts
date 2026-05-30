@@ -465,4 +465,8 @@ export const fiFI = {
   'All weekdays (Monday to Friday)': 'Kaikki arkipäivät (maanantaista perjantaihin)',
   'Monthly on the {{ordinal}} {{day}}': 'Kuukausittain {{ordinal}} {{day}} -päivänä',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Joka {{n}} kuukausi {{ordinal}} {{day}} -päivänä',
+  'Task visible on board and shown in app': 'Tehtävä näkyy taululla ja sovelluksessa',
+  'Task dimmed on board and not shown in app': 'Tehtävä himmennettynä taululla eikä näy sovelluksessa',
+  'Overdue task shown in app': 'Myöhässä oleva tehtävä näkyy sovelluksessa',
+  'Overdue task not shown in app': 'Myöhässä oleva tehtävä ei näy sovelluksessa',
 };

@@ -33,7 +33,7 @@ import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-m
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
-import {firstValueFrom, of} from 'rxjs';
+import {firstValueFrom, Observable, of} from 'rxjs';
 import {switchMap, take} from 'rxjs/operators';
 import {OperationDataResult} from 'src/app/common/models';
 
@@ -47,7 +47,7 @@ export interface TaskCreateEditModalData {
   tags: string[];
   propertyId: number;
   properties: CommonDictionaryModel[];
-  eforms: {id: number; label: string}[];
+  eforms: Observable<{id: number; label: string}[]>;
   folderId: number | null;
   planningTags: {id: number; name: string}[];
   sourceTask?: CalendarTaskModel | null;  // present in copy mode
@@ -121,6 +121,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
   boardControl = new FormControl<number | null>(null);
   eformControl = new FormControl<number | null>(null);
   planningTagControl = new FormControl<number | null>(null);
+  statusControl = new FormControl<boolean>(true, {nonNullable: true});
+  complianceEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
 
   constructor(
     @Optional() private dialogRef: MatDialogRef<TaskCreateEditModalComponent>,
@@ -244,6 +246,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+      this.statusControl.setValue(task.status ?? true);
+      this.complianceEnabledControl.setValue(task.complianceEnabled ?? true);
       // Seed attachments from the task DTO. The backend mapper populates
       // `attachments` for every occurrence of a recurring rule (master-rule
       // scope) — copy mode intentionally does NOT carry attachments forward.
@@ -274,6 +278,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(sourceTask['eformId'] ?? null);
       this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
+      this.statusControl.setValue(sourceTask.status ?? true);
+      this.complianceEnabledControl.setValue(sourceTask.complianceEnabled ?? true);
     } else {
       const startHour = this.data.startHour ?? 9;
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
@@ -290,8 +296,11 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
         : null;
       const initialBoard = sidebarSelected ?? fallbackBoard;
       this.boardControl.setValue(initialBoard?.id ?? null);
-      const kvittering = this.data.eforms?.find(e => e.label === 'Kvittering');
-      this.eformControl.setValue(kvittering?.id ?? this.data.eforms?.[0]?.id ?? null);
+      // take(1): seed default once; later refresh emissions must not overwrite the user's selection.
+      this.data.eforms.pipe(take(1)).subscribe(list => {
+        const kvittering = list.find(e => e.label === 'Kvittering');
+        this.eformControl.setValue(kvittering?.id ?? list[0]?.id ?? null);
+      });
     }
 
     // Disable all controls for past tasks
@@ -313,6 +322,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
         this.boardControl.disable();
         this.eformControl.disable();
         this.planningTagControl.disable();
+        this.statusControl.disable();
+        this.complianceEnabledControl.disable();
       }
     }
 
@@ -703,8 +714,8 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
           ),
       driveLink: this.driveLinkControl.value ?? '',
       propertyId: this.propertyControl.value ?? this.data.propertyId,
-      status: 1,
-      complianceEnabled: true,
+      status: this.statusControl.value ? 1 : 2,
+      complianceEnabled: this.complianceEnabledControl.value,
       folderId: this.data.folderId,
       eformId: this.eformControl.value,
       itemPlanningTagId: this.planningTagControl.value,

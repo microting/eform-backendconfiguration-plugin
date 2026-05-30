@@ -465,4 +465,8 @@ export const csCZ = {
   'All weekdays (Monday to Friday)': 'Všechny všední dny (pondělí až pátek)',
   'Monthly on the {{ordinal}} {{day}}': 'Měsíčně v {{ordinal}} {{day}}',
   'Every {{n}} months on the {{ordinal}} {{day}}': 'Každých {{n}} měsíců v {{ordinal}} {{day}}',
+  'Task visible on board and shown in app': 'Úkol viditelný na palubě a zobrazený v aplikaci',
+  'Task dimmed on board and not shown in app': 'Úkol je na tabuli zobrazen šedě a v aplikaci se nezobrazuje',
+  'Overdue task shown in app': 'V aplikaci se zobrazuje po termínu úkol',
+  'Overdue task not shown in app': 'Zpožděný úkol se v aplikaci nezobrazuje',
 };

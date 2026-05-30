@@ -26,6 +26,8 @@ public class CalendarTaskResponseModel
     public int? RepeatOrdinalWeek { get; set; }
     public string? RepeatWeekdaysCsv { get; set; }
     public bool Completed { get; set; }
+    public bool Status { get; set; }
+    public bool ComplianceEnabled { get; set; }
     public int PropertyId { get; set; }
     public int? ComplianceId { get; set; }
     public bool IsFromCompliance { get; set; }
