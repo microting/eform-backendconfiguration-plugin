@@ -317,4 +317,125 @@ public class CalendarStatusToggleTests : TestBaseSetup
         var afterOnAgain = await service.GetTasksForWeek(WeekRequest(property.Id, monday));
         Assert.That(afterOnAgain.Model[0].Status, Is.True);
     }
+
+    /// <summary>
+    /// Compliance path with soft-deleted Planning: locks in the symmetric
+    /// drop of the WorkflowState=Removed filter on
+    /// <c>compliancePlanningsDict</c> (around line 702 of
+    /// BackendConfigurationCalendarService). A regression that re-adds the
+    /// filter on the compliance loop's planning lookup would let a past
+    /// Compliance row vanish when its backing Planning was soft-deleted by
+    /// the Status=OFF cascade.
+    /// </summary>
+    [Test]
+    public async Task GetTasksForWeek_CompliancePath_PlanningSoftDeleted_TaskRemainsVisible()
+    {
+        var (property, _, planning) = await SeedCalendarTask(
+            status: false, complianceEnabled: false, planningSoftDeleted: true);
+        var monday = GetNextMonday();
+
+        var compliance = new Compliance
+        {
+            PlanningId = planning.Id,
+            PropertyId = property.Id,
+            Deadline = monday,
+            StartDate = monday.AddDays(-7),
+            MicrotingSdkCaseId = 0,
+            MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(compliance);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var service = await BuildService();
+        var result = await service.GetTasksForWeek(WeekRequest(property.Id, monday));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model, Has.Some.Matches<CalendarTaskResponseModel>(t => t.IsFromCompliance),
+            "Compliance row with a soft-deleted backing Planning must still "
+            + "surface in the response — symmetric to the planningsDict fix.");
+    }
+
+    /// <summary>
+    /// Mixed-status response: the most common production shape — a board
+    /// with both active and inactive tasks. Both ARPs must surface in the
+    /// same week response with their respective Status values so the
+    /// frontend can render the inactive one dimmed alongside the active
+    /// ones.
+    /// </summary>
+    [Test]
+    public async Task GetTasksForWeek_MixedStatus_BothActiveAndInactiveSurface()
+    {
+        var (property, _, _) = await SeedCalendarTask(
+            status: true, complianceEnabled: true, planningSoftDeleted: false);
+        var monday = GetNextMonday();
+
+        // Second ARP on the same property, this one inactive with a
+        // soft-deleted Planning (the cascade shape).
+        var planningInactive = new Planning
+        {
+            Enabled = false,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Week,
+            StartDate = monday,
+            RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Removed,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planningInactive);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var areaRuleInactive = new AreaRule
+        {
+            AreaId = (await BackendConfigurationPnDbContext!.Areas.FirstAsync()).Id,
+            PropertyId = property.Id,
+            EformId = 0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRuleInactive);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var arpInactive = new AreaRulePlanning
+        {
+            AreaRuleId = areaRuleInactive.Id,
+            PropertyId = property.Id,
+            AreaId = areaRuleInactive.AreaId,
+            ItemPlanningId = planningInactive.Id,
+            StartDate = monday,
+            Status = false,
+            ComplianceEnabled = false,
+            RepeatType = 2,
+            RepeatEvery = 1,
+            RepeatWeekdaysCsv = "1",
+            DayOfWeek = 1,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arpInactive);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(new CalendarConfiguration
+        {
+            AreaRulePlanningId = arpInactive.Id,
+            StartHour = 10.0,
+            Duration = 1.0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var service = await BuildService();
+        var result = await service.GetTasksForWeek(WeekRequest(property.Id, monday));
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(result.Model.Any(t => t.Status), Is.True,
+            "Mixed-status response must include the active task.");
+        Assert.That(result.Model.Any(t => !t.Status), Is.True,
+            "Mixed-status response must include the inactive task (dimmed).");
+    }
 }
