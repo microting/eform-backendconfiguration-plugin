@@ -103,6 +103,15 @@
   min-width: 0;
 }
 
+// Stack paired slide-toggles (e.g. Aktiv/Inaktiv, Vis/Skjul overskredet)
+// one per line. Without this they default to mat-slide-toggle's inline-flex
+// and pack side-by-side until the row wraps.
+.gcal-toggle-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 // Date + Time row
 .gcal-datetime-row {
   display: flex;
