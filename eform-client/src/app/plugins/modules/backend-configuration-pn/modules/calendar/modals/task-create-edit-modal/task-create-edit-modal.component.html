@@ -354,32 +354,32 @@
         <mat-slide-toggle
           id="calendarEventStatusActive"
           [checked]="statusControl.value"
-          (change)="statusControl.setValue(true)">
+          (change)="onPickStatusActive()">
           {{ 'Task visible on board and shown in app' | translate }}
         </mat-slide-toggle>
         <mat-slide-toggle
           id="calendarEventStatusInactive"
           [checked]="!statusControl.value"
-          (change)="statusControl.setValue(false)">
+          (change)="onPickStatusInactive()">
           {{ 'Task dimmed on board and not shown in app' | translate }}
         </mat-slide-toggle>
       </div>
     </div>
 
-    <!-- Overdue visibility (paired view) -->
+    <!-- Overdue visibility (paired view; both off when inactive) -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">schedule</mat-icon>
       <div class="gcal-row-content gcal-toggle-stack">
         <mat-slide-toggle
           id="calendarEventComplianceOn"
-          [checked]="complianceEnabledControl.value"
-          (change)="complianceEnabledControl.setValue(true)">
+          [checked]="statusControl.value && complianceEnabledControl.value"
+          (change)="onPickOverdueShown()">
           {{ 'Overdue task shown in app' | translate }}
         </mat-slide-toggle>
         <mat-slide-toggle
           id="calendarEventComplianceOff"
-          [checked]="!complianceEnabledControl.value"
-          (change)="complianceEnabledControl.setValue(false)">
+          [checked]="statusControl.value && !complianceEnabledControl.value"
+          (change)="onPickOverdueHidden()">
           {{ 'Overdue task not shown in app' | translate }}
         </mat-slide-toggle>
       </div>

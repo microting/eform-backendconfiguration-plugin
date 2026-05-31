@@ -1,7 +1,7 @@
 <div
   class="task-block"
   [class.completed]="task.completed"
-  [class.gcal-task--inactive]="!task.status"
+  [class.gcal-task--inactive]="task.status === false"
   [class.resizing]="resizing"
   [class.raised]="raised"
   [style.top.px]="topPx"

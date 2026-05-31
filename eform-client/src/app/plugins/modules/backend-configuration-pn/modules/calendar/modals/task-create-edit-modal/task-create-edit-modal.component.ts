@@ -194,6 +194,26 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Toggle handlers for the Active / Overdue pair UI.
+  // Pair (R1, R2) is mutually exclusive: exactly one is on.
+  // Pair (R3, R4) is mutually exclusive but BOTH may be off when Status is
+  // inactive — overdue is N/A in that case. Clicking R3 or R4 also forces
+  // Status active (matches the user-supplied state matrix).
+  onPickStatusActive(): void {
+    this.statusControl.setValue(true);
+  }
+  onPickStatusInactive(): void {
+    this.statusControl.setValue(false);
+  }
+  onPickOverdueShown(): void {
+    this.statusControl.setValue(true);
+    this.complianceEnabledControl.setValue(true);
+  }
+  onPickOverdueHidden(): void {
+    this.statusControl.setValue(true);
+    this.complianceEnabledControl.setValue(false);
+  }
+
   ngOnInit() {
     this.store.select(selectCurrentUserLanguageId).pipe(take(1)).subscribe(langId => {
       this.currentLanguageId = langId ?? 1;
