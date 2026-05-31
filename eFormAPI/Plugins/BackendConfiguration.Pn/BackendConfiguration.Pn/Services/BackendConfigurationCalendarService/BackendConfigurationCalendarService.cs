@@ -296,11 +296,15 @@ public class BackendConfigurationCalendarService(
                     .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
 
-            // Batch-load plannings to avoid N+1 queries
+            // Batch-load plannings to avoid N+1 queries.
+            // Soft-deleted plannings are INCLUDED so the calendar can still
+            // show inactive (Status=false) tasks dimmed — the cascade in
+            // TaskWizardService.UpdateTask soft-deletes the underlying Planning
+            // when Status flips OFF, but we still want the AreaRulePlanning
+            // to surface in the response so the frontend can render it dimmed.
             var planningIds = areaRulePlannings.Select(x => x.ItemPlanningId).Distinct().ToList();
             var planningsDict = await itemsPlanningPnDbContext.Plannings
                 .Where(x => planningIds.Contains(x.Id))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.Id);
 
             // Batch-load calendar configurations
@@ -692,10 +696,11 @@ public class BackendConfigurationCalendarService(
                 .Where(x => complianceTagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
 
-            // Batch-load compliance plannings so we can read description from Planning
+            // Batch-load compliance plannings so we can read description from Planning.
+            // Soft-deleted plannings are INCLUDED — see comment on planningsDict
+            // above (line ~300) for the same rationale.
             var compliancePlanningsDict = await itemsPlanningPnDbContext.Plannings
                 .Where(x => compliancePlanningIds.Contains(x.Id))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.Id);
 
             // Batch-load the SDK Cases backing these compliance rows so the
