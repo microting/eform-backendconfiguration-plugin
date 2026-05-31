@@ -103,12 +103,6 @@
   min-width: 0;
 }
 
-.gcal-toggle-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 // Date + Time row
 .gcal-datetime-row {
   display: flex;
@@ -130,6 +124,13 @@
   // datetime row's flex children.
   width: 90px !important;
   flex-shrink: 0;
+}
+
+// Lift the workspace 320px max-width cap on mtx-select fields marked
+// `w-100` so they align to Title's right edge. Scoped via `.w-100` so the
+// 90px `.gcal-time-field` pickers above are unaffected.
+mat-form-field.w-100.mat-mdc-form-field-type-mtx-select {
+  max-width: none !important;
 }
 
 .gcal-time-separator {
