@@ -382,14 +382,12 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
-   * Set the event-modal Repeat dropdown to "Weekly on {weekday}". The
-   * repeat options have stable order (calendar-repeat.service:245+):
-   * 0:none, 1:daily, 2:weeklyOne, 3:weeklyAll, 4:monthlyDom, 5:yearlyOne,
-   * 6:custom. Index 2 is what we want. Pick by position to avoid
-   * locale-dependent label matching.
-   *
-   * The repeat select is [searchable]="false", so click .ng-select-container
-   * (the inner combobox input is non-interactive at opacity 0).
+   * Set the event-modal Repeat dropdown to "Weekly on {weekday}". Picks by
+   * position to avoid locale-dependent label matching; option order is the
+   * same table documented on `selectRepeatPreset` below (index 2 is
+   * weeklyOne). The repeat select is `[searchable]="false"`, so click
+   * `.ng-select-container` directly — the inner combobox input is
+   * non-interactive at opacity 0.
    */
   async setRepeatToWeekly(): Promise<void> {
     const repeatRow = this.page
@@ -399,6 +397,48 @@ export class CalendarUiEnhancementsPage {
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.locator('.ng-dropdown-panel .ng-option').nth(2).click();
     await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Set the event-modal Repeat dropdown to a built-in preset by its `value`
+   * attribute. Mirrors the option order from calendar-repeat.service.ts
+   * `buildRepeatSelectOptions` (without customCurrent):
+   *   0:none, 1:daily, 2:weeklyOne, 3:monthlyByDay, 4:yearlyOne,
+   *   5:weekdays, 6:custom
+   *
+   * Positional .nth() picking is locale-independent (the visible labels are
+   * translated) and matches the existing pattern used by setRepeatToWeekly.
+   */
+  async selectRepeatPreset(
+    value: 'none' | 'daily' | 'weeklyOne' | 'monthlyByDay' | 'yearlyOne' | 'weekdays' | 'custom',
+  ): Promise<void> {
+    const indexByValue: Record<string, number> = {
+      none: 0,
+      daily: 1,
+      weeklyOne: 2,
+      monthlyByDay: 3,
+      yearlyOne: 4,
+      weekdays: 5,
+      custom: 6,
+    };
+    const repeatRow = this.page
+      .locator('.gcal-row')
+      .filter({ has: this.page.locator('mat-icon.gcal-icon:has-text("sync")') });
+    await repeatRow.locator('.ng-select-container').first().click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').nth(indexByValue[value]).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Returns `.task-block` locators inside the day column for `dayIndex`
+   * (0=Mon..6=Sun, matching the `data-day` attribute set by the week-grid
+   * template), filtered by a substring of the title.
+   */
+  getDayColumnTaskBlocks(dayIndex: number, titleSubstring: string): Locator {
+    return this.page
+      .locator(`.day-cell-content[data-day="${dayIndex}"] .task-block`)
+      .filter({ hasText: titleSubstring });
   }
 
   /**

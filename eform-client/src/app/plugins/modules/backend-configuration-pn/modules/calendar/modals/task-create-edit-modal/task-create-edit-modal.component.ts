@@ -642,7 +642,13 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       'weekly': 2, 'weeklyOne': 2, 'weeklyAll': 2,
       'monthly': 3, 'monthlyDom': 3, 'monthlyByDay': 3,
       'yearly': 4, 'yearlyOne': 4,
-      'weekdays': 5,
+      // "Alle hverdage (mandag til fredag)" is wire-encoded as a weekly
+      // rule whose weekday CSV is "1,2,3,4,5" — the backend's
+      // GetOccurrencesInWeek already loops the multi-day weekly branch.
+      // A dedicated RepeatType value (e.g. 5) would have no matching enum
+      // member on the server and the entire planning falls through to the
+      // default case, emitting zero occurrences for the week.
+      'weekdays': 2,
       'custom': 6,
       'customCurrent': 6,
     };
@@ -697,19 +703,20 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       repeatEndMode,
       repeatOccurrences,
       repeatUntilDate,
-      // CSV of JS getDay() weekday indices for weekly custom rules.
-      // Single-weekday rules (weeklyOne / everyNWeekOne) live in
-      // meta.weekday (singular); multi-day rules in meta.weekdays (plural).
-      // The service helper collapses both shapes into the wire format so
-      // a Tuesday-only pick doesn't ship as null (which would otherwise let
-      // the server-stored DayOfWeek default of 0 win on reload, showing
-      // "Sunday" instead of the picked weekday). Sent as null for any
-      // non-custom rule (isCustomRule=false), which unconditionally clears
-      // any stale CSV the row may carry from a prior custom selection.
-      // See spec — Layer 3 / "explicit clearing rule".
+      // CSV of JS getDay() weekday indices for weekly rules. Single-weekday
+      // rules (weeklyOne / everyNWeekOne) live in meta.weekday (singular);
+      // multi-day rules in meta.weekdays (plural). The service helper
+      // collapses both shapes into the wire format. Built-in options carry
+      // their own meta (e.g. the "Alle hverdage" option ships
+      // weekdays=[1..5]) — read from there for non-custom rules so the
+      // weekday list reaches the backend. metaToWeekdaysCsv returns null
+      // for non-weekly metas, so daily/monthly/yearly built-ins still ship
+      // null and any stale CSV from a prior custom selection is cleared.
       repeatWeekdaysCsv: isCustomRule
         ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
-        : null,
+        : this.repeatService.metaToWeekdaysCsv(
+            this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
+          ),
       // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
       // ship this field at all, the request model had no DayOfMonth
       // property, and AreaRulePlanning.DayOfMonth defaulted to its int 0
