@@ -703,18 +703,23 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
       repeatEndMode,
       repeatOccurrences,
       repeatUntilDate,
-      // CSV of JS getDay() weekday indices for weekly rules. Single-weekday
-      // rules (weeklyOne / everyNWeekOne) live in meta.weekday (singular);
-      // multi-day rules in meta.weekdays (plural). The service helper
-      // collapses both shapes into the wire format. Built-in options carry
-      // their own meta (e.g. the "Alle hverdage" option ships
-      // weekdays=[1..5]) — read from there for non-custom rules so the
-      // weekday list reaches the backend. metaToWeekdaysCsv returns null
-      // for non-weekly metas, so daily/monthly/yearly built-ins still ship
-      // null and any stale CSV from a prior custom selection is cleared.
+      // CSV of JS getDay() weekday indices. Custom rules use whichever shape
+      // metaToWeekdaysCsv supports (single via meta.weekday, multi via
+      // meta.weekdays). For built-in non-custom rules we ONLY emit a CSV
+      // when the option's embedded meta is a multi-day pattern
+      // (meta.weekdays?.length > 0) — that's how the "Alle hverdage" preset
+      // ships its [1..5] payload. Single-day built-ins like 'weeklyOne'
+      // intentionally keep the legacy null payload so the backend's
+      // Week-case takes its 7-day stride path (CalendarService
+      // GetOccurrencesInWeek:2326) rather than the multi-day anchor path —
+      // the two paths are not identical under edit/move flows that
+      // calendar-resize.spec.ts depends on.
       repeatWeekdaysCsv: isCustomRule
         ? this.repeatService.metaToWeekdaysCsv(this.customRepeatMeta)
-        : this.repeatService.metaToWeekdaysCsv(
+        : ((meta) =>
+            meta?.weekdays?.length
+              ? this.repeatService.metaToWeekdaysCsv(meta)
+              : null)(
             this.repeatOptions.find(o => o.value === repeatRuleValue)?.meta ?? null,
           ),
       // Day-of-month for monthly + yearly rules. Pre-fix the modal didn't
