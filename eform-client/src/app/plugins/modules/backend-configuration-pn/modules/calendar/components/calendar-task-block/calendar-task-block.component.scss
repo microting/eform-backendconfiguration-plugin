@@ -7,7 +7,7 @@
   cursor: pointer;
   padding: 2px 4px;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 4px;
   border: 2px solid white;
   transition:
@@ -144,6 +144,48 @@
     .task-time {
       font-size: 10px;
       opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // Compact layout for cards under 40 px tall. Single inline row with the
+  // time sitting immediately after the title (left-aligned, not pinned
+  // right). Title shrinks to ellipsis first; the time stays whole.
+  //
+  // Vertical fit is the tight constraint here: a 15-min slot is clamped to
+  // 20 px tall, of which 4 px is border and 4 px is padding by default,
+  // leaving only 12 px for text. We trim padding to 1 px top/bottom,
+  // center-align the body, and force line-height to 1 so an 11 px line
+  // doesn't get clipped by a default 1.2-1.4 line-height box.
+  &.compact {
+    font-size: 11px;
+    line-height: 1;
+    padding-top: 1px;
+    padding-bottom: 1px;
+
+    .task-block-body { align-items: center; }
+
+    .task-content {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      line-height: 1;
+
+      .task-title { flex: 0 1 auto; min-width: 0; }
+      .task-time  { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+    }
+
+    // The completion disc shares the card's vertical space; a 16 px disc
+    // clips inside a ~14 px content area on a 15-min slot. Match the type
+    // and force a 1.0 line-height so Material's default leading doesn't
+    // re-introduce the same clipping.
+    .completion-btn mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      line-height: 1;
     }
   }
 }
