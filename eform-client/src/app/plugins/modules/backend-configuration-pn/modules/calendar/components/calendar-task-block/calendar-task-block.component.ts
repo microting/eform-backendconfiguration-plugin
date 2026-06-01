@@ -51,6 +51,16 @@ export class CalendarTaskBlockComponent {
     return Math.max(dur * this.hourHeight - 4, 20);
   }
 
+  // Cards shorter than 40 px can't fit the two-row stack without clipping
+  // the title or wrapping the time. Below the threshold, the template
+  // switches to a single inline row (title + time on the same baseline)
+  // and shrinks the type and the completion disc to match. 40 px lands
+  // between a 45-min slot (~35 px) and a 60-min slot (~48 px) at the
+  // default HOUR_HEIGHT, so it's a natural break.
+  get isCompact(): boolean {
+    return this.heightPx < 40;
+  }
+
   // Google-Calendar-style cascade-with-overlap. When raised, the card jumps
   // above all others in its conflict group and its right edge extends to
   // the column's right edge (the left edge stays put — see design spec
