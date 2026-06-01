@@ -186,6 +186,20 @@ describe('CalendarRepeatService', () => {
       opts.filter(o => o.value !== 'none' && o.value !== 'custom')
         .forEach(o => expect(o.meta).toBeDefined());
     });
+
+    // Guard for the "Alle hverdage (mandag til fredag)" save bug: the
+    // modal's save path emits repeatWeekdaysCsv by passing this option's
+    // meta to metaToWeekdaysCsv. If the meta drifts (e.g. someone changes
+    // weekdays:[1..5] to a different shape), the backend reverts to
+    // emitting zero Mon-Fri occurrences for the week.
+    it('weekdays option carries weeklyMulti meta with weekdays [1..5]', () => {
+      const opts = service.buildRepeatSelectOptions(monday);
+      const wkOpt = opts.find(o => o.value === 'weekdays');
+      expect(wkOpt).toBeDefined();
+      expect(wkOpt!.meta!.kind).toBe('weeklyMulti');
+      expect(wkOpt!.meta!.weekdays).toEqual([1, 2, 3, 4, 5]);
+      expect(service.metaToWeekdaysCsv(wkOpt!.meta!)).toBe('1,2,3,4,5');
+    });
   });
 
   // ─── buildMetaFromCustomConfig ────────────────────────────────────────────
