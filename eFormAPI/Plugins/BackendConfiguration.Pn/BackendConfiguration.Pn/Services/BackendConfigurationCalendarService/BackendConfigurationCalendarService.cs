@@ -2340,16 +2340,32 @@ public class BackendConfigurationCalendarService(
                     // Multi-day path: only emit occurrences in this week if
                     // the requested week is a multiple of repeatEvery weeks
                     // past the anchor week (Sunday-based, matches JS getDay).
+                    //
+                    // The stride check still uses Sunday-aligned weeks so the
+                    // bucket math is independent of the caller's week-start
+                    // convention. But the per-day projection MUST be relative
+                    // to the caller's weekStart, because the caller's week
+                    // may be Mon-Sun while wd uses JS getDay() (Sun=0..Sat=6).
+                    // Old code wrote `weekStartAligned.AddDays(wd)` which for
+                    // a Mon-Sun week with weekStart=Mon and weekStartAligned=
+                    // the prior Sun produced wd=0 → the Sun BEFORE the week,
+                    // then filtered it out — so Sunday at the END of the week
+                    // was never emitted. Project from weekStart instead.
                     var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
                     var weekStartAligned = weekStart.Date.AddDays(-(int)weekStart.Date.DayOfWeek);
                     var weeksFromAnchor = (weekStartAligned - anchorWeekStart).Days / 7;
                     if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                     {
+                        var weekStartDow = (int)weekStart.Date.DayOfWeek;
                         foreach (var wd in weekdays)
                         {
-                            var candidate = weekStartAligned.AddDays(wd);
+                            // Days from weekStart to the date in the same
+                            // 7-day window with DayOfWeek == wd.
+                            var offset = ((wd - weekStartDow) % 7 + 7) % 7;
+                            var candidate = weekStart.Date.AddDays(offset);
                             if (candidate < startDate) continue;
-                            if (candidate < weekStart || candidate > weekEnd) continue;
+                            // candidate is by construction in [weekStart,
+                            // weekStart+6] — no further bounds guard needed.
                             occurrences.Add(candidate);
                         }
                     }
