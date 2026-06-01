@@ -251,6 +251,8 @@ public class EventsGrpcService(
 
         foreach (var task in result.Model)
         {
+            if (!task.Status) continue;
+
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
 
             var comment = envelope?.EventComment?.Text ?? string.Empty;
@@ -1006,6 +1008,8 @@ public class EventsGrpcService(
 
         foreach (var task in result.Model)
         {
+            if (!task.Status) continue;
+
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
             var comment = envelope?.EventComment?.Text ?? string.Empty;
 
