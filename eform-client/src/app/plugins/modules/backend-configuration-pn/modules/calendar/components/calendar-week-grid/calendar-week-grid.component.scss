@@ -203,6 +203,15 @@
 .day-cell-content {
   display: block;
   position: relative;
+  // Establish a local stacking context so task-block z-indexes (10, 11,
+  // 12, …) stay contained below the sticky day-header row. Without this,
+  // task-blocks bubble up to the nearest ancestor stacking context — past
+  // the .mat-mdc-header-row (z-index: 11 in the workspace theme) — and a
+  // cascaded second/third card can tie with or exceed the header z, so
+  // events at the top of the visible scroll range draw over the header.
+  // Setting z-index here doesn't change ordering of cards within the day
+  // column (the cascade still works); it only re-parents the comparison.
+  z-index: 1;
   border-left: 1px solid #dadce0;
   overflow: visible;
 }
