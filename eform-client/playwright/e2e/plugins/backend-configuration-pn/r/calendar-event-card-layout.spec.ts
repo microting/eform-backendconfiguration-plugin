@@ -179,20 +179,28 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     await calendarPage.openCreateModalOnCurrentWeek(2, 10);
     await calendarPage.fillAndSaveEvent(`${title}-tall`, { endTime: '11:30' });
 
-    const compactTime = calendarPage
-      .findEventBlock(`${title}-compact`)
-      .locator('.task-time');
-    const tallTime = calendarPage
-      .findEventBlock(`${title}-tall`)
-      .locator('.task-time');
+    // Title is known to be one line (it has nowrap + ellipsis). Time on the
+    // same single-line rule should be ≈ one line tall. We compare against
+    // the title's box rather than a hard pixel bound because the line-height
+    // inheritance differs between local dev (~14 px) and CI (~22 px) — a
+    // 22 px tall .task-time is still one line if the title beside it is
+    // also 22 px tall (both inherit the same "normal" line-height from the
+    // parent). A wrap would push .task-time to ≥ 1.6 × the title height.
+    const compactBlock = calendarPage.findEventBlock(`${title}-compact`);
+    const tallBlock = calendarPage.findEventBlock(`${title}-tall`);
 
-    const compactBox = await compactTime.boundingBox();
-    const tallBox = await tallTime.boundingBox();
-    expect(compactBox).not.toBeNull();
-    expect(tallBox).not.toBeNull();
-    // ~10–12 px for a single line; > 14 px would indicate a 2-line wrap.
-    expect(compactBox!.height).toBeLessThanOrEqual(14);
-    expect(tallBox!.height).toBeLessThanOrEqual(14);
+    const compactTimeBox = await compactBlock.locator('.task-time').boundingBox();
+    const compactTitleBox = await compactBlock.locator('.task-title').boundingBox();
+    const tallTimeBox = await tallBlock.locator('.task-time').boundingBox();
+    const tallTitleBox = await tallBlock.locator('.task-title').boundingBox();
+
+    expect(compactTimeBox).not.toBeNull();
+    expect(compactTitleBox).not.toBeNull();
+    expect(tallTimeBox).not.toBeNull();
+    expect(tallTitleBox).not.toBeNull();
+
+    expect(compactTimeBox!.height).toBeLessThanOrEqual(compactTitleBox!.height * 1.6);
+    expect(tallTimeBox!.height).toBeLessThanOrEqual(tallTitleBox!.height * 1.6);
   });
 
   // =======================================================================
