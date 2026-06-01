@@ -1,6 +1,7 @@
 <div
   class="task-block"
   [class.completed]="task.completed"
+  [class.compact]="isCompact"
   [class.gcal-task--inactive]="task.status === false"
   [class.resizing]="resizing"
   [class.raised]="raised"
@@ -36,7 +37,7 @@
 
     <div class="task-content">
       <div class="task-title"><span *ngIf="showId" class="task-id">{{ task.id }} </span>{{ task.title }}</div>
-      <div class="task-time" *ngIf="task.duration >= 0.5">{{ displayStartText }} – {{ displayEndText }}</div>
+      <div class="task-time" *ngIf="isCompact || task.duration >= 0.5">{{ displayStartText }} – {{ displayEndText }}</div>
     </div>
   </div>
 
