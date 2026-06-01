@@ -103,6 +103,30 @@
   min-width: 0;
 }
 
+// Description box: auto-grows with content (see growTextarea) and stays
+// user-resizable via the native vertical drag handle. Capped so a very long
+// description scrolls internally instead of pushing the popover off-screen.
+.gcal-description-textarea {
+  resize: vertical;
+  min-height: 40px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+// The global theme locks EVERY .mat-mdc-text-field-wrapper to a fixed 40px
+// height with overflow:hidden (canonical 40px outlined box) via
+// `body.theme-workspace .mat-mdc-form-field .mat-mdc-text-field-wrapper`
+// [specificity (0,3,1)]. That clips the auto-growing description textarea.
+// Scope an exception to this one field so the wrapper grows with the textarea
+// (the infix already does). The `.gcal-description-field.mat-mdc-form-field`
+// compound lifts this to (0,4,0) so it beats the theme rule, and !important
+// beats MDC's own declarations.
+:host ::ng-deep .gcal-description-field.mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  height: auto !important;
+  min-height: 40px !important;
+  overflow: visible !important;
+}
+
 // Stack paired slide-toggles (e.g. Aktiv/Inaktiv, Vis/Skjul overskredet)
 // one per line. Without this they default to mat-slide-toggle's inline-flex
 // and pack side-by-side until the row wraps.

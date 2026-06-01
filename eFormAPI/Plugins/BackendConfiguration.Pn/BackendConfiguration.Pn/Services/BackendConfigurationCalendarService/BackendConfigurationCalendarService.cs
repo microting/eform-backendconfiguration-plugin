@@ -211,7 +211,7 @@ public class BackendConfigurationCalendarService(
                 // Bug A fix (compliance 9810 / case 17701 retracted-rotation parity):
                 // when a compliance is filtered out by IsComplianceActionable (retracted SDK
                 // case, soft-deleted, or status==100), the recurrence-emit loop below STILL
-                // fires for that planning's occurrence date because compliancePlanningIdsInWeek
+                // fires for that planning's occurrence date because the compliance dedup set
                 // (built from the filtered actionable subset) no longer contains it. Without
                 // intervention the model emitted by that loop has ComplianceId=null /
                 // SdkCaseId=null, the device caches compliance_id=0 in Drift, and any
@@ -278,9 +278,7 @@ public class BackendConfigurationCalendarService(
             // ActionableOnly callers is actionable ∪ removed-completed so the recurrence-
             // emit loop doesn't double-fire a date the worker just completed.
             var complianceDateSet = new HashSet<string>(
-                compliancesForDedup.Select(c => $"{c.PlanningId}:{c.Deadline:yyyy-MM-dd}"));
-            var compliancePlanningIdsInWeek = new HashSet<int>(
-                compliancesForDedup.Select(c => c.PlanningId));
+                compliancesForDedup.Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
 
             // 1. Query AreaRulePlannings (future/active and inactive tasks).
             // Inactive (Status=false) plannings are included so the calendar can
@@ -416,7 +414,14 @@ public class BackendConfigurationCalendarService(
 
                 foreach (var occurrenceDate in occurrences)
                 {
-                    if (compliancePlanningIdsInWeek.Contains(arp.ItemPlanningId))
+                    // Suppress recurrence-emit ONLY for the specific date(s) that
+                    // already have a compliance row (rendered by the compliance
+                    // loop below) — keyed per (planning, date). The previous gate
+                    // keyed per planningId, so completing ONE occurrence of a
+                    // multi-day series (e.g. Mon-Fri) created a compliance row
+                    // and then suppressed EVERY sibling occurrence, making the
+                    // other (uncompleted) days disappear from the week.
+                    if (complianceDateSet.Contains($"{arp.ItemPlanningId}:{occurrenceDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"))
                         continue;
 
                     CalendarOccurrenceException exception = null;
@@ -2351,23 +2356,34 @@ public class BackendConfigurationCalendarService(
                     // the prior Sun produced wd=0 → the Sun BEFORE the week,
                     // then filtered it out — so Sunday at the END of the week
                     // was never emitted. Project from weekStart instead.
+                    // Sunday-aligned anchor week (matches JS getDay numbering),
+                    // consistent with EnumerateOccurrences above.
                     var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
-                    var weekStartAligned = weekStart.Date.AddDays(-(int)weekStart.Date.DayOfWeek);
-                    var weeksFromAnchor = (weekStartAligned - anchorWeekStart).Days / 7;
-                    if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
+                    var weekStartDow = (int)weekStart.Date.DayOfWeek;
+                    foreach (var wd in weekdays)
                     {
-                        var weekStartDow = (int)weekStart.Date.DayOfWeek;
-                        foreach (var wd in weekdays)
-                        {
-                            // Days from weekStart to the date in the same
-                            // 7-day window with DayOfWeek == wd.
-                            var offset = ((wd - weekStartDow) % 7 + 7) % 7;
-                            var candidate = weekStart.Date.AddDays(offset);
-                            if (candidate < startDate) continue;
-                            // candidate is by construction in [weekStart,
-                            // weekStart+6] — no further bounds guard needed.
+                        // Days from weekStart to the date in the same
+                        // 7-day window with DayOfWeek == wd. candidate is by
+                        // construction in [weekStart, weekStart+6].
+                        var offset = ((wd - weekStartDow) % 7 + 7) % 7;
+                        var candidate = weekStart.Date.AddDays(offset);
+                        if (candidate < startDate) continue;
+                        // Gate the stride PER CANDIDATE on the candidate's own
+                        // Sunday-aligned week. A Mon-Sun caller week straddles
+                        // TWO Sunday-aligned weeks (Mon-Sat in one, the trailing
+                        // Sunday in the next), so a single gate computed from
+                        // weekStart's Sunday-week wrongly rejected an occurrence
+                        // whose anchor landed on that trailing Sunday
+                        // (weeksFromAnchor = -1) — the event disappeared from
+                        // its own week after an edit moved the StartDate onto a
+                        // Sunday. Computing weeksFromAnchor from `candidate`
+                        // instead also fixes mixed multi-day CSVs (e.g. "3,0"
+                        // Wed+Sun) whose days fall in different Sunday-weeks
+                        // within one caller week.
+                        var candidateWeekStart = candidate.AddDays(-(int)candidate.DayOfWeek);
+                        var weeksFromAnchor = (candidateWeekStart - anchorWeekStart).Days / 7;
+                        if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                             occurrences.Add(candidate);
-                        }
                     }
                 }
                 break;

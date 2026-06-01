@@ -90,6 +90,7 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'Repeat' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventRepeat"
             [formControl]="repeatControl"
             [items]="repeatOptions"
             bindValue="value"
@@ -233,9 +234,11 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">notes</mat-icon>
       <div class="gcal-row-content">
-        <mat-form-field class="w-100">
+        <mat-form-field class="w-100 gcal-description-field">
           <mat-label>{{ 'Description' | translate }}</mat-label>
-          <textarea id="calendarEventDescription" matInput [formControl]="descriptionControl" rows="2"></textarea>
+          <textarea #descriptionTextarea id="calendarEventDescription" class="gcal-description-textarea" matInput
+                    [formControl]="descriptionControl" rows="2"
+                    (input)="autoGrowTextarea($event)"></textarea>
         </mat-form-field>
       </div>
     </div>

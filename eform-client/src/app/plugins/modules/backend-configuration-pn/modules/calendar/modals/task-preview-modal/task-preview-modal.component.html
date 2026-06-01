@@ -48,9 +48,9 @@
     </div>
 
     <!-- Description -->
-    <div class="preview-row" *ngIf="data.task.descriptionHtml">
+    <div class="preview-row preview-row--description" *ngIf="data.task.descriptionHtml">
       <mat-icon class="preview-icon">notes</mat-icon>
-      <span [innerHTML]="data.task.descriptionHtml"></span>
+      <span class="preview-description">{{ data.task.descriptionHtml }}</span>
     </div>
 
     <!-- Drive link -->
