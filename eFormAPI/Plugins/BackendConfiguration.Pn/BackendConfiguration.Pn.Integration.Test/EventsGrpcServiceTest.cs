@@ -193,7 +193,8 @@ public class EventsGrpcServiceTest : TestBaseSetup
             TaskDate = "2026-05-19",
             StartHour = 8.5,
             Completed = false,
-            Color = "#abcdef"
+            Color = "#abcdef",
+            Status = true
         };
 
         var service = MakeServiceWithTask(task);
@@ -234,7 +235,8 @@ public class EventsGrpcServiceTest : TestBaseSetup
             Title = "edge",
             PropertyId = PropertyIdInt,
             TaskDate = "2026-05-19",
-            StartHour = startHour
+            StartHour = startHour,
+            Status = true
         };
 
         var service = MakeServiceWithTask(task);
