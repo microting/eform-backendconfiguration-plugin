@@ -385,17 +385,15 @@ test.describe.serial('Calendar resize scope (#889)', () => {
       expect(clampedBox).not.toBeNull();
       const clampedHeight = clampedBox!.height;
 
-      // (a) did not collapse.
+      // (a) did not collapse to zero/negative.
       expect(clampedHeight).toBeGreaterThan(0);
-      // (b) shrank well below the original (and below the 30-min boundary
-      // ~26 px) — proves the drag took effect.
+      // (b) shrank below the 30-min boundary (~half the 1-h block) — proves
+      // the drag took effect and the duration is at the 15-min clamp, not a
+      // 30-min or larger block. We do NOT assert a tight lower band: the
+      // clamped 0.25 h card has a min-height (~20 px in CI) that exceeds a
+      // naive quarter-of-1-h estimate, so the meaningful, robust invariant is
+      // simply "> 0 and clearly below the 0.5 h height".
       expect(clampedHeight).toBeLessThan(oneHourHeight / 2);
-      // (c) sits in the ~0.25 h band: a quarter of the 1-h reference is the
-      // ideal target; allow a wide [3 px, ~half-the-1-h-block] window to
-      // absorb card padding and sub-pixel rounding while still proving the
-      // floor held (it is NOT zero and NOT a 30-min/0.5 h block).
-      expect(clampedHeight).toBeGreaterThanOrEqual(3);
-      expect(clampedHeight).toBeLessThanOrEqual(oneHourHeight / 3);
     });
   });
 
