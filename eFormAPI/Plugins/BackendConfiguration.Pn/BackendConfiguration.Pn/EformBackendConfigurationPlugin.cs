@@ -47,6 +47,8 @@ using Infrastructure.Data.Seed.Data;
 using Infrastructure.Models.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -754,15 +756,27 @@ public class EformBackendConfigurationPlugin : IEformPlugin
 
         var chemicalsContextFactory = new ChemicalsContextFactory();
         var chemicalsDbContext = chemicalsContextFactory.CreateDbContext([chemicalBaseConnectionString]);
-        chemicalsDbContext.Database.Migrate();
+        var chemicalsHistoryRepo = chemicalsDbContext.GetService<IHistoryRepository>();
+        if (!chemicalsHistoryRepo.Exists() || chemicalsDbContext.Database.GetPendingMigrations().Any())
+        {
+            chemicalsDbContext.Database.Migrate();
+        }
 
         var caseTemplatePnContextFactory = new CaseTemplatePnContextFactory();
         var caseTemplateContext = caseTemplatePnContextFactory.CreateDbContext([documentsConnectionString]);
-        caseTemplateContext.Database.Migrate();
+        var caseTemplateHistoryRepo = caseTemplateContext.GetService<IHistoryRepository>();
+        if (!caseTemplateHistoryRepo.Exists() || caseTemplateContext.Database.GetPendingMigrations().Any())
+        {
+            caseTemplateContext.Database.Migrate();
+        }
 
         var contextFactory = new BackendConfigurationPnContextFactory();
         var context = contextFactory.CreateDbContext([connectionString]);
-        context.Database.Migrate();
+        var historyRepo = context.GetService<IHistoryRepository>();
+        if (!historyRepo.Exists() || context.Database.GetPendingMigrations().Any())
+        {
+            context.Database.Migrate();
+        }
 
         // Seed database
         SeedDatabase(connectionString);
@@ -777,7 +791,11 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // Ensure all pending migrations are applied before the backfill queries the schema
         var contextFactory = new BackendConfigurationPnContextFactory();
         using var migrationContext = contextFactory.CreateDbContext([_connectionString]);
-        migrationContext.Database.Migrate();
+        var migrationHistoryRepo = migrationContext.GetService<IHistoryRepository>();
+        if (!migrationHistoryRepo.Exists() || migrationContext.Database.GetPendingMigrations().Any())
+        {
+            migrationContext.Database.Migrate();
+        }
 
         using var scope = serviceProvider.CreateScope();
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
