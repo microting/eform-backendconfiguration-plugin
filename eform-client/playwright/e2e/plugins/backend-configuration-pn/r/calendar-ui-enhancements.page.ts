@@ -863,6 +863,106 @@ export class CalendarUiEnhancementsPage {
       .first();
   }
 
+  // ----- Delete flow (preview popover → scope modal | delete modal) --------
+
+  /**
+   * Open the preview popover for `title` and click its Delete button. The
+   * Delete button has no id (only the Edit/Copy buttons carry ids), so we
+   * reuse `getPreviewDeleteButton()` which matches by the `delete` mat-icon.
+   *
+   * After the click, the preview's `onDelete()` either:
+   *   - opens RepeatScopeModalComponent (`{mode:'delete'}`) for a recurring
+   *     series — the SAME modal as move/resize, so `pickScopeInModal` works;
+   *   - opens TaskDeleteModalComponent for a one-off.
+   * This helper does NOT wait for either — the caller asserts which modal
+   * appeared (D06) or drives the confirm flow (confirmDeleteScope /
+   * confirmOneOffDelete).
+   */
+  async openPreviewAndDelete(title: string): Promise<void> {
+    await this.openEventPreview(title);
+    await this.getPreviewDeleteButton().click();
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * For a RECURRING series: pick a scope in the RepeatScopeModal that the
+   * delete flow opens, then await the delete PUT (.../calendar/tasks/delete)
+   * AND the subsequent week reload (.../tasks/week POST) so the grid has
+   * re-rendered before the caller asserts. Mirrors confirmEditScope, but the
+   * committed network call is the delete PUT rather than the update PUT.
+   *
+   * Registers BOTH waiters BEFORE clicking Confirm so neither can miss its
+   * response (the deleteTask().subscribe → close('reload') → reload sequence
+   * is fast on CI boxes).
+   */
+  async confirmDeleteScope(scope: 'this' | 'thisAndFollowing' | 'all'): Promise<void> {
+    const deleteWait = this.page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks/delete')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 }
+    );
+    const reloadWait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.pickScopeInModal(scope);
+    await deleteWait;
+    await reloadWait;
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * For a ONE-OFF event: click Confirm in the TaskDeleteModal, then await the
+   * delete PUT (.../calendar/tasks/delete) AND the subsequent week reload.
+   * The TaskDeleteModal confirm button is `button.btn-delete` (the visible
+   * "Delete" label is locale-translated, so match by class — same convention
+   * as pickScopeInModal's `button.btn-primary`). Scope is irrelevant for a
+   * one-off (the component hardcodes scope 'this').
+   */
+  async confirmOneOffDelete(): Promise<void> {
+    const dialog = this.page.locator('app-task-delete-modal');
+    await dialog.waitFor({ state: 'visible', timeout: 10000 });
+    const deleteWait = this.page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks/delete')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 }
+    );
+    const reloadWait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await dialog.locator('button.btn-delete').click();
+    await deleteWait;
+    await reloadWait;
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Cancel an open TaskDeleteModal (the one-off delete-confirm dialog) via
+   * its Cancel button (`button.btn-cancel`), then wait for it to detach.
+   * Used by D06 to dismiss the modal without deleting.
+   */
+  async cancelOneOffDelete(): Promise<void> {
+    const dialog = this.page.locator('app-task-delete-modal');
+    await dialog.locator('button.btn-cancel').click();
+    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Cancel an open RepeatScopeModal via its Cancel button
+   * (`#repeatScopeCancelBtn`), then wait for it to detach. Used by D06 to
+   * dismiss the recurring-delete scope modal without deleting.
+   */
+  async cancelScopeModal(): Promise<void> {
+    const dialog = this.page.locator('app-repeat-scope-modal');
+    await dialog.locator('#repeatScopeCancelBtn').click();
+    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+    await this.page.waitForTimeout(300);
+  }
+
   // ----- Sticky day-of-week header (week + day views) ----------------------
 
   /**
