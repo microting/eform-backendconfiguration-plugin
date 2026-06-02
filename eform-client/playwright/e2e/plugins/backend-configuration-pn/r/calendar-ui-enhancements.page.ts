@@ -750,6 +750,42 @@ export class CalendarUiEnhancementsPage {
     return this.page.locator('.schedule-item').filter({ hasText: title }).first();
   }
 
+  /**
+   * Click the Copy/Duplicate button in the preview popover, then wait for the
+   * create-edit modal's title input to appear in copy mode. Mirrors
+   * `clickCopyInPreview` in l/calendar.page.ts (button id #calendarEventCopyBtn).
+   * The modal opens pre-populated from the source task (title gets the
+   * "Copy of " / "Kopi af " prefix), so we wait on the title input the same
+   * way clickEditInPreview does.
+   */
+  async clickCopyInPreview(): Promise<void> {
+    await this.getPreviewCopyButton().click();
+    await this.page
+      .locator('#calendarEventTitle')
+      .waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.waitForTimeout(800); // let the copy-mode form rehydrate
+  }
+
+  /**
+   * Read the current value of the create-edit modal's title input
+   * (#calendarEventTitle). Used to verify the copy-of prefix in copy mode.
+   * Mirrors `getCreateModalTitle` in l/calendar.page.ts.
+   */
+  async getCreateModalTitle(): Promise<string> {
+    return (await this.page.locator('#calendarEventTitle').inputValue()) || '';
+  }
+
+  /**
+   * Read the create-edit modal's Date field's displayed (locale long-format)
+   * value — the `formattedSelectedDate` rendered into `.gcal-date-field
+   * input[matInput]`. Used by the copy-date invariant check in P02.
+   */
+  async getCreateModalDateText(): Promise<string> {
+    return (
+      await this.page.locator('.gcal-date-field input[matInput]').first().inputValue()
+    ).trim();
+  }
+
   /** Edit button in the preview popover (week-grid + schedule both reuse it). */
   getPreviewEditButton(): Locator {
     return this.page.locator('#calendarEventEditBtn');
