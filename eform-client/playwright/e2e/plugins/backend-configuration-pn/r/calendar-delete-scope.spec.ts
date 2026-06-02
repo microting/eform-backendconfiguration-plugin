@@ -244,29 +244,28 @@ test.describe.serial('Calendar delete scope (#895)', () => {
   // opens the scope modal. Both are cancelled (no deletion) so the test
   // asserts only WHICH modal renders.
   // =======================================================================
-  test('D06: recurring delete opens the scope modal; one-off opens the delete modal', async ({ page }) => {
+  // Split into two tests so each runs on a fresh page (beforeEach reloads),
+  // avoiding a lingering preview/modal overlay from the first half blocking
+  // the second create.
+  test('D06a: one-off delete opens the simple delete modal', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
-
-    // ----- one-off → TaskDeleteModal -----
     const oneOffTitle = `D06off-${generateRandmString(5)}`;
-    const oneOffDay = 0; // Monday
-    await createSimpleEvent(page, calendarPage, oneOffTitle, oneOffDay, 8);
+    await createSimpleEvent(page, calendarPage, oneOffTitle, 0, 8); // Monday
 
     await calendarPage.openPreviewAndDelete(oneOffTitle);
     await expect(page.locator('app-task-delete-modal')).toBeVisible();
     await expect(page.locator('app-repeat-scope-modal')).toHaveCount(0);
-    // Cancel — leaves the one-off intact (cleaned up by afterAll).
     await calendarPage.cancelOneOffDelete();
+  });
 
-    // ----- recurring → RepeatScopeModal -----
+  test('D06b: recurring delete opens the scope modal', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
     const recTitle = `D06rec-${generateRandmString(5)}`;
-    const recDay = 1; // Tuesday — distinct from the one-off's Monday.
-    await createWeeklyEvent(page, calendarPage, recTitle, recDay, 8);
+    await createWeeklyEvent(page, calendarPage, recTitle, 1, 8); // Tuesday
 
     await calendarPage.openPreviewAndDelete(recTitle);
     await expect(page.locator('app-repeat-scope-modal')).toBeVisible();
     await expect(page.locator('app-task-delete-modal')).toHaveCount(0);
-    // Cancel — leaves the recurring series intact.
     await calendarPage.cancelScopeModal();
   });
 
