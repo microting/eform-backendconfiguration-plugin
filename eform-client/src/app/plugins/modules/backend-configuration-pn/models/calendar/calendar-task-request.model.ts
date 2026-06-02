@@ -23,6 +23,8 @@ export interface CalendarTaskCreateModel {
 export interface CalendarTaskUpdateModel extends CalendarTaskCreateModel {
   id: number;
   repeatSeriesId?: string;
+  // Pre-edit occurrence date ("YYYY-MM-DD") for scope-aware edits (#885).
+  originalDate?: string;
 }
 
 export type RepeatEditScope = 'this' | 'thisAndFollowing' | 'all';
