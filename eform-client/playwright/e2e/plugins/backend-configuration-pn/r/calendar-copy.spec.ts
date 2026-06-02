@@ -375,8 +375,10 @@ test.describe.serial('Calendar copy flows (#886)', () => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `P04-${generateRandmString(5)}`;
 
-    // Source: Wednesday next week at 09:00.
-    await calendarPage.openCreateModalAtSlot(2, 9);
+    // Source: Saturday next week at 09:00. Saturday avoids P03's Mon/Wed/Fri
+    // recurring occurrences (which would otherwise sit on this week's
+    // Wednesday and intercept the empty-slot click).
+    await calendarPage.openCreateModalAtSlot(5, 9);
     await fillRequiredFields(page, title);
 
     // Stage one PDF before save — queues as a pending row, uploaded post-create.
