@@ -104,7 +104,8 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
     /// Seeds Area→Property→AreaRule(+translation)→Planning→AreaRulePlanning→
     /// CalendarConfiguration for a weekly series. Returns the ARP Id.
     /// </summary>
-    private async Task<int> SeedWeeklyTask(DateTime startDate, string title = "Original Title")
+    private async Task<int> SeedWeeklyTask(DateTime startDate, string title = "Original Title",
+        int arpRepeatType = 2)
     {
         var area = new Area
         {
@@ -151,7 +152,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         {
             AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
             ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
-            RepeatType = 2, RepeatEvery = 1,
+            RepeatType = arpRepeatType, RepeatEvery = 1,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
@@ -277,6 +278,33 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         Assert.That(exceptions, Has.Count.EqualTo(1), "should update the existing row, not create a duplicate");
         Assert.That(exceptions[0].StartHour, Is.EqualTo(13.0));
         Assert.That(exceptions[0].Title, Is.EqualTo("Edited Title"));
+    }
+
+    [Test]
+    public async Task UpdateTask_ScopeThis_OnNonRecurringTask_UpdatesSeries_NoException()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        // One-off event (RepeatType=0). The frontend sends scope="this" for
+        // non-recurring edits — the backend must treat it as a full update.
+        var arpId = await SeedWeeklyTask(startDate, arpRepeatType: 0);
+
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday, startHour: 15.0);
+        model.RepeatType = 0;
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        // Must NOT create an occurrence exception for a one-off...
+        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        Assert.That(exceptions, Is.Empty);
+        // ...and must update the event itself (wizard + CalendarConfiguration).
+        await _taskWizardService.Received().UpdateTask(Arg.Any<TaskWizardCreateModel>());
+        var calConfig = await BackendConfigurationPnDbContext.CalendarConfigurations
+            .FirstAsync(x => x.AreaRulePlanningId == arpId);
+        Assert.That(calConfig.StartHour, Is.EqualTo(15.0));
     }
 
     [Test]

@@ -1022,6 +1022,25 @@ public class BackendConfigurationCalendarService(
             // ResizeTask/DeleteTask. Only "all" (the default) falls through to
             // the full-series wizard update below.
             var scope = updateModel.Scope ?? "all";
+
+            // Scope only diverges for a recurring series. A one-off event has a
+            // single occurrence, so "this"/"thisAndFollowing" are equivalent to
+            // "all". The frontend defaults a non-recurring edit's scope to
+            // "this" (and always sends originalDate); without this guard such an
+            // edit would be stored as an occurrence exception instead of
+            // updating the event itself.
+            if (scope != "all")
+            {
+                var isRecurringSeries = await backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == updateModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .AnyAsync(x => x.RepeatType.HasValue && x.RepeatType.Value > 0);
+                if (!isRecurringSeries)
+                {
+                    scope = "all";
+                }
+            }
+
             if (scope == "this" && !string.IsNullOrEmpty(updateModel.OriginalDate))
             {
                 return await UpdateTaskThisOccurrence(updateModel);
