@@ -539,6 +539,62 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
+   * Create a single (non-recurring) event in the create-modal currently
+   * open, with the given title, start time, end time, and required dropdowns
+   * (first eForm + first planning tag + first assignee, mirroring
+   * createSimpleEvent in calendar-resize.spec.ts). Awaits the create POST
+   * and waits for the resulting `.task-block` to appear on the grid.
+   *
+   * The modal must already be open at the desired day slot — callers should
+   * pair this with `openCreateModalAtSlot(dayOffset, startHour)` first.
+   */
+  async fillAndSaveEvent(
+    title: string,
+    options: { endTime?: string; startTime?: string } = {},
+  ): Promise<void> {
+    await this.page.locator('#calendarEventTitle').fill(title);
+
+    if (options.startTime) {
+      await this.typeStartTime(options.startTime, 'Enter');
+    }
+    if (options.endTime) {
+      await this.typeEndTime(options.endTime, 'Enter');
+    }
+
+    const eform = this.page.locator('#calendarEventEform');
+    await eform.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.page.waitForTimeout(300);
+
+    const planningTag = this.page.locator('#calendarEventPlanningTag');
+    await planningTag.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.page.waitForTimeout(300);
+
+    const assignee = this.page.locator('#calendarEventAssignee');
+    await assignee.click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.page.locator('#calendarEventTitle').click();
+    await this.page.waitForTimeout(300);
+
+    const createResp = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+        && !r.url().includes('/tasks/week')
+        && !r.url().includes('/tasks/move')
+        && !r.url().includes('/tasks/resize')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.page.locator('#calendarEventSaveBtn').click();
+    await createResp;
+    await this.page.waitForTimeout(1500);
+    await this.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+  }
+
+  /**
    * Set the event-modal Repeat dropdown to "Weekly on {weekday}". Picks by
    * position to avoid locale-dependent label matching; option order is the
    * same table documented on `selectRepeatPreset` below (index 2 is
