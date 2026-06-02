@@ -336,6 +336,93 @@ export class CalendarUiEnhancementsPage {
   }
 
   /**
+   * Read the visible title text on a task block (the `.task-title` element,
+   * minus any leading admin task-id span). Used to distinguish per-occurrence
+   * title overrides from the series title.
+   */
+  async getEventTitleText(title: string): Promise<string> {
+    const block = this.findEventBlock(title);
+    const titleEl = block.locator('.task-title');
+    if ((await titleEl.count()) === 0) return '';
+    return ((await titleEl.first().textContent()) ?? '').trim();
+  }
+
+  // ----- Edit flow (preview popover → edit modal) --------------------------
+
+  /**
+   * Click a task block's body to open the preview popover
+   * (`app-task-preview-modal`). The popover renders Edit / Duplicate /
+   * Delete actions. The click target is `.task-block-body` (carries the
+   * (click)=onBodyClick handler) rather than the resize handles.
+   */
+  async openEventPreview(title: string): Promise<void> {
+    const body = this.findEventBlock(title).locator('.task-block-body');
+    await body.click();
+    await this.page
+      .locator('app-task-preview-modal')
+      .waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Click Edit in the preview popover and wait for the edit modal's title
+   * input to appear and rehydrate. Mirrors clickEditInPreview in
+   * l/calendar.page.ts.
+   */
+  async clickEditInPreview(): Promise<void> {
+    await this.getPreviewEditButton().click();
+    await this.page
+      .locator('#calendarEventTitle')
+      .waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Convenience: open the preview for `title`, then click Edit. Leaves the
+   * edit modal open for the caller to mutate fields + save.
+   */
+  async openEditModal(title: string): Promise<void> {
+    await this.openEventPreview(title);
+    await this.clickEditInPreview();
+  }
+
+  /**
+   * Click Save in the (already-open) edit modal. For a recurring-series edit
+   * the backend save is deferred until the RepeatScopeModal is confirmed, so
+   * this helper does NOT await any network — the caller drives the scope
+   * modal + reload (mirrors the dragResizeHandle awaitReload:false pattern).
+   */
+  async clickSaveInEditModal(): Promise<void> {
+    await this.page.locator('#calendarEventSaveBtn').click();
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Pick a scope in the RepeatScopeModal that pops on a recurring-series
+   * edit-save, then await the resulting updateTask PUT (.../tasks) AND the
+   * subsequent week reload (.../tasks/week) so the grid has re-rendered
+   * before the caller asserts. The RepeatScopeModal is shared with
+   * move/resize/delete; the radio + Confirm wiring is identical, so this
+   * reuses pickScopeInModal under the hood.
+   */
+  async confirmEditScope(scope: 'this' | 'thisAndFollowing' | 'all'): Promise<void> {
+    const updateWait = this.page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 }
+    );
+    const reloadWait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.pickScopeInModal(scope);
+    await updateWait;
+    await reloadWait;
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
    * Drag a resize handle on a task block. `edge` is which edge to grab
    * (top = changes start time, bottom = changes end/duration). `deltaPx`
    * is signed: positive moves down, negative up.
