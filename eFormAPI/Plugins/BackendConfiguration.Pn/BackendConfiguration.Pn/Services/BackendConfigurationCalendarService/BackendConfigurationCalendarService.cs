@@ -1050,6 +1050,33 @@ public class BackendConfigurationCalendarService(
                 return await UpdateTaskThisAndFollowing(updateModel);
             }
 
+            // scope == "all": full-series update via the wizard. Preserve the
+            // series anchor when the edited occurrence's date was NOT changed
+            // (a time/field-only edit) — otherwise the wizard would relocate
+            // StartDate onto the clicked occurrence and drop earlier
+            // occurrences, the same #885 symptom for the "all" case (E08 wants
+            // every occurrence, past and future, to reflect the change). A
+            // genuine date change, or a one-off (whose anchor == its own date),
+            // still flows through to relocate as before.
+            var wizardStartDate = updateModel.StartDate;
+            if (!string.IsNullOrEmpty(updateModel.OriginalDate))
+            {
+                var parsedOriginalDate = DateTime.Parse(updateModel.OriginalDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                if (updateModel.StartDate.Date == parsedOriginalDate)
+                {
+                    var currentStartDate = await backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(x => x.Id == updateModel.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => x.StartDate)
+                        .FirstOrDefaultAsync();
+                    if (currentStartDate.HasValue)
+                    {
+                        wizardStartDate = currentStartDate.Value;
+                    }
+                }
+            }
+
             // Delegate to TaskWizard service for full task field updates
             var wizardModel = new TaskWizardCreateModel
             {
@@ -1060,7 +1087,7 @@ public class BackendConfigurationCalendarService(
                 TagIds = updateModel.TagIds,
                 Translates = updateModel.Translates,
                 EformId = updateModel.EformId,
-                StartDate = updateModel.StartDate,
+                StartDate = wizardStartDate,
                 RepeatType = (Infrastructure.Enums.RepeatType)updateModel.RepeatType,
                 RepeatEvery = updateModel.RepeatEvery,
                 Status = (Infrastructure.Enums.TaskWizardStatuses)updateModel.Status,

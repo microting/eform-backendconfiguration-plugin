@@ -363,6 +363,29 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
     }
 
     [Test]
+    public async Task UpdateTask_ScopeAll_TimeOnlyEdit_PreservesSeriesAnchor()
+    {
+        var nextMonday = GetNextMonday();
+        var seriesStart = DateTime.SpecifyKind(nextMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(seriesStart);
+
+        // Edit a LATER occurrence (week +2) with scope=all, changing only the
+        // start hour — the occurrence date is unchanged (StartDate==originalDate).
+        var laterOccurrence = nextMonday.AddDays(14);
+        var model = BuildEdit(arpId, laterOccurrence, "all", laterOccurrence, startHour: 8.0);
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        // The wizard must receive the ORIGINAL series anchor, not the clicked
+        // occurrence's date — otherwise earlier occurrences would be dropped.
+        await _taskWizardService.Received().UpdateTask(
+            Arg.Is<TaskWizardCreateModel>(m => m.StartDate == seriesStart));
+        var calConfig = await BackendConfigurationPnDbContext!.CalendarConfigurations
+            .FirstAsync(x => x.AreaRulePlanningId == arpId);
+        Assert.That(calConfig.StartHour, Is.EqualTo(8.0));
+    }
+
+    [Test]
     public async Task UpdateTask_ScopeThisAndFollowing_AnchorsPastOccurrences_KeepsSeriesStart()
     {
         var nextMonday = GetNextMonday();

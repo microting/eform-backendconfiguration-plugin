@@ -824,7 +824,12 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       });
     };
 
-    if (this.isEditMode && this.data.task?.repeatSeriesId) {
+    // Show the scope picker for a recurring series — keyed on repeatRule
+    // (the same signal move/resize use), NOT repeatSeriesId which is never
+    // populated on calendar tasks. Without this the picker never opened and
+    // every recurring edit fell through to doSave() with the default scope.
+    const isRepeating = !!this.data.task?.repeatRule && this.data.task.repeatRule !== 'none';
+    if (this.isEditMode && isRepeating) {
       const ref = this.dialog.open(
         RepeatScopeModalComponent,
         dialogConfigHelper(this.overlay, {mode: 'edit'})
