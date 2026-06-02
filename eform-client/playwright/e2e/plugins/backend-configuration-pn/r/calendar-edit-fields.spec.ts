@@ -287,7 +287,9 @@ test.describe.serial('Calendar edit-event field combinations (#891)', () => {
     page: import('@playwright/test').Page,
   ): Promise<any> {
     const reqPromise = page.waitForRequest(
-      r => isEditPut(r.request().method(), r.url()),
+      // waitForRequest's callback receives a Request directly (not a Response),
+      // so use r.method(), not r.request().method().
+      r => isEditPut(r.method(), r.url()),
       { timeout: 30000 }
     );
     const respPromise = page.waitForResponse(
