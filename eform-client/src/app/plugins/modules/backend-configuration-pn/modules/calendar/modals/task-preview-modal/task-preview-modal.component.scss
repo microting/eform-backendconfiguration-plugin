@@ -80,3 +80,19 @@
   margin-right: 16px;
   flex-shrink: 0;
 }
+
+// Description can span multiple lines: top-align the icon and preserve the
+// line breaks / whitespace the user typed in the Beskrivelse field so the
+// formatting is reflected here. Long words wrap instead of overflowing.
+.preview-row--description {
+  align-items: flex-start;
+
+  .preview-icon {
+    margin-top: 7px;
+  }
+}
+
+.preview-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

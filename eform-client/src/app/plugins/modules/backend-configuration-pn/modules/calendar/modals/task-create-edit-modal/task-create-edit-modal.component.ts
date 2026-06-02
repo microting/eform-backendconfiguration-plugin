@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Inject, OnDestroy, OnInit, Optional, Output} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Inject, OnDestroy, OnInit, Optional, Output, ViewChild} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -66,9 +66,10 @@ declare const google: any;
   templateUrl: './task-create-edit-modal.component.html',
   styleUrls: ['./task-create-edit-modal.component.scss'],
 })
-export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
+export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() popoverClose = new EventEmitter<boolean | null>();
   @Output() timeChanged = new EventEmitter<{startHour: number; endHour: number}>();
+  @ViewChild('descriptionTextarea') descriptionTextarea?: ElementRef<HTMLTextAreaElement>;
   usePopoverMode = false;
 
   isEditMode = false;
@@ -565,9 +566,33 @@ export class TaskCreateEditModalComponent implements OnInit, OnDestroy {
   };
 
   autoGrowTextarea(event: Event) {
-    const el = event.target as HTMLTextAreaElement;
+    this.growTextarea(event.target as HTMLTextAreaElement);
+  }
+
+  /**
+   * Auto-expand the description textarea to fit its content. Resetting to
+   * 'auto' first lets it both grow (typing more lines) and shrink (deleting
+   * lines) back to the content height. The `resize: vertical` handle (see
+   * SCSS) still lets the user drag it taller; the next keystroke re-fits to
+   * content, which is the conventional "autosize + resizable" behaviour.
+   */
+  private growTextarea(el: HTMLTextAreaElement | null) {
+    if (!el) return;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+  }
+
+  /**
+   * Size the description box to fit any pre-existing (edit/copy mode) text so
+   * a multi-line description opens fully expanded instead of clipped to two
+   * rows. Deferred a tick so the formControl value has rendered.
+   */
+  ngAfterViewInit() {
+    setTimeout(() => {
+      if (this.descriptionControl.value) {
+        this.growTextarea(this.descriptionTextarea?.nativeElement ?? null);
+      }
+    });
   }
 
   private emitTimeChanged() {
