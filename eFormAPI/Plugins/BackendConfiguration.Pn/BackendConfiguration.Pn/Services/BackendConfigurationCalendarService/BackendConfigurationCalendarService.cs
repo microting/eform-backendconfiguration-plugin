@@ -478,6 +478,9 @@ public class BackendConfigurationCalendarService(
                         Attachments = MapAttachments(arp)
                     };
 
+                    // Per-occurrence field overrides from a "this"-scope edit (#885).
+                    ApplyOccurrenceFieldOverrides(model, exception);
+
                     // Bug A fix: if a non-actionable compliance was stripped for this
                     // (planningId, occurrenceDate), propagate its ComplianceId + SdkCaseId
                     // so any device-side write routes through the PK lookup. Leave
@@ -558,6 +561,8 @@ public class BackendConfigurationCalendarService(
                             Attachments = MapAttachments(arp)
                         };
 
+                        ApplyOccurrenceFieldOverrides(orphanModel, orphan);
+
                         if (ShouldIncludeTask(orphanModel, requestModel))
                         {
                             result.Add(orphanModel);
@@ -633,6 +638,8 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = movedPlanning.Description,
                     Attachments = MapAttachments(arp)
                 };
+
+                ApplyOccurrenceFieldOverrides(movedModel, movedIn);
 
                 if (ShouldIncludeTask(movedModel, requestModel))
                 {
@@ -833,6 +840,8 @@ public class BackendConfigurationCalendarService(
                     ExceptionId = complianceException?.Id,
                 };
 
+                ApplyOccurrenceFieldOverrides(model, complianceException);
+
                 if (ShouldIncludeTask(model, requestModel))
                 {
                     result.Add(model);
@@ -1006,6 +1015,41 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
             }
 
+            // Scope-aware edit (issue #885). "this"/"thisAndFollowing" must NOT
+            // relocate the series anchor (which the task wizard's StartDate
+            // write does); they record per-occurrence overrides on a
+            // CalendarOccurrenceException instead, mirroring MoveTask/
+            // ResizeTask/DeleteTask. Only "all" (the default) falls through to
+            // the full-series wizard update below.
+            var scope = updateModel.Scope ?? "all";
+
+            // Scope only diverges for a recurring series. A one-off event has a
+            // single occurrence, so "this"/"thisAndFollowing" are equivalent to
+            // "all". The frontend defaults a non-recurring edit's scope to
+            // "this" (and always sends originalDate); without this guard such an
+            // edit would be stored as an occurrence exception instead of
+            // updating the event itself.
+            if (scope != "all")
+            {
+                var isRecurringSeries = await backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == updateModel.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .AnyAsync(x => x.RepeatType.HasValue && x.RepeatType.Value > 0);
+                if (!isRecurringSeries)
+                {
+                    scope = "all";
+                }
+            }
+
+            if (scope == "this" && !string.IsNullOrEmpty(updateModel.OriginalDate))
+            {
+                return await UpdateTaskThisOccurrence(updateModel);
+            }
+            if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(updateModel.OriginalDate))
+            {
+                return await UpdateTaskThisAndFollowing(updateModel);
+            }
+
             // Delegate to TaskWizard service for full task field updates
             var wizardModel = new TaskWizardCreateModel
             {
@@ -1110,6 +1154,257 @@ public class BackendConfigurationCalendarService(
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileUpdatingCalendarTask")}: {e.Message}");
         }
+    }
+
+    // Edit scope="this" (#885): record a single-occurrence override on a
+    // CalendarOccurrenceException without touching the series. Reuses an
+    // existing exception for the date (e.g. from a prior move/resize) so a
+    // date+field edit collapses into one row. Per-occurrence assignees use
+    // ExceptionSites; eForm/tags/status/compliance/repeat stay series-level.
+    private async Task<OperationResult> UpdateTaskThisOccurrence(CalendarTaskUpdateRequestModel updateModel)
+    {
+        var originalDate = DateTime.Parse(updateModel.OriginalDate, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+        var newDate = updateModel.StartDate.Date;
+        var title = updateModel.Translates?.FirstOrDefault()?.Name;
+
+        var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == updateModel.Id)
+            .Where(x => x.OriginalDate == originalDate)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync();
+
+        if (exception == null)
+        {
+            exception = new CalendarOccurrenceException
+            {
+                AreaRulePlanningId = updateModel.Id,
+                OriginalDate = originalDate,
+                IsDeleted = false,
+                NewDate = newDate != originalDate ? newDate : null,
+                StartHour = updateModel.StartHour,
+                Duration = updateModel.Duration,
+                Title = title,
+                DescriptionHtml = updateModel.DescriptionHtml,
+                BoardId = updateModel.BoardId,
+                Color = updateModel.Color,
+                CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId
+            };
+            await exception.Create(backendConfigurationPnDbContext);
+        }
+        else
+        {
+            // Re-editing an occurrence that was previously deleted via
+            // scope="this" must bring it back, otherwise the edit is stored
+            // but GetTasksForWeek keeps skipping it (IsDeleted gate).
+            exception.IsDeleted = false;
+            exception.NewDate = newDate != originalDate ? newDate : null;
+            exception.StartHour = updateModel.StartHour;
+            exception.Duration = updateModel.Duration;
+            exception.Title = title;
+            exception.DescriptionHtml = updateModel.DescriptionHtml;
+            exception.BoardId = updateModel.BoardId;
+            exception.Color = updateModel.Color;
+            exception.UpdatedByUserId = userService.UserId;
+            await exception.Update(backendConfigurationPnDbContext);
+        }
+
+        // Replace the per-occurrence assignee set with the edited Sites so
+        // this occurrence reflects the change without mutating the series.
+        var currentSites = await backendConfigurationPnDbContext.CalendarOccurrenceExceptionSites
+            .Where(x => x.CalendarOccurrenceExceptionId == exception.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        foreach (var s in currentSites)
+        {
+            await s.Delete(backendConfigurationPnDbContext);
+        }
+        foreach (var siteId in updateModel.Sites)
+        {
+            var exceptionSite = new CalendarOccurrenceExceptionSite
+            {
+                CalendarOccurrenceExceptionId = exception.Id,
+                SiteId = siteId,
+                CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId
+            };
+            await exceptionSite.Create(backendConfigurationPnDbContext);
+        }
+
+        return new OperationResult(true,
+            localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+    }
+
+    // Edit scope="thisAndFollowing" (#885): anchor every PAST occurrence with
+    // the OLD field values, then apply the NEW values to the series WITHOUT
+    // relocating its StartDate (the wizard is given the unchanged anchor), and
+    // clear exceptions from originalDate forward so future occurrences render
+    // from the updated series. Mirrors the MoveTask thisAndFollowing handler.
+    private async Task<OperationResult> UpdateTaskThisAndFollowing(CalendarTaskUpdateRequestModel updateModel)
+    {
+        var originalDate = DateTime.Parse(updateModel.OriginalDate, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+
+        var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Include(x => x.AreaRule)
+                .ThenInclude(x => x.AreaRuleTranslations)
+            .FirstOrDefaultAsync(x => x.Id == updateModel.Id
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
+        if (arp == null || arp.StartDate == null)
+        {
+            // No live series (or a malformed row without an anchor) — refuse
+            // rather than fall back to the clicked date, which would relocate
+            // the series and reintroduce the #885 bug.
+            return new OperationResult(false,
+                localizationService.GetString("ErrorWhileUpdatingCalendarTask"));
+        }
+
+        var planning = await itemsPlanningPnDbContext.Plannings
+            .FirstOrDefaultAsync(x => x.Id == arp.ItemPlanningId
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
+        var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.AreaRulePlanningId == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .FirstOrDefaultAsync();
+
+        // Capture OLD field values before mutating the series so past
+        // occurrences keep showing what they showed before the edit.
+        var oldTitle = arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name;
+        var oldDescription = planning?.Description;
+        var oldBoardId = calConfig?.BoardId;
+        var oldColor = calConfig?.Color;
+        var oldStartHour = calConfig?.StartHour ?? 9.0;
+        var oldDuration = calConfig?.Duration ?? 1.0;
+
+        if (planning != null)
+        {
+            var existingPastDates = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                .Where(x => x.AreaRulePlanningId == updateModel.Id)
+                .Where(x => x.OriginalDate < originalDate)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.OriginalDate)
+                .ToListAsync();
+            var existingSet = new HashSet<DateTime>(existingPastDates);
+
+            foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, originalDate,
+                         arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
+            {
+                if (existingSet.Contains(occDate)) continue;
+                var anchor = new CalendarOccurrenceException
+                {
+                    AreaRulePlanningId = updateModel.Id,
+                    OriginalDate = occDate,
+                    IsDeleted = false,
+                    NewDate = null,
+                    StartHour = oldStartHour,
+                    Duration = oldDuration,
+                    Title = oldTitle,
+                    DescriptionHtml = oldDescription,
+                    BoardId = oldBoardId,
+                    Color = oldColor,
+                    CreatedByUserId = userService.UserId,
+                    UpdatedByUserId = userService.UserId
+                };
+                await anchor.Create(backendConfigurationPnDbContext);
+            }
+        }
+
+        // Apply NEW field values to the series. Pass the EXISTING StartDate to
+        // the wizard so its StartDate write is a no-op — this is the #885 fix:
+        // a thisAndFollowing edit must not drag the series anchor onto the
+        // clicked occurrence's date.
+        var wizardModel = new TaskWizardCreateModel
+        {
+            Id = updateModel.Id,
+            PropertyId = updateModel.PropertyId,
+            FolderId = updateModel.FolderId,
+            ItemPlanningTagId = updateModel.ItemPlanningTagId,
+            TagIds = updateModel.TagIds,
+            Translates = updateModel.Translates,
+            EformId = updateModel.EformId,
+            StartDate = arp.StartDate.Value,
+            RepeatType = (Infrastructure.Enums.RepeatType)updateModel.RepeatType,
+            RepeatEvery = updateModel.RepeatEvery,
+            Status = (Infrastructure.Enums.TaskWizardStatuses)updateModel.Status,
+            Sites = updateModel.Sites,
+            ComplianceEnabled = updateModel.ComplianceEnabled
+        };
+        var wizardResult = await taskWizardService.UpdateTask(wizardModel);
+        if (!wizardResult.Success)
+        {
+            return wizardResult;
+        }
+
+        arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
+        arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
+        arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
+        if (updateModel.RepeatOrdinalWeek.HasValue)
+        {
+            arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
+        }
+        arp.RepeatEndMode = updateModel.RepeatEndMode;
+        arp.RepeatOccurrences = updateModel.RepeatOccurrences;
+        arp.RepeatUntilDate = updateModel.RepeatUntilDate;
+        await arp.Update(backendConfigurationPnDbContext);
+
+        if (planning != null)
+        {
+            planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+            planning.UpdatedByUserId = userService.UserId;
+            await planning.Update(itemsPlanningPnDbContext);
+        }
+
+        if (calConfig != null)
+        {
+            calConfig.StartHour = updateModel.StartHour;
+            calConfig.Duration = updateModel.Duration;
+            calConfig.BoardId = updateModel.BoardId;
+            calConfig.Color = updateModel.Color;
+            calConfig.UpdatedByUserId = userService.UserId;
+            await calConfig.Update(backendConfigurationPnDbContext);
+        }
+        else
+        {
+            calConfig = new CalendarConfiguration
+            {
+                AreaRulePlanningId = updateModel.Id,
+                StartHour = updateModel.StartHour,
+                Duration = updateModel.Duration,
+                BoardId = updateModel.BoardId,
+                Color = updateModel.Color,
+                CreatedByUserId = userService.UserId,
+                UpdatedByUserId = userService.UserId
+            };
+            await calConfig.Create(backendConfigurationPnDbContext);
+        }
+
+        // From originalDate forward the updated series is the source of truth;
+        // drop any pre-edit overrides so they don't shadow the new values.
+        var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == updateModel.Id)
+            .Where(x => x.OriginalDate >= originalDate)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        foreach (var stale in staleExceptions)
+        {
+            await stale.Delete(backendConfigurationPnDbContext);
+        }
+
+        return new OperationResult(true,
+            localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
+    }
+
+    // Overlay a per-occurrence exception's field overrides (#885) onto a
+    // rendered task. Null override fields inherit the series value, so this is
+    // safe to call for move/resize/delete exceptions that carry no field edits.
+    private static void ApplyOccurrenceFieldOverrides(CalendarTaskResponseModel model, CalendarOccurrenceException exception)
+    {
+        if (exception == null) return;
+        if (!string.IsNullOrEmpty(exception.Title)) model.Title = exception.Title;
+        if (exception.DescriptionHtml != null) model.DescriptionHtml = exception.DescriptionHtml;
+        if (exception.BoardId.HasValue) model.BoardId = exception.BoardId;
+        if (!string.IsNullOrEmpty(exception.Color)) model.Color = exception.Color;
     }
 
     public async Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel)

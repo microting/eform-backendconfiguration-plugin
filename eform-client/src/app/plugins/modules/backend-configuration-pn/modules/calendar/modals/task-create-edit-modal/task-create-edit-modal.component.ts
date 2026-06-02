@@ -787,6 +787,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       repeatRule: repeatRuleValue === 'customCurrent' ? 'custom' : repeatRuleValue,
       id: this.data.task?.id,
       repeatSeriesId: this.data.task?.repeatSeriesId,
+      // Pre-edit occurrence date so a "this"/"thisAndFollowing" edit targets
+      // the right occurrence instead of relocating the series (#885).
+      // startDate/taskDate above carry the NEW (edited) date.
+      originalDate: this.data.task?.taskDate,
     };
 
     const doSave = (scope?: string) => {
