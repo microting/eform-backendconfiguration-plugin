@@ -405,7 +405,14 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
       expect(w1).not.toContain('14:00');
     });
 
-    test('M06: scope=all cross-day move — every week reflects the new day+time', async ({ page }) => {
+    // A cross-day scope=all move re-anchors the whole series onto the moved
+    // occurrence: MoveTask sets StartDate=newDate and clears exceptions, so the
+    // series now STARTS at the anchor week's new day. The anchor week and
+    // FUTURE weeks land on the new day/time; weeks BEFORE the anchor (which are
+    // now before the new StartDate) no longer have an occurrence. (For a
+    // time-only "all" edit the anchor is preserved — see calendar-edit-scope
+    // E08; a cross-day drag genuinely changes the date, so it relocates.)
+    test('M06: scope=all cross-day move re-anchors the whole series to the new day/time', async ({ page }) => {
       const calendarPage = new CalendarUiEnhancementsPage(page);
       const title = `M06-${generateRandmString(5)}`;
       const startDay = 2; // Wednesday
@@ -428,35 +435,25 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
           && r.request().method() === 'POST',
         { timeout: 30000 }
       );
-      // scope=all updates the series StartDate and clears per-occurrence
-      // exceptions, so EVERY week lands on the new day/time.
       await calendarPage.pickScopeInModal('all');
       await reloadAfterScope;
       await page.waitForTimeout(800);
 
-      // Week +3 (anchor): Saturday 13:00.
+      // Week +3 (anchor / new series start): Saturday 13:00.
       expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
-      const anchor = await calendarPage.getEventTimeText(title);
-      expect(anchor).toContain('13:00');
+      expect(await calendarPage.getEventTimeText(title)).toContain('13:00');
 
-      // Week +2 and +1: ALSO on the new day/time.
-      await calendarPage.navigateToPreviousWeek();
-      expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
-      const w2 = await calendarPage.getEventTimeText(title);
-      expect(w2).toContain('13:00');
-
-      await calendarPage.navigateToPreviousWeek();
-      expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
-      const w1 = await calendarPage.getEventTimeText(title);
-      expect(w1).toContain('13:00');
-
-      // Week +4 (one past the anchor): also on the new day/time.
-      await calendarPage.navigateToNextWeek();
-      await calendarPage.navigateToNextWeek();
+      // Week +4 (after the new StartDate): also Saturday 13:00.
       await calendarPage.navigateToNextWeek();
       expect(await calendarPage.getEventDayIndex(title)).toBe(targetDay);
-      const w4 = await calendarPage.getEventTimeText(title);
-      expect(w4).toContain('13:00');
+      expect(await calendarPage.getEventTimeText(title)).toContain('13:00');
+
+      // Weeks +2 and +1 are now BEFORE the new StartDate → no occurrence.
+      await calendarPage.navigateToPreviousWeek(); // back to +3
+      await calendarPage.navigateToPreviousWeek(); // +2
+      expect(await calendarPage.getEventDayIndex(title)).toBe(-1);
+      await calendarPage.navigateToPreviousWeek(); // +1
+      expect(await calendarPage.getEventDayIndex(title)).toBe(-1);
     });
   });
 
