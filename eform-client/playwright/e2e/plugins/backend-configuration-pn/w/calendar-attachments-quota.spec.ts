@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { CalendarUiEnhancementsPage } from './calendar-ui-enhancements.page';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -52,7 +52,7 @@ let seeded = false;
 
 // Fixtures live next to the spec inside e2e/plugins/backend-configuration-pn/r/
 // so the CI workflow's existing `cp -av` of that directory picks them up.
-const FIXTURE_DIR = path.resolve(__dirname, 'fixtures/calendar-attachments');
+const FIXTURE_DIR = path.resolve(__dirname, '../fixtures/calendar-attachments');
 const PDF_FIXTURE = path.join(FIXTURE_DIR, 'sample.pdf');
 const PNG_FIXTURE = path.join(FIXTURE_DIR, 'sample.png');
 const JPG_FIXTURE = path.join(FIXTURE_DIR, 'sample.jpg');

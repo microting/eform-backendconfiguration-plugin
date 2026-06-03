@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { CalendarUiEnhancementsPage } from './calendar-ui-enhancements.page';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -55,7 +55,7 @@ let seeded = false;
 
 // Fixture re-used from the attachments suite — the CI workflow's `cp -av` of
 // the backend-configuration-pn directory picks up the whole fixtures tree.
-const FIXTURE_DIR = path.resolve(__dirname, 'fixtures/calendar-attachments');
+const FIXTURE_DIR = path.resolve(__dirname, '../fixtures/calendar-attachments');
 const PDF_FIXTURE = path.join(FIXTURE_DIR, 'sample.pdf');
 
 // Matches the create endpoint specifically (POST .../calendar/tasks), NOT the
