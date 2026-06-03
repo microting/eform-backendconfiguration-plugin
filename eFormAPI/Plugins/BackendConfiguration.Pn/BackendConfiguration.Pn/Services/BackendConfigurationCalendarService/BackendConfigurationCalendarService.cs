@@ -2666,21 +2666,20 @@ public class BackendConfigurationCalendarService(
                 {
                     // Multi-day path: only emit occurrences in this week if
                     // the requested week is a multiple of repeatEvery weeks
-                    // past the anchor week (Sunday-based, matches JS getDay).
+                    // past the anchor week.
                     //
-                    // The stride check still uses Sunday-aligned weeks so the
-                    // bucket math is independent of the caller's week-start
-                    // convention. But the per-day projection MUST be relative
-                    // to the caller's weekStart, because the caller's week
-                    // may be Mon-Sun while wd uses JS getDay() (Sun=0..Sat=6).
-                    // Old code wrote `weekStartAligned.AddDays(wd)` which for
-                    // a Mon-Sun week with weekStart=Mon and weekStartAligned=
-                    // the prior Sun produced wd=0 → the Sun BEFORE the week,
-                    // then filtered it out — so Sunday at the END of the week
-                    // was never emitted. Project from weekStart instead.
-                    // Sunday-aligned anchor week (matches JS getDay numbering),
-                    // consistent with EnumerateOccurrences above.
-                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    // Bucket weeks MONDAY-aligned (ISO: Mon=0..Sun=6) so all 7
+                    // days of one Mon–Sun week share a single stride bucket. A
+                    // Sunday-aligned grid puts the trailing Sunday in the NEXT
+                    // bucket, so an every-Nth-week rule (N>1) dropped it — an
+                    // all-days every-2nd-week rule lost Sunday (#922 CR04), and
+                    // a mixed Wed+Sun set split across two buckets. The per-day
+                    // projection below MUST still use the caller's weekStart
+                    // (the caller's week may be Mon-Sun while wd uses JS
+                    // getDay() Sun=0..Sat=6), so candidates land in
+                    // [weekStart, weekStart+6]; only the stride bucketing is
+                    // Monday-aligned.
+                    var anchorWeekStart = startDate.AddDays(-(((int)startDate.DayOfWeek + 6) % 7));
                     var weekStartDow = (int)weekStart.Date.DayOfWeek;
                     foreach (var wd in weekdays)
                     {
@@ -2691,18 +2690,12 @@ public class BackendConfigurationCalendarService(
                         var candidate = weekStart.Date.AddDays(offset);
                         if (candidate < startDate) continue;
                         // Gate the stride PER CANDIDATE on the candidate's own
-                        // Sunday-aligned week. A Mon-Sun caller week straddles
-                        // TWO Sunday-aligned weeks (Mon-Sat in one, the trailing
-                        // Sunday in the next), so a single gate computed from
-                        // weekStart's Sunday-week wrongly rejected an occurrence
-                        // whose anchor landed on that trailing Sunday
-                        // (weeksFromAnchor = -1) — the event disappeared from
-                        // its own week after an edit moved the StartDate onto a
-                        // Sunday. Computing weeksFromAnchor from `candidate`
-                        // instead also fixes mixed multi-day CSVs (e.g. "3,0"
-                        // Wed+Sun) whose days fall in different Sunday-weeks
-                        // within one caller week.
-                        var candidateWeekStart = candidate.AddDays(-(int)candidate.DayOfWeek);
+                        // Monday-aligned week, so every day of a Mon–Sun week
+                        // (including the trailing Sunday) maps to the same week
+                        // bucket as its anchor. This keeps all-days and mixed
+                        // Wed+Sun multi-day sets together under every-Nth-week
+                        // cadences instead of splitting the Sunday off (#922).
+                        var candidateWeekStart = candidate.AddDays(-(((int)candidate.DayOfWeek + 6) % 7));
                         var weeksFromAnchor = (candidateWeekStart - anchorWeekStart).Days / 7;
                         if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                             occurrences.Add(candidate);
