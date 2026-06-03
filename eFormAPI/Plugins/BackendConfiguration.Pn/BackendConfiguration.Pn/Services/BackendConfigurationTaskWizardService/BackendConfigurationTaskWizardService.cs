@@ -573,14 +573,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             };
             await areRule.Create(_backendConfigurationPnDbContext);
 
-            if (createModel.Status == TaskWizardStatuses.Active && createModel.StartDate <= DateTime.UtcNow)
-            {
-                await PairItemWithSiteHelper.Pair(
-                    createModel.Sites,
-                    createModel.EformId,
-                    planning.Id,
-                    (int)createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
-            }
+            // Defect C in #935 — do NOT call PairItemWithSiteHelper.Pair from the
+            // create path. Pair writes a PlanningCase + PlanningCaseSite AND calls
+            // sdkCore.CaseCreate for each assignee, which then duplicates with
+            // EventDeployService.EnsureDeployedAsync on the worker's first sync.
+            // With defects A and B fixed, EventDeployService is the single owner
+            // of the SDK case lifecycle for newly-created tasks.
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
