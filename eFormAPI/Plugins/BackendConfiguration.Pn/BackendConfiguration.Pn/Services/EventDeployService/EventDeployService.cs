@@ -320,9 +320,15 @@ public class EventDeployService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
-                    "EventDeployService: failed to deploy planningId={PlanningId} rotation={Rotation} sdkSiteId={SdkSiteId} — continuing with the rest",
-                    planningId, rotationDate, sdkSiteId);
+                // Defect B in #935 — recoverable per-rotation failure. The
+                // stuck-row recovery path at the candidate filter above
+                // (`!t.IsFromCompliance || t.SdkCaseId == 0`) will redeploy on
+                // the next sync, so log at Warning with structured fields
+                // (exception type + planning + rotation + site) for
+                // observability without spamming Error stack traces.
+                logger.LogWarning(ex,
+                    "EventDeployService: per-rotation deploy threw {ExceptionType} for planningId={PlanningId} rotationDate={RotationDate} sdkSiteId={SdkSiteId} — continuing; recovery on next sync via stuck-row branch.",
+                    ex.GetType().Name, planningId, rotationDate, sdkSiteId);
                 // continue — do not abort the whole pass
             }
         }
@@ -607,6 +613,25 @@ public class EventDeployService(
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
+        // Defect B in #935 — refuse to write a Compliance row when the
+        // PlanningCaseSite has no SDK case linkage (MicrotingSdkCaseId == 0).
+        // The pre-existing code wrote a poisoned Compliance row whenever
+        // Core.CaseCreateLocalOnly returned null inside DeployForRotationAsync,
+        // and that poisoned row then satisfied the (PlanningId, Deadline.Date)
+        // idempotence guard so subsequent syncs skipped redeploy and the user
+        // saw a non-functional event tile. With this guard, the stuck-row
+        // recovery branch in EnsureDeployedAsync (candidate filter
+        // `!t.IsFromCompliance || t.SdkCaseId == 0`) is the only path that
+        // ever produces a Compliance, and it only does so after a real SDK
+        // case is in place.
+        if (planningCaseSite.MicrotingSdkCaseId <= 0)
+        {
+            logger.LogWarning(
+                "EventDeployService: skipping Compliance write — PlanningCaseSite {Id} has no SDK case linkage (planningId={PlanningId}, rotationDate={RotationDate}). The stuck-row recovery path will retry on next sync.",
+                planningCaseSite.Id, planning.Id, rotationDate);
+            return null;
+        }
+
         // Race protection lives in the duplicate-key catch below (mirrors
         // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
         // in EnsureDeployedAsync already filters out the common case before
