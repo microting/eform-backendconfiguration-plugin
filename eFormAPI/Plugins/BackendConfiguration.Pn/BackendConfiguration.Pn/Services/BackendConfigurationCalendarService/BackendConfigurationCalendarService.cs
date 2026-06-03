@@ -516,6 +516,15 @@ public class BackendConfigurationCalendarService(
                         // different date — those are handled by the
                         // movedInExceptions pass at the destination week.
                         if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
+                        // A compliance row already renders this date with its real
+                        // completion state and case binding. Emitting an orphan
+                        // anchor on top would stack a second, hard-coded
+                        // uncompleted/unopenable tile over it — the completed task
+                        // "resurrecting" as not-done (#930) and the duplicate
+                        // sibling tiles (#928). Let the compliance loop own it.
+                        if (complianceDateSet.Contains(
+                                $"{planning.Id}:{orphan.OriginalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"))
+                            continue;
 
                         var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
                         var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
@@ -1316,10 +1325,25 @@ public class BackendConfigurationCalendarService(
                 .ToListAsync();
             var existingSet = new HashSet<DateTime>(existingPastDates);
 
+            // Dates that already deployed a case (incl. completed ones whose
+            // Compliance row was soft-deleted after Status=100) are rendered by
+            // GetTasksForWeek's compliance loop. Backfilling an orphan anchor for
+            // them would resurrect a completed occurrence as not-done (#930), so
+            // skip those dates and only anchor genuinely orphaned past dates.
+            var compliancePastDates = new HashSet<DateTime>(
+                await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PlanningId == planning.Id)
+                    .Where(x => x.Deadline < originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                || x.MicrotingSdkCaseId > 0)
+                    .Select(x => x.Deadline.Date)
+                    .ToListAsync());
+
             foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, originalDate,
                          arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
             {
                 if (existingSet.Contains(occDate)) continue;
+                if (compliancePastDates.Contains(occDate)) continue;
                 var anchor = new CalendarOccurrenceException
                 {
                     AreaRulePlanningId = updateModel.Id,
@@ -1758,9 +1782,24 @@ public class BackendConfigurationCalendarService(
                         .ToListAsync();
                     var existingSet = new HashSet<DateTime>(existingPastDates);
 
+                    // Skip dates that already deployed a case (incl. completed
+                    // ones whose Compliance row was soft-deleted after
+                    // Status=100): the compliance loop renders those, so an
+                    // orphan anchor here would resurrect a completed occurrence
+                    // as not-done (#930).
+                    var compliancePastDates = new HashSet<DateTime>(
+                        await backendConfigurationPnDbContext.Compliances
+                            .Where(x => x.PlanningId == oldPlanning.Id)
+                            .Where(x => x.Deadline < originalDate)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                        || x.MicrotingSdkCaseId > 0)
+                            .Select(x => x.Deadline.Date)
+                            .ToListAsync());
+
                     foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
                     {
                         if (existingSet.Contains(occDate)) continue;
+                        if (compliancePastDates.Contains(occDate)) continue;
                         var anchor = new CalendarOccurrenceException
                         {
                             AreaRulePlanningId = moveModel.Id,
