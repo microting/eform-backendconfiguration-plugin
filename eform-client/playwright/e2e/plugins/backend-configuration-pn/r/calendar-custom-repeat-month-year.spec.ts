@@ -43,15 +43,15 @@ import {
  *    is implied by startDate (the anchored Monday's month), and the local
  *    January default only drives the collapsed label.
  *
- * KNOWN BACKEND GAP (Year does not render)
- * ----------------------------------------
- * The server recurrence engine (CalendarService GetOccurrencesInWeek /
- * EnumerateOccurrences) only expands Day/Week/Month rules — repeatType=4
- * (yearly) is NOT expanded, so a yearly event is CREATED (POST 200) but never
- * paints a block in the week view. This is the same gap the #888 RP05 test is
- * test.fixme for. CR12/CR13 therefore assert ONLY the wire payload + collapsed
- * label in an ACTIVE test, and mark the calendar-rendering check test.fixme
- * with a pointer to this gap.
+ * YEAR RENDERING (#922 FIXED)
+ * ---------------------------
+ * GetOccurrencesInWeek already had a Year branch, but the task wizard only
+ * captured DayOfMonth for Month — so a yearly event defaulted to DayOfMonth=1
+ * and the Year branch landed on the 1st (wrong week), appearing not to render.
+ * The wizard now captures DayOfMonth from the start date for Year too, so
+ * yearly events paint on their anchored day. CR12/CR13 assert the wire payload
+ * + label; CR12b/CR13b assert the initial render + absence of weekly recurrence
+ * (the multi-year cadence is covered server-side, not via week-grid navigation).
  *
  * MATRIX (CR10–CR13)
  * ------------------
@@ -421,17 +421,51 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
     expect(body.repeatOrdinalWeek ?? 0, 'yearly rule is not an ordinal rule').toBe(0);
   });
 
-  // KNOWN BACKEND GAP — Year does not render in the week view.
-  // repeatType=4 (yearly) is NOT expanded by CalendarService
-  // GetOccurrencesInWeek / EnumerateOccurrences (Day/Week/Month only), so the
-  // CR12 event is CREATED but never paints a block — identical to the #888
-  // RP05 fixme. Kept as a documented placeholder so the gap is visible in the
-  // suite and flips to an active assertion once the engine learns Year.
-  test.fixme('CR12b — yearly (repeatType=4) renders an occurrence in the calendar grid', async () => {
-    // Blocked by the server recurrence engine not expanding yearly rules
-    // (same gap as #888 RP05). When fixed: create a yearlyOne rule anchored on
-    // Monday, then assert a block lands on the anchored day-of-week column, and
-    // re-appears the following year via multi-year navigation.
+  // CR12b — yearly (repeatType=4) RENDERS in the week view (#922 FIXED).
+  //   The task wizard now captures DayOfMonth from the start date for Year (it
+  //   previously defaulted to 1, so the Year branch landed on the 1st / wrong
+  //   week and never painted). The initial yearly occurrence now renders on its
+  //   anchored day. The multi-year re-appearance cadence is covered server-side
+  //   (GetOccurrencesInWeek's Year math); a 52-week chevron walk is too slow /
+  //   flaky to assert in a week-grid e2e, so here we assert the initial render
+  //   on the anchored column plus the absence of any weekly recurrence.
+  // =======================================================================
+  test('CR12b — yearly (repeatType=4) renders an occurrence in the calendar grid', async ({ page }) => {
+    expect(seeded, 'seed property + worker must have completed').toBe(true);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `CR12b-${generateRandmString(8)}`;
+
+    await calendarPage.openCreateModalAtSlot(0, 13);
+    await fillRequiredFields(page, title);
+
+    await openCustomRepeatDialog(page);
+    await setCustomUnit(page, 'year');
+    await setCustomStep(page, 1);
+    await clickDone(page);
+
+    const body = await saveAndCaptureCreateBody(page);
+    expect(body.repeatType, 'yearly custom rule → repeatType 4').toBe(4);
+    expect(body.repeatEvery, 'step=1 → repeatEvery 1').toBe(1);
+
+    // The initial yearly occurrence paints on the anchored day (Monday, day 0)
+    // of the seed week.
+    const mondayCount = await calendarPage.getDayColumnTaskBlocks(0, title).count();
+    expect(
+      mondayCount,
+      `Expected the yearly occurrence to render on Monday (day 0) of the seed week ` +
+      `for "${title}", but found ${mondayCount}.`
+    ).toBeGreaterThanOrEqual(1);
+
+    // Yearly must NOT recur weekly — the following week is empty on every day.
+    await calendarPage.navigateToNextWeek();
+    for (let day = 0; day <= 6; day++) {
+      const count = await calendarPage.getDayColumnTaskBlocks(day, title).count();
+      expect(
+        count,
+        `Yearly must not recur weekly — day ${day} of the week after the seed week ` +
+        `must be empty for "${title}", found ${count}.`
+      ).toBe(0);
+    }
   });
 
   // =======================================================================
@@ -470,10 +504,49 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
     expect(body.repeatOrdinalWeek ?? 0, 'yearly rule is not an ordinal rule').toBe(0);
   });
 
-  // KNOWN BACKEND GAP — same as CR12b but for the every-N-year cadence.
-  test.fixme('CR13b — every-2-years (repeatType=4) renders an occurrence in the calendar grid', async () => {
-    // Blocked by the server recurrence engine not expanding yearly rules
-    // (same gap as #888 RP05 / CR12b). When fixed: assert the block lands on
-    // the anchored column and re-appears two years later, not one.
+  // CR13b — every-2-years (repeatType=4) renders an occurrence (#922 FIXED).
+  //   Same Year render fix as CR12b, for the every-N-year cadence. The wire
+  //   carries repeatEvery=2; the "re-appears in 2 years, not 1" cadence is
+  //   exercised by GetOccurrencesInWeek's Year math server-side (a 104-week
+  //   chevron walk is impractical in a week-grid e2e). Here we assert the
+  //   initial render on the anchored column, repeatEvery=2 on the wire, and no
+  //   weekly recurrence.
+  // =======================================================================
+  test('CR13b — every-2-years (repeatType=4) renders an occurrence in the calendar grid', async ({ page }) => {
+    expect(seeded, 'seed property + worker must have completed').toBe(true);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `CR13b-${generateRandmString(8)}`;
+
+    await calendarPage.openCreateModalAtSlot(0, 14);
+    await fillRequiredFields(page, title);
+
+    await openCustomRepeatDialog(page);
+    await setCustomUnit(page, 'year');
+    await setCustomStep(page, 2);
+    await clickDone(page);
+
+    const body = await saveAndCaptureCreateBody(page);
+    expect(body.repeatType, 'yearly custom rule → repeatType 4').toBe(4);
+    expect(body.repeatEvery, 'step=2 → repeatEvery 2').toBe(2);
+
+    // The initial occurrence paints on the anchored day (Monday, day 0) of the
+    // seed week.
+    const mondayCount = await calendarPage.getDayColumnTaskBlocks(0, title).count();
+    expect(
+      mondayCount,
+      `Expected the every-2-years occurrence to render on Monday (day 0) of the ` +
+      `seed week for "${title}", but found ${mondayCount}.`
+    ).toBeGreaterThanOrEqual(1);
+
+    // Must NOT recur weekly — the following week is empty on every day.
+    await calendarPage.navigateToNextWeek();
+    for (let day = 0; day <= 6; day++) {
+      const count = await calendarPage.getDayColumnTaskBlocks(day, title).count();
+      expect(
+        count,
+        `every-2-years must not recur weekly — day ${day} of the week after the ` +
+        `seed week must be empty for "${title}", found ${count}.`
+      ).toBe(0);
+    }
   });
 });

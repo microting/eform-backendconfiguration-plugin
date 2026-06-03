@@ -412,6 +412,17 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     dayOfMonth = 28;
                 }
             }
+            else if (createModel.RepeatType == RepeatType.Year)
+            {
+                // Yearly recurs on the same day-of-month + month as the start date,
+                // so it needs DayOfMonth captured — otherwise the renderer's Year
+                // branch falls back to DayOfMonth=1, the occurrence lands on the
+                // 1st (wrong week) and never appears (#922). Keep the real day
+                // (no 28-cap): the month is fixed, and the renderer clamps the
+                // candidate to the month's length, so a 29th/30th/31st yearly
+                // renders on its actual day rather than being pulled to the 28th.
+                dayOfMonth = createModel.StartDate.Value.Day;
+            }
 
             // create planning
             var planning = new Planning

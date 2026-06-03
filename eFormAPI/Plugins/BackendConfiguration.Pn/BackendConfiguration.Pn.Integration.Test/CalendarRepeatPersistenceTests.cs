@@ -324,6 +324,41 @@ public class CalendarRepeatPersistenceTests : TestBaseSetup
     }
 
     [Test]
+    public async Task AllDaysEveryTwoWeeks_IncludesTrailingSunday_AndSkipsOffCycleWeek()
+    {
+        // #922 CR04: an "all 7 days, every 2nd week" rule (CSV 0..6) must emit
+        // EVERY day of the start week — including the trailing Sunday — then
+        // skip the off-cycle week, then resume. A Sunday-aligned stride used to
+        // bucket the trailing Sunday into the NEXT (odd) week and drop it.
+        var monday = GetNextMonday();
+        var seeded = await SeedTask(
+            startDate: monday,
+            arpRepeatType: 2,
+            arpRepeatEvery: 2,
+            repeatWeekdaysCsv: "0,1,2,3,4,5,6",
+            dayOfWeek: (int)monday.DayOfWeek);
+
+        var week0 = await FetchWeek(seeded.PropertyId, monday);
+        var week0Dates = week0.Select(t => t.TaskDate).OrderBy(s => s).ToList();
+        var expectedWeek0 = Enumerable.Range(0, 7)
+            .Select(i => monday.AddDays(i).ToString("yyyy-MM-dd"))
+            .OrderBy(s => s).ToList();
+        Assert.That(week0Dates, Is.EqualTo(expectedWeek0),
+            "the start week must emit all 7 days, including the trailing Sunday");
+
+        var week1 = await FetchWeek(seeded.PropertyId, monday.AddDays(7));
+        Assert.That(week1, Is.Empty, "the off-cycle week must be empty for repeatEvery=2");
+
+        var week2 = await FetchWeek(seeded.PropertyId, monday.AddDays(14));
+        var week2Dates = week2.Select(t => t.TaskDate).OrderBy(s => s).ToList();
+        var expectedWeek2 = Enumerable.Range(0, 7)
+            .Select(i => monday.AddDays(14 + i).ToString("yyyy-MM-dd"))
+            .OrderBy(s => s).ToList();
+        Assert.That(week2Dates, Is.EqualTo(expectedWeek2),
+            "the next on-cycle week resumes all 7 days");
+    }
+
+    [Test]
     public async Task MultiDayWeeklyAfterCapStopsAtTotalOccurrences()
     {
         // Mon+Wed+Fri every 2 weeks, capped at 10 occurrences. The cap counts

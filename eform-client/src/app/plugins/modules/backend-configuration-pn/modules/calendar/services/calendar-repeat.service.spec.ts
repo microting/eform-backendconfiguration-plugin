@@ -852,6 +852,16 @@ describe('CalendarRepeatService', () => {
       const meta: CalendarRepeatMeta = {kind: 'weeklyMulti', weekdays: [], endMode: 'never', n: 1};
       expect(service.metaToWeekdaysCsv(meta)).toBeNull();
     });
+
+    it('everyNWeekAll (no weekday list) → full 7-day CSV (#922)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNWeekAll', endMode: 'never', n: 2};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('0,1,2,3,4,5,6');
+    });
+
+    it('weeklyAll (no weekday list) → full 7-day CSV (#922)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyAll', endMode: 'never', n: 1};
+      expect(service.metaToWeekdaysCsv(meta)).toBe('0,1,2,3,4,5,6');
+    });
   });
 
   // ─── metaToDayOfMonth ────────────────────────────────────────────────────
