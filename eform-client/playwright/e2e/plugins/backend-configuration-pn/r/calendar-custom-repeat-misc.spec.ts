@@ -400,10 +400,9 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
 
   // =======================================================================
   // CR20 — step min clamp: set the step to "0" (below the input min=1) and
-  //   commit/blur; the value clamps to "1" and the wire repeatEvery=1.
-  //   Documents the EXACT clamp behaviour observed (see assertion comments).
+  //   commit; the model clamps to 1 (#922) so the wire carries repeatEvery=1.
   // =======================================================================
-  test('CR20 — custom step input has min=1, but a sub-min entry is NOT clamped on the wire', async ({ page }) => {
+  test('CR20 — custom step below min=1 is clamped to 1 on the wire', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `CR20-${generateRandmString(8)}`;
@@ -415,8 +414,8 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
     await setCustomUnit(page, 'day');
 
     const stepInput = page.locator('.custom-repeat-dialog .step-input input');
-    // The HTML min="1" constraint is present (it blocks the spinner arrows),
-    // but it is advisory: typing "0" is accepted and is NOT coerced to 1.
+    // The HTML min="1" constraint is present, and the model now also enforces
+    // it: typing "0" is clamped to 1 on confirm (#922).
     await expect(stepInput).toHaveAttribute('min', '1');
     await stepInput.fill('0');
     await page.locator('.custom-repeat-dialog .unit-select .ng-select-container').first().click();
@@ -425,18 +424,15 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
 
     await clickDone(page);
 
-    // ACTUAL behaviour (CI-verified): the sub-min step is NOT clamped — the
-    // wire carries repeatEvery=0, not 1. The input's min=1 is not enforced on
-    // the model/wire. (For a daily rule, repeatEvery=0 is treated as an
-    // "always" event by GetTasksForWeek's isRepeatAlways branch.) Asserting
-    // the real value documents this minor frontend gap rather than a clamp
-    // that doesn't happen.
+    // The sub-min step is clamped on confirm — the wire carries repeatEvery=1,
+    // not the entered 0 (which the backend would otherwise treat as an "always"
+    // event via GetTasksForWeek's isRepeatAlways branch).
     const body = await saveAndCaptureCreateBody(page);
     expect(body.repeatType, 'unit=day maps to repeatType=1').toBe(1);
     expect(
       body.repeatEvery,
-      'sub-min step is not clamped on the wire — ships the entered 0 (min=1 is advisory only)'
-    ).toBe(0);
+      'sub-min step is clamped to 1 on the wire (min=1 now enforced on the model)'
+    ).toBe(1);
   });
 
   // =======================================================================
@@ -698,17 +694,14 @@ test.describe.serial('Calendar custom repeat — dialog mechanics (#901)', () =>
   });
 
   // =======================================================================
-  // CR29 — cancel restores the previous selection.
+  // CR29 — cancel restores the previous selection (#922 FIXED).
   //
-  //   fixme: CI showed cancelling the Tilpasset… dialog does NOT restore the
-  //   previous preset — after picking "Tilpasset…" (which opens the dialog)
-  //   and then Cancel, the repeat dropdown resets to "Gentages ikke" (none)
-  //   instead of reverting to the prior "Ugentligt hver mandag" (weeklyOne).
-  //   That loses the user's previous selection — a minor UX bug worth a
-  //   separate investigation. Left as a documented placeholder rather than
-  //   asserting the buggy reset as expected behavior.
+  //   onRepeatChange now snapshots the repeat selection that was active before
+  //   "Tilpasset…" was picked and restores it when the dialog is cancelled, so
+  //   the dropdown reverts to the prior "Ugentligt hver mandag" (weeklyOne)
+  //   instead of resetting to "Gentages ikke" (none).
   // =======================================================================
-  test.fixme('CR29 — cancelling Tilpasset… restores the previous repeat selection', async ({ page }) => {
+  test('CR29 — cancelling Tilpasset… restores the previous repeat selection', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `CR29-${generateRandmString(8)}`;

@@ -2760,7 +2760,10 @@ public class BackendConfigurationCalendarService(
             case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
             {
                 if (startDate > weekEnd) break;
-                var yearDom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                // Yearly stays in a fixed month, so keep the real day-of-month
+                // and clamp it to the candidate month's length below (#922) —
+                // unlike Month, which caps to 28 to dodge short-month overflow.
+                var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = weekStart.Year - startDate.Year;
                 if (yearsSinceStart < 0) break;

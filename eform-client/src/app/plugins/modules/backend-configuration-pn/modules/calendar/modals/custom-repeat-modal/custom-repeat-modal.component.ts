@@ -105,6 +105,11 @@ export class CustomRepeatModalComponent implements OnInit {
   }
 
   onConfirm() {
+    // Enforce the min=1 step constraint on the model. The input's min="1" is
+    // advisory only — a typed 0 (or blank/negative) otherwise ships
+    // repeatEvery=0, which the backend treats as an "always" event (#922).
+    this.step = Math.max(1, Math.floor(this.step) || 1);
+
     const untilTs = this.endMode === 'until' && this.untilDateObj
       ? this.untilDateObj.getTime()
       : undefined;

@@ -770,6 +770,12 @@ export class CalendarRepeatService {
     if (meta.kind === 'weeklyOne' || meta.kind === 'everyNWeekOne') {
       return meta.weekday != null ? `${meta.weekday}` : null;
     }
+    // "All days" weekly kinds carry no weekday list but mean every day of the
+    // week. Ship the full 7-day CSV so the backend expands all days instead of
+    // falling back to its legacy start-weekday-only path (#922).
+    if (meta.kind === 'weeklyAll' || meta.kind === 'everyNWeekAll') {
+      return '0,1,2,3,4,5,6';
+    }
     return null;
   }
 
