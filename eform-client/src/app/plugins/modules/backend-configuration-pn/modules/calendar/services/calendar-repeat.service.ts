@@ -786,7 +786,8 @@ export class CalendarRepeatService {
     weekdays: number[],
     endMode: 'never' | 'after' | 'until',
     afterCount?: number,
-    untilTs?: number
+    untilTs?: number,
+    date?: Date
   ): CalendarRepeatMeta {
     const base: Partial<CalendarRepeatMeta> = {endMode, afterCount, untilTs, n: step};
 
@@ -803,9 +804,18 @@ export class CalendarRepeatService {
         weekdays: weekdays.length !== 1 ? weekdays : undefined,
       } as CalendarRepeatMeta;
     } else if (unit === 'month') {
+      // Custom monthly intentionally anchors to day 1 (the user sets a specific
+      // day-of-month elsewhere); keep that — #933 is scoped to the yearly branch.
       return {...base, kind: step === 1 ? 'monthlyDom' : 'everyNMonthDom', dom: 1} as CalendarRepeatMeta;
     } else {
-      return {...base, kind: step === 1 ? 'yearlyOne' : 'everyNYear', dom: 1, month: 0} as CalendarRepeatMeta;
+      // Anchor the day-of-month + month to the selected start date instead of
+      // hard-coding January 1 regardless of the chosen date (#933).
+      return {
+        ...base,
+        kind: step === 1 ? 'yearlyOne' : 'everyNYear',
+        dom: date ? date.getDate() : 1,
+        month: date ? date.getMonth() : 0,
+      } as CalendarRepeatMeta;
     }
   }
 }

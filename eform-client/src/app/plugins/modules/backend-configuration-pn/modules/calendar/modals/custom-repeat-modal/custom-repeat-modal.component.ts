@@ -121,6 +121,7 @@ export class CustomRepeatModalComponent implements OnInit {
       this.endMode,
       this.endMode === 'after' ? this.afterCount : undefined,
       untilTs,
+      this.data.date,
     );
     this.dialogRef.close(meta);
   }
