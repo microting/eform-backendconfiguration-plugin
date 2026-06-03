@@ -864,6 +864,10 @@ public class EventsGrpcService(
         // the first occurrence (or whenever the failure class changes).
         // Reset to null on every successful poll.
         Type? lastErrorType = null;
+        // Defect D in #935 — initial snapshot above only READS; new server-side
+        // plannings would not surface until the worker manually refreshes. Run
+        // EnsureDeployedAsync at most once per minute so they appear within ~60s.
+        var lastDeployUtc = DateTime.UtcNow.AddSeconds(-60);
         while (!ct.IsCancellationRequested)
         {
             try
@@ -878,6 +882,35 @@ public class EventsGrpcService(
             try
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
+
+                // Defect D in #935 — eager deploy debounced once-per-minute.
+                if ((DateTime.UtcNow - lastDeployUtc).TotalSeconds >= 60)
+                {
+                    try
+                    {
+                        await eventDeployService.EnsureDeployedAsync(
+                            request.PropertyId ?? string.Empty,
+                            request.BoardIds,
+                            windowStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                            windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                            sdkSiteId,
+                            ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Stream cancelled mid-deploy — fall through to the
+                        // outer OperationCanceledException catch via the next
+                        // ct.ThrowIfCancellationRequested in the read path.
+                    }
+                    catch (Exception deployEx)
+                    {
+                        logger.LogWarning(deployEx,
+                            "EventsGrpcService.StreamEventChanges eager deploy failed for sdkSiteId={SdkSiteId} property={PropertyId} — read path will still run; retry in ~60s",
+                            sdkSiteId, propertyId);
+                    }
+                    lastDeployUtc = DateTime.UtcNow;
+                }
+
                 var current = await LoadEventsAsync(
                     propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
