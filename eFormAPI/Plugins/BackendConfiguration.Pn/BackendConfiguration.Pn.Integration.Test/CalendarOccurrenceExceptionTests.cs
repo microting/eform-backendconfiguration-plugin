@@ -464,6 +464,55 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     }
 
     [Test]
+    public async Task DeleteTask_ScopeThis_AfterMove_FlipsExistingExceptionInsteadOfCreatingSecond()
+    {
+        // Reproduces #915: a scope=this MOVE writes {OriginalDate=X, NewDate=Y,
+        // IsDeleted=false} and the occurrence then renders at Y. A scope=this
+        // DELETE of that occurrence sends the DISPLAYED date (Y) as OriginalDate.
+        // The delete must flip the SAME exception's IsDeleted to true (matching
+        // by NewDate), NOT create a second {OriginalDate=Y, IsDeleted=true} row
+        // that leaves the moved occurrence visible.
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        var movedToDate = baseMonday.AddDays(2); // Wed
+
+        // MOVE the Monday occurrence to Wednesday (scope=this).
+        var moveResult = await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = movedToDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 10.0,
+            Scope = "this"
+        });
+        Assert.That(moveResult.Success, Is.True, moveResult.Message);
+
+        // DELETE the now-moved occurrence (scope=this) using its DISPLAYED date (Wed).
+        var deleteResult = await _calendarService.DeleteTask(new CalendarTaskDeleteRequestModel
+        {
+            Id = arpId,
+            OriginalDate = movedToDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            Scope = "this"
+        });
+        Assert.That(deleteResult.Success, Is.True, deleteResult.Message);
+
+        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        // Exactly ONE exception row — the original move row, now flagged deleted.
+        Assert.That(exceptions, Has.Count.EqualTo(1),
+            "delete-after-move must reuse the move exception row, not create a second one");
+        Assert.That(exceptions[0].OriginalDate.Date, Is.EqualTo(baseMonday.Date),
+            "the surviving row is the original move exception (OriginalDate=X)");
+        Assert.That(exceptions[0].IsDeleted, Is.True,
+            "the moved occurrence's exception must be flagged deleted so it stops rendering");
+    }
+
+    [Test]
     public async Task DeleteTask_ScopeThisAndFollowing_SetsEndDateToDayBefore()
     {
         // Arrange
