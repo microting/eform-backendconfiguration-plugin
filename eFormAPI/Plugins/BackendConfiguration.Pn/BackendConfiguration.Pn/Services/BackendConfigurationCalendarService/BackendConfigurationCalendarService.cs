@@ -1445,11 +1445,19 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(deleteModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-                var existing = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == deleteModel.Id)
-                    .Where(x => x.OriginalDate == originalDate)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
+
+                // Match the occurrence's own exception by OriginalDate first. If the
+                // occurrence was previously moved (scope=this), it now renders at its
+                // NewDate and the delete payload sends that displayed date — so fall
+                // back to matching by NewDate, flipping the SAME row's IsDeleted instead
+                // of creating a duplicate exception that leaves the moved occurrence
+                // visible (#915).
+                var existing = exceptions.FirstOrDefault(x => x.OriginalDate.Date == originalDate)
+                    ?? exceptions.FirstOrDefault(x => x.NewDate.HasValue && x.NewDate.Value.Date == originalDate);
 
                 if (existing != null)
                 {
