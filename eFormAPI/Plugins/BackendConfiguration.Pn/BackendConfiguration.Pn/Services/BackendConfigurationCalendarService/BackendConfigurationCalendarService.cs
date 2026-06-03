@@ -937,10 +937,11 @@ public class BackendConfigurationCalendarService(
                 latestArp.RepeatOrdinalWeek = createModel.RepeatOrdinalWeek;
                 // Capture the planned weekday from the start date so the
                 // monthlyByDay iterator (Nth weekday of month) has the target
-                // weekday available. Scoped to monthlyByDay rules to avoid
-                // disturbing the column for other rule kinds, where it is
-                // unused but may be read by adjacent Area Rule Planning UI.
-                if (createModel.RepeatOrdinalWeek.HasValue)
+                // weekday available, and so a plain weekly rule reports the
+                // correct weekday in the edit dialog instead of defaulting to
+                // Sunday (DayOfWeek=0) when the FE sends a null weekday CSV (#929).
+                if (createModel.RepeatOrdinalWeek.HasValue
+                    || createModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
                 {
                     latestArp.DayOfWeek = (int)createModel.StartDate.DayOfWeek;
                 }
@@ -1118,10 +1119,11 @@ public class BackendConfigurationCalendarService(
                 arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
                 // Mirror the create handler: keep DayOfWeek in sync with the
                 // start date so the monthlyByDay iterator reads the right
-                // target weekday after edits that move the anchor date.
-                // Scoped to monthlyByDay rules per the same rationale as
-                // create.
-                if (updateModel.RepeatOrdinalWeek.HasValue)
+                // target weekday after edits that move the anchor date, and so
+                // a plain weekly rule reports the correct weekday in the edit
+                // dialog instead of defaulting to Sunday (#929).
+                if (updateModel.RepeatOrdinalWeek.HasValue
+                    || updateModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
                 {
                     arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
                 }
@@ -1337,10 +1339,35 @@ public class BackendConfigurationCalendarService(
             }
         }
 
-        // Apply NEW field values to the series. Pass the EXISTING StartDate to
-        // the wizard so its StartDate write is a no-op — this is the #885 fix:
-        // a thisAndFollowing edit must not drag the series anchor onto the
-        // clicked occurrence's date.
+        // Distinguish a pure field edit from a date move. When the new start
+        // date equals the edited occurrence's date, the user only changed
+        // fields (title/time/colour) — keep the series anchor where it is so we
+        // don't drag the whole series onto the clicked occurrence (#885). When
+        // the date actually changed, a "this and following" edit re-anchors the
+        // series forward to the new date (exactly like a thisAndFollowing drag):
+        // the rule from that date on follows the new weekday/ordinal, while past
+        // occurrences stay pinned by the backfill anchors created above. Without
+        // this re-anchor the iterator keeps generating from the old anchor and
+        // the moved occurrence snaps to a stale weekday (#927).
+        var newAnchor = DateTime.SpecifyKind(updateModel.StartDate, DateTimeKind.Utc).Date;
+        var dateChanged = newAnchor != originalDate;
+        if (dateChanged)
+        {
+            arp.StartDate = newAnchor;
+            arp.UpdatedByUserId = userService.UserId;
+            await arp.Update(backendConfigurationPnDbContext);
+            if (planning != null)
+            {
+                planning.StartDate = newAnchor;
+                planning.UpdatedByUserId = userService.UserId;
+                await planning.Update(itemsPlanningPnDbContext);
+            }
+        }
+
+        // Apply NEW field values to the series. The wizard re-derives the
+        // items-planning weekday/day-of-month from this StartDate, so it must
+        // receive the (possibly re-anchored) series start to keep both
+        // scheduler masters in agreement.
         var wizardModel = new TaskWizardCreateModel
         {
             Id = updateModel.Id,
@@ -1366,7 +1393,8 @@ public class BackendConfigurationCalendarService(
         arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
         arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
         arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
-        if (updateModel.RepeatOrdinalWeek.HasValue)
+        if (updateModel.RepeatOrdinalWeek.HasValue
+            || updateModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
         {
             arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
         }
@@ -1406,11 +1434,17 @@ public class BackendConfigurationCalendarService(
             await calConfig.Create(backendConfigurationPnDbContext);
         }
 
-        // From originalDate forward the updated series is the source of truth;
-        // drop any pre-edit overrides so they don't shadow the new values.
+        // From the re-anchored series' start forward, the updated series is the
+        // source of truth; drop any pre-edit overrides (including past anchors
+        // just backfilled for dates the new series now regenerates) so they
+        // don't shadow the new values. For a backward date move the new anchor
+        // is earlier than originalDate, so the cutoff is the new anchor — else a
+        // backfilled anchor at/after the new anchor double-renders the same day
+        // with stale values (#927).
+        var staleCutoff = dateChanged && newAnchor < originalDate ? newAnchor : originalDate;
         var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
             .Where(x => x.AreaRulePlanningId == updateModel.Id)
-            .Where(x => x.OriginalDate >= originalDate)
+            .Where(x => x.OriginalDate >= staleCutoff)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
         foreach (var stale in staleExceptions)
@@ -1749,12 +1783,33 @@ public class BackendConfigurationCalendarService(
                 }
 
                 arp.StartDate = newDate;
+                // Re-derive the recurrence weekday from the drop date so the
+                // moved series follows the new weekday instead of snapping back
+                // to the original one (#926). For an Nth-weekday-of-month rule
+                // also re-derive the ordinal week; for a single-day weekly rule
+                // rewrite the explicit weekday CSV. Multi-day weekly CSVs are
+                // left untouched (a single drag has no single target weekday).
+                if (arp.RepeatOrdinalWeek.HasValue)
+                {
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                }
+                else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
+                         && !arp.RepeatWeekdaysCsv.Contains(','))
+                {
+                    arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
                 if (oldPlanning != null)
                 {
                     oldPlanning.StartDate = newDate;
+                    // Keep the items-planning scheduler master in sync with the
+                    // new weekday so NextExecutionTime does not pull the series
+                    // back to the old day (the two-master defect, #925/#926).
+                    oldPlanning.DayOfWeek = newDate.DayOfWeek;
                     oldPlanning.UpdatedByUserId = userService.UserId;
                     await oldPlanning.Update(itemsPlanningPnDbContext);
                 }
@@ -1778,9 +1833,14 @@ public class BackendConfigurationCalendarService(
                     await calConfig.Create(backendConfigurationPnDbContext);
                 }
 
+                // For a backward move the new anchor precedes originalDate, so
+                // drop backfilled anchors at/after the new anchor too — otherwise
+                // they double-render the re-anchored series' own days with stale
+                // values (companion to the #927 cutoff fix).
+                var staleCutoff = newDate < originalDate ? newDate : originalDate;
                 var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
-                    .Where(x => x.OriginalDate >= originalDate)
+                    .Where(x => x.OriginalDate >= staleCutoff)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync();
 
@@ -1792,6 +1852,21 @@ public class BackendConfigurationCalendarService(
             else
             {
                 arp.StartDate = newDate;
+                // Re-derive the recurrence weekday/ordinal from the drop date so
+                // a whole-series move follows the new weekday instead of snapping
+                // back to the original one (#926), mirroring the thisAndFollowing
+                // branch above.
+                if (arp.RepeatOrdinalWeek.HasValue)
+                {
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                }
+                else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
+                         && !arp.RepeatWeekdaysCsv.Contains(','))
+                {
+                    arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
@@ -1803,6 +1878,7 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.StartDate = newDate;
+                    planning.DayOfWeek = newDate.DayOfWeek;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
