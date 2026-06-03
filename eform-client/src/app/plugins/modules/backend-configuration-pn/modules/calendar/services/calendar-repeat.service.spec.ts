@@ -233,6 +233,42 @@ describe('CalendarRepeatService', () => {
       expect(meta.kind).toBe('monthlyDom');
     });
 
+    it('yearly preserves the selected day-of-month and month (#933)', () => {
+      const date = new Date(2026, 5, 4); // Thu 4 June 2026 (month is 0-indexed)
+      const meta = service.buildMetaFromCustomConfig(
+        1, 'year', [], 'never', undefined, undefined, date,
+      );
+      expect(meta.kind).toBe('yearlyOne');
+      expect(meta.dom).toBe(4);
+      expect(meta.month).toBe(5);
+    });
+
+    it('everyNYear preserves the selected day-of-month and month (#933)', () => {
+      const date = new Date(2026, 2, 15); // 15 March 2026
+      const meta = service.buildMetaFromCustomConfig(
+        2, 'year', [], 'never', undefined, undefined, date,
+      );
+      expect(meta.kind).toBe('everyNYear');
+      expect(meta.dom).toBe(15);
+      expect(meta.month).toBe(2);
+    });
+
+    it('monthly custom stays anchored to day 1 regardless of start date (#933 scope)', () => {
+      const date = new Date(2026, 5, 15); // 15 June 2026
+      const meta = service.buildMetaFromCustomConfig(
+        1, 'month', [], 'never', undefined, undefined, date,
+      );
+      expect(meta.kind).toBe('monthlyDom');
+      expect(meta.dom).toBe(1);
+    });
+
+    it('yearly without a date falls back to Jan 1 (backward-compatible)', () => {
+      const meta = service.buildMetaFromCustomConfig(1, 'year', [], 'never');
+      expect(meta.kind).toBe('yearlyOne');
+      expect(meta.dom).toBe(1);
+      expect(meta.month).toBe(0);
+    });
+
     it('endMode "after" is preserved with afterCount', () => {
       const meta = service.buildMetaFromCustomConfig(1, 'day', [], 'after', 10);
       expect(meta.endMode).toBe('after');

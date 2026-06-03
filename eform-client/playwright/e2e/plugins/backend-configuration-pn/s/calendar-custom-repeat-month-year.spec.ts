@@ -387,7 +387,7 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
   //   gap: repeatType=4 is not expanded by GetOccurrencesInWeek, so the event
   //   is created but never paints a block — same as #888 RP05.
   // =======================================================================
-  test('CR12 — custom year step=1 (yearlyOne) wires repeatType=4, repeatEvery=1, dayOfMonth=1 and is created', async ({ page }) => {
+  test('CR12 — custom year step=1 (yearlyOne) wires repeatType=4, repeatEvery=1, dayOfMonth from the start date and is created', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `CR12-${generateRandmString(8)}`;
@@ -400,21 +400,24 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
     await setCustomStep(page, 1);
     await clickDone(page);
 
-    // Collapsed label reflects a yearly rule on 1 January (da: "Årligt den 1.
-    // januar"). Asserted loosely since the run locale is Danish and the month
-    // name is locale-dependent — anchor on the yearly keyword + day 1.
+    // Collapsed label reflects a yearly rule on the selected start date (da:
+    // "Årligt den <day>. <month>"). Asserted loosely since the run locale is
+    // Danish and the month name is locale-dependent — anchor on the yearly
+    // keyword + that a day number is shown (no longer hard-coded to 1, #933).
     await expect(repeatRowLabel(page)).toHaveText(/årligt|yearly/i);
-    await expect(repeatRowLabel(page)).toHaveText(/(^|\D)1(\.|\s)/);
+    await expect(repeatRowLabel(page)).toHaveText(/\d{1,2}/);
 
     const body = await saveAndCaptureCreateBody(page);
 
     expect(body.repeatType, 'yearly custom rule → repeatType 4').toBe(4);
     expect(body.repeatEvery, 'step=1 → repeatEvery 1').toBe(1);
-    // YEAR unit always ships dom=1 (1 January in the local meta).
+    // YEAR unit now anchors dayOfMonth to the selected start date (#933);
+    // assert it matches the day-of-month of the same payload's start date.
+    const expectedDom = Number(body.taskDate.slice(-2));
     expect(
       body.dayOfMonth,
-      'YEAR unit has no day-of-month control → dayOfMonth hard-coded to 1'
-    ).toBe(1);
+      'YEAR custom rule anchors dayOfMonth to the selected start date (#933)'
+    ).toBe(expectedDom);
     // No separate month index is sent on the wire (the local month=0 only
     // drives the label); assert the rule is neither weekly nor ordinal.
     expect(body.repeatWeekdaysCsv ?? '', 'yearly rule ships no weekday CSV').toBe('');
@@ -474,7 +477,7 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
   //   dayOfMonth=1 quirk. Wire payload + creation asserted here; rendering is
   //   the same Year gap, documented via CR13b test.fixme.
   // =======================================================================
-  test('CR13 — custom year step=2 (everyNYear) wires repeatType=4, repeatEvery=2, dayOfMonth=1 and is created', async ({ page }) => {
+  test('CR13 — custom year step=2 (everyNYear) wires repeatType=4, repeatEvery=2, dayOfMonth from the start date and is created', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `CR13-${generateRandmString(8)}`;
@@ -487,19 +490,21 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
     await setCustomStep(page, 2);
     await clickDone(page);
 
-    // Collapsed label: "Every 2 years on 1. {month}" (da: "Hvert 2. år på 1.
-    // januar"). Anchor on the years keyword + day 1.
+    // Collapsed label: "Every 2 years on <day>. {month}" (da: "Hvert 2. år på
+    // <day>. <month>"). Anchor on the years keyword + that a day number shows
+    // (no longer hard-coded to 1, #933).
     await expect(repeatRowLabel(page)).toHaveText(/år|year/i);
-    await expect(repeatRowLabel(page)).toHaveText(/(^|\D)1(\.|\s)/);
+    await expect(repeatRowLabel(page)).toHaveText(/\d{1,2}/);
 
     const body = await saveAndCaptureCreateBody(page);
 
     expect(body.repeatType, 'yearly custom rule → repeatType 4').toBe(4);
     expect(body.repeatEvery, 'step=2 → repeatEvery 2').toBe(2);
+    const expectedDom = Number(body.taskDate.slice(-2));
     expect(
       body.dayOfMonth,
-      'YEAR unit has no day-of-month control → dayOfMonth hard-coded to 1'
-    ).toBe(1);
+      'YEAR custom rule anchors dayOfMonth to the selected start date (#933)'
+    ).toBe(expectedDom);
     expect(body.repeatWeekdaysCsv ?? '', 'yearly rule ships no weekday CSV').toBe('');
     expect(body.repeatOrdinalWeek ?? 0, 'yearly rule is not an ordinal rule').toBe(0);
   });
