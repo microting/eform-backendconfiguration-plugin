@@ -26,14 +26,34 @@
     opacity: 0;
   }
 
+  // Dimmed states (completed / inactive) must stay FULLY OPAQUE. Conflicting
+  // events stack with overlapping z-indexes ordered by start time, so a dimmed
+  // tile can sit on top of an active one; element-level `opacity` here made the
+  // tile translucent and let the active tile bleed through, rendering the dimmed
+  // tile's text unreadable. Express "dimmed" via `filter` (desaturate + darken)
+  // instead — it keeps the tile opaque, and the slight darkening actually lifts
+  // the white text's contrast.
   &.completed {
-    opacity: 0.6;
+    // Keep a hint of the board colour so the category is still recognisable,
+    // but muted and settled. Strike-through + the green check mark (set in the
+    // template) carry the "done" meaning.
+    filter: saturate(0.55) brightness(0.82);
     text-decoration: line-through;
   }
 
   &.gcal-task--inactive {
-    opacity: 0.45;
-    filter: grayscale(0.7);
+    // Fully de-categorised: drained of colour and dimmed so it clearly recedes
+    // behind active tiles, while staying opaque and legible.
+    filter: grayscale(0.95) brightness(0.82);
+  }
+
+  // Hover must never drop a dimmed tile back to translucency (that would
+  // reintroduce the bleed-through over a stacked active tile). Lift via filter
+  // instead of opacity.
+  &.completed:hover,
+  &.gcal-task--inactive:hover {
+    opacity: 1;
+    filter: saturate(0.7) brightness(0.92);
   }
 
   &.resizing {
@@ -116,7 +136,8 @@
 
     // Completed task (SDK case Status == 100): turn the check_circle glyph
     // green so users can spot completion at a glance. The block also
-    // dims to opacity 0.6 + line-through via .task-block.completed above,
+    // dims via CSS filter (saturate + brightness) + line-through via
+    // .task-block.completed above,
     // but at 16px on the red background those are easy to miss.
     // #61BA5B matches the project's $eform-green palette token (used
     // elsewhere in the frontend); grep $eform-green to find the source.
