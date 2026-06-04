@@ -134,6 +134,33 @@ public class CalendarGrpcServiceTests
     }
 
     [Test]
+    public async Task GetTasksForWeek_ScopesToCallerSite_IgnoringClientSiteIds()
+    {
+        // #931 — the gRPC (mobile) path must hard-scope task visibility to the
+        // caller's own resolved site, NOT trust the client-supplied SiteIds.
+        var resolver = Substitute.For<IGrpcSiteResolver>();
+        resolver.GetSdkSiteIdAsync().Returns(7);
+        var access = Substitute.For<IBackendConfigurationUserPropertyAccess>();
+        access.HasAccessAsync(7, 10).Returns(true);
+        var calSvc = Substitute.For<IBackendConfigurationCalendarService>();
+
+        CalendarTaskRequestModel captured = null;
+        calSvc.GetTasksForWeek(Arg.Do<CalendarTaskRequestModel>(m => captured = m))
+            .Returns(new OperationDataResult<List<CalendarTaskResponseModel>>(true, []));
+
+        var sut = CreateSut(calendarService: calSvc, access: access, resolver: resolver);
+
+        // Client asks for a DIFFERENT site (99) than the caller's own (7).
+        var request = new GetTasksForWeekRequest { PropertyId = 10, SiteIds = { 99 } };
+        await sut.GetTasksForWeek(request, Substitute.For<ServerCallContext>());
+
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured.SiteIds, Is.EquivalentTo(new[] { 7 }),
+            "gRPC must forward only the caller's resolved site (7), ignoring the "
+            + "client-supplied SiteIds (99).");
+    }
+
+    [Test]
     public void GetBoards_AccessDenied_ThrowsPermissionDenied()
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();

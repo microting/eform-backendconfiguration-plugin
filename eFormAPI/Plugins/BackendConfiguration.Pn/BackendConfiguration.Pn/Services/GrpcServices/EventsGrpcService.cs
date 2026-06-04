@@ -222,7 +222,11 @@ public class EventsGrpcService(
             WeekEnd = request.ToDateKey ?? string.Empty,
             BoardIds = TryParseBoardIds(request.BoardIds),
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope mobile reads to the caller's own site. The deploy
+            // pass above intentionally enumerates property-wide and narrows
+            // itself; this read, which is what the worker actually sees, must
+            // only return events assigned to their site.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         };
 
@@ -861,7 +865,7 @@ public class EventsGrpcService(
         {
             var (initialStart, initialEnd) = ComputeWatchWindow();
             var initial = await LoadEventsAsync(
-                propertyId, boardFilter, initialStart, initialEnd, ct).ConfigureAwait(false);
+                propertyId, boardFilter, initialStart, initialEnd, sdkSiteId, ct).ConfigureAwait(false);
             foreach (var op in initial)
             {
                 ct.ThrowIfCancellationRequested();
@@ -930,7 +934,7 @@ public class EventsGrpcService(
                 }
 
                 var current = await LoadEventsAsync(
-                    propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
+                    propertyId, boardFilter, windowStart, windowEnd, sdkSiteId, ct).ConfigureAwait(false);
 
                 var currentKeys = new HashSet<(string EventId, string PlanDayKey)>();
 
@@ -1048,6 +1052,7 @@ public class EventsGrpcService(
         List<int> boardFilter,
         DateTime windowStart,
         DateTime windowEnd,
+        int sdkSiteId,
         CancellationToken ct = default)
     {
         var model = new CalendarTaskRequestModel
@@ -1057,7 +1062,9 @@ public class EventsGrpcService(
             WeekEnd = windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             BoardIds = boardFilter,
             TagNames = [],
-            SiteIds = [],
+            // #931 — the mobile stream only surfaces events assigned to the
+            // caller's own site (the worker), never the whole property.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         };
 
@@ -1786,7 +1793,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -1996,7 +2005,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -2289,7 +2300,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -3209,7 +3222,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 

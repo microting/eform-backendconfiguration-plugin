@@ -36,7 +36,13 @@ public class CalendarGrpcService(
             WeekEnd = request.WeekEnd,
             BoardIds = request.BoardIds.ToList(),
             TagNames = request.TagNames.ToList(),
-            SiteIds = request.SiteIds.ToList()
+            // #931 — gRPC (mobile) callers only ever see tasks assigned to their
+            // own site. Hard-scope to the resolved caller site rather than
+            // trusting the client-supplied SiteIds; the property-access gate
+            // above already authorises property-level access, but per-task
+            // visibility must be the worker's own site. (The REST controller
+            // path is unchanged, so web keeps its all-sites view.)
+            SiteIds = [sdkSiteId]
         };
 
         var result = await calendarService.GetTasksForWeek(model);
