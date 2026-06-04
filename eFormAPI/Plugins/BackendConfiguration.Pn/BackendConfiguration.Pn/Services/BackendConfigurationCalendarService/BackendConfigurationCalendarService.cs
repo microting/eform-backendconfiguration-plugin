@@ -2024,6 +2024,66 @@ public class BackendConfigurationCalendarService(
                 }
             }
 
+            // #954: a series-level move ("thisAndFollowing"/"all") shifts the
+            // recurrence anchor but leaves the dragged occurrence's Compliance
+            // row at its old Deadline, so the compliance loop keeps painting a
+            // tile on the old day while the recurrence paints one on the new day
+            // — a duplicate. Carry that occurrence's Compliance row to the new
+            // date so a single tile remains (the dedup gate then suppresses the
+            // recurrence tile on that day). Scope "this" is excluded: it is
+            // rendered through the per-occurrence exception the compliance loop
+            // already consults. The move guard above rejected completed
+            // occurrences, so the row at originalDate is open; Compliance rows on
+            // other dates (incl. completed history) stay pinned. A 3-day window
+            // + in-memory .Date match avoids DateTime.Kind drift (mirrors
+            // IsTaskOccurrenceCompleted).
+            if (scope != "this" && !string.IsNullOrEmpty(moveModel.OriginalDate))
+            {
+                var origComplianceDate = DateTime.Parse(moveModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                var windowStart = origComplianceDate.AddDays(-1);
+                var windowEnd = origComplianceDate.AddDays(2);
+                var complianceCandidates = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PlanningId == arp.ItemPlanningId)
+                    .Where(x => x.Deadline >= windowStart && x.Deadline < windowEnd)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+                var complianceAtOriginalDate = complianceCandidates
+                    .Where(c => c.Deadline.Date == origComplianceDate)
+                    .ToList();
+
+                // Never relocate a COMPLETED occurrence's row: completed history
+                // stays pinned to its date even if (data anomaly) it shares the
+                // day with the open occurrence the move guard cleared. The guard
+                // only inspects one row per day (FirstOrDefault), so re-check
+                // completion here against the backing SDK case (Status == 100).
+                var caseIds = complianceAtOriginalDate
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var completedCaseIds = new HashSet<int>();
+                if (caseIds.Count > 0)
+                {
+                    var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+                    await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+                    completedCaseIds = (await sdkDbContext.Cases
+                        .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+                        .Select(c => c.Id)
+                        .ToListAsync()).ToHashSet();
+                }
+
+                foreach (var compliance in complianceAtOriginalDate
+                             .Where(c => !(c.MicrotingSdkCaseId > 0
+                                           && completedCaseIds.Contains(c.MicrotingSdkCaseId))))
+                {
+                    compliance.Deadline = newDate.Date;
+                    compliance.UpdatedByUserId = userService.UserId;
+                    await compliance.Update(backendConfigurationPnDbContext);
+                }
+            }
+
             return new OperationResult(true,
                 localizationService.GetString("CalendarTaskMovedSuccessfully"));
         }
