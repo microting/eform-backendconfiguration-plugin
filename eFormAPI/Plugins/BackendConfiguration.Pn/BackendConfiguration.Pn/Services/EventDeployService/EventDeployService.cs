@@ -359,6 +359,43 @@ public class EventDeployService(
         SdkLanguage language,
         CancellationToken ct)
     {
+        // 0. Defense-in-depth site-assignment guard (#932 / #1377). This is the
+        //    single source of truth for every PlanningCaseSite write, so it is
+        //    the right place to refuse a cross-worker leak. A PlanningCaseSite
+        //    must only ever be written for a site that is in the planning's own
+        //    (non-removed) PlanningSites. The two callers already uphold this:
+        //    EnsureDeployedAsync site-narrows its candidates (#935 defect A) and
+        //    the on-demand EnsureComplianceForOccurrenceAsync caller passes an
+        //    assigned site. If either invariant ever regresses, fail loud here
+        //    rather than silently deploying a case to a non-assigned worker (the
+        //    exact symptom #932 reports). In EnsureDeployedAsync this throw is
+        //    swallowed by the per-rotation try/catch and recovered on the next
+        //    sync; on the on-demand path it surfaces the bug to the caller.
+        //
+        //    Cost: this re-queries PlanningSites even though EnsureDeployedAsync
+        //    already narrowed by the same predicate. We keep it unconditional
+        //    (rather than passing a "trust me" flag from the narrowed caller) so
+        //    the guard genuinely protects EVERY write site, including future
+        //    callers. The extra indexed AnyAsync is negligible here: this method
+        //    only runs for candidates that survived the idempotence guard (i.e.
+        //    actually need deploying) and is dominated by the SDK ReadeForm +
+        //    CaseCreateLocalOnly round-trips that follow.
+        var siteIsAssignedToPlanning = await itemsPlanningPnDbContext.PlanningSites
+            .AsNoTracking()
+            .AnyAsync(ps =>
+                    ps.PlanningId == planning.Id
+                    && ps.SiteId == sdkSiteId
+                    && ps.WorkflowState != Constants.WorkflowStates.Removed,
+                ct)
+            .ConfigureAwait(false);
+        if (!siteIsAssignedToPlanning)
+        {
+            throw new InvalidOperationException(
+                $"EventDeployService refused to deploy planning {planning.Id} to sdkSiteId {sdkSiteId}: "
+                + "the site is not in the planning's (non-removed) PlanningSites. Deploying here would "
+                + "leak a case to a non-assigned worker (#932/#1377).");
+        }
+
         // 3. Resolve / create PlanningCase.
         //    Mirrors ItemCaseCreateHandler.cs:83-89, scoped to the
         //    rotation we're deploying (one PlanningCase per
