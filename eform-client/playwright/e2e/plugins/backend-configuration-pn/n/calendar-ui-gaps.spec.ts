@@ -298,18 +298,25 @@ test.describe.serial('Calendar UI gaps (#897)', () => {
       // 2) It carries the dimmed class (.gcal-task--inactive ← status===false).
       await expect(block).toHaveClass(/gcal-task--inactive/);
 
-      // 3) Computed-style probe: the dimming is actually applied — opacity is
-      //    reduced below 1 (the SCSS sets opacity: 0.45 on .gcal-task--inactive).
-      //    A filtered-out task would be absent; a non-dimmed task would be at
-      //    opacity 1. This is the regression guard that "dimmed, not hidden"
-      //    holds at the rendered-pixel level, not just the class level.
-      const opacity = await block.evaluate(
-        el => parseFloat(getComputedStyle(el as HTMLElement).opacity)
-      );
+      // 3) Computed-style probe: the dimming is actually applied. The dimmed
+      //    state is rendered via a CSS `filter` (grayscale + brightness) rather
+      //    than element `opacity` — element opacity made the tile translucent
+      //    and let an overlapping active tile bleed through, so the dimmed tile
+      //    must stay fully OPAQUE (opacity 1) and dim via filter instead. This
+      //    is the regression guard that "dimmed, not hidden" holds at the
+      //    rendered-pixel level, and that the tile is not see-through.
+      const { opacity, filter } = await block.evaluate(el => {
+        const cs = getComputedStyle(el as HTMLElement);
+        return { opacity: parseFloat(cs.opacity), filter: cs.filter };
+      });
       expect(
         opacity,
-        `inactive task should be visibly dimmed (opacity < 1), got ${opacity}`
-      ).toBeLessThan(1);
+        `inactive task must stay fully opaque so overlapping tiles don't bleed through, got ${opacity}`
+      ).toBe(1);
+      expect(
+        filter,
+        `inactive task should be visibly dimmed via a CSS filter, got "${filter}"`
+      ).not.toBe('none');
     });
 
     // ----- Overdue filter: intentionally not implementable via the UI ------
