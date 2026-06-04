@@ -298,25 +298,28 @@ test.describe.serial('Calendar UI gaps (#897)', () => {
       // 2) It carries the dimmed class (.gcal-task--inactive ← status===false).
       await expect(block).toHaveClass(/gcal-task--inactive/);
 
-      // 3) Computed-style probe: the dimming is actually applied. The dimmed
-      //    state is rendered via a CSS `filter` (grayscale + brightness) rather
-      //    than element `opacity` — element opacity made the tile translucent
-      //    and let an overlapping active tile bleed through, so the dimmed tile
-      //    must stay fully OPAQUE (opacity 1) and dim via filter instead. This
-      //    is the regression guard that "dimmed, not hidden" holds at the
+      // 3) Computed-style probe: the dimming is actually applied. The inactive
+      //    state recolours the tile to a neutral light grey (de-categorised)
+      //    rather than dropping element `opacity` — element opacity made the
+      //    tile translucent and let an overlapping active tile bleed through.
+      //    So the tile must stay fully OPAQUE (opacity 1) and its background
+      //    must be a near-neutral grey (R≈G≈B), not the saturated board colour.
+      //    This is the regression guard that "dimmed, not hidden" holds at the
       //    rendered-pixel level, and that the tile is not see-through.
-      const { opacity, filter } = await block.evaluate(el => {
+      const { opacity, bg } = await block.evaluate(el => {
         const cs = getComputedStyle(el as HTMLElement);
-        return { opacity: parseFloat(cs.opacity), filter: cs.filter };
+        return { opacity: parseFloat(cs.opacity), bg: cs.backgroundColor };
       });
       expect(
         opacity,
         `inactive task must stay fully opaque so overlapping tiles don't bleed through, got ${opacity}`
       ).toBe(1);
+      const ch = (bg.match(/\d+(\.\d+)?/g) ?? []).map(Number).slice(0, 3);
+      const spread = ch.length === 3 ? Math.max(...ch) - Math.min(...ch) : 999;
       expect(
-        filter,
-        `inactive task should be visibly dimmed via a CSS filter, got "${filter}"`
-      ).not.toBe('none');
+        spread,
+        `inactive task should be recoloured to a neutral grey (de-categorised), got "${bg}"`
+      ).toBeLessThan(12);
     });
 
     // ----- Overdue filter: intentionally not implementable via the UI ------
