@@ -1858,6 +1858,15 @@ public class BackendConfigurationCalendarService(
                     arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
                     arp.DayOfWeek = (int)newDate.DayOfWeek;
                 }
+                // Yearly rules anchor on a fixed (month, day-of-month). The
+                // month follows StartDate, but the day-of-month is read from
+                // DayOfMonth by the yearly render; carry it to the drop day or
+                // the occurrence re-pins to the original day and snaps back
+                // (#952).
+                if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                {
+                    arp.DayOfMonth = newDate.Day;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
@@ -1868,6 +1877,10 @@ public class BackendConfigurationCalendarService(
                     // new weekday so NextExecutionTime does not pull the series
                     // back to the old day (the two-master defect, #925/#926).
                     oldPlanning.DayOfWeek = newDate.DayOfWeek;
+                    if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                    {
+                        oldPlanning.DayOfMonth = newDate.Day;
+                    }
                     oldPlanning.UpdatedByUserId = userService.UserId;
                     await oldPlanning.Update(itemsPlanningPnDbContext);
                 }
@@ -1925,6 +1938,12 @@ public class BackendConfigurationCalendarService(
                     arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
                     arp.DayOfWeek = (int)newDate.DayOfWeek;
                 }
+                // Carry the yearly day-of-month to the drop day (#952); see the
+                // thisAndFollowing branch above for the rationale.
+                if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                {
+                    arp.DayOfMonth = newDate.Day;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
@@ -1937,6 +1956,10 @@ public class BackendConfigurationCalendarService(
                 {
                     planning.StartDate = newDate;
                     planning.DayOfWeek = newDate.DayOfWeek;
+                    if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                    {
+                        planning.DayOfMonth = newDate.Day;
+                    }
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
