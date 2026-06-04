@@ -35,6 +35,64 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 {
+    // ------------------------------------------------------------------
+    // Date anchors — computed relative to UtcNow so the fixture never rots.
+    //
+    // The recurrence assertions below were originally written against a
+    // hardcoded June/July 2026 calendar (series start = Thu 2026-06-04, the
+    // 1st Thursday of June; next-month occurrence = Thu 2026-07-02, the 1st
+    // Thursday of July; drag target = Wed 2026-07-01). That made the suite a
+    // time-bomb: once "today" reached the series date, the CalendarService's
+    // "can't create/edit a task in the past" guard (CannotCreateTaskInThePast)
+    // started rejecting the edits and the tests failed for everyone.
+    //
+    // We reproduce the SAME calendar shape, anchored a couple of months into
+    // the future:
+    //   SeriesStart                — 1st Thursday of base month M (a Thursday)
+    //   NextMonthFirstThu          — 1st Thursday of month M+1
+    //   WedBeforeNextMonthFirstThu — the Wednesday before it (week 1 → ordinal 1)
+    //   WeeklyThuPlus4/5/6         — Thursdays 4/5/6 weeks after SeriesStart
+    //                                (the weekly-series occurrences)
+    // M is chosen so M+1's 1st Thursday is not day 1 of the month, i.e. the
+    // Wednesday-before lives in the same month and in week 1 — exactly the
+    // 2026-07-01/02 shape the assertions rely on.
+    // ------------------------------------------------------------------
+    private static readonly DateTime SeriesStart;
+    private static readonly DateTime NextMonthFirstThu;
+    private static readonly DateTime WedBeforeNextMonthFirstThu;
+    private static readonly DateTime WeeklyThuPlus4;
+    private static readonly DateTime WeeklyThuPlus5;
+    private static readonly DateTime WeeklyThuPlus6;
+
+    static CalendarRecurrenceRulePersistenceFixTests()
+    {
+        var probeMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc)
+            .AddMonths(2);
+        while (true)
+        {
+            var baseThu = FirstThursdayOfMonth(probeMonth);
+            var nextThu = FirstThursdayOfMonth(probeMonth.AddMonths(1));
+            if (nextThu.Day > 1) // Wednesday-before stays inside the same month (week 1)
+            {
+                SeriesStart = baseThu;
+                NextMonthFirstThu = nextThu;
+                WedBeforeNextMonthFirstThu = nextThu.AddDays(-1);
+                break;
+            }
+            probeMonth = probeMonth.AddMonths(1);
+        }
+        WeeklyThuPlus4 = SeriesStart.AddDays(28);
+        WeeklyThuPlus5 = SeriesStart.AddDays(35);
+        WeeklyThuPlus6 = SeriesStart.AddDays(42);
+    }
+
+    private static DateTime FirstThursdayOfMonth(DateTime anyDayInMonth)
+    {
+        var first = new DateTime(anyDayInMonth.Year, anyDayInMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var offset = ((int)DayOfWeek.Thursday - (int)first.DayOfWeek + 7) % 7;
+        return first.AddDays(offset);
+    }
+
     private IUserService _userService;
     private IBackendConfigurationTaskWizardService _taskWizardService;
     private BackendConfigurationCalendarService _calendarService;
@@ -208,6 +266,8 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
 
     // ------------------------------------------------------------------
     // A. DeriveDayOfMonth unit tests (#925/#938) — pure, no DB needed.
+    //    These are calendar-math unit tests with no "now" comparison, so the
+    //    literal dates are intentional and do not rot.
     // ------------------------------------------------------------------
 
     [TestCase(PluginRepeatType.Week, 2026, 6, 4, ExpectedResult = 1)]
@@ -231,15 +291,14 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task MoveTask_ThisAndFollowing_ReDerivesNthWeekday()
     {
-        // Monthly 1st-Thursday rule starting Thu 2026-06-04.
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
+        // Monthly 1st-Thursday rule starting on SeriesStart (1st Thu of month M).
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
 
-        // Drag the 1st Thursday of July (2026-07-02) to Wed 2026-07-01.
-        var originalDate = new DateTime(2026, 7, 2);
-        var newDate = new DateTime(2026, 7, 1); // Wednesday
+        // Drag the 1st Thursday of month M+1 to the Wednesday before it.
+        var originalDate = NextMonthFirstThu;
+        var newDate = WedBeforeNextMonthFirstThu; // Wednesday, week 1
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
@@ -270,16 +329,15 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task MoveTask_ScopeAll_ReDerivesNthWeekday()
     {
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
 
-        var newDate = new DateTime(2026, 7, 1); // Wednesday
+        var newDate = WedBeforeNextMonthFirstThu; // Wednesday, week 1
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
-            OriginalDate = new DateTime(2026, 7, 2).ToString("yyyy-MM-dd") + "T00:00:00Z",
+            OriginalDate = NextMonthFirstThu.ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewDate = newDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewStartHour = 10.0,
             Scope = "all"
@@ -306,17 +364,17 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task UpdateTask_ThisAndFollowing_ChangedDate_ReAnchorsSeries()
     {
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
 
-        // OriginalDate = 1st Thursday of July; the edit moves it to Wed 2026-07-01.
+        // OriginalDate = 1st Thursday of month M+1; the edit moves it to the
+        // Wednesday before it.
         var model = BuildEdit(
             arpId,
-            startDate: new DateTime(2026, 7, 1),
+            startDate: WedBeforeNextMonthFirstThu,
             scope: "thisAndFollowing",
-            originalDate: new DateTime(2026, 7, 2),
+            originalDate: NextMonthFirstThu,
             repeatType: 3,
             repeatOrdinalWeek: 1);
 
@@ -327,14 +385,14 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         var planning = await ItemsPlanningPnDbContext!.Plannings.SingleAsync(x => x.Id == arp.ItemPlanningId);
         Assert.Multiple(() =>
         {
-            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(new DateTime(2026, 7, 1)), "re-anchored");
+            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(WedBeforeNextMonthFirstThu.Date), "re-anchored");
             Assert.That(arp.DayOfWeek, Is.EqualTo(3), "Wednesday");
             Assert.That(arp.RepeatOrdinalWeek, Is.EqualTo(1));
-            Assert.That(planning.StartDate.Date, Is.EqualTo(new DateTime(2026, 7, 1)));
+            Assert.That(planning.StartDate.Date, Is.EqualTo(WedBeforeNextMonthFirstThu.Date));
         });
         // The wizard must rebuild the series from the re-anchored start date.
         await _taskWizardService.Received().UpdateTask(
-            Arg.Is<TaskWizardCreateModel>(m => m.StartDate.HasValue && m.StartDate.Value.Date == new DateTime(2026, 7, 1)));
+            Arg.Is<TaskWizardCreateModel>(m => m.StartDate.HasValue && m.StartDate.Value.Date == WedBeforeNextMonthFirstThu.Date));
 
         // No backfill anchor may survive at/after the new anchor — it would
         // shadow the re-anchored series' own occurrences with stale values.
@@ -342,7 +400,7 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             .Where(x => x.AreaRulePlanningId == arpId)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
-        Assert.That(exceptions.Any(e => e.OriginalDate.Date >= new DateTime(2026, 7, 1)), Is.False,
+        Assert.That(exceptions.Any(e => e.OriginalDate.Date >= WedBeforeNextMonthFirstThu.Date), Is.False,
             "no anchor may shadow the re-anchored series");
     }
 
@@ -355,18 +413,18 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task UpdateTask_ThisAndFollowing_BackwardSameWeekday_NoShadowAnchor()
     {
-        // Weekly Thursday series from Thu 2026-06-04.
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
+        // Weekly Thursday series from SeriesStart.
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Week, planningDayOfWeek: DayOfWeek.Thursday);
 
-        // Edit the Thu 2026-07-16 occurrence back to the earlier Thu 2026-07-09.
+        // Edit the (SeriesStart + 6 weeks) Thursday back to the earlier
+        // (SeriesStart + 5 weeks) Thursday.
         var model = BuildEdit(
             arpId,
-            startDate: new DateTime(2026, 7, 9),
+            startDate: WeeklyThuPlus5,
             scope: "thisAndFollowing",
-            originalDate: new DateTime(2026, 7, 16),
+            originalDate: WeeklyThuPlus6,
             repeatType: 2,
             repeatOrdinalWeek: null);
 
@@ -381,11 +439,11 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         {
             // The re-anchored Thursday (and everything after it) is regenerated
             // by the series, so no anchor may remain at/after it.
-            Assert.That(exceptions.Any(e => e.OriginalDate.Date >= new DateTime(2026, 7, 9)), Is.False,
-                "the Jul-09 anchor (and later) must be cleared, not left to shadow the series");
-            // Genuinely-past occurrences (before the new anchor) stay pinned.
-            Assert.That(exceptions.Any(e => e.OriginalDate.Date == new DateTime(2026, 7, 2)), Is.True,
-                "the Jul-02 past occurrence stays anchored with its old values");
+            Assert.That(exceptions.Any(e => e.OriginalDate.Date >= WeeklyThuPlus5.Date), Is.False,
+                "the +5wk anchor (and later) must be cleared, not left to shadow the series");
+            // Earlier occurrences (before the new anchor) stay pinned.
+            Assert.That(exceptions.Any(e => e.OriginalDate.Date == WeeklyThuPlus4.Date), Is.True,
+                "the +4wk occurrence stays anchored with its old values");
         });
     }
 
@@ -397,16 +455,15 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task MoveTask_ThisAndFollowing_BackwardSameWeekday_NoShadowAnchor()
     {
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Week, planningDayOfWeek: DayOfWeek.Thursday);
 
         var moveModel = new CalendarTaskMoveRequestModel
         {
             Id = arpId,
-            OriginalDate = new DateTime(2026, 7, 16).ToString("yyyy-MM-dd") + "T00:00:00Z",
-            NewDate = new DateTime(2026, 7, 9).ToString("yyyy-MM-dd") + "T00:00:00Z",
+            OriginalDate = WeeklyThuPlus6.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = WeeklyThuPlus5.ToString("yyyy-MM-dd") + "T00:00:00Z",
             NewStartHour = 10.0,
             Scope = "thisAndFollowing"
         };
@@ -420,10 +477,10 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             .ToListAsync();
         Assert.Multiple(() =>
         {
-            Assert.That(exceptions.Any(e => e.OriginalDate.Date >= new DateTime(2026, 7, 9)), Is.False,
-                "the Jul-09 anchor (and later) must be cleared, not left to shadow the series");
-            Assert.That(exceptions.Any(e => e.OriginalDate.Date == new DateTime(2026, 7, 2)), Is.True,
-                "the Jul-02 past occurrence stays anchored");
+            Assert.That(exceptions.Any(e => e.OriginalDate.Date >= WeeklyThuPlus5.Date), Is.False,
+                "the +5wk anchor (and later) must be cleared, not left to shadow the series");
+            Assert.That(exceptions.Any(e => e.OriginalDate.Date == WeeklyThuPlus4.Date), Is.True,
+                "the +4wk occurrence stays anchored");
         });
     }
 
@@ -435,17 +492,16 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     [Test]
     public async Task UpdateTask_ThisAndFollowing_UnchangedDate_KeepsSeriesStart()
     {
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc);
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
+            SeriesStart, arpRepeatType: 3, repeatOrdinalWeek: 1, dayOfWeek: 4,
             planningRepeatType: PlanningRepeatType.Month, planningDayOfWeek: DayOfWeek.Thursday);
 
         // StartDate == OriginalDate → pure field edit, no date move.
         var model = BuildEdit(
             arpId,
-            startDate: new DateTime(2026, 7, 2),
+            startDate: NextMonthFirstThu,
             scope: "thisAndFollowing",
-            originalDate: new DateTime(2026, 7, 2),
+            originalDate: NextMonthFirstThu,
             repeatType: 3,
             repeatOrdinalWeek: 1);
 
@@ -453,10 +509,10 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
         Assert.That(result.Success, Is.True, result.Message);
 
         var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == arpId);
-        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(new DateTime(2026, 6, 4)),
+        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(SeriesStart.Date),
             "series start must NOT be relocated on an unchanged-date edit");
         await _taskWizardService.Received().UpdateTask(
-            Arg.Is<TaskWizardCreateModel>(m => m.StartDate.HasValue && m.StartDate.Value.Date == new DateTime(2026, 6, 4)));
+            Arg.Is<TaskWizardCreateModel>(m => m.StartDate.HasValue && m.StartDate.Value.Date == SeriesStart.Date));
     }
 
     // ------------------------------------------------------------------
@@ -467,17 +523,16 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
     public async Task UpdateTask_ScopeAll_PersistsWeeklyDayOfWeek()
     {
         // Weekly rule with a stale Sunday (0) DayOfWeek default that would
-        // otherwise mislabel the event.
-        var seriesStart = DateTime.SpecifyKind(new DateTime(2026, 6, 4), DateTimeKind.Utc); // Thursday
+        // otherwise mislabel the event. SeriesStart is a Thursday.
         var arpId = await SeedTask(
-            seriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 0,
+            SeriesStart, arpRepeatType: 2, repeatOrdinalWeek: null, dayOfWeek: 0,
             planningRepeatType: PlanningRepeatType.Week, planningDayOfWeek: DayOfWeek.Thursday);
 
         var model = BuildEdit(
             arpId,
-            startDate: new DateTime(2026, 6, 4),
+            startDate: SeriesStart,
             scope: "all",
-            originalDate: new DateTime(2026, 6, 4),
+            originalDate: SeriesStart,
             repeatType: 2,
             repeatOrdinalWeek: null);
 
