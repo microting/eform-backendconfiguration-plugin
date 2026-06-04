@@ -36,7 +36,10 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 using NSubstitute;
 
 /// <summary>
@@ -901,6 +904,243 @@ public class EventDeployServiceTest : TestBaseSetup
             "No PlanningCaseSite may be written for a site outside the planning's "
             + "PlanningSites (#932).");
     }
+
+    // ------------------------------------------------------------------
+    // 13. EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite
+    //
+    // Regression for #934. The forensic snapshot showed four identical
+    // PlanningCaseSites rows for the same (planning, site), three of them
+    // created in the same second — the 5s StreamEventChanges poll, ListEvents
+    // one-shots and the several window/board calls a single client fires per
+    // sync, all racing through the deploy path before any of them writes the
+    // Compliance row the idempotence guard keys on. This test fires N truly
+    // concurrent EnsureDeployedAsync passes (each on its OWN DbContexts, like
+    // separate gRPC requests on one pod) for the same rotation and asserts that
+    // exactly ONE PlanningCaseSite is created. Without the per-(planning, site)
+    // serialization in EventDeployService the passes each create a duplicate.
+    //
+    // Unlike the deferred happy-path test #8, this one drives the FULL deploy
+    // (real eForm template + CaseCreateLocalOnly), so it also covers the
+    // create → SDK case → Compliance write order end to end.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite()
+    {
+        const int passes = 4; // mirrors the 4-row forensic snapshot in #934
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // SDK site whose MicrotingUid CaseCreateLocalOnly resolves against.
+        const int siteMicrotingUid = 4242;
+        var site = new Site
+        {
+            Name = "concurrent-deploy-site",
+            MicrotingUid = siteMicrotingUid,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // Real eForm template so DeployForRotationAsync's ReadeForm +
+        // CaseCreateLocalOnly succeed (and the Compliance guard becomes
+        // effective for the second pass onward).
+        var template = await core.TemplateFromXml(CommentTemplateXml);
+        var templateId = await core.TemplateCreate(template);
+
+        // Full BC graph the deploy path reads: Area → Property → AreaRule →
+        // AreaRulePlanning(ItemPlanningId), plus the ItemsPlanning Planning +
+        // PlanningSite (the #935 site-narrowing + #932 guard require it).
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"ConcurrentProp-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var rotationDate = DateTime.UtcNow.Date.AddDays(2);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+            RelatedEFormId = templateId,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
+            ItemPlanningId = planning.Id, StartDate = rotationDate.AddDays(-7), Status = true,
+            RepeatType = 1, RepeatEvery = 1, DayOfWeek = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Shared calendar + core mocks (read-only across passes); each pass gets
+        // its OWN DbContexts, mirroring separate gRPC requests' scoped contexts.
+        var rotation = MakeRotation(id: 934, date: rotationDate, planningId: planning.Id, eformId: templateId);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var sp = new ServiceCollection().AddSingleton(calendar).BuildServiceProvider();
+
+        var todayKey = DateTime.UtcNow.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var toKey = rotationDate.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        // Warm the cached ServerVersion on the main thread so the concurrent
+        // context builds below don't race to detect it / open extra connections.
+        _ = CachedServerVersion();
+
+        // Act — N concurrent deploy passes for the same (planning, site,
+        // rotation). A Barrier holds every task at the gate until all are built,
+        // then releases them together so they genuinely overlap in the
+        // check-then-deploy window — without this the thread pool could run them
+        // sequentially on a constrained runner and the race would not reproduce.
+        using var startGate = new Barrier(passes);
+        var tasks = Enumerable.Range(0, passes).Select(_ => Task.Run(async () =>
+        {
+            var bc = NewBackendContext();
+            var ip = NewItemsPlanningContext();
+            try
+            {
+                var service = new EventDeployService(
+                    bc, ip, coreHelper, sp, NullLogger<EventDeployService>.Instance);
+                // Release all passes simultaneously (timeout guards against a hang
+                // if a sibling task faulted before reaching the gate).
+                startGate.SignalAndWait(TimeSpan.FromSeconds(60));
+                await service.EnsureDeployedAsync(
+                    PropertyId, BoardIds, todayKey, toKey, site.Id, CancellationToken.None);
+            }
+            finally
+            {
+                await bc.DisposeAsync();
+                await ip.DisposeAsync();
+            }
+        })).ToArray();
+        await Task.WhenAll(tasks);
+
+        // Assert — exactly one active PlanningCaseSite for (planning, site),
+        // read through a fresh context so we see all committed rows.
+        await using var verifyIp = NewItemsPlanningContext();
+        var planningCaseSiteCount = await verifyIp.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id
+                               && pcs.MicrotingSdkSiteId == site.Id
+                               && pcs.WorkflowState != Constants.WorkflowStates.Removed);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(1),
+            $"Expected exactly one PlanningCaseSite for (planning {planning.Id}, site {site.Id}) "
+            + $"after {passes} concurrent deploy passes, but found {planningCaseSiteCount} (#934).");
+    }
+
+    /// <summary>
+    /// Builds a fresh <see cref="BackendConfigurationPnDbContext"/> against the
+    /// same test database as the inherited one, so concurrent passes use their
+    /// own context like separate gRPC requests (EF DbContext is not thread-safe).
+    /// </summary>
+    // Cached so the concurrent context builds in test #13 don't each open a
+    // version-detection connection against the shared testcontainer. Same DB
+    // server for both contexts, so one detection serves both. Warmed once
+    // (on the main thread) before any parallel use to avoid a detect race.
+    private ServerVersion? _serverVersion;
+
+    private ServerVersion CachedServerVersion()
+        => _serverVersion ??= ServerVersion.AutoDetect(
+            BackendConfigurationPnDbContext!.Database.GetConnectionString());
+
+    private BackendConfigurationPnDbContext NewBackendContext()
+    {
+        var cs = BackendConfigurationPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        return new BackendConfigurationPnDbContext(ob.Options);
+    }
+
+    private ItemsPlanningPnDbContext NewItemsPlanningContext()
+    {
+        var cs = ItemsPlanningPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        return new ItemsPlanningPnDbContext(ob.Options);
+    }
+
+    /// <summary>
+    /// A minimal real eForm (single Comment field) used to make the full deploy
+    /// path succeed. Copied from the SDK's CoreTesteFormCreateInDB test.
+    /// </summary>
+    private const string CommentTemplateXml = @"
+<?xml version='1.0' encoding='UTF-8'?>
+<Main>
+    <Id>9060</Id>
+    <Repeated>0</Repeated>
+    <Label>CommentMain</Label>
+    <StartDate>2017-07-07</StartDate>
+    <EndDate>2027-07-07</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type='DataElement'>
+            <Id>9060</Id>
+            <Label>CommentDataElement</Label>
+            <Description><![CDATA[CommentDataElementDescription]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>false</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type='Comment'>
+                    <Id>73660</Id>
+                    <Label>CommentField</Label>
+                    <Description><![CDATA[CommentFieldDescription]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value />
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>";
 
     /// <summary>
     /// Captures every <see cref="ILogger.Log"/> invocation into an in-memory
