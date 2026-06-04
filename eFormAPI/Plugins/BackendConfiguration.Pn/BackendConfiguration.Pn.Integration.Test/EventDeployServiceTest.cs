@@ -716,6 +716,192 @@ public class EventDeployServiceTest : TestBaseSetup
     // EventDeployService.cs:392-395).
     // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
+    // 11. EnsureDeployedAsync_PlanningAssignedToOtherSite_NotDeployedForCallingSite
+    //
+    // Regression for #932 (deploy-side cross-worker leak — the deploy
+    // companion of #931's read-side leak). A planning assigned ONLY to site A
+    // must never be deployed for a different site B that merely shares
+    // property access. The site-aware candidate narrowing in
+    // EnsureDeployedAsync (EventDeployService.cs:150-165, #935 defect A) is
+    // what prevents this: the planning has no PlanningSite for the calling
+    // site B, so the candidate is dropped before the SDK deploy path runs.
+    //
+    // Observable canary: with narrowing, the candidate list is empty after
+    // the filter and EnsureDeployedAsync returns BEFORE coreHelper.GetCore()
+    // (EventDeployService.cs:167-175). Remove the narrowing and the same
+    // fixture reaches GetCore + the planning/ARP lookups, so
+    // DidNotReceive().GetCore() precisely distinguishes "narrowing dropped the
+    // leak" from "deploy ran". Test #7b is the positive control: the SAME
+    // fixture shape with calling site == assigned site DOES reach the deploy
+    // path, so this pair pins both directions of the narrowing.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_PlanningAssignedToOtherSite_NotDeployedForCallingSite()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // The assigned worker's site (A) and the non-assigned caller's site (B).
+        var assignedSite = new Site
+        {
+            Name = "niels-site",
+            MicrotingUid = 50,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var callingSite = new Site
+        {
+            Name = "soren-site",
+            MicrotingUid = 51,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(assignedSite, callingSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var rotationDate = DateTime.UtcNow.Date.AddDays(2);
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Planning is assigned ONLY to site A.
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = assignedSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var rotation = MakeRotation(id: 932, date: rotationDate, planningId: planning.Id, eformId: 9320);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper);
+
+        // Act — site B polls/deploys for a planning it is NOT assigned to.
+        await service.EnsureDeployedAsync(
+            PropertyId, BoardIds, "2026-05-14", "2026-05-20", callingSite.Id, CancellationToken.None);
+
+        // Assert — narrowing dropped the candidate before the SDK path: GetCore
+        // is never reached, and no deploy artefacts were written for site B.
+        await coreHelper.DidNotReceive().GetCore();
+
+        var planningCaseSiteCount = await ItemsPlanningPnDbContext.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(0),
+            "A planning assigned only to another site must not get a PlanningCaseSite "
+            + "for the calling site (#932).");
+
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        Assert.That(complianceCount, Is.EqualTo(0));
+    }
+
+    // ------------------------------------------------------------------
+    // 12. EnsureComplianceForOccurrence_SiteNotInPlanningSites_ThrowsAndDoesNotDeploy
+    //
+    // Pins the new defense-in-depth guard at the top of the single
+    // PlanningCaseSite write site (DeployForRotationAsync). The on-demand
+    // calendar materialisation path (EnsureComplianceForOccurrenceAsync ->
+    // DeployForRotationAsync) does NOT site-narrow its caller the way
+    // EnsureDeployedAsync does; its only protection is that
+    // BackendConfigurationCalendarService passes an assigned site. If that
+    // invariant ever regresses, the guard must throw rather than silently leak
+    // a case to a non-assigned worker (#932/#1377).
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureComplianceForOccurrence_SiteNotInPlanningSites_ThrowsAndDoesNotDeploy()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // Two real, separately-inserted sites: the planning is assigned to A,
+        // the caller is B. Capturing both generated Ids (rather than hardcoding
+        // a magic id) keeps the test robust against the fixture's shared
+        // testcontainer auto-increment carrying across tests.
+        var assignedSite = new Site
+        {
+            Name = "niels-site-ondemand",
+            MicrotingUid = 53,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var callingSite = new Site
+        {
+            Name = "soren-site-ondemand",
+            MicrotingUid = 52,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(assignedSite, callingSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var deadline = DateTime.UtcNow.Date.AddDays(2);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = deadline.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = deadline,
+            DayOfMonth = deadline.Day,
+            RepeatUntil = deadline.AddMonths(6),
+            // > 0 so EnsureComplianceForOccurrenceAsync resolves an EformId and
+            // reaches DeployForRotationAsync (where the guard lives) rather than
+            // bailing early on a missing eform.
+            RelatedEFormId = 9321,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Planning is assigned ONLY to assignedSite — NOT the calling site.
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = assignedSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Intentionally an in-memory AreaRulePlanning, NOT persisted:
+        // EnsureComplianceForOccurrenceAsync takes it as a parameter and only
+        // reads .ItemPlanningId off it (the Planning itself is looked up from
+        // the DB), so this is enough to drive the call through to
+        // DeployForRotationAsync where the guard lives. If that method is ever
+        // refactored to re-fetch the ARP from the DB, persist this entity.
+        var areaRulePlanning = new AreaRulePlanning
+        {
+            ItemPlanningId = planning.Id,
+            PropertyId = 1,
+            AreaId = 1,
+        };
+
+        var (calendar, coreHelper) = MakeMocks([], core);
+        var service = MakeService(calendar, coreHelper);
+
+        // Act + Assert — the guard refuses to deploy to a non-assigned site.
+        Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.EnsureComplianceForOccurrenceAsync(
+                areaRulePlanning, deadline, callingSite.Id, CancellationToken.None));
+
+        var planningCaseSiteCount = await ItemsPlanningPnDbContext.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(0),
+            "No PlanningCaseSite may be written for a site outside the planning's "
+            + "PlanningSites (#932).");
+    }
+
     /// <summary>
     /// Captures every <see cref="ILogger.Log"/> invocation into an in-memory
     /// list so tests can pin "this log line was (or wasn't) emitted". Used
