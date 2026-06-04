@@ -866,8 +866,11 @@ public class EventsGrpcService(
         Type? lastErrorType = null;
         // Defect D in #935 — initial snapshot above only READS; new server-side
         // plannings would not surface until the worker manually refreshes. Run
-        // EnsureDeployedAsync at most once per minute so they appear within ~60s.
-        var lastDeployUtc = DateTime.UtcNow.AddSeconds(-60);
+        // EnsureDeployedAsync at most once per ~5s (≈ one poll interval) so a
+        // freshly created event lands on the next emit instead of waiting up
+        // to a minute. PR-A's site-aware idempotence guard keeps the no-op
+        // case cheap.
+        var lastDeployUtc = DateTime.UtcNow.AddSeconds(-5);
         while (!ct.IsCancellationRequested)
         {
             try
@@ -883,8 +886,11 @@ public class EventsGrpcService(
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
 
-                // Defect D in #935 — eager deploy debounced once-per-minute.
-                if ((DateTime.UtcNow - lastDeployUtc).TotalSeconds >= 60)
+                // Defect D in #935 — eager deploy debounced to ~5s (one poll
+                // interval) so newly created events surface on the very next
+                // emit. PR-A's site-aware idempotence guard makes the no-op
+                // path cheap.
+                if ((DateTime.UtcNow - lastDeployUtc).TotalSeconds >= 5)
                 {
                     try
                     {
@@ -905,7 +911,7 @@ public class EventsGrpcService(
                     catch (Exception deployEx)
                     {
                         logger.LogWarning(deployEx,
-                            "EventsGrpcService.StreamEventChanges eager deploy failed for sdkSiteId={SdkSiteId} property={PropertyId} — read path will still run; retry in ~60s",
+                            "EventsGrpcService.StreamEventChanges eager deploy failed for sdkSiteId={SdkSiteId} property={PropertyId} — read path will still run; retry in ~5s",
                             sdkSiteId, propertyId);
                     }
                     lastDeployUtc = DateTime.UtcNow;
