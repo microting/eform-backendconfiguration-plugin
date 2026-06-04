@@ -382,11 +382,14 @@ public class EventDeployServiceTest : TestBaseSetup
     [Test]
     public async Task EnsureDeployedAsync_TodayRotation_AdmittedByCandidateFilter()
     {
-        // Arrange — a today rotation. We do NOT seed a Planning, so when
-        // the rotation is admitted by the candidate filter the pipeline
-        // reaches the planning lookup and emits a "planning ... not found"
-        // warning. That warning is the observable canary that the filter
-        // admitted today's date.
+        // Arrange — a today rotation. We seed a Planning + PlanningSite
+        // pair so the site-aware narrowing filter at
+        // EventDeployService.cs:150-165 (defect A from commit 5c543341)
+        // admits the candidate. We deliberately stop short of seeding the
+        // AreaRulePlanning so the pipeline emits the
+        // "areaRulePlanning for planning ... not found" warning. That
+        // warning contains both "planning" and "not found", which is the
+        // observable canary the assertion below pins.
         var core = await GetCore();
 
         // GetCore() seeds the SDK's default languages; reuse one.
@@ -403,11 +406,38 @@ public class EventDeployServiceTest : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
 
         var today = DateTime.UtcNow.Date;
-        const int planningId = 900;
+
+        // Seed a Planning (auto-id) so the PlanningSite FK is satisfied,
+        // then seed the PlanningSite that the site-aware narrowing filter
+        // at EventDeployService.cs:150-165 requires. The rotation's
+        // PlanningId is wired to the seeded Planning.Id so the candidate
+        // survives the narrowing.
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = today,
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = today.AddMonths(1),
+            DayOfMonth = today.Day,
+            RepeatUntil = today.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var rotation = MakeRotation(
             id: 104,
             date: today,
-            planningId: planningId,
+            planningId: planning.Id,
             eformId: 901);
 
         var logger = new TestLogger<EventDeployService>();
@@ -482,8 +512,36 @@ public class EventDeployServiceTest : TestBaseSetup
         await MicrotingDbContext.Sites.AddAsync(site);
         await MicrotingDbContext.SaveChangesAsync();
 
-        const int planningId = 600;
         var rotationDate = DateTime.UtcNow.Date.AddDays(4);
+
+        // Seed a Planning (auto-id) so the PlanningSite FK is satisfied,
+        // then seed the PlanningSite that the site-aware narrowing filter
+        // at EventDeployService.cs:150-165 (defect A from commit 5c543341)
+        // requires. Without the PlanningSite the rotation is dropped before
+        // reaching the idempotence guard and the stuck-row fall-through
+        // behaviour we're pinning never gets exercised.
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        var planningId = planning.Id;
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planningId,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         // The stuck shape: Created + MicrotingSdkCaseId == 0. Default int
         // is 0 so the property is left at its default to make the intent

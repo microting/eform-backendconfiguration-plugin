@@ -138,6 +138,32 @@ public class EventDeployService(
             .Where(x => x.RotationDate.HasValue && x.RotationDate.Value >= todayUtc)
             .ToList();
 
+        // Site-aware narrowing (defect A in #935). The candidate iteration above
+        // is property-wide because GetTasksForWeek is property-wide; deploying
+        // for plannings that have no PlanningSite for the calling worker is
+        // both wasted work AND makes the (PlanningId, Deadline.Date) idempotence
+        // guard mis-fire (the first caller's deploy "claims" the slot, the
+        // assignee then skips deploy and never gets their own SDK case).
+        // Stuck-row recovery is per-site by construction: cross-site cleanup
+        // (e.g. when a worker is removed from PlanningSites between the
+        // original deploy and recovery) belongs to the scheduler microservice.
+        var candidatePlanningIds = candidates
+            .Select(x => x.Task.PlanningId!.Value)
+            .Distinct()
+            .ToList();
+        var planningIdsAssignedToSite = await itemsPlanningPnDbContext.PlanningSites
+            .AsNoTracking()
+            .Where(ps => candidatePlanningIds.Contains(ps.PlanningId)
+                         && ps.SiteId == sdkSiteId
+                         && ps.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(ps => ps.PlanningId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var assignedPlanningIdSet = new HashSet<int>(planningIdsAssignedToSite);
+        candidates = candidates
+            .Where(x => assignedPlanningIdSet.Contains(x.Task.PlanningId!.Value))
+            .ToList();
+
         if (candidates.Count == 0)
         {
             logger.LogDebug(
@@ -183,29 +209,61 @@ public class EventDeployService(
 
             try
             {
-                // 1. Idempotence guard — Compliance natural key.
+                // 1. Idempotence guard — Compliance natural key + SDK site.
                 //    Mirrors EformParsedByServerHandler.cs:157-164 (compliance
-                //    is keyed on PlanningId + Deadline; we additionally scope
-                //    to the requested sdk site below when locating the
-                //    PlanningCaseSite).
-                //    The slot is "taken — skip" if it's soft-removed (user
-                //    already completed this rotation; the SDK Case still
-                //    exists, just the Compliance was retracted) OR fully
-                //    deployed (MicrotingSdkCaseId > 0). We re-deploy ONLY for
-                //    the genuine stuck-row shape: Created + MicrotingSdkCaseId
-                //    == 0, where an earlier deploy left a Compliance row
-                //    behind without an SDK Case (e.g. the SDK 10.0.27 EndDate
-                //    validation bug). EnsureComplianceRowAsync revives that
-                //    row in place via the duplicate-key catch.
+                //    is keyed on PlanningId + Deadline), but ALSO scopes the
+                //    "already deployed" decision to the calling worker's site
+                //    (defect A in #935): without the site filter, the first
+                //    caller wins the (PlanningId, Deadline) slot and writes a
+                //    Compliance pointing at THEIR SDK case, then subsequent
+                //    callers — including the planning's actual assignee — hit
+                //    this guard and skip deploy, so they see the tile but the
+                //    linked SDK case belongs to a different site and the eForm
+                //    never opens.
+                //
+                //    Two-step query because Compliance.MicrotingSdkCaseId
+                //    references the SDK DbContext's Cases table:
+                //      (1) From BC: candidate SdkCaseIds for (planning, day).
+                //      (2) From SDK: does any of those rows have SiteId == us?
+                //
+                //    The Removed-Compliance branch stays site-agnostic: a
+                //    soft-removed row globally means "this rotation has been
+                //    completed-then-retracted" (canonical complete-and-remove
+                //    semantics, e.g. mobile CompleteEvent + admin retract);
+                //    we never re-deploy that, regardless of which site
+                //    originally completed it.
                 var alreadyDeployed = await dbContext.Compliances
                     .AsNoTracking()
                     .AnyAsync(c =>
                             c.PlanningId == planningId
                             && c.Deadline.Date == rotationDate
-                            && (c.WorkflowState == Constants.WorkflowStates.Removed
-                                || c.MicrotingSdkCaseId > 0),
+                            && c.WorkflowState == Constants.WorkflowStates.Removed,
                         cancellationToken)
                     .ConfigureAwait(false);
+                if (!alreadyDeployed)
+                {
+                    var candidateSdkCaseIds = await dbContext.Compliances
+                        .AsNoTracking()
+                        .Where(c =>
+                            c.PlanningId == planningId
+                            && c.Deadline.Date == rotationDate
+                            && c.WorkflowState != Constants.WorkflowStates.Removed
+                            && c.MicrotingSdkCaseId > 0)
+                        .Select(c => c.MicrotingSdkCaseId)
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    if (candidateSdkCaseIds.Count > 0)
+                    {
+                        alreadyDeployed = await sdkDbContext.Cases
+                            .AsNoTracking()
+                            .AnyAsync(sc =>
+                                candidateSdkCaseIds.Contains(sc.Id)
+                                && sc.SiteId.HasValue
+                                && sc.SiteId.Value == sdkSiteId,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                }
                 if (alreadyDeployed)
                 {
                     continue;
@@ -262,9 +320,15 @@ public class EventDeployService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
-                    "EventDeployService: failed to deploy planningId={PlanningId} rotation={Rotation} sdkSiteId={SdkSiteId} — continuing with the rest",
-                    planningId, rotationDate, sdkSiteId);
+                // Defect B in #935 — recoverable per-rotation failure. The
+                // stuck-row recovery path at the candidate filter above
+                // (`!t.IsFromCompliance || t.SdkCaseId == 0`) will redeploy on
+                // the next sync, so log at Warning with structured fields
+                // (exception type + planning + rotation + site) for
+                // observability without spamming Error stack traces.
+                logger.LogWarning(ex,
+                    "EventDeployService: per-rotation deploy threw {ExceptionType} for planningId={PlanningId} rotationDate={RotationDate} sdkSiteId={SdkSiteId} — continuing; recovery on next sync via stuck-row branch.",
+                    ex.GetType().Name, planningId, rotationDate, sdkSiteId);
                 // continue — do not abort the whole pass
             }
         }
@@ -549,6 +613,25 @@ public class EventDeployService(
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
+        // Defect B in #935 — refuse to write a Compliance row when the
+        // PlanningCaseSite has no SDK case linkage (MicrotingSdkCaseId == 0).
+        // The pre-existing code wrote a poisoned Compliance row whenever
+        // Core.CaseCreateLocalOnly returned null inside DeployForRotationAsync,
+        // and that poisoned row then satisfied the (PlanningId, Deadline.Date)
+        // idempotence guard so subsequent syncs skipped redeploy and the user
+        // saw a non-functional event tile. With this guard, the stuck-row
+        // recovery branch in EnsureDeployedAsync (candidate filter
+        // `!t.IsFromCompliance || t.SdkCaseId == 0`) is the only path that
+        // ever produces a Compliance, and it only does so after a real SDK
+        // case is in place.
+        if (planningCaseSite.MicrotingSdkCaseId <= 0)
+        {
+            logger.LogWarning(
+                "EventDeployService: skipping Compliance write — PlanningCaseSite {Id} has no SDK case linkage (planningId={PlanningId}, rotationDate={RotationDate}). The stuck-row recovery path will retry on next sync.",
+                planningCaseSite.Id, planning.Id, rotationDate);
+            return null;
+        }
+
         // Race protection lives in the duplicate-key catch below (mirrors
         // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
         // in EnsureDeployedAsync already filters out the common case before

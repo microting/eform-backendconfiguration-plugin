@@ -277,8 +277,27 @@ public class BackendConfigurationCalendarService(
             // removed-completed rows per the broadened query at line 100-104), and for
             // ActionableOnly callers is actionable ∪ removed-completed so the recurrence-
             // emit loop doesn't double-fire a date the worker just completed.
+            //
+            // Defect E in #935 — only ACTIONABLE Compliance rows should suppress the
+            // recurrence-emit. A poisoned Compliance row (MicrotingSdkCaseId == 0 with
+            // a non-Removed WorkflowState — the legacy shape produced by the
+            // pre-defect-B code path) is NOT emitted by the Compliance loop downstream
+            // (which gates on a valid backing SDK case), so without this filter such
+            // a row would skip the recurrence-emit AND get no Compliance-loop emit
+            // either — producing zero tiles for that (planning, date). For
+            // non-Removed rows we require a real SDK case linkage; removed-completed
+            // rows (which carry a valid SdkCaseId > 0 by construction in
+            // removedCompletedInWeek above) pass through unchanged so the worker
+            // doesn't see a phantom uncompleted task right after completing it.
+            // Filter is necessary in the non-ActionableOnly branch (where compliancesInWeek
+            // includes MicrotingSdkCaseId == 0 rows) and a no-op in the ActionableOnly
+            // branch — placement at the union point is intentional for single-source-of-truth
+            // semantics.
             var complianceDateSet = new HashSet<string>(
-                compliancesForDedup.Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
+                compliancesForDedup
+                    .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                                || c.MicrotingSdkCaseId > 0)
+                    .Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
 
             // 1. Query AreaRulePlannings (future/active and inactive tasks).
             // Inactive (Status=false) plannings are included so the calendar can

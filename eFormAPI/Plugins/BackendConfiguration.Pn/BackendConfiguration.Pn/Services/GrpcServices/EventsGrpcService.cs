@@ -249,7 +249,29 @@ public class EventsGrpcService(
         var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        // Completeness filter: drop in-flight tasks whose eForm template
+        // structure has not yet materialised. A task with EformId > 0 but no
+        // entry in fieldsByTaskId represents the create→deploy race window —
+        // the planning has an eForm reference but LoadFieldsByTaskIdAsync
+        // returned nothing (no SDK case row, or the case has no fields yet).
+        // Emitting it would produce an empty tile on the Flutter client. The
+        // task is re-evaluated on the next sync/poll; once field structure
+        // is loaded it flows through. Tasks with no EformId (recurrence-only
+        // rows with no template attached) are always deliverable.
+        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
         foreach (var task in result.Model)
+        {
+            if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
+            {
+                logger.LogDebug(
+                    "EventsGrpcService.ListEvents dropped task {TaskId} (planning {PlanningId}): eForm field structure not yet loaded; will retry on next sync",
+                    task.Id, task.PlanningId);
+                continue;
+            }
+            deliverable.Add(task);
+        }
+
+        foreach (var task in deliverable)
         {
             if (!task.Status) continue;
 
@@ -864,6 +886,11 @@ public class EventsGrpcService(
         // the first occurrence (or whenever the failure class changes).
         // Reset to null on every successful poll.
         Type? lastErrorType = null;
+        // Defect D in #935 — run eager deploy on every poll; PR-A's site-aware
+        // idempotence keeps the steady-state case cheap (a couple of existence
+        // queries), while for new plannings the deploy actually runs. The
+        // completeness filter downstream (LoadEventsAsync) drops incomplete
+        // events so the client never sees a half-built event on the wire.
         while (!ct.IsCancellationRequested)
         {
             try
@@ -878,6 +905,35 @@ public class EventsGrpcService(
             try
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
+
+                // Eager deploy runs every poll — no debounce. PR-A's site-aware
+                // idempotence guard makes the no-op path cheap; for new
+                // plannings the deploy actually runs, closing the create-time
+                // race. Transient deploy failures are logged and swallowed so
+                // the stream survives; cancellation propagates.
+                try
+                {
+                    await eventDeployService.EnsureDeployedAsync(
+                        request.PropertyId ?? string.Empty,
+                        request.BoardIds,
+                        windowStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        sdkSiteId,
+                        ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Stream cancelled mid-deploy — fall through to the
+                    // outer OperationCanceledException catch via the next
+                    // ct.ThrowIfCancellationRequested in the read path.
+                }
+                catch (Exception deployEx)
+                {
+                    logger.LogWarning(deployEx,
+                        "EventsGrpcService.StreamEventChanges eager deploy failed for sdkSiteId={SdkSiteId} property={PropertyId} — read path will still run; retry on next poll",
+                        sdkSiteId, propertyId);
+                }
+
                 var current = await LoadEventsAsync(
                     propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
@@ -1006,7 +1062,24 @@ public class EventsGrpcService(
         var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        // Completeness filter: drop in-flight tasks whose eForm template
+        // structure has not yet materialised. See ListEvents for rationale —
+        // this is the stream-poll path, identical semantics required so the
+        // client never sees a half-built event over either RPC.
+        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
         foreach (var task in result.Model)
+        {
+            if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
+            {
+                logger.LogDebug(
+                    "EventsGrpcService.LoadEventsAsync dropped task {TaskId} (planning {PlanningId}): eForm field structure not yet loaded; will retry on next sync",
+                    task.Id, task.PlanningId);
+                continue;
+            }
+            deliverable.Add(task);
+        }
+
+        foreach (var task in deliverable)
         {
             if (!task.Status) continue;
 
