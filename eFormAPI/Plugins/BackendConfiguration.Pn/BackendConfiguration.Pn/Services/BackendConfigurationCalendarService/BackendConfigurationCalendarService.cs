@@ -1741,15 +1741,40 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
+                // The frontend sends the DISPLAYED date as OriginalDate. Prefer
+                // an exception keyed on that natural date; otherwise (if a prior
+                // scope=this move relocated a DIFFERENT occurrence onto the
+                // displayed date) reuse THAT move's exception, matched by its
+                // NewDate. Without the NewDate fallback, dragging an
+                // already-moved occurrence again — or back to its natural day —
+                // orphans the original row and the tile never moves (#953,
+                // mirrors the delete-after-move fix #915).
                 var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
                     .Where(x => x.OriginalDate == originalDate)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
+                if (exception == null)
+                {
+                    // No natural-keyed exception: look for an occurrence a prior
+                    // move relocated onto this displayed date. The
+                    // OriginalDate != displayedDate guard keeps this strictly to
+                    // moved-away occurrences (a same-day override stores
+                    // NewDate = null, so it is never matched here anyway).
+                    exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                        .Where(x => x.NewDate.HasValue && x.NewDate.Value.Date == originalDate
+                                    && x.OriginalDate.Date != originalDate)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+                }
+
                 if (exception != null)
                 {
-                    exception.NewDate = newDate.Date != originalDate ? newDate : null;
+                    // Clear the override when the occurrence lands back on its
+                    // own natural day; otherwise relocate it.
+                    exception.NewDate = newDate.Date != exception.OriginalDate.Date ? newDate : null;
                     exception.StartHour = moveModel.NewStartHour;
                     exception.UpdatedByUserId = userService.UserId;
                     await exception.Update(backendConfigurationPnDbContext);
