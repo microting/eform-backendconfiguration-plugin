@@ -156,7 +156,13 @@ message EventChange {
   oneof kind {
     Event upserted = 1;
     string removed_id = 2;
+    RemovedOccurrence removed_occurrence = 3;
   }
+}
+
+message RemovedOccurrence {
+  string event_id = 1;
+  string plan_day_key = 2;
 }
 
 message Property {

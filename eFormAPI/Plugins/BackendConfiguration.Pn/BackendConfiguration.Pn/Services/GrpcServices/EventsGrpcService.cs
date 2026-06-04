@@ -853,9 +853,8 @@ public class EventsGrpcService(
         // window forward without dropping the subscription.
         // ComputeWatchWindow uses today-N..today+M relative to UTC.
 
-        // seen: event_id (numeric) → state-hash. Tracks every Event we have
-        // already emitted, so subsequent polls only re-emit on real changes.
-        var seen = new Dictionary<int, string>();
+        // (eventId, planDayKey) → state-hash; composite so scope=this move emits removal+upsert.
+        var seen = new Dictionary<(string EventId, string PlanDayKey), string>();
 
         // 1. Initial snapshot.
         try
@@ -868,11 +867,7 @@ public class EventsGrpcService(
                 ct.ThrowIfCancellationRequested();
                 await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                     .ConfigureAwait(false);
-                if (int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                        out var eventId))
-                {
-                    seen[eventId] = ComputeStateHash(op);
-                }
+                seen[(op.Id, op.PlanDayKey)] = ComputeStateHash(op);
             }
         }
         catch (OperationCanceledException)
@@ -937,37 +932,55 @@ public class EventsGrpcService(
                 var current = await LoadEventsAsync(
                     propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
-                var currentIds = new HashSet<int>();
+                var currentKeys = new HashSet<(string EventId, string PlanDayKey)>();
 
                 foreach (var op in current)
                 {
-                    if (!int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                            out var eventId))
-                    {
-                        continue;
-                    }
-                    currentIds.Add(eventId);
+                    var seenKey = (op.Id, op.PlanDayKey);
+                    currentKeys.Add(seenKey);
 
                     var hash = ComputeStateHash(op);
-                    if (!seen.TryGetValue(eventId, out var prevHash) || prevHash != hash)
+                    if (!seen.TryGetValue(seenKey, out var prevHash) || prevHash != hash)
                     {
                         ct.ThrowIfCancellationRequested();
                         await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                             .ConfigureAwait(false);
-                        seen[eventId] = hash;
+                        seen[seenKey] = hash;
                     }
                 }
 
-                // Detect removals: anything in `seen` but not in `currentIds`.
-                var removed = seen.Keys.Where(id => !currentIds.Contains(id)).ToList();
-                foreach (var id in removed)
+                // Whole-event delete → RemovedId; partial → RemovedOccurrence per missing rotation.
+                var lostKeys = seen.Keys.Where(k => !currentKeys.Contains(k)).ToList();
+                var survivingEventIds = currentKeys.Select(k => k.EventId).ToHashSet();
+                var fullyLostEventIds = lostKeys
+                    .Select(k => k.EventId)
+                    .Where(id => !survivingEventIds.Contains(id))
+                    .ToHashSet();
+
+                foreach (var eventId in fullyLostEventIds)
                 {
                     ct.ThrowIfCancellationRequested();
+                    await responseStream.WriteAsync(
+                        new EventChange { RemovedId = eventId }, ct).ConfigureAwait(false);
+                }
+
+                foreach (var key in lostKeys)
+                {
+                    if (fullyLostEventIds.Contains(key.EventId)) continue;
+                    ct.ThrowIfCancellationRequested();
                     await responseStream.WriteAsync(new EventChange
+                    {
+                        RemovedOccurrence = new RemovedOccurrence
                         {
-                            RemovedId = id.ToString(CultureInfo.InvariantCulture)
-                        }, ct).ConfigureAwait(false);
-                    seen.Remove(id);
+                            EventId = key.EventId,
+                            PlanDayKey = key.PlanDayKey,
+                        }
+                    }, ct).ConfigureAwait(false);
+                }
+
+                foreach (var key in lostKeys)
+                {
+                    seen.Remove(key);
                 }
 
                 // Successful poll — clear the consecutive-error tracker so the
