@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -61,6 +62,48 @@ public class EventDeployService(
     IServiceProvider serviceProvider,
     ILogger<EventDeployService> logger) : IEventDeployService
 {
+    // #934 — per-(planning, site) in-process deploy locks. Concurrent deploy
+    // passes (the 5s StreamEventChanges poll, ListEvents one-shots, and the
+    // several window/board requests a single client fires per sync) all call
+    // into the deploy path for the same rotation. The idempotence guard keys on
+    // the Compliance row, which DeployForRotationAsync writes LAST (after the
+    // slow CaseCreateLocalOnly), so two passes that both clear the guard before
+    // either writes Compliance each create a PlanningCase + PlanningCaseSite —
+    // only Compliance has a duplicate-key catch, so the PlanningCaseSites
+    // duplicate. That is the "N identical PlanningCaseSites within seconds"
+    // symptom in #934. Serializing the check-then-deploy per (planning, site)
+    // closes the window: the first pass writes Compliance before the next
+    // re-checks the guard, so the next short-circuits.
+    //
+    // Keyed on (planning, site) — NOT (planning, site, rotation) — so the
+    // dictionary stays bounded by planning×site and never grows with the
+    // calendar window over the life of the process. Different rotations of the
+    // same planning+site therefore serialize against each other, which is
+    // harmless: the rotation-aware Compliance guard still lets each distinct
+    // day deploy exactly once, and deploys only run for not-yet-deployed
+    // candidates.
+    //
+    // In-process only: a mobile client's stream is pinned to one pod and the
+    // racing window/ListEvents calls share that pod, so this covers the
+    // reported scenario. Cross-pod races remain bounded by the Compliance
+    // duplicate-key catch; making duplicates physically impossible across pods
+    // would need the (PlanningId, MicrotingSdkSiteId, OccurrenceDate) DB unique
+    // constraint #934 mentions (deferred — requires a base migration).
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> DeployLocks = new();
+
+    private static async Task<IDisposable> AcquireDeployLockAsync(
+        int planningId, int sdkSiteId, CancellationToken ct)
+    {
+        var gate = DeployLocks.GetOrAdd($"{planningId}:{sdkSiteId}", _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        return new LockReleaser(gate);
+    }
+
+    private sealed class LockReleaser(SemaphoreSlim gate) : IDisposable
+    {
+        public void Dispose() => gate.Release();
+    }
+
     public async Task EnsureDeployedAsync(
         string propertyId,
         IReadOnlyCollection<string> boardIds,
@@ -207,6 +250,13 @@ public class EventDeployService(
             var planningId = task.PlanningId!.Value;
             var eformId = task.EformId!.Value;
 
+            // #934 — serialize the check-then-deploy for this (planning, site)
+            // so concurrent passes cannot both clear the Compliance guard before
+            // either writes it and each create a duplicate PlanningCaseSite.
+            // Disposed at the end of the iteration (incl. after `continue` and
+            // the catch below), releasing the gate.
+            using var deployLockHandle = await AcquireDeployLockAsync(planningId, sdkSiteId, cancellationToken)
+                .ConfigureAwait(false);
             try
             {
                 // 1. Idempotence guard — Compliance natural key + SDK site.
@@ -317,6 +367,13 @@ public class EventDeployService(
                         language,
                         cancellationToken)
                     .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancellation must abort the whole pass — not be swallowed as a
+                // per-rotation failure by the general catch below. (The lock is
+                // already released by the `using` as the exception unwinds.)
+                throw;
             }
             catch (Exception ex)
             {
@@ -540,6 +597,13 @@ public class EventDeployService(
         }
 
         var deadlineDate = deadline.Date;
+
+        // #934 — same per-(planning, site) serialization as the nightly path,
+        // so an on-demand calendar materialisation racing the eager-deploy poll
+        // for the same rotation cannot double-create a PlanningCaseSite. Held
+        // for the whole check-then-deploy and released on any return/throw.
+        using var deployLockHandle = await AcquireDeployLockAsync(
+            areaRulePlanning.ItemPlanningId, sdkSiteId, cancellationToken).ConfigureAwait(false);
 
         // Idempotence guard: another caller (nightly batch, parallel request)
         // may already have materialised this occurrence. Match the natural
