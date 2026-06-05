@@ -3101,10 +3101,32 @@ public class BackendConfigurationCalendarService(
                 }
                 break;
             }
-            // NOTE: GetOccurrencesInWeek has a `(RepeatType)4 // Year` branch
-            // but the RepeatType enum only defines Day/Week/Month — the cast
-            // is dead code. Not propagating it here. Add a real Year case
-            // when the enum gains a member.
+            case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
+            {
+                // Yearly stays in a fixed month (from StartDate); keep the real
+                // day-of-month and clamp it to the candidate month's length
+                // (#922), mirroring GetOccurrencesInWeek's Year branch so the two
+                // enumerators never drift (#952 follow-up). Without this case the
+                // iterator yielded nothing for yearly tasks, breaking the
+                // "after N occurrences" cap and every thisAndFollowing
+                // past-anchor backfill (MoveTask / ResizeTask / UpdateTask).
+                var yearDom = planning.DayOfMonth ?? startDate.Day;
+                var yearMonth = startDate.Month;
+                var yearsSinceStart = rangeStart.Year - startDate.Year;
+                var yearPeriods = yearsSinceStart > 0
+                    ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
+                var candidateYear = startDate.Year + yearPeriods * repeatEvery;
+                while (true)
+                {
+                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
+                    var candidate = new DateTime(candidateYear, yearMonth,
+                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate >= rangeEnd) break;
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidateYear += repeatEvery;
+                }
+                break;
+            }
             default:
                 // Non-recurring (RepeatType.None) — no past occurrences to anchor.
                 yield break;
