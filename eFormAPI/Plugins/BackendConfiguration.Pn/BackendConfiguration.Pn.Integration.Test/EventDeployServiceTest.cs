@@ -36,7 +36,10 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 using NSubstitute;
 
 /// <summary>
@@ -382,11 +385,14 @@ public class EventDeployServiceTest : TestBaseSetup
     [Test]
     public async Task EnsureDeployedAsync_TodayRotation_AdmittedByCandidateFilter()
     {
-        // Arrange — a today rotation. We do NOT seed a Planning, so when
-        // the rotation is admitted by the candidate filter the pipeline
-        // reaches the planning lookup and emits a "planning ... not found"
-        // warning. That warning is the observable canary that the filter
-        // admitted today's date.
+        // Arrange — a today rotation. We seed a Planning + PlanningSite
+        // pair so the site-aware narrowing filter at
+        // EventDeployService.cs:150-165 (defect A from commit 5c543341)
+        // admits the candidate. We deliberately stop short of seeding the
+        // AreaRulePlanning so the pipeline emits the
+        // "areaRulePlanning for planning ... not found" warning. That
+        // warning contains both "planning" and "not found", which is the
+        // observable canary the assertion below pins.
         var core = await GetCore();
 
         // GetCore() seeds the SDK's default languages; reuse one.
@@ -403,11 +409,38 @@ public class EventDeployServiceTest : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
 
         var today = DateTime.UtcNow.Date;
-        const int planningId = 900;
+
+        // Seed a Planning (auto-id) so the PlanningSite FK is satisfied,
+        // then seed the PlanningSite that the site-aware narrowing filter
+        // at EventDeployService.cs:150-165 requires. The rotation's
+        // PlanningId is wired to the seeded Planning.Id so the candidate
+        // survives the narrowing.
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = today,
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = today.AddMonths(1),
+            DayOfMonth = today.Day,
+            RepeatUntil = today.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
         var rotation = MakeRotation(
             id: 104,
             date: today,
-            planningId: planningId,
+            planningId: planning.Id,
             eformId: 901);
 
         var logger = new TestLogger<EventDeployService>();
@@ -482,8 +515,36 @@ public class EventDeployServiceTest : TestBaseSetup
         await MicrotingDbContext.Sites.AddAsync(site);
         await MicrotingDbContext.SaveChangesAsync();
 
-        const int planningId = 600;
         var rotationDate = DateTime.UtcNow.Date.AddDays(4);
+
+        // Seed a Planning (auto-id) so the PlanningSite FK is satisfied,
+        // then seed the PlanningSite that the site-aware narrowing filter
+        // at EventDeployService.cs:150-165 (defect A from commit 5c543341)
+        // requires. Without the PlanningSite the rotation is dropped before
+        // reaching the idempotence guard and the stuck-row fall-through
+        // behaviour we're pinning never gets exercised.
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+        var planningId = planning.Id;
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planningId,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         // The stuck shape: Created + MicrotingSdkCaseId == 0. Default int
         // is 0 so the property is left at its default to make the intent
@@ -657,6 +718,429 @@ public class EventDeployServiceTest : TestBaseSetup
     // column-name quirk (PlanningCaseSiteId = PlanningCase.Id; see
     // EventDeployService.cs:392-395).
     // ------------------------------------------------------------------
+
+    // ------------------------------------------------------------------
+    // 11. EnsureDeployedAsync_PlanningAssignedToOtherSite_NotDeployedForCallingSite
+    //
+    // Regression for #932 (deploy-side cross-worker leak — the deploy
+    // companion of #931's read-side leak). A planning assigned ONLY to site A
+    // must never be deployed for a different site B that merely shares
+    // property access. The site-aware candidate narrowing in
+    // EnsureDeployedAsync (EventDeployService.cs:150-165, #935 defect A) is
+    // what prevents this: the planning has no PlanningSite for the calling
+    // site B, so the candidate is dropped before the SDK deploy path runs.
+    //
+    // Observable canary: with narrowing, the candidate list is empty after
+    // the filter and EnsureDeployedAsync returns BEFORE coreHelper.GetCore()
+    // (EventDeployService.cs:167-175). Remove the narrowing and the same
+    // fixture reaches GetCore + the planning/ARP lookups, so
+    // DidNotReceive().GetCore() precisely distinguishes "narrowing dropped the
+    // leak" from "deploy ran". Test #7b is the positive control: the SAME
+    // fixture shape with calling site == assigned site DOES reach the deploy
+    // path, so this pair pins both directions of the narrowing.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_PlanningAssignedToOtherSite_NotDeployedForCallingSite()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // The assigned worker's site (A) and the non-assigned caller's site (B).
+        var assignedSite = new Site
+        {
+            Name = "niels-site",
+            MicrotingUid = 50,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var callingSite = new Site
+        {
+            Name = "soren-site",
+            MicrotingUid = 51,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(assignedSite, callingSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var rotationDate = DateTime.UtcNow.Date.AddDays(2);
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Planning is assigned ONLY to site A.
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = assignedSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var rotation = MakeRotation(id: 932, date: rotationDate, planningId: planning.Id, eformId: 9320);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var service = MakeService(calendar, coreHelper);
+
+        // Act — site B polls/deploys for a planning it is NOT assigned to.
+        await service.EnsureDeployedAsync(
+            PropertyId, BoardIds, "2026-05-14", "2026-05-20", callingSite.Id, CancellationToken.None);
+
+        // Assert — narrowing dropped the candidate before the SDK path: GetCore
+        // is never reached, and no deploy artefacts were written for site B.
+        await coreHelper.DidNotReceive().GetCore();
+
+        var planningCaseSiteCount = await ItemsPlanningPnDbContext.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(0),
+            "A planning assigned only to another site must not get a PlanningCaseSite "
+            + "for the calling site (#932).");
+
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        Assert.That(complianceCount, Is.EqualTo(0));
+    }
+
+    // ------------------------------------------------------------------
+    // 12. EnsureComplianceForOccurrence_SiteNotInPlanningSites_ThrowsAndDoesNotDeploy
+    //
+    // Pins the new defense-in-depth guard at the top of the single
+    // PlanningCaseSite write site (DeployForRotationAsync). The on-demand
+    // calendar materialisation path (EnsureComplianceForOccurrenceAsync ->
+    // DeployForRotationAsync) does NOT site-narrow its caller the way
+    // EnsureDeployedAsync does; its only protection is that
+    // BackendConfigurationCalendarService passes an assigned site. If that
+    // invariant ever regresses, the guard must throw rather than silently leak
+    // a case to a non-assigned worker (#932/#1377).
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureComplianceForOccurrence_SiteNotInPlanningSites_ThrowsAndDoesNotDeploy()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // Two real, separately-inserted sites: the planning is assigned to A,
+        // the caller is B. Capturing both generated Ids (rather than hardcoding
+        // a magic id) keeps the test robust against the fixture's shared
+        // testcontainer auto-increment carrying across tests.
+        var assignedSite = new Site
+        {
+            Name = "niels-site-ondemand",
+            MicrotingUid = 53,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var callingSite = new Site
+        {
+            Name = "soren-site-ondemand",
+            MicrotingUid = 52,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(assignedSite, callingSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var deadline = DateTime.UtcNow.Date.AddDays(2);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = deadline.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = deadline,
+            DayOfMonth = deadline.Day,
+            RepeatUntil = deadline.AddMonths(6),
+            // > 0 so EnsureComplianceForOccurrenceAsync resolves an EformId and
+            // reaches DeployForRotationAsync (where the guard lives) rather than
+            // bailing early on a missing eform.
+            RelatedEFormId = 9321,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Planning is assigned ONLY to assignedSite — NOT the calling site.
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = assignedSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Intentionally an in-memory AreaRulePlanning, NOT persisted:
+        // EnsureComplianceForOccurrenceAsync takes it as a parameter and only
+        // reads .ItemPlanningId off it (the Planning itself is looked up from
+        // the DB), so this is enough to drive the call through to
+        // DeployForRotationAsync where the guard lives. If that method is ever
+        // refactored to re-fetch the ARP from the DB, persist this entity.
+        var areaRulePlanning = new AreaRulePlanning
+        {
+            ItemPlanningId = planning.Id,
+            PropertyId = 1,
+            AreaId = 1,
+        };
+
+        var (calendar, coreHelper) = MakeMocks([], core);
+        var service = MakeService(calendar, coreHelper);
+
+        // Act + Assert — the guard refuses to deploy to a non-assigned site.
+        Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.EnsureComplianceForOccurrenceAsync(
+                areaRulePlanning, deadline, callingSite.Id, CancellationToken.None));
+
+        var planningCaseSiteCount = await ItemsPlanningPnDbContext.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(0),
+            "No PlanningCaseSite may be written for a site outside the planning's "
+            + "PlanningSites (#932).");
+    }
+
+    // ------------------------------------------------------------------
+    // 13. EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite
+    //
+    // Regression for #934. The forensic snapshot showed four identical
+    // PlanningCaseSites rows for the same (planning, site), three of them
+    // created in the same second — the 5s StreamEventChanges poll, ListEvents
+    // one-shots and the several window/board calls a single client fires per
+    // sync, all racing through the deploy path before any of them writes the
+    // Compliance row the idempotence guard keys on. This test fires N truly
+    // concurrent EnsureDeployedAsync passes (each on its OWN DbContexts, like
+    // separate gRPC requests on one pod) for the same rotation and asserts that
+    // exactly ONE PlanningCaseSite is created. Without the per-(planning, site)
+    // serialization in EventDeployService the passes each create a duplicate.
+    //
+    // Unlike the deferred happy-path test #8, this one drives the FULL deploy
+    // (real eForm template + CaseCreateLocalOnly), so it also covers the
+    // create → SDK case → Compliance write order end to end.
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite()
+    {
+        const int passes = 4; // mirrors the 4-row forensic snapshot in #934
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // SDK site whose MicrotingUid CaseCreateLocalOnly resolves against.
+        const int siteMicrotingUid = 4242;
+        var site = new Site
+        {
+            Name = "concurrent-deploy-site",
+            MicrotingUid = siteMicrotingUid,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // Real eForm template so DeployForRotationAsync's ReadeForm +
+        // CaseCreateLocalOnly succeed (and the Compliance guard becomes
+        // effective for the second pass onward).
+        var template = await core.TemplateFromXml(CommentTemplateXml);
+        var templateId = await core.TemplateCreate(template);
+
+        // Full BC graph the deploy path reads: Area → Property → AreaRule →
+        // AreaRulePlanning(ItemPlanningId), plus the ItemsPlanning Planning +
+        // PlanningSite (the #935 site-narrowing + #932 guard require it).
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"ConcurrentProp-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var rotationDate = DateTime.UtcNow.Date.AddDays(2);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = rotationDate.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day,
+            NextExecutionTime = rotationDate,
+            DayOfMonth = rotationDate.Day,
+            RepeatUntil = rotationDate.AddMonths(6),
+            RelatedEFormId = templateId,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = site.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
+            ItemPlanningId = planning.Id, StartDate = rotationDate.AddDays(-7), Status = true,
+            RepeatType = 1, RepeatEvery = 1, DayOfWeek = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Shared calendar + core mocks (read-only across passes); each pass gets
+        // its OWN DbContexts, mirroring separate gRPC requests' scoped contexts.
+        var rotation = MakeRotation(id: 934, date: rotationDate, planningId: planning.Id, eformId: templateId);
+        var (calendar, coreHelper) = MakeMocks([rotation], core);
+        var sp = new ServiceCollection().AddSingleton(calendar).BuildServiceProvider();
+
+        var todayKey = DateTime.UtcNow.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var toKey = rotationDate.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        // Warm the cached ServerVersion on the main thread so the concurrent
+        // context builds below don't race to detect it / open extra connections.
+        _ = CachedServerVersion();
+
+        // Act — N concurrent deploy passes for the same (planning, site,
+        // rotation). A Barrier holds every task at the gate until all are built,
+        // then releases them together so they genuinely overlap in the
+        // check-then-deploy window — without this the thread pool could run them
+        // sequentially on a constrained runner and the race would not reproduce.
+        using var startGate = new Barrier(passes);
+        var tasks = Enumerable.Range(0, passes).Select(_ => Task.Run(async () =>
+        {
+            var bc = NewBackendContext();
+            var ip = NewItemsPlanningContext();
+            try
+            {
+                var service = new EventDeployService(
+                    bc, ip, coreHelper, sp, NullLogger<EventDeployService>.Instance);
+                // Release all passes simultaneously (timeout guards against a hang
+                // if a sibling task faulted before reaching the gate).
+                startGate.SignalAndWait(TimeSpan.FromSeconds(60));
+                await service.EnsureDeployedAsync(
+                    PropertyId, BoardIds, todayKey, toKey, site.Id, CancellationToken.None);
+            }
+            finally
+            {
+                await bc.DisposeAsync();
+                await ip.DisposeAsync();
+            }
+        })).ToArray();
+        await Task.WhenAll(tasks);
+
+        // Assert — exactly one active PlanningCaseSite for (planning, site),
+        // read through a fresh context so we see all committed rows.
+        await using var verifyIp = NewItemsPlanningContext();
+        var planningCaseSiteCount = await verifyIp.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id
+                               && pcs.MicrotingSdkSiteId == site.Id
+                               && pcs.WorkflowState != Constants.WorkflowStates.Removed);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(1),
+            $"Expected exactly one PlanningCaseSite for (planning {planning.Id}, site {site.Id}) "
+            + $"after {passes} concurrent deploy passes, but found {planningCaseSiteCount} (#934).");
+    }
+
+    /// <summary>
+    /// Builds a fresh <see cref="BackendConfigurationPnDbContext"/> against the
+    /// same test database as the inherited one, so concurrent passes use their
+    /// own context like separate gRPC requests (EF DbContext is not thread-safe).
+    /// </summary>
+    // Cached so the concurrent context builds in test #13 don't each open a
+    // version-detection connection against the shared testcontainer. Same DB
+    // server for both contexts, so one detection serves both. Warmed once
+    // (on the main thread) before any parallel use to avoid a detect race.
+    private ServerVersion? _serverVersion;
+
+    private ServerVersion CachedServerVersion()
+        => _serverVersion ??= ServerVersion.AutoDetect(
+            BackendConfigurationPnDbContext!.Database.GetConnectionString());
+
+    private BackendConfigurationPnDbContext NewBackendContext()
+    {
+        var cs = BackendConfigurationPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        return new BackendConfigurationPnDbContext(ob.Options);
+    }
+
+    private ItemsPlanningPnDbContext NewItemsPlanningContext()
+    {
+        var cs = ItemsPlanningPnDbContext!.Database.GetConnectionString();
+        var ob = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
+        ob.UseMySql(cs, CachedServerVersion(), b => b.EnableRetryOnFailure());
+        return new ItemsPlanningPnDbContext(ob.Options);
+    }
+
+    /// <summary>
+    /// A minimal real eForm (single Comment field) used to make the full deploy
+    /// path succeed. Copied from the SDK's CoreTesteFormCreateInDB test.
+    /// </summary>
+    private const string CommentTemplateXml = @"
+<?xml version='1.0' encoding='UTF-8'?>
+<Main>
+    <Id>9060</Id>
+    <Repeated>0</Repeated>
+    <Label>CommentMain</Label>
+    <StartDate>2017-07-07</StartDate>
+    <EndDate>2027-07-07</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type='DataElement'>
+            <Id>9060</Id>
+            <Label>CommentDataElement</Label>
+            <Description><![CDATA[CommentDataElementDescription]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>false</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type='Comment'>
+                    <Id>73660</Id>
+                    <Label>CommentField</Label>
+                    <Description><![CDATA[CommentFieldDescription]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value />
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>";
 
     /// <summary>
     /// Captures every <see cref="ILogger.Log"/> invocation into an in-memory

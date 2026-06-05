@@ -770,7 +770,55 @@ export class CalendarRepeatService {
     if (meta.kind === 'weeklyOne' || meta.kind === 'everyNWeekOne') {
       return meta.weekday != null ? `${meta.weekday}` : null;
     }
+    // "All days" weekly kinds carry no weekday list but mean every day of the
+    // week. Ship the full 7-day CSV so the backend expands all days instead of
+    // falling back to its legacy start-weekday-only path (#922).
+    if (meta.kind === 'weeklyAll' || meta.kind === 'everyNWeekAll') {
+      return '0,1,2,3,4,5,6';
+    }
     return null;
+  }
+
+  /**
+   * Re-derive a repeat rule's anchor fields from a new start date (#960).
+   *
+   * For single-anchor recurrences the start date *is* the anchor, so when the
+   * edit-modal date changes the rule must follow it: a "1st Friday" monthly
+   * rule moved to a Thursday becomes "1st Thursday", a weekly-on-Friday rule
+   * becomes weekly-on-Thursday, etc. The interval `n` and the end-mode trio
+   * (`endMode`/`afterCount`/`untilTs`) are preserved.
+   *
+   * Multi-anchor or anchorless kinds (multi-weekday weekly sets, daily,
+   * every-N-day, all-days weekly) have no single date-derived anchor and are
+   * returned unchanged. Returns a NEW object — never mutates the input.
+   */
+  reanchorMetaToDate(meta: CalendarRepeatMeta, date: Date): CalendarRepeatMeta {
+    switch (meta.kind) {
+      case 'weeklyOne':
+      case 'everyNWeekOne':
+        return {...meta, weekday: date.getDay()};
+
+      case 'monthlyByDay':
+      case 'everyNMonthByDay':
+        return {
+          ...meta,
+          weekday: date.getDay(),
+          ordinalWeek: Math.ceil(date.getDate() / 7),
+        };
+
+      case 'monthlyDom':
+      case 'everyNMonthDom':
+        return {...meta, dom: date.getDate()};
+
+      case 'yearlyOne':
+      case 'everyNYear':
+        return {...meta, month: date.getMonth(), dom: date.getDate()};
+
+      default:
+        // daily / everyNd / weeklyMulti / weeklyAll / everyNWeek{Multi,All}:
+        // no single date-derived anchor — leave untouched.
+        return meta;
+    }
   }
 
   /** Convert a custom repeat config to a CalendarRepeatMeta */
@@ -780,7 +828,8 @@ export class CalendarRepeatService {
     weekdays: number[],
     endMode: 'never' | 'after' | 'until',
     afterCount?: number,
-    untilTs?: number
+    untilTs?: number,
+    date?: Date
   ): CalendarRepeatMeta {
     const base: Partial<CalendarRepeatMeta> = {endMode, afterCount, untilTs, n: step};
 
@@ -797,9 +846,18 @@ export class CalendarRepeatService {
         weekdays: weekdays.length !== 1 ? weekdays : undefined,
       } as CalendarRepeatMeta;
     } else if (unit === 'month') {
+      // Custom monthly intentionally anchors to day 1 (the user sets a specific
+      // day-of-month elsewhere); keep that — #933 is scoped to the yearly branch.
       return {...base, kind: step === 1 ? 'monthlyDom' : 'everyNMonthDom', dom: 1} as CalendarRepeatMeta;
     } else {
-      return {...base, kind: step === 1 ? 'yearlyOne' : 'everyNYear', dom: 1, month: 0} as CalendarRepeatMeta;
+      // Anchor the day-of-month + month to the selected start date instead of
+      // hard-coding January 1 regardless of the chosen date (#933).
+      return {
+        ...base,
+        kind: step === 1 ? 'yearlyOne' : 'everyNYear',
+        dom: date ? date.getDate() : 1,
+        month: date ? date.getMonth() : 0,
+      } as CalendarRepeatMeta;
     }
   }
 }

@@ -85,6 +85,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   showMiniPicker = false;
   filteredEmployees: CommonDictionaryModel[] = [];
   private customRepeatMeta: CalendarRepeatMeta | null = null;
+  // Last concrete repeat selection before 'custom' was picked, so cancelling
+  // the Tilpasset… dialog can restore the prior preset instead of 'none' (#922).
+  private repeatValueBeforeCustom: string | null = 'none';
   private currentLanguageId = 1;  // default to English
 
   // Per-AreaRulePlanning file attachments. Mutated from the upload/delete
@@ -256,6 +259,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, reconstructed);
         this.repeatControl.setValue('customCurrent', {emitEvent: false});
       } else {
+        // Seed the cancel-restore tracker too: this runs in ngOnInit before the
+        // valueChanges subscription is wired, so the emit here isn't captured (#922).
+        this.repeatValueBeforeCustom = task.repeatRule ?? 'none';
         this.repeatControl.setValue(task.repeatRule ?? 'none');
       }
       this.assigneeControl.setValue(task.assigneeIds ?? []);
@@ -288,6 +294,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, reconstructed);
         this.repeatControl.setValue('customCurrent', {emitEvent: false});
       } else {
+        // See edit-mode note: seed the cancel-restore tracker explicitly (#922).
+        this.repeatValueBeforeCustom = sourceTask.repeatRule ?? 'none';
         this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
       }
       this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
@@ -368,6 +376,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     this.repeatControl.valueChanges.subscribe(value => {
       if (value === 'custom') {
         this.onRepeatChange();
+      } else if (value != null) {
+        // Remember the last concrete selection so a Cancel from the custom
+        // dialog can restore it instead of resetting to 'none' (#922).
+        this.repeatValueBeforeCustom = value;
       }
     });
 
@@ -406,9 +418,16 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.isLoadingTemplate = false;
     });
 
-    // When date changes, rebuild repeat options and regenerate time slots
+    // When date changes, rebuild repeat options and regenerate time slots.
+    // Re-anchor the custom rule to the new date first so single-anchor kinds
+    // (e.g. "monthly on the 1st Friday") follow the new weekday/day-of-month
+    // instead of keeping the stale anchor — the "Gentag" label must track the
+    // date (#960). Multi-anchor/anchorless kinds are returned unchanged.
     this.dateControl.valueChanges.subscribe(date => {
       if (date) {
+        if (this.customRepeatMeta) {
+          this.customRepeatMeta = this.repeatService.reanchorMetaToDate(this.customRepeatMeta, date);
+        }
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date, this.customRepeatMeta);
         this.timeSlots = this.generateTimeSlots();
       }
@@ -627,7 +646,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
           this.repeatOptions = this.repeatService.buildRepeatSelectOptions(baseDate, previousMeta);
           this.repeatControl.setValue('customCurrent', {emitEvent: false});
         } else {
-          this.repeatControl.setValue('none', {emitEvent: false});
+          // No prior custom rule — restore the preset (or 'none') that was
+          // selected before opening Tilpasset…, instead of wiping it (#922).
+          this.repeatControl.setValue(this.repeatValueBeforeCustom ?? 'none', {emitEvent: false});
           this.customRepeatMeta = null;
         }
       } else {

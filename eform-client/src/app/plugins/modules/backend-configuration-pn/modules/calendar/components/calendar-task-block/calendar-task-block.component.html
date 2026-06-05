@@ -27,6 +27,7 @@
 
   <div class="task-block-body" cdkDragHandle (click)="onBodyClick($event)">
     <button
+      *ngIf="task.status || task.completed"
       class="completion-btn"
       [class.done]="task.completed"
       (click)="onCompletionClick($event)"

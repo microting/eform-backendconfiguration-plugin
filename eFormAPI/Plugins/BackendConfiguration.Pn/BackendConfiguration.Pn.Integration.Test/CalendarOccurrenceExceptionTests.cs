@@ -464,6 +464,55 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
     }
 
     [Test]
+    public async Task DeleteTask_ScopeThis_AfterMove_FlipsExistingExceptionInsteadOfCreatingSecond()
+    {
+        // Reproduces #915: a scope=this MOVE writes {OriginalDate=X, NewDate=Y,
+        // IsDeleted=false} and the occurrence then renders at Y. A scope=this
+        // DELETE of that occurrence sends the DISPLAYED date (Y) as OriginalDate.
+        // The delete must flip the SAME exception's IsDeleted to true (matching
+        // by NewDate), NOT create a second {OriginalDate=Y, IsDeleted=true} row
+        // that leaves the moved occurrence visible.
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        var movedToDate = baseMonday.AddDays(2); // Wed
+
+        // MOVE the Monday occurrence to Wednesday (scope=this).
+        var moveResult = await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = movedToDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 10.0,
+            Scope = "this"
+        });
+        Assert.That(moveResult.Success, Is.True, moveResult.Message);
+
+        // DELETE the now-moved occurrence (scope=this) using its DISPLAYED date (Wed).
+        var deleteResult = await _calendarService.DeleteTask(new CalendarTaskDeleteRequestModel
+        {
+            Id = arpId,
+            OriginalDate = movedToDate.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            Scope = "this"
+        });
+        Assert.That(deleteResult.Success, Is.True, deleteResult.Message);
+
+        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        // Exactly ONE exception row — the original move row, now flagged deleted.
+        Assert.That(exceptions, Has.Count.EqualTo(1),
+            "delete-after-move must reuse the move exception row, not create a second one");
+        Assert.That(exceptions[0].OriginalDate.Date, Is.EqualTo(baseMonday.Date),
+            "the surviving row is the original move exception (OriginalDate=X)");
+        Assert.That(exceptions[0].IsDeleted, Is.True,
+            "the moved occurrence's exception must be flagged deleted so it stops rendering");
+    }
+
+    [Test]
     public async Task DeleteTask_ScopeThisAndFollowing_SetsEndDateToDayBefore()
     {
         // Arrange
@@ -563,5 +612,104 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
 
         // DeleteTask on the wizard service should have been called
         await _taskWizardService.Received(1).DeleteTask(arpId);
+    }
+
+    [Test]
+    public async Task MoveTask_ScopeThis_BackToNaturalDay_ClearsOverrideInsteadOfOrphaning()
+    {
+        // Reproduces #953: a scope=this MOVE writes {OriginalDate=Mon, NewDate=Wed}
+        // and the occurrence renders on Wed. Dragging that Wed tile back to its
+        // natural Monday sends the DISPLAYED date (Wed) as OriginalDate. The move
+        // must reuse the SAME exception (matched by NewDate) and clear its
+        // override (NewDate -> null) so the occurrence renders naturally again —
+        // NOT create a second orphan {OriginalDate=Wed} row that leaves the tile
+        // stuck on Wed.
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        var wed = baseMonday.AddDays(2);
+
+        var move1 = await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = wed.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 10.0,
+            Scope = "this"
+        });
+        Assert.That(move1.Success, Is.True, move1.Message);
+
+        // Drag the now-Wed tile back to natural Monday (FE sends displayed date = Wed).
+        var move2 = await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = wed.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 9.0,
+            Scope = "this"
+        });
+        Assert.That(move2.Success, Is.True, move2.Message);
+
+        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        Assert.That(exceptions, Has.Count.EqualTo(1),
+            "move-back must reuse the original exception row, not create a second orphan");
+        Assert.That(exceptions[0].OriginalDate.Date, Is.EqualTo(baseMonday.Date),
+            "the surviving row keeps the natural OriginalDate");
+        Assert.That(exceptions[0].NewDate, Is.Null,
+            "back-to-natural clears the override so the occurrence renders on its natural day");
+        Assert.That(exceptions[0].StartHour, Is.EqualTo(9.0),
+            "the dropped start hour is retained (consistent with the same-day move path)");
+    }
+
+    [Test]
+    public async Task MoveTask_ScopeThis_ReMoveAlreadyMovedOccurrence_RelocatesSingleException()
+    {
+        // #953 sibling: move Mon -> Wed, then drag the Wed tile on to Thu (both
+        // scope=this). The second move sends the displayed date (Wed); it must
+        // RELOCATE the existing exception (NewDate -> Thu), not create a second
+        // {OriginalDate=Wed} row.
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        var wed = baseMonday.AddDays(2);
+        var thu = baseMonday.AddDays(3);
+
+        await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = baseMonday.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = wed.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 10.0,
+            Scope = "this"
+        });
+
+        var move2 = await _calendarService.MoveTask(new CalendarTaskMoveRequestModel
+        {
+            Id = arpId,
+            OriginalDate = wed.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewDate = thu.ToString("yyyy-MM-dd") + "T00:00:00Z",
+            NewStartHour = 11.0,
+            Scope = "this"
+        });
+        Assert.That(move2.Success, Is.True, move2.Message);
+
+        var exceptions = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        Assert.That(exceptions, Has.Count.EqualTo(1),
+            "re-moving an already-moved occurrence must reuse the original exception row");
+        Assert.That(exceptions[0].OriginalDate.Date, Is.EqualTo(baseMonday.Date),
+            "the surviving row keeps the natural OriginalDate");
+        Assert.That(exceptions[0].NewDate!.Value.Date, Is.EqualTo(thu.Date),
+            "the surviving row's NewDate is relocated to the latest drop date");
+        Assert.That(exceptions[0].StartHour, Is.EqualTo(11.0));
     }
 }

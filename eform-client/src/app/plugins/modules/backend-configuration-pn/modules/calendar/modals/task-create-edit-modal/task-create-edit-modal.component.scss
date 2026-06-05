@@ -129,11 +129,15 @@
 
 // Stack paired slide-toggles (e.g. Aktiv/Inaktiv, Vis/Skjul overskredet)
 // one per line. Without this they default to mat-slide-toggle's inline-flex
-// and pack side-by-side until the row wraps.
+// and pack side-by-side until the row wraps. margin-bottom adds breathing
+// room before the next field — slide-toggles are intrinsically shorter
+// than form-fields, so the .gcal-row's 4px margin-bottom alone makes the
+// transition into a form-field below look cramped.
 .gcal-toggle-stack {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 14px;
 }
 
 // Date + Time row

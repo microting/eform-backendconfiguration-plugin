@@ -277,8 +277,27 @@ public class BackendConfigurationCalendarService(
             // removed-completed rows per the broadened query at line 100-104), and for
             // ActionableOnly callers is actionable ∪ removed-completed so the recurrence-
             // emit loop doesn't double-fire a date the worker just completed.
+            //
+            // Defect E in #935 — only ACTIONABLE Compliance rows should suppress the
+            // recurrence-emit. A poisoned Compliance row (MicrotingSdkCaseId == 0 with
+            // a non-Removed WorkflowState — the legacy shape produced by the
+            // pre-defect-B code path) is NOT emitted by the Compliance loop downstream
+            // (which gates on a valid backing SDK case), so without this filter such
+            // a row would skip the recurrence-emit AND get no Compliance-loop emit
+            // either — producing zero tiles for that (planning, date). For
+            // non-Removed rows we require a real SDK case linkage; removed-completed
+            // rows (which carry a valid SdkCaseId > 0 by construction in
+            // removedCompletedInWeek above) pass through unchanged so the worker
+            // doesn't see a phantom uncompleted task right after completing it.
+            // Filter is necessary in the non-ActionableOnly branch (where compliancesInWeek
+            // includes MicrotingSdkCaseId == 0 rows) and a no-op in the ActionableOnly
+            // branch — placement at the union point is intentional for single-source-of-truth
+            // semantics.
             var complianceDateSet = new HashSet<string>(
-                compliancesForDedup.Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
+                compliancesForDedup
+                    .Where(c => c.WorkflowState == Constants.WorkflowStates.Removed
+                                || c.MicrotingSdkCaseId > 0)
+                    .Select(c => $"{c.PlanningId}:{c.Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"));
 
             // 1. Query AreaRulePlannings (future/active and inactive tasks).
             // Inactive (Status=false) plannings are included so the calendar can
@@ -305,6 +324,71 @@ public class BackendConfigurationCalendarService(
                 .Where(x => planningIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id);
 
+            // --- Period-level completed suppression (#960) ---
+            // A completed occurrence (backing SDK Case Status==100) freezes its
+            // WHOLE recurrence period. When a rule is re-anchored (e.g. the
+            // weekday changes under a "thisAndFollowing"/"all" edit) the emit
+            // loop would otherwise sprout a phantom not-completed sibling in a
+            // period that is already completed. We suppress those here.
+            //
+            // Crucially this looks BEYOND the rendered week: a re-anchored
+            // sibling can land in a different week of the SAME month/year than
+            // the completed occurrence, so we scan completed compliances across
+            // the year(s) the rendered week touches and bucket them by period
+            // (CompletedPeriodKey decides month/ISO-week/year granularity and
+            // returns null for multi-day-weekly/daily — those are covered
+            // exactly by the per-(planning,date) complianceDateSet instead).
+            var completedPeriodSet = new HashSet<string>();
+            {
+                // Full calendar year(s) the rendered week touches, widened by a
+                // week on each side so a weekly period whose ISO week straddles a
+                // Dec/Jan boundary is still fully covered regardless of how the
+                // caller aligns its 7-day window (month/year periods are already
+                // within the year span).
+                var periodWindowStart = new DateTime(weekStart.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(-7);
+                var periodWindowEnd = new DateTime(weekEnd.Year, 12, 31, 23, 59, 59, DateTimeKind.Utc).AddDays(7);
+                // NOTE: deliberately NO WorkflowState filter — the canonical
+                // completion path sets the backing Case to Status=100 AND
+                // soft-deletes the Compliance row (see removedCompletedInWeek
+                // above). Excluding Removed rows would miss the most common
+                // completed shape and let a phantom sibling slip through.
+                var periodCompliances = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PropertyId == requestModel.PropertyId)
+                    .Where(x => x.MicrotingSdkCaseId > 0)
+                    .Where(x => planningIds.Contains(x.PlanningId))
+                    .Where(x => x.Deadline >= periodWindowStart && x.Deadline <= periodWindowEnd)
+                    .Select(x => new { x.PlanningId, x.Deadline, x.MicrotingSdkCaseId })
+                    .ToListAsync();
+                var periodCaseIds = periodCompliances.Select(x => x.MicrotingSdkCaseId).Distinct().ToList();
+                if (periodCaseIds.Count > 0)
+                {
+                    var sdkCoreForPeriods = await coreHelper.GetCore().ConfigureAwait(false);
+                    await using var sdkDbContextForPeriods = sdkCoreForPeriods.DbContextHelper.GetDbContext();
+                    var completedCaseIds = (await sdkDbContextForPeriods.Cases
+                        .Where(c => periodCaseIds.Contains(c.Id) && c.Status == 100)
+                        .Select(c => c.Id)
+                        .ToListAsync()).ToHashSet();
+
+                    // Per-planning RepeatType + weekday CSV drive the period
+                    // granularity; use the same planning the emit loop uses.
+                    var repeatInfoByPlanningId = areaRulePlannings
+                        .Where(a => planningsDict.ContainsKey(a.ItemPlanningId))
+                        .GroupBy(a => a.ItemPlanningId)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => (RepeatType: planningsDict[g.Key].RepeatType,
+                                  Csv: g.First().RepeatWeekdaysCsv));
+
+                    foreach (var c in periodCompliances)
+                    {
+                        if (!completedCaseIds.Contains(c.MicrotingSdkCaseId)) continue;
+                        if (!repeatInfoByPlanningId.TryGetValue(c.PlanningId, out var info)) continue;
+                        var key = CompletedPeriodKey(info.RepeatType, info.Csv, c.Deadline);
+                        if (key != null) completedPeriodSet.Add($"{c.PlanningId}:{key}");
+                    }
+                }
+            }
+
             // Batch-load calendar configurations
             var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
             var calConfigsDict = await backendConfigurationPnDbContext.CalendarConfigurations
@@ -322,11 +406,16 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.ExceptionSites)
                 .ToListAsync();
 
+            // Last-wins on duplicate OriginalDate per ARP — same rationale as the
+            // compliance-path build below: no DB uniqueness, so a plain
+            // ToDictionary could throw. The top-up loop at lines 717-725 already
+            // assumes last-wins via indexer assignment.
             var exceptionsByArp = exceptionsInWeek
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.ToDictionary(x => x.OriginalDate.Date));
+                    g => g.GroupBy(x => x.OriginalDate.Date)
+                        .ToDictionary(inner => inner.Key, inner => inner.Last()));
 
             var movedInExceptions = exceptionsInWeek
                 .Where(x => x.NewDate.HasValue
@@ -424,6 +513,16 @@ public class BackendConfigurationCalendarService(
                     if (complianceDateSet.Contains($"{arp.ItemPlanningId}:{occurrenceDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"))
                         continue;
 
+                    // Completed occurrences freeze their whole recurrence period:
+                    // skip a re-anchored rule occurrence whose period already
+                    // contains a completed occurrence (rendered by the compliance
+                    // loop on its real date). Kills the "all"/"thisAndFollowing"
+                    // phantom sibling and hardens completed-immutability (#960).
+                    var completedPeriodKey = CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, occurrenceDate);
+                    if (completedPeriodKey != null
+                        && completedPeriodSet.Contains($"{arp.ItemPlanningId}:{completedPeriodKey}"))
+                        continue;
+
                     CalendarOccurrenceException exception = null;
                     if (exceptionsByArp.TryGetValue(arp.Id, out var arpExceptions))
                     {
@@ -516,6 +615,23 @@ public class BackendConfigurationCalendarService(
                         // different date — those are handled by the
                         // movedInExceptions pass at the destination week.
                         if (orphan.NewDate.HasValue && orphan.NewDate.Value.Date != orphan.OriginalDate.Date) continue;
+                        // A compliance row already renders this date with its real
+                        // completion state and case binding. Emitting an orphan
+                        // anchor on top would stack a second, hard-coded
+                        // uncompleted/unopenable tile over it — the completed task
+                        // "resurrecting" as not-done (#930) and the duplicate
+                        // sibling tiles (#928). Let the compliance loop own it.
+                        if (complianceDateSet.Contains(
+                                $"{planning.Id}:{orphan.OriginalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}"))
+                            continue;
+
+                        // Completed-period backstop (#960 R2): never render an
+                        // orphan anchor inside a period that already holds a
+                        // completed occurrence — the compliance loop owns it.
+                        var orphanPeriodKey = CompletedPeriodKey(planning.RepeatType, arp.RepeatWeekdaysCsv, orphan.OriginalDate);
+                        if (orphanPeriodKey != null
+                            && completedPeriodSet.Contains($"{arp.ItemPlanningId}:{orphanPeriodKey}"))
+                            continue;
 
                         var orphanStartHour = orphan.StartHour ?? (isAllDay ? 0 : calConfig?.StartHour ?? 9.0);
                         var orphanDuration = orphan.Duration ?? (isAllDay ? 0 : calConfig?.Duration ?? 1.0);
@@ -739,9 +855,9 @@ public class BackendConfigurationCalendarService(
             foreach (var compliance in compliances)
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                if (arp == null) continue;
                 CalendarConfiguration calConfig = null;
-                if (arp != null)
-                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+                complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
 
                 var title = compliance.ItemName ?? "";
                 if (arp?.AreaRule?.AreaRuleTranslations != null)
@@ -937,10 +1053,11 @@ public class BackendConfigurationCalendarService(
                 latestArp.RepeatOrdinalWeek = createModel.RepeatOrdinalWeek;
                 // Capture the planned weekday from the start date so the
                 // monthlyByDay iterator (Nth weekday of month) has the target
-                // weekday available. Scoped to monthlyByDay rules to avoid
-                // disturbing the column for other rule kinds, where it is
-                // unused but may be read by adjacent Area Rule Planning UI.
-                if (createModel.RepeatOrdinalWeek.HasValue)
+                // weekday available, and so a plain weekly rule reports the
+                // correct weekday in the edit dialog instead of defaulting to
+                // Sunday (DayOfWeek=0) when the FE sends a null weekday CSV (#929).
+                if (createModel.RepeatOrdinalWeek.HasValue
+                    || createModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
                 {
                     latestArp.DayOfWeek = (int)createModel.StartDate.DayOfWeek;
                 }
@@ -1059,12 +1176,17 @@ public class BackendConfigurationCalendarService(
             // genuine date change, or a one-off (whose anchor == its own date),
             // still flows through to relocate as before.
             var wizardStartDate = updateModel.StartDate;
+            // Whether this "all" edit actually moves the occurrence date (and so
+            // potentially re-patterns the rule). A pure time/field edit keeps the
+            // anchor and must not relocate any past Compliance rows (#960).
+            var dateChanged = true;
             if (!string.IsNullOrEmpty(updateModel.OriginalDate))
             {
                 var parsedOriginalDate = DateTime.Parse(updateModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
                 if (updateModel.StartDate.Date == parsedOriginalDate)
                 {
+                    dateChanged = false;
                     var currentStartDate = await backendConfigurationPnDbContext.AreaRulePlannings
                         .Where(x => x.Id == updateModel.Id)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1118,10 +1240,11 @@ public class BackendConfigurationCalendarService(
                 arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
                 // Mirror the create handler: keep DayOfWeek in sync with the
                 // start date so the monthlyByDay iterator reads the right
-                // target weekday after edits that move the anchor date.
-                // Scoped to monthlyByDay rules per the same rationale as
-                // create.
-                if (updateModel.RepeatOrdinalWeek.HasValue)
+                // target weekday after edits that move the anchor date, and so
+                // a plain weekly rule reports the correct weekday in the edit
+                // dialog instead of defaulting to Sunday (#929).
+                if (updateModel.RepeatOrdinalWeek.HasValue
+                    || updateModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
                 {
                     arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
                 }
@@ -1138,6 +1261,17 @@ public class BackendConfigurationCalendarService(
                     planning.Description = updateModel.DescriptionHtml ?? string.Empty;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
+
+                    // #960 — "all" re-patterns non-completed occurrences. The rule
+                    // re-anchor above handles future + never-deployed dates; already
+                    // deployed-but-NOT-completed Compliance rows keep their old
+                    // Deadline, so move each to the new-pattern date within its own
+                    // recurrence period. COMPLETED rows (SDK Case Status==100) are
+                    // frozen and never touched (R2 immutability).
+                    if (dateChanged)
+                    {
+                        await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning);
+                    }
                 }
             }
 
@@ -1314,10 +1448,25 @@ public class BackendConfigurationCalendarService(
                 .ToListAsync();
             var existingSet = new HashSet<DateTime>(existingPastDates);
 
+            // Dates that already deployed a case (incl. completed ones whose
+            // Compliance row was soft-deleted after Status=100) are rendered by
+            // GetTasksForWeek's compliance loop. Backfilling an orphan anchor for
+            // them would resurrect a completed occurrence as not-done (#930), so
+            // skip those dates and only anchor genuinely orphaned past dates.
+            var compliancePastDates = new HashSet<DateTime>(
+                await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PlanningId == planning.Id)
+                    .Where(x => x.Deadline < originalDate)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                || x.MicrotingSdkCaseId > 0)
+                    .Select(x => x.Deadline.Date)
+                    .ToListAsync());
+
             foreach (var occDate in EnumerateOccurrences(planning, planning.StartDate.Date, originalDate,
                          arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
             {
                 if (existingSet.Contains(occDate)) continue;
+                if (compliancePastDates.Contains(occDate)) continue;
                 var anchor = new CalendarOccurrenceException
                 {
                     AreaRulePlanningId = updateModel.Id,
@@ -1337,10 +1486,35 @@ public class BackendConfigurationCalendarService(
             }
         }
 
-        // Apply NEW field values to the series. Pass the EXISTING StartDate to
-        // the wizard so its StartDate write is a no-op — this is the #885 fix:
-        // a thisAndFollowing edit must not drag the series anchor onto the
-        // clicked occurrence's date.
+        // Distinguish a pure field edit from a date move. When the new start
+        // date equals the edited occurrence's date, the user only changed
+        // fields (title/time/colour) — keep the series anchor where it is so we
+        // don't drag the whole series onto the clicked occurrence (#885). When
+        // the date actually changed, a "this and following" edit re-anchors the
+        // series forward to the new date (exactly like a thisAndFollowing drag):
+        // the rule from that date on follows the new weekday/ordinal, while past
+        // occurrences stay pinned by the backfill anchors created above. Without
+        // this re-anchor the iterator keeps generating from the old anchor and
+        // the moved occurrence snaps to a stale weekday (#927).
+        var newAnchor = DateTime.SpecifyKind(updateModel.StartDate, DateTimeKind.Utc).Date;
+        var dateChanged = newAnchor != originalDate;
+        if (dateChanged)
+        {
+            arp.StartDate = newAnchor;
+            arp.UpdatedByUserId = userService.UserId;
+            await arp.Update(backendConfigurationPnDbContext);
+            if (planning != null)
+            {
+                planning.StartDate = newAnchor;
+                planning.UpdatedByUserId = userService.UserId;
+                await planning.Update(itemsPlanningPnDbContext);
+            }
+        }
+
+        // Apply NEW field values to the series. The wizard re-derives the
+        // items-planning weekday/day-of-month from this StartDate, so it must
+        // receive the (possibly re-anchored) series start to keep both
+        // scheduler masters in agreement.
         var wizardModel = new TaskWizardCreateModel
         {
             Id = updateModel.Id,
@@ -1366,7 +1540,8 @@ public class BackendConfigurationCalendarService(
         arp.RepeatWeekdaysCsv = updateModel.RepeatWeekdaysCsv;
         arp.DayOfMonth = updateModel.DayOfMonth ?? 0;
         arp.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
-        if (updateModel.RepeatOrdinalWeek.HasValue)
+        if (updateModel.RepeatOrdinalWeek.HasValue
+            || updateModel.RepeatType == (int)Infrastructure.Enums.RepeatType.Week)
         {
             arp.DayOfWeek = (int)updateModel.StartDate.DayOfWeek;
         }
@@ -1406,11 +1581,17 @@ public class BackendConfigurationCalendarService(
             await calConfig.Create(backendConfigurationPnDbContext);
         }
 
-        // From originalDate forward the updated series is the source of truth;
-        // drop any pre-edit overrides so they don't shadow the new values.
+        // From the re-anchored series' start forward, the updated series is the
+        // source of truth; drop any pre-edit overrides (including past anchors
+        // just backfilled for dates the new series now regenerates) so they
+        // don't shadow the new values. For a backward date move the new anchor
+        // is earlier than originalDate, so the cutoff is the new anchor — else a
+        // backfilled anchor at/after the new anchor double-renders the same day
+        // with stale values (#927).
+        var staleCutoff = dateChanged && newAnchor < originalDate ? newAnchor : originalDate;
         var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
             .Where(x => x.AreaRulePlanningId == updateModel.Id)
-            .Where(x => x.OriginalDate >= originalDate)
+            .Where(x => x.OriginalDate >= staleCutoff)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .ToListAsync();
         foreach (var stale in staleExceptions)
@@ -1445,11 +1626,19 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(deleteModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
-                var existing = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == deleteModel.Id)
-                    .Where(x => x.OriginalDate == originalDate)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
+
+                // Match the occurrence's own exception by OriginalDate first. If the
+                // occurrence was previously moved (scope=this), it now renders at its
+                // NewDate and the delete payload sends that displayed date — so fall
+                // back to matching by NewDate, flipping the SAME row's IsDeleted instead
+                // of creating a duplicate exception that leaves the moved occurrence
+                // visible (#915).
+                var existing = exceptions.FirstOrDefault(x => x.OriginalDate.Date == originalDate)
+                    ?? exceptions.FirstOrDefault(x => x.NewDate.HasValue && x.NewDate.Value.Date == originalDate);
 
                 if (existing != null)
                 {
@@ -1599,6 +1788,100 @@ public class BackendConfigurationCalendarService(
         return sdkCase?.Status == 100;
     }
 
+    // #960 — under an "all" date/pattern edit, deployed-but-NOT-completed
+    // occurrences must adopt the new pattern too. The rule re-anchor handles
+    // future + never-deployed dates, but already-deployed Compliance rows keep
+    // their old Deadline, so move each non-completed one to the new-pattern
+    // date within its OWN recurrence period. COMPLETED rows (backing SDK Case
+    // Status==100) are frozen and never touched — the hard immutability
+    // invariant (R2). Rows already on the new-pattern date are left as-is.
+    private async Task RelocateNonCompletedComplianceRowsToNewPattern(
+        AreaRulePlanning arp,
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning)
+    {
+        var rows = await backendConfigurationPnDbContext.Compliances
+            .Where(c => c.PlanningId == arp.ItemPlanningId)
+            .Where(c => c.MicrotingSdkCaseId > 0)
+            .Where(c => c.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        if (rows.Count == 0) return;
+
+        var caseIds = rows.Select(c => c.MicrotingSdkCaseId).Distinct().ToList();
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        var completedCaseIds = (await sdkDbContext.Cases
+            .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+            .Select(c => c.Id)
+            .ToListAsync()).ToHashSet();
+
+        foreach (var row in rows)
+        {
+            // Completed occurrences are immutable — never relocate (R2).
+            if (completedCaseIds.Contains(row.MicrotingSdkCaseId)) continue;
+            var newDate = NewPatternDateForPeriodOf(planning, arp, row.Deadline);
+            if (newDate == null) continue;                          // kind has no single per-period anchor
+            if (newDate.Value.Date == row.Deadline.Date) continue;  // already aligned — no-op
+            row.Deadline = newDate.Value.Date;
+            row.UpdatedByUserId = userService.UserId;
+            await row.Update(backendConfigurationPnDbContext);
+        }
+    }
+
+    // The new-pattern occurrence date in the SAME recurrence period as
+    // `oldDeadline`, using the rule's CURRENT (post-edit) pattern. Returns null
+    // for kinds with no single per-period anchor (daily / multi-day weekly) or
+    // when an Nth-weekday ordinal spills past the month. Reuses
+    // NthWeekdayOfMonth so it can never drift from the recurrence enumerators.
+    private static DateTime? NewPatternDateForPeriodOf(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning arp,
+        DateTime oldDeadline)
+    {
+        switch ((int)planning.RepeatType)
+        {
+            case 2: // Week — only single-weekday rules have one occurrence per week.
+            {
+                if (ParseWeekdaysCsv(arp.RepeatWeekdaysCsv).Length > 1) return null;
+                // DayOfWeek is stored .NET/JS-style (Sun=0..Sat=6).
+                int targetDow = arp.DayOfWeek;
+                // Monday-aligned week containing oldDeadline, projected onto targetDow.
+                var monday = oldDeadline.Date.AddDays(-(((int)oldDeadline.DayOfWeek + 6) % 7));
+                return monday.AddDays((targetDow + 6) % 7);
+            }
+            case 3: // Month
+            {
+                if (arp.RepeatOrdinalWeek.HasValue)
+                {
+                    return NthWeekdayOfMonth(oldDeadline.Year, oldDeadline.Month,
+                        arp.RepeatOrdinalWeek.Value, arp.DayOfWeek);
+                }
+                // Legacy day-of-month: mirror GetOccurrencesInWeek exactly —
+                // planning.DayOfMonth is the single source of truth the renderer
+                // uses (the wizard derives it, capped at 28 for Month), then
+                // clamp to the candidate month's length. Reading planning (not
+                // arp) keeps the relocation aligned with where the rule actually
+                // renders, so the two can never diverge (#952 hardening).
+                var dom = Math.Min(planning.DayOfMonth ?? oldDeadline.Day, 28);
+                var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, oldDeadline.Month);
+                return new DateTime(oldDeadline.Year, oldDeadline.Month,
+                    Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+            }
+            case 4: // Year — fixed month + day-of-month from the new pattern, same year.
+            {
+                // Same single-source-of-truth as the renderer's Year branch:
+                // month + day-of-month come from planning, clamped to the month
+                // length (no 28-cap for yearly, matching GetOccurrencesInWeek).
+                var month = planning.StartDate.Month;
+                var dom = planning.DayOfMonth ?? oldDeadline.Day;
+                var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, month);
+                return new DateTime(oldDeadline.Year, month,
+                    Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+            }
+            default:
+                return null; // Day / None — no single per-period anchor to relocate.
+        }
+    }
+
     public async Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel)
     {
         try
@@ -1656,15 +1939,40 @@ public class BackendConfigurationCalendarService(
                 var originalDate = DateTime.Parse(moveModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
+                // The frontend sends the DISPLAYED date as OriginalDate. Prefer
+                // an exception keyed on that natural date; otherwise (if a prior
+                // scope=this move relocated a DIFFERENT occurrence onto the
+                // displayed date) reuse THAT move's exception, matched by its
+                // NewDate. Without the NewDate fallback, dragging an
+                // already-moved occurrence again — or back to its natural day —
+                // orphans the original row and the tile never moves (#953,
+                // mirrors the delete-after-move fix #915).
                 var exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
                     .Where(x => x.OriginalDate == originalDate)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
+                if (exception == null)
+                {
+                    // No natural-keyed exception: look for an occurrence a prior
+                    // move relocated onto this displayed date. The
+                    // OriginalDate != displayedDate guard keeps this strictly to
+                    // moved-away occurrences (a same-day override stores
+                    // NewDate = null, so it is never matched here anyway).
+                    exception = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                        .Where(x => x.AreaRulePlanningId == moveModel.Id)
+                        .Where(x => x.NewDate.HasValue && x.NewDate.Value.Date == originalDate
+                                    && x.OriginalDate.Date != originalDate)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+                }
+
                 if (exception != null)
                 {
-                    exception.NewDate = newDate.Date != originalDate ? newDate : null;
+                    // Clear the override when the occurrence lands back on its
+                    // own natural day; otherwise relocate it.
+                    exception.NewDate = newDate.Date != exception.OriginalDate.Date ? newDate : null;
                     exception.StartHour = moveModel.NewStartHour;
                     exception.UpdatedByUserId = userService.UserId;
                     await exception.Update(backendConfigurationPnDbContext);
@@ -1716,9 +2024,24 @@ public class BackendConfigurationCalendarService(
                         .ToListAsync();
                     var existingSet = new HashSet<DateTime>(existingPastDates);
 
+                    // Skip dates that already deployed a case (incl. completed
+                    // ones whose Compliance row was soft-deleted after
+                    // Status=100): the compliance loop renders those, so an
+                    // orphan anchor here would resurrect a completed occurrence
+                    // as not-done (#930).
+                    var compliancePastDates = new HashSet<DateTime>(
+                        await backendConfigurationPnDbContext.Compliances
+                            .Where(x => x.PlanningId == oldPlanning.Id)
+                            .Where(x => x.Deadline < originalDate)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                                        || x.MicrotingSdkCaseId > 0)
+                            .Select(x => x.Deadline.Date)
+                            .ToListAsync());
+
                     foreach (var occDate in EnumerateOccurrences(oldPlanning, oldPlanning.StartDate.Date, originalDate, arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek))
                     {
                         if (existingSet.Contains(occDate)) continue;
+                        if (compliancePastDates.Contains(occDate)) continue;
                         var anchor = new CalendarOccurrenceException
                         {
                             AreaRulePlanningId = moveModel.Id,
@@ -1741,12 +2064,46 @@ public class BackendConfigurationCalendarService(
                 }
 
                 arp.StartDate = newDate;
+                // Re-derive the recurrence weekday from the drop date so the
+                // moved series follows the new weekday instead of snapping back
+                // to the original one (#926). For an Nth-weekday-of-month rule
+                // also re-derive the ordinal week; for a single-day weekly rule
+                // rewrite the explicit weekday CSV. Multi-day weekly CSVs are
+                // left untouched (a single drag has no single target weekday).
+                if (arp.RepeatOrdinalWeek.HasValue)
+                {
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                }
+                else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
+                         && !arp.RepeatWeekdaysCsv.Contains(','))
+                {
+                    arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                }
+                // Yearly rules anchor on a fixed (month, day-of-month). The
+                // month follows StartDate, but the day-of-month is read from
+                // DayOfMonth by the yearly render; carry it to the drop day or
+                // the occurrence re-pins to the original day and snaps back
+                // (#952).
+                if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                {
+                    arp.DayOfMonth = newDate.Day;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
                 if (oldPlanning != null)
                 {
                     oldPlanning.StartDate = newDate;
+                    // Keep the items-planning scheduler master in sync with the
+                    // new weekday so NextExecutionTime does not pull the series
+                    // back to the old day (the two-master defect, #925/#926).
+                    oldPlanning.DayOfWeek = newDate.DayOfWeek;
+                    if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                    {
+                        oldPlanning.DayOfMonth = newDate.Day;
+                    }
                     oldPlanning.UpdatedByUserId = userService.UserId;
                     await oldPlanning.Update(itemsPlanningPnDbContext);
                 }
@@ -1770,9 +2127,14 @@ public class BackendConfigurationCalendarService(
                     await calConfig.Create(backendConfigurationPnDbContext);
                 }
 
+                // For a backward move the new anchor precedes originalDate, so
+                // drop backfilled anchors at/after the new anchor too — otherwise
+                // they double-render the re-anchored series' own days with stale
+                // values (companion to the #927 cutoff fix).
+                var staleCutoff = newDate < originalDate ? newDate : originalDate;
                 var staleExceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => x.AreaRulePlanningId == moveModel.Id)
-                    .Where(x => x.OriginalDate >= originalDate)
+                    .Where(x => x.OriginalDate >= staleCutoff)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync();
 
@@ -1784,6 +2146,27 @@ public class BackendConfigurationCalendarService(
             else
             {
                 arp.StartDate = newDate;
+                // Re-derive the recurrence weekday/ordinal from the drop date so
+                // a whole-series move follows the new weekday instead of snapping
+                // back to the original one (#926), mirroring the thisAndFollowing
+                // branch above.
+                if (arp.RepeatOrdinalWeek.HasValue)
+                {
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                    arp.RepeatOrdinalWeek = (newDate.Day - 1) / 7 + 1;
+                }
+                else if (!string.IsNullOrEmpty(arp.RepeatWeekdaysCsv)
+                         && !arp.RepeatWeekdaysCsv.Contains(','))
+                {
+                    arp.RepeatWeekdaysCsv = ((int)newDate.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+                    arp.DayOfWeek = (int)newDate.DayOfWeek;
+                }
+                // Carry the yearly day-of-month to the drop day (#952); see the
+                // thisAndFollowing branch above for the rationale.
+                if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                {
+                    arp.DayOfMonth = newDate.Day;
+                }
                 arp.UpdatedByUserId = userService.UserId;
                 await arp.Update(backendConfigurationPnDbContext);
 
@@ -1795,6 +2178,11 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.StartDate = newDate;
+                    planning.DayOfWeek = newDate.DayOfWeek;
+                    if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
+                    {
+                        planning.DayOfMonth = newDate.Day;
+                    }
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -1831,6 +2219,66 @@ public class BackendConfigurationCalendarService(
                 foreach (var ex in allExceptions)
                 {
                     await ex.Delete(backendConfigurationPnDbContext);
+                }
+            }
+
+            // #954: a series-level move ("thisAndFollowing"/"all") shifts the
+            // recurrence anchor but leaves the dragged occurrence's Compliance
+            // row at its old Deadline, so the compliance loop keeps painting a
+            // tile on the old day while the recurrence paints one on the new day
+            // — a duplicate. Carry that occurrence's Compliance row to the new
+            // date so a single tile remains (the dedup gate then suppresses the
+            // recurrence tile on that day). Scope "this" is excluded: it is
+            // rendered through the per-occurrence exception the compliance loop
+            // already consults. The move guard above rejected completed
+            // occurrences, so the row at originalDate is open; Compliance rows on
+            // other dates (incl. completed history) stay pinned. A 3-day window
+            // + in-memory .Date match avoids DateTime.Kind drift (mirrors
+            // IsTaskOccurrenceCompleted).
+            if (scope != "this" && !string.IsNullOrEmpty(moveModel.OriginalDate))
+            {
+                var origComplianceDate = DateTime.Parse(moveModel.OriginalDate,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                var windowStart = origComplianceDate.AddDays(-1);
+                var windowEnd = origComplianceDate.AddDays(2);
+                var complianceCandidates = await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PlanningId == arp.ItemPlanningId)
+                    .Where(x => x.Deadline >= windowStart && x.Deadline < windowEnd)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+                var complianceAtOriginalDate = complianceCandidates
+                    .Where(c => c.Deadline.Date == origComplianceDate)
+                    .ToList();
+
+                // Never relocate a COMPLETED occurrence's row: completed history
+                // stays pinned to its date even if (data anomaly) it shares the
+                // day with the open occurrence the move guard cleared. The guard
+                // only inspects one row per day (FirstOrDefault), so re-check
+                // completion here against the backing SDK case (Status == 100).
+                var caseIds = complianceAtOriginalDate
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var completedCaseIds = new HashSet<int>();
+                if (caseIds.Count > 0)
+                {
+                    var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+                    await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+                    completedCaseIds = (await sdkDbContext.Cases
+                        .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+                        .Select(c => c.Id)
+                        .ToListAsync()).ToHashSet();
+                }
+
+                foreach (var compliance in complianceAtOriginalDate
+                             .Where(c => !(c.MicrotingSdkCaseId > 0
+                                           && completedCaseIds.Contains(c.MicrotingSdkCaseId))))
+                {
+                    compliance.Deadline = newDate.Date;
+                    compliance.UpdatedByUserId = userService.UserId;
+                    await compliance.Update(backendConfigurationPnDbContext);
                 }
             }
 
@@ -2454,6 +2902,63 @@ public class BackendConfigurationCalendarService(
     // de-duplicated array of JS-style weekday ints (0=Sun..6=Sat). Returns
     // an empty array on null/empty/all-invalid input — callers treat empty
     // as "no multi-day expansion, fall back to single-day weekly behavior".
+    /// <summary>
+    /// Period bucket key used for completed-occurrence suppression (#960).
+    /// A completed occurrence freezes its whole recurrence period so a
+    /// re-anchored rule cannot render a phantom not-completed sibling there.
+    ///
+    /// Returns null when period-level suppression must NOT apply, i.e. when the
+    /// rule has more than one occurrence per period and the per-(planning,date)
+    /// complianceDateSet already handles suppression exactly:
+    ///   * Day / every-N-day — one occurrence per day == the date key itself.
+    ///   * multi-day weekly (CSV has 2+ weekdays) — independent per-day
+    ///     occurrences; bucketing by week would wrongly hide live siblings.
+    ///
+    /// Granularity for single-occurrence-per-period kinds:
+    ///   * single-weekday weekly → Monday-aligned ISO week (matches the
+    ///     Monday-aligned stride bucketing in GetOccurrencesInWeek's multi-day
+    ///     branch).
+    ///   * monthly → year+month.
+    ///   * yearly (RepeatType cast 4) → year.
+    /// </summary>
+    private static string? CompletedPeriodKey(
+        Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType repeatType,
+        string? repeatWeekdaysCsv,
+        DateTime date)
+    {
+        switch ((int)repeatType)
+        {
+            case 2: // Week
+                if (ParseWeekdaysCsv(repeatWeekdaysCsv).Length > 1) return null;
+                // Monday of the date's week (ISO Mon=0..Sun=6).
+                var monday = date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
+                return "W:" + monday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            case 3: // Month
+                return $"M:{date.Year:D4}-{date.Month:D2}";
+            case 4: // Year (enum has no member; cast used throughout this file)
+                return $"Y:{date.Year:D4}";
+            default: // Day / None — covered exactly by the per-date dedup set.
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// The Nth-weekday-of-month date (e.g. "2nd Tuesday of March 2026"), or
+    /// null when the ordinal spills past the month (e.g. a 5th occurrence in a
+    /// month with only four). Single source of truth shared by the recurrence
+    /// enumerators (GetOccurrencesInWeek / EnumerateOccurrences) and the "all"
+    /// re-pattern relocation (#960) so the two never drift.
+    /// </summary>
+    /// <param name="ordinal">1..5 (1 = first).</param>
+    /// <param name="targetDow">Target day-of-week, 0=Sun..6=Sat.</param>
+    private static DateTime? NthWeekdayOfMonth(int year, int month, int ordinal, int targetDow)
+    {
+        var firstOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+        int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
+        var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+        return candidate.Month != month ? null : candidate;
+    }
+
     private static int[] ParseWeekdaysCsv(string? csv)
     {
         if (string.IsNullOrWhiteSpace(csv)) return [];
@@ -2575,18 +3080,16 @@ public class BackendConfigurationCalendarService(
                     int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
                     while (true)
                     {
-                        var firstOfMonth = new DateTime(candidateMonth.Year, candidateMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                        int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
-                        var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+                        var candidate = NthWeekdayOfMonth(candidateMonth.Year, candidateMonth.Month, ordinal, targetDow);
                         // If ordinal spills into the next month (e.g. 5th occurrence
                         // in a month that only has 4), skip this month.
-                        if (candidate.Month != candidateMonth.Month)
+                        if (candidate == null)
                         {
                             candidateMonth = candidateMonth.AddMonths(repeatEvery);
                             continue;
                         }
-                        if (candidate >= rangeEnd) break;
-                        if (candidate >= rangeStart) yield return candidate;
+                        if (candidate.Value >= rangeEnd) break;
+                        if (candidate.Value >= rangeStart) yield return candidate.Value;
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
                     }
                 }
@@ -2606,10 +3109,32 @@ public class BackendConfigurationCalendarService(
                 }
                 break;
             }
-            // NOTE: GetOccurrencesInWeek has a `(RepeatType)4 // Year` branch
-            // but the RepeatType enum only defines Day/Week/Month — the cast
-            // is dead code. Not propagating it here. Add a real Year case
-            // when the enum gains a member.
+            case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
+            {
+                // Yearly stays in a fixed month (from StartDate); keep the real
+                // day-of-month and clamp it to the candidate month's length
+                // (#922), mirroring GetOccurrencesInWeek's Year branch so the two
+                // enumerators never drift (#952 follow-up). Without this case the
+                // iterator yielded nothing for yearly tasks, breaking the
+                // "after N occurrences" cap and every thisAndFollowing
+                // past-anchor backfill (MoveTask / ResizeTask / UpdateTask).
+                var yearDom = planning.DayOfMonth ?? startDate.Day;
+                var yearMonth = startDate.Month;
+                var yearsSinceStart = rangeStart.Year - startDate.Year;
+                var yearPeriods = yearsSinceStart > 0
+                    ? (int)Math.Ceiling((double)yearsSinceStart / repeatEvery) : 0;
+                var candidateYear = startDate.Year + yearPeriods * repeatEvery;
+                while (true)
+                {
+                    var daysInMonth = DateTime.DaysInMonth(candidateYear, yearMonth);
+                    var candidate = new DateTime(candidateYear, yearMonth,
+                        Math.Min(yearDom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
+                    if (candidate >= rangeEnd) break;
+                    if (candidate >= rangeStart) yield return candidate;
+                    candidateYear += repeatEvery;
+                }
+                break;
+            }
             default:
                 // Non-recurring (RepeatType.None) — no past occurrences to anchor.
                 yield break;
@@ -2666,21 +3191,20 @@ public class BackendConfigurationCalendarService(
                 {
                     // Multi-day path: only emit occurrences in this week if
                     // the requested week is a multiple of repeatEvery weeks
-                    // past the anchor week (Sunday-based, matches JS getDay).
+                    // past the anchor week.
                     //
-                    // The stride check still uses Sunday-aligned weeks so the
-                    // bucket math is independent of the caller's week-start
-                    // convention. But the per-day projection MUST be relative
-                    // to the caller's weekStart, because the caller's week
-                    // may be Mon-Sun while wd uses JS getDay() (Sun=0..Sat=6).
-                    // Old code wrote `weekStartAligned.AddDays(wd)` which for
-                    // a Mon-Sun week with weekStart=Mon and weekStartAligned=
-                    // the prior Sun produced wd=0 → the Sun BEFORE the week,
-                    // then filtered it out — so Sunday at the END of the week
-                    // was never emitted. Project from weekStart instead.
-                    // Sunday-aligned anchor week (matches JS getDay numbering),
-                    // consistent with EnumerateOccurrences above.
-                    var anchorWeekStart = startDate.AddDays(-(int)startDate.DayOfWeek);
+                    // Bucket weeks MONDAY-aligned (ISO: Mon=0..Sun=6) so all 7
+                    // days of one Mon–Sun week share a single stride bucket. A
+                    // Sunday-aligned grid puts the trailing Sunday in the NEXT
+                    // bucket, so an every-Nth-week rule (N>1) dropped it — an
+                    // all-days every-2nd-week rule lost Sunday (#922 CR04), and
+                    // a mixed Wed+Sun set split across two buckets. The per-day
+                    // projection below MUST still use the caller's weekStart
+                    // (the caller's week may be Mon-Sun while wd uses JS
+                    // getDay() Sun=0..Sat=6), so candidates land in
+                    // [weekStart, weekStart+6]; only the stride bucketing is
+                    // Monday-aligned.
+                    var anchorWeekStart = startDate.AddDays(-(((int)startDate.DayOfWeek + 6) % 7));
                     var weekStartDow = (int)weekStart.Date.DayOfWeek;
                     foreach (var wd in weekdays)
                     {
@@ -2691,18 +3215,12 @@ public class BackendConfigurationCalendarService(
                         var candidate = weekStart.Date.AddDays(offset);
                         if (candidate < startDate) continue;
                         // Gate the stride PER CANDIDATE on the candidate's own
-                        // Sunday-aligned week. A Mon-Sun caller week straddles
-                        // TWO Sunday-aligned weeks (Mon-Sat in one, the trailing
-                        // Sunday in the next), so a single gate computed from
-                        // weekStart's Sunday-week wrongly rejected an occurrence
-                        // whose anchor landed on that trailing Sunday
-                        // (weeksFromAnchor = -1) — the event disappeared from
-                        // its own week after an edit moved the StartDate onto a
-                        // Sunday. Computing weeksFromAnchor from `candidate`
-                        // instead also fixes mixed multi-day CSVs (e.g. "3,0"
-                        // Wed+Sun) whose days fall in different Sunday-weeks
-                        // within one caller week.
-                        var candidateWeekStart = candidate.AddDays(-(int)candidate.DayOfWeek);
+                        // Monday-aligned week, so every day of a Mon–Sun week
+                        // (including the trailing Sunday) maps to the same week
+                        // bucket as its anchor. This keeps all-days and mixed
+                        // Wed+Sun multi-day sets together under every-Nth-week
+                        // cadences instead of splitting the Sunday off (#922).
+                        var candidateWeekStart = candidate.AddDays(-(((int)candidate.DayOfWeek + 6) % 7));
                         var weeksFromAnchor = (candidateWeekStart - anchorWeekStart).Days / 7;
                         if (weeksFromAnchor >= 0 && weeksFromAnchor % repeatEvery == 0)
                             occurrences.Add(candidate);
@@ -2725,18 +3243,16 @@ public class BackendConfigurationCalendarService(
                     int targetDow = dayOfWeekOverride ?? (int)startDate.DayOfWeek; // 0=Sun..6=Sat
                     for (var i = 0; i < 3; i++)
                     {
-                        var firstOfMonth = new DateTime(candidateMonth.Year, candidateMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                        int dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
-                        var candidate = firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+                        var candidate = NthWeekdayOfMonth(candidateMonth.Year, candidateMonth.Month, ordinal, targetDow);
                         // Skip months where the ordinal spills into the next month.
-                        if (candidate.Month != candidateMonth.Month)
+                        if (candidate == null)
                         {
                             candidateMonth = candidateMonth.AddMonths(repeatEvery);
                             continue;
                         }
-                        if (candidate > weekEnd) break;
-                        if (candidate >= weekStart)
-                            occurrences.Add(candidate);
+                        if (candidate.Value > weekEnd) break;
+                        if (candidate.Value >= weekStart)
+                            occurrences.Add(candidate.Value);
                         candidateMonth = candidateMonth.AddMonths(repeatEvery);
                     }
                 }
@@ -2760,7 +3276,10 @@ public class BackendConfigurationCalendarService(
             case (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)4: // Year
             {
                 if (startDate > weekEnd) break;
-                var yearDom = Math.Min(planning.DayOfMonth ?? startDate.Day, 28);
+                // Yearly stays in a fixed month, so keep the real day-of-month
+                // and clamp it to the candidate month's length below (#922) —
+                // unlike Month, which caps to 28 to dodge short-month overflow.
+                var yearDom = planning.DayOfMonth ?? startDate.Day;
                 var yearMonth = startDate.Month;
                 var yearsSinceStart = weekStart.Year - startDate.Year;
                 if (yearsSinceStart < 0) break;
@@ -3398,6 +3917,27 @@ public class BackendConfigurationCalendarService(
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
+
+            // Load CalendarOccurrenceExceptions for the compliance ARPs so that
+            // single-occurrence deletes (scope="this" via DeleteOccurrence) AND
+            // scope="this" moves (NewDate override) are both honoured here,
+            // mirroring GetTasksForWeek lines 335-348 + 805-823.
+            // Last-wins on duplicate OriginalDate per ARP: nothing enforces a
+            // unique (AreaRulePlanningId, OriginalDate) at the DB level, and the
+            // move/delete write paths key by OriginalDate best-effort, so two
+            // non-Removed exceptions can collide. A plain ToDictionary would throw
+            // here; the inner GroupBy + last-wins mirrors the indexer-assignment
+            // top-up in GetTasksForWeek (lines 717-725).
+            var occExceptionsByArpId = (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync())
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.GroupBy(x => x.OriginalDate.Date)
+                        .ToDictionary(inner => inner.Key, inner => inner.Last()));
+
             var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -3429,9 +3969,24 @@ public class BackendConfigurationCalendarService(
             foreach (var compliance in compliances)
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
-                CalendarConfiguration calConfig = null;
-                if (arp != null)
-                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+                if (arp == null) continue;
+
+                // Honour scope=this moves and deletes, mirroring GetTasksForWeek lines 805-823.
+                occExceptionsByArpId.TryGetValue(arp.Id, out var arpExceptions);
+                CalendarOccurrenceException? occException = null;
+                arpExceptions?.TryGetValue(compliance.Deadline.Date, out occException);
+
+                // Skip single-occurrence-deleted events, mirroring GetTasksForWeek line 813.
+                if (occException?.IsDeleted == true)
+                {
+                    continue;
+                }
+
+                // Use NewDate if the occurrence was moved (scope=this), so the task
+                // appears on its new date rather than the original compliance.Deadline.
+                var effectiveDate = occException?.NewDate?.Date ?? compliance.Deadline.Date;
+
+                complianceCalConfigs.TryGetValue(arp.Id, out var calConfig);
 
                 if (!compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var planning))
                 {
@@ -3476,9 +4031,9 @@ public class BackendConfigurationCalendarService(
                 // Per-row Completed + TaskIsExpired derivation. Predicate
                 // matches the spec: completed = Case.Status==100;
                 // task_is_expired = (Case.WorkflowState=Removed AND
-                // Status=77) OR (compliance.Deadline.Date < UtcNow.Date AND
-                // Status != 100). Date-only so an event scheduled for today
-                // is not flagged expired once its time-of-day passes.
+                // Status=77) OR (effectiveDate < UtcNow.Date AND
+                // Status != 100). Uses effectiveDate so a moved occurrence is
+                // judged against its new date, not the original deadline.
                 // Recurrence-only or missing-Case rows fall back to the
                 // deadline-only check (no Status to consult, so they are
                 // treated as not-completed).
@@ -3491,13 +4046,13 @@ public class BackendConfigurationCalendarService(
                     completed = sdkCase.Status == 100;
                     var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
                                     && sdkCase.Status == 77;
-                    var pastDueIncomplete = compliance.Deadline.Date < dateTimeNow.Date
+                    var pastDueIncomplete = effectiveDate < dateTimeNow.Date
                                             && sdkCase.Status != 100;
                     taskIsExpired = retracted || pastDueIncomplete;
                 }
                 else
                 {
-                    taskIsExpired = compliance.Deadline.Date < dateTimeNow.Date;
+                    taskIsExpired = effectiveDate < dateTimeNow.Date;
                 }
 
                 var model = new CalendarTaskResponseModel
@@ -3506,7 +4061,7 @@ public class BackendConfigurationCalendarService(
                     Title = title,
                     StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
                     Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
-                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    TaskDate = effectiveDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)

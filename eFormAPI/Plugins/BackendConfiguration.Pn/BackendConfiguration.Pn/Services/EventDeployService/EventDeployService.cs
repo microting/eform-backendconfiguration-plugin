@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -61,6 +62,48 @@ public class EventDeployService(
     IServiceProvider serviceProvider,
     ILogger<EventDeployService> logger) : IEventDeployService
 {
+    // #934 — per-(planning, site) in-process deploy locks. Concurrent deploy
+    // passes (the 5s StreamEventChanges poll, ListEvents one-shots, and the
+    // several window/board requests a single client fires per sync) all call
+    // into the deploy path for the same rotation. The idempotence guard keys on
+    // the Compliance row, which DeployForRotationAsync writes LAST (after the
+    // slow CaseCreateLocalOnly), so two passes that both clear the guard before
+    // either writes Compliance each create a PlanningCase + PlanningCaseSite —
+    // only Compliance has a duplicate-key catch, so the PlanningCaseSites
+    // duplicate. That is the "N identical PlanningCaseSites within seconds"
+    // symptom in #934. Serializing the check-then-deploy per (planning, site)
+    // closes the window: the first pass writes Compliance before the next
+    // re-checks the guard, so the next short-circuits.
+    //
+    // Keyed on (planning, site) — NOT (planning, site, rotation) — so the
+    // dictionary stays bounded by planning×site and never grows with the
+    // calendar window over the life of the process. Different rotations of the
+    // same planning+site therefore serialize against each other, which is
+    // harmless: the rotation-aware Compliance guard still lets each distinct
+    // day deploy exactly once, and deploys only run for not-yet-deployed
+    // candidates.
+    //
+    // In-process only: a mobile client's stream is pinned to one pod and the
+    // racing window/ListEvents calls share that pod, so this covers the
+    // reported scenario. Cross-pod races remain bounded by the Compliance
+    // duplicate-key catch; making duplicates physically impossible across pods
+    // would need the (PlanningId, MicrotingSdkSiteId, OccurrenceDate) DB unique
+    // constraint #934 mentions (deferred — requires a base migration).
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> DeployLocks = new();
+
+    private static async Task<IDisposable> AcquireDeployLockAsync(
+        int planningId, int sdkSiteId, CancellationToken ct)
+    {
+        var gate = DeployLocks.GetOrAdd($"{planningId}:{sdkSiteId}", _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        return new LockReleaser(gate);
+    }
+
+    private sealed class LockReleaser(SemaphoreSlim gate) : IDisposable
+    {
+        public void Dispose() => gate.Release();
+    }
+
     public async Task EnsureDeployedAsync(
         string propertyId,
         IReadOnlyCollection<string> boardIds,
@@ -138,6 +181,32 @@ public class EventDeployService(
             .Where(x => x.RotationDate.HasValue && x.RotationDate.Value >= todayUtc)
             .ToList();
 
+        // Site-aware narrowing (defect A in #935). The candidate iteration above
+        // is property-wide because GetTasksForWeek is property-wide; deploying
+        // for plannings that have no PlanningSite for the calling worker is
+        // both wasted work AND makes the (PlanningId, Deadline.Date) idempotence
+        // guard mis-fire (the first caller's deploy "claims" the slot, the
+        // assignee then skips deploy and never gets their own SDK case).
+        // Stuck-row recovery is per-site by construction: cross-site cleanup
+        // (e.g. when a worker is removed from PlanningSites between the
+        // original deploy and recovery) belongs to the scheduler microservice.
+        var candidatePlanningIds = candidates
+            .Select(x => x.Task.PlanningId!.Value)
+            .Distinct()
+            .ToList();
+        var planningIdsAssignedToSite = await itemsPlanningPnDbContext.PlanningSites
+            .AsNoTracking()
+            .Where(ps => candidatePlanningIds.Contains(ps.PlanningId)
+                         && ps.SiteId == sdkSiteId
+                         && ps.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(ps => ps.PlanningId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var assignedPlanningIdSet = new HashSet<int>(planningIdsAssignedToSite);
+        candidates = candidates
+            .Where(x => assignedPlanningIdSet.Contains(x.Task.PlanningId!.Value))
+            .ToList();
+
         if (candidates.Count == 0)
         {
             logger.LogDebug(
@@ -181,31 +250,70 @@ public class EventDeployService(
             var planningId = task.PlanningId!.Value;
             var eformId = task.EformId!.Value;
 
+            // #934 — serialize the check-then-deploy for this (planning, site)
+            // so concurrent passes cannot both clear the Compliance guard before
+            // either writes it and each create a duplicate PlanningCaseSite.
+            // Disposed at the end of the iteration (incl. after `continue` and
+            // the catch below), releasing the gate.
+            using var deployLockHandle = await AcquireDeployLockAsync(planningId, sdkSiteId, cancellationToken)
+                .ConfigureAwait(false);
             try
             {
-                // 1. Idempotence guard — Compliance natural key.
+                // 1. Idempotence guard — Compliance natural key + SDK site.
                 //    Mirrors EformParsedByServerHandler.cs:157-164 (compliance
-                //    is keyed on PlanningId + Deadline; we additionally scope
-                //    to the requested sdk site below when locating the
-                //    PlanningCaseSite).
-                //    The slot is "taken — skip" if it's soft-removed (user
-                //    already completed this rotation; the SDK Case still
-                //    exists, just the Compliance was retracted) OR fully
-                //    deployed (MicrotingSdkCaseId > 0). We re-deploy ONLY for
-                //    the genuine stuck-row shape: Created + MicrotingSdkCaseId
-                //    == 0, where an earlier deploy left a Compliance row
-                //    behind without an SDK Case (e.g. the SDK 10.0.27 EndDate
-                //    validation bug). EnsureComplianceRowAsync revives that
-                //    row in place via the duplicate-key catch.
+                //    is keyed on PlanningId + Deadline), but ALSO scopes the
+                //    "already deployed" decision to the calling worker's site
+                //    (defect A in #935): without the site filter, the first
+                //    caller wins the (PlanningId, Deadline) slot and writes a
+                //    Compliance pointing at THEIR SDK case, then subsequent
+                //    callers — including the planning's actual assignee — hit
+                //    this guard and skip deploy, so they see the tile but the
+                //    linked SDK case belongs to a different site and the eForm
+                //    never opens.
+                //
+                //    Two-step query because Compliance.MicrotingSdkCaseId
+                //    references the SDK DbContext's Cases table:
+                //      (1) From BC: candidate SdkCaseIds for (planning, day).
+                //      (2) From SDK: does any of those rows have SiteId == us?
+                //
+                //    The Removed-Compliance branch stays site-agnostic: a
+                //    soft-removed row globally means "this rotation has been
+                //    completed-then-retracted" (canonical complete-and-remove
+                //    semantics, e.g. mobile CompleteEvent + admin retract);
+                //    we never re-deploy that, regardless of which site
+                //    originally completed it.
                 var alreadyDeployed = await dbContext.Compliances
                     .AsNoTracking()
                     .AnyAsync(c =>
                             c.PlanningId == planningId
                             && c.Deadline.Date == rotationDate
-                            && (c.WorkflowState == Constants.WorkflowStates.Removed
-                                || c.MicrotingSdkCaseId > 0),
+                            && c.WorkflowState == Constants.WorkflowStates.Removed,
                         cancellationToken)
                     .ConfigureAwait(false);
+                if (!alreadyDeployed)
+                {
+                    var candidateSdkCaseIds = await dbContext.Compliances
+                        .AsNoTracking()
+                        .Where(c =>
+                            c.PlanningId == planningId
+                            && c.Deadline.Date == rotationDate
+                            && c.WorkflowState != Constants.WorkflowStates.Removed
+                            && c.MicrotingSdkCaseId > 0)
+                        .Select(c => c.MicrotingSdkCaseId)
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    if (candidateSdkCaseIds.Count > 0)
+                    {
+                        alreadyDeployed = await sdkDbContext.Cases
+                            .AsNoTracking()
+                            .AnyAsync(sc =>
+                                candidateSdkCaseIds.Contains(sc.Id)
+                                && sc.SiteId.HasValue
+                                && sc.SiteId.Value == sdkSiteId,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                }
                 if (alreadyDeployed)
                 {
                     continue;
@@ -260,11 +368,24 @@ public class EventDeployService(
                         cancellationToken)
                     .ConfigureAwait(false);
             }
+            catch (OperationCanceledException)
+            {
+                // Cancellation must abort the whole pass — not be swallowed as a
+                // per-rotation failure by the general catch below. (The lock is
+                // already released by the `using` as the exception unwinds.)
+                throw;
+            }
             catch (Exception ex)
             {
-                logger.LogError(ex,
-                    "EventDeployService: failed to deploy planningId={PlanningId} rotation={Rotation} sdkSiteId={SdkSiteId} — continuing with the rest",
-                    planningId, rotationDate, sdkSiteId);
+                // Defect B in #935 — recoverable per-rotation failure. The
+                // stuck-row recovery path at the candidate filter above
+                // (`!t.IsFromCompliance || t.SdkCaseId == 0`) will redeploy on
+                // the next sync, so log at Warning with structured fields
+                // (exception type + planning + rotation + site) for
+                // observability without spamming Error stack traces.
+                logger.LogWarning(ex,
+                    "EventDeployService: per-rotation deploy threw {ExceptionType} for planningId={PlanningId} rotationDate={RotationDate} sdkSiteId={SdkSiteId} — continuing; recovery on next sync via stuck-row branch.",
+                    ex.GetType().Name, planningId, rotationDate, sdkSiteId);
                 // continue — do not abort the whole pass
             }
         }
@@ -295,6 +416,43 @@ public class EventDeployService(
         SdkLanguage language,
         CancellationToken ct)
     {
+        // 0. Defense-in-depth site-assignment guard (#932 / #1377). This is the
+        //    single source of truth for every PlanningCaseSite write, so it is
+        //    the right place to refuse a cross-worker leak. A PlanningCaseSite
+        //    must only ever be written for a site that is in the planning's own
+        //    (non-removed) PlanningSites. The two callers already uphold this:
+        //    EnsureDeployedAsync site-narrows its candidates (#935 defect A) and
+        //    the on-demand EnsureComplianceForOccurrenceAsync caller passes an
+        //    assigned site. If either invariant ever regresses, fail loud here
+        //    rather than silently deploying a case to a non-assigned worker (the
+        //    exact symptom #932 reports). In EnsureDeployedAsync this throw is
+        //    swallowed by the per-rotation try/catch and recovered on the next
+        //    sync; on the on-demand path it surfaces the bug to the caller.
+        //
+        //    Cost: this re-queries PlanningSites even though EnsureDeployedAsync
+        //    already narrowed by the same predicate. We keep it unconditional
+        //    (rather than passing a "trust me" flag from the narrowed caller) so
+        //    the guard genuinely protects EVERY write site, including future
+        //    callers. The extra indexed AnyAsync is negligible here: this method
+        //    only runs for candidates that survived the idempotence guard (i.e.
+        //    actually need deploying) and is dominated by the SDK ReadeForm +
+        //    CaseCreateLocalOnly round-trips that follow.
+        var siteIsAssignedToPlanning = await itemsPlanningPnDbContext.PlanningSites
+            .AsNoTracking()
+            .AnyAsync(ps =>
+                    ps.PlanningId == planning.Id
+                    && ps.SiteId == sdkSiteId
+                    && ps.WorkflowState != Constants.WorkflowStates.Removed,
+                ct)
+            .ConfigureAwait(false);
+        if (!siteIsAssignedToPlanning)
+        {
+            throw new InvalidOperationException(
+                $"EventDeployService refused to deploy planning {planning.Id} to sdkSiteId {sdkSiteId}: "
+                + "the site is not in the planning's (non-removed) PlanningSites. Deploying here would "
+                + "leak a case to a non-assigned worker (#932/#1377).");
+        }
+
         // 3. Resolve / create PlanningCase.
         //    Mirrors ItemCaseCreateHandler.cs:83-89, scoped to the
         //    rotation we're deploying (one PlanningCase per
@@ -440,6 +598,13 @@ public class EventDeployService(
 
         var deadlineDate = deadline.Date;
 
+        // #934 — same per-(planning, site) serialization as the nightly path,
+        // so an on-demand calendar materialisation racing the eager-deploy poll
+        // for the same rotation cannot double-create a PlanningCaseSite. Held
+        // for the whole check-then-deploy and released on any return/throw.
+        using var deployLockHandle = await AcquireDeployLockAsync(
+            areaRulePlanning.ItemPlanningId, sdkSiteId, cancellationToken).ConfigureAwait(false);
+
         // Idempotence guard: another caller (nightly batch, parallel request)
         // may already have materialised this occurrence. Match the natural
         // key the nightly path uses (PlanningId + Deadline.Date, non-removed)
@@ -549,6 +714,25 @@ public class EventDeployService(
         PlanningCaseSite planningCaseSite,
         CancellationToken cancellationToken)
     {
+        // Defect B in #935 — refuse to write a Compliance row when the
+        // PlanningCaseSite has no SDK case linkage (MicrotingSdkCaseId == 0).
+        // The pre-existing code wrote a poisoned Compliance row whenever
+        // Core.CaseCreateLocalOnly returned null inside DeployForRotationAsync,
+        // and that poisoned row then satisfied the (PlanningId, Deadline.Date)
+        // idempotence guard so subsequent syncs skipped redeploy and the user
+        // saw a non-functional event tile. With this guard, the stuck-row
+        // recovery branch in EnsureDeployedAsync (candidate filter
+        // `!t.IsFromCompliance || t.SdkCaseId == 0`) is the only path that
+        // ever produces a Compliance, and it only does so after a real SDK
+        // case is in place.
+        if (planningCaseSite.MicrotingSdkCaseId <= 0)
+        {
+            logger.LogWarning(
+                "EventDeployService: skipping Compliance write — PlanningCaseSite {Id} has no SDK case linkage (planningId={PlanningId}, rotationDate={RotationDate}). The stuck-row recovery path will retry on next sync.",
+                planningCaseSite.Id, planning.Id, rotationDate);
+            return null;
+        }
+
         // Race protection lives in the duplicate-key catch below (mirrors
         // EformParsedByServerHandler.cs:185-196). The outer idempotence guard
         // in EnsureDeployedAsync already filters out the common case before
