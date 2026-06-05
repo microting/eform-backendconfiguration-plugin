@@ -3705,7 +3705,8 @@ public class BackendConfigurationCalendarService(
 
                 // Honour scope=this moves and deletes, mirroring GetTasksForWeek lines 805-823.
                 occExceptionsByArpId.TryGetValue(arp.Id, out var arpExceptions);
-                arpExceptions?.TryGetValue(compliance.Deadline.Date, out var occException);
+                CalendarOccurrenceException? occException = null;
+                arpExceptions?.TryGetValue(compliance.Deadline.Date, out occException);
 
                 // Skip single-occurrence-deleted events, mirroring GetTasksForWeek line 813.
                 if (occException?.IsDeleted == true)
