@@ -689,7 +689,9 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.AreaRulePlanningFiles)
                     .ThenInclude(f => f.GoogleOAuthToken)
                 .ToListAsync();
-            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+            var complianceArpDict = complianceArps
+                .DistinctBy(x => x.ItemPlanningId)
+                .ToDictionary(x => x.ItemPlanningId);
 
             // Batch-load calendar configs for compliance ARPs
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
@@ -3533,7 +3535,9 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRulePlanningFiles)
                 .ToListAsync();
-            var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
+            var complianceArpDict = complianceArps
+                .DistinctBy(x => x.ItemPlanningId)
+                .ToDictionary(x => x.ItemPlanningId);
 
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
             var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
