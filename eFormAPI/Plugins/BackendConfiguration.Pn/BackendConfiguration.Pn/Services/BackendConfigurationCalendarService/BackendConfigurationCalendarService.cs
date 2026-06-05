@@ -767,9 +767,9 @@ public class BackendConfigurationCalendarService(
             foreach (var compliance in compliances)
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                if (arp == null) continue;
                 CalendarConfiguration calConfig = null;
-                if (arp != null)
-                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+                complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
 
                 var title = compliance.ItemName ?? "";
                 if (arp?.AreaRule?.AreaRuleTranslations != null)
@@ -3675,6 +3675,7 @@ public class BackendConfigurationCalendarService(
             foreach (var compliance in compliances)
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
+                if (arp == null) continue;
                 CalendarConfiguration calConfig = null;
                 if (arp != null)
                     complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
