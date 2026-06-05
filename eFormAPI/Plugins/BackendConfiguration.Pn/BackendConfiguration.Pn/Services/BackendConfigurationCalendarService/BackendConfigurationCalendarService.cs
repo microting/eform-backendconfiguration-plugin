@@ -341,11 +341,16 @@ public class BackendConfigurationCalendarService(
                 .Include(x => x.ExceptionSites)
                 .ToListAsync();
 
+            // Last-wins on duplicate OriginalDate per ARP — same rationale as the
+            // compliance-path build below: no DB uniqueness, so a plain
+            // ToDictionary could throw. The top-up loop at lines 717-725 already
+            // assumes last-wins via indexer assignment.
             var exceptionsByArp = exceptionsInWeek
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.ToDictionary(x => x.OriginalDate.Date));
+                    g => g.GroupBy(x => x.OriginalDate.Date)
+                        .ToDictionary(inner => inner.Key, inner => inner.Last()));
 
             var movedInExceptions = exceptionsInWeek
                 .Where(x => x.NewDate.HasValue
@@ -3646,16 +3651,24 @@ public class BackendConfigurationCalendarService(
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
 
             // Load CalendarOccurrenceExceptions for the compliance ARPs so that
-            // single-occurrence deletes (scope="this" via DeleteOccurrence) are
-            // honoured here, mirroring GetTasksForWeek lines 335-348 + 805-813.
-            var deletedOccurrenceKeys = (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            // single-occurrence deletes (scope="this" via DeleteOccurrence) AND
+            // scope="this" moves (NewDate override) are both honoured here,
+            // mirroring GetTasksForWeek lines 335-348 + 805-823.
+            // Last-wins on duplicate OriginalDate per ARP: nothing enforces a
+            // unique (AreaRulePlanningId, OriginalDate) at the DB level, and the
+            // move/delete write paths key by OriginalDate best-effort, so two
+            // non-Removed exceptions can collide. A plain ToDictionary would throw
+            // here; the inner GroupBy + last-wins mirrors the indexer-assignment
+            // top-up in GetTasksForWeek (lines 717-725).
+            var occExceptionsByArpId = (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                     .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.IsDeleted)
-                    .Select(x => new { x.AreaRulePlanningId, x.OriginalDate })
                     .ToListAsync())
-                .Select(x => (x.AreaRulePlanningId, x.OriginalDate.Date))
-                .ToHashSet();
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.GroupBy(x => x.OriginalDate.Date)
+                        .ToDictionary(inner => inner.Key, inner => inner.Last()));
 
             var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
@@ -3690,11 +3703,19 @@ public class BackendConfigurationCalendarService(
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
                 if (arp == null) continue;
 
+                // Honour scope=this moves and deletes, mirroring GetTasksForWeek lines 805-823.
+                occExceptionsByArpId.TryGetValue(arp.Id, out var arpExceptions);
+                arpExceptions?.TryGetValue(compliance.Deadline.Date, out var occException);
+
                 // Skip single-occurrence-deleted events, mirroring GetTasksForWeek line 813.
-                if (deletedOccurrenceKeys.Contains((arp.Id, compliance.Deadline.Date)))
+                if (occException?.IsDeleted == true)
                 {
                     continue;
                 }
+
+                // Use NewDate if the occurrence was moved (scope=this), so the task
+                // appears on its new date rather than the original compliance.Deadline.
+                var effectiveDate = occException?.NewDate?.Date ?? compliance.Deadline.Date;
 
                 complianceCalConfigs.TryGetValue(arp.Id, out var calConfig);
 
@@ -3741,9 +3762,9 @@ public class BackendConfigurationCalendarService(
                 // Per-row Completed + TaskIsExpired derivation. Predicate
                 // matches the spec: completed = Case.Status==100;
                 // task_is_expired = (Case.WorkflowState=Removed AND
-                // Status=77) OR (compliance.Deadline.Date < UtcNow.Date AND
-                // Status != 100). Date-only so an event scheduled for today
-                // is not flagged expired once its time-of-day passes.
+                // Status=77) OR (effectiveDate < UtcNow.Date AND
+                // Status != 100). Uses effectiveDate so a moved occurrence is
+                // judged against its new date, not the original deadline.
                 // Recurrence-only or missing-Case rows fall back to the
                 // deadline-only check (no Status to consult, so they are
                 // treated as not-completed).
@@ -3756,13 +3777,13 @@ public class BackendConfigurationCalendarService(
                     completed = sdkCase.Status == 100;
                     var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
                                     && sdkCase.Status == 77;
-                    var pastDueIncomplete = compliance.Deadline.Date < dateTimeNow.Date
+                    var pastDueIncomplete = effectiveDate < dateTimeNow.Date
                                             && sdkCase.Status != 100;
                     taskIsExpired = retracted || pastDueIncomplete;
                 }
                 else
                 {
-                    taskIsExpired = compliance.Deadline.Date < dateTimeNow.Date;
+                    taskIsExpired = effectiveDate < dateTimeNow.Date;
                 }
 
                 var model = new CalendarTaskResponseModel
@@ -3771,7 +3792,7 @@ public class BackendConfigurationCalendarService(
                     Title = title,
                     StartHour = compIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
                     Duration = compIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
-                    TaskDate = compliance.Deadline.ToString("yyyy-MM-dd"),
+                    TaskDate = effectiveDate.ToString("yyyy-MM-dd"),
                     Tags = tags,
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
