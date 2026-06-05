@@ -3644,6 +3644,19 @@ public class BackendConfigurationCalendarService(
             var complianceArpDict = complianceArps.ToDictionary(x => x.ItemPlanningId);
 
             var complianceArpIds = complianceArps.Select(x => x.Id).ToList();
+
+            // Load CalendarOccurrenceExceptions for the compliance ARPs so that
+            // single-occurrence deletes (scope="this" via DeleteOccurrence) are
+            // honoured here, mirroring GetTasksForWeek lines 335-348 + 805-813.
+            var deletedOccurrenceKeys = (await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                    .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.IsDeleted)
+                    .Select(x => new { x.AreaRulePlanningId, x.OriginalDate })
+                    .ToListAsync())
+                .Select(x => (x.AreaRulePlanningId, x.OriginalDate.Date))
+                .ToHashSet();
+
             var complianceCalConfigs = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -3676,9 +3689,14 @@ public class BackendConfigurationCalendarService(
             {
                 complianceArpDict.TryGetValue(compliance.PlanningId, out var arp);
                 if (arp == null) continue;
-                CalendarConfiguration calConfig = null;
-                if (arp != null)
-                    complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
+
+                // Skip single-occurrence-deleted events, mirroring GetTasksForWeek line 813.
+                if (deletedOccurrenceKeys.Contains((arp.Id, compliance.Deadline.Date)))
+                {
+                    continue;
+                }
+
+                complianceCalConfigs.TryGetValue(arp.Id, out var calConfig);
 
                 if (!compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var planning))
                 {
