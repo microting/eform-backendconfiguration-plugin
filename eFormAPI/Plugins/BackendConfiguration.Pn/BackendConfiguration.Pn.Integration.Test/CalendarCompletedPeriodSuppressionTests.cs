@@ -347,6 +347,148 @@ public class CalendarCompletedPeriodSuppressionTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// #952 hardening — the "all"-scope relocation must compute the new-pattern
+    /// date from the SAME source the renderer (GetOccurrencesInWeek) uses,
+    /// i.e. <c>planning.DayOfMonth</c>, NOT <c>arp.DayOfMonth</c>. Otherwise a
+    /// relocated compliance lands on a different day than the rule actually
+    /// renders, leaving a duplicate/misplaced tile.
+    ///
+    /// The task wizard is mocked, so it does NOT re-derive planning.DayOfMonth
+    /// on the edit — that deliberately decouples planning.DayOfMonth (4, the
+    /// renderer's day) from arp.DayOfMonth (which UpdateTask sets from the
+    /// request's DayOfMonth = 15). A correct relocation moves the past row to
+    /// June 4 (planning), not June 15 (arp).
+    ///
+    /// In production the (real) wizard runs first and writes
+    /// planning.DayOfMonth = DeriveDayOfMonth(Year, newStartDate) = newStartDate.Day,
+    /// then UpdateTask re-reads the planning row before relocating, so the two
+    /// agree and relocation reads the fresh value. This test isolates ONLY the
+    /// "which field does relocation trust" invariant by holding planning fixed.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeAll_Yearly_RelocatesUsingPlanningDayOfMonth_NotArp()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        var sdkSite = new Site
+        {
+            Name = "yearly-dom-source-site", MicrotingUid = 8787,
+            LanguageId = language.Id, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(sdkSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // Deployed-but-NOT-completed backing case (relocatable).
+        var caseNotDone = new Microting.eForm.Infrastructure.Data.Entities.Case
+        { SiteId = sdkSite.Id, Status = 66, WorkflowState = Constants.WorkflowStates.Created };
+        await MicrotingDbContext.Cases.AddAsync(caseNotDone);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"YearlyDomSource-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Yearly series anchored on June 4 (planning.DayOfMonth = 4 = renderer's day).
+        var startDate = new DateTime(2020, 6, 4, 0, 0, 0, DateTimeKind.Utc);
+        var planning = new Planning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = (RepeatType)4,
+            DayOfMonth = 4, StartDate = startDate, RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id,
+            ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
+            RepeatType = 4, RepeatEvery = 1, DayOfMonth = 4,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var calConfig = new CalendarConfiguration
+        {
+            AreaRulePlanningId = arp.Id, StartHour = 9.0, Duration = 1.0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(calConfig);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Deployed-not-completed past occurrence sitting on the WRONG day (June 20).
+        var pastWrongDay = new DateTime(2022, 6, 20, 0, 0, 0, DateTimeKind.Utc);
+        var notDone = new Compliance
+        {
+            PlanningId = planning.Id, PropertyId = property.Id, AreaId = area.Id,
+            Deadline = pastWrongDay, StartDate = pastWrongDay.AddDays(-30),
+            MicrotingSdkCaseId = caseNotDone.Id, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(notDone);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        var notDoneId = notDone.Id;
+
+        var service = BuildService(core);
+
+        // scope=all date change. The request's DayOfMonth = 15 DIVERGES from
+        // planning.DayOfMonth (4) — the wizard mock leaves planning.DayOfMonth
+        // untouched, so this isolates which field the relocation trusts.
+        var result = await service.UpdateTask(new CalendarTaskUpdateRequestModel
+        {
+            Id = arp.Id,
+            Scope = "all",
+            OriginalDate = "2027-06-20T00:00:00Z",
+            StartDate = new DateTime(2027, 6, 4, 0, 0, 0, DateTimeKind.Utc), // future, date changed
+            StartHour = 9.0,
+            Duration = 1.0,
+            Status = 1,
+            RepeatType = 4,
+            RepeatEvery = 1,
+            RepeatOrdinalWeek = null,
+            DayOfMonth = 15, // divergent on purpose
+            ComplianceEnabled = false,
+            PropertyId = property.Id,
+            EformId = 0,
+            Sites = [(int)sdkSite.Id],
+            TagIds = [],
+            Translates = []
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var reloaded = await BackendConfigurationPnDbContext.Compliances.AsNoTracking()
+            .FirstAsync(c => c.Id == notDoneId);
+
+        // Must land on June 4 (planning.DayOfMonth — what the renderer generates),
+        // NOT June 15 (arp.DayOfMonth from the request). Pre-fix it moved to June 15.
+        Assert.That(reloaded.Deadline.Date, Is.EqualTo(new DateTime(2022, 6, 4)),
+            "relocation uses planning.DayOfMonth (renderer's source), not arp.DayOfMonth");
+    }
+
     private BackendConfigurationCalendarService BuildService(eFormCore.Core core)
     {
         var language = MicrotingDbContext!.Languages.First();

@@ -1855,16 +1855,24 @@ public class BackendConfigurationCalendarService(
                     return NthWeekdayOfMonth(oldDeadline.Year, oldDeadline.Month,
                         arp.RepeatOrdinalWeek.Value, arp.DayOfWeek);
                 }
-                // Legacy day-of-month: clamp to the month length.
-                var dom = arp.DayOfMonth > 0 ? arp.DayOfMonth : (planning.DayOfMonth ?? oldDeadline.Day);
+                // Legacy day-of-month: mirror GetOccurrencesInWeek exactly —
+                // planning.DayOfMonth is the single source of truth the renderer
+                // uses (the wizard derives it, capped at 28 for Month), then
+                // clamp to the candidate month's length. Reading planning (not
+                // arp) keeps the relocation aligned with where the rule actually
+                // renders, so the two can never diverge (#952 hardening).
+                var dom = Math.Min(planning.DayOfMonth ?? oldDeadline.Day, 28);
                 var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, oldDeadline.Month);
                 return new DateTime(oldDeadline.Year, oldDeadline.Month,
                     Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
             }
             case 4: // Year — fixed month + day-of-month from the new pattern, same year.
             {
+                // Same single-source-of-truth as the renderer's Year branch:
+                // month + day-of-month come from planning, clamped to the month
+                // length (no 28-cap for yearly, matching GetOccurrencesInWeek).
                 var month = planning.StartDate.Month;
-                var dom = arp.DayOfMonth > 0 ? arp.DayOfMonth : (planning.DayOfMonth ?? oldDeadline.Day);
+                var dom = planning.DayOfMonth ?? oldDeadline.Day;
                 var daysInMonth = DateTime.DaysInMonth(oldDeadline.Year, month);
                 return new DateTime(oldDeadline.Year, month,
                     Math.Min(dom, daysInMonth), 0, 0, 0, DateTimeKind.Utc);
