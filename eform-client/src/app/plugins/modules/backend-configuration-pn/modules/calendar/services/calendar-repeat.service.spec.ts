@@ -1069,4 +1069,125 @@ describe('CalendarRepeatService', () => {
       expect(reconstructed?.weekday).toBe(2);
     });
   });
+
+  // ─── reanchorMetaToDate ────────────────────────────────────────────────────
+  // When the edit-modal date changes, the "Gentag" rule must follow the new
+  // date for single-anchor kinds (the start date IS the anchor). #960.
+
+  describe('reanchorMetaToDate', () => {
+    // JS getDay(): Sun=0, Mon=1, ... Thu=4, Fri=5.
+    const THU = new Date(2026, 6, 2);  // 1st Thursday of July 2026 (getDate=2)
+
+    it('monthlyByDay: 1st Friday → 1st Thursday (the exact reported case)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.kind).toBe('monthlyByDay');
+      expect(out.weekday).toBe(4);
+      expect(out.ordinalWeek).toBe(1);
+    });
+
+    it('monthlyByDay: a 3rd-week date yields ordinalWeek 3', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, new Date(2026, 6, 15));  // 15th
+      expect(out.ordinalWeek).toBe(3);
+      expect(out.weekday).toBe(new Date(2026, 6, 15).getDay());
+    });
+
+    it('monthlyByDay: the 29th yields ordinalWeek 5 (boundary)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, new Date(2026, 6, 29));  // 29th
+      expect(out.ordinalWeek).toBe(5);
+    });
+
+    it('everyNMonthByDay: re-anchors while preserving interval n', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNMonthByDay', n: 3, ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.kind).toBe('everyNMonthByDay');
+      expect(out.n).toBe(3);
+      expect(out.weekday).toBe(4);
+      expect(out.ordinalWeek).toBe(1);
+    });
+
+    it('weeklyOne: Friday → Thursday', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyOne', weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.kind).toBe('weeklyOne');
+      expect(out.weekday).toBe(4);
+    });
+
+    it('everyNWeekOne: re-anchors weekday, preserving n', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNWeekOne', n: 2, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.weekday).toBe(4);
+      expect(out.n).toBe(2);
+    });
+
+    it('monthlyDom: day 15 → day 20', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyDom', dom: 15, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, new Date(2026, 6, 20));
+      expect(out.kind).toBe('monthlyDom');
+      expect(out.dom).toBe(20);
+    });
+
+    it('everyNMonthDom: re-anchors dom, preserving n', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNMonthDom', n: 2, dom: 15, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, new Date(2026, 6, 20));
+      expect(out.dom).toBe(20);
+      expect(out.n).toBe(2);
+    });
+
+    it('yearlyOne: re-anchors both month and day-of-month', () => {
+      const meta: CalendarRepeatMeta = {kind: 'yearlyOne', month: 0, dom: 1, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);  // July (month 6), day 2
+      expect(out.kind).toBe('yearlyOne');
+      expect(out.month).toBe(6);
+      expect(out.dom).toBe(2);
+    });
+
+    it('everyNYear: re-anchors month+dom, preserving n', () => {
+      const meta: CalendarRepeatMeta = {kind: 'everyNYear', n: 2, month: 0, dom: 1, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.month).toBe(6);
+      expect(out.dom).toBe(2);
+      expect(out.n).toBe(2);
+    });
+
+    it('preserves endMode/afterCount/untilTs (non-anchor fields)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'after', afterCount: 7};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out.endMode).toBe('after');
+      expect(out.afterCount).toBe(7);
+    });
+
+    it('multi-weekday weekly sets are returned unchanged (no single anchor)', () => {
+      const meta: CalendarRepeatMeta = {kind: 'weeklyMulti', weekdays: [1, 3, 5], endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      expect(out).toEqual(meta);
+    });
+
+    it('daily / everyNd / alwaysRepeat-style kinds are returned unchanged', () => {
+      const daily: CalendarRepeatMeta = {kind: 'daily', endMode: 'never'};
+      expect(service.reanchorMetaToDate(daily, THU)).toEqual(daily);
+      const everyNd: CalendarRepeatMeta = {kind: 'everyNd', n: 3, endMode: 'never'};
+      expect(service.reanchorMetaToDate(everyNd, THU)).toEqual(everyNd);
+      const weeklyAll: CalendarRepeatMeta = {kind: 'weeklyAll', endMode: 'never'};
+      expect(service.reanchorMetaToDate(weeklyAll, THU)).toEqual(weeklyAll);
+    });
+
+    it('does not mutate the input meta', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      service.reanchorMetaToDate(meta, THU);
+      expect(meta.weekday).toBe(5);
+      expect(meta.ordinalWeek).toBe(1);
+    });
+
+    it('round-trip: re-anchored meta drives buildRepeatSelectOptions customCurrent', () => {
+      const meta: CalendarRepeatMeta = {kind: 'monthlyByDay', ordinalWeek: 1, weekday: 5, endMode: 'never'};
+      const out = service.reanchorMetaToDate(meta, THU);
+      const opts = service.buildRepeatSelectOptions(THU, out);
+      const current = opts.find(o => o.value === 'customCurrent');
+      expect(current?.meta?.weekday).toBe(4);
+      expect(current?.meta?.ordinalWeek).toBe(1);
+    });
+  });
 });

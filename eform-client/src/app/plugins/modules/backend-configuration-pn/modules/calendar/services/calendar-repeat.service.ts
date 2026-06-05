@@ -779,6 +779,48 @@ export class CalendarRepeatService {
     return null;
   }
 
+  /**
+   * Re-derive a repeat rule's anchor fields from a new start date (#960).
+   *
+   * For single-anchor recurrences the start date *is* the anchor, so when the
+   * edit-modal date changes the rule must follow it: a "1st Friday" monthly
+   * rule moved to a Thursday becomes "1st Thursday", a weekly-on-Friday rule
+   * becomes weekly-on-Thursday, etc. The interval `n` and the end-mode trio
+   * (`endMode`/`afterCount`/`untilTs`) are preserved.
+   *
+   * Multi-anchor or anchorless kinds (multi-weekday weekly sets, daily,
+   * every-N-day, all-days weekly) have no single date-derived anchor and are
+   * returned unchanged. Returns a NEW object — never mutates the input.
+   */
+  reanchorMetaToDate(meta: CalendarRepeatMeta, date: Date): CalendarRepeatMeta {
+    switch (meta.kind) {
+      case 'weeklyOne':
+      case 'everyNWeekOne':
+        return {...meta, weekday: date.getDay()};
+
+      case 'monthlyByDay':
+      case 'everyNMonthByDay':
+        return {
+          ...meta,
+          weekday: date.getDay(),
+          ordinalWeek: Math.ceil(date.getDate() / 7),
+        };
+
+      case 'monthlyDom':
+      case 'everyNMonthDom':
+        return {...meta, dom: date.getDate()};
+
+      case 'yearlyOne':
+      case 'everyNYear':
+        return {...meta, month: date.getMonth(), dom: date.getDate()};
+
+      default:
+        // daily / everyNd / weeklyMulti / weeklyAll / everyNWeek{Multi,All}:
+        // no single date-derived anchor — leave untouched.
+        return meta;
+    }
+  }
+
   /** Convert a custom repeat config to a CalendarRepeatMeta */
   buildMetaFromCustomConfig(
     step: number,

@@ -418,9 +418,16 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.isLoadingTemplate = false;
     });
 
-    // When date changes, rebuild repeat options and regenerate time slots
+    // When date changes, rebuild repeat options and regenerate time slots.
+    // Re-anchor the custom rule to the new date first so single-anchor kinds
+    // (e.g. "monthly on the 1st Friday") follow the new weekday/day-of-month
+    // instead of keeping the stale anchor — the "Gentag" label must track the
+    // date (#960). Multi-anchor/anchorless kinds are returned unchanged.
     this.dateControl.valueChanges.subscribe(date => {
       if (date) {
+        if (this.customRepeatMeta) {
+          this.customRepeatMeta = this.repeatService.reanchorMetaToDate(this.customRepeatMeta, date);
+        }
         this.repeatOptions = this.repeatService.buildRepeatSelectOptions(date, this.customRepeatMeta);
         this.timeSlots = this.generateTimeSlots();
       }

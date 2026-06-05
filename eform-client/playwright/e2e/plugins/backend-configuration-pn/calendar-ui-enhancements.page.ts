@@ -1071,4 +1071,44 @@ export class CalendarUiEnhancementsPage {
       `(expected < 2px — sticky regressed).`
     ).toBeLessThan(2);
   }
+
+  /**
+   * The currently displayed label of the "Gentag" (Repeat) select in the
+   * create/edit modal (`id="calendarEventRepeat"`). Reads the ng-select's
+   * selected-value label. Used to assert the label tracks the date (#960).
+   */
+  async getRepeatSelectLabel(): Promise<string> {
+    const label = this.page.locator('#calendarEventRepeat .ng-value-label').first();
+    await label.waitFor({ state: 'visible', timeout: 5000 });
+    return ((await label.textContent()) ?? '').trim();
+  }
+
+  /**
+   * Open the event date-picker and move the selected date by one day (prefers
+   * +1 day; falls back to -1 at month end) so the weekday changes. Returns the
+   * day numbers clicked from/to. Used to drive the #960 re-anchor assertion:
+   * for a single-anchor rule the "Gentag" label must follow the new weekday.
+   */
+  async shiftEventDateByOneDay(): Promise<void> {
+    await this.openEventDatePicker();
+    const grid = this.getMiniPickerOverlay();
+    const selected = grid.locator('.day-cell.selected').first();
+    const selText = ((await selected.textContent()) ?? '').trim();
+    const n = parseInt(selText, 10);
+
+    for (const day of [n + 1, n - 1]) {
+      if (day < 1) continue;
+      const cell = grid
+        .locator('.day-cell:not(.other-month):not(.disabled)')
+        .filter({ hasText: new RegExp(`^${day}$`) })
+        .first();
+      if (await cell.count()) {
+        await cell.click();
+        break;
+      }
+    }
+    // onMiniDateSelected closes the overlay; wait for it to detach.
+    await this.getMiniPickerOverlay().waitFor({ state: 'hidden', timeout: 5000 });
+    await this.page.waitForTimeout(300);
+  }
 }
