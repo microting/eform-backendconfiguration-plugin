@@ -1,7 +1,7 @@
 <h3 mat-dialog-title>{{'Select worker' | translate}}</h3>
 <div mat-dialog-content>
   <div class="d-flex flex-column">
-    <ng-select
+    <mtx-select
       [items]="sites"
       bindLabel="name"
       [multiple]="false"
@@ -12,8 +12,7 @@
       appendTo="body"
       [placeholder]="'Select worker' | translate"
       [(ngModel)]="selectedSite"
-      [virtualScroll]="false"
-    ></ng-select>
+    ></mtx-select>
   </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
