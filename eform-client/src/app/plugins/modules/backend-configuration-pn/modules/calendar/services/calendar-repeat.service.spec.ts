@@ -253,7 +253,7 @@ describe('CalendarRepeatService', () => {
       expect(meta.month).toBe(2);
     });
 
-    it('monthly custom stays anchored to day 1 regardless of start date (#933 scope)', () => {
+    it('no dom argument falls back to dom=1', () => {
       const date = new Date(2026, 5, 15); // 15 June 2026
       const meta = service.buildMetaFromCustomConfig(
         1, 'month', [], 'never', undefined, undefined, date,
@@ -1189,5 +1189,136 @@ describe('CalendarRepeatService', () => {
       expect(current?.meta?.weekday).toBe(4);
       expect(current?.meta?.ordinalWeek).toBe(1);
     });
+  });
+});
+
+// ── New monthly kinds + dom fix ───────────────────────────────────────────────
+
+describe('CalendarRepeatService — monthly kinds', () => {
+  let service: CalendarRepeatService;
+
+  beforeEach(() => {
+    service = new CalendarRepeatService(translateStub);
+  });
+
+  // ── buildMetaFromCustomConfig ──────────────────────────────────────────────
+
+  it('buildMeta: everyNMonthDom step=1 sets kind=monthlyDom and correct dom', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      'everyNMonthDom', 15, undefined,
+    );
+    expect(meta.kind).toBe('monthlyDom');
+    expect(meta.dom).toBe(15);
+  });
+
+  it('buildMeta: everyNMonthDom step=2 sets kind=everyNMonthDom and n=2', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      2, 'month', [], 'never', undefined, undefined, undefined,
+      'everyNMonthDom', 28, undefined,
+    );
+    expect(meta.kind).toBe('everyNMonthDom');
+    expect(meta.n).toBe(2);
+    expect(meta.dom).toBe(28);
+  });
+
+  it('buildMeta: monthlyFirstWeekday step=1 sets kind, ordinalWeek=1, weekday', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      'monthlyFirstWeekday', undefined, 3,
+    );
+    expect(meta.kind).toBe('monthlyFirstWeekday');
+    expect(meta.ordinalWeek).toBe(1);
+    expect(meta.weekday).toBe(3);
+  });
+
+  it('buildMeta: monthlyFirstWeekday step=2 sets kind=everyNMonthFirstWeekday', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      2, 'month', [], 'never', undefined, undefined, undefined,
+      'monthlyFirstWeekday', undefined, 5,
+    );
+    expect(meta.kind).toBe('everyNMonthFirstWeekday');
+    expect(meta.n).toBe(2);
+    expect(meta.ordinalWeek).toBe(1);
+    expect(meta.weekday).toBe(5);
+  });
+
+  it('buildMeta: monthly with no monthlyKind defaults to DOM kind', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      undefined, 10, undefined,
+    );
+    expect(meta.kind).toBe('monthlyDom');
+    expect(meta.dom).toBe(10);
+  });
+
+  // ── decomposeCustomMeta ───────────────────────────────────────────────────
+
+  it('decompose: monthlyDom returns monthlyKind=everyNMonthDom and dom', () => {
+    const decomposed = service.decomposeCustomMeta({
+      kind: 'monthlyDom', dom: 20, endMode: 'never',
+    });
+    expect(decomposed.unit).toBe('month');
+    expect(decomposed.step).toBe(1);
+    expect(decomposed.monthlyKind).toBe('everyNMonthDom');
+    expect(decomposed.dom).toBe(20);
+  });
+
+  it('decompose: everyNMonthDom returns correct step and dom', () => {
+    const decomposed = service.decomposeCustomMeta({
+      kind: 'everyNMonthDom', n: 3, dom: 7, endMode: 'never',
+    });
+    expect(decomposed.step).toBe(3);
+    expect(decomposed.monthlyKind).toBe('everyNMonthDom');
+    expect(decomposed.dom).toBe(7);
+  });
+
+  it('decompose: monthlyFirstWeekday returns monthlyKind and weekday', () => {
+    const decomposed = service.decomposeCustomMeta({
+      kind: 'monthlyFirstWeekday', ordinalWeek: 1, weekday: 2, endMode: 'never',
+    });
+    expect(decomposed.unit).toBe('month');
+    expect(decomposed.monthlyKind).toBe('monthlyFirstWeekday');
+    expect(decomposed.monthlyWeekday).toBe(2);
+  });
+
+  it('decompose: everyNMonthFirstWeekday returns correct step and weekday', () => {
+    const decomposed = service.decomposeCustomMeta({
+      kind: 'everyNMonthFirstWeekday', n: 2, ordinalWeek: 1, weekday: 4, endMode: 'never',
+    });
+    expect(decomposed.step).toBe(2);
+    expect(decomposed.monthlyKind).toBe('monthlyFirstWeekday');
+    expect(decomposed.monthlyWeekday).toBe(4);
+  });
+
+  // ── round-trip ────────────────────────────────────────────────────────────
+
+  it('round-trip: everyNMonthDom dom=15', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      'everyNMonthDom', 15, undefined,
+    );
+    const back = service.decomposeCustomMeta(meta);
+    expect(back.monthlyKind).toBe('everyNMonthDom');
+    expect(back.dom).toBe(15);
+  });
+
+  it('round-trip: monthlyFirstWeekday weekday=1 (Monday)', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      'monthlyFirstWeekday', undefined, 1,
+    );
+    const back = service.decomposeCustomMeta(meta);
+    expect(back.monthlyKind).toBe('monthlyFirstWeekday');
+    expect(back.monthlyWeekday).toBe(1);
+  });
+
+  it('buildMeta: monthlyFirstWeekday weekday=0 (Sunday) — nullish coalescing handles falsy zero', () => {
+    const meta = service.buildMetaFromCustomConfig(
+      1, 'month', [], 'never', undefined, undefined, undefined,
+      'monthlyFirstWeekday', undefined, 0,
+    );
+    expect(meta.kind).toBe('monthlyFirstWeekday');
+    expect(meta.weekday).toBe(0);
   });
 });

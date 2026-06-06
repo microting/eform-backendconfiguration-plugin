@@ -1,4 +1,4 @@
-::host {
+:host {
   display: block;
 }
 
@@ -50,6 +50,33 @@
 
   .unit-select {
     width: 120px;
+  }
+}
+
+.monthly-kind-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  .repeat-label {
+    font-size: 14px;
+    color: #3c4043;
+    white-space: nowrap;
+  }
+
+  .monthly-kind-select {
+    flex: 1;
+  }
+
+  .monthly-dom-select {
+    flex: none;
+    width: 72px;
+  }
+
+  .monthly-weekday-select {
+    flex: none;
+    width: 90px;
   }
 }
 
