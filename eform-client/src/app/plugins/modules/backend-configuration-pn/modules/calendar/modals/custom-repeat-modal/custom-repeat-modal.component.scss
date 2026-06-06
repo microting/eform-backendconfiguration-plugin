@@ -53,6 +53,25 @@
   }
 }
 
+.monthly-kind-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  .monthly-kind-select {
+    flex: 0 0 60%;
+  }
+
+  .monthly-dom-select {
+    flex: 0 0 35%;
+  }
+
+  .monthly-weekday-select {
+    flex: 0 0 35%;
+  }
+}
+
 .weekday-row {
   display: flex;
   align-items: center;
