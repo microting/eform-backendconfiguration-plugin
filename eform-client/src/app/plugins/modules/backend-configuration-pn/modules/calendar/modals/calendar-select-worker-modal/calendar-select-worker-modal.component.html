@@ -1,0 +1,30 @@
+<h3 mat-dialog-title>{{'Select worker' | translate}}</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-column">
+    <ng-select
+      [items]="sites"
+      bindLabel="name"
+      [multiple]="false"
+      [closeOnSelect]="true"
+      [searchable]="true"
+      [clearable]="false"
+      notFoundText="{{'No worker found' | translate}}"
+      appendTo="body"
+      [placeholder]="'Select worker' | translate"
+      [(ngModel)]="selectedSite"
+      [virtualScroll]="false"
+    ></ng-select>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="hide()">
+    {{'Cancel' | translate}}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    (click)="confirm()"
+    [disabled]="!selectedSite"
+  >
+    <span>{{'Select' | translate}}</span>
+  </button>
+</div>
