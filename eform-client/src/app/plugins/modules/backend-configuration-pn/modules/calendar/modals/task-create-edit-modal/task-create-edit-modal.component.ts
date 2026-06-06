@@ -733,7 +733,12 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     const payload: any = {
       // Backend CalendarTaskCreateRequestModel fields
       translates: [{name: this.titleControl.value, languageId: 1}],
-      startDate: taskDate,
+      // Send the date-only string (local Y-M-D), NOT the raw Date — a raw Date
+      // is JSON-serialised via toISOString(), which shifts a local-midnight pick
+      // by the browser's UTC offset (UTC+2 "Fri 3 Jul" → 2026-07-02T22:00Z) and
+      // re-anchors the series to the wrong weekday on the backend (#966). This
+      // mirrors how originalDate/taskDate are already sent as date-only strings.
+      startDate: dateStr,
       startHour,
       duration,
       sites: this.assigneeControl.value ?? [],

@@ -979,6 +979,13 @@ public class BackendConfigurationCalendarService(
     {
         try
         {
+            // Recover the user's intended local day before any .Date/.DayOfWeek
+            // read (#966) — see NormalizeStartDateToLocalDay. The weekday this
+            // derives (createModel.StartDate.DayOfWeek) is persisted as the
+            // series anchor below, so a tz-shifted value would re-anchor the
+            // recurrence to the wrong weekday.
+            createModel.StartDate = NormalizeStartDateToLocalDay(createModel.StartDate);
+
             // Validate: cannot create task in the past
             var taskDateTime = createModel.StartDate.AddHours(createModel.StartHour);
             if (taskDateTime < DateTime.UtcNow)
@@ -1110,10 +1117,38 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    // A browser at a non-zero UTC offset serialises a picked local-midnight
+    // date via Date.toISOString() as an instant shifted by that offset — a
+    // UTC+2 user picking "Fri 3 Jul" sends 2026-07-02T22:00:00.000Z. Reading
+    // .Date/.DayOfWeek off that raw value yields the WRONG calendar day (Thu 2
+    // Jul) and re-anchors a recurring series to the wrong weekday (#966).
+    // OriginalDate is immune because the FE sends it at midnight UTC and the BE
+    // parses it AssumeUniversal|AdjustToUniversal — StartDate carried a
+    // wall-clock time and skipped that normalisation, the asymmetry that is the
+    // bug. The server cannot know the browser offset, but a picked date always
+    // means a midnight, so round to the NEAREST midnight (UTC) to recover the
+    // intended local day. This is correct for every inhabited browser offset
+    // (UTC−11 … UTC+14): their local midnight serialises within 12h of a UTC
+    // midnight, so it rounds back to the intended day. Only the uninhabited
+    // UTC−12 boundary (local midnight == exactly T12:00Z) would round forward a
+    // day. A value already at midnight (a tz-stable instant, or the date-only
+    // string the FE now sends) is unchanged. Applied once at each entry point so
+    // every downstream .Date/.DayOfWeek read sees the corrected day.
+    private static DateTime NormalizeStartDateToLocalDay(DateTime startDate)
+    {
+        var shifted = DateTime.SpecifyKind(startDate, DateTimeKind.Utc).AddHours(12);
+        return new DateTime(shifted.Year, shifted.Month, shifted.Day, 0, 0, 0, DateTimeKind.Utc);
+    }
+
     public async Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel)
     {
         try
         {
+            // Recover the user's intended local day before any .Date/.DayOfWeek
+            // read (#966). Covers all scopes (this/thisAndFollowing/all) and the
+            // wizard StartDate handed off below.
+            updateModel.StartDate = NormalizeStartDateToLocalDay(updateModel.StartDate);
+
             // Validate: cannot update task to the past
             var taskDateTime = updateModel.StartDate.AddHours(updateModel.StartHour);
             if (taskDateTime < DateTime.UtcNow)
@@ -1597,6 +1632,60 @@ public class BackendConfigurationCalendarService(
         foreach (var stale in staleExceptions)
         {
             await stale.Delete(backendConfigurationPnDbContext);
+        }
+
+        // #966 (RC2) — mirror the MoveTask #954 fix for the edit-modal path: a
+        // date move re-anchors the recurrence but leaves the moved-from
+        // occurrence's deployed Compliance row at its old Deadline, so the
+        // compliance loop keeps painting a tile on the old day while the
+        // recurrence paints one on the new day — a duplicate "copy". The "all"
+        // scope already relocates via RelocateNonCompletedComplianceRowsToNewPattern
+        // (#960); only this thisAndFollowing path was missing it. Carry the
+        // source occurrence's non-completed Compliance row to the new anchor so a
+        // single tile remains (the dedup gate then suppresses the recurrence tile
+        // on that day). Only when the date actually changed; completed rows
+        // (backing SDK Case Status==100) are frozen (R2). A 3-day window +
+        // in-memory .Date match avoids DateTime.Kind drift (mirrors MoveTask /
+        // IsTaskOccurrenceCompleted). Keyed on arp.ItemPlanningId (not the
+        // planning row, which the backfill above only needs for description), so
+        // a deployed Compliance still relocates even if its Planning is missing
+        // — matching MoveTask, which gates only on the move having happened.
+        if (dateChanged)
+        {
+            var windowStart = originalDate.AddDays(-1);
+            var windowEnd = originalDate.AddDays(2);
+            var complianceAtOriginalDate = (await backendConfigurationPnDbContext.Compliances
+                    .Where(x => x.PlanningId == arp.ItemPlanningId)
+                    .Where(x => x.Deadline >= windowStart && x.Deadline < windowEnd)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync())
+                .Where(c => c.Deadline.Date == originalDate)
+                .ToList();
+
+            var caseIds = complianceAtOriginalDate
+                .Select(c => c.MicrotingSdkCaseId)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            var completedCaseIds = new HashSet<int>();
+            if (caseIds.Count > 0)
+            {
+                var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+                completedCaseIds = (await sdkDbContext.Cases
+                    .Where(c => caseIds.Contains(c.Id) && c.Status == 100)
+                    .Select(c => c.Id)
+                    .ToListAsync()).ToHashSet();
+            }
+
+            foreach (var compliance in complianceAtOriginalDate
+                         .Where(c => !(c.MicrotingSdkCaseId > 0
+                                       && completedCaseIds.Contains(c.MicrotingSdkCaseId))))
+            {
+                compliance.Deadline = newAnchor.Date;
+                compliance.UpdatedByUserId = userService.UserId;
+                await compliance.Update(backendConfigurationPnDbContext);
+            }
         }
 
         return new OperationResult(true,
