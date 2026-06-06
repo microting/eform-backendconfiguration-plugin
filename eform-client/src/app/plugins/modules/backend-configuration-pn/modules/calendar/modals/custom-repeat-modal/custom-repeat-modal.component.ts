@@ -126,8 +126,10 @@ export class CustomRepeatModalComponent implements OnInit {
       const circle = this.weekdays.find(w => w.value === wdVal);
       if (circle) circle.active = true;
 
-      // Seed monthly defaults from start date.
-      this.monthlyDom = Math.min(this.data.date.getDate(), 28);
+      // Default monthlyDom to 1 (the MONTH unit hard-codes day=1 per the
+      // spec — the user selects day-of-month from the picker, but the initial
+      // default is always 1, not the start-date's day).
+      this.monthlyDom = 1;
       this.monthlyWeekday = this.data.date.getDay();
     }
   }
@@ -140,7 +142,7 @@ export class CustomRepeatModalComponent implements OnInit {
     this.unit = val;
     if (val !== 'month') {
       this.monthlyKind = 'everyNMonthDom';
-      this.monthlyDom = Math.min(this.data.date.getDate(), 28);
+      this.monthlyDom = 1;
       this.monthlyWeekday = this.data.date.getDay();
     }
   }
