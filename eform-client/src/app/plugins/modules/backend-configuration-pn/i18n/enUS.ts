@@ -42,6 +42,8 @@ export const enUS= {
   'Plan rule': 'Plan rule',
   'Notifications on/off': 'Notifications on/off',
   'Repeat every': 'Repeat every',
+  'Monthly day': 'Monthly day',
+  'Monthly on the first': 'Monthly on the first',
   Day: 'Day',
   Week: 'Week',
   Month: 'Month',
