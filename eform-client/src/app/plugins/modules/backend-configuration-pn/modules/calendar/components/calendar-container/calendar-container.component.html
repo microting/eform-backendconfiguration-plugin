@@ -55,7 +55,7 @@
         (taskMoved)="onTaskMoved($event)"
         (taskResized)="onTaskResized($event)"
         (tasksReload)="loadTasks()"
-        (completeRequiresForm)="onCompleteRequiresForm($event)"
+        (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-week-grid>
 
       <app-calendar-week-grid
@@ -71,7 +71,7 @@
         (taskMoved)="onTaskMoved($event)"
         (taskResized)="onTaskResized($event)"
         (tasksReload)="loadTasks()"
-        (completeRequiresForm)="onCompleteRequiresForm($event)"
+        (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-week-grid>
 
       <app-calendar-schedule-view
@@ -81,7 +81,7 @@
         [boards]="boards"
         (taskClicked)="onTaskClickedFromGrid($event)"
         (tasksReload)="loadTasks()"
-        (completeRequiresForm)="onCompleteRequiresForm($event)"
+        (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-schedule-view>
     </ng-container>
   </div>
