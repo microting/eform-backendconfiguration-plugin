@@ -2501,7 +2501,7 @@ public class BackendConfigurationCalendarService(
     }
 
     public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(
-        int id, bool completed, int? complianceId, string? occurrenceDate)
+        int id, bool completed, int? complianceId, string? occurrenceDate, int? workerId = null)
     {
         // Calendar "complete from indicator" — resolves the specific Compliance
         // occurrence the user clicked (via complianceId from the calendar
@@ -2570,8 +2570,14 @@ public class BackendConfigurationCalendarService(
                         localizationService.GetString("TaskHasNoComplianceCase"));
                 }
 
-                var planningSite = arp.PlanningSites?
-                    .FirstOrDefault(s => s.WorkflowState != Constants.WorkflowStates.Removed);
+                var planningSite = workerId.HasValue
+                    ? arp.PlanningSites?.FirstOrDefault(s =>
+                        s.SiteId == workerId.Value
+                        && s.WorkflowState != Constants.WorkflowStates.Removed)
+                      ?? arp.PlanningSites?.FirstOrDefault(s =>
+                        s.WorkflowState != Constants.WorkflowStates.Removed)
+                    : arp.PlanningSites?.FirstOrDefault(s =>
+                        s.WorkflowState != Constants.WorkflowStates.Removed);
                 if (planningSite == null)
                 {
                     return new OperationDataResult<CalendarToggleCompleteResult>(false,
