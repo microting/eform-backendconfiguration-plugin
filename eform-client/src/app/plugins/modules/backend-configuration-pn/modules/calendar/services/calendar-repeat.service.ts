@@ -499,10 +499,16 @@ export class CalendarRepeatService {
     endMode: 'never' | 'after' | 'until';
     afterCount?: number;
     untilTs?: number;
+    dom?: number;
+    monthlyKind?: 'everyNMonthDom' | 'monthlyFirstWeekday';
+    monthlyWeekday?: number;
   } {
     let step = 1;
     let unit: 'day' | 'week' | 'month' | 'year' = 'week';
     let weekdays: number[] = [];
+    let dom: number | undefined;
+    let monthlyKind: 'everyNMonthDom' | 'monthlyFirstWeekday' | undefined;
+    let monthlyWeekday: number | undefined;
 
     switch (meta.kind) {
       case 'daily':
@@ -536,15 +542,27 @@ export class CalendarRepeatService {
         break;
       case 'monthlyDom':
         step = 1; unit = 'month'; weekdays = [];
+        dom = meta.dom ?? 1; monthlyKind = 'everyNMonthDom';
         break;
       case 'everyNMonthDom':
         step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        dom = meta.dom ?? 1; monthlyKind = 'everyNMonthDom';
         break;
       case 'monthlyByDay':
         step = 1; unit = 'month'; weekdays = [];
+        dom = meta.dom ?? 1; monthlyKind = 'everyNMonthDom';
         break;
       case 'everyNMonthByDay':
         step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        dom = meta.dom ?? 1; monthlyKind = 'everyNMonthDom';
+        break;
+      case 'monthlyFirstWeekday':
+        step = 1; unit = 'month'; weekdays = [];
+        monthlyKind = 'monthlyFirstWeekday'; monthlyWeekday = meta.weekday;
+        break;
+      case 'everyNMonthFirstWeekday':
+        step = meta.n ?? 1; unit = 'month'; weekdays = [];
+        monthlyKind = 'monthlyFirstWeekday'; monthlyWeekday = meta.weekday;
         break;
       case 'yearlyOne':
         step = 1; unit = 'year'; weekdays = [];
@@ -564,6 +582,9 @@ export class CalendarRepeatService {
       endMode: meta.endMode ?? 'never',
       afterCount: meta.afterCount,
       untilTs: meta.untilTs,
+      dom,
+      monthlyKind,
+      monthlyWeekday,
     };
   }
 
@@ -658,6 +679,14 @@ export class CalendarRepeatService {
       case 'monthlyDom':
         // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
         if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+          if (task.repeatOrdinalWeek === 1) {
+            return {
+              kind: n === 1 ? 'monthlyFirstWeekday' : 'everyNMonthFirstWeekday', n,
+              ordinalWeek: 1,
+              weekday: task.dayOfWeek,
+              endMode, afterCount, untilTs,
+            } as CalendarRepeatMeta;
+          }
           return {
             kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
             ordinalWeek: task.repeatOrdinalWeek,
@@ -689,6 +718,14 @@ export class CalendarRepeatService {
           case 3:
             // New path: Nth-weekday-of-month rule — takes priority over legacy dayOfMonth.
             if (task.repeatOrdinalWeek != null && task.dayOfWeek != null) {
+              if (task.repeatOrdinalWeek === 1) {
+                return {
+                  kind: n === 1 ? 'monthlyFirstWeekday' : 'everyNMonthFirstWeekday', n,
+                  ordinalWeek: 1,
+                  weekday: task.dayOfWeek,
+                  endMode, afterCount, untilTs,
+                } as CalendarRepeatMeta;
+              }
               return {
                 kind: n === 1 ? 'monthlyByDay' : 'everyNMonthByDay', n,
                 ordinalWeek: task.repeatOrdinalWeek,
@@ -814,6 +851,10 @@ export class CalendarRepeatService {
       case 'everyNYear':
         return {...meta, month: date.getMonth(), dom: date.getDate()};
 
+      case 'monthlyFirstWeekday':
+      case 'everyNMonthFirstWeekday':
+        return {...meta, weekday: date.getDay()};
+
       default:
         // daily / everyNd / weeklyMulti / weeklyAll / everyNWeek{Multi,All}:
         // no single date-derived anchor — leave untouched.
@@ -829,7 +870,10 @@ export class CalendarRepeatService {
     endMode: 'never' | 'after' | 'until',
     afterCount?: number,
     untilTs?: number,
-    date?: Date
+    date?: Date,
+    monthlyKind?: 'everyNMonthDom' | 'monthlyFirstWeekday',
+    dom?: number,
+    monthlyWeekday?: number,
   ): CalendarRepeatMeta {
     const base: Partial<CalendarRepeatMeta> = {endMode, afterCount, untilTs, n: step};
 
@@ -846,9 +890,21 @@ export class CalendarRepeatService {
         weekdays: weekdays.length !== 1 ? weekdays : undefined,
       } as CalendarRepeatMeta;
     } else if (unit === 'month') {
-      // Custom monthly intentionally anchors to day 1 (the user sets a specific
-      // day-of-month elsewhere); keep that — #933 is scoped to the yearly branch.
-      return {...base, kind: step === 1 ? 'monthlyDom' : 'everyNMonthDom', dom: 1} as CalendarRepeatMeta;
+      if (monthlyKind === 'monthlyFirstWeekday') {
+        const wd = monthlyWeekday ?? (date ? date.getDay() : 1);
+        return {
+          ...base,
+          kind: step === 1 ? 'monthlyFirstWeekday' : 'everyNMonthFirstWeekday',
+          ordinalWeek: 1,
+          weekday: wd,
+        } as CalendarRepeatMeta;
+      } else {
+        return {
+          ...base,
+          kind: step === 1 ? 'monthlyDom' : 'everyNMonthDom',
+          dom: dom ?? 1,
+        } as CalendarRepeatMeta;
+      }
     } else {
       // Anchor the day-of-month + month to the selected start date instead of
       // hard-coding January 1 regardless of the chosen date (#933).
