@@ -2574,14 +2574,14 @@ public class BackendConfigurationCalendarService(
                     ? arp.PlanningSites?.FirstOrDefault(s =>
                         s.SiteId == workerId.Value
                         && s.WorkflowState != Constants.WorkflowStates.Removed)
-                      ?? arp.PlanningSites?.FirstOrDefault(s =>
-                        s.WorkflowState != Constants.WorkflowStates.Removed)
                     : arp.PlanningSites?.FirstOrDefault(s =>
                         s.WorkflowState != Constants.WorkflowStates.Removed);
                 if (planningSite == null)
                 {
                     return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                        localizationService.GetString("NoAssignedWorker"));
+                        workerId.HasValue
+                            ? localizationService.GetString("SelectedWorkerNotAssignedToTask")
+                            : localizationService.GetString("NoAssignedWorker"));
                 }
 
                 if (string.IsNullOrWhiteSpace(occurrenceDate))

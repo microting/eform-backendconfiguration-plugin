@@ -5058,6 +5058,37 @@
     }
   },
   {
+    "Key": "SelectedWorkerNotAssignedToTask",
+    "LocalizedValue": {
+      "en-US": "Selected worker is not assigned to this task",
+      "da": "Den valgte medarbejder er ikke tildelt denne opgave",
+      "de": "Der ausgewählte Mitarbeiter ist dieser Aufgabe nicht zugewiesen",
+      "uk-UA": "Вибраний працівник не призначений для цього завдання",
+      "pl-PL": "Wybrany pracownik nie jest przypisany do tego zadania",
+      "no-NO": "Den valgte arbeideren er ikke tildelt denne oppgaven",
+      "sv-SE": "Den valda arbetaren är inte tilldelad denna uppgift",
+      "es-ES": "El trabajador seleccionado no está asignado a esta tarea.",
+      "fr-FR": "Le travailleur sélectionné n&#39;est pas assigné à cette tâche.",
+      "it-IT": "Il lavoratore selezionato non è assegnato a questo compito.",
+      "nl-NL": "De geselecteerde medewerker is niet toegewezen aan deze taak.",
+      "pt-BR": "O trabalhador selecionado não está atribuído a esta tarefa.",
+      "pt-PT": "O trabalhador selecionado não está atribuído a esta tarefa.",
+      "fi-FI": "Valittua työntekijää ei ole määritetty tälle tehtävälle",
+      "et-ET": "Valitud töötaja ei ole sellele ülesandele määratud",
+      "lv-LV": "Izvēlētais darbinieks nav piešķirts šim uzdevumam",
+      "lt-LT": "Pasirinktas darbuotojas nėra priskirtas šiai užduočiai",
+      "ro-RO": "Lucrătorul selectat nu este atribuit acestei sarcini",
+      "hr-HR": "Odabrani radnik nije dodijeljen ovom zadatku",
+      "sl-SL": "Izbrani delavec ni dodeljen tej nalogi",
+      "cs-CZ": "Vybraný pracovník není přiřazen k tomuto úkolu.",
+      "sk-SK": "Vybraný pracovník nie je priradený k tejto úlohe",
+      "hu-HU": "A kiválasztott dolgozó nincs hozzárendelve ehhez a feladathoz",
+      "bg-BG": "Избраният служител не е назначен за тази задача",
+      "el-GR": "Ο επιλεγμένος εργαζόμενος δεν έχει ανατεθεί σε αυτή την εργασία",
+      "is-IS": "Valinn starfsmaður er ekki úthlutaður þessum verkefnum"
+    }
+  },
+  {
     "Key": "SdkCaseNotFound",
     "LocalizedValue": {
       "en-US": "The compliance case could not be found",
