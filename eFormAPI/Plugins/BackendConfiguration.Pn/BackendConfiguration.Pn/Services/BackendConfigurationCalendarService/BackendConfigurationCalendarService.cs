@@ -435,10 +435,18 @@ public class BackendConfigurationCalendarService(
                 .Where(x => tagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
 
-            var sdkCoreForSiteNames = await coreHelper.GetCore().ConfigureAwait(false);
-            await using var sdkDbContextForSiteNames = sdkCoreForSiteNames.DbContextHelper.GetDbContext();
-            var siteNamesById = await sdkDbContextForSiteNames.Sites
-                .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
+            Dictionary<int, string> siteNamesById;
+            if (coreHelper != null)
+            {
+                var sdkCoreForSiteNames = await coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContextForSiteNames = sdkCoreForSiteNames.DbContextHelper.GetDbContext();
+                siteNamesById = await sdkDbContextForSiteNames.Sites
+                    .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
+            }
+            else
+            {
+                siteNamesById = new Dictionary<int, string>();
+            }
 
             foreach (var arp in areaRulePlannings)
             {
