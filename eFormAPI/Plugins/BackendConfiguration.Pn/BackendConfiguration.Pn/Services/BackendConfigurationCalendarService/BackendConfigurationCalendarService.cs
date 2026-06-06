@@ -435,6 +435,11 @@ public class BackendConfigurationCalendarService(
                 .Where(x => tagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
 
+            var sdkCoreForSiteNames = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContextForSiteNames = sdkCoreForSiteNames.DbContextHelper.GetDbContext();
+            var siteNamesById = await sdkDbContextForSiteNames.Sites
+                .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
+
             foreach (var arp in areaRulePlannings)
             {
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
@@ -551,6 +556,9 @@ public class BackendConfigurationCalendarService(
                         TaskDate = effectiveDate.ToString("yyyy-MM-dd"),
                         Tags = tags,
                         AssigneeIds = effectiveAssignees,
+                        WorkerNames = effectiveAssignees
+                            .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                            .ToList(),
                         BoardId = calConfig?.BoardId ?? defaultBoardId,
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
@@ -651,6 +659,9 @@ public class BackendConfigurationCalendarService(
                             TaskDate = orphan.OriginalDate.ToString("yyyy-MM-dd"),
                             Tags = tags,
                             AssigneeIds = orphanAssignees,
+                            WorkerNames = orphanAssignees
+                                .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                                .ToList(),
                             BoardId = calConfig?.BoardId ?? defaultBoardId,
                             Color = calConfig?.Color,
                             RepeatType = arp.RepeatType ?? 0,
@@ -729,6 +740,9 @@ public class BackendConfigurationCalendarService(
                     TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
                     Tags = movedTags,
                     AssigneeIds = movedAssignees,
+                    WorkerNames = movedAssignees
+                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                        .ToList(),
                     BoardId = movedCalConfig?.BoardId ?? defaultBoardId,
                     Color = movedCalConfig?.Color,
                     RepeatType = arp.RepeatType ?? 0,
@@ -923,6 +937,10 @@ public class BackendConfigurationCalendarService(
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(ps => (int)ps.SiteId)
+                        .ToList() ?? [],
+                    WorkerNames = arp?.PlanningSites?
+                        .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(ps => siteNamesById.GetValueOrDefault((int)ps.SiteId, string.Empty))
                         .ToList() ?? [],
                     BoardId = calConfig?.BoardId ?? defaultBoardId,
                     Color = calConfig?.Color,
