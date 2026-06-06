@@ -43,6 +43,7 @@ export const da = {
   'Plan rule': 'Planlæg',
   'Notifications on/off': 'Notifikationer på mobil/tablet',
   'Repeat every': 'Gentagelsesfrekvens',
+  'Repeat sub-type': 'Gentagelsestype',
   'Monthly day': 'Månedligt dag',
   'Monthly on the first': 'Månedligt på den første',
   Day: 'Dag',

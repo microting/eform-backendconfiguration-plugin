@@ -23,6 +23,7 @@
 
     <!-- Monthly sub-type row (visible when unit = month) -->
     <div class="monthly-kind-row" *ngIf="unit === 'month'">
+      <span class="repeat-label">{{ 'Repeat sub-type' | translate }}</span>
       <mat-form-field class="monthly-kind-select" appearance="outline">
         <mtx-select
           [(ngModel)]="monthlyKind"
