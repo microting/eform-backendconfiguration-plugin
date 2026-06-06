@@ -715,6 +715,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         'daily': 1, 'everyNd': 1,
         'weeklyOne': 2, 'weeklyMulti': 2, 'everyNWeekOne': 2, 'everyNWeekMulti': 2, 'everyNWeekAll': 2,
         'monthlyDom': 3, 'everyNMonthDom': 3, 'monthlyByDay': 3, 'everyNMonthByDay': 3,
+        'monthlyFirstWeekday': 3, 'everyNMonthFirstWeekday': 3,
         'yearlyOne': 4, 'everyNYear': 4,
       };
       resolvedRepeatType = kindMap[meta.kind] ?? 0;

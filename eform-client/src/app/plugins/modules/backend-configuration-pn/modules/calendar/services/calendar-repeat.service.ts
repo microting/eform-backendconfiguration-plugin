@@ -414,7 +414,9 @@ export class CalendarRepeatService {
       }
 
       case 'monthlyByDay':
-      case 'everyNMonthByDay': {
+      case 'everyNMonthByDay':
+      case 'monthlyFirstWeekday':
+      case 'everyNMonthFirstWeekday': {
         const ordinal = meta.ordinalWeek ?? 1;
         const wd = meta.weekday ?? 0;
         const currentLang = this.translate.currentLang || this.translate.defaultLang;
@@ -778,6 +780,9 @@ export class CalendarRepeatService {
     if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
       return 0;
     }
+    if (meta.kind === 'monthlyFirstWeekday' || meta.kind === 'everyNMonthFirstWeekday') {
+      return 0;
+    }
     return null;
   }
 
@@ -790,6 +795,9 @@ export class CalendarRepeatService {
     if (!meta) return null;
     if (meta.kind === 'monthlyByDay' || meta.kind === 'everyNMonthByDay') {
       return meta.ordinalWeek ?? null;
+    }
+    if (meta.kind === 'monthlyFirstWeekday' || meta.kind === 'everyNMonthFirstWeekday') {
+      return meta.ordinalWeek ?? 1;
     }
     return null;
   }
@@ -812,6 +820,9 @@ export class CalendarRepeatService {
     // falling back to its legacy start-weekday-only path (#922).
     if (meta.kind === 'weeklyAll' || meta.kind === 'everyNWeekAll') {
       return '0,1,2,3,4,5,6';
+    }
+    if (meta.kind === 'monthlyFirstWeekday' || meta.kind === 'everyNMonthFirstWeekday') {
+      return meta.weekday != null ? String(meta.weekday) : null;
     }
     return null;
   }
