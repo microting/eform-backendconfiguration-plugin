@@ -9,6 +9,7 @@
     <div
       class="schedule-item"
       *ngFor="let task of group.tasks"
+      [class.completed]="task.completed"
       [style.border-left-color]="task.color"
       (click)="onTaskClicked(task, $event)"
     >

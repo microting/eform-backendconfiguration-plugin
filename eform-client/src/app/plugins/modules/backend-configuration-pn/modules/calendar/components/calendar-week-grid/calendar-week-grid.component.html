@@ -5,6 +5,7 @@
          [class.today-col]="isToday(day)">
       <div class="all-day-chip"
            *ngFor="let task of getAllDayTasksForColumn(i)"
+           [class.completed]="task.completed"
            [style.background-color]="task.color"
            (click)="onAllDayTaskClicked($event, task, i)">
         <span *ngIf="isAdmin" class="task-id">{{ task.id }}</span> {{ task.title }}

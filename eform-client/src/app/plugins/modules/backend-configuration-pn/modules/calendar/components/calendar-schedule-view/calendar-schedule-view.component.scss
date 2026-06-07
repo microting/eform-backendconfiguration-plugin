@@ -38,6 +38,22 @@
         background: var(--bg-soft, #f1f3f4);
       }
 
+      // Completed task (SDK case Status == 100): solid green row, full opacity,
+      // white text/check (set above + on .completion-btn.done). padding-right
+      // gives the green fill symmetric breathing room (base row has none).
+      &.completed {
+        background: #5c7829;
+        padding-right: 12px;
+
+        .task-time { color: rgba(255, 255, 255, 0.85); }
+
+        // Light grey chips fail contrast on the green row — give them a
+        // translucent-white pill with white text instead.
+        .task-tags .tag { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+        &:hover { background: #4f6823; }
+      }
+
       .completion-btn {
         background: none;
         border: none;
@@ -53,12 +69,12 @@
           height: 20px;
         }
 
-        // Mirror the week-grid block's completed state — green check_circle
-        // (#61BA5B == $eform-green) and inert (no further click-through).
+        // Completed: white check_circle on the green (#5c7829) completed row,
+        // and inert (no further click-through).
         &.done {
           cursor: default;
           mat-icon {
-            color: #61BA5B;
+            color: #fff;
           }
         }
       }
@@ -76,9 +92,10 @@
         .task-title {
           font-weight: 500;
 
+          // Completed rows are green-filled (see .schedule-item.completed
+          // below) — white text, no dim, no strike-through.
           &.completed {
-            text-decoration: line-through;
-            opacity: 0.6;
+            color: #fff;
           }
         }
 

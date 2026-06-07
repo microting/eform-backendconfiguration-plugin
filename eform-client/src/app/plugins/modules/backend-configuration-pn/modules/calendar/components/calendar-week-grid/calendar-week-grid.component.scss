@@ -55,6 +55,14 @@
       opacity: 0.85;
     }
 
+    // Completed all-day task (SDK case Status == 100): solid green chip,
+    // matching the completed timed-tile treatment. The !important overrides the
+    // inline board-colour background. (All-day chips carry no completion icon by
+    // existing design, so only the background changes here.)
+    &.completed {
+      background-color: #5c7829 !important;
+    }
+
     .task-id {
       opacity: 0.7;
       font-size: 0.85em;
