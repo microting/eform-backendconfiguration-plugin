@@ -397,7 +397,6 @@ export const fiFI = {
   'My employees': 'Työntekijäni',
   'Create employee': 'Luo työntekijä',
   'Navn tavle': 'Hallituksen nimi',
-  Farve: 'Väri',
   'Slet tavle': 'Poista taulu',
   'Opret tavle': 'Luo taulu',
   Teamnavn: 'Joukkueen nimi',

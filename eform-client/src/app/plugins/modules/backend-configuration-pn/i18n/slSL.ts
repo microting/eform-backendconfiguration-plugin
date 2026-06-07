@@ -397,7 +397,6 @@ export const slSL = {
   'My employees': 'Moji zaposleni',
   'Create employee': 'Ustvari zaposlenega',
   'Navn tavle': 'Ime upravnega odbora',
-  Farve: 'Barva',
   'Slet tavle': 'Izbriši tablo',
   'Opret tavle': 'Ustvari tablo',
   Teamnavn: 'Ime ekipe',

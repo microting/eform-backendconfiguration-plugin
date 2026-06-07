@@ -399,7 +399,6 @@ export const noNO = {
   'My employees': 'Mine ansatte',
   'Create employee': 'Opprett ansatt',
   'Navn tavle': 'Navn på styret',
-  Farve: 'Farge',
   'Slet tavle': 'Slett tavlen',
   'Opret tavle': 'Opprett tavle',
   Teamnavn: 'Lagnavn',

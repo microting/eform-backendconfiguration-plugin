@@ -397,7 +397,6 @@ export const ptBR = {
   'My employees': 'Meus funcionários',
   'Create employee': 'Criar funcionário',
   'Navn tavle': 'Nome do quadro',
-  Farve: 'Cor',
   'Slet tavle': 'Excluir quadro',
   'Opret tavle': 'Criar quadro',
   Teamnavn: 'Nome da equipe',

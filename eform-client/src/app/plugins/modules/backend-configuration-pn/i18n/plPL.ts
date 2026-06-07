@@ -397,7 +397,6 @@ export const plPL = {
   'My employees': 'Moi pracownicy',
   'Create employee': 'Utwórz pracownika',
   'Navn tavle': 'Nazwa zarządu',
-  Farve: 'Kolor',
   'Slet tavle': 'Usuń tablicę',
   'Opret tavle': 'Utwórz tablicę',
   Teamnavn: 'Nazwa zespołu',

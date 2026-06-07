@@ -381,7 +381,6 @@ export const itIT = {
   'My employees': 'I miei dipendenti',
   'Create employee': 'Crea dipendente',
   'Navn tavle': 'Nome della bacheca',
-  Farve: 'Colore',
   'Slet tavle': 'Eliminare la scheda',
   'Opret tavle': 'Crea la bacheca',
   Teamnavn: 'Nome della squadra',

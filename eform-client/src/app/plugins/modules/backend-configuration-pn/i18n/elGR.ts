@@ -397,7 +397,6 @@ export const elGR = {
   'My employees': 'Οι υπάλληλοί μου',
   'Create employee': 'Δημιουργία υπαλλήλου',
   'Navn tavle': 'Όνομα συμβουλίου',
-  Farve: 'Χρώμα',
   'Slet tavle': 'Διαγραφή πίνακα',
   'Opret tavle': 'Δημιουργία πίνακα',
   Teamnavn: 'Όνομα ομάδας',

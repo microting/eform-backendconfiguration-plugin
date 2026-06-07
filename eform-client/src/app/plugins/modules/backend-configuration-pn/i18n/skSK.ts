@@ -397,7 +397,6 @@ export const skSK = {
   'My employees': 'Moji zamestnanci',
   'Create employee': 'Vytvoriť zamestnanca',
   'Navn tavle': 'Názov predstavenstva',
-  Farve: 'Farba',
   'Slet tavle': 'Odstrániť nástenku',
   'Opret tavle': 'Vytvoriť nástenku',
   Teamnavn: 'Názov tímu',
