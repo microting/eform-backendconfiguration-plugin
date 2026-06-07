@@ -26,13 +26,13 @@
     opacity: 0;
   }
 
-  // Completed tasks keep the SAME colour as active (not-completed) tasks — the
-  // completion is signalled purely by the strike-through and the green check
-  // mark (set in the template), not by any colour change. The tile is a solid,
-  // opaque board colour just like an active one, so it never lets a stacked
-  // active tile bleed through.
+  // Completed tasks (SDK case Status == 100) get a solid green tile (#966-style
+  // done cue): #5c7829 background, white check (set on .completion-btn.done
+  // below), NO strike-through, full opacity. The !important overrides the inline
+  // board-colour background, mirroring .gcal-task--inactive. Kept fully opaque so
+  // a stacked active tile can't bleed through.
   &.completed {
-    text-decoration: line-through;
+    background-color: #5c7829 !important;
   }
 
   // Inactive ("nedtonet" / status === false) tasks are intentionally de-
@@ -46,6 +46,23 @@
     color: #6b7280;
 
     .task-time { color: #9aa0a6; }
+  }
+
+  // A completed occurrence is a terminal state and outranks the inactive
+  // (status === false) grey treatment when both apply to the same tile.
+  &.gcal-task--inactive.completed {
+    background-color: #5c7829 !important;
+    border-color: #fff;
+    color: #fff;
+
+    .task-time { color: #fff; }
+  }
+
+  // ...and it should hover like a normal (active) completed tile, not inherit
+  // the inactive tile's brightness-dip press cue below.
+  &.gcal-task--inactive.completed:hover {
+    opacity: 0.9;
+    filter: none;
   }
 
   // Inactive tiles must stay fully opaque on hover too — element-opacity dimming
@@ -135,15 +152,11 @@
       height: 16px;
     }
 
-    // Completed task (SDK case Status == 100): turn the check_circle glyph
-    // green so users can spot completion at a glance. The tile keeps its normal
-    // colour (same as an active task) and only gains a line-through via
-    // .task-block.completed above,
-    // so this green check is the primary completion cue.
-    // #61BA5B matches the project's $eform-green palette token (used
-    // elsewhere in the frontend); grep $eform-green to find the source.
+    // Completed task (SDK case Status == 100): white check_circle on the solid
+    // #5c7829 tile (set on .task-block.completed). White reads cleanly on the
+    // dark green and matches the white card text.
     &.done mat-icon {
-      color: #61BA5B;
+      color: #fff;
     }
   }
 
