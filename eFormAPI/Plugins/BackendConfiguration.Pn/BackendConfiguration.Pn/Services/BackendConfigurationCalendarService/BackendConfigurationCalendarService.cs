@@ -435,6 +435,19 @@ public class BackendConfigurationCalendarService(
                 .Where(x => tagItemIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Name);
 
+            Dictionary<int, string> siteNamesById;
+            if (coreHelper != null)
+            {
+                var sdkCoreForSiteNames = await coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContextForSiteNames = sdkCoreForSiteNames.DbContextHelper.GetDbContext();
+                siteNamesById = await sdkDbContextForSiteNames.Sites
+                    .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
+            }
+            else
+            {
+                siteNamesById = new Dictionary<int, string>();
+            }
+
             foreach (var arp in areaRulePlannings)
             {
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var planning))
@@ -551,6 +564,9 @@ public class BackendConfigurationCalendarService(
                         TaskDate = effectiveDate.ToString("yyyy-MM-dd"),
                         Tags = tags,
                         AssigneeIds = effectiveAssignees,
+                        WorkerNames = effectiveAssignees
+                            .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                            .ToList(),
                         BoardId = calConfig?.BoardId ?? defaultBoardId,
                         Color = calConfig?.Color,
                         RepeatType = arp.RepeatType ?? 0,
@@ -651,6 +667,9 @@ public class BackendConfigurationCalendarService(
                             TaskDate = orphan.OriginalDate.ToString("yyyy-MM-dd"),
                             Tags = tags,
                             AssigneeIds = orphanAssignees,
+                            WorkerNames = orphanAssignees
+                                .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                                .ToList(),
                             BoardId = calConfig?.BoardId ?? defaultBoardId,
                             Color = calConfig?.Color,
                             RepeatType = arp.RepeatType ?? 0,
@@ -729,6 +748,9 @@ public class BackendConfigurationCalendarService(
                     TaskDate = movedIn.NewDate!.Value.ToString("yyyy-MM-dd"),
                     Tags = movedTags,
                     AssigneeIds = movedAssignees,
+                    WorkerNames = movedAssignees
+                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                        .ToList(),
                     BoardId = movedCalConfig?.BoardId ?? defaultBoardId,
                     Color = movedCalConfig?.Color,
                     RepeatType = arp.RepeatType ?? 0,
@@ -923,6 +945,10 @@ public class BackendConfigurationCalendarService(
                     AssigneeIds = arp?.PlanningSites?
                         .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(ps => (int)ps.SiteId)
+                        .ToList() ?? [],
+                    WorkerNames = arp?.PlanningSites?
+                        .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(ps => siteNamesById.GetValueOrDefault((int)ps.SiteId, string.Empty))
                         .ToList() ?? [],
                     BoardId = calConfig?.BoardId ?? defaultBoardId,
                     Color = calConfig?.Color,
@@ -2572,7 +2598,7 @@ public class BackendConfigurationCalendarService(
     }
 
     public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(
-        int id, bool completed, int? complianceId, string? occurrenceDate)
+        int id, bool completed, int? complianceId, string? occurrenceDate, int? workerId = null)
     {
         // Calendar "complete from indicator" — resolves the specific Compliance
         // occurrence the user clicked (via complianceId from the calendar
@@ -2641,12 +2667,18 @@ public class BackendConfigurationCalendarService(
                         localizationService.GetString("TaskHasNoComplianceCase"));
                 }
 
-                var planningSite = arp.PlanningSites?
-                    .FirstOrDefault(s => s.WorkflowState != Constants.WorkflowStates.Removed);
+                var planningSite = workerId.HasValue
+                    ? arp.PlanningSites?.FirstOrDefault(s =>
+                        s.SiteId == workerId.Value
+                        && s.WorkflowState != Constants.WorkflowStates.Removed)
+                    : arp.PlanningSites?.FirstOrDefault(s =>
+                        s.WorkflowState != Constants.WorkflowStates.Removed);
                 if (planningSite == null)
                 {
                     return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                        localizationService.GetString("NoAssignedWorker"));
+                        workerId.HasValue
+                            ? localizationService.GetString("SelectedWorkerNotAssignedToTask")
+                            : localizationService.GetString("NoAssignedWorker"));
                 }
 
                 if (string.IsNullOrWhiteSpace(occurrenceDate))

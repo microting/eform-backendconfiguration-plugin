@@ -18,4 +18,10 @@ public class CalendarToggleCompleteModel
     // identify which deadline to create the Compliance row for. Sent as
     // task.taskDate from the calendar response.
     public string? OccurrenceDate { get; set; }
+
+    // Worker to attribute the completion to. When the task has multiple
+    // assignees (or a single assignee who isn't the current user), the
+    // frontend shows a "Vælg medarbejder" picker and sends the selected
+    // site-user id here. Null means "use the caller's own identity".
+    public int? WorkerId { get; set; }
 }

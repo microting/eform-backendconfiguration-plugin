@@ -2,10 +2,10 @@ import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Router} from '@angular/router';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import {BehaviorSubject, firstValueFrom, Observable, Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
+import {selectCurrentUserFullName, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
@@ -31,6 +31,7 @@ import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/boar
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
 import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/compliance-case-modal.component';
+import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
 
@@ -76,6 +77,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   activeTagNames: string[] = [];
   sidebarOpen = true;
   isAdmin = false;
+  private currentUserFullName = '';
 
   constructor(
     private overlay: Overlay,
@@ -93,6 +95,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => this.isAdmin = isAdmin);
+    this.store.select(selectCurrentUserFullName).pipe(takeUntil(this.destroy$))
+      .subscribe(name => (this.currentUserFullName = name ?? ''));
   }
 
   ngOnInit(): void {
@@ -592,6 +596,48 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // from the canonical server view.
       this.loadTasks();
     });
+  }
+
+  async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
+    const needsWorkerSelect =
+      task.assigneeIds.length > 1 ||
+      (task.assigneeIds.length === 1 && task.workerNames[0] !== this.currentUserFullName);
+
+    let selectedWorkerId: number | undefined;
+
+    if (needsWorkerSelect) {
+      const sites: CommonDictionaryModel[] = task.assigneeIds.map((id, i) => ({
+        id,
+        name: task.workerNames[i] ?? '',
+        description: '',
+      }));
+
+      const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
+        minWidth: '400px',
+        autoFocus: false,
+      });
+      const instance = ref.componentInstance;
+      instance.sites = sites;
+      if (sites.length === 1) {
+        instance.selectedSite = sites[0];
+      }
+
+      const selected: CommonDictionaryModel | null = await firstValueFrom(ref.afterClosed());
+      if (!selected) return;
+
+      selectedWorkerId = selected.id;
+    }
+
+    this.calendarService
+      .toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate, selectedWorkerId)
+      .subscribe(res => {
+        if (!res?.success) return;
+        if (res.model?.requiresForm) {
+          this.onCompleteRequiresForm(res.model);
+          return;
+        }
+        this.loadTasks();
+      });
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

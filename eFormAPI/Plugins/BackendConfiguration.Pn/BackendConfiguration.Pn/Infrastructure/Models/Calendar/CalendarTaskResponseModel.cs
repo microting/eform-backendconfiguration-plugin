@@ -12,6 +12,7 @@ public class CalendarTaskResponseModel
     public string TaskDate { get; set; }
     public List<string> Tags { get; set; } = [];
     public List<int> AssigneeIds { get; set; } = [];
+    public List<string> WorkerNames { get; set; } = [];
     public int? BoardId { get; set; }
     public string Color { get; set; }
     public int RepeatType { get; set; }
