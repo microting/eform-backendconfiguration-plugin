@@ -59,7 +59,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
     {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
     {header: this.translateService.stream('Pictures'), field: 'imagesCount', type: 'button', buttons: [
         {
@@ -79,7 +78,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
     {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
     {header: this.translateService.stream('Pictures'), field: 'imagesCount', type: 'button', buttons: [
         {
