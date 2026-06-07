@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142879</Id>
+  <Repeated>0</Repeated>
+  <Label>06. Numerisk|06. Numerical|06. Numerisch|06. Числовий|06. Numeryczny|06. Numerisk|06. Numerisk|06. Numeerinen|06. Numeric</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142879</Id>
+      <Label>06. Numerisk|06. Numerical|06. Numerisch|06. Числовий|06. Numeryczny|06. Numerisk|06. Numerisk|06. Numeerinen|06. Numeric</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="Number">
+          <Id>378130</Id>
+          <Label>Aflæsning|Reading|Ablesung|Показання|Odczyt|Avlesning|Avläsning|Lukema|Citire</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount>3</DecimalCount>
+          <UnitName/>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378132</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378131</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

@@ -327,8 +327,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.boardControl.setValue(initialBoard?.id ?? null);
       // take(1): seed default once; later refresh emissions must not overwrite the user's selection.
       this.data.eforms.pipe(take(1)).subscribe(list => {
-        const kvittering = list.find(e => e.label === 'Kvittering');
-        this.eformControl.setValue(kvittering?.id ?? list[0]?.id ?? null);
+        const standard = list.find(e => e.label === '01. Standard');
+        this.eformControl.setValue(standard?.id ?? list[0]?.id ?? null);
       });
     }
 

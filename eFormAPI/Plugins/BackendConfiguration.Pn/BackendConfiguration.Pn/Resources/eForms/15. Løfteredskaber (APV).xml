@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142862</Id>
+  <Repeated>0</Repeated>
+  <Label>15. Løfteredskaber (APV)|15. Lifting equipment (APV)|15. Hebezeuge (APV)|15. Підіймальне обладнання (APV)|15. Urządzenia dźwigowe (APV)|15. Løfteredskaper (APV)|15. Lyftredskap (APV)|15. Nostolaitteet (APV)|15. Echipamente de ridicare (APV)</Label>
+  <StartDate>2024-12-18</StartDate>
+  <EndDate>2034-12-18</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142862</Id>
+      <Label>15. Løfteredskaber (APV)|15. Lifting equipment (APV)|15. Hebezeuge (APV)|15. Підіймальне обладнання (APV)|15. Urządzenia dźwigowe (APV)|15. Løfteredskaper (APV)|15. Lyftredskap (APV)|15. Nostolaitteet (APV)|15. Echipamente de ridicare (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>377943</Id>
+          <Label>Instruktionsbog OK|Instruction manual OK|Bedienungsanleitung OK|Інструкція з експлуатації OK|Instrukcja obsługi OK|Instruksjonsbok OK|Instruktionsbok OK|Käyttöohjekirja OK|Manual de instrucțiuni OK</Label>
+          <Description><![CDATA[Tjek om brugervejledningen er til stede på dansk|Check if the user manual is available in Danish|Prüfen Sie, ob die Bedienungsanleitung auf Dänisch vorhanden ist|Перевірте, чи є посібник користувача датською мовою|Sprawdź, czy instrukcja użytkownika jest dostępna w języku duńskim|Sjekk om brukerveiledningen er tilgjengelig på dansk|Kontrollera om bruksanvisningen finns tillgänglig på danska|Tarkista, onko käyttöohje saatavilla tanskaksi|Verificați dacă manualul utilizatorului este disponibil în daneză]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377944</Id>
+          <Label>Hydrauliksystem OK|Hydraulic system OK|Hydrauliksystem OK|Гідравлічна система OK|Układ hydrauliczny OK|Hydraulikksystem OK|Hydrauliksystem OK|Hydraulijärjestelmä OK|Sistem hidraulic OK</Label>
+          <Description><![CDATA[Tjek for utæthed, skader, revner og mørhed|Check for leaks, damage, cracks and tenderness|Auf Undichtigkeiten, Schäden, Risse und Druckempfindlichkeit prüfen|Перевірити на наявність витоків, пошкоджень, тріщин та болючості|Sprawdź pod kątem nieszczelności, uszkodzeń, pęknięć i tkliwości|Kontroller for lekkasje, skader, sprekker og ømhet|Kontrollera för läckage, skador, sprickor och ömhet|Tarkista vuodot, vauriot, halkeamat ja arkuus|Verificați scurgeri, deteriorări, fisuri și sensibilitate la atingere]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377942</Id>
+          <Label>Rust OK|Rust OK|Rost OK|Іржа OK|Rdza OK|Rust OK|Rost OK|Ruoste OK|Rugină OK</Label>
+          <Description><![CDATA[Tjek for tæringer på bærende dele|Check for corrosion on load-bearing parts|Auf Korrosion an tragenden Teilen prüfen|Перевірити наявність корозії на несучих деталях|Sprawdź pod kątem korozji na częściach nośnych|Kontroller for korrosjon på bærende deler|Kontrollera för korrosion på bärande delar|Tarkista korroosio kantavista osista|Verificați coroziunea pe părțile portante]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377945</Id>
+          <Label>Brud, revner og overbelastningsskader OK</Label>
+          <Description><![CDATA[Tjek for skader.]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377946</Id>
+          <Label>Slid OK|Wear OK|Verschleiß OK|Знос OK|Zużycie OK|Slitasje OK|Slitage OK|Kuluminen OK|Uzură OK</Label>
+          <Description><![CDATA[Tjek om det er mere end anbefalet af leverandøren|Check if it is more than recommended by the supplier|Prüfen Sie, ob es mehr ist als vom Lieferanten empfohlen|Перевірте, чи перевищує це рекомендації постачальника|Sprawdź, czy przekracza zalecenia dostawcy|Sjekk om det er mer enn anbefalt av leverandøren|Kontrollera om det är mer än vad leverantören rekommenderar|Tarkista, onko se enemmän kuin toimittajan suosittelema|Verificați dacă depășește recomandările furnizorului]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377947</Id>
+          <Label>Varme, kemisk påvirkning eller råd OK|Heat, chemical exposure or rot OK|Wärme, chemische Einwirkung oder Fäulnis OK|Тепло, хімічний вплив або гниття OK|Ciepło, działanie chemiczne lub gnicie OK|Varme, kjemisk påvirkning eller råte OK|Värme, kemisk påverkan eller röta OK|Lämpö, kemiallinen altistuminen tai mätäneminen OK|Căldură, expunere chimică sau putrezire OK</Label>
+          <Description><![CDATA[Tjek for tegn herpå|Check for signs of this|Auf Anzeichen hierfür prüfen|Перевірити на наявність ознак цього|Sprawdź oznaki tego|Kontroller for tegn på dette|Kontrollera för tecken på detta|Tarkista tämän merkit|Verificați semnele acestui lucru]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377950</Id>
+          <Label>Revner, snoninger, revner mv. OK|Cracks, kinks, tears, etc. OK|Risse, Knicke, Einrisse usw. OK|Тріщини, перекручування, розриви тощо OK|Pęknięcia, skręcenia, rozdarcia itp. OK|Sprekker, kinking, rifter mv. OK|Sprickor, knickar, revor m.m. OK|Halkeamat, mutkat, repeämät jne. OK|Fisuri, îndoituri, rupturi etc. OK</Label>
+          <Description><![CDATA[Tjek for skader og undersøg kritiske steder som samlinger og fastgørelser af tovender|Check for damage and examine critical areas such as joints and rope end attachments|Auf Schäden prüfen und kritische Stellen wie Verbindungen und Seilendenbefestigungen untersuchen|Перевірте на наявність пошкоджень і огляньте критичні місця, такі як з'єднання та кріплення кінців мотузки|Sprawdź uszkodzenia i zbadaj krytyczne miejsca, takie jak złącza i mocowania końców lin|Sjekk for skader og undersøk kritiske steder som skjøter og festepunkter for tauender|Kontrollera för skador och undersök kritiska ställen som skarvar och infästningar av taländar|Tarkista vauriot ja tutki kriittiset kohdat, kuten liitokset ja köyden päiden kiinnitykset|Verificați dacă există deteriorări și examinați zonele critice, cum ar fi îmbinările și fixările capetelor de frânghie]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377951</Id>
+          <Label>Varme, kemisk påvirkning eller råd OK|Heat, chemical exposure or rot OK|Wärme, chemische Einwirkung oder Fäulnis OK|Тепло, хімічний вплив або гниття OK|Ciepło, działanie chemiczne lub gnicie OK|Varme, kjemisk påvirkning eller råte OK|Värme, kemisk påverkan eller röta OK|Lämpö, kemiallinen altistuminen tai mätäneminen OK|Căldură, expunere chimică sau putrezire OK</Label>
+          <Description><![CDATA[Tjek for skader. Må ikke svejses eller loddes.|Check for damage. Do not weld or solder.|Auf Schäden prüfen. Darf nicht geschweißt oder gelötet werden.|Перевірте на наявність пошкоджень. Не зварювати та не паяти.|Sprawdź pod kątem uszkodzeń. Nie wolno spawać ani lutować.|Sjekk for skader. Må ikke sveises eller loddes.|Kontrollera för skador. Får inte svetsas eller lödas.|Tarkista vauriot. Ei saa hitsata tai juottaa.|Verificați dacă există deteriorări. Nu se sudează sau lipește.]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>377948</Id>
+          <Label>Kan løfteredskabet godkendes og mærkes?|Can the lifting equipment be approved and marked?|Kann das Hebezeug genehmigt und gekennzeichnet werden?|Чи може підіймальне обладнання бути схвалене та промарковане?|Czy sprzęt do podnoszenia może zostać zatwierdzony i oznakowany?|Kan løfteredskapet godkjennes og merkes?|Kan lyftredskapet godkännas och märkas?|Voiko nostolaite hyväksyä ja merkitä?|Poate echipamentul de ridicare să fie aprobat și marcat?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377940</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377939</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

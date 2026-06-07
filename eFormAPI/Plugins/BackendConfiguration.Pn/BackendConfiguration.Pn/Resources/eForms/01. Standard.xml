@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142874</Id>
+  <Repeated>0</Repeated>
+  <Label>01. Standard|01. Standard|01. Standard|01. Стандарт|01. Standard|01. Standard|01. Standard|01. Vakio|01. Standard</Label>
+  <StartDate>2026-05-26</StartDate>
+  <EndDate>2036-05-26</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142874</Id>
+      <Label>01. Standard|01. Standard|01. Standard|01. Стандарт|01. Standard|01. Standard|01. Standard|01. Vakio|01. Standard</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="Picture">
+          <Id>378100</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378101</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

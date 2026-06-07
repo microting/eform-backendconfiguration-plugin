@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142878</Id>
+  <Repeated>0</Repeated>
+  <Label>05. Kontrol telt|05. Check tent|05. Kontrollzelt|05. Контрольний намет|05. Namiot kontrolny|05. Kontrolltelt|05. Kontrolltält|05. Tarkistusteltta|05. Cort de control</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142878</Id>
+      <Label>05. Kontrol telt|05. Check tent|05. Kontrollzelt|05. Контрольний намет|05. Namiot kontrolny|05. Kontrolltelt|05. Kontrolltält|05. Tarkistusteltta|05. Cort de control</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>378124</Id>
+          <Label>Tank 1: Telt OK|Tank 1: Tent OK|Tank 1: Zelt OK|Резервуар 1: Намет OK|Zbiornik 1: Namiot OK|Tank 1: Telt OK|Tank 1: Tält OK|Säiliö 1: Teltta OK|Rezervor 1: Cort OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378126</Id>
+          <Label>Tank 2: Telt OK|Tank 2: Tent OK|Tank 2: Zelt OK|Резервуар 2: Намет OK|Zbiornik 2: Namiot OK|Tank 2: Telt OK|Tank 2: Tält OK|Säiliö 2: Teltta OK|Rezervor 2: Cort OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378128</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378127</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142881</Id>
+  <Repeated>0</Repeated>
+  <Label>11. Brandslukkere (APV)|11. Fire extinguishers (APV)|11. Feuerlöscher (APV)|11. Вогнегасники (APV)|11. Gaśnice (APV)|11. Brannslukningsapparater (APV)|11. Brandsläckare (APV)|11. Palonsammuttimet (APV)|11. Stingătoare de incendiu (APV)</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142881</Id>
+      <Label>11. Brandslukkere (APV)|11. Fire extinguishers (APV)|11. Feuerlöscher (APV)|11. Вогнегасники (APV)|11. Gaśnice (APV)|11. Brannslukningsapparater (APV)|11. Brandsläckare (APV)|11. Palonsammuttimet (APV)|11. Stingătoare de incendiu (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>378153</Id>
+          <Label>Ophængning|Suspension|Aufhängung|Підвіска|Zawieszenie|Oppheng|Upphängning|Ripustus|Suspensie</Label>
+          <Description><![CDATA[Tjek, at den er ok|Check that it is ok|Prüfen, dass es in Ordnung ist|Перевірте, що все в порядку|Sprawdź, czy jest w porządku|Kontroller at den er ok|Kontrollera att den är ok|Tarkista, että se on kunnossa|Verificați că este în regulă]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378154</Id>
+          <Label>Tilgængelighed|Availability|Verfügbarkeit|Доступність|Dostępność|Tilgjengelighet|Tillgänglighet|Saatavuus|Disponibilitate</Label>
+          <Description><![CDATA[Tjek, at der ikke er placeret gods mv. foran håndslukkeren| Check that no goods, etc. have been placed in front of the fire extinguisher|Prüfen, dass keine Waren o. Ä. vor dem Feuerlöscher platziert wurden|Перевірте, що перед вогнегасником не розміщено товари тощо|Sprawdź, czy przed gaśnicą nie zostały umieszczone towary itp.|Kontroller at det ikke er plassert gods mv. foran håndslukkeren|Kontrollera att inga varor m.m. har placerats framför handbrandsläckaren|Tarkista, ettei käsisammuttimen eteen ole sijoitettu tavaroita tms.|Verificați că nu au fost plasate mărfuri etc. în fața stingătorului de incendiu]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378152</Id>
+          <Label>Sikkerhedsskiltning|Safety signs|Sicherheitsbeschilderung|Знаки безпеки|Oznakowanie bezpieczeństwa|Sikkerhetsskiltning|Säkerhetsskyltar|Turvallisuusmerkit|Indicatoare de securitate</Label>
+          <Description><![CDATA[Tjek, at skilte er opsat på væg eller lignende|Check that signs are mounted on the wall or similar|Prüfen, dass Schilder an der Wand oder Ähnlichem angebracht sind|Перевірте, що знаки встановлені на стіні або подібному місці|Sprawdź, czy znaki są zamontowane na ścianie lub podobnym miejscu|Kontroller at skilter er satt opp på vegg eller lignende|Kontrollera att skyltar är uppsatta på vägg eller liknande|Tarkista, että kyltit on kiinnitetty seinälle tai vastaavaan paikkaan|Verificați că indicatoarele sunt montate pe perete sau similar]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378155</Id>
+          <Label>Funktionsklar og intakt|Functional and intact|Funktionsbereit und intakt|Функціонально готовий та цілий|Sprawny i nienaruszony|Funksjonsklar og intakt|Funktionsklar och intakt|Toimintavalmis ja ehjä|Funcțional și intact</Label>
+          <Description><![CDATA[Tjek, at det er ok|Check that it is ok|Prüfen, dass es in Ordnung ist|Перевірте, що воно в порядку|Sprawdź, czy to jest w porządku|Kontroller at det er ok|Kontrollera att det är ok|Tarkista, että se on ok|Verificați că este în regulă]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378156</Id>
+          <Label>Brugsanvisning på slukker|Instructions for use on extinguisher|Bedienungsanleitung am Feuerlöscher|Інструкція з використання на вогнегаснику|Instrukcja obsługi na gaśnicy|Bruksanvisning på slukker|Bruksanvisning på släckare|Käyttöohje sammuttimessa|Instrucțiuni de utilizare pe stingător</Label>
+          <Description><![CDATA[Tjek, at informationer vedrørende brug af ildslukker kan læses|Check that information regarding the use of the extinguisher can be read|Prüfen, dass Informationen zur Verwendung des Feuerlöschers lesbar sind|Перевірте, що інформація щодо використання вогнегасника може бути прочитана|Sprawdź, czy informacje dotyczące użytkowania gaśnicy są czytelne|Kontroller at informasjon om bruk av brannslukkeren kan leses|Kontrollera att information om användning av brandsläckaren kan läsas|Tarkista, että sammuttimen käyttöä koskevat tiedot ovat luettavissa|Verificați că informațiile privind utilizarea stingătorului de incendiu pot fi citite]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378157</Id>
+          <Label>Evt. trykmåler|Pressure gauge if necessary|Ggf. Druckmesser|Можливо, манометр|Ew. manometr|Evt. trykkmåler|Ev. tryckmätare|Mahd. painemittari|Eventual manometru</Label>
+          <Description><![CDATA[Tjek, at der vises korrekt driftstryk|Check that the correct operating pressure is displayed|Prüfen, dass der korrekte Betriebsdruck angezeigt wird|Перевірте, що відображається правильний робочий тиск|Sprawdź, czy wyświetlane jest prawidłowe ciśnienie robocze|Kontroller at korrekt driftstrykk vises|Kontrollera att korrekt drifttryck visas|Tarkista, että oikea käyttöpaine näytetään|Verificați că presiunea de lucru corectă este afișată]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378159</Id>
+          <Label>Ingen synlige beskadigelser|No visible damages|Keine sichtbaren Beschädigungen|Немає видимих пошкоджень|Brak widocznych uszkodzeń|Ingen synlige skader|Inga synliga skador|Ei näkyviä vaurioita|Fără deteriorări vizibile</Label>
+          <Description><![CDATA[Tjek beholder og håndtag|Check container and handle|Behälter und Griff prüfen|Перевірте ємність та ручку|Sprawdź pojemnik i uchwyt|Sjekk beholder og håndtak|Kontrollera behållare och handtag|Tarkista säiliö ja kahva|Verificați recipientul și mânerul]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378160</Id>
+          <Label>Kontrolvejning af CO2-slukker|Control weighing of CO2 extinguisher|Kontrollwägung des CO2-Feuerlöschers|Контрольне зважування CO2-вогнегасника|Kontrolne ważenie gaśnicy CO2|Kontrollveiing av CO2-slukker|Kontrollvägning av CO2-släckare|CO2-sammuttimen tarkistuspunnitus|Cântărire de control a stingătorului CO2</Label>
+          <Description><![CDATA[Se beholder for vægtangivelse|See container for weight declaration|Behälter auf Gewichtsangabe prüfen|Дивіться на ємність для позначення ваги|Sprawdź pojemnik w celu ustalenia masy|Se beholder for vektangivelse|Se behållare för viktangivelse|Katso painomerkintä säiliöstä|Consultați recipientul pentru indicarea greutății]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378161</Id>
+          <Label>Plomberingen|The seal|Die Plombierung|Пломба|Plomba|Plomberingen|Plomberingen|Sinetti|Sigiliul</Label>
+          <Description><![CDATA[Tjek om plomberingen er intakt|Check if seal is intact|Überprüfen Sie, ob die Plombierung intakt ist|Перевірте, чи ціла пломба|Sprawdź, czy plomba jest nienaruszona|Sjekk om plomberingen er intakt|Kontrollera om plomberingen är intakt|Tarkista, onko sinetti ehjä|Verificați dacă sigiliul este intact]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378158</Id>
+          <Label>Kan ildslukkeren godkendes?|Can the fire extinguisher be approved?|Kann der Feuerlöscher zugelassen werden?|Чи можна схвалити вогнегасник?|Czy gaśnica może zostać zatwierdzona?|Kan brannslukkeren godkjennes?|Kan brandsläckaren godkännas?|Voidaanko sammutin hyväksyä?|Poate fi aprobat extinctorul?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378150</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378149</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
