@@ -397,7 +397,6 @@ export const huHU = {
   'My employees': 'Az alkalmazottaim',
   'Create employee': 'Alkalmazott létrehozása',
   'Navn tavle': 'Tábla neve',
-  Farve: 'Szín',
   'Slet tavle': 'Tábla törlése',
   'Opret tavle': 'Tábla létrehozása',
   Teamnavn: 'Csapat neve',

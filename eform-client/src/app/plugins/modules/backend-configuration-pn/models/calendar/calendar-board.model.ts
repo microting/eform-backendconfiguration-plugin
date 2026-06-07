@@ -6,6 +6,6 @@ export interface CalendarBoardModel {
 }
 
 export const CALENDAR_COLORS: string[] = [
-  '#D50000', '#E67C73', '#F4511E', '#F6BF26', '#33B679',
-  '#0B8043', '#039BE5', '#3F51B5', '#7986CB', '#8E24AA',
+  '#d04d4d', '#5ba8ff', '#fd9b6b', '#9588fd',
+  '#fff286', '#e6cfff', '#ff88cf', '#bfd8ff',
 ];

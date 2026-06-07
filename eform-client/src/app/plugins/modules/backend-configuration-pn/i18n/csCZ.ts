@@ -397,7 +397,6 @@ export const csCZ = {
   'My employees': 'Moji zaměstnanci',
   'Create employee': 'Vytvořit zaměstnance',
   'Navn tavle': 'Název představenstva',
-  Farve: 'Barva',
   'Slet tavle': 'Smazat nástěnku',
   'Opret tavle': 'Vytvořit nástěnku',
   Teamnavn: 'Název týmu',

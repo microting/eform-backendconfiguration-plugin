@@ -392,7 +392,6 @@ export const ukUA = {
   'My employees': 'Мої співробітники',
   'Create employee': 'Створити співробітника',
   'Navn tavle': 'Назва ради директорів',
-  Farve: 'Колір',
   'Slet tavle': 'Видалити дошку',
   'Opret tavle': 'Створити дошку',
   Teamnavn: 'Назва команди',

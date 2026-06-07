@@ -397,7 +397,6 @@ export const etET = {
   'My employees': 'Minu töötajad',
   'Create employee': 'Loo töötaja',
   'Navn tavle': 'Juhatuse nimi',
-  Farve: 'Värv',
   'Slet tavle': 'Kustuta tahvel',
   'Opret tavle': 'Loo tahvel',
   Teamnavn: 'Meeskonna nimi',

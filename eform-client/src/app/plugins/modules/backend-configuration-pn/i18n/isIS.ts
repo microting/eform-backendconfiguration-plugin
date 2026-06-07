@@ -397,7 +397,6 @@ export const isIS = {
   'My employees': 'Starfsmenn mínir',
   'Create employee': 'Stofna starfsmann',
   'Navn tavle': 'Nafn stjórnar',
-  Farve: 'Litur',
   'Slet tavle': 'Eyða töflu',
   'Opret tavle': 'Búa til borð',
   Teamnavn: 'Nafn liðs',

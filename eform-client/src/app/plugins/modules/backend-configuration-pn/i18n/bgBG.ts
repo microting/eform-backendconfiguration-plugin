@@ -397,7 +397,6 @@ export const bgBG = {
   'My employees': 'Моите служители',
   'Create employee': 'Създаване на служител',
   'Navn tavle': 'Име на управителния съвет',
-  Farve: 'Цвят',
   'Slet tavle': 'Изтриване на дъската',
   'Opret tavle': 'Създаване на дъска',
   Teamnavn: 'Име на отбора',

@@ -397,7 +397,6 @@ export const esES = {
   'My employees': 'Mis empleados',
   'Create employee': 'Crear empleado',
   'Navn tavle': 'Nombre de la placa',
-  Farve: 'Color',
   'Slet tavle': 'Tablero de eliminación',
   'Opret tavle': 'Crear tablero',
   Teamnavn: 'Nombre del equipo',

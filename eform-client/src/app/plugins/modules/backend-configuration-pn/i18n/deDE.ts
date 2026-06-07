@@ -451,7 +451,6 @@ export const deDE = {
   'My employees': 'Meine Mitarbeiter',
   'Create employee': 'Mitarbeiter erstellen',
   'Navn tavle': 'Name des Gremiums',
-  Farve: 'Farbe',
   'Slet tavle': 'Forum löschen',
   'Opret tavle': 'Board erstellen',
   Teamnavn: 'Teamname',

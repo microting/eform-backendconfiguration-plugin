@@ -397,7 +397,6 @@ export const roRO = {
   'My employees': 'Angajații mei',
   'Create employee': 'Creați un angajat',
   'Navn tavle': 'Numele consiliului de administrație',
-  Farve: 'Culoare',
   'Slet tavle': 'Ștergeți panoul',
   'Opret tavle': 'Creați o tablă',
   Teamnavn: 'Numele echipei',

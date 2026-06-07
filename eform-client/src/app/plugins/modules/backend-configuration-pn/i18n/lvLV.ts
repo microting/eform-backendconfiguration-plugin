@@ -397,7 +397,6 @@ export const lvLV = {
   'My employees': 'Mani darbinieki',
   'Create employee': 'Izveidot darbinieku',
   'Navn tavle': 'Valdes nosaukums',
-  Farve: 'Krāsa',
   'Slet tavle': 'Dzēst dēli',
   'Opret tavle': 'Izveidot dēli',
   Teamnavn: 'Komandas nosaukums',

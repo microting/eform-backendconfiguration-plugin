@@ -21,9 +21,10 @@ export interface BoardCreateModalData {
     }
     .color-picker-grid {
       display: grid;
-      grid-template-columns: repeat(5, 32px);
+      grid-template-columns: repeat(8, 32px);
       gap: 8px;
       margin-top: 4px;
+      min-width: 312px;
     }
     .color-swatch {
       width: 32px;

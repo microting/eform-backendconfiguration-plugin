@@ -377,7 +377,6 @@ export const frFR = {
   'My employees': 'Mes employés',
   'Create employee': 'Créer un employé',
   'Navn tavle': 'Nom du conseil',
-  Farve: 'Couleur',
   'Slet tavle': 'Supprimer le tableau',
   'Opret tavle': 'Créer un tableau',
   'Opret team': 'Créer une équipe',

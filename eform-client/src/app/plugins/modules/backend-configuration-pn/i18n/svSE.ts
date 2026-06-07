@@ -399,7 +399,6 @@ export const svSE = {
   'My employees': 'Mina anställda',
   'Create employee': 'Skapa anställd',
   'Navn tavle': 'Styrelsens namn',
-  Farve: 'Färg',
   'Slet tavle': 'Ta bort anslagstavla',
   'Opret tavle': 'Skapa tavla',
   Teamnavn: 'Lagnamn',

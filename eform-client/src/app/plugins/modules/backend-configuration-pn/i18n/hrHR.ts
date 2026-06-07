@@ -397,7 +397,6 @@ export const hrHR = {
   'My employees': 'Moji zaposlenici',
   'Create employee': 'Kreiraj zaposlenika',
   'Navn tavle': 'Naziv odbora',
-  Farve: 'Boja',
   'Slet tavle': 'Izbriši ploču',
   'Opret tavle': 'Izradi ploču',
   Teamnavn: 'Naziv tima',

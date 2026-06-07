@@ -397,7 +397,6 @@ export const ltLT = {
   'My employees': 'Mano darbuotojai',
   'Create employee': 'Sukurti darbuotoją',
   'Navn tavle': 'Valdybos pavadinimas',
-  Farve: 'Spalva',
   'Slet tavle': 'Ištrinti lentą',
   'Opret tavle': 'Sukurti lentą',
   Teamnavn: 'Komandos pavadinimas',

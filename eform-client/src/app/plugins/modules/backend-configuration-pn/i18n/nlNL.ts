@@ -396,7 +396,6 @@ export const nlNL = {
   'My employees': 'Mijn medewerkers',
   'Create employee': 'Werknemer aanmaken',
   'Navn tavle': 'Bestuursnaam',
-  Farve: 'Kleur',
   'Slet tavle': 'Verwijder het bord',
   'Opret tavle': 'Maak een bord aan',
   Teamnavn: 'Teamnaam',
