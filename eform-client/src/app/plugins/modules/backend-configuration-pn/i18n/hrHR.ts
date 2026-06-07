@@ -391,6 +391,7 @@ export const hrHR = {
   Title: 'Titula',
   'Set tags...': 'Postavi oznake...',
   'Assign to...': 'Dodijeli...',
+  'Add description': 'Dodaj opis',
   'My properties': 'Moje nekretnine',
   'My boards': 'Moje ploče',
   'My teams': 'Moji timovi',

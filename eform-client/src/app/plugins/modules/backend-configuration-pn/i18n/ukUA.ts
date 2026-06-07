@@ -386,6 +386,7 @@ export const ukUA = {
   Title: 'Назва',
   'Set tags...': 'Встановити теги...',
   'Assign to...': 'Призначити...',
+  'Add description': 'Додати опис',
   'My properties': 'Мої властивості',
   'My boards': 'Мої дошки',
   'My teams': 'Мої команди',

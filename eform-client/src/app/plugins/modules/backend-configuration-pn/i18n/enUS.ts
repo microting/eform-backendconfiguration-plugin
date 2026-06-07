@@ -423,6 +423,7 @@ export const enUS= {
   'Title': 'Title',
   'Set tags...': 'Set tags...',
   'Assign to...': 'Assign to...',
+  'Add description': 'Add description',
   // Preview + copy actions
   'Show details': 'Show details',
   'Hide details': 'Hide details',

@@ -391,6 +391,7 @@ export const etET = {
   Title: 'Pealkiri',
   'Set tags...': 'Määra sildid...',
   'Assign to...': 'Määrake...',
+  'Add description': 'Lisa kirjeldus',
   'My properties': 'Minu kinnisvara',
   'My boards': 'Minu lauad',
   'My teams': 'Minu meeskonnad',

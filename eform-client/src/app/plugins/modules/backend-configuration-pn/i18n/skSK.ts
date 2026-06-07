@@ -391,6 +391,7 @@ export const skSK = {
   Title: 'Názov',
   'Set tags...': 'Nastaviť značky...',
   'Assign to...': 'Priradiť...',
+  'Add description': 'Pridať popis',
   'My properties': 'Moje nehnuteľnosti',
   'My boards': 'Moje nástenky',
   'My teams': 'Moje tímy',

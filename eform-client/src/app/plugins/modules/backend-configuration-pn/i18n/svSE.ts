@@ -393,6 +393,7 @@ export const svSE = {
   Title: 'Titel',
   'Set tags...': 'Ställ in taggar...',
   'Assign to...': 'Tilldela till...',
+  'Add description': 'Lägg till beskrivning',
   'My properties': 'Mina fastigheter',
   'My boards': 'Mina anslagstavlor',
   'My teams': 'Mina lag',

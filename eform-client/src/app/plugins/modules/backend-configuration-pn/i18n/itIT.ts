@@ -375,6 +375,7 @@ export const itIT = {
   Title: 'Titolo',
   'Set tags...': 'Imposta i tag...',
   'Assign to...': 'Assegna a...',
+  'Add description': 'Aggiungi descrizione',
   'My properties': 'Le mie proprietà',
   'My boards': 'Le mie tavole',
   'My teams': 'Le mie squadre',

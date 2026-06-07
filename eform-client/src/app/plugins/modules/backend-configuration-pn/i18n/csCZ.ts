@@ -391,6 +391,7 @@ export const csCZ = {
   Title: 'Titul',
   'Set tags...': 'Nastavit štítky...',
   'Assign to...': 'Přiřadit k...',
+  'Add description': 'Přidat popis',
   'My properties': 'Moje nemovitosti',
   'My boards': 'Moje nástěnky',
   'My teams': 'Moje týmy',

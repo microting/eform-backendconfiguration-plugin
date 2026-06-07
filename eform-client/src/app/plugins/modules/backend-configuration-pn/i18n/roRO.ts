@@ -391,6 +391,7 @@ export const roRO = {
   Title: 'Titlu',
   'Set tags...': 'Setați etichete...',
   'Assign to...': 'Atribuiți către...',
+  'Add description': 'Adăugați o descriere',
   'My properties': 'Proprietățile mele',
   'My boards': 'Plăcile mele',
   'My teams': 'Echipele mele',

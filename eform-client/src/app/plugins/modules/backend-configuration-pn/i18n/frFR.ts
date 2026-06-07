@@ -371,6 +371,7 @@ export const frFR = {
   Title: 'Titre',
   'Set tags...': 'Définir les étiquettes...',
   'Assign to...': 'Attribuer à...',
+  'Add description': 'Ajouter une description',
   'My properties': 'Mes propriétés',
   'My boards': 'Mes planches',
   'My teams': 'Mes équipes',

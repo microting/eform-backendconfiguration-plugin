@@ -391,6 +391,7 @@ export const ptPT = {
   Title: 'Título',
   'Set tags...': 'Definir etiquetas...',
   'Assign to...': 'Atribuir a...',
+  'Add description': 'Adicionar descrição',
   'My properties': 'Minhas propriedades',
   'My boards': 'Meus quadros',
   'My teams': 'Minhas equipes',

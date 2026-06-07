@@ -391,6 +391,7 @@ export const bgBG = {
   Title: 'Заглавие',
   'Set tags...': 'Задаване на етикети...',
   'Assign to...': 'Присвояване на...',
+  'Add description': 'Добавяне на описание',
   'My properties': 'Моите имоти',
   'My boards': 'Моите дъски',
   'My teams': 'Моите екипи',

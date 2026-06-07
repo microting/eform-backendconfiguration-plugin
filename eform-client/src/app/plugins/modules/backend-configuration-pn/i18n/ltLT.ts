@@ -391,6 +391,7 @@ export const ltLT = {
   Title: 'Pavadinimas',
   'Set tags...': 'Nustatyti žymas...',
   'Assign to...': 'Priskirti...',
+  'Add description': 'Pridėti aprašymą',
   'My properties': 'Mano savybės',
   'My boards': 'Mano lentos',
   'My teams': 'Mano komandos',
