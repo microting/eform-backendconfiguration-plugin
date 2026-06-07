@@ -42,6 +42,9 @@ export const enUS= {
   'Plan rule': 'Plan rule',
   'Notifications on/off': 'Notifications on/off',
   'Repeat every': 'Repeat every',
+  'Repeat sub-type': 'Repeat sub-type',
+  'Monthly day': 'Monthly day',
+  'Monthly on the first': 'Monthly on the first',
   Day: 'Day',
   Week: 'Week',
   Month: 'Month',
@@ -420,6 +423,7 @@ export const enUS= {
   'Title': 'Title',
   'Set tags...': 'Set tags...',
   'Assign to...': 'Assign to...',
+  'Add description': 'Add description',
   // Preview + copy actions
   'Show details': 'Show details',
   'Hide details': 'Hide details',

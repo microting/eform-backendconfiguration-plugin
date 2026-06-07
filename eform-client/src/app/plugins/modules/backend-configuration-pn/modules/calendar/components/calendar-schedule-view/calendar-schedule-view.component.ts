@@ -1,8 +1,7 @@
-import {Component, EventEmitter, Input, OnChanges, Output, inject} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, Output} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
-import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarToggleCompleteResult} from '../../../../models/calendar';
+import {CalendarBoardModel, CalendarTaskLayoutModel} from '../../../../models/calendar';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
-import {BackendConfigurationPnCalendarService} from '../../../../services';
 
 interface ScheduleGroup {
   dateLabel: string;
@@ -22,29 +21,16 @@ export class CalendarScheduleViewComponent implements OnChanges {
 
   @Output() tasksReload = new EventEmitter<void>();
   @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
-  @Output() completeRequiresForm = new EventEmitter<CalendarToggleCompleteResult>();
+  @Output() toggleCompleteRequested = new EventEmitter<CalendarTaskLayoutModel>();
 
   groups: ScheduleGroup[] = [];
-
-  private calendarService = inject(BackendConfigurationPnCalendarService);
 
   constructor(private translate: TranslateService) {}
 
   onCompletionClick(task: CalendarTaskLayoutModel, event: MouseEvent) {
     event.stopPropagation();
-    // Match the week-grid indicator: the SDK case status is one-way, so
-    // once an event is completed the indicator is inert (no doomed PUT).
     if (task.completed) return;
-    this.calendarService
-      .toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate)
-      .subscribe(res => {
-        if (!res?.success) return;
-        if (res.model?.requiresForm) {
-          this.completeRequiresForm.emit(res.model);
-          return;
-        }
-        this.tasksReload.emit();
-      });
+    this.toggleCompleteRequested.emit(task);
   }
 
   ngOnChanges() {

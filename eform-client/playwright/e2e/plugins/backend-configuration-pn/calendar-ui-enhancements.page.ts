@@ -863,6 +863,106 @@ export class CalendarUiEnhancementsPage {
       .first();
   }
 
+  // ----- Delete flow (preview popover → scope modal | delete modal) --------
+
+  /**
+   * Open the preview popover for `title` and click its Delete button. The
+   * Delete button has no id (only the Edit/Copy buttons carry ids), so we
+   * reuse `getPreviewDeleteButton()` which matches by the `delete` mat-icon.
+   *
+   * After the click, the preview's `onDelete()` either:
+   *   - opens RepeatScopeModalComponent (`{mode:'delete'}`) for a recurring
+   *     series — the SAME modal as move/resize, so `pickScopeInModal` works;
+   *   - opens TaskDeleteModalComponent for a one-off.
+   * This helper does NOT wait for either — the caller asserts which modal
+   * appeared (D06) or drives the confirm flow (confirmDeleteScope /
+   * confirmOneOffDelete).
+   */
+  async openPreviewAndDelete(title: string): Promise<void> {
+    await this.openEventPreview(title);
+    await this.getPreviewDeleteButton().click();
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * For a RECURRING series: pick a scope in the RepeatScopeModal that the
+   * delete flow opens, then await the delete PUT (.../calendar/tasks/delete)
+   * AND the subsequent week reload (.../tasks/week POST) so the grid has
+   * re-rendered before the caller asserts. Mirrors confirmEditScope, but the
+   * committed network call is the delete PUT rather than the update PUT.
+   *
+   * Registers BOTH waiters BEFORE clicking Confirm so neither can miss its
+   * response (the deleteTask().subscribe → close('reload') → reload sequence
+   * is fast on CI boxes).
+   */
+  async confirmDeleteScope(scope: 'this' | 'thisAndFollowing' | 'all'): Promise<void> {
+    const deleteWait = this.page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks/delete')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 }
+    );
+    const reloadWait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await this.pickScopeInModal(scope);
+    await deleteWait;
+    await reloadWait;
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * For a ONE-OFF event: click Confirm in the TaskDeleteModal, then await the
+   * delete PUT (.../calendar/tasks/delete) AND the subsequent week reload.
+   * The TaskDeleteModal confirm button is `button.btn-delete` (the visible
+   * "Delete" label is locale-translated, so match by class — same convention
+   * as pickScopeInModal's `button.btn-primary`). Scope is irrelevant for a
+   * one-off (the component hardcodes scope 'this').
+   */
+  async confirmOneOffDelete(): Promise<void> {
+    const dialog = this.page.locator('app-task-delete-modal');
+    await dialog.waitFor({ state: 'visible', timeout: 10000 });
+    const deleteWait = this.page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks/delete')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 }
+    );
+    const reloadWait = this.page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await dialog.locator('button.btn-delete').click();
+    await deleteWait;
+    await reloadWait;
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Cancel an open TaskDeleteModal (the one-off delete-confirm dialog) via
+   * its Cancel button (`button.btn-cancel`), then wait for it to detach.
+   * Used by D06 to dismiss the modal without deleting.
+   */
+  async cancelOneOffDelete(): Promise<void> {
+    const dialog = this.page.locator('app-task-delete-modal');
+    await dialog.locator('button.btn-cancel').click();
+    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Cancel an open RepeatScopeModal via its Cancel button
+   * (`#repeatScopeCancelBtn`), then wait for it to detach. Used by D06 to
+   * dismiss the recurring-delete scope modal without deleting.
+   */
+  async cancelScopeModal(): Promise<void> {
+    const dialog = this.page.locator('app-repeat-scope-modal');
+    await dialog.locator('#repeatScopeCancelBtn').click();
+    await dialog.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+    await this.page.waitForTimeout(300);
+  }
+
   // ----- Sticky day-of-week header (week + day views) ----------------------
 
   /**
@@ -970,5 +1070,45 @@ export class CalendarUiEnhancementsPage {
       `headerBox.y=${headerBox.y}, wrapperBox.y=${wrapperBoxAfter.y}, delta=${delta}px ` +
       `(expected < 2px — sticky regressed).`
     ).toBeLessThan(2);
+  }
+
+  /**
+   * The currently displayed label of the "Gentag" (Repeat) select in the
+   * create/edit modal (`id="calendarEventRepeat"`). Reads the ng-select's
+   * selected-value label. Used to assert the label tracks the date (#960).
+   */
+  async getRepeatSelectLabel(): Promise<string> {
+    const label = this.page.locator('#calendarEventRepeat .ng-value-label').first();
+    await label.waitFor({ state: 'visible', timeout: 5000 });
+    return ((await label.textContent()) ?? '').trim();
+  }
+
+  /**
+   * Open the event date-picker and move the selected date by one day (prefers
+   * +1 day; falls back to -1 at month end) so the weekday changes. Returns the
+   * day numbers clicked from/to. Used to drive the #960 re-anchor assertion:
+   * for a single-anchor rule the "Gentag" label must follow the new weekday.
+   */
+  async shiftEventDateByOneDay(): Promise<void> {
+    await this.openEventDatePicker();
+    const grid = this.getMiniPickerOverlay();
+    const selected = grid.locator('.day-cell.selected').first();
+    const selText = ((await selected.textContent()) ?? '').trim();
+    const n = parseInt(selText, 10);
+
+    for (const day of [n + 1, n - 1]) {
+      if (day < 1) continue;
+      const cell = grid
+        .locator('.day-cell:not(.other-month):not(.disabled)')
+        .filter({ hasText: new RegExp(`^${day}$`) })
+        .first();
+      if (await cell.count()) {
+        await cell.click();
+        break;
+      }
+    }
+    // onMiniDateSelected closes the overlay; wait for it to detach.
+    await this.getMiniPickerOverlay().waitFor({ state: 'hidden', timeout: 5000 });
+    await this.page.waitForTimeout(300);
   }
 }

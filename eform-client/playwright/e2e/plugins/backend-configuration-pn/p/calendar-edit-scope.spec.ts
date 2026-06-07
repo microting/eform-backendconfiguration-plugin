@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { CalendarUiEnhancementsPage } from './calendar-ui-enhancements.page';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -337,5 +337,65 @@ test.describe.serial('Calendar edit scope', () => {
     await calendarPage.findEventBlock(baseTitle).waitFor({ state: 'visible', timeout: 10000 });
     expect(await calendarPage.getEventTitleText(baseTitle)).toContain(baseTitle);
     await expect(calendarPage.findEventBlock(overrideTitle)).toHaveCount(0);
+  });
+
+  // #960 — editing the DATE of a monthly Nth-weekday series must re-derive the
+  // "Gentag" (Repeat) label to follow the new weekday. Pre-fix the label stayed
+  // pinned to the loaded rule meta (e.g. "1st Friday") even after moving the
+  // date to a different weekday, silently persisting the stale pattern on save.
+  test('edit date re-anchors monthly "Gentag" label to the new weekday (#960)', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `S5-${generateRandmString(5)}`;
+
+    // Create a MONTHLY (Nth-weekday) event on Friday of week +1 at 09:00.
+    await calendarPage.openCreateModalAtSlot(4, 9);
+    await page.locator('#calendarEventTitle').fill(title);
+
+    const eform = page.locator('#calendarEventEform');
+    await eform.click();
+    await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await page.waitForTimeout(300);
+
+    const planningTag = page.locator('#calendarEventPlanningTag');
+    await planningTag.click();
+    await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await page.waitForTimeout(300);
+
+    const assignee = page.locator('#calendarEventAssignee');
+    await assignee.click();
+    await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await page.locator('#calendarEventTitle').click();
+    await page.waitForTimeout(300);
+
+    // Monthly on the Nth weekday (index 3 in the repeat dropdown = 'monthlyByDay').
+    await calendarPage.selectRepeatPreset('monthlyByDay');
+
+    const createResp = page.waitForResponse(
+      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
+        && !r.url().includes('/tasks/week')
+        && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
+    await page.locator('#calendarEventSaveBtn').click();
+    await createResp;
+    await page.waitForTimeout(1500);
+    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
+
+    // Reopen the series in edit mode → the repeat select reconstructs the
+    // synthesized "customCurrent" monthly-Nth-weekday option, whose label is
+    // derived from the loaded rule meta (the Friday weekday).
+    await calendarPage.openEditModal(title);
+    const before = await calendarPage.getRepeatSelectLabel();
+    expect(before.length).toBeGreaterThan(0);
+
+    // Move the date by one day → the weekday changes. The re-anchor fix must
+    // update the "Gentag" label to the new weekday; pre-fix it stayed pinned.
+    await calendarPage.shiftEventDateByOneDay();
+    const after = await calendarPage.getRepeatSelectLabel();
+
+    expect(after).not.toEqual(before);
   });
 });

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { CalendarUiEnhancementsPage } from './calendar-ui-enhancements.page';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -38,6 +38,17 @@ const worker: PropertyWorker = {
 };
 
 let seeded = false;
+
+// Dismiss the worker-selection modal that appears when the task's assigned
+// worker is not the current user. With a single worker the modal opens
+// pre-selected — clicking the primary button confirms immediately.
+async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
+  const workerModal = page.locator('app-calendar-select-worker-modal');
+  const appeared = await workerModal.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+  if (!appeared) return;
+  await page.locator('app-calendar-select-worker-modal button.btn-primary').click();
+  await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+}
 
 test.describe.serial('Calendar event card — adaptive layout', () => {
   test.beforeEach(async ({ page }) => {
@@ -287,6 +298,7 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
       { timeout: 30000 }
     );
     await block.locator('.completion-btn').click();
+    await handleWorkerSelectModal(page);
     await completionWait;
 
     // The eForm submission dialog opens in response to the PUT (the seeded

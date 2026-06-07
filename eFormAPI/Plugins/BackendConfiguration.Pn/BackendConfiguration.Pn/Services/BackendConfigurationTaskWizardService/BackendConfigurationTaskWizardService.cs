@@ -341,6 +341,27 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
     }
 
+    /// <summary>
+    /// Derives the items-planning <c>Planning.DayOfMonth</c> from a start date per
+    /// RepeatType. Month captures the day-of-month capped at 28 (so the rule fires
+    /// every month even in February); Year keeps the real day (the renderer clamps
+    /// to month length); every other type uses 1. Shared by the create and the two
+    /// update/reactivation paths so an edit never regresses the day-of-month (#938).
+    /// </summary>
+    internal static int DeriveDayOfMonth(RepeatType repeatType, DateTime startDate)
+    {
+        switch (repeatType)
+        {
+            case RepeatType.Month:
+                var dayOfMonth = startDate.Day;
+                return dayOfMonth > 28 ? 28 : dayOfMonth;
+            case RepeatType.Year:
+                return startDate.Day;
+            default:
+                return 1;
+        }
+    }
+
     /// <inheritdoc />
     public async Task<OperationResult> CreateTask(TaskWizardCreateModel createModel)
     {
@@ -395,23 +416,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     0, 0, 0);
             }
 
-            var dayOfWeek = DayOfWeek.Monday;
-            if (createModel.RepeatType == RepeatType.Week)
-            {
-                // get day of week from start date
-                dayOfWeek = createModel.StartDate.Value.DayOfWeek;
-            }
-
-            var dayOfMonth = 1;
-            if (createModel.RepeatType == RepeatType.Month)
-            {
-                // get day of month from start date
-                dayOfMonth = createModel.StartDate.Value.Day;
-                if (dayOfMonth > 28)
-                {
-                    dayOfMonth = 28;
-                }
-            }
+            // Anchor the items-planning scheduler to the start date's weekday for
+            // every RepeatType, not just Week. The scheduler uses Planning.DayOfWeek
+            // to compute NextExecutionTime; a hard-coded Monday default pulled
+            // yearly/monthly tasks back to the Monday of the start week (#925).
+            var dayOfWeek = createModel.StartDate.Value.DayOfWeek;
+            var dayOfMonth = DeriveDayOfMonth(createModel.RepeatType, createModel.StartDate.Value);
 
             // create planning
             var planning = new Planning
@@ -573,14 +583,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             };
             await areRule.Create(_backendConfigurationPnDbContext);
 
-            if (createModel.Status == TaskWizardStatuses.Active && createModel.StartDate <= DateTime.UtcNow)
-            {
-                await PairItemWithSiteHelper.Pair(
-                    createModel.Sites,
-                    createModel.EformId,
-                    planning.Id,
-                    (int)createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
-            }
+            // Defect C in #935 — do NOT call PairItemWithSiteHelper.Pair from the
+            // create path. Pair writes a PlanningCase + PlanningCaseSite AND calls
+            // sdkCore.CaseCreate for each assignee, which then duplicates with
+            // EventDeployService.EnsureDeployedAsync on the worker's first sync.
+            // With defects A and B fixed, EventDeployService is the single owner
+            // of the SDK case lifecycle for newly-created tasks.
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
@@ -850,10 +858,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 // create item planning
                 case false when areaRulePlanning.Status:
                 {
-                    planning.DayOfMonth = 1;
                     planning.StartDate = updateModel.StartDate!.Value;
+                    // Derive DayOfMonth/DayOfWeek from the start date per RepeatType
+                    // (mirror the create path); hard-coding 1/Monday here regressed
+                    // monthly & yearly render on edit/reactivation (#938, #925).
+                    planning.DayOfMonth = DeriveDayOfMonth(updateModel.RepeatType, planning.StartDate);
                     planning.Enabled = true;
-                    planning.DayOfWeek = DayOfWeek.Monday;
+                    planning.DayOfWeek = planning.StartDate.DayOfWeek;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
                     planning.SdkFolderName = folderName;
@@ -1012,8 +1023,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.PushMessageOnDeployment = areaRulePlanning.SendNotifications;
                     planning.StartDate = new DateTime((int)(areaRulePlanning.StartDate?.Year),
                         (int)(areaRulePlanning.StartDate?.Month), (int)(areaRulePlanning.StartDate?.Day), 0, 0, 0);
-                    planning.DayOfMonth = 1;
-                    planning.DayOfWeek = DayOfWeek.Friday;
+                    // Derive DayOfMonth/DayOfWeek from the start date per RepeatType
+                    // (mirror the create path); hard-coding 1/Friday here regressed
+                    // monthly & yearly render and misplaced weekly rules on update
+                    // (#938, #925).
+                    planning.DayOfMonth = DeriveDayOfMonth(updateModel.RepeatType, planning.StartDate);
+                    planning.DayOfWeek = planning.StartDate.DayOfWeek;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
                     planning.RelatedEFormId = updateModel.EformId;

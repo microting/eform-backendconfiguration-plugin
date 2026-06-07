@@ -56,6 +56,7 @@ import {
   BoardCreateModalComponent,
   BoardDeleteModalComponent,
   ComplianceCaseModalComponent,
+  CalendarSelectWorkerModalComponent,
 } from './modals';
 
 // Re-export modal components for barrel
@@ -68,6 +69,7 @@ export {
   BoardCreateModalComponent,
   BoardDeleteModalComponent,
   ComplianceCaseModalComponent,
+  CalendarSelectWorkerModalComponent,
 };
 
 @NgModule({
@@ -90,6 +92,7 @@ export {
     BoardCreateModalComponent,
     BoardDeleteModalComponent,
     ComplianceCaseModalComponent,
+    CalendarSelectWorkerModalComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
     TagCreateDialogComponent,

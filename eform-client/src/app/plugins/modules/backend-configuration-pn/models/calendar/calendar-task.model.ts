@@ -18,6 +18,7 @@ export interface CalendarTaskModel {
   endText: string;           // "10:00"
   tags: string[];
   assigneeIds: number[];
+  workerNames: string[];
   boardId: number;
   color: string;
   descriptionHtml: string;

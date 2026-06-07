@@ -222,7 +222,11 @@ public class EventsGrpcService(
             WeekEnd = request.ToDateKey ?? string.Empty,
             BoardIds = TryParseBoardIds(request.BoardIds),
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope mobile reads to the caller's own site. The deploy
+            // pass above intentionally enumerates property-wide and narrows
+            // itself; this read, which is what the worker actually sees, must
+            // only return events assigned to their site.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         };
 
@@ -249,7 +253,29 @@ public class EventsGrpcService(
         var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        // Completeness filter: drop in-flight tasks whose eForm template
+        // structure has not yet materialised. A task with EformId > 0 but no
+        // entry in fieldsByTaskId represents the create→deploy race window —
+        // the planning has an eForm reference but LoadFieldsByTaskIdAsync
+        // returned nothing (no SDK case row, or the case has no fields yet).
+        // Emitting it would produce an empty tile on the Flutter client. The
+        // task is re-evaluated on the next sync/poll; once field structure
+        // is loaded it flows through. Tasks with no EformId (recurrence-only
+        // rows with no template attached) are always deliverable.
+        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
         foreach (var task in result.Model)
+        {
+            if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
+            {
+                logger.LogDebug(
+                    "EventsGrpcService.ListEvents dropped task {TaskId} (planning {PlanningId}): eForm field structure not yet loaded; will retry on next sync",
+                    task.Id, task.PlanningId);
+                continue;
+            }
+            deliverable.Add(task);
+        }
+
+        foreach (var task in deliverable)
         {
             if (!task.Status) continue;
 
@@ -831,26 +857,21 @@ public class EventsGrpcService(
         // window forward without dropping the subscription.
         // ComputeWatchWindow uses today-N..today+M relative to UTC.
 
-        // seen: event_id (numeric) → state-hash. Tracks every Event we have
-        // already emitted, so subsequent polls only re-emit on real changes.
-        var seen = new Dictionary<int, string>();
+        // (eventId, planDayKey) → state-hash; composite so scope=this move emits removal+upsert.
+        var seen = new Dictionary<(string EventId, string PlanDayKey), string>();
 
         // 1. Initial snapshot.
         try
         {
             var (initialStart, initialEnd) = ComputeWatchWindow();
             var initial = await LoadEventsAsync(
-                propertyId, boardFilter, initialStart, initialEnd, ct).ConfigureAwait(false);
+                propertyId, boardFilter, initialStart, initialEnd, sdkSiteId, ct).ConfigureAwait(false);
             foreach (var op in initial)
             {
                 ct.ThrowIfCancellationRequested();
                 await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                     .ConfigureAwait(false);
-                if (int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                        out var eventId))
-                {
-                    seen[eventId] = ComputeStateHash(op);
-                }
+                seen[(op.Id, op.PlanDayKey)] = ComputeStateHash(op);
             }
         }
         catch (OperationCanceledException)
@@ -864,6 +885,11 @@ public class EventsGrpcService(
         // the first occurrence (or whenever the failure class changes).
         // Reset to null on every successful poll.
         Type? lastErrorType = null;
+        // Defect D in #935 — run eager deploy on every poll; PR-A's site-aware
+        // idempotence keeps the steady-state case cheap (a couple of existence
+        // queries), while for new plannings the deploy actually runs. The
+        // completeness filter downstream (LoadEventsAsync) drops incomplete
+        // events so the client never sees a half-built event on the wire.
         while (!ct.IsCancellationRequested)
         {
             try
@@ -878,40 +904,87 @@ public class EventsGrpcService(
             try
             {
                 var (windowStart, windowEnd) = ComputeWatchWindow();
-                var current = await LoadEventsAsync(
-                    propertyId, boardFilter, windowStart, windowEnd, ct).ConfigureAwait(false);
 
-                var currentIds = new HashSet<int>();
+                // Eager deploy runs every poll — no debounce. PR-A's site-aware
+                // idempotence guard makes the no-op path cheap; for new
+                // plannings the deploy actually runs, closing the create-time
+                // race. Transient deploy failures are logged and swallowed so
+                // the stream survives; cancellation propagates.
+                try
+                {
+                    await eventDeployService.EnsureDeployedAsync(
+                        request.PropertyId ?? string.Empty,
+                        request.BoardIds,
+                        windowStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        sdkSiteId,
+                        ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Stream cancelled mid-deploy — fall through to the
+                    // outer OperationCanceledException catch via the next
+                    // ct.ThrowIfCancellationRequested in the read path.
+                }
+                catch (Exception deployEx)
+                {
+                    logger.LogWarning(deployEx,
+                        "EventsGrpcService.StreamEventChanges eager deploy failed for sdkSiteId={SdkSiteId} property={PropertyId} — read path will still run; retry on next poll",
+                        sdkSiteId, propertyId);
+                }
+
+                var current = await LoadEventsAsync(
+                    propertyId, boardFilter, windowStart, windowEnd, sdkSiteId, ct).ConfigureAwait(false);
+
+                var currentKeys = new HashSet<(string EventId, string PlanDayKey)>();
 
                 foreach (var op in current)
                 {
-                    if (!int.TryParse(op.Id, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                            out var eventId))
-                    {
-                        continue;
-                    }
-                    currentIds.Add(eventId);
+                    var seenKey = (op.Id, op.PlanDayKey);
+                    currentKeys.Add(seenKey);
 
                     var hash = ComputeStateHash(op);
-                    if (!seen.TryGetValue(eventId, out var prevHash) || prevHash != hash)
+                    if (!seen.TryGetValue(seenKey, out var prevHash) || prevHash != hash)
                     {
                         ct.ThrowIfCancellationRequested();
                         await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
                             .ConfigureAwait(false);
-                        seen[eventId] = hash;
+                        seen[seenKey] = hash;
                     }
                 }
 
-                // Detect removals: anything in `seen` but not in `currentIds`.
-                var removed = seen.Keys.Where(id => !currentIds.Contains(id)).ToList();
-                foreach (var id in removed)
+                // Whole-event delete → RemovedId; partial → RemovedOccurrence per missing rotation.
+                var lostKeys = seen.Keys.Where(k => !currentKeys.Contains(k)).ToList();
+                var survivingEventIds = currentKeys.Select(k => k.EventId).ToHashSet();
+                var fullyLostEventIds = lostKeys
+                    .Select(k => k.EventId)
+                    .Where(id => !survivingEventIds.Contains(id))
+                    .ToHashSet();
+
+                foreach (var eventId in fullyLostEventIds)
                 {
                     ct.ThrowIfCancellationRequested();
+                    await responseStream.WriteAsync(
+                        new EventChange { RemovedId = eventId }, ct).ConfigureAwait(false);
+                }
+
+                foreach (var key in lostKeys)
+                {
+                    if (fullyLostEventIds.Contains(key.EventId)) continue;
+                    ct.ThrowIfCancellationRequested();
                     await responseStream.WriteAsync(new EventChange
+                    {
+                        RemovedOccurrence = new RemovedOccurrence
                         {
-                            RemovedId = id.ToString(CultureInfo.InvariantCulture)
-                        }, ct).ConfigureAwait(false);
-                    seen.Remove(id);
+                            EventId = key.EventId,
+                            PlanDayKey = key.PlanDayKey,
+                        }
+                    }, ct).ConfigureAwait(false);
+                }
+
+                foreach (var key in lostKeys)
+                {
+                    seen.Remove(key);
                 }
 
                 // Successful poll — clear the consecutive-error tracker so the
@@ -979,6 +1052,7 @@ public class EventsGrpcService(
         List<int> boardFilter,
         DateTime windowStart,
         DateTime windowEnd,
+        int sdkSiteId,
         CancellationToken ct = default)
     {
         var model = new CalendarTaskRequestModel
@@ -988,7 +1062,9 @@ public class EventsGrpcService(
             WeekEnd = windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             BoardIds = boardFilter,
             TagNames = [],
-            SiteIds = [],
+            // #931 — the mobile stream only surfaces events assigned to the
+            // caller's own site (the worker), never the whole property.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         };
 
@@ -1006,7 +1082,24 @@ public class EventsGrpcService(
         var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        // Completeness filter: drop in-flight tasks whose eForm template
+        // structure has not yet materialised. See ListEvents for rationale —
+        // this is the stream-poll path, identical semantics required so the
+        // client never sees a half-built event over either RPC.
+        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
         foreach (var task in result.Model)
+        {
+            if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
+            {
+                logger.LogDebug(
+                    "EventsGrpcService.LoadEventsAsync dropped task {TaskId} (planning {PlanningId}): eForm field structure not yet loaded; will retry on next sync",
+                    task.Id, task.PlanningId);
+                continue;
+            }
+            deliverable.Add(task);
+        }
+
+        foreach (var task in deliverable)
         {
             if (!task.Status) continue;
 
@@ -1700,7 +1793,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -1910,7 +2005,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -2203,7 +2300,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 
@@ -3123,7 +3222,9 @@ public class EventsGrpcService(
             WeekEnd = dayKey,
             BoardIds = [],
             TagNames = [],
-            SiteIds = [],
+            // #931 — scope the echo read to the caller's site, consistent with
+            // the list/stream reads; a worker only ever sees their own events.
+            SiteIds = [sdkSiteId],
             ActionableOnly = true
         }).ConfigureAwait(false);
 

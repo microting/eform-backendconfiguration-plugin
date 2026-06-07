@@ -10,8 +10,46 @@
       </mat-form-field>
       <mat-form-field class="unit-select" appearance="outline">
         <mtx-select
-          [(ngModel)]="unit"
+          [ngModel]="unit"
+          (ngModelChange)="onUnitChange($event)"
           [items]="unitOptions"
+          bindValue="value"
+          bindLabel="label"
+          [clearable]="false"
+          [searchable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Monthly sub-type row (visible when unit = month) -->
+    <div class="monthly-kind-row" *ngIf="unit === 'month'">
+      <span class="repeat-label">{{ 'Repeat sub-type' | translate }}</span>
+      <mat-form-field class="monthly-kind-select" appearance="outline">
+        <mtx-select
+          [(ngModel)]="monthlyKind"
+          [items]="monthlyKindOptions"
+          bindValue="value"
+          bindLabel="label"
+          [clearable]="false"
+          [searchable]="false"
+        ></mtx-select>
+      </mat-form-field>
+      <mat-form-field class="monthly-dom-select" appearance="outline"
+                      *ngIf="monthlyKind === 'everyNMonthDom'">
+        <mtx-select
+          [(ngModel)]="monthlyDom"
+          [items]="monthlyDomOptions"
+          bindValue="value"
+          bindLabel="label"
+          [clearable]="false"
+          [searchable]="false"
+        ></mtx-select>
+      </mat-form-field>
+      <mat-form-field class="monthly-weekday-select" appearance="outline"
+                      *ngIf="monthlyKind === 'monthlyFirstWeekday'">
+        <mtx-select
+          [(ngModel)]="monthlyWeekday"
+          [items]="monthlyWeekdayOptions"
           bindValue="value"
           bindLabel="label"
           [clearable]="false"

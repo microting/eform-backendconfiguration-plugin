@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
-import { CalendarUiEnhancementsPage } from './calendar-ui-enhancements.page';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import {
   BackendConfigurationPropertiesPage,
   PropertyCreateUpdate,
@@ -317,21 +317,16 @@ test.describe.serial('Calendar repeat presets — built-in Gentag dropdown', () 
   });
 
   // =======================================================================
-  // RP05. "Årligt" (yearly) preset.
+  // RP05. "Årligt" (yearly) preset (#922 FIXED).
   //
-  //   fixme: KNOWN BACKEND GAP. The yearly preset maps to RepeatType=4, which
-  //   is not a member of the ItemsPlanningBase RepeatType enum and is NOT
-  //   expanded by the server-side recurrence engine (GetOccurrencesInWeek /
-  //   EnumerateOccurrences only handle Day/Week/Month). As a result a yearly
-  //   event is created (POST succeeds) but does NOT render in the week view —
-  //   so the "initial occurrence on the seed-week Monday" assertion below
-  //   finds 0 blocks. Confirmed by CI: RP02/RP03/RP04 (daily/weekly/monthly)
-  //   render fine; only the yearly preset does not. This is the Year-handling
-  //   gap flagged in docs/calendar-test-matrix (RP05/C19/CR12). Left as a
-  //   documented placeholder until the backend supports yearly expansion;
-  //   the test below encodes the INTENDED behavior for when it does.
+  //   The yearly preset maps to RepeatType=4. GetOccurrencesInWeek already has
+  //   a Year branch, but the task wizard only captured DayOfMonth for Month —
+  //   so a yearly event defaulted to DayOfMonth=1 and rendered on the 1st
+  //   (wrong week), appearing not to render at all. The wizard now captures
+  //   DayOfMonth from the start date for Year too, so the initial occurrence
+  //   renders on its actual day and does not recur weekly.
   // =======================================================================
-  test.fixme('RP05 — Årligt (yearly) preset creates the initial occurrence and does not recur weekly', async ({ page }) => {
+  test('RP05 — Årligt (yearly) preset creates the initial occurrence and does not recur weekly', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `RP05-${generateRandmString(8)}`;
