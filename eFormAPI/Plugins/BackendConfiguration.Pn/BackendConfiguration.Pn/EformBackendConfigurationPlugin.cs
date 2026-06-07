@@ -27,6 +27,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 using Microting.eForm.Infrastructure.Models;
@@ -172,7 +173,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // removes the implicit registration.
         services.AddMemoryCache();
         services.AddControllers();
-        SeedEForms(services);
+        SeedEForms(services).GetAwaiter().GetResult();
         // QuestPDF 2202.8+ is fully open-source; no license configuration needed.
     }
 
@@ -203,7 +204,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             .ValidateDataAnnotations();
     }
 
-    private static async void SeedEForms(IServiceCollection services)
+    private static async Task SeedEForms(IServiceCollection services)
     {
         var serviceProvider = services.BuildServiceProvider();
 
