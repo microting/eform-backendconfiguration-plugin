@@ -280,7 +280,7 @@ export const da = {
   'Create new employee': 'Opret ny medarbejder',
   'New employee': 'Ny medarbejder',
   Timeregistration: 'Timeregistrering',
-  'Submitted date': 'Indsendt dato',
+  'Submitted date': 'Udført dato',
   'Edit employee': 'Rediger medarbejder',
   Always: 'Altid',
   Completed: 'Afsluttet',
