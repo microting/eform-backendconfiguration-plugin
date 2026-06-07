@@ -127,6 +127,17 @@ async function closeComplianceDialog(page: import('@playwright/test').Page): Pro
     .catch(() => undefined);
 }
 
+// Dismiss the worker-selection modal that appears when the task's assigned
+// worker is not the current user. With a single worker the modal opens
+// pre-selected — clicking the primary button confirms immediately.
+async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
+  const workerModal = page.locator('app-calendar-select-worker-modal');
+  const appeared = await workerModal.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+  if (!appeared) return;
+  await page.locator('app-calendar-select-worker-modal button.btn-primary').click();
+  await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
+}
+
 test.describe.serial('Calendar task completion (#894)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
@@ -216,6 +227,7 @@ test.describe.serial('Calendar task completion (#894)', () => {
 
     const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
     await block.locator('.completion-btn').click();
+    await handleWorkerSelectModal(page);
     const resp = await completionWait;
 
     // X04: the PUT fired and was accepted.
@@ -256,6 +268,7 @@ test.describe.serial('Calendar task completion (#894)', () => {
 
     const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
     await row.locator('.completion-btn').click();
+    await handleWorkerSelectModal(page);
     const resp = await completionWait;
 
     // Same PUT as the week-grid path.
