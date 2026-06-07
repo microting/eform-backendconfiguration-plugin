@@ -65,6 +65,7 @@
     filter: none;
   }
 
+
   // Inactive tiles must stay fully opaque on hover too — element-opacity dimming
   // would reintroduce the bleed-through over a stacked active tile. Give a subtle
   // press cue via a faint brightness dip instead. (Completed hovers like an
