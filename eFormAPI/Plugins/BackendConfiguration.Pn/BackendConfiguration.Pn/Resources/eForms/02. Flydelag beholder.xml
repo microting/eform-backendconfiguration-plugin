@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142875</Id>
+  <Repeated>0</Repeated>
+  <Label>02. Flydelag beholder|02. Floating layer tank|02. Schwimmschicht Behälter|02. Резервуар із плаваючим шаром|02. Zbiornik z warstwą pływającą|02. Flytedekke beholder|02. Flytskikt behållare|02. Kelluvapinta-allas|02. Rezervor cu strat flotant</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142875</Id>
+      <Label>02. Flydelag beholder|02. Floating layer tank|02. Schwimmschicht Behälter|02. Резервуар із плаваючим шаром|02. Zbiornik z warstwą pływającą|02. Flytedekke beholder|02. Flytskikt behållare|02. Kelluvapinta-allas|02. Rezervor cu strat flotant</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="SingleSelect">
+          <Id>378104</Id>
+          <Label>Er flydelaget skorpet og fri for sprækker med blank gylleoverflade?|Is the floating crust intact and free of cracks with a shiny slurry surface visible?|Ist die Schwimmschicht verkrustet und frei von Rissen mit glänzender Gülle-Oberfläche?|Чи вкрилося плаваюче покриття кіркою та чи вільне від тріщин із блискучою поверхнею гною?|Czy warstwa pływająca jest pokryta skorupą i wolna od pęknięć z błyszczącą powierzchnią gnojownicy?|Er flytedekket skorpedannet og fritt for sprekker med blank gjødseloverflate?|Är flytskiktet skorporat och fritt från sprickor med en blank gödselyta synlig?|Onko kelluva kerros kuorettunut ja vapaa halkeamista, ja onko lieteliete pintana kiiltävä?|Este stratul flotant crăpat și liber de fisuri cu o suprafață lucioasă de gunoi de grajd vizibilă?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej|No|Nein|Ні|Nie|Nei|Nej|Ei|Nu]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378105</Id>
+          <Label>Er overdækningen tæt, sammenhængende og stabil i blæsevejr?|Is the floating crust tight, continuous/cohesive, and stable in windy weather?|Ist die Abdeckung dicht, zusammenhängend und stabil bei windigem Wetter?|Чи є покриття щільним, суцільним і стабільним у вітряну погоду?|Czy pokrywa jest szczelna, spójna i stabilna w wietrzną pogodę?|Er overdekket tett, sammenhengende og stabilt i blåsevær?|Är täckningen tät, sammanhängande och stabil i blåsigt väder?|Onko peitto tiivis, yhtenäinen ja vakaa tuulisella säällä?|Este acoperișul etanș, continuu și stabil pe vreme vântoasă?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej|No|Nein|Ні|Nie|Nei|Nej|Ei|Nu]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378106</Id>
+          <Label>Har overdækningen en tør overflade i tørvejr?|Does the crust have a dry surface in dry weather?|Hat die Abdeckung eine trockene Oberfläche bei trockenem Wetter?|Чи має покриття суху поверхню в суху погоду?|Czy pokrywa ma suchą powierzchnię podczas suchej pogody?|Har overdekket en tørr overflate i tørt vær?|Har täckningen en torr yta i torrt väder?|Onko peitolla kuiva pinta kuivalla säällä?|Are acoperișul o suprafață uscată pe vreme uscată?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej|No|Nein|Ні|Nie|Nei|Nej|Ei|Nu]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378107</Id>
+          <Label>Vælg % overflade med tilfredsstillende flydelag|Select % of surface with satisfactory floating layer/crust|Wählen Sie % Oberfläche mit zufriedenstellender Schwimmschicht|Виберіть % поверхні з задовільним плаваючим шаром|Wybierz % powierzchni z zadowalającą warstwą pływającą|Velg % overflate med tilfredsstillende flytedekke|Välj % yta med tillfredsställande flytskikt|Valitse % pinta-alasta, jolla on tyydyttävä kelluva kerros|Selectați % suprafață cu strat flotant satisfăcător</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[100 %|100 %|100 %|100 %|100 %|100 %|100 %|100 %|100 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[90 %|90 %|90 %|90 %|90 %|90 %|90 %|90 %|90 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[80 %|80 %|80 %|80 %|80 %|80 %|80 %|80 %|80 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[70 %|70 %|70 %|70 %|70 %|70 %|70 %|70 %|70 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>5</Key>
+              <Value><![CDATA[60 %|60 %|60 %|60 %|60 %|60 %|60 %|60 %|60 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>5</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>6</Key>
+              <Value><![CDATA[50 %|50 %|50 %|50 %|50 %|50 %|50 %|50 %|50 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>6</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>7</Key>
+              <Value><![CDATA[40 %|40 %|40 %|40 %|40 %|40 %|40 %|40 %|40 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>7</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>8</Key>
+              <Value><![CDATA[30 %|30 %|30 %|30 %|30 %|30 %|30 %|30 %|30 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>8</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>9</Key>
+              <Value><![CDATA[20 %|20 %|20 %|20 %|20 %|20 %|20 %|20 %|20 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>9</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>10</Key>
+              <Value><![CDATA[10 %|10 %|10 %|10 %|10 %|10 %|10 %|10 %|10 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>10</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>11</Key>
+              <Value><![CDATA[0 %|0 %|0 %|0 %|0 %|0 %|0 %|0 %|0 %]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>11</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>12</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>12</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378108</Id>
+          <Label>Vælg årsag til manglende flydelag|Select the reason for missing floating layer|Grund für fehlendes Schwimmdecke auswählen|Виберіть причину відсутності плаваючого шару|Wybierz przyczynę braku warstwy pływającej|Velg årsak til manglende flytelag|Välj orsak till saknat flytlager|Valitse syy puuttuvalle kelluvalle kerrokselle|Selectați motivul pentru stratul plutitor lipsă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Beholder tom|Tank empty|Behälter leer|Резервуар порожній|Zbiornik pusty|Beholder tom|Behållare tom|Säiliö tyhjä|Rezervor gol ]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Beholder omrørt|Tank agitated / stirred|Behälter umgerührt|Резервуар перемішаний|Zbiornik wymieszany|Beholder omrørt|Behållare omrörd|Säiliö sekoitettu|Rezervor agitat / amestecat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Flyttet til anden beholder|Slurry transferred to another tank|In einen anderen Behälter umgepumpt|Перекачано до іншого резервуара|Przeniesiono do innego zbiornika|Flyttet til annen beholder|Flyttad till annan behållare|Siirretty toiseen säiliöön|Transferat în alt rezervor]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[Gylle udbragt|Slurry applied to fields|Gülle ausgebracht|Гній внесено на поля|Gnojowica wywieziona na pola|Gjødsel spredt|Gödsel spridd|Lanta levitetty pelloille|Gunoi de grajd aplicat pe câmpuri]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>5</Key>
+              <Value><![CDATA[Halm tilført|Straw added|Stroh hinzugefügt|Солому додано|Dodano słomę|Halm tilsatt|Halm tillfört|Olkia lisätty|Paie adăugate]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>5</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>6</Key>
+              <Value><![CDATA[Modtaget biogasgylle|Received biogas digestate|Biogasgülle erhalten|Отримано біогазовий дигестат|Odebrano poferment biogazowy|Mottatt biogassgjødsel|Mottaget biogasgödsel|Vastaanotettu biokaasumädäte|Digestat biogaz primit]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>6</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>7</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>7</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378102</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378103</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142196</Id>
+  <Repeated>0</Repeated>
+  <Label>09. Medarbejder (APV-new)|09. Worker (APV-new)|09. Mitarbeiter (APV-new)|09. Працівник (APV-new)|09. Pracownik (APV-new)|09. Medarbeider (APV-new)|09. Medarbetare (APV-new)|09. Työntekijä (APV-new)|09. Angajat (APV-new)</Label>
+  <StartDate>2020-12-04</StartDate>
+  <EndDate>2030-12-04</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142196</Id>
+      <Label>09. Medarbejder (APV-new)|09. Worker (APV-new)|09. Mitarbeiter (APV-new)|09. Працівник (APV-new)|09. Pracownik (APV-new)|09. Medarbeider (APV-new)|09. Medarbetare (APV-new)|09. Työntekijä (APV-new)|09. Angajat (APV-new)</Label>
+      <Description><![CDATA[<br>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="SingleSelect">
+          <Id>372091</Id>
+          <Label>01. Fald til lavere niveau|01. Fall to lower level|01. Sturz auf ein niedrigeres Niveau|01. Падіння на нижчий рівень|01. Upadek na niższy poziom|01. Fall til lavere nivå|01. Fall till lägre nivå|01. Putoaminen alemmalle tasolle|01. Cădere la un nivel inferior</Label>
+          <Description><![CDATA[Er der sikkerhedsudstyr/værnemidler til brug ved arbejde med fx stiger, plansiloer eller bygningen?<br>|<br>Is there safety equipment / Personal Protective Equipment available for work involving e.g. ladders, bunker silos or the building?|<br>Gibt es Sicherheitsausrüstung/Schutzausrüstung für die Arbeit mit z. B. Leitern, Flachsilos oder dem Gebäude?|<br>Чи є захисне спорядження/засоби індивідуального захисту для роботи, наприклад, зі сходами, горизонтальними силосами або будівлею?|<br>Czy dostępny jest sprzęt ochronny/środki ochrony indywidualnej do pracy np. z drabinami, silosami płaskimi lub budynkiem?|<br>Finnes det sikkerhetsutstyr/verneutstyr til bruk ved arbeid med f.eks. stiger, plansilo eller bygningen?|<br>Finns det säkerhetsutrustning/skyddsutrustning för arbete med t.ex. stegar, plansilos eller byggnaden?|<br>Onko turvallisuusvarusteet/henkilönsuojaimet saatavilla työskentelyyn esimerkiksi tikkaiden, aumasiiloin tai rakennuksen kanssa?|<br>Există echipamente de securitate/mijloace de protecție personală pentru utilizare la lucrul cu, de exemplu, scări, silozuri plate sau clădirea?]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372092</Id>
+          <Label>02. Ulykker med maskiner|02. Accidents with machines|02. Unfälle mit Maschinen|02. Нещасні випадки з машинами|02. Wypadki z maszynami|02. Ulykker med maskiner|02. Olyckor med maskiner|02. Onnettomuudet koneiden kanssa|02. Accidente cu mașini</Label>
+          <Description><![CDATA[Er der sikkerhedsudstyr/værnemidler til brug ved arbejde med de maskiner, du bruger til fx høst, foder tilberedning eller gyllehåndtering?<br>|<br>Is there safety equipment / Personal Protective Equipment for working with the machines you use for e.g. harvesting, feed preparation or slurry handling?|<br>Gibt es Sicherheitsausrüstung/Schutzausrüstung für die Arbeit mit den Maschinen, die Sie z. B. für die Ernte, Futterzubereitung oder Gülleverarbeitung verwenden?|<br>Чи є захисне спорядження/засоби індивідуального захисту для роботи з машинами, які ви використовуєте, наприклад, для збирання врожаю, приготування корму або переробки рідкого гною?|<br>Czy dostępny jest sprzęt ochronny/środki ochrony indywidualnej do pracy z maszynami używanymi np. do zbiorów, przygotowania paszy lub obsługi gnojowicy?|<br>Finnes det sikkerhetsutstyr/verneutstyr til bruk ved arbeid med maskinene du bruker til f.eks. høsting, fôrtilberedning eller gjødselhåndtering?|<br>Finns det säkerhetsutrustning/skyddsutrustning för arbete med de maskiner du använder för t.ex. skörd, foderberedning eller gödselhantering?|<br>Onko turvallisuusvarusteet/henkilönsuojaimet saatavilla työskentelyyn koneiden kanssa, joita käytät esimerkiksi sadonkorjuuseen, rehun valmistukseen tai lietelantakäsittelyyn?|<br>Există echipamente de securitate/mijloace de protecție personală pentru utilizare la lucrul cu mașinile pe care le folosiți, de exemplu, pentru recoltare, pregătirea furajelor sau gestionarea gunoiului de grajd lichid?]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372093</Id>
+          <Label>03. Akut fysisk overbelastning|03. Acute physical overload|03. Akute körperliche Überlastung|03. Гостре фізичне перевантаження|03. Ostre przeciążenie fizyczne|03. Akutt fysisk overbelastning|03. Akut fysisk överbelastning|03. Akuutti fyysinen ylikuormitus|03. Suprasolicitare fizică acută</Label>
+          <Description><![CDATA[Er der sikkerheds- og hjælpeudstyr til brug ved arbejde med tunge løft eller tunge skub af materialer på bedriften for at undgå akut overbelastning af kroppen?<br>|<br>Is there safety and assistive equipment for heavy lifting or heavy pushing of materials on the farm to avoid acute physical overload?|<br>Gibt es Sicherheits- und Hilfsmittel für die Arbeit mit schweren Hebe- oder Schiebevorgängen von Materialien auf dem Betrieb, um eine akute körperliche Überlastung zu vermeiden?|<br>Чи є захисне та допоміжне обладнання для роботи з важким підніманням або важким штовханням матеріалів на фермі, щоб уникнути гострого фізичного перевантаження?|<br>Czy dostępny jest sprzęt ochronny i pomocniczy do pracy z ciężkim podnoszeniem lub ciężkim pchaniem materiałów w gospodarstwie, aby uniknąć ostrego przeciążenia fizycznego?|<br>Finnes det sikkerhets- og hjelpeutstyr til bruk ved arbeid med tunge løft eller tunge skyv av materialer på gården for å unngå akutt fysisk overbelastning?|<br>Finns det säkerhets- och hjälputrustning för arbete med tunga lyft eller tunga skjutningar av material på gården för att undvika akut fysisk överbelastning?|<br>Onko turvallisuus- ja apuvälineitä saatavilla raskaiden nostojen tai raskaiden työntöjen tekemiseen tilalla, jotta voidaan välttää akuutti fyysinen ylikuormitus?|<br>Există echipamente de securitate și auxiliare pentru utilizare la lucrul cu ridicarea sau împingerea greutăților de materiale în fermă, pentru a evita suprasolicitarea fizică acută?]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372094</Id>
+          <Label>04. Fald og snublen|04. Fall and stumble|04. Sturz und Stolpern|04. Падіння та спотикання|04. Upadki i potknięcia|04. Fall og snubling|04. Fall och snubbling|04. Kaatuminen ja kompastuminen|04. Căderi și împiedicări</Label>
+          <Description><![CDATA[Er du instrueret i arbejdsrutiner og arbejdsgange for at mindske risikoen for, at du kan falde, snuble eller glide over fx rod eller paller i laden, maskinhuset eller udendørs?<br>|<br>Have you been instructed in work routines and procedures to reduce the risk of falling, tripping or slipping over e.g. clutter or pallets in the barn, machine shed or outdoors?|<br>Wurden Sie in Arbeitsroutinen und Arbeitsabläufen unterwiesen, um das Risiko zu verringern, dass Sie über z.B. Unordnung oder Paletten in der Scheune, der Maschinenhalle oder im Freien stolpern, straucheln oder ausrutschen?<br>|<br>Чи були ви проінструктовані щодо робочих процедур і регламентів для зменшення ризику падіння, спотикання або ковзання, наприклад, через безлад або піддони в стайні, машинному сараї або на вулиці?<br>|<br>Czy zostałeś przeszkolony w zakresie rutynowych procedur i procesów roboczych w celu zmniejszenia ryzyka upadku, potknięcia lub poślizgnięcia się, np. na nieładzie lub paletach w stodole, budynku maszyn lub na zewnątrz?<br>|<br>Er du blitt opplært i arbeidsrutiner og arbeidsprosedyrer for å redusere risikoen for å falle, snuble eller gli over f.eks. rot eller paller i låven, maskinbygget eller utendørs?<br>|<br>Har du blivit instruerad i arbetsrutiner och arbetsprocesser för att minska risken för att falla, snubbla eller halka på t.ex. röra eller pallar i ladan, maskinhuset eller utomhus?<br>|<br>Onko sinulle annettu ohjeita työmenetelmistä ja -prosesseista, joiden avulla vähennetään kaatumis-, kompastumis- tai liukastumisriskiä esimerkiksi epäjärjestyksen tai lavojen takia navetassa, konehalissa tai ulkona?<br>|<br>Ați fost instruit cu privire la rutinele și procedurile de lucru pentru a reduce riscul de a cădea, împiedica sau aluneca, de exemplu, pe dezordine sau paleți în grajd, în remiza de mașini sau în aer liber?<br>]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372095</Id>
+          <Label>05. Ulykker med håndværktøj|05. Accidents with hand tools|05. Unfälle mit Handwerkzeug|05. Нещасні випадки з ручним інструментом|05. Wypadki z narzędziami ręcznymi|05. Ulykker med håndverktøy|05. Olyckor med handverktyg|05. Tapaturmat käsityökalujen kanssa|05. Accidente cu unelte de mână</Label>
+          <Description><![CDATA[Er du instrueret i arbejdsrutiner og arbejdsgange for at mindske risikoen for at skære dig eller at få fingrene i klemme, når du arbejder med håndværktøj som fx motorsave, vinkelslibere og boremaskiner?<br>|<br>Have you been instructed in work routines to reduce the risk of cutting yourself or getting your fingers caught when working with hand tools such as chainsaws, angle grinders and drills?|<br>Wurden Sie in Arbeitsroutinen und Arbeitsabläufen unterwiesen, um das Risiko zu verringern, sich zu schneiden oder die Finger einzuklemmen, wenn Sie mit Handwerkzeugen wie z.B. Motorsägen, Winkelschleifern und Bohrmaschinen arbeiten?<br>|<br>Чи були ви проінструктовані щодо робочих процедур і регламентів для зменшення ризику порізів або защемлення пальців під час роботи з ручними інструментами, такими як бензопили, кутові шліфувальники та дрилі?<br>|<br>Czy zostałeś przeszkolony w zakresie rutynowych procedur i procesów pracy w celu zmniejszenia ryzyka skaleczenia lub przyciśnięcia palców podczas pracy z narzędziami ręcznymi, takimi jak pilarki łańcuchowe, szlifierki kątowe i wiertarki?<br>|<br>Er du blitt opplært i arbeidsrutiner og arbeidsprosedyrer for å redusere risikoen for å skjære deg eller få fingrene i klem når du arbeider med håndverktøy som motorsager, vinkelslipere og bormaskiner?<br>|<br>Har du blivit instruerad i arbetsrutiner och arbetsprocesser för att minska risken för att skära dig eller få fingrarna i kläm när du arbetar med handverktyg som t.ex. motorsågar, vinkelslipar och borrmaskiner?<br>|<br>Onko sinulle annettu ohjeita työmenetelmistä ja -prosesseista, joiden avulla vähennetään riskiä viiltää itsesi tai puristaa sormesi käsityökaluilla, kuten moottorisahoilla, kulmahiomakonilla tai porakoneilla, työskentelemisen aikana?<br>|<br>Ați fost instruit cu privire la rutinele și procedurile de lucru pentru a reduce riscul de a vă tăia sau de a vă prinde degetele atunci când lucrați cu unelte de mână, cum ar fi ferăstraie cu lanț, polizoare unghiulare și mașini de găurit?<br>]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372096</Id>
+          <Label>06. Intern færdsel|06. Internal traffic|06. Interner Verkehr|06. Внутрішній рух транспорту|06. Ruch wewnętrzny|06. Intern ferdsel|06. Intern trafik|06. Sisäinen liikenne|06. Trafic intern</Label>
+          <Description><![CDATA[Er der risiko for, at du kan blive påkørt eller klemt af fx traktorer, knækstyrede frontlæssere og fladvogne, når du færdes på ejendommen?<br>|<br>Is there a risk of being hit or crushed by e.g. tractors, articulated front loaders and flatbed trailers when moving around the property?|<br>Besteht das Risiko, dass Sie z.B. von Traktoren, knickgelenkten Frontladern oder Flachbettwagen angefahren oder eingeklemmt werden, wenn Sie sich auf dem Betriebsgelände bewegen?<br>|<br>Чи існує ризик того, що вас може збити або притиснути, наприклад, трактором, шарнірно-зчленованим фронтальним навантажувачем або платформним причепом під час пересування по господарству?<br>|<br>Czy istnieje ryzyko potrącenia lub przygniecenia przez np. traktory, przegubowe ładowarki czołowe lub naczepy platformowe podczas poruszania się po terenie gospodarstwa?<br>|<br>Er det risiko for at du kan bli påkjørt eller klemt av f.eks. traktorer, knekkstyrede frontlastere og flatvogner når du ferdes på eiendommen?<br>|<br>Finns det risk för att du kan bli påkörd eller klämd av t.ex. traktorer, ledsagade frontlastare och flaktrailers när du rör dig på fastigheten?<br>|<br>Onko olemassa riski, että sinut voidaan ajaa yli tai puristaa, esimerkiksi traktorin, nivelvarsikauhakuormaajan tai lavaperävaunun toimesta, kun liikut tilalla?<br>|<br>Există riscul de a fi lovit sau strivit de, de exemplu, tractoare, încărcătoare frontale articulate și remorci cu platformă atunci când vă deplasați pe proprietate?<br>]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372097</Id>
+          <Label>07. Dårlige arbejdsstillinger|07. Poor working positions|07. Ungünstige Arbeitshaltungen|07. Незручні робочі пози|07. Nieergonomiczne pozycje przy pracy|07. Dårlige arbeidsstillinger|07. Dåliga arbetsställningar|07. Huonot työasennot|07. Poziții de lucru incomode</Label>
+          <Description><![CDATA[Er der hjælperedskaber til brug ved arbejde med bl.a. foroverbøjet ryg, løftede arme, på knæ eller i andre dårlige arbejdsstillinger?<br>|<br>Are there assistive devices for working with e.g. forward-bent back, raised arms, on knees or other poor working postures?|<br>Gibt es Hilfsmittel für die Arbeit mit u.a. gebeugtem Rücken, erhobenen Armen, auf den Knien oder in anderen ungünstigen Arbeitshaltungen?<br>|<br>Чи є допоміжні засоби для роботи, зокрема із зігнутою спиною, піднятими руками, на колінах або в інших незручних робочих позах?<br>|<br>Czy dostępne są pomoce robocze do pracy m.in. z pochylonym do przodu tułowiem, uniesionymi ramionami, na kolanach lub w innych nieergonomicznych pozycjach roboczych?<br>|<br>Finnes det hjelpemidler til bruk ved arbeid med bl.a. foroverbøyd rygg, løftede armer, på kne eller i andre dårlige arbeidsstillinger?<br>|<br>Finns det hjälpmedel för arbete med bl.a. framåtböjd rygg, lyfta armar, på knä eller i andra dåliga arbetsställningar?<br>|<br>Onko saatavilla apuvälineitä työskentelyyn esimerkiksi eteenpäin taivuttuneessa asennossa, kädet ylhäällä, polvillaan tai muissa huonoissa työasennoissa?<br>|<br>Există dispozitive de asistență pentru lucrul cu, printre altele, spatele aplecat înainte, brațele ridicate, în genunchi sau în alte poziții de lucru incomode?<br>]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372098</Id>
+          <Label>08. Ensidigt, belastende arbejde|08. One-sided, stressful work|08. Einseitige, belastende Arbeit|08. Одностороннє, навантажуюче навантаження|08. Jednostronna, obciążająca praca|08. Ensformig, belastende arbeid|08. Ensidigt, belastande arbete|08. Yksipuolinen, kuormittava työ|08. Muncă unilaterală și solicitantă</Label>
+          <Description><![CDATA[Er du instrueret i arbejdsrutiner og arbejdsgange for at undgå at udsætte kroppen for samme belastning over længere tid, f.eks. ved maskinkørsel i højsæson, kastrering af mange smågrise eller aftørring/afrensning af yvere?<br>|<br>Have you been instructed in work routines to avoid prolonged exposure of the body to repetitive strain, for example during peak-season machine work, castrating large numbers of piglets, or drying/cleaning of udders?|<br>Wurden Sie in Arbeitsroutinen und Arbeitsabläufen unterwiesen, um zu vermeiden, den Körper über längere Zeit derselben Belastung auszusetzen, z.B. bei Maschinenarbeiten in der Hochsaison, Kastrieren vieler Ferkel oder dem Abtrocknen/Reinigen von Eutern?<br>|<br>Чи були ви проінструктовані щодо робочих процедур і регламентів, щоб уникнути тривалого впливу одноманітного навантаження на тіло, наприклад, при роботі на машині у сезон пік, кастрації великої кількості поросят або обтиранні/чищенні вим'я?<br>|<br>Czy zostałeś przeszkolony w zakresie rutynowych procedur i procesów pracy w celu uniknięcia narażania ciała na to samo obciążenie przez dłuższy czas, np. przy obsłudze maszyn w sezonie szczytowym, kastracji wielu prosiąt lub wycieraniu/czyszczeniu wymion?<br>|<br>Er du blitt opplært i arbeidsrutiner og arbeidsprosedyrer for å unngå å utsette kroppen for samme belastning over lengre tid, f.eks. ved maskinkjøring i høysesong, kastrering av mange smågriser eller avtørking/rensing av jur?<br>|<br>Har du blivit instruerad i arbetsrutiner och arbetsprocesser för att undvika att utsätta kroppen för samma belastning under längre tid, t.ex. vid maskinkörning i högsäsong, kastrering av många smågrisar eller avtorkning/rengöring av juver?<br>|<br>Onko sinulle annettu ohjeita työmenetelmistä ja -prosesseista, joiden avulla vältetään kehon altistaminen samalle kuormitukselle pitkäksi aikaa, esimerkiksi konetyön aikana huippukaudella, monien porsaiden kastraation yhteydessä tai utareiden kuivaamisen/puhdistamisen yhteydessä?<br>|<br>Ați fost instruit cu privire la rutinele și procedurile de lucru pentru a evita expunerea prelungită a corpului la același tip de solicitare, de exemplu, la operarea utilajelor în sezonul de vârf, castrarea unui număr mare de purcei sau ștergerea/curățarea ugerelor?<br>]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372099</Id>
+          <Label>09. Beredskabsplan|09. Emergency plan|09. Notfallplan|09. План дій у надзвичайних ситуаціях|09. Plan awaryjny|09. Beredskapsplan|09. Beredskapsplan|09. Hätäsuunnitelma|09. Plan de urgență</Label>
+          <Description><![CDATA[Har du fået gennemgået/selv læst bedriftens beredskabsplan?<br>|<br>Have you had the company’s emergency plan reviewed with you / read it yourself?|<br>Haben Sie den Notfallplan des Betriebs durchgesehen / selbst gelesen?|<br>Чи ознайомилися ви з планом екстреної готовності підприємства / самостійно його прочитали?|<br>Czy zapoznałeś się z planem awaryjnym zakładu / przeczytałeś go samodzielnie?|<br>Har du fått gjennomgått/selv lest bedriftens beredskapsplan?|<br>Har du fått genomgångna/själv läst företagets beredskapsplan?|<br>Oletko käynyt läpi / itse lukenut yrityksen valmiussuunnitelman?|<br>Ți s-a prezentat/ai citit singur planul de urgență al întreprinderii?]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372100</Id>
+          <Label>10. Løft, træk og skub|10. Lift, pull and push|10. Heben, Ziehen und Schieben|10. Підйом, тяга і штовхання|10. Podnoszenie, ciągnięcie i pchanie|10. Løft, trekk og skyv|10. Lyft, drag och skjut|10. Nosto, veto ja työntö|10. Ridicat, tras și împins</Label>
+          <Description><![CDATA[10. Er der mulighed for at benytte motoriseret hjælperedskab ved arbejde med tunge løft eller tunge skub af materialer på bedriften for at undgå akut overbelastning af kroppen?<br>|<br>Is it possible to use motorized assistive devices for heavy lifting or heavy pushing of materials on the farm to prevent acute physical strain?|<br>Besteht die Möglichkeit, motorisierte Hilfsmittel für schwere Hebe- oder Schiebearbeiten mit Materialien auf dem Betrieb einzusetzen, um eine akute Überlastung des Körpers zu vermeiden?<br>|<br>Чи є можливість використовувати механізовані допоміжні засоби для важких підйомів або переміщення важких матеріалів на господарстві, щоб запобігти гострому перевантаженню тіла?<br>|<br>Czy istnieje możliwość korzystania z mechanicznych pomocy roboczych przy pracy z ciężkimi uniesieniami lub ciężkimi pchnięciami materiałów na terenie gospodarstwa w celu uniknięcia ostrego przeciążenia ciała?<br>|<br>Er det mulighet for å benytte motoriserte hjelpemidler ved arbeid med tunge løft eller tunge skyv av materialer på bedriften for å unngå akutt overbelastning av kroppen?<br>|<br>Finns det möjlighet att använda motoriserade hjälpmedel vid arbete med tunga lyft eller tunga skjutningar av material på gården för att undvika akut överbelastning av kroppen?<br>|<br>Onko mahdollista käyttää moottoroituja apuvälineitä raskaiden nostojen tai raskaiden materiaalien työntämiseen tilalla, jotta vältetään kehon akuutti ylikuormitus?<br>|<br>Există posibilitatea de a utiliza dispozitive de asistență motorizate pentru ridicarea sau împingerea materialelor grele în cadrul fermei, pentru a preveni suprasolicitarea acută a corpului?<br>]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372101</Id>
+          <Label>11. Støj|11. Noise|11. Lärm|11. Шум|11. Hałas|11. Støy|11. Buller|11. Melu|11. Zgomot</Label>
+          <Description><![CDATA[Er der sikkerhedsudstyr/værnemidler til brug ved arbejde med vinkelslibere, motorsave og højtryksrensere eller andre meget støjende maskiner?<br>|<br>Is there safety equipment / Personal Protective Equipment for working with angle grinders, chainsaws, pressure washers or other very noisy machines?|<br>Gibt es Sicherheitsausrüstung / persönliche Schutzausrüstung für die Arbeit mit Winkelschleifern, Kettensägen, Hochdruckreinigern oder anderen sehr lauten Maschinen?|<br>Чи є засоби безпеки / засоби індивідуального захисту для роботи з кутовими шліфувальними машинами, бензопилами, мийками високого тиску або іншими дуже гучними машинами?|<br>Czy dostępny jest sprzęt bezpieczeństwa / środki ochrony indywidualnej do pracy z szlifierkami kątowymi, piłami łańcuchowymi, myjkami ciśnieniowymi lub innymi bardzo głośnymi maszynami?|<br>Er det sikkerhetsutstyr / personlig verneutstyr for arbeid med vinkelslipmaskiner, motorsager, høytrykksspylere eller andre svært støyende maskiner?|<br>Finns det säkerhetsutrustning / personlig skyddsutrustning för arbete med vinkelslipar, motorsågar, högtryckstvättar eller andra mycket bullriga maskiner?|<br>Onko saatavilla turvavarusteet / henkilönsuojaimet kulmahiomakoneiden, moottorisahojen, painepesurien tai muiden erittäin meluisten koneiden kanssa työskentelyä varten?|<br>Există echipamente de siguranță / echipamente individuale de protecție pentru lucrul cu polizoare unghiulare, ferăstraie cu lanț, aparate de spălat cu presiune sau alte mașini foarte zgomotoase?]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372102</Id>
+          <Label>12. Arbejdsmængde|12. Workload|12. Arbeitsbelastung|12. Обсяг роботи|12. Obciążenie pracą|12. Arbeidsmengde|12. Arbetsbörda|12. Työmäärä|12. Volumul de muncă</Label>
+          <Description><![CDATA[Føler du dig ofte stresset i forbindelse med arbejdsopgaver?<br>|<br>Do you often feel stressed in connection with your work tasks?|<br>Fühlen Sie sich bei Ihren Arbeitsaufgaben oft gestresst?|<br>Чи часто ви відчуваєте стрес у зв'язку з робочими завданнями?|<br>Czy często czujesz się zestresowany/-a w związku z zadaniami w pracy?|<br>Føler du deg ofte stresset i forbindelse med arbeidsoppgaver?|<br>Känner du dig ofta stressad i samband med dina arbetsuppgifter?|<br>Tunnetko usein stressiä työtehtäviisi liittyen?|<br>Te simți adesea stresat(ă) în legătură cu sarcinile de serviciu?]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372103</Id>
+          <Label>13. Hjælp og støtte|13. Help and support|13. Hilfe und Unterstützung|13. Допомога та підтримка|13. Pomoc i wsparcie|13. Hjelp og støtte|13. Hjälp och stöd|13. Apu ja tuki|13. Ajutor și sprijin</Label>
+          <Description><![CDATA[Mangler du hjælp og støtte fra din nærmeste leder?<br>|<br>Do you lack help and support from your immediate supervisor?|<br>Fehlt Ihnen Hilfe und Unterstützung von Ihrem unmittelbaren Vorgesetzten?|<br>Чи відчуваєте ви брак допомоги та підтримки від свого безпосереднього керівника?|<br>Czy brakuje ci pomocy i wsparcia od twojego bezpośredniego przełożonego?|<br>Mangler du hjelp og støtte fra din nærmeste leder?|<br>Saknar du hjälp och stöd från din närmaste chef?|<br>Puuttuuko sinulta lähiesimiehesi apu ja tuki?|<br>Îți lipsesc ajutorul și sprijinul din partea supervizorului tău direct?]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372104</Id>
+          <Label>14. Mobning|14. Bullying|14. Mobbing|14. Цькування|14. Mobbing|14. Mobbing|14. Mobbning|14. Kiusaaminen|14. Hărțuire / Bullying</Label>
+          <Description><![CDATA[Er der nogen på arbejdspladsen, der bliver udsat for mobning?<br>|<br>Is anyone at the workplace exposed to bullying?|<br>Gibt es jemanden am Arbeitsplatz, der von Mobbing betroffen ist?|<br>Чи є на робочому місці хтось, хто зазнає цькування?|<br>Czy jest ktoś w miejscu pracy, kto jest narażony na mobbing?|<br>Er det noen på arbeidsplassen som blir utsatt for mobbing?|<br>Finns det någon på arbetsplatsen som utsätts för mobbning?|<br>Onko työpaikalla ketään, joka joutuu kiusaamisen kohteeksi?|<br>Există cineva la locul de muncă care este expus la hărțuire / bullying?]]></Description>
+          <DisplayOrder>13</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372105</Id>
+          <Label>15. Infektionsrisiko|15. Risk of infection|15. Infektionsrisiko|15. Ризик інфікування|15. Ryzyko zakażenia|15. Infeksjonsrisiko|15. Infektionsrisk|15. Tartuntariski|15. Risc de infecție</Label>
+          <Description><![CDATA[Er der risiko for infektioner eller luftvejsbelastninger når du arbejder?<br>|<br>Is there a risk of infections or respiratory strain when you work?|<br>Besteht bei Ihrer Arbeit das Risiko von Infektionen oder Atemwegsbelastungen?|<br>Чи існує ризик інфікування або навантаження на дихальні шляхи під час роботи?|<br>Czy podczas pracy istnieje ryzyko infekcji lub obciążenia układu oddechowego?|<br>Er det risiko for infeksjoner eller luftveisbelastninger når du arbeider?|<br>Finns det risk för infektioner eller luftvägsbelastningar när du arbetar?|<br>Onko työssäsi riski saada infektioita tai hengitysteiden rasitusta?|<br>Există riscul de infecții sau de solicitare a căilor respiratorii atunci când lucrezi?]]></Description>
+          <DisplayOrder>14</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372106</Id>
+          <Label>16. Farlige stoffer og materialer|16. Hazardous substances and materials|16. Gefährliche Stoffe und Materialien|16. Небезпечні речовини та матеріали|16. Niebezpieczne substancje i materiały|16. Farlige stoffer og materialer|16. Farliga ämnen och material|16. Vaaralliset aineet ja materiaalit|16. Substanțe și materiale periculoase</Label>
+          <Description><![CDATA[Er der sikkerhedsudstyr til brug ved arbejde med faremærkede produkter som fx bekæmpelsesmidler, desinficeringsmidler, rengøringsmidler, flydende ammoniak, gødning eller med andre produkter, der kan indeholde farlige stoffer og materialer?<br>|<br>Is there safety equipment for working with hazardous labeled products such as pesticides, disinfectants, cleaning agents, liquid ammonia, fertilizer or other products that may contain dangerous substances and materials?|<br>Gibt es Sicherheitsausrüstung für die Arbeit mit gefahrgekennzeichneten Produkten wie z. B. Pestiziden, Desinfektionsmitteln, Reinigungsmitteln, flüssigem Ammoniak, Düngemitteln oder anderen Produkten, die gefährliche Stoffe und Materialien enthalten können?|<br>Чи є засоби захисту для роботи з продуктами, маркованими як небезпечні, такими як засоби захисту рослин, дезінфікуючі засоби, миючі засоби, рідкий аміак, добрива або інші продукти, що можуть містити небезпечні речовини та матеріали?|<br>Czy dostępny jest sprzęt ochronny do pracy z produktami oznaczonymi jako niebezpieczne, takimi jak środki ochrony roślin, środki dezynfekcyjne, środki czyszczące, ciekły amoniak, nawozy lub inne produkty, które mogą zawierać niebezpieczne substancje i materiały?|<br>Er det sikkerhetsutstyr for arbeid med faremerkte produkter som for eksempel bekjempelsesmidler, desinfeksjonsmidler, rengjøringsmidler, flytende ammoniakk, gjødsel eller andre produkter som kan inneholde farlige stoffer og materialer?|<br>Finns det säkerhetsutrustning för arbete med faromärkta produkter såsom bekämpningsmedel, desinfektionsmedel, rengöringsmedel, flytande ammoniak, gödningsmedel eller andra produkter som kan innehålla farliga ämnen och material?|<br>Onko saatavilla suojavarusteet vaarallisiksi merkittyjen tuotteiden, kuten torjunta-aineiden, desinfiointiaineiden, puhdistusaineiden, nestemäisen ammoniakin, lannoitteiden tai muiden vaarallisia aineita ja materiaaleja sisältävien tuotteiden kanssa työskentelyä varten?|<br>Există echipamente de siguranță pentru lucrul cu produse etichetate ca periculoase, precum pesticide, dezinfectanți, agenți de curățare, amoniac lichid, îngrășăminte sau alte produse care pot conține substanțe și materiale periculoase?]]></Description>
+          <DisplayOrder>15</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372107</Id>
+          <Label>17. Støv, gasser og røg|17. Dust, gases and fumes|17. Staub, Gase und Rauch|17. Пил, гази та дим|17. Pyły, gazy i dymy|17. Støv, gasser og røyk|17. Damm, gaser och rök|17. Pöly, kaasut ja savu|17. Praf, gaze și fum</Label>
+          <Description><![CDATA[Er der sikkerhedsudstyr til brug ved arbejde, hvor du bliver udsat for støv, gas eller røg fra flis, hø, halm, korn, gylle, udstødning eller svejsning?<br>|<br>Is there safety equipment for work where you are exposed to dust, gas or smoke from wood chips, hay, straw, grain, slurry, exhaust or welding?|<br>Gibt es Sicherheitsausrüstung für Arbeiten, bei denen Sie Staub, Gas oder Rauch von Hackschnitzeln, Heu, Stroh, Getreide, Gülle, Abgasen oder Schweißarbeiten ausgesetzt sind?|<br>Чи є захисне спорядження для роботи, під час якої ви піддаєтеся впливу пилу, газу або диму від деревної тріски, сіна, соломи, зерна, гною, вихлопних газів або зварювання?|<br>Czy dostępny jest sprzęt ochronny do pracy, podczas której jesteś narażony/-a na pył, gaz lub dym pochodzący z wiórów drzewnych, siana, słomy, zboża, gnojowicy, spalin lub spawania?|<br>Er det sikkerhetsutstyr for arbeid der du blir utsatt for støv, gass eller røyk fra flis, høy, halm, korn, gylle, eksosutslipp eller sveising?|<br>Finns det säkerhetsutrustning för arbete där du utsätts för damm, gas eller rök från flis, hö, halm, spannmål, flytgödsel, avgaser eller svetsning?|<br>Onko saatavilla suojavarusteita töihin, joissa altistut pölylle, kaasulle tai savulle hakkeesta, heinästä, oljesta, viljasta, lietelannasta, pakokaasuista tai hitsauksesta?|<br>Există echipamente de siguranță pentru lucrul în care ești expus la praf, gaz sau fum provenite din așchii de lemn, fân, paie, cereale, nămol, gaze de eșapament sau sudură?]]></Description>
+          <DisplayOrder>16</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372108</Id>
+          <Label>18. Våde eller fugtige hænder|18. Wet or damp hands|18. Nasse oder feuchte Hände|18. Мокрі або вологі руки|18. Mokre lub wilgotne dłonie|18. Våte eller fuktige hender|18. Våta eller fuktiga händer|18. Märät tai kosteat kädet|18. Mâini ude sau umede</Label>
+          <Description><![CDATA[Arbejder du med våde eller fugtige hænder i mere end 2 timer om dagen?<br>|<br>Do you work with wet or damp hands for more than 2 hours a day?|<br>Arbeiten Sie mehr als 2 Stunden täglich mit nassen oder feuchten Händen?|<br>Чи працюєте ви з мокрими або вологими руками більше 2 годин на день?|<br>Czy pracujesz z mokrymi lub wilgotnymi dłońmi przez więcej niż 2 godziny dziennie?|<br>Arbeider du med våte eller fuktige hender i mer enn 2 timer om dagen?|<br>Arbetar du med våta eller fuktiga händer i mer än 2 timmar om dagen?|<br>Työskenteletkö märillä tai kosteilla käsillä yli 2 tuntia päivässä?|<br>Lucrezi cu mâini ude sau umede mai mult de 2 ore pe zi?]]></Description>
+          <DisplayOrder>17</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372109</Id>
+          <Label>19. Helkropsvibrationer|19. Whole body vibrations|19. Ganzkörpervibrationen|19. Вібрації всього тіла|19. Wibracje całego ciała|19. Helkroppsvibrasjoner|19. Helkroppsvibrationer|19. Koko kehon tärinä|19. Vibrații ale întregului corp</Label>
+          <Description><![CDATA[<br>Kører du med traktorer, høst materiel, minilæssere og andre maskiner, der udsætter dig for kraftige vibrationer?|<br>Do you operate tractors, harvesting equipment, mini loaders and other machines that expose you to strong vibrations?|<br><br>Fahren Sie Traktoren, Erntemaschinen, Minilader und andere Maschinen, die Sie starken Vibrationen aussetzen?|<br><br>Чи керуєте ви тракторами, збиральною технікою, міні-навантажувачами та іншими машинами, які піддають вас сильним вібраціям?|<br><br>Czy obsługujesz traktory, sprzęt do zbioru plonów, miniładowarki i inne maszyny, które narażają cię na silne wibracje?|<br><br>Kjører du traktorer, høstutstyr, miniladere og andre maskiner som utsetter deg for kraftige vibrasjoner?|<br><br>Kör du traktorer, skördemaskiner, minilastare och andra maskiner som utsätter dig för kraftiga vibrationer?|<br><br>Ajaako sinä traktoreita, sadonkorjuulaitteita, pienkuormaajia ja muita koneita, jotka altistavat sinut voimakkaille tärinöille?|<br><br>Conduceți tractoare, echipamente de recoltare, miniîncărcătoare și alte mașini care vă expun la vibrații puternice?]]></Description>
+          <DisplayOrder>18</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372110</Id>
+          <Label>20. Hånd-armvibrationer|20. Hand-arm vibrations|20. Hand-Arm-Vibrationen|20. Вібрації рук та рук (кисть-рука)|20. Wibracje dłoni i ramion|20. Hånd-armvibrasjoner|20. Hand-armvibrationer|20. Käsi-käsivarsi-tärinä|20. Vibrații mână-braț</Label>
+          <Description><![CDATA[<br>Har du snurrende eller følelsesløse fingre, når du har arbejdet med meget vibrerende værktøj som fx motorsave, højtryksrensere og vinkelslibere?|<br>Do you experience tingling or numb fingers after working with highly vibrating tools such as chainsaws, pressure washers and angle grinders?|<br><br>Haben Sie kribbelnde oder tauben Finger, wenn Sie mit stark vibrierenden Werkzeugen wie Kettensägen, Hochdruckreinigern und Winkelschleifern gearbeitet haben?|<br><br>Чи відчуваєте ви поколювання або оніміння пальців після роботи з дуже вібруючими інструментами, такими як бензопили, мийки високого тиску та кутові шліфмашини?|<br><br>Czy odczuwasz mrowienie lub drętwienie palców po pracy z mocno wibrującymi narzędziami, takimi jak piły łańcuchowe, myjki wysokociśnieniowe i szlifierki kątowe?|<br><br>Har du snurrende eller numne fingre etter å ha arbeidet med sterkt vibrerende verktøy som motorsager, høytrykksspylere og vinkelslipere?|<br><br>Har du stickande eller domnade fingrar när du har arbetat med kraftigt vibrerande verktyg som motorsågar, högtryckstvätt och vinkelslip?|<br><br>Onko sinulla pistelyä tai tunnottomuutta sormissa, kun olet työskennellyt voimakkaasti tärisevien työkalujen, kuten moottorisahojen, painepesurien ja kulmahiomakoneiden, kanssa?|<br><br>Aveți furnicături sau degete amorțite după ce ați lucrat cu scule care vibrează intens, cum ar fi ferăstraie cu lanț, aparate de spălat cu presiune și polizoare unghiulare?]]></Description>
+          <DisplayOrder>19</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>372112</Id>
+          <Label>21. Arbejdsforholdende generelt|21. Working conditions in general|21. Allgemeine Arbeitsbedingungen|21. Умови праці загалом|21. Warunki pracy ogólnie|21. Arbeidsforholdene generelt|21. Arbetsförhållandena generellt|21. Työolot yleisesti|21. Condițiile de muncă în general</Label>
+          <Description><![CDATA[Alt i alt oplever jeg, at arbejdsforholdende er gode på min arbejdsplads<br>|<br>Overall, I experience that the working conditions are good at my workplace.|<br>Insgesamt erlebe ich, dass die Arbeitsbedingungen an meinem Arbeitsplatz gut sind|<br>Загалом я відчуваю, що умови праці на моєму робочому місці хороші|<br>Ogólnie uważam, że warunki pracy w moim miejscu pracy są dobre|<br>Alt i alt opplever jeg at arbeidsforholdene er gode på min arbeidsplass|<br>Sammantaget upplever jag att arbetsförhållandena är goda på min arbetsplats|<br>Kaiken kaikkiaan koen, että työolot ovat hyvät työpaikallani|<br>În general, consider că condițiile de muncă sunt bune la locul meu de muncă]]></Description>
+          <DisplayOrder>20</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[I høj grad|Very much|In hohem Maße|Значною мірою|W dużym stopniu|I høy grad|I hög grad|Suuressa määrin|În mare măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[I mindre grad|Not so much|In geringerem Maße|Меншою мірою|W mniejszym stopniu|I mindre grad|I mindre grad|Vähemmässä määrin|În mai mică măsură]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Slet ikke|Not at all|Überhaupt nicht|Зовсім ні|Wcale nie|Slett ikke|Inte alls|Ei lainkaan|Deloc]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372113</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>21</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

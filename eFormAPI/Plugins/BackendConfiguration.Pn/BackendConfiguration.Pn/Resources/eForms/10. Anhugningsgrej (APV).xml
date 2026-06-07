@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142880</Id>
+  <Repeated>0</Repeated>
+  <Label>10. Anhugningsgrej (APV)|10. Hooking equipment (APV)|10. Anschlagmittel (APV)|10. Такелажне обладнання (APV)|10. Sprzęt do zawieszania (APV)|10. Løfteredskap (APV)|10. Lyftredskap (APV)|10. Nostoapuvälineet (APV)|10. Echipament de prindere (APV)</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142880</Id>
+      <Label>10. Anhugningsgrej (APV)|10. Hooking equipment (APV)|10. Anschlagmittel (APV)|10. Такелажне обладнання (APV)|10. Sprzęt do zawieszania (APV)|10. Løfteredskap (APV)|10. Lyftredskap (APV)|10. Nostoapuvälineet (APV)|10. Echipament de prindere (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>378139</Id>
+          <Label>Opbevaring OK|Storage OK|Lagerung OK|Зберігання OK|Przechowywanie OK|Oppbevaring OK|Förvaring OK|Varastointi OK|Depozitare OK</Label>
+          <Description><![CDATA[Opbevar grejet tørt, luftigt og uden sollys|Store the equipment in a dry, airy place and out of sunlight|Lagern Sie das Gerät trocken, luftig und lichtgeschützt|Зберігайте спорядження в сухому, провітрюваному місці та без прямих сонячних променів|Przechowuj sprzęt w suchym, przewiewnym miejscu i bez dostępu światła słonecznego|Oppbevar utstyret tørt, luftig og uten sollys|Förvara utrustningen torrt, luftigt och utan solljus|Säilytä välineet kuivassa, ilmavassa paikassa ja poissa auringonvalosta|Depozitați echipamentul uscat, aerisit și ferit de lumina soarelui]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378140</Id>
+          <Label>Stand 1 OK|Condition 1 OK|Zustand 1 OK|Стан 1 OK|Stan 1 OK|Stand 1 OK|Skick 1 OK|Kunto 1 OK|Stare 1 OK</Label>
+          <Description><![CDATA[Tjek for åbenlyse skader og brud|Check for obvious damage and breakage|Auf offensichtliche Schäden und Brüche prüfen|Перевірте на наявність явних пошкоджень та зламів|Sprawdź pod kątem oczywistych uszkodzeń i pęknięć|Kontroller for åpenlyse skader og brudd|Kontrollera för uppenbara skador och brott|Tarkista ilmeisten vaurioiden ja murtumien varalta|Verificați dacă există deteriorări evidente și rupturi]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378143</Id>
+          <Label>Stand 2 OK| Condition 2 OK|Zustand 2 OK|Стан 2 OK|Stan 2 OK|Stand 2 OK|Skick 2 OK|Kunto 2 OK|Stare 2 OK</Label>
+          <Description><![CDATA[Tjek om grejet er rent og uden rust|Check that the equipment is clean and free of rust|Prüfen Sie, ob das Gerät sauber und frei von Rost ist|Перевірте, чи спорядження чисте та без іржі|Sprawdź, czy sprzęt jest czysty i wolny od rdzy|Kontroller at utstyret er rent og uten rust|Kontrollera att utrustningen är ren och fri från rost|Tarkista, että välineet ovat puhtaat ja ruosteesta vapaat|Verificați dacă echipamentul este curat și fără rugină]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378138</Id>
+          <Label>Højest belastning OK|Highest load OK|Höchstlast OK|Максимальне навантаження OK|Maksymalne obciążenie OK|Høyest belastning OK|Högsta belastning OK|Suurin kuorma OK|Sarcina maximă OK</Label>
+          <Description><![CDATA[Tjek for metalskilt med angivelse af størst tilladelig belastning|Check for metal signs indicating the maximum permissible load|Prüfen Sie das Metallschild mit Angabe der höchsten zulässigen Last|Перевірте наявність металевої таблички із зазначенням максимально допустимого навантаження|Sprawdź metalową tabliczkę z podaniem maksymalnego dopuszczalnego obciążenia|Kontroller metallskilt med angivelse av største tillatte belastning|Kontrollera metallskylt med angivelse av högsta tillåtna belastning|Tarkista metallikilpi, jossa on ilmoitettu suurin sallittu kuorma|Verificați plăcuța metalică cu indicarea sarcinii maxime admise]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378141</Id>
+          <Label>Slid OK|Wear OK|Verschleiß OK|Знос OK|Zużycie OK|Slitasje OK|Slitage OK|Kuluminen OK|Uzură OK</Label>
+          <Description><![CDATA[Tjek om diameter er mindre end anbefalet af leverandøren|Check if diameter is smaller than recommended by the supplier|Prüfen, ob der Durchmesser kleiner ist als vom Lieferanten empfohlen|Перевірте, чи діаметр менший за рекомендований постачальником|Sprawdź, czy średnica jest mniejsza niż zalecana przez dostawcę|Sjekk om diameteren er mindre enn anbefalt av leverandøren|Kontrollera om diametern är mindre än vad leverantören rekommenderar|Tarkista, onko halkaisija pienempi kuin toimittajan suosittelema|Verificați dacă diametrul este mai mic decât cel recomandat de furnizor]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378142</Id>
+          <Label>Kinker, stikker, kordel el. lignende OK|Knots, sticks, string or similar OK|Knicke, Spleiße, Schnur o. Ä. OK|Вузли, петлі, шнур або подібне OK|Węzły, szpilki, sznurek lub podobne OK|Kinker, stikker, snor el. lignende OK|Knickar, stygn, snöre el. liknande OK|Kinkit, solmut, naru tai vastaava OK|Noduri, înțepături, sfoară sau similar OK</Label>
+          <Description><![CDATA[Tjek for udtrukket løkke, trådbrud mv.|Check for pulled out loops, broken threads, etc.|Auf herausgezogene Schlaufen, Fadenbrüche usw. prüfen|Перевірте на наявність витягнутих петель, обривів ниток тощо|Sprawdź pod kątem wysuniętych pętelek, zerwanych nitek itp.|Sjekk for uttrukket løkke, tråddbrudd mv.|Kontrollera för utdragna öglor, trådbrott m.m.|Tarkista vedetyt silmukat, langan katkeamiset jne.|Verificați pentru bucle trase, rupturi de fir etc.]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378146</Id>
+          <Label>Revner, snoninger, revner mv. OK|Cracks, twists, tears, etc. OK|Risse, Verdrehungen, Risse usw. OK|Тріщини, скручування, розриви тощо OK|Pęknięcia, skręcenia, rozdarcia itp. OK|Revner, snoninger, rifter mv. OK|Sprickor, vridningar, revor m.m. OK|Halkeamat, vääntymiset, repeämät jne. OK|Fisuri, răsuciri, rupturi etc. OK</Label>
+          <Description><![CDATA[Tjek for skader og undersøg kritiske steder som samlinger og fastgørelser af tovender|Check for damage and examine critical areas such as joints and rope end attachments|Auf Schäden prüfen und kritische Stellen wie Verbindungen und Seilendenbefestigungen untersuchen|Перевірте на наявність пошкоджень і огляньте критичні місця, такі як з'єднання та кріплення кінців мотузки|Sprawdź uszkodzenia i zbadaj krytyczne miejsca, takie jak złącza i mocowania końców lin|Sjekk for skader og undersøk kritiske steder som skjøter og festepunkter for tauender|Kontrollera för skador och undersök kritiska ställen som skarvar och infästningar av taländar|Tarkista vauriot ja tutki kriittiset kohdat, kuten liitokset ja köyden päiden kiinnitykset|Verificați dacă există deteriorări și examinați zonele critice, cum ar fi îmbinările și fixările capetelor de frânghie]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378147</Id>
+          <Label>Varme, kemisk påvirkning eller råd OK|Heat, chemical exposure or rot OK|Wärme, chemische Einwirkung oder Fäulnis OK|Тепло, хімічний вплив або гниття OK|Ciepło, działanie chemiczne lub gnicie OK|Varme, kjemisk påvirkning eller råte OK|Värme, kemisk påverkan eller röta OK|Lämpö, kemiallinen altistuminen tai mätäneminen OK|Căldură, expunere chimică sau putrezire OK</Label>
+          <Description><![CDATA[Tjek for skader. Må ikke svejses eller loddes.|Check for damage. Do not weld or solder.|Auf Schäden prüfen. Darf nicht geschweißt oder gelötet werden.|Перевірте на наявність пошкоджень. Не зварювати та не паяти.|Sprawdź pod kątem uszkodzeń. Nie wolno spawać ani lutować.|Sjekk for skader. Må ikke sveises eller loddes.|Kontrollera för skador. Får inte svetsas eller lödas.|Tarkista vauriot. Ei saa hitsata tai juottaa.|Verificați dacă există deteriorări. Nu se sudează sau lipește.]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378148</Id>
+          <Label>Sugekopper (vakuumløfter), anlægsflader (magnetåg) mv. OK|Suction cups (vacuum lifters), contact surfaces (magnetic drag), etc. OK|Saugnäpfe (Vakuumheber), Anlageflächen (Magnetzug) usw. OK|Присоски (вакуумні підйомники), контактні поверхні (магнітне буксирування) тощо OK|Przyssawki (podnośniki próżniowe), powierzchnie styku (przeciąg magnetyczny) itp. OK|Sugekopper (vakuumløftere), anleggsflater (magnetdrag) mv. OK|Sugkoppar (vakuumlyftare), anläggningsytor (magnetdrag) m.m. OK|Imukopit (tyhjiönostimet), kosketuspinnat (magneettiveto) jne. OK|Ventuze (ridicătoare cu vacuum), suprafețe de contact (tracțiune magnetică) etc. OK</Label>
+          <Description><![CDATA[Tjek ledning og materiel for skader|Check the cord and equipment for damage|Leitung und Material auf Schäden prüfen|Перевірте кабель та обладнання на наявність пошкоджень|Sprawdź przewód i sprzęt pod kątem uszkodzeń|Sjekk ledning og materiell for skader|Kontrollera ledning och materiel för skador|Tarkista johto ja varusteet vaurioiden varalta|Verificați cablul și echipamentul pentru deteriorări]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378144</Id>
+          <Label>Kan anhugningsgrejet godkendes og mærkes?|Can the hooking equipment be approved and marked?|Kann das Anschlaggerät genehmigt und gekennzeichnet werden?|Чи може гакове обладнання бути схваленим і маркованим?|Czy sprzęt hakowy może zostać zatwierdzony i oznakowany?|Kan anhuggingsutstyret godkjennes og merkes?|Kan anhängningsredskapet godkännas och märkas?|Voidaanko nostoapuväline hyväksyä ja merkitä?|Poate echipamentul de prindere să fie aprobat și marcat?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378136</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378135</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

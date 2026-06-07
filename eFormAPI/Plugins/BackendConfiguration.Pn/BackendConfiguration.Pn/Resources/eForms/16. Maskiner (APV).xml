@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142401</Id>
+  <Repeated>0</Repeated>
+  <Label>16. Maskiner (APV)|16. Machines (APV)|16. Maschinen (APV)|16. Машини (APV)|16. Maszyny (APV)|16. Maskiner (APV)|16. Maskiner (APV)|16. Koneet (APV)|16. Mașini (APV)</Label>
+  <StartDate>2021-05-20</StartDate>
+  <EndDate>2031-05-20</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142401</Id>
+      <Label>16. Maskiner (APV)|16. Machines (APV)|16. Maschinen (APV)|16. Машини (APV)|16. Maszyny (APV)|16. Maskiner (APV)|16. Maskiner (APV)|16. Koneet (APV)|16. Mașini (APV)</Label>
+      <Description><![CDATA[<br>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>373708</Id>
+          <Label>Lys, blinklys og bremser OK|Lights, indicators and brakes OK|Beleuchtung, Blinker und Bremsen OK|Фари, покажчики повороту та гальма OK|Światła, kierunkowskazy i hamulce OK|Lys, blinklys og bremser OK|Ljus, blinkers och bromsar OK|Valot, vilkut ja jarrut OK|Lumini, semnalizatoare și frâne OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373710</Id>
+          <Label>Hydraulik og slanger OK|Hydraulics and hoses OK|Hydraulik und Schläuche OK|Гідравліка та шланги OK|Hydraulika i węże OK|Hydraulikk og slanger OK|Hydraulik och slangar OK|Hydrauliikka ja letkut OK|Hidraulică și furtunuri OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>375249</Id>
+          <Label>Sliddele OK|Wear parts OK|Verschleißteile OK|Зношувані деталі OK|Części ścierne OK|Slitedeler OK|Slitdelar OK|Kulutuspyörät OK|Piese de uzură OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373709</Id>
+          <Label>Olie OK|Oil OK|Öl OK|Мастило OK|Olej OK|Olje OK|Olja OK|Öljy OK|Ulei OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373707</Id>
+          <Label>Ingen utætheder|No leaks|Keine Undichtigkeiten|Відсутність витоків|Brak nieszczelności|Ingen lekkasjer|Inga läckage|Ei vuotoja|Fără scurgeri</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>373702</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>373701</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

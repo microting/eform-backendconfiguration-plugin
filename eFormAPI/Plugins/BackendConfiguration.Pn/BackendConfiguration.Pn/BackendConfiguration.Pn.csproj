@@ -211,6 +211,62 @@
       <EmbeddedResource Include="Resources\eForms\Kvittering.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\01. Standard.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Standard.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\02. Flydelag beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Flydelag beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\03. Konstruktion beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\03. Konstruktion beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\04. Aktivitet beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\04. Aktivitet beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\05. Kontrol telt.xml" />
+      <EmbeddedResource Include="Resources\eForms\05. Kontrol telt.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\06. Numerisk.xml" />
+      <EmbeddedResource Include="Resources\eForms\06. Numerisk.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\09. Medarbejder (APV-new).xml" />
+      <EmbeddedResource Include="Resources\eForms\09. Medarbejder (APV-new).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\10. Anhugningsgrej (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\10. Anhugningsgrej (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\11. Brandslukkere (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\11. Brandslukkere (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\12. Elværktøj (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\12. Elværktøj (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\14. Hejseredskaber og spil (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\14. Hejseredskaber og spil (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\15. Løfteredskaber (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\15. Løfteredskaber (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\16. Maskiner (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\16. Maskiner (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\17. Stiger (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\17. Stiger (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\Gyllebeholder - Aktivitet i beholder.xml" />
     </ItemGroup>
 

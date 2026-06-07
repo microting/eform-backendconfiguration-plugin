@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142882</Id>
+  <Repeated>0</Repeated>
+  <Label>12. Elværktøj (APV)|12. Power tools (APV)|12. Elektrowerkzeug (APV)|12. Електроінструмент (APV)|12. Narzędzia elektryczne (APV)|12. Elektroverktøy (APV)|12. Elverktyg (APV)|12. Sähkötyökalut (APV)|12. Unelte electrice (APV)</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142882</Id>
+      <Label>12. Elværktøj (APV)|12. Power tools (APV)|12. Elektrowerkzeug (APV)|12. Електроінструмент (APV)|12. Narzędzia elektryczne (APV)|12. Elektroverktøy (APV)|12. Elverktyg (APV)|12. Sähkötyökalut (APV)|12. Unelte electrice (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>378167</Id>
+          <Label>Ledninger OK|Wires OK|Kabel OK|Дроти OK|Przewody OK|Ledninger OK|Ledningar OK|Johdot OK|Cabluri OK</Label>
+          <Description><![CDATA[Tjek for skader, revner eller huller på ledninger|Check for damage, cracks or holes in wires|Auf Schäden, Risse oder Löcher in den Kabeln prüfen|Перевірте наявність пошкоджень, тріщин або отворів у проводах|Sprawdź pod kątem uszkodzeń, pęknięć lub dziur w przewodach|Sjekk for skader, sprekker eller hull i ledningene|Kontrollera för skador, sprickor eller hål i ledningarna|Tarkista johdoista vauriot, halkeamat tai reiät|Verificați dacă există deteriorări, fisuri sau găuri în cabluri]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378168</Id>
+          <Label>Stik OK|Plug OK|Stecker OK|Штекер OK|Wtyczka OK|Støpsel OK|Kontakt OK|Pistoke OK|Priză OK</Label>
+          <Description><![CDATA[Tjek for skader, revner mm.|Check for damage, cracks etc.|Auf Schäden, Risse usw. prüfen|Перевірте наявність пошкоджень, тріщин тощо|Sprawdź pod kątem uszkodzeń, pęknięć itp.|Sjekk for skader, sprekker mv.|Kontrollera för skador, sprickor m.m.|Tarkista vauriot, halkeamat jne.|Verificați dacă există deteriorări, fisuri etc.]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378166</Id>
+          <Label>Værktøjshus og håndtag OK|Tool house and handle OK|Werkzeuggehäuse und Griff OK|Корпус інструменту та рукоятка OK|Obudowa narzędzia i uchwyt OK|Verktøyhus og håndtak OK|Verktygshus och handtag OK|Työkalun runko ja kahva OK|Carcasa uneltei și mânerul OK</Label>
+          <Description><![CDATA[Tjek for skader, revner, brud mv.|Check for damage, cracks, fractures, etc.|Auf Schäden, Risse, Brüche usw. prüfen|Перевірте наявність пошкоджень, тріщин, зламів тощо|Sprawdź pod kątem uszkodzeń, pęknięć, złamań itp.|Sjekk for skader, sprekker, brudd mv.|Kontrollera för skador, sprickor, brott m.m.|Tarkista vauriot, halkeamat, murtumat jne.|Verificați dacă există deteriorări, fisuri, fracturi etc.]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378169</Id>
+          <Label>Maskine i god stand|Machine in good condition|Maschine in gutem Zustand|Машина в хорошому стані|Maszyna w dobrym stanie|Maskin i god stand|Maskin i gott skick|Kone hyvässä kunnossa|Mașină în stare bună</Label>
+          <Description><![CDATA[Tjek om el-materiellet er rent, fri for fedt og har frie ventilationsåbninger| Check that the electrical equipment is clean, free of grease and has free ventilation openings|Prüfen Sie, ob das Elektrogerät sauber, fettfrei und die Lüftungsöffnungen frei sind|Перевірте, чи є електроустаткування чистим, вільним від жиру та чи є вільні вентиляційні отвори|Sprawdź, czy urządzenie elektryczne jest czyste, wolne od tłuszczu i ma drożne otwory wentylacyjne|Sjekk om elektromateriell er rent, fritt for fett og har frie ventilasjonsåpninger|Kontrollera att elutrustningen är ren, fri från fett och har fria ventilationsöppningar|Tarkista, että sähkölaite on puhdas, rasvatonta ja että tuuletusaukot ovat vapaat|Verificați dacă echipamentul electric este curat, lipsit de grăsime și are orificii de ventilație libere]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378170</Id>
+          <Label>Ingen tegn på overbelastning|No signs of congestion|Keine Anzeichen von Überlastung|Немає ознак перевантаження|Brak oznak przeciążenia|Ingen tegn på overbelastning|Inga tecken på överbelastning|Ei merkkejä ylikuormituksesta|Niciun semn de supraîncărcare</Label>
+          <Description><![CDATA[Tjek for synlige spor mv.|Check for visible traces etc.|Auf sichtbare Spuren usw. prüfen|Перевірте наявність видимих слідів тощо|Sprawdź pod kątem widocznych śladów itp.|Sjekk for synlige spor mv.|Kontrollera för synliga spår m.m.|Tarkista näkyvät jäljet jne.|Verificați dacă există urme vizibile etc.]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378171</Id>
+          <Label>Betjeningsknapper OK|Control buttons OK|Bedienungsknöpfe OK|Кнопки керування OK|Przyciski sterowania OK|Betjeningsknapper OK|Manövreringsknappar OK|Käyttöpainikkeet OK|Butoane de comandă OK</Label>
+          <Description><![CDATA[Tjek at START/STOP knapper og andre kontakter virker efter hensigten|Check that START/STOP buttons and other switches work as intended|Überprüfen Sie, ob START/STOP-Tasten und andere Schalter wie vorgesehen funktionieren|Перевірте, чи кнопки ПУСК/СТОП та інші перемикачі працюють належним чином|Sprawdź, czy przyciski START/STOP i inne przełączniki działają zgodnie z przeznaczeniem|Sjekk at START/STOPP-knapper og andre brytere fungerer etter hensikten|Kontrollera att START/STOPP-knappar och andra strömbrytare fungerar som avsett|Tarkista, että KÄYNNISTYS/PYSÄYTYS-painikkeet ja muut kytkimet toimivat tarkoitetulla tavalla|Verificați că butoanele START/STOP și alte comutatoare funcționează conform intenției]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378172</Id>
+          <Label>Kan elværktøjet godkendes?|Can the power tool be approved?|Kann das Elektrowerkzeug genehmigt werden?|Чи може електроінструмент бути схвалений?|Czy elektronarzędzie może zostać zatwierdzone?|Kan elektroverktøyet godkjennes?|Kan elverktyget godkännas?|Voiko sähkötyökalun hyväksyä?|Poate fi aprobată unealta electrică?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378164</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378163</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

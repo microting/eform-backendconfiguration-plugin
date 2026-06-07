@@ -62,6 +62,62 @@ public static class BackendConfigurationSeedEforms
 		item = new KeyValuePair<string, List<string>>("Kvittering", headers);
 		theList.Add(item);
 
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("01. Standard", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("02. Flydelag beholder", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("03. Konstruktion beholder", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("04. Aktivitet beholder", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("05. Kontrol telt", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("06. Numerisk", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("09. Medarbejder (APV-new)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("10. Anhugningsgrej (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("11. Brandslukkere (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("12. Elværktøj (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("14. Hejseredskaber og spil (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("15. Løfteredskaber (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("16. Maskiner (APV)", headers);
+		theList.Add(item);
+
+		headers = ["", "", ""];
+		item = new KeyValuePair<string, List<string>>("17. Stiger (APV)", headers);
+		theList.Add(item);
+
 		return theList;
 	}
 }

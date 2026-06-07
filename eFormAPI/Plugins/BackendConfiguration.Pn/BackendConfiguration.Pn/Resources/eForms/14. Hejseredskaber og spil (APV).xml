@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142860</Id>
+  <Repeated>0</Repeated>
+  <Label>14. Hejseredskaber og spil (APV)|14. Hoisting equipment and winches (APV)|14. Hebezeuge und Winden (APV)|14. Підіймальне обладнання та лебідки (APV)|14. Urządzenia dźwigowe i wciągarki (APV)|14. Heiseredskaper og vinsjer (APV)|14. Lyftredskap och vinschar (APV)|14. Nostolaitteet ja vinssit (APV)|14. Echipamente de ridicare și trolii (APV)</Label>
+  <StartDate>2024-12-18</StartDate>
+  <EndDate>2034-12-18</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142860</Id>
+      <Label>14. Hejseredskaber og spil (APV)|14. Hoisting equipment and winches (APV)|14. Hebezeuge und Winden (APV)|14. Підіймальне обладнання та лебідки (APV)|14. Urządzenia dźwigowe i wciągarki (APV)|14. Heiseredskaper og vinsjer (APV)|14. Lyftredskap och vinschar (APV)|14. Nostolaitteet ja vinssit (APV)|14. Echipamente de ridicare și trolii (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>377918</Id>
+          <Label>Instruktionsbog på dansk OK|Instruction manual in Danish OK|Bedienungsanleitung auf Dänisch OK|Інструкція з експлуатації данською мовою OK|Instrukcja obsługi w języku duńskim OK|Instruksjonsbok på dansk OK|Instruktionsbok på danska OK|Käyttöohje tanskaksi OK|Manual de instrucțiuni în daneză OK</Label>
+          <Description><![CDATA[Tjek om brugervejledningen er til stede på dansk|Check if the user manual is available in Danish|Prüfen Sie, ob die Bedienungsanleitung auf Dänisch vorhanden ist|Перевірте, чи є посібник користувача датською мовою|Sprawdź, czy instrukcja użytkownika jest dostępna w języku duńskim|Sjekk om brukerveiledningen er tilgjengelig på dansk|Kontrollera om bruksanvisningen finns tillgänglig på danska|Tarkista, onko käyttöohje saatavilla tanskaksi|Verificați dacă manualul utilizatorului este disponibil în daneză]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377919</Id>
+          <Label>Stand OK|Condition OK|Zustand OK|Стан OK|Stan OK|Stand OK|Skick OK|Kunto OK|Stare OK</Label>
+          <Description><![CDATA[Tjek for åbenlyse skader og brud|Check for obvious damage and breakage|Auf offensichtliche Schäden und Brüche prüfen|Перевірте на наявність явних пошкоджень та зламів|Sprawdź pod kątem oczywistych uszkodzeń i pęknięć|Kontroller for åpenlyse skader og brudd|Kontrollera för uppenbara skador och brott|Tarkista ilmeisten vaurioiden ja murtumien varalta|Verificați dacă există deteriorări evidente și rupturi]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377917</Id>
+          <Label>Slid OK|Wear OK|Verschleiß OK|Знос OK|Zużycie OK|Slitasje OK|Slitage OK|Kuluminen OK|Uzură OK</Label>
+          <Description><![CDATA[Tjek om det er mere end anbefalet af leverandøren|Check if it is more than recommended by the supplier|Prüfen Sie, ob es mehr ist als vom Lieferanten empfohlen|Перевірте, чи перевищує це рекомендації постачальника|Sprawdź, czy przekracza zalecenia dostawcy|Sjekk om det er mer enn anbefalt av leverandøren|Kontrollera om det är mer än vad leverantören rekommenderar|Tarkista, onko se enemmän kuin toimittajan suosittelema|Verificați dacă depășește recomandările furnizorului]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377920</Id>
+          <Label>Kinker, stikker, kordel el. lignende OK|Kinks, snags, string, etc. OK|Knicke, Haken, Schnur o. Ä. OK|Перегини, зачіпки, шнур тощо OK|Zagięcia, zaczepy, sznur itp. OK|Kink, haker, snor e.l. OK|Knickar, hakar, snöre e.d. OK|Kinkat, tarttumat, naru tms. OK|Noduri, agățături, șnur etc. OK</Label>
+          <Description><![CDATA[Tjek for udtrukket løkke, trådbrud mv.|Check for pulled-out loops, broken threads, etc.|Prüfen auf herausgezogene Schlaufen, Fadenbrüche usw.|Перевірте на наявність витягнутих петель, обривів ниток тощо|Sprawdź pod kątem wyciągniętych pętelek, zerwanych nici itp.|Sjekk for uttrukne løkker, trådbrudd mv.|Kontrollera efter utdragna öglar, trådbrott m.m.|Tarkista vedetyt silmukat, langankatkokset jne.|Verificați bucle trase, rupturi de fire etc.]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377921</Id>
+          <Label>Rust og tæring OK|Rust and corrosion OK|Rost und Korrosion OK|Іржа та корозія OK|Rdza i korozja OK|Rust og tæring OK|Rost och korrosion OK|Ruoste ja korroosio OK|Rugină și coroziune OK</Label>
+          <Description><![CDATA[Tjek for tegn på rust og tæring|Check for signs of rust and corrosion|Prüfen auf Anzeichen von Rost und Korrosion|Перевірте наявність ознак іржі та корозії|Sprawdź pod kątem śladów rdzy i korozji|Sjekk for tegn på rust og tæring|Kontrollera efter tecken på rost och korrosion|Tarkista ruosteen ja korroosion merkkien varalta|Verificați semnele de rugină și coroziune]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377922</Id>
+          <Label>Revner, brud, snoninger mv. OK|Cracks, breaks, kinks, etc. OK|Risse, Brüche, Verdrillungen usw. OK|Тріщини, розриви, скручування тощо OK|Pęknięcia, złamania, skręcenia itp. OK|Sprekker, brudd, snoninger mv. OK|Sprickor, brott, tvinningar m.m. OK|Halkeamat, murtumat, kiertymiset jne. OK|Fisuri, rupturi, răsuciri etc. OK</Label>
+          <Description><![CDATA[Tjek for skader og undersøg kritiske steder som samlinger og tovender|Check for damage and examine critical areas such as joints and rope ends|Prüfen auf Schäden und untersuchen Sie kritische Stellen wie Verbindungen und Seilenden|Перевірте на наявність пошкоджень та огляньте критичні місця, такі як з'єднання та кінці мотузок|Sprawdź uszkodzenia i zbadaj krytyczne miejsca, takie jak złącza i końce lin|Sjekk for skader og undersøk kritiske steder som skjøter og tauender|Kontrollera efter skador och undersök kritiska ställen såsom skarvar och tågändar|Tarkista vauriot ja tutki kriittiset kohdat, kuten liitokset ja köysien päät|Verificați deteriorările și examinați zonele critice, cum ar fi îmbinările și capetele de frânghie]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>377923</Id>
+          <Label>Kan hejseredskabet godkendes og mærkes?|Can the lifting equipment be approved and marked?|Kann das Hebegerät genehmigt und markiert werden?|Чи може підіймальне обладнання бути схвалене та позначене?|Czy urządzenie dźwigowe może zostać zatwierdzone i oznakowane?|Kan heiseredskapet godkjennes og merkes?|Kan lyftredskapet godkännas och märkas?|Voiko nostolaite hyväksyä ja merkitä?|Poate fi aprobat și marcat echipamentul de ridicare?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377915</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377914</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

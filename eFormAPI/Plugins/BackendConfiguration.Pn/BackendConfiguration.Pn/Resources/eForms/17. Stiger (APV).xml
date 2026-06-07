@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142842</Id>
+  <Repeated>0</Repeated>
+  <Label>17. Stiger (APV)|17. Ladders (APV)|17. Leitern (APV)|17. Сходи (APV)|17. Drabiny (APV)|17. Stiger (APV)|17. Stegar (APV)|17. Tikkaat (APV)|17. Scări (APV)</Label>
+  <StartDate>2023-11-29</StartDate>
+  <EndDate>2033-11-29</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142842</Id>
+      <Label>17. Stiger (APV)|17. Ladders (APV)|17. Leitern (APV)|17. Сходи (APV)|17. Drabiny (APV)|17. Stiger (APV)|17. Stegar (APV)|17. Tikkaat (APV)|17. Scări (APV)</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>377769</Id>
+          <Label>Stigebeslag OK|Ladder fittings OK|Leiterhalterungen OK|Кріплення сходів OK|Okucia drabiny OK|Stigebeslag OK|Stegbeslag OK|Tikkaan kiinnikkeet OK|Accesorii scară OK</Label>
+          <Description><![CDATA[Ikke skæve, løse, mv.|Not crooked, loose, etc.|Nicht schief, locker, usw.|Не криві, не loose, тощо|Nie krzywe, luzujące się itp.|Ikke skjeve, løse, mv.|Inte sneda, lösa, m.m.|Ei vinoja, löysiä jne.|Nu strâmbe, slăbite etc.]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377770</Id>
+          <Label>Kæder OK|Chains OK|Ketten OK|Ланцюги OK|Łańcuchy OK|Kjeder OK|Kedjor OK|Ketjut OK|Lanțuri OK</Label>
+          <Description><![CDATA[Ingen løs befæstning, ikke itu, mv.|No loose fastening, not broken, etc.|Keine losen Befestigungen, nicht kaputt, usw.|Жодних loose кріплень, не зламано тощо|Brak luźnych zamocowań, nie uszkodzone itp.|Ingen løs festing, ikke i stykker, mv.|Inga lösa fästen, inte sönder, m.m.|Ei löysiä kiinnityksiä, ei rikki jne.|Nicio prindere slăbită, nu rupt etc.]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377768</Id>
+          <Label>Vanger OK|Stringer OK|Holme OK|Тятиви OK|Toczki OK|Vanger OK|Strängar OK|Sivupuut OK|Lonjeroane OK</Label>
+          <Description><![CDATA[Ikke skæve, flækkede, mv.|Not crooked, cracked, etc.|Nicht schief, gespalten, usw.|Не криві, не розщеплені тощо|Nie krzywe, nie pęknięte itp.|Ikke skjeve, flaket, mv.|Inte sneda, splittrade, m.m.|Ei vinoja, haljenneita jne.|Nu strâmbe, crăpate etc.]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377771</Id>
+          <Label>Trin OK|Steps OK|Stufen OK|Сходинки OK|Szczeble OK|Trinn OK|Steg OK|Askelmat OK|Trepte OK</Label>
+          <Description><![CDATA[Ikke skæve, løse, mv.| Not crooked, loose, etc.|Nicht schief, locker, usw.|Не криві, не розхитані тощо|Nie krzywe, luzujące się itp.|Ikke skjeve, løse, mv.|Inte sneda, lösa, m.m.|Ei vinoja, löysiä jne.|Nu strâmbe, slăbite etc.]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377772</Id>
+          <Label>Stigedupper OK|Ladder pads OK|Leiterfüße OK|Накладки сходів OK|Stopki drabiny OK|Stigedupper OK|Stegdynor OK|Tikkaiden jalkasuojat OK|Tălpi scară OK</Label>
+          <Description><![CDATA[Ikke skæve, revnede, mv.|Not crooked, cracked, etc.|Nicht schief, gerissen, usw.|Не криві, не потріскані тощо|Nie krzywe, nie popękane itp.|Ikke skjeve, revnede, mv.|Inte sneda, spruckna, m.m.|Ei vinoja, halkeilleja jne.|Nu strâmbe, crăpate etc.]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377773</Id>
+          <Label>Efterbehandling OK|Subsequent treatment OK|Nachbehandlung OK|Подальша обробка OK|Obróbka wykończeniowa OK|Etterbehandling OK|Efterbehandling OK|Jälkikäsittely OK|Tratament ulterior OK</Label>
+          <Description><![CDATA[F.eks. ingen skader på lakering, mv.| Eg. no damage to paintwork, etc.|Z.B. keine Schäden am Lackierung, usw.|Напр. жодних пошкоджень лакофарбового покриття тощо|Np. brak uszkodzeń lakieru itp.|F.eks. ingen skader på lakkering, mv.|T.ex. inga skador på lackeringen, m.m.|Esim. ei vaurioita lakkauksessa jne.|De ex. nicio deteriorare a vopselei etc.]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377777</Id>
+          <Label>Ingen tegn på misbrug|No signs of abuse|Keine Anzeichen von Missbrauch|Жодних ознак неналежного використання|Brak śladów nadużycia|Ingen tegn på misbruk|Inga tecken på missbruk|Ei merkkejä väärinkäytöstä|Niciun semn de abuz</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>377778</Id>
+          <Label>Ikke vakkelvorn ved brug|Do not wobble when used|Wackelt nicht bei Verwendung|Не хитається під час використання|Nie chwiejne podczas użytkowania|Ikke vakler ved bruk|Vinglar inte vid användning|Ei horju käytössä|Nu se clatină în utilizare</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>377774</Id>
+          <Label>Kan stigen godkendes?|Can the ladder be approved?|Kann die Leiter abgenommen werden?|Чи може сходи бути схвалені?|Czy drabina może być zatwierdzona?|Kan stigen godkjennes?|Kan stegen godkännas?|Voidaanko tikkaiden hyväksyä?|Poate fi aprobată scara?</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Ja|Yes|Ja|Так|Tak|Ja|Ja|Kyllä|Da]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Nej, skal repareres|No, needs to be repaired|Nein, muss repariert werden|Ні, потребує ремонту|Nie, wymaga naprawy|Nei, skal repareres|Nej, ska repareras|Ei, tarvitsee korjausta|Nu, trebuie reparat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Nej, skal kasseres|No, must be discarded|Nein, muss ausgesondert werden|Ні, має бути відбраковано|Nie, musi zostać wycofany z użycia|Nei, skal kasseres|Nej, ska kasseras|Ei, on hylättävä|Nu, trebuie casat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377766</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377765</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

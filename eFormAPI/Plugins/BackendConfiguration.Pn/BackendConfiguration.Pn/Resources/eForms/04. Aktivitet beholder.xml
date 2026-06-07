@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142877</Id>
+  <Repeated>0</Repeated>
+  <Label>04. Aktivitet beholder|04. Activity tank|04. Aktivität Behälter|04. Активність резервуара|04. Aktywność zbiornika|04. Aktivitet beholder|04. Aktivitet behållare|04. Toiminta säiliö|04. Activitate rezervor</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142877</Id>
+      <Label>04. Aktivitet beholder|04. Activity tank|04. Aktivität Behälter|04. Активність резервуара|04. Aktywność zbiornika|04. Aktivitet beholder|04. Aktivitet behållare|04. Toiminta säiliö|04. Activitate rezervor</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="SingleSelect">
+          <Id>378117</Id>
+          <Label>Vælg gyllebeholder|Select tank|Güllebebälter auswählen|Вибрати резервуар для гноївки|Wybierz zbiornik na gnojowicę|Velg gjødselbeholder|Välj gödselbehållare|Valitse lietelantasäiliö|Selectați rezervorul de gunoi de grajd</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Beholder 1|Tank 1|Behälter 1|Резервуар 1|Zbiornik 1|Beholder 1|Behållare 1|Säiliö 1|Rezervor 1]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Beholder 2|Tank 2|Behälter 2|Резервуар 2|Zbiornik 2|Beholder 2|Behållare 2|Säiliö 2|Rezervor 2]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>378122</Id>
+          <Label>Aktivitet i beholder|Activity in tank|Aktivität im Behälter|Активність у резервуарі|Aktywność w zbiorniku|Aktivitet i beholder|Aktivitet i behållare|Toiminta säiliössä|Activitate în rezervor</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Beholder omrørt|Tank stirred|Behälter umgerührt|Резервуар перемішано|Zbiornik wymieszany|Beholder omrørt|Behållare omrörd|Säiliö sekoitettu|Rezervor amestecat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Gylle udbragt|Slurry spread|Gülle ausgebracht|Гноївку внесено|Gnojowica rozrzucona|Gjødsel spredt|Gödsel spritt|Lietelanta levitetty|Gunoi de grajd împrăștiat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[Beholder tom|Tank empty|Behälter leer|Резервуар порожній|Zbiornik pusty|Beholder tom|Behållare tom|Säiliö tyhjä|Rezervor gol]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>5</Key>
+              <Value><![CDATA[Halm tilført|Straw added|Stroh hinzugefügt|Солому додано|Dodano słomę|Halm tilsatt|Halm tillfört|Olkia lisätty|Paie adăugate]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>5</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>6</Key>
+              <Value><![CDATA[Flyttet til anden beholder|Moved to another tank|In einen anderen Behälter umgefüllt|Переміщено до іншого резервуара|Przeniesiono do innego zbiornika|Flyttet til annen beholder|Flyttad till en annan behållare|Siirretty toiseen säiliöön|Mutat în alt rezervor]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>6</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>7</Key>
+              <Value><![CDATA[Modtaget biogas-gylle|Received biogas slurry|Biogasgülle empfangen|Отримано біогазову гноївку|Odebrano gnojowicę biogazową|Mottatt biogassgjødsel|Mottagen biogasgödsel|Vastaanotettu biokaasuliete|Primit nămol de biogaz]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>7</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>8</Key>
+              <Value><![CDATA[Tilført gylle|Supplied slurry|Gülle zugeführt|Гноївку додано|Dostarczona gnojowica|Tilført gjødsel|Tillfört gödsel|Lisätty lietelantaa|Gunoi de grajd adăugat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>8</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378119</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378118</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
