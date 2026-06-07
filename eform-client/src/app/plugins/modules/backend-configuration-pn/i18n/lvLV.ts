@@ -391,6 +391,7 @@ export const lvLV = {
   Title: 'Nosaukums',
   'Set tags...': 'Iestatīt tagus...',
   'Assign to...': 'Piešķirt...',
+  'Add description': 'Pievienot aprakstu',
   'My properties': 'Mani īpašumi',
   'My boards': 'Mani dēļi',
   'My teams': 'Manas komandas',

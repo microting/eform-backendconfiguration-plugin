@@ -391,6 +391,7 @@ export const fiFI = {
   Title: 'Otsikko',
   'Set tags...': 'Aseta tunnisteet...',
   'Assign to...': 'Määritä...',
+  'Add description': 'Lisää kuvaus',
   'My properties': 'Omat kiinteistöni',
   'My boards': 'Omat taulut',
   'My teams': 'Omat tiimini',

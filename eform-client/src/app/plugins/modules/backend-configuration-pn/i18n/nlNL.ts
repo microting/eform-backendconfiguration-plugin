@@ -390,6 +390,7 @@ export const nlNL = {
   Title: 'Titel',
   'Set tags...': 'Labels instellen...',
   'Assign to...': 'Toewijzen aan...',
+  'Add description': 'Beschrijving toevoegen',
   'My properties': 'Mijn eigendommen',
   'My boards': 'Mijn borden',
   'My teams': 'Mijn teams',

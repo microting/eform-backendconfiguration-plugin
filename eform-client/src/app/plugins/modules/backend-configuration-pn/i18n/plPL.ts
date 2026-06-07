@@ -391,6 +391,7 @@ export const plPL = {
   Title: 'Tytuł',
   'Set tags...': 'Ustaw tagi...',
   'Assign to...': 'Przypisz do...',
+  'Add description': 'Dodaj opis',
   'My properties': 'Moje nieruchomości',
   'My boards': 'Moje deski',
   'My teams': 'Moje zespoły',

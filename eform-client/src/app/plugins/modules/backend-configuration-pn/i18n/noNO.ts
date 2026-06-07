@@ -393,6 +393,7 @@ export const noNO = {
   Title: 'Tittel',
   'Set tags...': 'Angi tagger...',
   'Assign to...': 'Tildel til...',
+  'Add description': 'Legg til beskrivelse',
   'My properties': 'Mine eiendommer',
   'My boards': 'Mine tavler',
   'My teams': 'Mine lag',

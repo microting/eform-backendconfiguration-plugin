@@ -391,6 +391,7 @@ export const esES = {
   Title: 'Título',
   'Set tags...': 'Establecer etiquetas...',
   'Assign to...': 'Asignar a...',
+  'Add description': 'Añadir descripción',
   'My properties': 'Mis propiedades',
   'My boards': 'Mis tableros',
   'My teams': 'Mis equipos',

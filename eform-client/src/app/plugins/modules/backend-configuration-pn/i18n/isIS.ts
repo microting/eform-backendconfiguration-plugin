@@ -391,6 +391,7 @@ export const isIS = {
   Title: 'Titill',
   'Set tags...': 'Setja merki...',
   'Assign to...': 'Úthluta til...',
+  'Add description': 'Bæta við lýsingu',
   'My properties': 'Eignir mínar',
   'My boards': 'Mínar töflur',
   'My teams': 'Liðin mín',

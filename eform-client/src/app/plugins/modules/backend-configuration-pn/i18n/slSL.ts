@@ -391,6 +391,7 @@ export const slSL = {
   Title: 'Naslov',
   'Set tags...': 'Nastavi oznake ...',
   'Assign to...': 'Dodeli ...',
+  'Add description': 'Dodaj opis',
   'My properties': 'Moje nepremičnine',
   'My boards': 'Moje deske',
   'My teams': 'Moje ekipe',

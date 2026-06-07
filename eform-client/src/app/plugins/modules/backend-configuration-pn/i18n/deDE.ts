@@ -445,6 +445,7 @@ export const deDE = {
   Title: 'Titel',
   'Set tags...': 'Tags festlegen...',
   'Assign to...': 'Zuweisen an...',
+  'Add description': 'Beschreibung hinzufügen',
   'My properties': 'Meine Immobilien',
   'My boards': 'Meine Boards',
   'My teams': 'Meine Teams',

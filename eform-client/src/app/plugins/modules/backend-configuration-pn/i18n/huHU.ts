@@ -391,6 +391,7 @@ export const huHU = {
   Title: 'Cím',
   'Set tags...': 'Címkék beállítása...',
   'Assign to...': 'Hozzárendelés...',
+  'Add description': 'Leírás hozzáadása',
   'My properties': 'Saját ingatlanok',
   'My boards': 'A tábláim',
   'My teams': 'Csapatom',

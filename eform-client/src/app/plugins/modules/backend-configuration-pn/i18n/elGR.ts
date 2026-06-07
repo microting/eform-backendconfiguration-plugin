@@ -391,6 +391,7 @@ export const elGR = {
   Title: 'Τίτλος',
   'Set tags...': 'Ορισμός ετικετών...',
   'Assign to...': 'Ανάθεση σε...',
+  'Add description': 'Προσθήκη περιγραφής',
   'My properties': 'Τα ακίνητά μου',
   'My boards': 'Οι πίνακές μου',
   'My teams': 'Οι ομάδες μου',
