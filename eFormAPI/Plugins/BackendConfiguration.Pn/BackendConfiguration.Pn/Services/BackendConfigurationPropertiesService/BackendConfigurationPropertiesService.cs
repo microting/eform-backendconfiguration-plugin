@@ -698,7 +698,7 @@ public class BackendConfigurationPropertiesService(
         }
     }
 
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance)
+    public async Task<OperationDataResult<List<SiteLanguageDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance)
     {
         try
         {
@@ -730,22 +730,23 @@ public class BackendConfigurationPropertiesService(
             var sites = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => siteIds.Contains(x.Id))
-                .Select(x => new CommonDictionaryModel
+                .Select(x => new SiteLanguageDictionaryModel
                 {
                     Name = x.Name,
-                    Id = x.Id
+                    Id = x.Id,
+                    LanguageId = x.LanguageId
                 })
                 .OrderBy(x => x.Name)
                 .ToListAsync();
 
-            return new OperationDataResult<List<CommonDictionaryModel>>(true, sites);
+            return new OperationDataResult<List<SiteLanguageDictionaryModel>>(true, sites);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e.Message);
             logger.LogTrace(e.StackTrace);
-            return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            return new OperationDataResult<List<SiteLanguageDictionaryModel>>(false, e.Message);
         }
     }
 

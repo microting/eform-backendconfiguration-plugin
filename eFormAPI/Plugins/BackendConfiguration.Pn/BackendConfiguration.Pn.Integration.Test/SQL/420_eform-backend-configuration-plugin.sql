@@ -564,6 +564,7 @@ DROP TABLE IF EXISTS `AreaRuleTranslations`;
 CREATE TABLE `AreaRuleTranslations` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Name` varchar(250) DEFAULT NULL,
+  `Description` longtext DEFAULT NULL,
   `LanguageId` int(11) NOT NULL,
   `AreaRuleId` int(11) NOT NULL,
   `CreatedAt` datetime(6) NOT NULL,

@@ -18,6 +18,15 @@ import {
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
+// Linked-site dictionary entry, extended with the site's language so the
+// calendar modal can derive per-worker target languages. Mirrors the backend
+// SiteLanguageDictionaryModel { Id, Name, LanguageId }. Extends
+// CommonDictionaryModel so existing getLinkedSites consumers that expect a
+// CommonDictionaryModel[] keep type-checking; calendar uses `languageId`.
+export interface LinkedSiteModel extends CommonDictionaryModel {
+  languageId: number;
+}
+
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
   PropertyAreas: 'api/backend-configuration-pn/property-areas',
@@ -220,7 +229,7 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getLinkedSites(id: number, compliance: boolean): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+  getLinkedSites(id: number, compliance: boolean): Observable<OperationDataResult<LinkedSiteModel[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.GetLinkedSites,
       { propertyId: id, compliance: compliance}

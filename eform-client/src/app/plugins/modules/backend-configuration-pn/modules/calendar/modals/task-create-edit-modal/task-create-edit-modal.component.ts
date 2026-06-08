@@ -11,12 +11,16 @@ import {EformVisualEditorService} from 'src/app/common/services';
 import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {selectLanguages} from 'src/app/state/application-settings/application-settings.selector';
+import {LanguagesModel} from 'src/app/common/models';
+import {TranslationService, TranslationRequestModel} from 'src/app/common/services/translation.service';
 import {
   BackendConfigurationPnCalendarFilesService,
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnGoogleDriveService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
+import {LinkedSiteModel} from '../../../../services/backend-configuration-pn-properties.service';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services/items-planning-pn-tags.service';
 import {
   CALENDAR_COLORS,
@@ -83,7 +87,24 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   isLoadingTemplate = false;
   showEformDetails = false;
   showMiniPicker = false;
-  filteredEmployees: CommonDictionaryModel[] = [];
+  filteredEmployees: LinkedSiteModel[] = [];
+
+  // ---- Per-language Title & Description state ----
+  // Active languages from the app-settings store (filtered to isActive).
+  private activeLanguages: { id: number; code: string; name: string }[] = [];
+  // Distinct non-Danish languages spoken by the currently-selected assignees,
+  // resolved to {id, code, name}. Drives the translate button + per-lang fields.
+  targetLanguages: { id: number; code: string; name: string }[] = [];
+  // Per-language Title/Description values, keyed by languageId. Danish (1) lives
+  // in titleControl/descriptionControl; these hold the non-Danish targets.
+  titleByLang: Record<number, string> = {};
+  descByLang: Record<number, string> = {};
+  // Whether the stacked per-language fields are revealed for each group.
+  titleTranslateExpanded = false;
+  descTranslateExpanded = false;
+  /** Cached result of TranslationService.translationPossible() (Google config). */
+  private translationConfigured = false;
+
   private customRepeatMeta: CalendarRepeatMeta | null = null;
   // Last concrete repeat selection before 'custom' was picked, so cancelling
   // the Tilpasset… dialog can restore the prior preset instead of 'none' (#922).
@@ -143,6 +164,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     private tagsService: ItemsPlanningPnTagsService,
     private filesService: BackendConfigurationPnCalendarFilesService,
     private googleDriveService: BackendConfigurationPnGoogleDriveService,
+    private translationService: TranslationService,
   ) {}
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
@@ -223,6 +245,21 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.currentLanguageId = langId ?? 1;
     });
 
+    // Load the active languages list (id/code/name) from the app-settings store.
+    // Used to resolve each assignee's languageId to a translatable target.
+    this.store.select(selectLanguages).pipe(take(1)).subscribe((model: LanguagesModel) => {
+      this.activeLanguages = (model?.languages ?? [])
+        .filter(l => l.isActive)
+        .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
+      this.recomputeTargetLanguages();
+    });
+
+    // Cache whether Google Translate is configured so the translate action can
+    // decide between auto-fill and just revealing empty editable fields.
+    this.translationService.translationPossible().pipe(take(1)).subscribe(res => {
+      this.translationConfigured = !!(res && res.success && res.model);
+    });
+
     this.isEditMode = !!this.data.task;
     this.timeSlots = this.generateTimeSlots();
     this.filteredBoards = this.data.boards;
@@ -267,6 +304,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.assigneeControl.setValue(task.assigneeIds ?? []);
       this.tagsControl.setValue(task.tags ?? []);
       this.descriptionControl.setValue(task.descriptionHtml ?? '');
+      // Prefill the per-language Title/Description fields from the saved
+      // translations. Danish (1) seeds the source controls (fall back to the
+      // single title/descriptionHtml); non-Danish entries seed the maps and
+      // auto-expand so the saved translations are visible.
+      this.prefillTranslations(task);
       this.driveLinkControl.setValue(task.driveLink ?? '');
       this.showDriveInput = !!task.driveLink;
       this.boardControl.setValue(task.boardId ?? null);
@@ -399,6 +441,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.assigneeControl.setValue([]);
     });
 
+    // Recompute the per-language target set whenever the assignee selection
+    // changes — adding/removing a worker can add/remove a language field.
+    this.assigneeControl.valueChanges.subscribe(() => this.recomputeTargetLanguages());
+
     // Load eForm template details when selection changes
     // Use switchMap so rapid eForm switches cancel any in-flight getSingle()
     // and we never overwrite the current selection with a stale response.
@@ -469,6 +515,121 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
       if (res && res.success && res.model) {
         this.filteredEmployees = res.model;
+        // Sites (and their languages) are now known — re-resolve the target set
+        // so a pre-seeded (edit/copy mode) assignee selection lights up.
+        this.recomputeTargetLanguages();
+      }
+    });
+  }
+
+  // ---- Per-language Title & Description -----------------------------------
+
+  /** True when at least one non-Danish target language is in play. */
+  get showTranslate(): boolean {
+    return this.targetLanguages.length > 0;
+  }
+
+  /**
+   * Resolve the distinct languages of the currently-selected assignees
+   * (site ids → filteredEmployees[].languageId), drop Danish (id 1), and map
+   * each to the active-languages {id, code, name}. Languages not present in the
+   * active-languages list (or with no code) are skipped. Preserves any text
+   * already typed for a still-present language; collapses the expanded fields
+   * if the target set becomes empty.
+   */
+  private recomputeTargetLanguages(): void {
+    const selectedIds = this.assigneeControl.value ?? [];
+    const langIds = new Set<number>();
+    for (const id of selectedIds) {
+      const site = this.filteredEmployees.find(e => e.id === id);
+      if (site && site.languageId && site.languageId !== 1) {
+        langIds.add(site.languageId);
+      }
+    }
+    const resolved: { id: number; code: string; name: string }[] = [];
+    for (const langId of langIds) {
+      const lang = this.activeLanguages.find(l => l.id === langId);
+      if (lang && lang.code) {
+        resolved.push(lang);
+      }
+    }
+    this.targetLanguages = resolved;
+    if (this.targetLanguages.length === 0) {
+      this.titleTranslateExpanded = false;
+      this.descTranslateExpanded = false;
+    }
+  }
+
+  /** Seed the per-language maps + source controls from saved task.translations. */
+  private prefillTranslations(task: CalendarTaskModel): void {
+    const translations = task.translations ?? [];
+    if (translations.length === 0) return;
+    const danish = translations.find(t => t.languageId === 1);
+    if (danish) {
+      this.titleControl.setValue(danish.name ?? task.title ?? '');
+      this.descriptionControl.setValue(danish.description ?? task.descriptionHtml ?? '');
+    }
+    let hasTitleTarget = false;
+    let hasDescTarget = false;
+    for (const t of translations) {
+      if (t.languageId === 1) continue;
+      this.titleByLang[t.languageId] = t.name ?? '';
+      this.descByLang[t.languageId] = t.description ?? '';
+      if (t.name) hasTitleTarget = true;
+      if (t.description) hasDescTarget = true;
+    }
+    if (hasTitleTarget) this.titleTranslateExpanded = true;
+    if (hasDescTarget) this.descTranslateExpanded = true;
+  }
+
+  /** Reveal the per-language Title fields and (re-)translate every target. */
+  toggleTitleTranslate(): void {
+    this.titleTranslateExpanded = true;
+    this.translateAll('title');
+  }
+
+  /** Reveal the per-language Description fields and (re-)translate every target. */
+  toggleDescTranslate(): void {
+    this.descTranslateExpanded = true;
+    this.translateAll('desc');
+  }
+
+  /**
+   * Translate the Danish source of the given field into every target language.
+   * No-op auto-fill when translation isn't configured (fields stay editable but
+   * empty) or when the Danish source is empty.
+   */
+  private translateAll(kind: 'title' | 'desc'): void {
+    for (const lang of this.targetLanguages) {
+      this.translateField(kind, lang);
+    }
+  }
+
+  /** Re-translate a single field for a single language (the per-field ↻). */
+  retranslateField(kind: 'title' | 'desc', languageId: number): void {
+    const lang = this.targetLanguages.find(l => l.id === languageId);
+    if (lang) {
+      this.translateField(kind, lang);
+    }
+  }
+
+  private translateField(kind: 'title' | 'desc', lang: { id: number; code: string; name: string }): void {
+    if (!this.translationConfigured) return;
+    const source = kind === 'title'
+      ? (this.titleControl.value ?? '')
+      : (this.descriptionControl.value ?? '');
+    if (!source.trim()) return;
+    this.translationService.getTranslation(new TranslationRequestModel({
+      sourceText: source,
+      sourceLanguageCode: 'da',
+      targetLanguageCode: lang.code,
+    })).subscribe(res => {
+      if (res && res.success) {
+        if (kind === 'title') {
+          this.titleByLang[lang.id] = res.model ?? '';
+        } else {
+          this.descByLang[lang.id] = res.model ?? '';
+        }
       }
     });
   }
@@ -730,9 +891,25 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     }
 
+    // Build the per-language Translates array: Danish source (languageId 1)
+    // always included, plus one entry per target language that has a non-empty
+    // title OR description. Empty targets are dropped (not persisted).
+    const danishName = this.titleControl.value ?? '';
+    const danishDescription = this.descriptionControl.value ?? '';
+    const translates: { name: string; description: string; languageId: number }[] = [
+      {name: danishName, description: danishDescription, languageId: 1},
+    ];
+    for (const lang of this.targetLanguages) {
+      const name = this.titleByLang[lang.id] ?? '';
+      const description = this.descByLang[lang.id] ?? '';
+      if (name || description) {
+        translates.push({name, description, languageId: lang.id});
+      }
+    }
+
     const payload: any = {
       // Backend CalendarTaskCreateRequestModel fields
-      translates: [{name: this.titleControl.value, languageId: 1}],
+      translates,
       // Send the date-only string (local Y-M-D), NOT the raw Date — a raw Date
       // is JSON-serialised via toISOString(), which shifts a local-midnight pick
       // by the browser's UTC offset (UTC+2 "Fri 3 Jul" → 2026-07-02T22:00Z) and
