@@ -24,7 +24,7 @@
     <div class="board-list">
       <div class="board-item" *ngFor="let board of boards">
         <span class="board-checkbox" [class.active]="isBoardActive(board.id)" [style.background]="isBoardActive(board.id) ? board.color : 'transparent'" [style.border-color]="isBoardActive(board.id) ? board.color : '#9e9e9e'" (click)="boardToggled.emit(board.id)">
-          <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon">check</mat-icon>
+          <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon" [style.color]="boardTextColor(board.color)">check</mat-icon>
         </span>
         <span class="board-name" (click)="boardToggled.emit(board.id)">{{ board.name }}</span>
         <button mat-icon-button class="board-menu-btn" [matMenuTriggerFor]="boardMenu" (click)="startEditBoard(board); $event.stopPropagation()">
