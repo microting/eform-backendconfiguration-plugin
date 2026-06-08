@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microting.eForm.Infrastructure.Models;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 
@@ -41,6 +42,14 @@ public class CalendarTaskResponseModel
     public int? SdkCaseId { get; set; }
     public int? ItemPlanningTagId { get; set; }
     public string? DescriptionHtml { get; set; }
+
+    /// <summary>
+    /// Per-language Title + Description for the task's AreaRule, so the edit
+    /// modal can pre-fill the multi-language fields. Empty for compliance/orphan
+    /// rows that have no AreaRule. The single Title/DescriptionHtml above remain
+    /// the caller-language values used for rendering.
+    /// </summary>
+    public List<CommonTranslationsModel> Translations { get; set; } = [];
     public List<CalendarTaskAttachmentDto> Attachments { get; set; } = new();
 
     /// <summary>

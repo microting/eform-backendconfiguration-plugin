@@ -503,6 +503,15 @@ public class BackendConfigurationCalendarService(
                     .Select(t => t.Name)
                     .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
 
+                // Per-language title+description for edit-mode prefill, plus the
+                // caller-language description (same selection as the title above).
+                var translations = arp.AreaRule?.AreaRuleTranslations?
+                    .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(t => new CommonTranslationsModel { Id = t.Id, LanguageId = t.LanguageId, Name = t.Name, Description = t.Description })
+                    .ToList() ?? [];
+                var description = translations.FirstOrDefault(t => t.LanguageId == userLanguageId)?.Description
+                    ?? translations.FirstOrDefault()?.Description ?? planning.Description;
+
                 var tags = allArpTags
                     .Where(x => x.AreaRulePlanningId == arp.Id)
                     .Select(x => planningTagNames.TryGetValue(x.ItemPlanningTagId, out var name) ? name : null)
@@ -589,7 +598,8 @@ public class BackendConfigurationCalendarService(
                         ExceptionId = exception?.Id,
                         EformId = arp.AreaRule?.EformId,
                         ItemPlanningTagId = arp.ItemPlanningTagId,
-                        DescriptionHtml = planning.Description,
+                        DescriptionHtml = description,
+                        Translations = translations,
                         Attachments = MapAttachments(arp)
                     };
 
@@ -692,7 +702,8 @@ public class BackendConfigurationCalendarService(
                             ExceptionId = orphan.Id,
                             EformId = arp.AreaRule?.EformId,
                             ItemPlanningTagId = arp.ItemPlanningTagId,
-                            DescriptionHtml = planning.Description,
+                            DescriptionHtml = description,
+                            Translations = translations,
                             Attachments = MapAttachments(arp)
                         };
 
@@ -722,6 +733,13 @@ public class BackendConfigurationCalendarService(
                     .Where(t => t.LanguageId == userLanguageId)
                     .Select(t => t.Name)
                     .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
+
+                var translations = arp.AreaRule?.AreaRuleTranslations?
+                    .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(t => new CommonTranslationsModel { Id = t.Id, LanguageId = t.LanguageId, Name = t.Name, Description = t.Description })
+                    .ToList() ?? [];
+                var description = translations.FirstOrDefault(t => t.LanguageId == userLanguageId)?.Description
+                    ?? translations.FirstOrDefault()?.Description ?? movedPlanning.Description;
 
                 var movedTags = allArpTags
                     .Where(x => x.AreaRulePlanningId == arp.Id)
@@ -773,7 +791,8 @@ public class BackendConfigurationCalendarService(
                     ExceptionId = movedIn.Id,
                     EformId = arp.AreaRule?.EformId,
                     ItemPlanningTagId = arp.ItemPlanningTagId,
-                    DescriptionHtml = movedPlanning.Description,
+                    DescriptionHtml = description,
+                    Translations = translations,
                     Attachments = MapAttachments(arp)
                 };
 
@@ -890,6 +909,13 @@ public class BackendConfigurationCalendarService(
                         .FirstOrDefault() ?? title;
                 }
 
+                // Per-language title+description so the edit modal can prefill a
+                // compliance-backed (past) task's multi-language fields.
+                var complianceTranslations = arp?.AreaRule?.AreaRuleTranslations?
+                    .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(t => new CommonTranslationsModel { Id = t.Id, LanguageId = t.LanguageId, Name = t.Name, Description = t.Description })
+                    .ToList() ?? [];
+
                 var tags = arp != null
                     ? complianceArpTags
                         .Where(x => x.AreaRulePlanningId == arp.Id)
@@ -978,6 +1004,7 @@ public class BackendConfigurationCalendarService(
                     DescriptionHtml = compliancePlanningsDict.TryGetValue(compliance.PlanningId, out var cp)
                         ? cp.Description
                         : null,
+                    Translations = complianceTranslations,
                     Attachments = MapAttachments(arp),
                     ExceptionId = complianceException?.Id,
                 };

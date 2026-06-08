@@ -422,6 +422,7 @@ export const enUS= {
   'year': 'year',
   // Modal labels
   'Title': 'Title',
+  'Translate': 'Translate',
   'Set tags...': 'Set tags...',
   'Assign to...': 'Assign to...',
   'Add description': 'Add description',

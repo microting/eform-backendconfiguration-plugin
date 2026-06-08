@@ -22,6 +22,9 @@ export interface CalendarTaskModel {
   boardId: number;
   color: string;
   descriptionHtml: string;
+  // Per-language Title + Description for edit-mode prefill of the multi-language
+  // fields (mirrors the backend CalendarTaskResponseModel.Translations).
+  translations?: { languageId: number; name: string; description: string }[];
   repeatRule: CalendarRepeatRule;
   repeatMeta?: CalendarRepeatMeta;
   taskDate: string;          // ISO "YYYY-MM-DD"

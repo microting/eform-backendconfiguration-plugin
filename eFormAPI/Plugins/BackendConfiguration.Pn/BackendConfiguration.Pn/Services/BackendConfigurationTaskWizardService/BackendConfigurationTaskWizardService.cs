@@ -301,7 +301,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PropertyId = x.PropertyId,
                     Translations = x.AreaRule.AreaRuleTranslations
                         .Select(y => new CommonTranslationsModel()
-                            { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name })
+                            { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name, Description = y.Description })
                         .ToList(),
                     RepeatEvery = (int)x.RepeatEvery,
                     StartDate = (DateTime)x.StartDate,
@@ -522,6 +522,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .Select(t => new AreaRuleTranslation
                     {
                         Name = t.Name,
+                        Description = t.Description,
                         LanguageId = t.LanguageId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId
@@ -833,9 +834,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         && nt.WorkflowState != Constants.WorkflowStates.Removed);
                 if (existing != null)
                 {
-                    if (existing.Name != t.Name)
+                    if (existing.Name != t.Name || existing.Description != t.Description)
                     {
                         existing.Name = t.Name;
+                        existing.Description = t.Description;
                         existing.UpdatedByUserId = _userService.UserId;
                         await existing.Update(_backendConfigurationPnDbContext);
                     }
@@ -845,6 +847,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     await new AreaRuleTranslation
                     {
                         Name = t.Name,
+                        Description = t.Description,
                         LanguageId = t.LanguageId,
                         AreaRuleId = areaRulePlanning.AreaRuleId,
                         CreatedByUserId = _userService.UserId,

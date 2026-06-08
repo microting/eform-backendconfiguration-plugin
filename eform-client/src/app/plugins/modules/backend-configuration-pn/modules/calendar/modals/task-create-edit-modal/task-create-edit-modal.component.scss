@@ -419,3 +419,35 @@ mat-form-field.w-100.mat-mdc-form-field-type-mtx-select {
   font-style: italic;
   padding: 4px 0;
 }
+
+// ---- Per-language Title & Description translate UI -----------------------
+
+// The translate / re-translate icon button sits as a suffix inside the field.
+// Keep it compact and visually muted so it reads as a secondary action.
+.gcal-translate-btn {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  color: rgba(0, 0, 0, 0.54);
+
+  .mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    color: rgba(0, 0, 0, 0.78);
+  }
+}
+
+// Stacked per-language fields rendered below the Danish source field. A small
+// left inset visually nests them under the source as "translations of it".
+.gcal-translate-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 0, 0, 0.08);
+}
