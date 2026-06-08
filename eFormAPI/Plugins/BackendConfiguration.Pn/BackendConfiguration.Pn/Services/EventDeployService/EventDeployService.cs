@@ -419,24 +419,33 @@ public class EventDeployService(
         // 0. Defense-in-depth site-assignment guard (#932 / #1377). This is the
         //    single source of truth for every PlanningCaseSite write, so it is
         //    the right place to refuse a cross-worker leak. A PlanningCaseSite
-        //    must only ever be written for a site that is in the planning's own
-        //    (non-removed) PlanningSites. The two callers already uphold this:
-        //    EnsureDeployedAsync site-narrows its candidates (#935 defect A) and
-        //    the on-demand EnsureComplianceForOccurrenceAsync caller passes an
-        //    assigned site. If either invariant ever regresses, fail loud here
-        //    rather than silently deploying a case to a non-assigned worker (the
-        //    exact symptom #932 reports). In EnsureDeployedAsync this throw is
-        //    swallowed by the per-rotation try/catch and recovered on the next
-        //    sync; on the on-demand path it surfaces the bug to the caller.
+        //    must only ever be written for a site that is legitimately tied to
+        //    this event — either the task's own (non-removed) PlanningSites, OR
+        //    an active worker of the event's PROPERTY (PropertyWorkers).
         //
-        //    Cost: this re-queries PlanningSites even though EnsureDeployedAsync
-        //    already narrowed by the same predicate. We keep it unconditional
-        //    (rather than passing a "trust me" flag from the narrowed caller) so
-        //    the guard genuinely protects EVERY write site, including future
-        //    callers. The extra indexed AnyAsync is negligible here: this method
-        //    only runs for candidates that survived the idempotence guard (i.e.
-        //    actually need deploying) and is dominated by the SDK ReadeForm +
-        //    CaseCreateLocalOnly round-trips that follow.
+        //    The on-demand calendar materialisation now lets a user complete a
+        //    future/on-demand occurrence on behalf of ANY active property worker
+        //    (the worker pickers list every property worker, same source as
+        //    GetLinkedSites). Such a worker may not be in PlanningSites, so the
+        //    guard accepts the property-worker case too — while still refusing a
+        //    site that is neither, so a stray id can never leak a case to an
+        //    unrelated worker.
+        //
+        //    The two callers uphold this: EnsureDeployedAsync site-narrows its
+        //    candidates to PlanningSites (#935 defect A) and the on-demand
+        //    EnsureComplianceForOccurrenceAsync caller validates the site is an
+        //    active property worker. If either invariant ever regresses, fail
+        //    loud here rather than silently deploying a case to an unrelated
+        //    worker (the exact symptom #932 reports). In EnsureDeployedAsync this
+        //    throw is swallowed by the per-rotation try/catch and recovered on
+        //    the next sync; on the on-demand path it surfaces the bug to the
+        //    caller.
+        //
+        //    Cost: at most two indexed AnyAsync (the PropertyWorkers probe is
+        //    only evaluated when the site is not already a PlanningSite). Both
+        //    are negligible against the SDK ReadeForm + CaseCreateLocalOnly
+        //    round-trips that follow, and this method only runs for candidates
+        //    that survived the idempotence guard (i.e. actually need deploying).
         var siteIsAssignedToPlanning = await itemsPlanningPnDbContext.PlanningSites
             .AsNoTracking()
             .AnyAsync(ps =>
@@ -447,10 +456,22 @@ public class EventDeployService(
             .ConfigureAwait(false);
         if (!siteIsAssignedToPlanning)
         {
-            throw new InvalidOperationException(
-                $"EventDeployService refused to deploy planning {planning.Id} to sdkSiteId {sdkSiteId}: "
-                + "the site is not in the planning's (non-removed) PlanningSites. Deploying here would "
-                + "leak a case to a non-assigned worker (#932/#1377).");
+            var siteIsActivePropertyWorker = await dbContext.PropertyWorkers
+                .AsNoTracking()
+                .AnyAsync(pw =>
+                        pw.PropertyId == areaRulePlanning.PropertyId
+                        && pw.WorkerId == sdkSiteId
+                        && pw.WorkflowState != Constants.WorkflowStates.Removed,
+                    ct)
+                .ConfigureAwait(false);
+            if (!siteIsActivePropertyWorker)
+            {
+                throw new InvalidOperationException(
+                    $"EventDeployService refused to deploy planning {planning.Id} to sdkSiteId {sdkSiteId}: "
+                    + "the site is neither in the planning's (non-removed) PlanningSites nor an active "
+                    + $"worker of property {areaRulePlanning.PropertyId}. Deploying here would leak a case "
+                    + "to an unrelated worker (#932/#1377).");
+            }
         }
 
         // 3. Resolve / create PlanningCase.

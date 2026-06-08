@@ -2697,18 +2697,46 @@ public class BackendConfigurationCalendarService(
                         localizationService.GetString("TaskHasNoComplianceCase"));
                 }
 
-                var planningSite = workerId.HasValue
-                    ? arp.PlanningSites?.FirstOrDefault(s =>
-                        s.SiteId == workerId.Value
-                        && s.WorkflowState != Constants.WorkflowStates.Removed)
-                    : arp.PlanningSites?.FirstOrDefault(s =>
-                        s.WorkflowState != Constants.WorkflowStates.Removed);
-                if (planningSite == null)
+                // Resolve the SDK site to materialise the on-demand case for.
+                //
+                // When the caller picks a worker, allow ANY active worker of the
+                // event's PROPERTY — not just the task's assigned PlanningSites.
+                // The calendar / task-tracker worker pickers now list every
+                // property worker (same source as GetLinkedSites:
+                // PropertyWorkers WHERE PropertyId = <property> AND not removed),
+                // so a user can complete a future/on-demand occurrence on behalf
+                // of any property worker. We still reject an arbitrary site id
+                // that is NOT a property worker, so a stray id can never leak a
+                // case to an unrelated worker.
+                //
+                // When no worker is picked, keep the historical default: pick the
+                // first non-removed PlanningSite assigned to the task.
+                int targetSiteId;
+                if (workerId.HasValue)
                 {
-                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                        workerId.HasValue
-                            ? localizationService.GetString("SelectedWorkerNotAssignedToTask")
-                            : localizationService.GetString("NoAssignedWorker"));
+                    var isActivePropertyWorker = await backendConfigurationPnDbContext.PropertyWorkers
+                        .AsNoTracking()
+                        .AnyAsync(pw =>
+                            pw.PropertyId == arp.PropertyId
+                            && pw.WorkerId == workerId.Value
+                            && pw.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (!isActivePropertyWorker)
+                    {
+                        return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                            localizationService.GetString("SelectedWorkerNotAssignedToTask"));
+                    }
+                    targetSiteId = workerId.Value;
+                }
+                else
+                {
+                    var planningSite = arp.PlanningSites?.FirstOrDefault(s =>
+                        s.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (planningSite == null)
+                    {
+                        return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                            localizationService.GetString("NoAssignedWorker"));
+                    }
+                    targetSiteId = planningSite.SiteId;
                 }
 
                 if (string.IsNullOrWhiteSpace(occurrenceDate))
@@ -2729,7 +2757,7 @@ public class BackendConfigurationCalendarService(
                 var deadline = parsedDate.Date;
 
                 var ensure = await eventDeployService
-                    .EnsureComplianceForOccurrenceAsync(arp, deadline, planningSite.SiteId)
+                    .EnsureComplianceForOccurrenceAsync(arp, deadline, targetSiteId)
                     .ConfigureAwait(false);
                 if (ensure == null || ensure.ComplianceId <= 0)
                 {
