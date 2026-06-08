@@ -311,9 +311,11 @@ export class TaskTrackerContainerComponent implements OnInit, AfterViewInit, Aft
           this.propertyService.getLinkedSites(data.model.propertyId, true)
             .subscribe((sites) => {
               if (sites && sites.success && sites.model) {
-                // only take the sites that are in the data.model.assignedTo
+                // List ALL workers assigned to the event's property (not just the
+                // task-assigned subset), sorted alphabetically by name. Locale-aware
+                // 'da' sort so Danish characters (æ/ø/å) order correctly.
                 this.selectWorkerForEditModal.componentInstance.sites =
-                  sites.model.filter(x => data.model.assignedTo.includes(x.id));
+                  [...sites.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
                 if (this.selectWorkerForEditModal.componentInstance.sites.length === 1) {
                   this.selectWorkerForEditModal.componentInstance.selectedSite = this.selectWorkerForEditModal.componentInstance.sites[0];
                 }
