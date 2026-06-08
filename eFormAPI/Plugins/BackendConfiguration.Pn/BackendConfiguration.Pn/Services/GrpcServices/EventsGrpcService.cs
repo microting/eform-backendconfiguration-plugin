@@ -227,7 +227,9 @@ public class EventsGrpcService(
             // itself; this read, which is what the worker actually sees, must
             // only return events assigned to their site.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         };
 
         var result = await calendarService.GetTasksForWeek(model);
@@ -355,7 +357,8 @@ public class EventsGrpcService(
                 "Caller has no PropertyWorker access to the requested property."));
         }
 
-        var result = await calendarService.GetTaskTrackerList(propertyId, (int)sdkSiteId)
+        var result = await calendarService
+            .GetTaskTrackerList(propertyId, (int)sdkSiteId, await siteResolver.GetSiteLanguageIdAsync((int)sdkSiteId))
             .ConfigureAwait(false);
 
         var response = new ListTaskTrackerResponse();
@@ -504,7 +507,14 @@ public class EventsGrpcService(
 
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        var language = await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
+        // Serve the eForm template (field labels/descriptions/options) in the
+        // worker's own site language; fall back to the DB-first language when the
+        // worker has no resolvable site or no row for that language exists.
+        var siteLanguageId = await siteResolver.GetSiteLanguageIdAsync().ConfigureAwait(false);
+        var language = siteLanguageId.HasValue
+            ? await sdkDbContext.Languages.FirstOrDefaultAsync(l => l.Id == siteLanguageId.Value).ConfigureAwait(false)
+              ?? await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false)
+            : await sdkDbContext.Languages.FirstAsync().ConfigureAwait(false);
 
         foreach (var (taskId, caseId) in taskIdToCaseId)
         {
@@ -1065,7 +1075,9 @@ public class EventsGrpcService(
             // #931 — the mobile stream only surfaces events assigned to the
             // caller's own site (the worker), never the whole property.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         };
 
         var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
@@ -1796,7 +1808,9 @@ public class EventsGrpcService(
             // #931 — scope the echo read to the caller's site, consistent with
             // the list/stream reads; a worker only ever sees their own events.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
@@ -2008,7 +2022,9 @@ public class EventsGrpcService(
             // #931 — scope the echo read to the caller's site, consistent with
             // the list/stream reads; a worker only ever sees their own events.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
@@ -2303,7 +2319,9 @@ public class EventsGrpcService(
             // #931 — scope the echo read to the caller's site, consistent with
             // the list/stream reads; a worker only ever sees their own events.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null
@@ -3225,7 +3243,9 @@ public class EventsGrpcService(
             // #931 — scope the echo read to the caller's site, consistent with
             // the list/stream reads; a worker only ever sees their own events.
             SiteIds = [sdkSiteId],
-            ActionableOnly = true
+            ActionableOnly = true,
+            // Serve Title/Description in the worker's own site language.
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
         }).ConfigureAwait(false);
 
         var refreshedTask = refreshed.Success && refreshed.Model != null

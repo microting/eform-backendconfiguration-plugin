@@ -10,6 +10,16 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 public interface IGrpcSiteResolver
 {
     Task<int> GetSdkSiteIdAsync();
+
+    /// <summary>
+    /// The SDK Site.LanguageId of the calling worker's resolved site, so the
+    /// gRPC path can serve Title/Description/eForm in the worker's own language.
+    /// Null when the worker has no resolvable site / no language (caller falls
+    /// back to its existing default language). Pass <paramref name="preResolvedSiteId"/>
+    /// when the caller already resolved the site via <see cref="GetSdkSiteIdAsync"/>
+    /// to avoid re-running the worker→site lookup.
+    /// </summary>
+    Task<int?> GetSiteLanguageIdAsync(int? preResolvedSiteId = null);
 }
 
 public class GrpcSiteResolver(
@@ -65,5 +75,24 @@ public class GrpcSiteResolver(
         }
 
         return siteWorker.SiteId ?? 0;
+    }
+
+    public async Task<int?> GetSiteLanguageIdAsync(int? preResolvedSiteId = null)
+    {
+        var siteId = preResolvedSiteId ?? await GetSdkSiteIdAsync().ConfigureAwait(false);
+        if (siteId == 0)
+        {
+            return null;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        // `LanguageId > 0` guards a malformed Site (LanguageId 0): return null so
+        // the caller falls back to its default rather than querying language 0.
+        return await sdkDbContext.Sites
+            .Where(s => s.Id == siteId && s.LanguageId > 0)
+            .Select(s => (int?)s.LanguageId)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
     }
 }

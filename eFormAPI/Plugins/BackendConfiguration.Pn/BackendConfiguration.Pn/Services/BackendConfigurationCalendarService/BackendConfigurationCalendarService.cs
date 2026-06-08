@@ -49,7 +49,10 @@ public class BackendConfigurationCalendarService(
             var weekEnd = DateTime.Parse(requestModel.WeekEnd, CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
-            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+            // gRPC mobile-worker path passes the worker's Site.LanguageId so the
+            // worker sees Title/Description in their own language; web/REST passes
+            // null and keeps the current-user language (#unchanged).
+            var userLanguageId = requestModel.LanguageId ?? (await userService.GetCurrentUserLanguage()).Id;
             var result = new List<CalendarTaskResponseModel>();
 
             // Get the default board for this property (first created board)
@@ -4005,11 +4008,13 @@ public class BackendConfigurationCalendarService(
     /// (compliance.Deadline &lt; UtcNow AND Status != 100)</c>).
     /// </remarks>
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
-        int propertyId, int? sdkSiteIdForFilter)
+        int propertyId, int? sdkSiteIdForFilter, int? languageId = null)
     {
         try
         {
-            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+            // gRPC mobile-worker path passes the worker's Site.LanguageId; web
+            // passes null and keeps the current-user language.
+            var userLanguageId = languageId ?? (await userService.GetCurrentUserLanguage()).Id;
             var dateTimeNow = DateTime.UtcNow;
             var result = new List<CalendarTaskResponseModel>();
 
@@ -4164,6 +4169,20 @@ public class BackendConfigurationCalendarService(
                         .FirstOrDefault() ?? title;
                 }
 
+                // Description in the caller/worker language (same selection as the
+                // title and as GetTasksForWeek): caller language, else first
+                // translation, else the single planning description.
+                var descriptionHtml = planning.Description;
+                if (arp?.AreaRule?.AreaRuleTranslations != null)
+                {
+                    descriptionHtml = arp.AreaRule.AreaRuleTranslations
+                        .Where(t => t.LanguageId == userLanguageId)
+                        .Select(t => t.Description)
+                        .FirstOrDefault()
+                        ?? arp.AreaRule.AreaRuleTranslations.Select(t => t.Description).FirstOrDefault()
+                        ?? planning.Description;
+                }
+
                 var tags = arp != null
                     ? complianceArpTags
                         .Where(x => x.AreaRulePlanningId == arp.Id)
@@ -4239,7 +4258,7 @@ public class BackendConfigurationCalendarService(
                     EformId = arp?.AreaRule?.EformId,
                     SdkCaseId = compliance.MicrotingSdkCaseId,
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
-                    DescriptionHtml = planning.Description,
+                    DescriptionHtml = descriptionHtml,
                     Attachments = MapAttachments(arp),
                     TaskIsExpired = taskIsExpired
                 };
