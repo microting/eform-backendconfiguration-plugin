@@ -606,11 +606,20 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     let selectedWorkerId: number | undefined;
 
     if (needsWorkerSelect) {
-      const sites: CommonDictionaryModel[] = task.assigneeIds.map((id, i) => ({
-        id,
-        name: task.workerNames[i] ?? '',
-        description: '',
-      }));
+      // List ALL workers assigned to the event's PROPERTY (not just the
+      // task-assigned subset), sorted alphabetically by name. Mirrors the
+      // task-tracker change (openSelectWorkerModal). getLinkedSites(propertyId,
+      // true) returns the property's non-removed PropertyWorkers as
+      // CommonDictionaryModel ({id, name, languageId}) — the exact shape the
+      // modal's `sites` input expects. Locale-aware 'da' sort so Danish
+      // characters (æ/ø/å) order correctly; copy the array first (no in-place
+      // mutation of the service response).
+      const linked = await firstValueFrom(
+        this.propertiesService.getLinkedSites(task.propertyId, true),
+      );
+      if (!linked?.success || !linked.model) return;
+      const sites: CommonDictionaryModel[] =
+        [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
 
       const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
         minWidth: '400px',
