@@ -1,5 +1,6 @@
 export const lvLV = {
   Actions: 'Darbības',
+  'Admin only': 'Admin only',
   areas: 'apgabali',
   Area: 'Apgabals',
   'Read more': 'Lasīt vairāk',

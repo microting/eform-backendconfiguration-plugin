@@ -1,5 +1,6 @@
 export const roRO = {
   Actions: 'Acțiuni',
+  'Admin only': 'Admin only',
   areas: 'zone',
   Area: 'Zonă',
   'Read more': 'Citeşte mai mult',

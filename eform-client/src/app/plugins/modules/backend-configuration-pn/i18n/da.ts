@@ -1,5 +1,6 @@
 export const da = {
   Actions: 'Handlinger',
+  'Admin only': 'Kun admin',
   areas: 'Områder',
   Area: 'Område',
   'Read more': 'Læs mere',

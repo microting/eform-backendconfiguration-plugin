@@ -4,6 +4,7 @@
   [cellTemplate]="{
     actions: actionsTpl
   }"
+  [headerTemplate]="adminHeaderTpls"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="false"
@@ -12,6 +13,16 @@
   [showColumnMenuButton]="false"
 >
 </mtx-grid>
+
+<ng-template #itemIdHeaderTpl let-col>
+  <span [matTooltip]="'Admin only' | translate">{{ col.header | async }}</span>
+</ng-template>
+<ng-template #eFormIdHeaderTpl let-col>
+  <span [matTooltip]="'Admin only' | translate">{{ col.header | async }}</span>
+</ng-template>
+<ng-template #serverTimeHeaderTpl let-col>
+  <span [matTooltip]="'Admin only' | translate">{{ col.header | async }}</span>
+</ng-template>
 
 <ng-template #actionsTpl let-row let-i="index">
   <div class="report-actions" id="action-items-{{i}}">

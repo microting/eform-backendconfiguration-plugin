@@ -1,5 +1,6 @@
 export const svSE = {
   Actions: 'Handlingar',
+  'Admin only': 'Admin only',
   areas: 'områden',
   Area: 'Område',
   'Read more': 'Läs mer',

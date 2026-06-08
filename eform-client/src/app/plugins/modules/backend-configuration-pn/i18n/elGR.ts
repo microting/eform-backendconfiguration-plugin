@@ -1,5 +1,6 @@
 export const elGR = {
   Actions: 'Ενέργειες',
+  'Admin only': 'Admin only',
   areas: 'περιοχές',
   Area: 'Περιοχή',
   'Read more': 'Διαβάστε περισσότερα',

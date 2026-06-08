@@ -1,5 +1,6 @@
 export const nlNL = {
   Actions: 'Acties',
+  'Admin only': 'Admin only',
   areas: 'gebieden',
   Area: 'Gebied',
   'Read more': 'Lees meer',

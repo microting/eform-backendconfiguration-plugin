@@ -1,5 +1,6 @@
 export const plPL = {
   Actions: 'działania',
+  'Admin only': 'Admin only',
   areas: 'Obszary',
   Area: 'Obszar',
   'Read more': 'Czytaj więcej',
