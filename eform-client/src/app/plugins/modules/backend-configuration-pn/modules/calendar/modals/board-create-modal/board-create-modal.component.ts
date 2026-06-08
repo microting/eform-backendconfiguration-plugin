@@ -24,7 +24,7 @@ export interface BoardCreateModalData {
       grid-template-columns: repeat(8, 32px);
       gap: 8px;
       margin-top: 4px;
-      min-width: 312px;
+      min-width: 352px;
     }
     .color-swatch {
       width: 32px;

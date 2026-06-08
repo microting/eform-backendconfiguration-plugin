@@ -1,5 +1,6 @@
 export const ltLT = {
   Actions: 'Veiksmai',
+  'Admin only': 'Admin only',
   areas: 'srityse',
   Area: 'Plotas',
   'Read more': 'Skaityti daugiau',

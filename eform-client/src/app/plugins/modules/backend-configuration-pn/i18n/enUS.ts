@@ -1,5 +1,6 @@
 export const enUS= {
   Actions: 'Actions',
+  'Admin only': 'Admin only',
   areas: 'areas',
   Area: 'Area',
   'Read more': 'Read more',

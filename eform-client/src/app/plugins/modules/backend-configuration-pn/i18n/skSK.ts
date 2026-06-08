@@ -1,5 +1,6 @@
 export const skSK = {
   Actions: 'Akcie',
+  'Admin only': 'Admin only',
   areas: 'oblasti',
   Area: 'Oblasť',
   'Read more': 'Čítaj viac',

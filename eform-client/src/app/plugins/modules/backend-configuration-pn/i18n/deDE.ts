@@ -1,5 +1,6 @@
 export const deDE = {
   Actions: 'Aktionen',
+  'Admin only': 'Admin only',
   areas: 'Bereiche',
   Area: 'Gebiet',
   'Read more': 'Weiterlesen',

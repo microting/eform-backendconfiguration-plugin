@@ -1,5 +1,6 @@
 export const isIS = {
   Actions: 'Aðgerðir',
+  'Admin only': 'Admin only',
   areas: 'svæði',
   Area: 'Svæði',
   'Read more': 'Lestu meira',

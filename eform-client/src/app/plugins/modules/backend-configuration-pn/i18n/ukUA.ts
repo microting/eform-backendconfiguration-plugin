@@ -1,5 +1,6 @@
 export const ukUA = {
   Actions: 'Дії',
+  'Admin only': 'Admin only',
   areas: 'Зони',
   Area: 'Зона',
   'Read more': 'Читати далі',

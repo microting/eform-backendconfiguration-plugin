@@ -1,5 +1,6 @@
 export const noNO = {
   Actions: 'Handlinger',
+  'Admin only': 'Admin only',
   areas: 'områder',
   Area: 'Område',
   'Read more': 'Les mer',

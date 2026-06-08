@@ -1,5 +1,6 @@
 export const huHU = {
   Actions: 'Műveletek',
+  'Admin only': 'Admin only',
   areas: 'területeken',
   Area: 'Terület',
   'Read more': 'Olvass tovább',

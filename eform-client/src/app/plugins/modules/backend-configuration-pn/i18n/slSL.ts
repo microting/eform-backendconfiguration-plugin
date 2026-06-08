@@ -1,5 +1,6 @@
 export const slSL = {
   Actions: 'Dejanja',
+  'Admin only': 'Admin only',
   areas: 'področja',
   Area: 'Območje',
   'Read more': 'Preberi več',

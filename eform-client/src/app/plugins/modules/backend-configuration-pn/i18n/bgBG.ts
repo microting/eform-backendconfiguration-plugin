@@ -1,5 +1,6 @@
 export const bgBG = {
   Actions: 'Действия',
+  'Admin only': 'Admin only',
   areas: 'области',
   Area: '■ площ',
   'Read more': 'Прочетете още',

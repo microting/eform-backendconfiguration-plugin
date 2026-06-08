@@ -1,5 +1,6 @@
 export const ptPT = {
   Actions: 'Ações',
+  'Admin only': 'Admin only',
   areas: 'áreas',
   Area: 'Área',
   'Read more': 'Consulte Mais informação',

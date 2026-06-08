@@ -1,5 +1,6 @@
 export const esES = {
   Actions: 'Comportamiento',
+  'Admin only': 'Admin only',
   areas: 'áreas',
   Area: 'Área',
   'Read more': 'Leer más',

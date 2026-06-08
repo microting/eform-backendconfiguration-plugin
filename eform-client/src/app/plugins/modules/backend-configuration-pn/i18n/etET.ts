@@ -1,5 +1,6 @@
 export const etET = {
   Actions: 'Tegevused',
+  'Admin only': 'Admin only',
   areas: 'alad',
   Area: 'Piirkond',
   'Read more': 'Loe rohkem',

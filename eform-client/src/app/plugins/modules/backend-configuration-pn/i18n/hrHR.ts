@@ -1,5 +1,6 @@
 export const hrHR = {
   Actions: 'Radnje',
+  'Admin only': 'Admin only',
   areas: 'područja',
   Area: 'Površina',
   'Read more': 'Čitaj više',

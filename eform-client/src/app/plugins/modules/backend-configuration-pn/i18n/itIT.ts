@@ -1,5 +1,6 @@
 export const itIT = {
   Actions: 'Azioni',
+  'Admin only': 'Admin only',
   areas: 'le zone',
   Area: 'La zona',
   'Read more': 'Per saperne di più',

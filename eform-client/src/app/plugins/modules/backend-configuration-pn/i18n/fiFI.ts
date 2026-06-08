@@ -1,5 +1,6 @@
 export const fiFI = {
   Actions: 'Toiminnot',
+  'Admin only': 'Admin only',
   areas: 'alueilla',
   Area: 'Alue',
   'Read more': 'Lue lisää',

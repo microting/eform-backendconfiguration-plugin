@@ -1,5 +1,6 @@
 export const frFR = {
   Actions: 'Actions',
+  'Admin only': 'Admin only',
   areas: 'zones',
   Area: 'Zone',
   'Read more': 'Lire la suite',

@@ -1,5 +1,6 @@
 export const csCZ = {
   Actions: 'Akce',
+  'Admin only': 'Admin only',
   areas: 'oblastí',
   Area: 'Plocha',
   'Read more': 'Přečtěte si více',
