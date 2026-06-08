@@ -610,10 +610,33 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             }
         }
 
+        // Seed data hardcodes AreaTranslation.LanguageId as 1=da, 2=en-US, 3=de-DE, but the
+        // SDK Languages table uses environment-specific auto-increment ids. Resolve the real
+        // SDK language id by code so translations point at languages that actually exist.
+        var sdkLanguagesForAreaSeed = await sdkDbContext.Languages.ToListAsync().ConfigureAwait(false);
+        var seedLanguageIdToCode = new Dictionary<int, string> { { 1, "da" }, { 2, "en-US" }, { 3, "de-DE" } };
+        var seedLanguageIdToSdkId = new Dictionary<int, int>();
+        foreach (var (seedLanguageId, languageCode) in seedLanguageIdToCode)
+        {
+            var sdkLanguage = sdkLanguagesForAreaSeed.FirstOrDefault(x => x.LanguageCode == languageCode);
+            if (sdkLanguage != null)
+            {
+                seedLanguageIdToSdkId[seedLanguageId] = sdkLanguage.Id;
+            }
+        }
+
         foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
                      .Where(newArea => !backendConfigurationPnDbContext.Areas.Any(x => x.Id == newArea.Id))
                      .Where(x => x.IsDisabled == false))
         {
+            foreach (var translation in newArea.AreaTranslations)
+            {
+                if (seedLanguageIdToSdkId.TryGetValue(translation.LanguageId, out var sdkLanguageId))
+                {
+                    translation.LanguageId = sdkLanguageId;
+                }
+            }
+
             await newArea.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
 
