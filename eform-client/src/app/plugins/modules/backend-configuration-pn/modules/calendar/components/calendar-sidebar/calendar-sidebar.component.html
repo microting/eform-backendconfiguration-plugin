@@ -30,7 +30,7 @@
         <button mat-icon-button class="board-menu-btn" [matMenuTriggerFor]="boardMenu" (click)="startEditBoard(board); $event.stopPropagation()">
           <mat-icon>more_vert</mat-icon>
         </button>
-        <mat-menu #boardMenu="matMenu">
+        <mat-menu #boardMenu="matMenu" class="board-edit-menu">
           <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <label class="field-label">{{ 'Navn tavle' | translate }}</label>
             <mat-form-field appearance="outline" style="width: 100%;">
