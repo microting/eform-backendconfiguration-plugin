@@ -1,7 +1,7 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
-import {CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
+import {boardTextColor, CalendarBoardModel, CALENDAR_COLORS} from '../../../../models/calendar';
 import {TeamCreateDialogComponent} from './team-create-dialog.component';
 import {TeamDeleteDialogComponent} from './team-delete-dialog.component';
 import {TagCreateDialogComponent} from './tag-create-dialog.component';
@@ -41,6 +41,8 @@ export class CalendarSidebarComponent {
   @Output() updateBoard = new EventEmitter<{id: number; name: string; color: string}>();
   @Output() deleteBoard = new EventEmitter<CalendarBoardModel>();
   @Output() deleteTag = new EventEmitter<number>();
+
+  readonly boardTextColor = boardTextColor;
 
   editingTagId: number | null = null;
   editingTagName = '';

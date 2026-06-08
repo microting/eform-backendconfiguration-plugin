@@ -11,6 +11,7 @@
   [style.width]="widthStyle"
   [style.z-index]="zIndexStyle"
   [style.background-color]="task.color"
+  [style.color]="boardTextColor(task.color)"
   cdkDrag
   [cdkDragData]="task"
   [cdkDragDisabled]="task.completed || resizing"

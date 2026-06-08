@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
-import {CalendarTaskLayoutModel} from '../../../../models/calendar';
+import {boardTextColor, CalendarTaskLayoutModel} from '../../../../models/calendar';
 
 export const HOUR_HEIGHT = 52; // px per hour
 
@@ -18,6 +18,8 @@ export interface TaskResizePayload {
   styleUrls: ['./calendar-task-block.component.scss'],
 })
 export class CalendarTaskBlockComponent {
+  readonly boardTextColor = boardTextColor;
+
   @Input() task!: CalendarTaskLayoutModel;
   @Input() hourHeight = HOUR_HEIGHT;
   @Input() showId = false;
