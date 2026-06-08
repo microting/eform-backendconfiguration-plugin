@@ -267,24 +267,30 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 					areaRule.FolderName = "00. Morgenrundtur";
 
 					await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-					var areaRuleTranslation = new AreaRuleTranslation
+					var areaRuleTranslations = new List<AreaRuleTranslation>
 					{
-						AreaRuleId = areaRule.Id,
-						LanguageId = 1,
-						Name = "Morgenrundtur",
-						CreatedByUserId = _userService.UserId,
-						UpdatedByUserId = _userService.UserId
+						new()
+						{
+							AreaRuleId = areaRule.Id,
+							LanguageId = 1, // da
+							Name = "Morgenrundtur",
+							CreatedByUserId = _userService.UserId,
+							UpdatedByUserId = _userService.UserId
+						},
+						new()
+						{
+							AreaRuleId = areaRule.Id,
+							LanguageId = 2, // en-US
+							Name = "Morning tour",
+							CreatedByUserId = _userService.UserId,
+							UpdatedByUserId = _userService.UserId
+						}
 					};
-					await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
-					areaRuleTranslation = new AreaRuleTranslation
+					await AreaRuleLanguageHelper.RemapSeedLanguageIdsAsync(areaRuleTranslations, sdkDbContext).ConfigureAwait(false);
+					foreach (var areaRuleTranslation in areaRuleTranslations)
 					{
-						AreaRuleId = areaRule.Id,
-						LanguageId = 2,
-						Name = "Morning tour",
-						CreatedByUserId = _userService.UserId,
-						UpdatedByUserId = _userService.UserId
-					};
-					await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
+						await areaRuleTranslation.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+					}
 				}
 			}
 
@@ -336,6 +342,8 @@ public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRul
 						areaRule.ComplianceModifiable = true;
 						areaRule.NotificationsModifiable = true;
 						areaRule.EformId = eformId;
+						await AreaRuleLanguageHelper
+							.RemapSeedLanguageIdsAsync(areaRule, sdkDbContext).ConfigureAwait(false);
 						await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 					}
 				}
