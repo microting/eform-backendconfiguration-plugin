@@ -11,8 +11,7 @@ import {EformVisualEditorService} from 'src/app/common/services';
 import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
-import {selectLanguages} from 'src/app/state/application-settings/application-settings.selector';
-import {LanguagesModel} from 'src/app/common/models';
+import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
 import {TranslationService, TranslationRequestModel} from 'src/app/common/services/translation.service';
 import {
   BackendConfigurationPnCalendarFilesService,
@@ -165,6 +164,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     private filesService: BackendConfigurationPnCalendarFilesService,
     private googleDriveService: BackendConfigurationPnGoogleDriveService,
     private translationService: TranslationService,
+    private appSettingsStateService: AppSettingsStateService,
   ) {}
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
@@ -245,10 +245,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.currentLanguageId = langId ?? 1;
     });
 
-    // Load the active languages list (id/code/name) from the app-settings store.
-    // Used to resolve each assignee's languageId to a translatable target.
-    this.store.select(selectLanguages).pipe(take(1)).subscribe((model: LanguagesModel) => {
-      this.activeLanguages = (model?.languages ?? [])
+    // Load the active languages list (id/code/name) used to resolve each
+    // assignee's languageId to a translatable target. Fetch via the settings
+    // service (mirrors the device-users modal) rather than reading the
+    // app-settings store — that store is only populated by the settings/profile
+    // pages, so in the calendar flow it would be empty and the translate icon
+    // would never appear.
+    this.appSettingsStateService.getLanguages().pipe(take(1)).subscribe(res => {
+      this.activeLanguages = (res?.model?.languages ?? [])
         .filter(l => l.isActive)
         .map(l => ({id: l.id, code: l.languageCode, name: l.name}));
       this.recomputeTargetLanguages();
@@ -557,6 +561,19 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     if (this.targetLanguages.length === 0) {
       this.titleTranslateExpanded = false;
       this.descTranslateExpanded = false;
+    } else {
+      // Re-expand when a current target language already has translated text.
+      // In edit mode prefillTranslations populates titleByLang/descByLang and
+      // expands the fields, but it runs before the active-languages list has
+      // loaded; the first recompute pass then sees an empty target set and
+      // collapses them. Once the languages arrive we restore the expansion so
+      // the saved translations aren't hidden behind a collapsed field.
+      if (this.targetLanguages.some(l => (this.titleByLang[l.id] ?? '').length > 0)) {
+        this.titleTranslateExpanded = true;
+      }
+      if (this.targetLanguages.some(l => (this.descByLang[l.id] ?? '').length > 0)) {
+        this.descTranslateExpanded = true;
+      }
     }
   }
 
