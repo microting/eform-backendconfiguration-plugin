@@ -164,6 +164,95 @@ public class CalendarMultiLanguageTitleDescriptionTests : TestBaseSetup
         Assert.That(da.Description, Is.EqualTo("Kontrollér ventiler og noter tryk."));
     }
 
+    // Seeds a monthly 1st-Saturday task with da/en/de AreaRuleTranslations
+    // (Name+Description) and returns the property id + language ids.
+    private async Task<(int PropertyId, Langs Langs)> SeedTriLingualTask()
+    {
+        var langs = await EnsureLanguages();
+
+        var area = new Area { Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0, WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property { Name = $"MlProp-{Guid.NewGuid()}", ItemPlanningTagId = 0, WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule { AreaId = area.Id, PropertyId = property.Id, EformId = 0, WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        foreach (var (langId, name, desc) in new[]
+                 {
+                     (langs.Da, "Tank 4 inspektion", "Kontrollér ventiler og noter tryk."),
+                     (langs.En, "Tank 4 inspection", "Check valves and note the pressure."),
+                     (langs.De, "Tank 4 Inspektion", "Ventile prüfen und den Druck notieren."),
+                 })
+        {
+            await BackendConfigurationPnDbContext.AreaRuleTranslations.AddAsync(new AreaRuleTranslation
+            { AreaRuleId = areaRule.Id, LanguageId = langId, Name = name, Description = desc, WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 });
+        }
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var startDate = new DateTime(2026, 6, 6, 0, 0, 0, DateTimeKind.Utc);
+        var planning = new Planning
+        {
+            Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Month, StartDate = startDate,
+            DayOfMonth = 0, Description = "Kontrollér ventiler og noter tryk.", RelatedEFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arp = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id, PropertyId = property.Id, AreaId = area.Id, ItemPlanningId = planning.Id,
+            StartDate = startDate, Status = true, RepeatType = 3, RepeatEvery = 1,
+            RepeatOrdinalWeek = 1, DayOfWeek = 6,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        await BackendConfigurationPnDbContext.CalendarConfigurations.AddAsync(new CalendarConfiguration
+        { AreaRulePlanningId = arp.Id, StartHour = 9.0, Duration = 1.0, WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        return (property.Id, langs);
+    }
+
+    // The gRPC seam: requestModel.LanguageId overrides the current-user language
+    // (the worker's Site.LanguageId), and null falls back to the current user.
+    [Test]
+    public async Task GetTasksForWeek_RequestLanguageId_OverridesCurrentUserLanguage()
+    {
+        var core = await GetCore();
+        var (propertyId, langs) = await SeedTriLingualTask();
+
+        // Current user is DANISH; the request asks for ENGLISH (the worker's site).
+        var svc = BuildService(core, langs.Da);
+        var weekStart = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        async Task<CalendarTaskResponseModel> Tile(int? languageId)
+        {
+            var res = await svc.GetTasksForWeek(new CalendarTaskRequestModel
+            {
+                PropertyId = propertyId, WeekStart = IsoUtc(weekStart),
+                WeekEnd = IsoUtc(weekStart.AddDays(6).AddHours(23).AddMinutes(59)),
+                ActionableOnly = false, BoardIds = [], TagNames = [], SiteIds = [], LanguageId = languageId
+            });
+            Assert.That(res.Success, Is.True, res.Message);
+            return res.Model!.Single(t => t.TaskDate == "2026-06-06");
+        }
+
+        var overridden = await Tile(langs.En);
+        Assert.That(overridden.Title, Is.EqualTo("Tank 4 inspection"), "LanguageId override → English title");
+        Assert.That(overridden.DescriptionHtml, Is.EqualTo("Check valves and note the pressure."), "LanguageId override → English description");
+
+        var fallback = await Tile(null);
+        Assert.That(fallback.Title, Is.EqualTo("Tank 4 inspektion"), "null LanguageId → current-user (Danish) title");
+        Assert.That(fallback.DescriptionHtml, Is.EqualTo("Kontrollér ventiler og noter tryk."), "null LanguageId → current-user (Danish) description");
+    }
+
     private BackendConfigurationCalendarService BuildService(eFormCore.Core core, int callerLanguageId)
     {
         var language = MicrotingDbContext!.Languages.First(x => x.Id == callerLanguageId);

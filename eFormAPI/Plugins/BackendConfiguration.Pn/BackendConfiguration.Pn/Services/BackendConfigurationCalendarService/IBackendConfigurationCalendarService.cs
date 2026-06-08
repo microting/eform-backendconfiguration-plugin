@@ -29,7 +29,7 @@ public interface IBackendConfigurationCalendarService
     /// disable site filtering (admin context).
     /// </summary>
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
-        int propertyId, int? sdkSiteIdForFilter);
+        int propertyId, int? sdkSiteIdForFilter, int? languageId = null);
     Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
