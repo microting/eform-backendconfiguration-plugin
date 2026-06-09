@@ -42,6 +42,6 @@
   </mat-form-field>
   <mat-form-field>
     <mat-label>{{ 'Search' | translate }}</mat-label>
-    <input matInput [(ngModel)]="filters.nameFilter" (ngModelChange)="emit()">
+    <input matInput [(ngModel)]="filters.nameFilter" (ngModelChange)="onSearchChange($event)">
   </mat-form-field>
 </div>

@@ -1,4 +1,6 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {Subject} from 'rxjs';
+import {debounceTime, takeUntil} from 'rxjs/operators';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskListFiltrationModel} from '../../../../models/calendar';
 
@@ -8,7 +10,7 @@ import {CalendarBoardModel, CalendarTaskListFiltrationModel} from '../../../../m
   styleUrls: ['./calendar-task-list-filters.component.scss'],
   standalone: false,
 })
-export class CalendarTaskListFiltersComponent {
+export class CalendarTaskListFiltersComponent implements OnInit, OnDestroy {
   @Input() properties: CommonDictionaryModel[] = [];
   @Input() boards: CalendarBoardModel[] = [];
   @Input() eforms: {id: number; label: string}[] = [];
@@ -22,8 +24,25 @@ export class CalendarTaskListFiltersComponent {
     tagIds: [], status: null, complianceEnabled: null, nameFilter: null,
   };
 
+  private searchChanged = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  ngOnInit() {
+    this.searchChanged.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => this.emit());
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   emit() {
     this.filtersChanged.emit({...this.filters});
+  }
+
+  onSearchChange(value: string) {
+    this.filters.nameFilter = value;
+    this.searchChanged.next(value);
   }
 
   onPropertyChange(ids: number[]) {

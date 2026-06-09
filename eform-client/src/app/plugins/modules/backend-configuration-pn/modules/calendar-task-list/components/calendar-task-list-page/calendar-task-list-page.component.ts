@@ -121,6 +121,8 @@ export class CalendarTaskListPageComponent implements OnInit {
     this.loadTasks();
   }
 
+  // Board names/colors are resolved from the property-scoped board list, so they only appear
+  // when a single property is selected (table swatch falls back to task.color).
   onPropertyChanged(propertyId: number | null) {
     this.boards = [];
     this.workers = [];
@@ -177,6 +179,7 @@ export class CalendarTaskListPageComponent implements OnInit {
     const rows = this.tasks.map(t => [
       t.id,
       this.properties.find(p => p.id === t.propertyId)?.name ?? '',
+      // Board names only resolve when a single property is selected (boards is property-scoped).
       this.boards.find(b => b.id === t.boardId)?.name ?? '',
       this.tags.find(x => x.id === t.itemPlanningTagId)?.name ?? '',
       t.title ?? '',
