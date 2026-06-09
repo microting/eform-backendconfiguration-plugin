@@ -72,7 +72,8 @@ export class CalendarTaskBlockComponent {
   }
 
   get widthStyle(): string {
-    if (this.raised) return `${100 - this.task._left}%`;
+    // _width already equals 100 - _left (cards extend to the right edge), so a
+    // raised card needs no width change — raising is driven purely by z-index.
     return `${this.task._width}%`;
   }
 
@@ -82,7 +83,7 @@ export class CalendarTaskBlockComponent {
   }
 
   get isInCascade(): boolean {
-    return this.task._width < 100;
+    return !!this.task._inGroup;
   }
 
   // Click on the card body: always open the detail. For cascaded cards

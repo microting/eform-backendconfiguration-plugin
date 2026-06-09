@@ -113,6 +113,10 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _left: number;    // left edge in % of day-column usable width
   _width: number;   // width in % of day-column usable width
   _zIndex: number;  // default stacking order within the conflict group
+  // True when this card belongs to a multi-card overlap group. Drives the
+  // click-to-raise behaviour (isInCascade) — geometry alone can't tell, since
+  // the leftmost card in a group has _width === 100 just like a solo card.
+  _inGroup?: boolean;
 }
 
 // Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the

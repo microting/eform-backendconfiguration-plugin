@@ -14,7 +14,7 @@ export class CalendarLayoutService {
     const events: CalendarTaskLayoutModel[] = tasks
       .slice()
       .sort((a, b) => a.startHour - b.startHour)
-      .map(t => ({...t, _left: 0, _width: 100, _zIndex: 10}));
+      .map(t => ({...t, _left: 0, _width: 100, _zIndex: 10, _inGroup: false}));
 
     // Build conflict groups: any pair that overlaps in time joins the same group.
     const groups: CalendarTaskLayoutModel[][] = [];
@@ -48,6 +48,9 @@ export class CalendarLayoutService {
         ev._left = i * cardWidthPct;
         ev._width = 100 - ev._left; // extend to the right edge, behind the cards in front
         ev._zIndex = 10 + i;
+        // Flag multi-card overlap groups so click-to-raise works even for the
+        // leftmost card (whose _width === 100 is indistinguishable from solo).
+        ev._inGroup = n > 1;
       });
     });
 

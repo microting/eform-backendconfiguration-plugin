@@ -43,6 +43,7 @@ describe('CalendarLayoutService', () => {
     expect(result[0]._left).toBe(0);
     expect(result[0]._width).toBe(100);
     expect(result[0]._zIndex).toBe(10);
+    expect(result[0]._inGroup).toBe(false);
   });
 
   it('two non-overlapping tasks each get full width', () => {
@@ -60,6 +61,10 @@ describe('CalendarLayoutService', () => {
     expect(result[1]._width).toBe(50);
     expect(result[0]._zIndex).toBe(10);
     expect(result[1]._zIndex).toBe(11);
+    // Both cards — including the leftmost (_width === 100) — are flagged as in a
+    // multi-card overlap group so click-to-raise works for either.
+    expect(result[0]._inGroup).toBe(true);
+    expect(result[1]._inGroup).toBe(true);
   });
 
   it('three mutually overlapping tasks: extend-right cascade geometry', () => {
