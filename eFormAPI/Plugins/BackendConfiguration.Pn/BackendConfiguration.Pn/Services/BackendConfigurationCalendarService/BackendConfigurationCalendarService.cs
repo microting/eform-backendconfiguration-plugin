@@ -1085,10 +1085,13 @@ public class BackendConfigurationCalendarService(
             var areaRulePlannings = await query.ToListAsync();
             var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
 
-            var calConfigsDict = await backendConfigurationPnDbContext.CalendarConfigurations
+            var calConfigsList = await backendConfigurationPnDbContext.CalendarConfigurations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .ToDictionaryAsync(x => x.AreaRulePlanningId);
+                .ToListAsync();
+            var calConfigsDict = calConfigsList
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionary(g => g.Key, g => g.First());
 
             var planningTagIds = areaRulePlannings
                 .SelectMany(x => x.AreaRulePlanningTags
