@@ -1,12 +1,6 @@
 import {Injectable} from '@angular/core';
 import {CalendarTaskLayoutModel, CalendarTaskModel} from '../../../models/calendar';
 
-// Overlap factor for the equal-divide-with-overlap layout. Each card in a
-// conflict group of N gets width = colW * OVERLAP_FACTOR / N, so adjacent
-// cards overlap their neighbours. 1.8 matches Google Calendar's density —
-// measured from screenshots in 2026-05-24 design spec.
-const OVERLAP_FACTOR = 1.8;
-
 @Injectable({providedIn: 'root'})
 export class CalendarLayoutService {
 
@@ -42,17 +36,17 @@ export class CalendarLayoutService {
 
     groups.forEach(group => {
       const n = group.length;
-      if (n === 1) {
-        group[0]._left = 0;
-        group[0]._width = 100;
-        group[0]._zIndex = 10;
-        return;
-      }
-      const cardWidthPct = 100 * OVERLAP_FACTOR / n;
-      const stepPct = (100 - cardWidthPct) / (n - 1);
+      // Cascade-with-overlap: each card in a conflict group of N starts at an
+      // equal 100/N step (left = i * 100/N) but extends all the way to the
+      // right edge (width = 100 - left), so cards behind run underneath the
+      // ones in front. The rightmost card (highest i) sits on top and shows
+      // fully; each earlier card reveals a 100/N strip before the next one
+      // overlaps it. For N === 1 this collapses to a single full-width card
+      // at left 0.
+      const cardWidthPct = 100 / n;
       group.forEach((ev, i) => {
-        ev._left = i * stepPct;
-        ev._width = cardWidthPct;
+        ev._left = i * cardWidthPct;
+        ev._width = 100 - ev._left; // extend to the right edge, behind the cards in front
         ev._zIndex = 10 + i;
       });
     });
