@@ -37,11 +37,23 @@ export class CalendarUiEnhancementsPage {
    * clean integer hour. Tests downstream depend on this for their math.
    */
   async clickEmptyTimeSlot(dayOffset: number, hour: number): Promise<void> {
+    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+    const hourHeight = 65;
+    // Scroll the TARGET hour into view, neutralising the grid's scrollToNow()
+    // auto-scroll. The grid scrolls to the current time on load, so without
+    // controlling the scroll the click coordinate (box.y + hour*hourHeight)
+    // lands on the wrong cell — or off the visible area for late hours —
+    // depending on the time of day the suite runs. Positioning the target ~150px
+    // below the visible top keeps it clear of the sticky day-header and works
+    // for any hour, early or late.
+    await this.page.evaluate((top) => {
+      const w = document.querySelector('.week-grid-wrapper') as HTMLElement | null;
+      if (w) { w.scrollTop = top; }
+    }, Math.max(0, hour * hourHeight - 150));
+    await this.page.waitForTimeout(300);
     const dayCell = this.page.locator(`.day-cell-content[data-day="${dayOffset}"]`);
     const box = await dayCell.boundingBox();
     if (!box) throw new Error(`Day cell ${dayOffset} not found`);
-    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
-    const hourHeight = 65;
     const y = box.y + hour * hourHeight + 5;
     const x = box.x + box.width / 2;
     await this.page.mouse.click(x, y);
