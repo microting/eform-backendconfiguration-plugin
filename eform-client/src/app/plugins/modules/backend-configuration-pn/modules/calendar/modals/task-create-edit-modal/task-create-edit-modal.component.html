@@ -446,6 +446,7 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'My boards' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventBoard"
             [formControl]="boardControl"
             [items]="filteredBoards"
             bindValue="id"

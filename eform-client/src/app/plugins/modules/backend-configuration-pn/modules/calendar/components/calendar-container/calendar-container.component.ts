@@ -72,6 +72,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
   activeBoardIds: number[] = [];
+  // The board the user most recently turned ON in the sidebar. Transient
+  // (in-memory only) — used to default the create-task modal to that board
+  // even when several boards stay checked. Re-seeded on board load.
+  lastActivatedBoardId: number | null = null;
   activeSiteIds: number[] = [];
   activeTeamIds: number[] = [];
   activeTagNames: string[] = [];
@@ -174,6 +178,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         if (autoSelectDefault && this.boards.length > 0) {
           const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
           this.stateService.setActiveBoardIds([defaultBoard.id]);
+          this.lastActivatedBoardId = defaultBoard.id;
         }
         this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
           if (folderRes && folderRes.success) {
@@ -348,7 +353,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       date: event.date,
       startHour: event.startHour,
       boards: this.boards,
-      selectedBoardId: this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined,
+      selectedBoardId:
+        (this.lastActivatedBoardId != null && this.activeBoardIds.includes(this.lastActivatedBoardId))
+          ? this.lastActivatedBoardId
+          : (this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined),
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
@@ -466,6 +474,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onBoardToggled(boardId: number) {
+    // The store update is async, so activeBoardIds here still reflects the
+    // pre-toggle state: if the board is not currently active, this click is
+    // turning it ON — remember it as the default for new tasks.
+    if (!this.activeBoardIds.includes(boardId)) {
+      this.lastActivatedBoardId = boardId;
+    }
     this.stateService.toggleBoard(boardId);
     this.loadTasks();
   }
