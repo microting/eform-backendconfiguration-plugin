@@ -4,7 +4,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {CalendarBoardModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
-import {getCurrentLocale} from '../../../calendar/services/calendar-locale.helper';
+import {formatRepeatText} from '../../calendar-task-list-repeat.util';
 
 @Component({
   selector: 'app-calendar-task-list-table',
@@ -39,14 +39,7 @@ export class CalendarTaskListTableComponent {
   }
 
   repeatText(task: CalendarTaskModel): string {
-    if (!task.repeatRule || task.repeatRule === 'none') {
-      return this.translate.instant('Does not repeat');
-    }
-    const meta = this.repeatService.reconstructMetaFromTask(task);
-    if (!meta) {
-      return task.repeatRule;
-    }
-    return this.repeatService.formatCustomRepeatLabel(meta, getCurrentLocale(this.translate));
+    return formatRepeatText(this.repeatService, this.translate, task);
   }
 
   columns: MtxGridColumn[] = [

@@ -17,8 +17,8 @@ import {
 } from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
-import {getCurrentLocale} from '../../../calendar/services/calendar-locale.helper';
 import {mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
+import {formatRepeatText} from '../../calendar-task-list-repeat.util';
 import {
   TaskCreateEditModalComponent,
   TaskCreateEditModalData,
@@ -201,10 +201,6 @@ export class CalendarTaskListPageComponent implements OnInit {
   }
 
   private repeatTextForCsv(t: CalendarTaskModel): string {
-    if (!t.repeatRule || t.repeatRule === 'none') {
-      return this.translate.instant('Does not repeat');
-    }
-    const meta = this.repeatService.reconstructMetaFromTask(t);
-    return meta ? this.repeatService.formatCustomRepeatLabel(meta, getCurrentLocale(this.translate)) : t.repeatRule;
+    return formatRepeatText(this.repeatService, this.translate, t);
   }
 }
