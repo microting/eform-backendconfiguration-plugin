@@ -87,7 +87,10 @@ test.describe.serial('Calendar new-task default board', () => {
     await activateBoard(page, boardA);
     await activateBoard(page, boardB);
 
-    await calendarPage.clickEmptyTimeSlot(1, 9); // Tuesday 09:00 next week
+    // Advance to next week so the clicked slot is in the future (a current-week
+    // morning slot is in the past once CI runs after that hour) and reset the
+    // grid's scrollToNow auto-scroll, so the create modal reliably opens.
+    await calendarPage.openCreateModalAtSlot(1, 9);
     await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: 10000 });
 
     expect(await selectedBoardLabel(page)).toBe(boardB);
@@ -102,7 +105,7 @@ test.describe.serial('Calendar new-task default board', () => {
     await activateBoard(page, boardB);
     await deactivateBoard(page, boardB); // B (the last-activated) is no longer active
 
-    await calendarPage.clickEmptyTimeSlot(1, 9);
+    await calendarPage.openCreateModalAtSlot(1, 9); // next-week future slot
     await expect(page.locator('#calendarEventTitle')).toBeVisible({ timeout: 10000 });
 
     // The guard drops the no-longer-active last-activated board: the modal must
