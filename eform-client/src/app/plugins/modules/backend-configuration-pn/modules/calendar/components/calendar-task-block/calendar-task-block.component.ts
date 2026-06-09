@@ -2,7 +2,7 @@ import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {boardTextColor, CalendarTaskLayoutModel} from '../../../../models/calendar';
 
-export const HOUR_HEIGHT = 52; // px per hour
+export const HOUR_HEIGHT = 65; // px per hour
 
 export interface TaskResizePayload {
   task: CalendarTaskLayoutModel;
@@ -53,14 +53,14 @@ export class CalendarTaskBlockComponent {
     return Math.max(dur * this.hourHeight - 4, 20);
   }
 
-  // Cards shorter than 40 px can't fit the two-row stack without clipping
+  // Cards shorter than 50 px can't fit the two-row stack without clipping
   // the title or wrapping the time. Below the threshold, the template
   // switches to a single inline row (title + time on the same baseline)
-  // and shrinks the type and the completion disc to match. 40 px lands
-  // between a 45-min slot (~35 px) and a 60-min slot (~48 px) at the
+  // and shrinks the type and the completion disc to match. 50 px lands
+  // between a 45-min slot (~45 px) and a 60-min slot (~61 px) at the
   // default HOUR_HEIGHT, so it's a natural break.
   get isCompact(): boolean {
-    return this.heightPx < 40;
+    return this.heightPx < 50;
   }
 
   // Google-Calendar-style cascade-with-overlap. When raised, the card jumps
@@ -72,7 +72,8 @@ export class CalendarTaskBlockComponent {
   }
 
   get widthStyle(): string {
-    if (this.raised) return `${100 - this.task._left}%`;
+    // _width already equals 100 - _left (cards extend to the right edge), so a
+    // raised card needs no width change — raising is driven purely by z-index.
     return `${this.task._width}%`;
   }
 
@@ -82,7 +83,7 @@ export class CalendarTaskBlockComponent {
   }
 
   get isInCascade(): boolean {
-    return this.task._width < 100;
+    return !!this.task._inGroup;
   }
 
   // Click on the card body: always open the detail. For cascaded cards

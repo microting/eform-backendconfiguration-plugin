@@ -63,10 +63,11 @@ const worker: PropertyWorker = {
 
 let seeded = false;
 
-// HOUR_HEIGHT = 52 px; resize snaps to 15-min (≈13 px) increments. Matches
+// HOUR_HEIGHT = 65 px; resize snaps to 15-min (≈16.25 px) increments. Matches
 // the value used in calendar-resize.spec.ts and `hourHeight` in the page
 // object's clickEmptyTimeSlot / dragEventToSlot.
-const HOUR_PX = 52;
+// Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+const HOUR_PX = 65;
 
 test.describe.serial('Calendar resize scope (#889)', () => {
   test.beforeEach(async ({ page }) => {
@@ -374,7 +375,7 @@ test.describe.serial('Calendar resize scope (#889)', () => {
       await calendarPage.dragResizeHandle(title, 'bottom', -HOUR_PX);
 
       // Height heuristic: at 0.25 h the block is ~1/4 of a 1-h block (HOUR_PX
-      // ≈ 52 px, so ≈13 px minus a few px of card padding). .task-time does
+      // ≈ 65 px, so ≈16.25 px minus a few px of card padding). .task-time does
       // NOT render below 0.5 h, so we assert via boundingBox height like
       // D2/D4 do. We require:
       //   (a) height > 0            — it did NOT collapse to zero/negative;

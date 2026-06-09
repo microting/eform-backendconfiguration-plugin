@@ -21,8 +21,6 @@ function makeTask(id: number, startHour: number, dur: number): CalendarTaskModel
   } as CalendarTaskModel;
 }
 
-const OVERLAP_FACTOR = 1.8;
-
 describe('CalendarLayoutService', () => {
   let service: CalendarLayoutService;
 
@@ -45,6 +43,7 @@ describe('CalendarLayoutService', () => {
     expect(result[0]._left).toBe(0);
     expect(result[0]._width).toBe(100);
     expect(result[0]._zIndex).toBe(10);
+    expect(result[0]._inGroup).toBe(false);
   });
 
   it('two non-overlapping tasks each get full width', () => {
@@ -53,27 +52,34 @@ describe('CalendarLayoutService', () => {
     expect(result.every(t => t._left === 0)).toBe(true);
   });
 
-  it('two overlapping tasks: equal-divide-with-overlap geometry', () => {
+  it('two overlapping tasks: extend-right cascade geometry', () => {
     const result = service.computeLayout([makeTask(1, 9, 1), makeTask(2, 9, 1)]);
-    const expectedWidth = 100 * OVERLAP_FACTOR / 2; // 90
-    const expectedStep = (100 - expectedWidth) / (2 - 1); // 10
-    expect(result.every(t => t._width === expectedWidth)).toBe(true);
+    // left = i * 100/2; width = 100 - left, so each card extends to the right edge.
     expect(result[0]._left).toBe(0);
-    expect(result[1]._left).toBe(expectedStep);
+    expect(result[1]._left).toBe(50);
+    expect(result[0]._width).toBe(100);
+    expect(result[1]._width).toBe(50);
     expect(result[0]._zIndex).toBe(10);
     expect(result[1]._zIndex).toBe(11);
+    // Both cards — including the leftmost (_width === 100) — are flagged as in a
+    // multi-card overlap group so click-to-raise works for either.
+    expect(result[0]._inGroup).toBe(true);
+    expect(result[1]._inGroup).toBe(true);
   });
 
-  it('three mutually overlapping tasks: evenly distributed left offsets', () => {
+  it('three mutually overlapping tasks: extend-right cascade geometry', () => {
     const result = service.computeLayout([
       makeTask(1, 9, 2),
       makeTask(2, 9, 2),
       makeTask(3, 9, 2),
     ]);
-    const expectedWidth = 100 * OVERLAP_FACTOR / 3; // 60
-    const expectedStep = (100 - expectedWidth) / (3 - 1); // 20
-    expect(result.every(t => t._width === expectedWidth)).toBe(true);
-    expect(result.map(t => t._left)).toEqual([0, expectedStep, expectedStep * 2]);
+    // left = i * 100/3; width = 100 - left.
+    expect(result[0]._left).toBeCloseTo(0, 10);
+    expect(result[1]._left).toBeCloseTo(100 / 3, 10);
+    expect(result[2]._left).toBeCloseTo(200 / 3, 10);
+    expect(result[0]._width).toBe(100);
+    expect(result[1]._width).toBeCloseTo(100 - 100 / 3, 10); // 200/3 ≈ 66.667
+    expect(result[2]._width).toBeCloseTo(100 - 200 / 3, 10); // 100/3 ≈ 33.333
     expect(result.map(t => t._zIndex)).toEqual([10, 11, 12]);
   });
 
@@ -87,9 +93,10 @@ describe('CalendarLayoutService', () => {
     const standalone = result.find(t => t.id === 3)!;
     expect(standalone._width).toBe(100);
     expect(standalone._left).toBe(0);
-    const overlapping = result.filter(t => t.id !== 3);
-    const expectedWidth = 100 * OVERLAP_FACTOR / 2;
-    expect(overlapping.every(t => t._width === expectedWidth)).toBe(true);
+    // Overlapping pair: lefts 0/50, widths extend to the right edge → 100/50.
+    const overlapping = result.filter(t => t.id !== 3).sort((a, b) => a._left - b._left);
+    expect(overlapping.map(t => t._left)).toEqual([0, 50]);
+    expect(overlapping.map(t => t._width)).toEqual([100, 50]);
   });
 
   it('output is sorted by startHour ascending', () => {
@@ -128,5 +135,9 @@ describe('CalendarLayoutService', () => {
     const zIndexes = result.map(t => t._zIndex);
     // Default stacking: later index (in sort order) → higher z-index.
     expect(zIndexes).toEqual([10, 11, 12, 13]);
+    // Lefts step by 100/4 (0, 25, 50, 75); widths extend to the right edge
+    // (100 - left) → 100, 75, 50, 25.
+    expect(result.map(t => t._left)).toEqual([0, 25, 50, 75]);
+    expect(result.map(t => t._width)).toEqual([100, 75, 50, 25]);
   });
 });
