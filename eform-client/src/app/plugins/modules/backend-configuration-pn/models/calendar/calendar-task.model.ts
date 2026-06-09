@@ -90,6 +90,29 @@ export interface CalendarTaskAttachment {
   driveRevoked?: boolean;
 }
 
+// Request models for the calendar "task list" page (POST /calendar/tasks/index).
+// Mirrors the backend CalendarTaskListRequestModel: a filter block + pagination.
+export interface CalendarTaskListFiltrationModel {
+  propertyIds: number[];
+  boardIds: number[];
+  eformIds: number[];
+  assignToIds: number[];
+  tagIds: number[];
+  status: boolean | null;
+  complianceEnabled: boolean | null;
+  nameFilter: string | null;
+}
+
+export interface CalendarTaskListPaginationModel {
+  sort: string;
+  isSortDsc: boolean;
+}
+
+export interface CalendarTaskIndexRequestModel {
+  filters: CalendarTaskListFiltrationModel;
+  pagination: CalendarTaskListPaginationModel;
+}
+
 export interface CalendarRepeatMeta {
   kind: string;
   n?: number;
