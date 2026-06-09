@@ -1,0 +1,47 @@
+<div class="ctl-filters">
+  <mat-form-field>
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select [items]="properties" bindValue="id" bindLabel="name" [multiple]="true"
+                [(ngModel)]="filters.propertyIds" (ngModelChange)="onPropertyChange($event)"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'eForm' | translate }}</mat-label>
+    <mtx-select [items]="eforms" bindValue="id" bindLabel="label" [multiple]="true"
+                [(ngModel)]="filters.eformIds" (ngModelChange)="emit()"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Board' | translate }}</mat-label>
+    <mtx-select [items]="boards" bindValue="id" bindLabel="name" [multiple]="true"
+                [disabled]="filters.propertyIds.length !== 1"
+                [(ngModel)]="filters.boardIds" (ngModelChange)="emit()"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Assigned to' | translate }}</mat-label>
+    <mtx-select [items]="workers" bindValue="id" bindLabel="name" [multiple]="true"
+                [disabled]="filters.propertyIds.length !== 1"
+                [(ngModel)]="filters.assignToIds" (ngModelChange)="emit()"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Active' | translate }}</mat-label>
+    <mtx-select [(ngModel)]="filters.status" (ngModelChange)="emit()" [clearable]="true">
+      <mtx-option [value]="true">{{ 'Yes' | translate }}</mtx-option>
+      <mtx-option [value]="false">{{ 'No' | translate }}</mtx-option>
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Compliance' | translate }}</mat-label>
+    <mtx-select [(ngModel)]="filters.complianceEnabled" (ngModelChange)="emit()" [clearable]="true">
+      <mtx-option [value]="true">{{ 'Yes' | translate }}</mtx-option>
+      <mtx-option [value]="false">{{ 'No' | translate }}</mtx-option>
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Tags' | translate }}</mat-label>
+    <mtx-select [items]="tags" bindValue="id" bindLabel="name" [multiple]="true"
+                [(ngModel)]="filters.tagIds" (ngModelChange)="emit()"></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Search' | translate }}</mat-label>
+    <input matInput [(ngModel)]="filters.nameFilter" (ngModelChange)="emit()">
+  </mat-form-field>
+</div>
