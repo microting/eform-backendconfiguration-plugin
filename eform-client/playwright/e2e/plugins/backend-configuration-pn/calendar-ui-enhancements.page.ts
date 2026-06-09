@@ -40,7 +40,8 @@ export class CalendarUiEnhancementsPage {
     const dayCell = this.page.locator(`.day-cell-content[data-day="${dayOffset}"]`);
     const box = await dayCell.boundingBox();
     if (!box) throw new Error(`Day cell ${dayOffset} not found`);
-    const hourHeight = 52;
+    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+    const hourHeight = 65;
     const y = box.y + hour * hourHeight + 5;
     const x = box.x + box.width / 2;
     await this.page.mouse.click(x, y);
@@ -685,7 +686,8 @@ export class CalendarUiEnhancementsPage {
     const targetCell = this.page.locator(`.day-cell-content[data-day="${targetDayOffset}"]`);
     const targetBox = await targetCell.boundingBox();
     if (!targetBox) throw new Error(`Target day cell ${targetDayOffset} not found`);
-    const hourHeight = 52;
+    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+    const hourHeight = 65;
     const targetX = targetBox.x + targetBox.width / 2;
     // 5 px into the hour band — same convention as clickEmptyTimeSlot
     // so we land cleanly on H:00 (the grid snaps to 30-min boundaries).

@@ -178,7 +178,7 @@ test.describe.serial('Calendar task-modal translation', () => {
 
   // Open the create modal at (dayOffset, hour), scrolling the week grid to the
   // top first. clickEmptyTimeSlot clicks a raw (x,y) computed from the day
-  // column's box + hour*52px; if the grid is auto-scrolled to the current time
+  // column's box + hour*65px; if the grid is auto-scrolled to the current time
   // (e.g. afternoon), an early hour lands off-grid and no modal opens. Scrolling
   // to 00:00 makes the coordinate deterministic regardless of wall-clock time.
   async function openCreateAt(

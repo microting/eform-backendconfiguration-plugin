@@ -24,7 +24,8 @@ export class CalendarPage {
     const dayCell = this.page.locator(`.day-cell-content[data-day="${dayOffset}"]`);
     const box = await dayCell.boundingBox();
     if (!box) throw new Error(`Day cell ${dayOffset} not found`);
-    const hourHeight = 52;
+    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+    const hourHeight = 65;
     const y = box.y + hour * hourHeight + hourHeight / 2;
     const x = box.x + box.width / 2;
     await this.page.mouse.click(x, y);
@@ -106,7 +107,8 @@ export class CalendarPage {
     const targetBox = await targetCell.boundingBox();
     if (!targetBox) throw new Error(`Target day ${targetDayOffset} not found`);
 
-    const hourHeight = 52;
+    // Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+    const hourHeight = 65;
     const targetY = targetBox.y + targetHour * hourHeight + hourHeight / 2;
     const targetX = targetBox.x + targetBox.width / 2;
 
