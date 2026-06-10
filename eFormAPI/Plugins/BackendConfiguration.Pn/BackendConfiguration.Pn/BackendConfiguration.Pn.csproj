@@ -18,6 +18,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="BackendConfiguration.Pn.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
       <None Remove="Resources\eForms\01. Vandforbrug.xml" />
       <None Remove="Resources\eForms\02. Brandudstyr.xml" />

@@ -501,10 +501,7 @@ public class BackendConfigurationCalendarService(
                 var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
                 var isAllDay = calConfig == null && !hasNonAlwaysRepeat;
 
-                var title = arp.AreaRule?.AreaRuleTranslations?
-                    .Where(t => t.LanguageId == userLanguageId)
-                    .Select(t => t.Name)
-                    .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
+                var title = ResolveTaskTitle(arp.AreaRule?.AreaRuleTranslations, userLanguageId, null);
 
                 // Per-language title+description for edit-mode prefill, plus the
                 // caller-language description (same selection as the title above).
@@ -732,10 +729,7 @@ public class BackendConfigurationCalendarService(
                 var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
                 var isAllDay = movedCalConfig == null && !hasNonAlwaysRepeat;
 
-                var title = arp.AreaRule?.AreaRuleTranslations?
-                    .Where(t => t.LanguageId == userLanguageId)
-                    .Select(t => t.Name)
-                    .FirstOrDefault() ?? arp.AreaRule?.AreaRuleTranslations?.FirstOrDefault()?.Name ?? "";
+                var title = ResolveTaskTitle(arp.AreaRule?.AreaRuleTranslations, userLanguageId, null);
 
                 var translations = arp.AreaRule?.AreaRuleTranslations?
                     .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
@@ -903,14 +897,7 @@ public class BackendConfigurationCalendarService(
                 CalendarConfiguration calConfig = null;
                 complianceCalConfigs.TryGetValue(arp.Id, out calConfig);
 
-                var title = compliance.ItemName ?? "";
-                if (arp?.AreaRule?.AreaRuleTranslations != null)
-                {
-                    title = arp.AreaRule.AreaRuleTranslations
-                        .Where(t => t.LanguageId == userLanguageId)
-                        .Select(t => t.Name)
-                        .FirstOrDefault() ?? title;
-                }
+                var title = ResolveTaskTitle(arp?.AreaRule?.AreaRuleTranslations, userLanguageId, compliance.ItemName);
 
                 // Per-language title+description so the edit modal can prefill a
                 // compliance-backed (past) task's multi-language fields.
@@ -4342,14 +4329,7 @@ public class BackendConfigurationCalendarService(
                     }
                 }
 
-                var title = compliance.ItemName ?? "";
-                if (arp?.AreaRule?.AreaRuleTranslations != null)
-                {
-                    title = arp.AreaRule.AreaRuleTranslations
-                        .Where(t => t.LanguageId == userLanguageId)
-                        .Select(t => t.Name)
-                        .FirstOrDefault() ?? title;
-                }
+                var title = ResolveTaskTitle(arp?.AreaRule?.AreaRuleTranslations, userLanguageId, compliance.ItemName);
 
                 // Description in the caller/worker language (same selection as the
                 // title and as GetTasksForWeek): caller language, else first
@@ -4457,5 +4437,27 @@ public class BackendConfigurationCalendarService(
             return new OperationDataResult<List<CalendarTaskResponseModel>>(false,
                 $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
         }
+    }
+
+    /// <summary>
+    /// Resolves a calendar task title with a robust, cross-language fallback chain:
+    /// 1) the user-language translation with a non-empty name,
+    /// 2) any translation with a non-empty name (cross-language fallback),
+    /// 3) the caller-supplied final fallback (e.g. compliance.ItemName), else "".
+    /// Uses string.IsNullOrWhiteSpace (NOT ??) so empty-string names also fall through.
+    /// </summary>
+    internal static string ResolveTaskTitle(
+        IEnumerable<AreaRuleTranslation> translations, int userLanguageId, string finalFallback)
+    {
+        var list = translations?.ToList() ?? new List<AreaRuleTranslation>();
+        // 1) user-language, non-empty name
+        var byLang = list.FirstOrDefault(t => t.LanguageId == userLanguageId
+                                              && !string.IsNullOrWhiteSpace(t.Name))?.Name;
+        if (!string.IsNullOrWhiteSpace(byLang)) return byLang!;
+        // 2) any translation with a non-empty name (cross-language fallback)
+        var any = list.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.Name))?.Name;
+        if (!string.IsNullOrWhiteSpace(any)) return any!;
+        // 3) caller-supplied fallback (e.g. compliance.ItemName), else empty
+        return string.IsNullOrWhiteSpace(finalFallback) ? "" : finalFallback!;
     }
 }
