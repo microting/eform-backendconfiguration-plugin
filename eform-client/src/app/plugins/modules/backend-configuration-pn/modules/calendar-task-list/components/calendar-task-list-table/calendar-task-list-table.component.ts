@@ -42,6 +42,16 @@ export class CalendarTaskListTableComponent {
     return formatRepeatText(this.repeatService, this.translate, task);
   }
 
+  // Converts the row's `taskDate` ("yyyy-MM-dd") to "dd-MM-yyyy" by splitting
+  // and reordering (no `new Date()` parsing, which could shift across timezones).
+  formatStartDate(value: string): string {
+    if (!value) {
+      return '';
+    }
+    const [y, m, d] = value.split('-');
+    return d && m && y ? `${d}-${m}-${y}` : '';
+  }
+
   columns: MtxGridColumn[] = [
     {
       field: 'id', header: this.translate.stream('Id'), sortable: true, sortProp: {id: 'Id'},
@@ -69,6 +79,10 @@ export class CalendarTaskListTableComponent {
     {
       field: 'tags', header: this.translate.stream('Tags'),
       formatter: (t: CalendarTaskModel) => (t.tags ?? []).join(', '),
+    },
+    {
+      field: 'taskDate', header: this.translate.stream('Start date'), sortable: true,
+      formatter: (t: CalendarTaskModel) => this.formatStartDate(t.taskDate),
     },
     {
       field: 'repeat', header: this.translate.stream('Repeat'),

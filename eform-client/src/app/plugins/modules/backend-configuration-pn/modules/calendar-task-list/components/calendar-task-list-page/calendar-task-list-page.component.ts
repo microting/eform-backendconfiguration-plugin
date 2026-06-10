@@ -174,7 +174,7 @@ export class CalendarTaskListPageComponent implements OnInit {
 
   exportCsv() {
     const headers = ['Id', 'Property', 'Board', 'Report headline', 'Task name', 'eForm',
-      'Assigned to', 'Tags', 'Repeat', 'Active', 'Compliance']
+      'Assigned to', 'Tags', 'Start date', 'Repeat', 'Active', 'Compliance']
       .map(h => this.translate.instant(h));
     const rows = this.tasks.map(t => [
       t.id,
@@ -186,6 +186,7 @@ export class CalendarTaskListPageComponent implements OnInit {
       this.eforms.find(e => e.id === t.eformId)?.label ?? '',
       (t.workerNames ?? []).join(', '),
       (t.tags ?? []).join(', '),
+      this.formatStartDate(t.taskDate),
       this.repeatTextForCsv(t),
       this.translate.instant(t.status ? 'Yes' : 'No'),
       this.translate.instant(t.complianceEnabled ? 'Yes' : 'No'),
@@ -205,5 +206,14 @@ export class CalendarTaskListPageComponent implements OnInit {
 
   private repeatTextForCsv(t: CalendarTaskModel): string {
     return formatRepeatText(this.repeatService, this.translate, t);
+  }
+
+  // "yyyy-MM-dd" -> "dd-MM-yyyy" (split-and-reorder; no timezone-sensitive Date parsing).
+  private formatStartDate(value: string): string {
+    if (!value) {
+      return '';
+    }
+    const [y, m, d] = value.split('-');
+    return d && m && y ? `${d}-${m}-${y}` : '';
   }
 }

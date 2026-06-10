@@ -120,6 +120,17 @@ describe('CalendarTaskListTableComponent', () => {
     });
   });
 
+  describe('formatStartDate', () => {
+    it('reorders "yyyy-MM-dd" to "dd-MM-yyyy"', () => {
+      expect(component.formatStartDate('2026-06-09')).toBe('09-06-2026');
+    });
+
+    it('returns empty string for empty or malformed input', () => {
+      expect(component.formatStartDate('')).toBe('');
+      expect(component.formatStartDate(undefined as unknown as string)).toBe('');
+    });
+  });
+
   describe('onEdit', () => {
     it('emits editTask on row click', () => {
       const task = makeTask({id: 42});
