@@ -541,6 +541,19 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
    * already typed for a still-present language; collapses the expanded fields
    * if the target set becomes empty.
    */
+  /**
+   * Resolve the real SDK Languages.Id for the Danish source title from the
+   * loaded active-languages list (same list the targets resolve their ids from,
+   * populated from getLanguages() -> SDK Languages). The SDK Languages table is
+   * customer-specific: Danish is NOT guaranteed to be id 1 (e.g. customer 420 has
+   * da=2). Falls back to 1 only if Danish is somehow absent from the loaded list,
+   * so the backend existence-based remap can still recover it.
+   */
+  private resolveDanishLanguageId(): number {
+    const danish = this.activeLanguages.find(l => l.code === 'da');
+    return danish?.id ?? 1;
+  }
+
   private recomputeTargetLanguages(): void {
     const selectedIds = this.assigneeControl.value ?? [];
     const langIds = new Set<number>();
@@ -908,13 +921,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     }
 
-    // Build the per-language Translates array: Danish source (languageId 1)
-    // always included, plus one entry per target language that has a non-empty
-    // title OR description. Empty targets are dropped (not persisted).
+    // Build the per-language Translates array: Danish source (real SDK
+    // Languages.Id, NOT the hardcoded app-locale id 1) always included, plus one
+    // entry per target language that has a non-empty title OR description. Empty
+    // targets are dropped (not persisted).
     const danishName = this.titleControl.value ?? '';
     const danishDescription = this.descriptionControl.value ?? '';
     const translates: { name: string; description: string; languageId: number }[] = [
-      {name: danishName, description: danishDescription, languageId: 1},
+      {name: danishName, description: danishDescription, languageId: this.resolveDanishLanguageId()},
     ];
     for (const lang of this.targetLanguages) {
       const name = this.titleByLang[lang.id] ?? '';

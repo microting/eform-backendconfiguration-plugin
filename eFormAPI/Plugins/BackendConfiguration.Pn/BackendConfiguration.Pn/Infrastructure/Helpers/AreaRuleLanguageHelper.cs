@@ -101,19 +101,20 @@ public static class AreaRuleLanguageHelper
     /// event title renders blank.
     ///
     /// The SDK Languages table is customer-specific (auto-increment ids; Danish is NOT guaranteed to
-    /// be id 1), so the hardcoded app-locale id 1 only happens to be correct when the tenant's
-    /// Danish row landed on id 1. This remaps each incoming translate's LanguageId IN PLACE to the
-    /// SDK Languages.Id that ACTUALLY carries the intended language code, but only when the incoming
-    /// id is one of the frontend's static app-locale ids {1->da, 2->en-US, 3->de-DE} AND the SDK row
-    /// currently at that id is NOT already the matching language. Concretely:
-    ///   * Danish source comes in as app-locale id 1. If SDK id 1 is the Danish row, it is left as-is
-    ///     (correct no-op). If SDK id 1 is some other language (or missing), it is remapped to the
-    ///     SDK id whose LanguageCode == "da".
-    ///   * Target languages already carry their true SDK id whose LanguageCode matches, so they are
-    ///     left untouched (never corrupted), even when that id is 2 or 3.
-    /// Resolution mirrors the #985 seed remap and #982 (resolve by LanguageCode). A translate whose
-    /// app-locale code cannot be resolved to any SDK language is left unchanged (never dropped) and
-    /// logged.
+    /// be id 1, and ids are NOT guaranteed to be the contiguous set {1,2,3}). This remaps each
+    /// incoming translate's LanguageId IN PLACE — but the guard is purely EXISTENCE-based, never
+    /// value-based:
+    ///   * If the incoming id EXISTS in the SDK Languages table, it is a real SDK Languages.Id
+    ///     (sent by the modal's target languages, resolved from getLanguages()) -> leave it
+    ///     untouched. This is the critical safety property: a valid target id such as en-US=3 on a
+    ///     shifted-id tenant must NOT be reinterpreted via the static app-locale map (which would
+    ///     mis-key it to de-DE) -> no corruption of good data.
+    ///   * If the incoming id is ABSENT from the SDK Languages table, it can only be the frontend's
+    ///     hardcoded app-locale id {1->da, 2->en-US, 3->de-DE}. Resolve the intended language code
+    ///     from that static map, look up the SDK row by LanguageCode, and remap to its real id.
+    ///   * If an absent id is not in the static map, or its code has no matching SDK row, the
+    ///     translate is left unchanged (never dropped) and a warning is logged.
+    /// Resolution mirrors the #985 seed remap and #982 (resolve by LanguageCode).
     /// </summary>
     public static async Task RemapCommonTranslationLanguageIdsAsync(
         IEnumerable<CommonTranslationsModel> translations,
@@ -131,30 +132,32 @@ public static class AreaRuleLanguageHelper
             return;
         }
 
-        var sdkLanguages = await sdkDbContext.Languages.ToListAsync().ConfigureAwait(false);
-        var sdkLanguageById = sdkLanguages.ToDictionary(x => x.Id);
+        var sdkLanguages = await sdkDbContext.Languages.AsNoTracking().ToListAsync().ConfigureAwait(false);
+        var sdkIds = sdkLanguages.Select(x => x.Id).ToHashSet();
         // Mirror of the frontend applicationLanguages app-locale ids (1=da, 2=en-US, 3=de-DE).
         var appLocaleIdToCode = new Dictionary<int, string> { { 1, "da" }, { 2, "en-US" }, { 3, "de-DE" } };
 
         foreach (var translation in translationList)
         {
-            // Only the static app-locale ids carry the buggy hardcoded convention; any other id is
-            // a true SDK Languages.Id sent by the modal's target languages -> leave it untouched.
+            // EXISTENCE-based guard: a present id is a real SDK Languages.Id (a target language sent
+            // by the modal). Never touch it — reinterpreting it via the static app-locale map would
+            // corrupt valid data on shifted-id tenants (e.g. en-US=3 -> wrongly remapped to de-DE).
+            if (sdkIds.Contains(translation.LanguageId))
+            {
+                continue;
+            }
+
+            // The id is absent from SDK Languages, so it can only be the frontend's hardcoded
+            // app-locale id. Resolve the intended language code from the static map.
             if (!appLocaleIdToCode.TryGetValue(translation.LanguageId, out var code))
             {
+                logger?.LogWarning(
+                    "RemapCommonTranslationLanguageIdsAsync: translate LanguageId {LanguageId} is absent from SDK Languages and is not a known app-locale id; leaving unchanged",
+                    translation.LanguageId);
                 continue;
             }
 
-            // The SDK row currently at this id already IS the intended language -> correct no-op
-            // (e.g. a default-seeded tenant where da=1). Avoids corrupting a target that legitimately
-            // carries SDK id 2 or 3.
-            if (sdkLanguageById.TryGetValue(translation.LanguageId, out var sdkAtSameId)
-                && sdkAtSameId.LanguageCode == code)
-            {
-                continue;
-            }
-
-            // The id points at the wrong (or no) language: resolve the intended language by code.
+            // Resolve the intended language by code to its real SDK id.
             var sdkLanguage = sdkLanguages.FirstOrDefault(x => x.LanguageCode == code);
             if (sdkLanguage != null)
             {
