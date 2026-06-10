@@ -846,7 +846,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-properties",
                 Link = "/plugins/backend-configuration-pn/properties",
                 Type = MenuItemTypeEnum.Link,
-                Position = 8,
+                Position = 9,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Properties",
@@ -921,7 +921,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-property-workers",
                 Link = "/plugins/backend-configuration-pn/property-workers",
                 Type = MenuItemTypeEnum.Link,
-                Position = 7,
+                Position = 8,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Workers",
@@ -996,7 +996,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-task-management",
                 Link = "/plugins/backend-configuration-pn/task-management",
                 Type = MenuItemTypeEnum.Link,
-                Position = 4,
+                Position = 5,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Task management",
@@ -1146,7 +1146,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-documents",
                 Link = "/plugins/backend-configuration-pn/documents",
                 Type = MenuItemTypeEnum.Link,
-                Position = 6,
+                Position = 7,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Documents",
@@ -1221,7 +1221,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-files",
                 Link = "/plugins/backend-configuration-pn/files",
                 Type = MenuItemTypeEnum.Link,
-                Position = 5,
+                Position = 6,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "PDF-archive",
@@ -1296,7 +1296,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-task-tracker",
                 Link = "/plugins/backend-configuration-pn/task-tracker",
                 Type = MenuItemTypeEnum.Link,
-                Position = 3,
+                Position = 4,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Active planned tasks",
@@ -1442,6 +1442,81 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             },
             new()
             {
+                Name = "Tasks and actions",
+                E2EId = "backend-configuration-pn-calendar-task-list",
+                Link = "/plugins/backend-configuration-pn/calendar-task-list",
+                Type = MenuItemTypeEnum.Link,
+                Position = 3,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Tasks and actions",
+                    E2EId = "backend-configuration-pn-calendar-task-list",
+                    DefaultLink = "/plugins/backend-configuration-pn/calendar-task-list",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Tasks and actions",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Aufgaben und Aktionen",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Opgaver og handlinger",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Завдання та дії",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Tasks and actions",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Aufgaben und Aktionen",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Opgaver og handlinger",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Завдання та дії",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
+            },
+            new()
+            {
                 Name = "Dashboard",
                 E2EId = "backend-configuration-pn-statistics",
                 Link = "/plugins/backend-configuration-pn/statistics",
@@ -1525,7 +1600,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-google-drive-accounts",
                 Link = "/plugins/backend-configuration-pn/google-drive-accounts",
                 Type = MenuItemTypeEnum.Link,
-                Position = 9,
+                Position = 10,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Connected Google Drive accounts",
@@ -1600,7 +1675,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                 E2EId = "backend-configuration-pn-reports",
                 Link = "/plugins/backend-configuration-pn/reports",
                 Type = MenuItemTypeEnum.Link,
-                Position = 8,
+                Position = 9,
                 MenuTemplate = new PluginMenuTemplateModel
                 {
                     Name = "Reports v1",

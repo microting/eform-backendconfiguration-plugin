@@ -494,4 +494,9 @@ export const enUS= {
   'Task dimmed on board and not shown in app': 'Task dimmed on board and not shown in app',
   'Overdue task shown in app': 'Overdue task shown in app',
   'Overdue task not shown in app': 'Overdue task not shown in app',
+  'Tasks and actions': 'Tasks and actions',
+  Compliance: 'Compliance',
+  'Export CSV': 'Export CSV',
+  Board: 'Board',
+  Search: 'Search',
 };

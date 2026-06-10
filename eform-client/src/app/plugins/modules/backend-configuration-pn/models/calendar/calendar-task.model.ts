@@ -42,6 +42,13 @@ export interface CalendarTaskModel {
   isAllDay?: boolean;
   exceptionId?: number;
 
+  // Surfaced from the AreaRulePlanning by the calendar `tasks/index` endpoint so
+  // the "Opgaver og handlinger" table can resolve the eForm label and the
+  // "Overskrift" (planning-tag) name from the option lists. Both optional —
+  // the week endpoint does not populate them.
+  eformId?: number | null;
+  itemPlanningTagId?: number | null;
+
   // Persisted custom-repeat fields surfaced from AreaRulePlanning so the
   // edit-modal can reconstruct a full CalendarRepeatMeta for an existing row.
   // All optional/nullable — older backends and rows without a custom rule
@@ -88,6 +95,29 @@ export interface CalendarTaskAttachment {
   // renders a red "Google Drive disconnected — reconnect to resume sync"
   // badge in place of the regular Drive badge when this is set.
   driveRevoked?: boolean;
+}
+
+// Request models for the calendar "task list" page (POST /calendar/tasks/index).
+// Mirrors the backend CalendarTaskListRequestModel: a filter block + pagination.
+export interface CalendarTaskListFiltrationModel {
+  propertyIds: number[];
+  boardIds: number[];
+  eformIds: number[];
+  assignToIds: number[];
+  tagIds: number[];
+  status: boolean | null;
+  complianceEnabled: boolean | null;
+  nameFilter: string | null;
+}
+
+export interface CalendarTaskListPaginationModel {
+  sort: string;
+  isSortDsc: boolean;
+}
+
+export interface CalendarTaskIndexRequestModel {
+  filters: CalendarTaskListFiltrationModel;
+  pagination: CalendarTaskListPaginationModel;
 }
 
 export interface CalendarRepeatMeta {

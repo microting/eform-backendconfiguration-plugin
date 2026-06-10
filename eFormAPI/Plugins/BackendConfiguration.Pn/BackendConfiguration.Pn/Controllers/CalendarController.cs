@@ -29,6 +29,14 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.GetTasksForWeek(requestModel);
     }
 
+    [HttpPost]
+    [Route("tasks/index")]
+    public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(
+        [FromBody] CalendarTaskIndexRequestModel requestModel)
+    {
+        return await _backendConfigurationCalendarService.Index(requestModel);
+    }
+
     [HttpPost("tasks")]
     public async Task<OperationDataResult<int>> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
     {

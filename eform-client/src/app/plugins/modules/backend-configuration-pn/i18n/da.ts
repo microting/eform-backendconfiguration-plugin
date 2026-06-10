@@ -474,4 +474,9 @@ export const da = {
   'Task dimmed on board and not shown in app': 'Opgave nedtonet i tavle og vises ikke i app',
   'Overdue task shown in app': 'Overskredet opgave vises i app',
   'Overdue task not shown in app': 'Overskredet opgave vises ikke i app',
+  'Tasks and actions': 'Opgaver og handlinger',
+  Compliance: 'Compliance',
+  'Export CSV': 'Eksportér CSV',
+  Board: 'Tavle',
+  Search: 'Søg',
 };

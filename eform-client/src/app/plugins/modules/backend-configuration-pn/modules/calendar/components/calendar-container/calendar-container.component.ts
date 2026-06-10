@@ -12,7 +12,6 @@ import {
 } from '../../../../services';
 import {
   CalendarBoardModel,
-  CalendarRepeatRule,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
   CalendarToggleCompleteResult,
@@ -20,6 +19,7 @@ import {
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
+import {mapResponseToCalendarTask} from '../../services/calendar-task.mapper';
 import {CalendarStateService} from '../store';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
@@ -279,10 +279,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       )
       .subscribe(res => {
         if (res && res.success) {
-          this.tasks = (res.model || []).map((t: any) => ({
-            ...t,
-            repeatRule: this.mapRepeatType(t.repeatType ?? 0, t.repeatEvery ?? 1),
-          }));
+          this.tasks = (res.model || []).map((t: any) => mapResponseToCalendarTask(t));
           this.rebuildLayout(monday);
         }
       });
@@ -930,17 +927,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const modalWidth = 500;
     const spaceRight = window.innerWidth - cellRight;
     return spaceRight >= modalWidth + 16 ? cellRight : cellLeft;
-  }
-
-  private mapRepeatType(repeatType: number, repeatEvery: number): CalendarRepeatRule {
-    if (!repeatType || repeatType === 0) return 'none';
-    switch (repeatType) {
-      case 1: return repeatEvery === 1 ? 'daily' : 'custom';
-      case 2: return repeatEvery === 1 ? 'weeklyOne' : 'custom';
-      case 3: return repeatEvery === 1 ? 'monthlyDom' : 'custom';
-      case 4: return repeatEvery === 1 ? 'yearlyOne' : 'custom';
-      default: return 'custom';
-    }
   }
 
   private toLocalDateString(d: Date): string {

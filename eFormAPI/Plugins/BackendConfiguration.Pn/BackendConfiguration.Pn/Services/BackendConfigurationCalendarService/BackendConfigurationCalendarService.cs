@@ -1031,6 +1031,160 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(
+        CalendarTaskIndexRequestModel requestModel)
+    {
+        try
+        {
+            var filters = requestModel.Filters;
+            var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+
+            var query = backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Include(x => x.AreaRule)
+                    .ThenInclude(x => x.AreaRuleTranslations)
+                .Include(x => x.PlanningSites)
+                .Include(x => x.AreaRulePlanningTags)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (filters.PropertyIds.Any())
+                query = query.Where(x => filters.PropertyIds.Contains(x.PropertyId));
+            if (filters.Status != null)
+                query = query.Where(x => x.Status == filters.Status.Value);
+            if (filters.ComplianceEnabled != null)
+                query = query.Where(x => x.ComplianceEnabled == filters.ComplianceEnabled.Value);
+            if (filters.EformIds.Any())
+                query = query.Where(x => x.AreaRule.EformId.HasValue && filters.EformIds.Contains(x.AreaRule.EformId.Value));
+            if (filters.AssignToIds.Any())
+                query = query.Where(x => x.PlanningSites
+                    .Where(z => z.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Any(y => filters.AssignToIds.Contains(y.SiteId)));
+            if (filters.TagIds.Any())
+            {
+                foreach (var tagId in filters.TagIds)
+                {
+                    query = query.Where(x =>
+                        x.AreaRulePlanningTags
+                            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Any(y => y.ItemPlanningTagId == tagId)
+                        || (x.ItemPlanningTagId.HasValue && x.ItemPlanningTagId.Value == tagId));
+                }
+            }
+            if (filters.BoardIds.Any())
+            {
+                var boardArpIds = await backendConfigurationPnDbContext.CalendarConfigurations
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.BoardId.HasValue && filters.BoardIds.Contains(x.BoardId.Value))
+                    .Select(x => x.AreaRulePlanningId)
+                    .Distinct()
+                    .ToListAsync();
+                query = query.Where(x => boardArpIds.Contains(x.Id));
+            }
+
+            var areaRulePlannings = await query.ToListAsync();
+            var arpIds = areaRulePlannings.Select(x => x.Id).ToList();
+
+            var calConfigsList = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .ToListAsync();
+            var calConfigsDict = calConfigsList
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var planningTagIds = areaRulePlannings
+                .SelectMany(x => x.AreaRulePlanningTags
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(y => y.ItemPlanningTagId))
+                .Concat(areaRulePlannings.Where(x => x.ItemPlanningTagId.HasValue).Select(x => x.ItemPlanningTagId.Value))
+                .Distinct().ToList();
+            var planningTagNames = await itemsPlanningPnDbContext.PlanningTags
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => planningTagIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name);
+
+            var core = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var siteIds = areaRulePlannings
+                .SelectMany(x => x.PlanningSites
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(y => (int)y.SiteId))
+                .Distinct().ToList();
+            var siteNamesById = await sdkDbContext.Sites
+                .Where(s => siteIds.Contains((int)s.Id))
+                .ToDictionaryAsync(s => (int)s.Id, s => s.Name ?? string.Empty);
+
+            var rows = areaRulePlannings.Select(arp =>
+            {
+                calConfigsDict.TryGetValue(arp.Id, out var calConfig);
+                var translations = (arp.AreaRule?.AreaRuleTranslations ?? new List<AreaRuleTranslation>())
+                    .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(t => new CommonTranslationsModel { Id = t.Id, LanguageId = t.LanguageId, Name = t.Name, Description = t.Description })
+                    .ToList();
+                var title = translations.FirstOrDefault(t => t.LanguageId == userLanguageId)?.Name
+                    ?? translations.FirstOrDefault()?.Name ?? "";
+                var description = translations.FirstOrDefault(t => t.LanguageId == userLanguageId)?.Description
+                    ?? translations.FirstOrDefault()?.Description;
+                var assigneeIds = (arp.PlanningSites ?? new List<PlanningSite>())
+                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(ps => (int)ps.SiteId).ToList();
+                var tags = (arp.AreaRulePlanningTags ?? new List<AreaRulePlanningTag>())
+                    .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(t => planningTagNames.TryGetValue(t.ItemPlanningTagId, out var n) ? n : null)
+                    .Where(n => n != null).ToList();
+
+                return new CalendarTaskResponseModel
+                {
+                    Id = arp.Id,
+                    Title = title,
+                    StartHour = calConfig?.StartHour ?? 0,
+                    Duration = calConfig?.Duration ?? 1,
+                    TaskDate = arp.StartDate?.ToString("yyyy-MM-dd") ?? "",
+                    Tags = tags,
+                    AssigneeIds = assigneeIds,
+                    WorkerNames = assigneeIds.Select(id => siteNamesById.GetValueOrDefault(id, string.Empty)).ToList(),
+                    BoardId = calConfig?.BoardId,
+                    Color = calConfig?.Color,
+                    RepeatType = arp.RepeatType ?? 0,
+                    RepeatEvery = arp.RepeatEvery ?? 1,
+                    RepeatEndMode = arp.RepeatEndMode,
+                    RepeatOccurrences = arp.RepeatOccurrences,
+                    RepeatUntilDate = arp.RepeatUntilDate,
+                    DayOfWeek = arp.DayOfWeek,
+                    DayOfMonth = arp.DayOfMonth,
+                    RepeatOrdinalWeek = arp.RepeatOrdinalWeek,
+                    RepeatWeekdaysCsv = arp.RepeatWeekdaysCsv,
+                    Status = arp.Status,
+                    ComplianceEnabled = arp.ComplianceEnabled,
+                    PropertyId = arp.PropertyId,
+                    PlanningId = arp.ItemPlanningId,
+                    EformId = arp.AreaRule?.EformId,
+                    ItemPlanningTagId = arp.ItemPlanningTagId,
+                    DescriptionHtml = description,
+                    Translations = translations,
+                };
+            }).ToList();
+
+            if (!string.IsNullOrWhiteSpace(filters.NameFilter))
+            {
+                var needle = filters.NameFilter.Trim().ToLowerInvariant();
+                rows = rows.Where(r => (r.Title ?? "").ToLowerInvariant().Contains(needle)
+                                       || r.Id.ToString().Contains(needle)).ToList();
+            }
+
+            var sorted = QueryHelper.AddSortToQuery(rows.AsQueryable(), requestModel.Pagination).ToList();
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(true, sorted);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.Index: {Message}", e.Message);
+            return new OperationDataResult<List<CalendarTaskResponseModel>>(false,
+                localizationService.GetString("ErrorWhileObtainingTasks"));
+        }
+    }
+
     public async Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel)
     {
         try

@@ -9,6 +9,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 public interface IBackendConfigurationCalendarService
 {
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(CalendarTaskRequestModel requestModel);
+    Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(CalendarTaskIndexRequestModel requestModel);
 
     /// <summary>
     /// Returns the FULL property-scoped compliance list (no deadline window):
