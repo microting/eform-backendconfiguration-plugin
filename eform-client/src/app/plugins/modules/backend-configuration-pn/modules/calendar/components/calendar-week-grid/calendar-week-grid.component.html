@@ -7,7 +7,7 @@
            *ngFor="let task of getAllDayTasksForColumn(i)"
            [class.completed]="task.completed"
            [style.background-color]="task.color"
-           [style.color]="boardTextColor(task.color)"
+           [style.color]="task.completed ? null : boardTextColor(task.color)"
            (click)="onAllDayTaskClicked($event, task, i)">
         <span *ngIf="isAdmin" class="task-id">{{ task.id }}</span> {{ task.title }}
       </div>

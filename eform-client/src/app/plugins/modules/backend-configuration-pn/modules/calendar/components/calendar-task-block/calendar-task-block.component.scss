@@ -31,6 +31,13 @@
   // below), NO strike-through, full opacity. The !important overrides the inline
   // board-colour background, mirroring .gcal-task--inactive. Kept fully opaque so
   // a stacked active tile can't bleed through.
+  //
+  // Text stays white on the green tile and must NOT follow the board-colour
+  // contrast rule (boardTextColor), which picks dark text on the four light
+  // boards. The template emits a null inline [style.color] when completed, so the
+  // .task-block base `color: white` (which .task-time inherits) applies — no
+  // explicit colour needed here (unlike .gcal-task--inactive.completed, which has
+  // to re-assert white over the inactive grey).
   &.completed {
     background-color: #5c7829 !important;
   }
