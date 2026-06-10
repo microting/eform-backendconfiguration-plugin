@@ -5,6 +5,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService
 using BackendConfigurationLocalizationService;
 using Infrastructure;
 using Infrastructure.Enums;
+using Infrastructure.Helpers;
 using Infrastructure.Models.TaskWizard;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -382,6 +383,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+            // Remap each translate's LanguageId to the real SDK Languages.Id before it is persisted
+            // into PlanningNameTranslation and AreaRuleTranslations below. The calendar modal
+            // hardcodes the Danish source title to app-locale id 1, which is not a valid SDK id and
+            // would otherwise store the title under a language no reader ever queries (blank title).
+            await AreaRuleLanguageHelper
+                .RemapCommonTranslationLanguageIdsAsync(createModel.Translates, sdkDbContext, _logger)
+                .ConfigureAwait(false);
+
             var eformName = sdkDbContext.CheckListTranslations
                 .Where(x => x.CheckListId == createModel.EformId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -699,6 +708,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            // Remap each translate's LanguageId to the real SDK Languages.Id before it is persisted
+            // into AreaRuleTranslations and PlanningNameTranslation below (same fix as CreateTask).
+            await AreaRuleLanguageHelper
+                .RemapCommonTranslationLanguageIdsAsync(updateModel.Translates, sdkDbContext, _logger)
+                .ConfigureAwait(false);
 
             var eformName = sdkDbContext.CheckListTranslations
                 .Where(x => x.CheckListId == updateModel.EformId)
