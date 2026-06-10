@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ public static class AreaRuleLanguageHelper
         var seedLanguageIdToSdkId = new Dictionary<int, int>();
         foreach (var (seedLanguageId, code) in seedLanguageIdToCode)
         {
-            var lang = sdkLanguages.FirstOrDefault(x => x.LanguageCode == code);
+            var lang = sdkLanguages.FirstOrDefault(x => string.Equals(x.LanguageCode, code, StringComparison.OrdinalIgnoreCase));
             if (lang != null)
             {
                 seedLanguageIdToSdkId[seedLanguageId] = lang.Id;
@@ -158,7 +159,7 @@ public static class AreaRuleLanguageHelper
             }
 
             // Resolve the intended language by code to its real SDK id.
-            var sdkLanguage = sdkLanguages.FirstOrDefault(x => x.LanguageCode == code);
+            var sdkLanguage = sdkLanguages.FirstOrDefault(x => string.Equals(x.LanguageCode, code, StringComparison.OrdinalIgnoreCase));
             if (sdkLanguage != null)
             {
                 translation.LanguageId = sdkLanguage.Id;
