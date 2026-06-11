@@ -444,6 +444,8 @@ export const enUS= {
   'Navn tavle': 'Board name',
   'Farve': 'Color',
   'Slet tavle': 'Delete board',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.':
+    'This will permanently delete the board and its {{count}} events. This cannot be undone.',
   'Opret tavle': 'Create board',
   'Teamnavn': 'Team name',
   'Slet team': 'Delete team',

@@ -413,6 +413,8 @@ export const da = {
   'Create employee': 'Opret medarbejder',
   'Navn tavle': 'Tavlenavn',
   'Slet tavle': 'Slet tavle',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.':
+    'Dette sletter tavlen og dens {{count}} begivenheder permanent. Dette kan ikke fortrydes.',
   'Opret tavle': 'Opret tavle',
   Teamnavn: 'Holdnavn',
   'Slet team': 'Slet hold',
