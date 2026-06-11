@@ -3204,6 +3204,28 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CalendarBoardNotFound"));
             }
 
+            // Cascade: delete every event placed on this board, reusing the exact
+            // per-event series-delete path used for manual deletes. Events first,
+            // board last, so a mid-way failure leaves the board intact (recoverable).
+            var arpIds = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.BoardId == id)
+                .Select(x => x.AreaRulePlanningId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var arpId in arpIds)
+            {
+                var seriesResult = await DeleteEntireSeries(arpId);
+                if (!seriesResult.Success)
+                {
+                    logger.LogError(
+                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}",
+                        arpId, id);
+                    return seriesResult;
+                }
+            }
+
             await board.Delete(backendConfigurationPnDbContext);
 
             return new OperationResult(true,

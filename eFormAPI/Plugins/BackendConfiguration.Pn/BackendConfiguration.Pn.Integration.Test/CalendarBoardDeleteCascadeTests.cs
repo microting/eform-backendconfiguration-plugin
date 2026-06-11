@@ -6,6 +6,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -125,5 +126,57 @@ public class CalendarBoardDeleteCascadeTests : TestBaseSetup
 
         Assert.That(result.Success, Is.True);
         Assert.That(result.Model, Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task DeleteBoard_CascadeDeletesEvents_AndDelegatesEachAreaRulePlanning()
+    {
+        _service = BuildService();
+        var (boardId, arpIds) = await SeedBoardWithEvents(2);
+
+        var result = await _service.DeleteBoard(boardId);
+
+        Assert.That(result.Success, Is.True);
+
+        // Board itself soft-deleted.
+        var board = await BackendConfigurationPnDbContext!.CalendarBoards
+            .FirstAsync(x => x.Id == boardId);
+        Assert.That(board.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        // Every CalendarConfiguration on the board soft-deleted.
+        var liveConfigs = await BackendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.BoardId == boardId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .CountAsync();
+        Assert.That(liveConfigs, Is.EqualTo(0));
+
+        // AreaRulePlanning removal delegated once per distinct event.
+        foreach (var arpId in arpIds)
+        {
+            await _taskWizardService.Received(1).DeleteTask(arpId);
+        }
+    }
+
+    [Test]
+    public async Task DeleteBoard_DoesNotTouchEventsOnOtherBoards()
+    {
+        _service = BuildService();
+        var (boardId, _) = await SeedBoardWithEvents(1);
+        var (otherBoardId, otherArpIds) = await SeedBoardWithEvents(1);
+
+        await _service.DeleteBoard(boardId);
+
+        // The other board and its event are untouched.
+        var otherBoard = await BackendConfigurationPnDbContext!.CalendarBoards
+            .FirstAsync(x => x.Id == otherBoardId);
+        Assert.That(otherBoard.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+
+        var otherConfigsLive = await BackendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => x.BoardId == otherBoardId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .CountAsync();
+        Assert.That(otherConfigsLive, Is.EqualTo(1));
+
+        await _taskWizardService.DidNotReceive().DeleteTask(otherArpIds[0]);
     }
 }
