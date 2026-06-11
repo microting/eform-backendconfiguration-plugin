@@ -505,4 +505,7 @@ export const slSL = {
   Delete: 'Izbriši',
   Edit: 'Uredi',
   'Select date': 'Izberite datum',
+  'Edit repeat': 'Uredi ponovitev',
+  'Move repeat': 'Ponavljanje premikanja',
+  'Delete repeat': 'Izbriši ponovitev',
 };

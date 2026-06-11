@@ -505,4 +505,7 @@ export const ltLT = {
   Delete: 'Ištrinti',
   Edit: 'Redaguoti',
   'Select date': 'Pasirinkite datą',
+  'Edit repeat': 'Redaguoti kartojimą',
+  'Move repeat': 'Judėjimo kartojimas',
+  'Delete repeat': 'Ištrinti kartojimą',
 };

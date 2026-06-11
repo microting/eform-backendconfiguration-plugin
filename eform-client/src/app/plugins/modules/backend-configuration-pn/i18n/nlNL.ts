@@ -505,4 +505,7 @@ export const nlNL = {
   Delete: 'Verwijderen',
   Edit: 'Bewerking',
   'Select date': 'Selecteer datum',
+  'Edit repeat': 'Herhalen bewerken',
+  'Move repeat': 'Verplaats herhalen',
+  'Delete repeat': 'Verwijder herhaling',
 };

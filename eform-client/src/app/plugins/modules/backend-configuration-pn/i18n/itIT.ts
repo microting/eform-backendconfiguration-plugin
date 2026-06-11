@@ -505,4 +505,7 @@ export const itIT = {
   Delete: 'Eliminare',
   Edit: 'Modificare',
   'Select date': 'Seleziona la data',
+  'Edit repeat': 'Modifica ripeti',
+  'Move repeat': 'Muoviti ripeti',
+  'Delete repeat': 'Elimina ripeti',
 };

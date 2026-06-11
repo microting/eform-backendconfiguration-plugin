@@ -505,4 +505,7 @@ export const isIS = {
   Delete: 'Eyða',
   Edit: 'Breyta',
   'Select date': 'Veldu dagsetningu',
+  'Edit repeat': 'Breyta endurtekningu',
+  'Move repeat': 'Færa endurtekið',
+  'Delete repeat': 'Eyða endurtekningu',
 };

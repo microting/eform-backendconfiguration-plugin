@@ -505,4 +505,7 @@ export const hrHR = {
   Delete: 'Izbrisati',
   Edit: 'Uredi',
   'Select date': 'Odaberite datum',
+  'Edit repeat': 'Uredi ponavljanje',
+  'Move repeat': 'Ponavljanje poteza',
+  'Delete repeat': 'Izbriši ponavljanje',
 };

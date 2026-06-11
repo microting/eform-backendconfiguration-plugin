@@ -504,4 +504,7 @@ export const frFR = {
   Delete: 'Supprimer',
   Edit: 'Modifier',
   'Select date': 'Sélectionnez une date',
+  'Edit repeat': 'Répéter la modification',
+  'Move repeat': 'Répéter le déplacement',
+  'Delete repeat': 'Supprimer la répétition',
 };

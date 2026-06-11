@@ -505,4 +505,7 @@ export const esES = {
   Delete: 'Borrar',
   Edit: 'Editar',
   'Select date': 'Seleccione la fecha',
+  'Edit repeat': 'Editar repetir',
+  'Move repeat': 'Mover repetir',
+  'Delete repeat': 'Eliminar repetir',
 };

@@ -506,4 +506,7 @@ export const da = {
   Delete: 'Slet',
   Edit: 'Rediger',
   'Select date': 'Vælg dato',
+  'Edit repeat': 'Rediger gentagelse',
+  'Move repeat': 'Flyt gentagelse',
+  'Delete repeat': 'Slet gentagelse',
 };

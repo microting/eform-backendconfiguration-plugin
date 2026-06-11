@@ -505,4 +505,7 @@ export const elGR = {
   Delete: 'Διαγράφω',
   Edit: 'Εκδίδω',
   'Select date': 'Επιλογή ημερομηνίας',
+  'Edit repeat': 'Επεξεργασία επανάληψης',
+  'Move repeat': 'Επανάληψη κίνησης',
+  'Delete repeat': 'Διαγραφή επανάληψης',
 };

@@ -505,4 +505,7 @@ export const ukUA = {
   Delete: 'Видалити',
   Edit: 'Редагувати',
   'Select date': 'Виберіть дату',
+  'Edit repeat': 'Редагувати повторення',
+  'Move repeat': 'Повторення руху',
+  'Delete repeat': 'Видалити повторення',
 };

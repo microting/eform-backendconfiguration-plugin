@@ -524,4 +524,7 @@ export const enUS= {
   Delete: 'Delete',
   Edit: 'Edit',
   'Select date': 'Select date',
+  'Edit repeat': 'Edit repeat',
+  'Move repeat': 'Move repeat',
+  'Delete repeat': 'Delete repeat',
 };

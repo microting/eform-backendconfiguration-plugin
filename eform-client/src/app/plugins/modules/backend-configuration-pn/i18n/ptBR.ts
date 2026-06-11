@@ -505,4 +505,7 @@ export const ptBR = {
   Delete: 'Excluir',
   Edit: 'Editar',
   'Select date': 'Selecione a data',
+  'Edit repeat': 'Editar repetição',
+  'Move repeat': 'Repita o movimento',
+  'Delete repeat': 'Excluir repetição',
 };

@@ -505,4 +505,7 @@ export const etET = {
   Delete: 'Kustuta',
   Edit: 'Redigeeri',
   'Select date': 'Valige kuupäev',
+  'Edit repeat': 'Redigeeri kordust',
+  'Move repeat': 'Liigutuse kordus',
+  'Delete repeat': 'Kustuta kordus',
 };

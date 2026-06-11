@@ -505,4 +505,7 @@ export const lvLV = {
   Delete: 'Dzēst',
   Edit: 'Rediģēt',
   'Select date': 'Izvēlieties datumu',
+  'Edit repeat': 'Rediģēt atkārtojumu',
+  'Move repeat': 'Pārvietošanas atkārtošana',
+  'Delete repeat': 'Dzēst atkārtojumu',
 };
