@@ -3218,6 +3218,28 @@ public class BackendConfigurationCalendarService(
         }
     }
 
+    public async Task<OperationDataResult<int>> GetBoardEventCount(int id)
+    {
+        try
+        {
+            var count = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.BoardId == id)
+                .Select(x => x.AreaRulePlanningId)
+                .Distinct()
+                .CountAsync();
+
+            return new OperationDataResult<int>(true, count);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.GetBoardEventCount: {Message}", e.Message);
+            return new OperationDataResult<int>(false,
+                $"{localizationService.GetString("ErrorWhileReadingCalendarBoard")}: {e.Message}");
+        }
+    }
+
     // Parses a comma-separated weekday CSV (e.g. "1,3,5") into a sorted,
     // de-duplicated array of JS-style weekday ints (0=Sun..6=Sat). Returns
     // an empty array on null/empty/all-invalid input — callers treat empty
