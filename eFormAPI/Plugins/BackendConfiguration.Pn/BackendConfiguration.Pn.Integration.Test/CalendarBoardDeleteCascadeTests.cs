@@ -179,4 +179,25 @@ public class CalendarBoardDeleteCascadeTests : TestBaseSetup
 
         await _taskWizardService.DidNotReceive().DeleteTask(otherArpIds[0]);
     }
+
+    [Test]
+    public async Task DeleteBoard_WhenEventDeletionFails_AbortsWithBoardIntact()
+    {
+        _service = BuildService();
+
+        // Re-stub DeleteTask to return failure so the per-event series-delete aborts.
+        _taskWizardService.DeleteTask(Arg.Any<int>())
+            .Returns(Task.FromResult(new OperationResult(false, "boom")));
+
+        var (boardId, _) = await SeedBoardWithEvents(1);
+
+        var result = await _service.DeleteBoard(boardId);
+
+        Assert.That(result.Success, Is.False);
+
+        // Board must NOT be soft-deleted — it should be left intact / recoverable.
+        var board = await BackendConfigurationPnDbContext!.CalendarBoards
+            .FirstAsync(x => x.Id == boardId);
+        Assert.That(board.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+    }
 }
