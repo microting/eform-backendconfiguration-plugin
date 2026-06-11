@@ -9,7 +9,7 @@ import {MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
     <div mat-dialog-content>
       <div class="d-flex flex-row justify-content-between">
         <div class="d-flex flex-column">
-          <p>ID</p>
+          <p>{{ 'ID' | translate }}</p>
         </div>
         <div class="d-flex flex-column">
           <strong>{{ data.id }}</strong>

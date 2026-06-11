@@ -1,12 +1,12 @@
 <h2 mat-dialog-title>
   <mat-icon style="vertical-align: middle; margin-right: 8px;">dashboard</mat-icon>
-  {{ 'Opret tavle' | translate }}
+  {{ 'Create board' | translate }}
 </h2>
 <mat-dialog-content>
   <form [formGroup]="form">
-    <label class="field-label">{{ 'Navn' | translate }}</label>
+    <label class="field-label">{{ 'Name' | translate }}</label>
     <mat-form-field appearance="outline" style="width: 100%;">
-      <input matInput formControlName="name" [placeholder]="'Indtast navn tavle' | translate">
+      <input matInput formControlName="name" [placeholder]="'Enter board name' | translate">
     </mat-form-field>
 
     <div class="color-picker-grid">
@@ -21,8 +21,8 @@
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button class="btn-cancel" mat-dialog-close>{{ 'Annuller' | translate }}</button>
+  <button class="btn-cancel" mat-dialog-close>{{ 'Cancel' | translate }}</button>
   <button class="btn-primary btn-primary--icon-left" [disabled]="form.invalid" (click)="onSave()">
-    <span>{{ 'Opret' | translate }}</span>
+    <span>{{ 'Create' | translate }}</span>
   </button>
 </mat-dialog-actions>
