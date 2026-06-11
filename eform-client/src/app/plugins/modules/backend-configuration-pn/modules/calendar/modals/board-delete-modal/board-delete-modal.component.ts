@@ -23,11 +23,16 @@ export class BoardDeleteModalComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.calendarService.getBoardEventCount(this.data.board.id).subscribe(res => {
-      if (res && res.success) {
-        this.eventCount = res.model;
-      }
-      this.countLoaded = true;
+    this.calendarService.getBoardEventCount(this.data.board.id).subscribe({
+      next: res => {
+        if (res && res.success) {
+          this.eventCount = res.model;
+        }
+        this.countLoaded = true;
+      },
+      error: () => {
+        this.countLoaded = true;
+      },
     });
   }
 
