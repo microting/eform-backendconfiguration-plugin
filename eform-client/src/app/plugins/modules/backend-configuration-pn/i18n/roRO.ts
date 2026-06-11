@@ -505,4 +505,7 @@ export const roRO = {
   Delete: 'Şterge',
   Edit: 'Edita',
   'Select date': 'Selectați data',
+  'Edit repeat': 'Repetare editare',
+  'Move repeat': 'Repetare mutare',
+  'Delete repeat': 'Ștergeți repetarea',
 };

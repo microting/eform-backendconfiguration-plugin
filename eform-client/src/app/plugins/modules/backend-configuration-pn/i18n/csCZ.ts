@@ -505,4 +505,7 @@ export const csCZ = {
   Delete: 'Vymazat',
   Edit: 'Upravit',
   'Select date': 'Vyberte datum',
+  'Edit repeat': 'Upravit opakování',
+  'Move repeat': 'Opakování pohybu',
+  'Delete repeat': 'Smazat opakování',
 };

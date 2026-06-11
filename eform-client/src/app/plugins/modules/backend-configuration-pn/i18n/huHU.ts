@@ -505,4 +505,7 @@ export const huHU = {
   Delete: 'Töröl',
   Edit: 'Szerkesztés',
   'Select date': 'Dátum kiválasztása',
+  'Edit repeat': 'Szerkesztés ismétlése',
+  'Move repeat': 'Mozgás ismétlése',
+  'Delete repeat': 'Ismétlés törlése',
 };

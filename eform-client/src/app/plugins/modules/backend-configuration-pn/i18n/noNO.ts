@@ -505,4 +505,7 @@ export const noNO = {
   Delete: 'Slett',
   Edit: 'Redigere',
   'Select date': 'Velg dato',
+  'Edit repeat': 'Rediger gjentakelse',
+  'Move repeat': 'Flytt gjenta',
+  'Delete repeat': 'Slett gjentakelse',
 };

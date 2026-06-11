@@ -505,4 +505,7 @@ export const skSK = {
   Delete: 'Odstrániť',
   Edit: 'Upraviť',
   'Select date': 'Vyberte dátum',
+  'Edit repeat': 'Upraviť opakovanie',
+  'Move repeat': 'Opakovanie pohybu',
+  'Delete repeat': 'Odstrániť opakovanie',
 };

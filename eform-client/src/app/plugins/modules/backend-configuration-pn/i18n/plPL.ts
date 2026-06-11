@@ -505,4 +505,7 @@ export const plPL = {
   Delete: 'Usuwać',
   Edit: 'Redagować',
   'Select date': 'Wybierz datę',
+  'Edit repeat': 'Edytuj powtórzenie',
+  'Move repeat': 'Przesuń powtórz',
+  'Delete repeat': 'Usuń powtórzenie',
 };

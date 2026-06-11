@@ -505,4 +505,7 @@ export const svSE = {
   Delete: 'Radera',
   Edit: 'Redigera',
   'Select date': 'Välj datum',
+  'Edit repeat': 'Redigera upprepning',
+  'Move repeat': 'Flytta upprepa',
+  'Delete repeat': 'Ta bort upprepning',
 };

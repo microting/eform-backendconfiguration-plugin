@@ -505,4 +505,7 @@ export const bgBG = {
   Delete: 'Изтриване',
   Edit: 'Редактиране',
   'Select date': 'Изберете дата',
+  'Edit repeat': 'Редактиране на повторение',
+  'Move repeat': 'Повторение на движението',
+  'Delete repeat': 'Изтриване на повторение',
 };

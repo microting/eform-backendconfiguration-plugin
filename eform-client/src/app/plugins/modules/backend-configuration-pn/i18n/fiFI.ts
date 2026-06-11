@@ -505,4 +505,7 @@ export const fiFI = {
   Delete: 'Poistaa',
   Edit: 'Muokata',
   'Select date': 'Valitse päivämäärä',
+  'Edit repeat': 'Muokkaa toistoa',
+  'Move repeat': 'Siirrä toisto',
+  'Delete repeat': 'Poista toisto',
 };

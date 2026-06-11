@@ -556,4 +556,7 @@ export const deDE = {
   Save: 'Speichern',
   Delete: 'Löschen',
   Edit: 'Bearbeiten',
+  'Edit repeat': 'Bearbeiten wiederholen',
+  'Move repeat': 'Bewegung wiederholen',
+  'Delete repeat': 'Löschen Sie die Wiederholung',
 };
