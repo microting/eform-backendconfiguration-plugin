@@ -112,4 +112,8 @@ export class BackendConfigurationPnCalendarService {
   deleteBoard(id: number): Observable<OperationResult> {
     return this.apiBaseService.delete(`${BackendConfigurationPnCalendarMethods.Boards}/${id}`);
   }
+
+  getBoardEventCount(id: number): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.get(`${BackendConfigurationPnCalendarMethods.Boards}/${id}/event-count`);
+  }
 }

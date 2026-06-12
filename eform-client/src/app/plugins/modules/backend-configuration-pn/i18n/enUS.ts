@@ -496,6 +496,7 @@ export const enUS= {
   'Create board': 'Create board',
   'Board name': 'Board name',
   'Delete board': 'Delete board',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'This will permanently delete the board and its {{count}} events. This cannot be undone.',
   'Enter board name': 'Enter board name',
   Cancel: 'Cancel',
   Create: 'Create',

@@ -91,6 +91,12 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.DeleteBoard(id);
     }
 
+    [HttpGet("boards/{id:int}/event-count")]
+    public async Task<OperationDataResult<int>> GetBoardEventCount(int id)
+    {
+        return await _backendConfigurationCalendarService.GetBoardEventCount(id);
+    }
+
     [HttpPut("tasks/{id:int}/complete")]
     public async Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(int id, [FromBody] CalendarToggleCompleteModel model)
     {

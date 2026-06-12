@@ -478,6 +478,7 @@ export const da = {
   'Create board': 'Opret tavle',
   'Board name': 'Tavlenavn',
   'Delete board': 'Slet tavle',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dette sletter tavlen og dens {{count}} begivenheder permanent. Dette kan ikke fortrydes.',
   'Enter board name': 'Indtast brætnavn',
   Cancel: 'Annuller',
   Create: 'Opret',

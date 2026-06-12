@@ -3204,6 +3204,28 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("CalendarBoardNotFound"));
             }
 
+            // Cascade: delete every event placed on this board, reusing the exact
+            // per-event series-delete path used for manual deletes. Events first,
+            // board last, so a mid-way failure leaves the board intact (recoverable).
+            var arpIds = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.BoardId == id)
+                .Select(x => x.AreaRulePlanningId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var arpId in arpIds)
+            {
+                var seriesResult = await DeleteEntireSeries(arpId);
+                if (!seriesResult.Success)
+                {
+                    logger.LogError(
+                        "BackendConfigurationCalendarService.DeleteBoard: aborting; failed to delete event series {ArpId} for board {BoardId}",
+                        arpId, id);
+                    return seriesResult;
+                }
+            }
+
             await board.Delete(backendConfigurationPnDbContext);
 
             return new OperationResult(true,
@@ -3215,6 +3237,28 @@ public class BackendConfigurationCalendarService(
             logger.LogError(e, "BackendConfigurationCalendarService.DeleteBoard: {Message}", e.Message);
             return new OperationResult(false,
                 $"{localizationService.GetString("ErrorWhileDeletingCalendarBoard")}: {e.Message}");
+        }
+    }
+
+    public async Task<OperationDataResult<int>> GetBoardEventCount(int id)
+    {
+        try
+        {
+            var count = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.BoardId == id)
+                .Select(x => x.AreaRulePlanningId)
+                .Distinct()
+                .CountAsync();
+
+            return new OperationDataResult<int>(true, count);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.GetBoardEventCount: {Message}", e.Message);
+            return new OperationDataResult<int>(false,
+                $"{localizationService.GetString("ErrorWhileReadingCalendarBoard")}: {e.Message}");
         }
     }
 

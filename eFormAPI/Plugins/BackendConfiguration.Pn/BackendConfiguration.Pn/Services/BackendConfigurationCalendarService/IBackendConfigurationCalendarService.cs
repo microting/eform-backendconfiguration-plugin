@@ -42,6 +42,7 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);
     Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model);
     Task<OperationResult> DeleteBoard(int id);
+    Task<OperationDataResult<int>> GetBoardEventCount(int id);
     Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int taskId, IFormFile file);
     Task<OperationDataResult<List<CalendarTaskAttachmentDto>>> ListFiles(int taskId);
     Task<CalendarFileDownload?> DownloadFile(int taskId, int fileId);
