@@ -864,10 +864,62 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
             IUserService userService, UserManager<EformUser> userManager)
         {
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            string siteName = null;
+
+            async Task CleanupOrphanSiteAsync()
+            {
+                if (string.IsNullOrEmpty(siteName))
+                {
+                    return;
+                }
+                try
+                {
+                    // SiteCreate may throw after committing the Site row but before the SiteWorker is
+                    // created, leaving an active orphan Site that blocks re-creating this name. Match the
+                    // orphan by name and only remove it when it has no active SiteWorker.
+                    var orphanSite = await sdkDbContext.Sites
+                        .FirstOrDefaultAsync(x => x.Name == siteName
+                            && x.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (orphanSite == null)
+                    {
+                        return;
+                    }
+                    var siteHasActiveWorkerLink = await sdkDbContext.SiteWorkers
+                        .AnyAsync(sw => sw.SiteId == orphanSite.Id
+                            && sw.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (siteHasActiveWorkerLink)
+                    {
+                        return; // fully-formed worker, not an orphan — leave it intact
+                    }
+                    await orphanSite.Delete(sdkDbContext);
+
+                    // Also remove a dangling Worker created for this site (no active SiteWorker link).
+                    // The pre-SiteCreate email check guarantees no pre-existing active worker had this email,
+                    // so a match here is the one just created.
+                    var orphanWorker = await sdkDbContext.Workers
+                        .FirstOrDefaultAsync(x => x.Email == deviceUserModel.WorkerEmail
+                            && x.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (orphanWorker != null)
+                    {
+                        var workerHasActiveLink = await sdkDbContext.SiteWorkers
+                            .AnyAsync(sw => sw.WorkerId == orphanWorker.Id
+                                && sw.WorkflowState != Constants.WorkflowStates.Removed);
+                        if (!workerHasActiveLink)
+                        {
+                            await orphanWorker.Delete(sdkDbContext);
+                        }
+                    }
+                }
+                catch (Exception cleanupEx)
+                {
+                    SentrySdk.CaptureException(cleanupEx);
+                    Console.WriteLine($"[CreateDeviceUser] orphan-site cleanup failed: {cleanupEx.Message}");
+                }
+            }
+
             try
             {
-                var sdkDbContext = core.DbContextHelper.GetDbContext();
-
                 if (sdkDbContext.Workers.AsNoTracking().Any(x =>
                         x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
@@ -878,7 +930,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
                 deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
                 // var result = await _deviceUsersService.Create(deviceUserModel);
-                var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+                siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
                 var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x =>
                     x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName &&
@@ -1102,7 +1154,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     {
                         Console.WriteLine($"[CreateDeviceUser] EXCEPTION: {e}");
                         // _logger.LogError(e.Message);
-                        return new OperationDataResult<int>(false, "");
+                        return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
                     }
                 }
 
@@ -1111,6 +1163,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             {
                 SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
+                await CleanupOrphanSiteAsync().ConfigureAwait(false);
                 return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
             }
         }
