@@ -867,39 +867,58 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             SiteDto? siteDto = null;
+            string siteName = null;
 
-            // Compensating cleanup: SiteCreate already committed the SDK Site (and possibly Worker)
-            // before this failure. core.SiteDelete is not null-safe for siteworker-less orphans, so
-            // soft-delete the SDK rows directly to avoid leaving an active orphan that blocks name reuse.
             async Task CleanupOrphanSiteAsync()
             {
-                if (siteDto == null)
+                if (string.IsNullOrEmpty(siteName))
                 {
                     return;
                 }
-
                 try
                 {
+                    // SiteCreate commits the SDK Site before creating the Worker/SiteWorker; if creation
+                    // throws, an active orphan Site with no SiteWorker can remain and permanently block
+                    // re-creating that name. siteDto is null when SiteCreate throws, so match the orphan by
+                    // name and only remove it when it has no active SiteWorker (so we never delete a
+                    // fully-formed worker).
                     var orphanSite = await sdkDbContext.Sites
-                        .FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.SiteId
-                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
-                    if (orphanSite != null)
+                        .FirstOrDefaultAsync(x => x.Name == siteName
+                            && x.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (orphanSite == null)
                     {
-                        await orphanSite.Delete(sdkDbContext).ConfigureAwait(false);
+                        return;
                     }
+                    var siteHasActiveWorkerLink = await sdkDbContext.SiteWorkers
+                        .AnyAsync(sw => sw.SiteId == orphanSite.Id
+                            && sw.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (siteHasActiveWorkerLink)
+                    {
+                        return; // fully-formed worker, not an orphan — leave it intact
+                    }
+                    await orphanSite.Delete(sdkDbContext);
 
+                    // Also remove a dangling Worker created for this site (no active SiteWorker link).
+                    // The pre-SiteCreate email check guarantees no pre-existing active worker had this email,
+                    // so a match here is the one just created.
                     var orphanWorker = await sdkDbContext.Workers
-                        .FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid
-                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                        .FirstOrDefaultAsync(x => x.Email == deviceUserModel.WorkerEmail
+                            && x.WorkflowState != Constants.WorkflowStates.Removed);
                     if (orphanWorker != null)
                     {
-                        await orphanWorker.Delete(sdkDbContext).ConfigureAwait(false);
+                        var workerHasActiveLink = await sdkDbContext.SiteWorkers
+                            .AnyAsync(sw => sw.WorkerId == orphanWorker.Id
+                                && sw.WorkflowState != Constants.WorkflowStates.Removed);
+                        if (!workerHasActiveLink)
+                        {
+                            await orphanWorker.Delete(sdkDbContext);
+                        }
                     }
                 }
                 catch (Exception cleanupEx)
                 {
                     SentrySdk.CaptureException(cleanupEx);
-                    Console.WriteLine($"[CreateDeviceUser] failed to clean up orphan SDK site after a failed worker create: {cleanupEx}");
+                    Console.WriteLine($"[CreateDeviceUser] orphan-site cleanup failed: {cleanupEx.Message}");
                 }
             }
 
@@ -915,7 +934,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
                 deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
                 // var result = await _deviceUsersService.Create(deviceUserModel);
-                var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+                siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
 
                 var site = await sdkDbContext.Sites.AsNoTracking().SingleOrDefaultAsync(x =>
                     x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName &&
@@ -1139,7 +1158,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     {
                         Console.WriteLine($"[CreateDeviceUser] EXCEPTION: {e}");
                         // _logger.LogError(e.Message);
-                        await CleanupOrphanSiteAsync().ConfigureAwait(false);
                         return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
                     }
                 }
