@@ -8,7 +8,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
-using Microting.eForm.Dto;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
@@ -866,7 +865,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             IUserService userService, UserManager<EformUser> userManager)
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            SiteDto? siteDto = null;
             string siteName = null;
 
             async Task CleanupOrphanSiteAsync()
@@ -877,11 +875,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 }
                 try
                 {
-                    // SiteCreate commits the SDK Site before creating the Worker/SiteWorker; if creation
-                    // throws, an active orphan Site with no SiteWorker can remain and permanently block
-                    // re-creating that name. siteDto is null when SiteCreate throws, so match the orphan by
-                    // name and only remove it when it has no active SiteWorker (so we never delete a
-                    // fully-formed worker).
+                    // SiteCreate may throw after committing the Site row but before the SiteWorker is
+                    // created, leaving an active orphan Site that blocks re-creating this name. Match the
+                    // orphan by name and only remove it when it has no active SiteWorker.
                     var orphanSite = await sdkDbContext.Sites
                         .FirstOrDefaultAsync(x => x.Name == siteName
                             && x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -945,7 +941,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     return new OperationDataResult<int>(false, "TheEmployeeAlreadyExist");
                 }
 
-                siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName,
+                var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName,
                     deviceUserModel.UserLastName,
                     deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
