@@ -7,17 +7,17 @@ import {MatDialogRef} from '@angular/material/dialog';
   template: `
     <h2 mat-dialog-title>
       <mat-icon style="vertical-align: middle; margin-right: 8px;">label</mat-icon>
-      {{ 'Opret tag' | translate }}
+      {{ 'Create tag' | translate }}
     </h2>
     <mat-dialog-content>
-      <label class="team-field-label">{{ 'Navn' | translate }}</label>
+      <label class="team-field-label">{{ 'Name' | translate }}</label>
       <mat-form-field appearance="outline" style="width: 100%;">
-        <input matInput [(ngModel)]="tagName" [placeholder]="'Indtast tagnavn' | translate" (keydown.enter)="onCreate()">
+        <input matInput [(ngModel)]="tagName" [placeholder]="'Enter tag name' | translate" (keydown.enter)="onCreate()">
       </mat-form-field>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>{{ 'Annuller' | translate }}</button>
-      <button mat-flat-button color="primary" [disabled]="!tagName.trim()" (click)="onCreate()">{{ 'Opret' | translate }}</button>
+      <button mat-button mat-dialog-close>{{ 'Cancel' | translate }}</button>
+      <button mat-flat-button color="primary" [disabled]="!tagName.trim()" (click)="onCreate()">{{ 'Create' | translate }}</button>
     </mat-dialog-actions>
   `,
   styles: [`
