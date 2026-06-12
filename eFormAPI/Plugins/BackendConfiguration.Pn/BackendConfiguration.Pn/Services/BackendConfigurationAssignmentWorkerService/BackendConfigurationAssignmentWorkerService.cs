@@ -324,6 +324,21 @@ public class BackendConfigurationAssignmentWorkerService(
                 }
             }
 
+            // Remove the underlying SDK Site (cascades to Worker + SiteWorker, and deregisters remotely)
+            // so a deleted worker does not leave an active orphan Site blocking name reuse.
+            if (site != null && site.MicrotingUid.HasValue)
+            {
+                try
+                {
+                    await core.SiteDelete(site.MicrotingUid.Value).ConfigureAwait(false);
+                }
+                catch (Exception siteDeleteEx)
+                {
+                    SentrySdk.CaptureException(siteDeleteEx);
+                    logger.LogError(siteDeleteEx, "Delete: core.SiteDelete failed for site MicrotingUid {Uid}", site.MicrotingUid);
+                }
+            }
+
             return new OperationResult(true,
                 backendConfigurationLocalizationService.GetString("SuccessfullyDeleteAssignmentsProperties"));
         }

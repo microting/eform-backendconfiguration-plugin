@@ -8,6 +8,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
+using Microting.eForm.Dto;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
@@ -864,10 +865,46 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
             IUserService userService, UserManager<EformUser> userManager)
         {
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            SiteDto? siteDto = null;
+
+            // Compensating cleanup: SiteCreate already committed the SDK Site (and possibly Worker)
+            // before this failure. core.SiteDelete is not null-safe for siteworker-less orphans, so
+            // soft-delete the SDK rows directly to avoid leaving an active orphan that blocks name reuse.
+            async Task CleanupOrphanSiteAsync()
+            {
+                if (siteDto == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var orphanSite = await sdkDbContext.Sites
+                        .FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.SiteId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                    if (orphanSite != null)
+                    {
+                        await orphanSite.Delete(sdkDbContext).ConfigureAwait(false);
+                    }
+
+                    var orphanWorker = await sdkDbContext.Workers
+                        .FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid
+                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                    if (orphanWorker != null)
+                    {
+                        await orphanWorker.Delete(sdkDbContext).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception cleanupEx)
+                {
+                    SentrySdk.CaptureException(cleanupEx);
+                    Console.WriteLine($"[CreateDeviceUser] failed to clean up orphan SDK site after a failed worker create: {cleanupEx}");
+                }
+            }
+
             try
             {
-                var sdkDbContext = core.DbContextHelper.GetDbContext();
-
                 if (sdkDbContext.Workers.AsNoTracking().Any(x =>
                         x.Email == deviceUserModel.WorkerEmail && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
@@ -889,7 +926,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     return new OperationDataResult<int>(false, "TheEmployeeAlreadyExist");
                 }
 
-                var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName,
+                siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName,
                     deviceUserModel.UserLastName,
                     deviceUserModel.WorkerEmail, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
@@ -1102,7 +1139,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     {
                         Console.WriteLine($"[CreateDeviceUser] EXCEPTION: {e}");
                         // _logger.LogError(e.Message);
-                        return new OperationDataResult<int>(false, "");
+                        await CleanupOrphanSiteAsync().ConfigureAwait(false);
+                        return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
                     }
                 }
 
@@ -1111,6 +1149,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             {
                 SentrySdk.CaptureException(ex);
                 Console.WriteLine(ex.Message);
+                await CleanupOrphanSiteAsync().ConfigureAwait(false);
                 return new OperationDataResult<int>(false, "DeviceUserCouldNotBeCreated");
             }
         }
