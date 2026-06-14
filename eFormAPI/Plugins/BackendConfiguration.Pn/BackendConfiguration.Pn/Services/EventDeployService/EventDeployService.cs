@@ -203,6 +203,46 @@ public class EventDeployService(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         var assignedPlanningIdSet = new HashSet<int>(planningIdsAssignedToSite);
+
+        // C4 — also retain plannings where this site qualifies through a worker
+        // tag assigned to the event (not just explicit PlanningSites), so
+        // not-yet-deployed occurrences materialise against live tag membership.
+        // Uses a short-lived SDK context (the pass-wide one is opened below).
+        var sdkCoreForTags = await coreHelper.GetCore().ConfigureAwait(false);
+        await using (var sdkDbContextForTags = sdkCoreForTags.DbContextHelper.GetDbContext())
+        {
+            var siteTagIds = await sdkDbContextForTags.SiteTags
+                .AsNoTracking()
+                .Where(st => st.SiteId == sdkSiteId
+                             && st.TagId != null
+                             && st.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(st => st.TagId!.Value)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+            if (siteTagIds.Count > 0)
+            {
+                var arpIdsViaTag = await dbContext.AreaRulePlanningWorkerTags
+                    .AsNoTracking()
+                    .Where(wt => siteTagIds.Contains(wt.TagId)
+                                 && wt.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(wt => wt.AreaRulePlanningId)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+                if (arpIdsViaTag.Count > 0)
+                {
+                    var planningIdsViaTag = await dbContext.AreaRulePlannings
+                        .AsNoTracking()
+                        .Where(arp => arpIdsViaTag.Contains(arp.Id)
+                                      && arp.ItemPlanningId > 0
+                                      && arp.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(arp => arp.ItemPlanningId)
+                        .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+                    foreach (var pid in planningIdsViaTag) assignedPlanningIdSet.Add(pid);
+                }
+            }
+        }
+
         candidates = candidates
             .Where(x => assignedPlanningIdSet.Contains(x.Task.PlanningId!.Value))
             .ToList();
@@ -464,12 +504,36 @@ public class EventDeployService(
                         && pw.WorkflowState != Constants.WorkflowStates.Removed,
                     ct)
                 .ConfigureAwait(false);
+            var siteIsWorkerTagMember = false;
             if (!siteIsActivePropertyWorker)
+            {
+                // Also accept a site that is a live member of any worker tag
+                // assigned to THIS event (C4): not-yet-deployed occurrences
+                // must materialise against live tag membership, even when the
+                // site is neither an explicit PlanningSite nor a property worker.
+                var eventTagIds = await dbContext.AreaRulePlanningWorkerTags
+                    .AsNoTracking()
+                    .Where(wt => wt.AreaRulePlanningId == areaRulePlanning.Id
+                                 && wt.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(wt => wt.TagId)
+                    .ToListAsync(ct).ConfigureAwait(false);
+                if (eventTagIds.Count > 0)
+                {
+                    siteIsWorkerTagMember = await sdkDbContext.SiteTags
+                        .AsNoTracking()
+                        .AnyAsync(st => st.SiteId == sdkSiteId
+                                        && st.TagId != null && eventTagIds.Contains(st.TagId.Value)
+                                        && st.WorkflowState != Constants.WorkflowStates.Removed, ct)
+                        .ConfigureAwait(false);
+                }
+            }
+            if (!siteIsActivePropertyWorker && !siteIsWorkerTagMember)
             {
                 throw new InvalidOperationException(
                     $"EventDeployService refused to deploy planning {planning.Id} to sdkSiteId {sdkSiteId}: "
-                    + "the site is neither in the planning's (non-removed) PlanningSites nor an active "
-                    + $"worker of property {areaRulePlanning.PropertyId}. Deploying here would leak a case "
+                    + "the site is neither in the planning's (non-removed) PlanningSites, an active "
+                    + $"worker of property {areaRulePlanning.PropertyId}, nor a worker-tag member of "
+                    + $"event {areaRulePlanning.Id}. Deploying here would leak a case "
                     + "to an unrelated worker (#932/#1377).");
             }
         }
@@ -626,29 +690,45 @@ public class EventDeployService(
         using var deployLockHandle = await AcquireDeployLockAsync(
             areaRulePlanning.ItemPlanningId, sdkSiteId, cancellationToken).ConfigureAwait(false);
 
-        // Idempotence guard: another caller (nightly batch, parallel request)
-        // may already have materialised this occurrence. Match the natural
-        // key the nightly path uses (PlanningId + Deadline.Date, non-removed)
-        // plus the canonical "case actually exists" filter
-        // (MicrotingSdkCaseId > 0) so we never hand back a half-deployed row.
-        var existing = await dbContext.Compliances
+        // Site-aware idempotence: only treat this occurrence as already
+        // materialised for THIS site if a non-removed compliance row exists
+        // whose backing SDK case belongs to sdkSiteId. A row for a *different*
+        // site must NOT short-circuit deployment of this site (retroactive
+        // worker-tag add path).
+        var candidateComplianceRows = await dbContext.Compliances
             .AsNoTracking()
-            .FirstOrDefaultAsync(c =>
-                    c.PlanningId == areaRulePlanning.ItemPlanningId
-                    && c.Deadline.Date == deadlineDate
-                    && c.WorkflowState != Constants.WorkflowStates.Removed
-                    && c.MicrotingSdkCaseId > 0,
-                cancellationToken)
+            .Where(c =>
+                c.PlanningId == areaRulePlanning.ItemPlanningId
+                && c.Deadline.Date == deadlineDate
+                && c.WorkflowState != Constants.WorkflowStates.Removed
+                && c.MicrotingSdkCaseId > 0)
+            .Select(c => new { c.Id, c.MicrotingSdkCaseId, c.MicrotingSdkeFormId })
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (existing != null)
+        if (candidateComplianceRows.Count > 0)
         {
-            return new EnsureComplianceResult
+            var candidateCaseIds = candidateComplianceRows.Select(x => x.MicrotingSdkCaseId).ToList();
+            var sdkCoreForGuard = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContextForGuard = sdkCoreForGuard.DbContextHelper.GetDbContext();
+            var matchedCaseId = await sdkDbContextForGuard.Cases
+                .AsNoTracking()
+                .Where(sc => candidateCaseIds.Contains(sc.Id)
+                             && sc.SiteId.HasValue
+                             && sc.SiteId.Value == sdkSiteId)
+                .Select(sc => sc.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (matchedCaseId != 0)
             {
-                Created = false,
-                ComplianceId = existing.Id,
-                SdkCaseId = existing.MicrotingSdkCaseId,
-                TemplateId = existing.MicrotingSdkeFormId
-            };
+                var existing = candidateComplianceRows.First(x => x.MicrotingSdkCaseId == matchedCaseId);
+                return new EnsureComplianceResult
+                {
+                    Created = false,
+                    ComplianceId = existing.Id,
+                    SdkCaseId = existing.MicrotingSdkCaseId,
+                    TemplateId = existing.MicrotingSdkeFormId
+                };
+            }
         }
 
         var planning = await itemsPlanningPnDbContext.Plannings

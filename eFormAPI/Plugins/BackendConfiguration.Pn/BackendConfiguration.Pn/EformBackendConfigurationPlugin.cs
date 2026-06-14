@@ -120,6 +120,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.GrpcServices.GrpcSiteResolver>();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
+        services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
+            Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver>();
+        services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService,
+            Services.CalendarAssignmentReconciliation.CalendarAssignmentReconciliationService>();
         services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
         services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
         services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();

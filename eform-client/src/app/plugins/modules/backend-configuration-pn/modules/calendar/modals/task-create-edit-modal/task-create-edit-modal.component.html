@@ -180,6 +180,25 @@
       </div>
     </div>
 
+    <!-- Worker tags (assignment) row -->
+    <div class="gcal-row" *ngIf="data.workerTags.length > 0">
+      <mat-icon class="gcal-icon">groups</mat-icon>
+      <div class="gcal-row-content">
+        <mat-form-field class="w-100">
+          <mat-label>{{ 'Assign to worker tags' | translate }}</mat-label>
+          <mtx-select
+            id="calendarEventWorkerTags"
+            [formControl]="workerTagsControl"
+            [items]="data.workerTags"
+            bindValue="id"
+            bindLabel="name"
+            [multiple]="true"
+            [clearable]="true"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+
     <!-- Report headline row -->
     <div class="gcal-row">
       <mat-icon class="gcal-icon">view_compact</mat-icon>
@@ -461,8 +480,8 @@
 
   <div class="gcal-actions" *ngIf="!isReadonly">
     <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
-            [disabled]="titleControl.invalid || !(assigneeControl.value?.length)"
-            [title]="!(assigneeControl.value?.length) ? ('At least one worker must be assigned' | translate) : ''"
+            [disabled]="titleControl.invalid || !((assigneeControl.value?.length) || (workerTagsControl.value?.length))"
+            [title]="!((assigneeControl.value?.length) || (workerTagsControl.value?.length)) ? ('At least one worker or worker tag must be assigned' | translate) : ''"
             (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}
     </button>

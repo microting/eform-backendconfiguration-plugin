@@ -508,4 +508,7 @@ export const lvLV = {
   'Edit repeat': 'Rediģēt atkārtojumu',
   'Move repeat': 'Pārvietošanas atkārtošana',
   'Delete repeat': 'Dzēst atkārtojumu',
+  'At least one worker or worker tag must be assigned': 'Jāpiešķir vismaz viens darbinieks vai darbinieka atzīme',
+  'Assign to worker tags': 'Piešķirt darbinieka tagiem',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tas neatgriezeniski izdzēsīs tāfeli un tā {{count}} notikumus. Šo darbību nevar atsaukt.',
 };

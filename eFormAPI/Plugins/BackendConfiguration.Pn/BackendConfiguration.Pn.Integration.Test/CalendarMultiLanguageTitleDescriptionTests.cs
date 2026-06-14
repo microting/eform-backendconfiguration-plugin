@@ -16,6 +16,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -266,6 +267,7 @@ public class CalendarMultiLanguageTitleDescriptionTests : TestBaseSetup
             new BackendConfigurationLocalizationService(), userService,
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, taskWizardService,
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
             NullLogger<BackendConfigurationCalendarService>.Instance);
     }
 }

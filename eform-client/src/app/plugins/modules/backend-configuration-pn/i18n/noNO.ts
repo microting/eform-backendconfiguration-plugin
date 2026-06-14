@@ -508,4 +508,7 @@ export const noNO = {
   'Edit repeat': 'Rediger gjentakelse',
   'Move repeat': 'Flytt gjenta',
   'Delete repeat': 'Slett gjentakelse',
+  'At least one worker or worker tag must be assigned': 'Minst én arbeider eller arbeidermerke må tilordnes',
+  'Assign to worker tags': 'Tildel til arbeider-tagger',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dette vil slette brettet og dets {{count}} hendelser permanent. Dette kan ikke angres.',
 };

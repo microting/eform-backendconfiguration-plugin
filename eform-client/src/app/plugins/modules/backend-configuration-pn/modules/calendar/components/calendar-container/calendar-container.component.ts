@@ -279,7 +279,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       )
       .subscribe(res => {
         if (res && res.success) {
-          this.tasks = (res.model || []).map((t: any) => mapResponseToCalendarTask(t));
+          const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+          this.tasks = (res.model || []).map((t: any) => {
+            const task = mapResponseToCalendarTask(t);
+            // Resolve worker-tag ids to display names here (the container owns
+            // `teams`); child views render the names without needing the list.
+            task.workerTagNames = (task.workerTagIds ?? [])
+              .map(id => teamNameById.get(id))
+              .filter((name): name is string => !!name);
+            return task;
+          });
           this.rebuildLayout(monday);
         }
       });
@@ -356,6 +365,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           : (this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined),
       employees: this.employees,
       tags: this.tags.map(t => t.name),
+      workerTags: this.teams,
       propertyId: this.currentPropertyId!,
       properties: this.properties,
       eforms: this.eforms$,
@@ -764,6 +774,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       boards: this.boards,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
+      workerTags: this.teams,
       propertyId: task.propertyId,
       properties: this.properties,
       eforms: this.eforms$,
@@ -836,6 +847,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       boards: this.boards,
       employees: this.employees,
       tags: this.tags.map(t => t.name),
+      workerTags: this.teams,
       propertyId: sourceTask.propertyId,
       properties: this.properties,
       eforms: this.eforms$,

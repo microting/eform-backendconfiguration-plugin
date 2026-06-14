@@ -50,6 +50,11 @@
         // Light grey chips fail contrast on the green row — give them a
         // translucent-white pill with white text instead.
         .task-tags .tag { background: rgba(255, 255, 255, 0.25); color: #fff; }
+        .task-worker-tags .worker-tag {
+          background: rgba(255, 255, 255, 0.25);
+          color: #fff;
+          border-color: rgba(255, 255, 255, 0.4);
+        }
 
         &:hover { background: #4f6823; }
       }
@@ -107,6 +112,25 @@
 
           .tag {
             background: #e0e0e0;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+          }
+        }
+
+        // Worker-tag (assignment) chips — visually distinct from the grey
+        // item-planning .task-tags: blue-tinted pill so the two concepts
+        // don't read as the same thing.
+        .task-worker-tags {
+          display: flex;
+          gap: 4px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+
+          .worker-tag {
+            background: #e3f0fb;
+            color: #1565c0;
+            border: 1px solid #90caf9;
             border-radius: 12px;
             padding: 2px 8px;
             font-size: 11px;

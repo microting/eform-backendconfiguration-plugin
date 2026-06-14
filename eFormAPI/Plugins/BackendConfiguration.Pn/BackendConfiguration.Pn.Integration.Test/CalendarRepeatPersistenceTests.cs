@@ -3,6 +3,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
@@ -73,6 +74,7 @@ public class CalendarRepeatPersistenceTests : TestBaseSetup
             Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!,
             _taskWizardService,
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
             NullLogger<BackendConfigurationCalendarService>.Instance
         );
     }

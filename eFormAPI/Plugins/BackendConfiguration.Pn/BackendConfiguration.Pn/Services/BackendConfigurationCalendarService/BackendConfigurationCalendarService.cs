@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
+using CalendarAssignmentReconciliation;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
@@ -36,6 +37,7 @@ public class BackendConfigurationCalendarService(
     IEventDeployService eventDeployService,
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationTaskWizardService taskWizardService,
+    ICalendarAssignmentReconciliationService reconciliationService,
     ILogger<BackendConfigurationCalendarService> logger)
     : IBackendConfigurationCalendarService
 {
@@ -399,6 +401,14 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
+            // Batch-load raw worker-tag links per ARP so each response model can
+            // round-trip its assigned tags (edit modal would otherwise clear them).
+            var workerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
             // Batch-load occurrence exceptions for this week
             var exceptionsInWeek = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
                 .Where(x => arpIds.Contains(x.AreaRulePlanningId))
@@ -600,7 +610,8 @@ public class BackendConfigurationCalendarService(
                         ItemPlanningTagId = arp.ItemPlanningTagId,
                         DescriptionHtml = description,
                         Translations = translations,
-                        Attachments = MapAttachments(arp)
+                        Attachments = MapAttachments(arp),
+                        WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                     };
 
                     // Per-occurrence field overrides from a "this"-scope edit (#885).
@@ -704,7 +715,8 @@ public class BackendConfigurationCalendarService(
                             ItemPlanningTagId = arp.ItemPlanningTagId,
                             DescriptionHtml = description,
                             Translations = translations,
-                            Attachments = MapAttachments(arp)
+                            Attachments = MapAttachments(arp),
+                            WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                         };
 
                         ApplyOccurrenceFieldOverrides(orphanModel, orphan);
@@ -790,7 +802,8 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp.ItemPlanningTagId,
                     DescriptionHtml = description,
                     Translations = translations,
-                    Attachments = MapAttachments(arp)
+                    Attachments = MapAttachments(arp),
+                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
                 };
 
                 ApplyOccurrenceFieldOverrides(movedModel, movedIn);
@@ -823,6 +836,14 @@ public class BackendConfigurationCalendarService(
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
+
+            // Raw worker-tag links per compliance ARP (same round-trip rationale
+            // as the recurrence path above).
+            var complianceWorkerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
             // Top up exceptionsByArp with any exceptions for compliance ARPs not
             // already covered. arpIds now contains all non-Removed plannings
@@ -997,6 +1018,9 @@ public class BackendConfigurationCalendarService(
                     Translations = complianceTranslations,
                     Attachments = MapAttachments(arp),
                     ExceptionId = complianceException?.Id,
+                    WorkerTagIds = arp != null
+                        ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                        : new List<int>(),
                 };
 
                 ApplyOccurrenceFieldOverrides(model, complianceException);
@@ -1080,6 +1104,13 @@ public class BackendConfigurationCalendarService(
                 .GroupBy(x => x.AreaRulePlanningId)
                 .ToDictionary(g => g.Key, g => g.First());
 
+            // Raw worker-tag links per ARP so the list/edit round-trips assigned tags.
+            var workerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
             var planningTagIds = areaRulePlannings
                 .SelectMany(x => x.AreaRulePlanningTags
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1150,6 +1181,7 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp.ItemPlanningTagId,
                     DescriptionHtml = description,
                     Translations = translations,
+                    WorkerTagIds = workerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>()),
                 };
             }).ToList();
 
@@ -1196,7 +1228,9 @@ public class BackendConfigurationCalendarService(
             // render as a dimmed inactive task with no one to perform it.
             // Reject here with a clear error rather than silently creating
             // an orphan event.
-            if (createModel.Sites is null || createModel.Sites.Count == 0)
+            var hasExplicitSites = createModel.Sites is { Count: > 0 };
+            var hasWorkerTags = createModel.WorkerTagIds is { Count: > 0 };
+            if (!hasExplicitSites && !hasWorkerTags)
             {
                 return new OperationDataResult<int>(false,
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
@@ -1295,6 +1329,29 @@ public class BackendConfigurationCalendarService(
                     UpdatedByUserId = userService.UserId
                 };
                 await calConfig.Create(backendConfigurationPnDbContext);
+
+                // Persist worker-tag links against the created event. The id is
+                // latestArp.Id (TaskWizard's CreateTask does not surface the ARP
+                // id directly — we correlate it via the latest matching ARP above).
+                if (createModel.WorkerTagIds is { Count: > 0 })
+                {
+                    foreach (var tagId in createModel.WorkerTagIds.Distinct())
+                    {
+                        var link = new AreaRulePlanningWorkerTag
+                        {
+                            AreaRulePlanningId = latestArp.Id,
+                            TagId = tagId,
+                            CreatedByUserId = userService.UserId,
+                            UpdatedByUserId = userService.UserId
+                        };
+                        await link.Create(backendConfigurationPnDbContext);
+                    }
+                }
+
+                // Reconcile the new event so an already-deployed current week
+                // picks up the effective recipient set (explicit PlanningSites ∪
+                // live worker-tag members). Idempotent; no-op if removed/inactive.
+                await reconciliationService.ReconcileEventAsync(latestArp.Id);
             }
 
             // latestArp may be null in the rare edge case where TaskWizard
@@ -1358,7 +1415,9 @@ public class BackendConfigurationCalendarService(
             // assignees would downgrade the task to NotActive (same as the
             // Create path); reject rather than silently producing an
             // inactive task with no one to perform it.
-            if (updateModel.Sites is null || updateModel.Sites.Count == 0)
+            var hasExplicitSites = updateModel.Sites is { Count: > 0 };
+            var hasWorkerTags = updateModel.WorkerTagIds is { Count: > 0 };
+            if (!hasExplicitSites && !hasWorkerTags)
             {
                 return new OperationResult(false,
                     localizationService.GetString("AtLeastOneWorkerMustBeAssigned"));
@@ -1462,6 +1521,15 @@ public class BackendConfigurationCalendarService(
             var arp = await backendConfigurationPnDbContext.AreaRulePlannings
                 .FirstOrDefaultAsync(x => x.Id == updateModel.Id
                     && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            // Worker-tag diff is a series-level change, applied only on the "all"
+            // scope path (this/thisAndFollowing return earlier). Load the current
+            // links before mutating so we can compute add/remove sets below.
+            var existingWorkerTagIds = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                .Where(x => x.AreaRulePlanningId == updateModel.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.TagId)
+                .ToListAsync();
             if (arp != null)
             {
                 // Write end-mode + recurrence fields unconditionally so
@@ -1505,6 +1573,45 @@ public class BackendConfigurationCalendarService(
                         await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning);
                     }
                 }
+
+                // Diff worker-tag links against the desired set. Adds create new
+                // links; removes soft-delete the existing ones. Runs on the
+                // series-level "all" path so the persisted set mirrors the wizard's
+                // PlanningSites mutation above.
+                var desiredWorkerTagIds = (updateModel.WorkerTagIds ?? []).Distinct().ToList();
+                var tagsToAdd = desiredWorkerTagIds.Except(existingWorkerTagIds).ToList();
+                var tagsToRemove = existingWorkerTagIds.Except(desiredWorkerTagIds).ToList();
+
+                foreach (var tagId in tagsToAdd)
+                {
+                    var link = new AreaRulePlanningWorkerTag
+                    {
+                        AreaRulePlanningId = updateModel.Id,
+                        TagId = tagId,
+                        CreatedByUserId = userService.UserId,
+                        UpdatedByUserId = userService.UserId
+                    };
+                    await link.Create(backendConfigurationPnDbContext);
+                }
+
+                foreach (var tagId in tagsToRemove)
+                {
+                    var link = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                        .Where(x => x.AreaRulePlanningId == updateModel.Id && x.TagId == tagId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+                    if (link != null)
+                    {
+                        link.UpdatedByUserId = userService.UserId;
+                        await link.Delete(backendConfigurationPnDbContext);
+                    }
+                }
+
+                // Series-level reconcile: after the recipient set (PlanningSites +
+                // worker-tag links) is mutated, pick up/retract cases for future
+                // already-deployed occurrences. Idempotent; no-op if removed/inactive.
+                // Only the "all" scope reaches here — this/thisAndFollowing return earlier.
+                await reconciliationService.ReconcileEventAsync(updateModel.Id);
             }
 
             // Update or create CalendarConfiguration for calendar-specific fields
@@ -2033,6 +2140,22 @@ public class BackendConfigurationCalendarService(
         foreach (var ex in exceptions)
         {
             await ex.Delete(backendConfigurationPnDbContext);
+        }
+
+        // Soft-delete the event's worker-tag links so they don't linger after the
+        // series is gone. The wizard DeleteTask below already retracts every case
+        // (core.CaseDelete) and soft-deletes Planning/PlanningSites/ARP/Compliances,
+        // so reconciliation is not needed here (and would early-return anyway once
+        // the event is removed/inactive).
+        var workerTagLinks = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        foreach (var link in workerTagLinks)
+        {
+            link.UpdatedByUserId = userService.UserId;
+            await link.Delete(backendConfigurationPnDbContext);
         }
 
         var wizardResult = await taskWizardService.DeleteTask(arpId);
@@ -4309,6 +4432,13 @@ public class BackendConfigurationCalendarService(
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToDictionaryAsync(x => x.AreaRulePlanningId);
 
+            // Raw worker-tag links per compliance ARP so models round-trip them.
+            var complianceWorkerTagIdsByArpId = await backendConfigurationPnDbContext.AreaRulePlanningWorkerTags
+                .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .GroupBy(x => x.AreaRulePlanningId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
             var complianceArpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
                 .Where(x => complianceArpIds.Contains(x.AreaRulePlanningId))
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -4466,7 +4596,10 @@ public class BackendConfigurationCalendarService(
                     ItemPlanningTagId = arp?.ItemPlanningTagId,
                     DescriptionHtml = descriptionHtml,
                     Attachments = MapAttachments(arp),
-                    TaskIsExpired = taskIsExpired
+                    TaskIsExpired = taskIsExpired,
+                    WorkerTagIds = arp != null
+                        ? complianceWorkerTagIdsByArpId.GetValueOrDefault(arp.Id, new List<int>())
+                        : new List<int>()
                 };
 
                 result.Add(model);

@@ -508,4 +508,7 @@ export const ukUA = {
   'Edit repeat': 'Редагувати повторення',
   'Move repeat': 'Повторення руху',
   'Delete repeat': 'Видалити повторення',
+  'At least one worker or worker tag must be assigned': 'Повинен бути призначений принаймні один працівник або тег працівника',
+  'Assign to worker tags': 'Призначити тегам працівника',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Це назавжди видалить дошку та її {{count}} подій. Цю дію неможливо скасувати.',
 };

@@ -13,6 +13,8 @@ public class CalendarTaskResponseModel
     public string TaskDate { get; set; }
     public List<string> Tags { get; set; } = [];
     public List<int> AssigneeIds { get; set; } = [];
+    // Worker tags assigned to this event (SDK Tag ids).
+    public List<int> WorkerTagIds { get; set; } = [];
     public List<string> WorkerNames { get; set; } = [];
     public int? BoardId { get; set; }
     public string Color { get; set; }

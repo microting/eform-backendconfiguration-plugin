@@ -559,4 +559,7 @@ export const deDE = {
   'Edit repeat': 'Bearbeiten wiederholen',
   'Move repeat': 'Bewegung wiederholen',
   'Delete repeat': 'Löschen Sie die Wiederholung',
+  'At least one worker or worker tag must be assigned': 'Mindestens ein Arbeiter oder ein Arbeiterausweis muss zugewiesen werden.',
+  'Assign to worker tags': 'Mitarbeiter-Tags zuweisen',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dadurch werden das Board und alle darin enthaltenen {{count}} Ereignisse endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
 };

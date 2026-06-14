@@ -4655,6 +4655,12 @@
     }
   },
   {
+    "Key": "WorkerStillAssignedToEventsCannotResign",
+    "LocalizedValue": {
+      "en-US": "Worker is still assigned to one or more events and cannot be resigned. Remove them from those events (or the tags) first."
+    }
+  },
+  {
     "Key": "ReportPeriod",
     "LocalizedValue": {
       "da": "Rapport periode",

@@ -508,4 +508,7 @@ export const huHU = {
   'Edit repeat': 'Szerkesztés ismétlése',
   'Move repeat': 'Mozgás ismétlése',
   'Delete repeat': 'Ismétlés törlése',
+  'At least one worker or worker tag must be assigned': 'Legalább egy munkavállalót vagy munkavállalói címkét hozzá kell rendelni',
+  'Assign to worker tags': 'Munkavállalói címkék hozzárendelése',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ez véglegesen törli a táblát és a hozzá tartozó {{count}} eseményt. A művelet nem vonható vissza.',
 };

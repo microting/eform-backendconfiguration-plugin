@@ -5,7 +5,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
-import {EFormService} from 'src/app/common/services';
+import {EFormService, EformTagService} from 'src/app/common/services';
 import {
   CalendarBoardModel,
   CalendarTaskListFiltrationModel,
@@ -34,6 +34,8 @@ export class CalendarTaskListPageComponent implements OnInit {
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
   workers: CommonDictionaryModel[] = [];
+  // Available worker tags (a.k.a. "teams") for the edit modal's worker-tag field.
+  teams: CommonDictionaryModel[] = [];
   eforms: {id: number; label: string}[] = [];
   tags: SharedTagModel[] = [];
   tasks: CalendarTaskModel[] = [];
@@ -51,14 +53,24 @@ export class CalendarTaskListPageComponent implements OnInit {
     private propertiesService: BackendConfigurationPnPropertiesService,
     private tagsService: ItemsPlanningPnTagsService,
     private eformService: EFormService,
+    private eformTagService: EformTagService,
     private repeatService: CalendarRepeatService,
   ) {}
 
   ngOnInit() {
     this.loadProperties();
     this.loadTags();
+    this.loadWorkerTags();
     this.loadEforms();
     this.loadTasks();
+  }
+
+  loadWorkerTags() {
+    this.eformTagService.getAvailableTags().subscribe(res => {
+      if (res && res.success) {
+        this.teams = res.model;
+      }
+    });
   }
 
   loadProperties() {
@@ -155,6 +167,7 @@ export class CalendarTaskListPageComponent implements OnInit {
       selectedBoardId: task.boardId ?? undefined,
       employees: this.workers,
       tags: this.tags.map(t => t.name),
+      workerTags: this.teams,
       propertyId: task.propertyId,
       properties: this.properties,
       eforms: of(this.eforms),

@@ -508,4 +508,7 @@ export const bgBG = {
   'Edit repeat': 'Редактиране на повторение',
   'Move repeat': 'Повторение на движението',
   'Delete repeat': 'Изтриване на повторение',
+  'At least one worker or worker tag must be assigned': 'Трябва да бъде зададен поне един работник или етикет на работник',
+  'Assign to worker tags': 'Присвояване на етикети на работници',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Това ще изтрие завинаги дъската и нейните {{count}} събития. Това действие не може да бъде отменено.',
 };
