@@ -389,7 +389,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             TimePlanningPnDbContext timePlanningDbContext,
             BaseDbContext baseDbContext,
             ILogger logger,
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -408,6 +409,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
                     var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid).ConfigureAwait(false);
+                    if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
                     var site = await sdkDbContext.Sites
                         .Include(x => x.SiteTags)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -452,7 +454,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                         await siteTag.Create(sdkDbContext);
                     }
-                    if (worker == null) return new OperationResult(false, "DeviceUserCouldNotBeObtained");
+
+                    // Reconcile already-deployed future occurrences of any event referencing a changed worker tag
+                    var changedTagIds = forRemove.Concat(forCreate).Distinct().ToList();
+                    if (changedTagIds.Count > 0 && reconciliationService != null)
+                    {
+                        await reconciliationService.ReconcileEventsForWorkerTagsAsync(changedTagIds);
+                    }
                     {
                         var oldEmail = worker.Email;
                         if (sdkDbContext.Workers.Any(x => x.Email == deviceUserModel.WorkerEmail && x.MicrotingUid != siteDto.WorkerUid && x.WorkflowState != Constants.WorkflowStates.Removed))
@@ -477,6 +485,32 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.EmployeeNo = deviceUserModel.EmployeeNo;
                         worker.Email = deviceUserModel.WorkerEmail;
                         worker.PhoneNumber = deviceUserModel.PhoneNumber;
+
+                        // Authoritative backend block: a worker still effectively assigned to an active
+                        // event (explicitly or via a worker tag) cannot be resigned.
+                        if (deviceUserModel.Resigned && !worker.Resigned)
+                        {
+                            var myTagIds = await sdkDbContext.SiteTags
+                                .Where(st => st.SiteId == site.Id && st.TagId != null
+                                             && st.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Select(st => st.TagId!.Value)
+                                .ToListAsync();
+
+                            var stillAssigned = await backendConfigurationPnDbContext.AreaRulePlannings
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed && x.Status)
+                                .Where(x =>
+                                    x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
+                                                             && y.SiteId == site.Id)
+                                    || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                                                                              && myTagIds.Contains(wt.TagId)))
+                                .AnyAsync();
+
+                            if (stillAssigned)
+                            {
+                                return new OperationResult(false, "WorkerStillAssignedToEventsCannotResign");
+                            }
+                        }
+
                         worker.Resigned = deviceUserModel.Resigned;
                         worker.ResignedAtDate = deviceUserModel.ResignedAtDate;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
@@ -862,7 +896,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel, Core core,
             int userId, TimePlanningPnDbContext timePlanningDbContext, BaseDbContext baseDbContext,
-            IUserService userService, UserManager<EformUser> userManager)
+            IUserService userService, UserManager<EformUser> userManager,
+            Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null)
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             string siteName = null;
@@ -961,6 +996,12 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         await siteTag.Create(sdkDbContext).ConfigureAwait(false);
                     }
                     Console.WriteLine($"[CreateDeviceUser] Saved {deviceUserModel.Tags.Count} site tags for site {site.Id}");
+
+                    // Reconcile already-deployed future occurrences of any event referencing these worker tags
+                    if (reconciliationService != null && deviceUserModel.Tags is { Count: > 0 })
+                    {
+                        await reconciliationService.ReconcileEventsForWorkerTagsAsync(deviceUserModel.Tags);
+                    }
                 }
 
                 var worker = await sdkDbContext.Workers.SingleAsync(x => x.MicrotingUid == siteDto.WorkerUid)

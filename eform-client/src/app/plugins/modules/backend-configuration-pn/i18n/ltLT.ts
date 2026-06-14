@@ -508,4 +508,7 @@ export const ltLT = {
   'Edit repeat': 'Redaguoti kartojimą',
   'Move repeat': 'Judėjimo kartojimas',
   'Delete repeat': 'Ištrinti kartojimą',
+  'At least one worker or worker tag must be assigned': 'Turi būti priskirtas bent vienas darbuotojas arba darbuotojo žymė',
+  'Assign to worker tags': 'Priskirti darbuotojo žymes',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tai visam laikui ištrins lentą ir jos {{count}} įvykius. Šio veiksmo atšaukti negalima.',
 };

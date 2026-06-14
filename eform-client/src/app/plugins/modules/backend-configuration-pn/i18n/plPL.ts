@@ -508,4 +508,7 @@ export const plPL = {
   'Edit repeat': 'Edytuj powtórzenie',
   'Move repeat': 'Przesuń powtórz',
   'Delete repeat': 'Usuń powtórzenie',
+  'At least one worker or worker tag must be assigned': 'Należy przypisać co najmniej jednego pracownika lub znacznik pracownika',
+  'Assign to worker tags': 'Przypisz do tagów pracownika',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Spowoduje to trwałe usunięcie tablicy i {{count}} jej zdarzeń. Tej czynności nie można cofnąć.',
 };

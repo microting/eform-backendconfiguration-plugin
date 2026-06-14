@@ -508,4 +508,7 @@ export const isIS = {
   'Edit repeat': 'Breyta endurtekningu',
   'Move repeat': 'Færa endurtekið',
   'Delete repeat': 'Eyða endurtekningu',
+  'At least one worker or worker tag must be assigned': 'Að minnsta kosti einn starfsmaður eða starfsmannamerki verður að vera úthlutað',
+  'Assign to worker tags': 'Úthluta til starfsmannamerkja',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Þetta mun eyða borðinu og {{count}} atburðum þess fyrir fullt og allt. Þetta er ekki hægt að afturkalla.',
 };

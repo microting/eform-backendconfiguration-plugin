@@ -27,6 +27,9 @@
         <span class="task-tags" *ngIf="task.tags?.length">
           <span class="tag" *ngFor="let tag of task.tags">{{ tag }}</span>
         </span>
+        <span class="task-worker-tags" *ngIf="task.workerTagNames?.length">
+          <span class="worker-tag" *ngFor="let wt of task.workerTagNames">{{ wt }}</span>
+        </span>
       </div>
     </div>
   </div>

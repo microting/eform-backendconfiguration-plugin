@@ -508,4 +508,7 @@ export const etET = {
   'Edit repeat': 'Redigeeri kordust',
   'Move repeat': 'Liigutuse kordus',
   'Delete repeat': 'Kustuta kordus',
+  'At least one worker or worker tag must be assigned': 'Vähemalt üks töötaja või töötaja silt peab olema määratud',
+  'Assign to worker tags': 'Määra töötaja siltidele',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'See kustutab tahvli ja selle {{count}} sündmust jäädavalt. Seda ei saa tagasi võtta.',
 };

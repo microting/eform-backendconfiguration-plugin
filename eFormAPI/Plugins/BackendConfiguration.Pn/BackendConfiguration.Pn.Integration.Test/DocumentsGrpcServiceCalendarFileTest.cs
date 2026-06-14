@@ -7,6 +7,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.GrpcServices;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using Grpc.Core;
 using static Grpc.Core.ServerCallContext;
 using Microsoft.AspNetCore.Http;
@@ -102,6 +103,7 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
             Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!,
             _taskWizardService,
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
             NullLogger<BackendConfigurationCalendarService>.Instance
         );
 

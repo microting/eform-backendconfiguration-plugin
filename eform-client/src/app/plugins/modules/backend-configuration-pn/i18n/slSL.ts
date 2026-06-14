@@ -508,4 +508,7 @@ export const slSL = {
   'Edit repeat': 'Uredi ponovitev',
   'Move repeat': 'Ponavljanje premikanja',
   'Delete repeat': 'Izbriši ponovitev',
+  'At least one worker or worker tag must be assigned': 'Dodeljen mora biti vsaj en delavec ali oznaka delavca',
+  'Assign to worker tags': 'Dodeli oznakam delavcev',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'S tem boste trajno izbrisali tablo in {{count}} dogodkov na njej. Tega ni mogoče razveljaviti.',
 };

@@ -508,4 +508,7 @@ export const hrHR = {
   'Edit repeat': 'Uredi ponavljanje',
   'Move repeat': 'Ponavljanje poteza',
   'Delete repeat': 'Izbriši ponavljanje',
+  'At least one worker or worker tag must be assigned': 'Mora biti dodijeljen barem jedan radnik ili oznaka radnika',
+  'Assign to worker tags': 'Dodijeli oznakama radnika',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ovim će se trajno izbrisati ploča i njezinih {{count}} događaja. Ova radnja se ne može poništiti.',
 };

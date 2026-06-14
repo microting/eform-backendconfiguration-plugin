@@ -60,7 +60,8 @@ public class BackendConfigurationAssignmentWorkerService(
     TimePlanningPnDbContext timePlanningDbContext,
     CaseTemplatePnDbContext caseTemplatePnDbContext,
     BaseDbContext baseDbContext,
-    ILogger<BackendConfigurationAssignmentWorkerService> logger)
+    ILogger<BackendConfigurationAssignmentWorkerService> logger,
+    Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService)
     : IBackendConfigurationAssignmentWorkerService
 {
 
@@ -513,11 +514,16 @@ public class BackendConfigurationAssignmentWorkerService(
                 deviceUserModel.PropertyNames = string.Join(", ", properties);
                 deviceUserModel.PropertyIds = propertyIds;
 
+                var workerTagIds = deviceUserModel.Tags ?? new List<int>();
                 var numberOfAssignements = await backendConfigurationPnDbContext.AreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Status)
                     .Where(x => propertyIds.Contains(x.PropertyId))
-                    .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == deviceUserModel.SiteId).Select(y => y.SiteId).Any())
+                    .Where(x =>
+                        x.PlanningSites.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed
+                                                 && y.SiteId == deviceUserModel.SiteId)
+                        || x.AreaRulePlanningWorkerTags.Any(wt => wt.WorkflowState != Constants.WorkflowStates.Removed
+                                                                  && workerTagIds.Contains(wt.TagId)))
                     .CountAsync().ConfigureAwait(false);
 
                 if (deviceUserModel.WorkerEmail != null && !deviceUserModel.WorkerEmail.Contains("invalid"))
@@ -596,7 +602,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
-            timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext);
+            timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService);
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
@@ -606,7 +612,7 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core,
             userService.UserId,
-            timePlanningDbContext, baseDbContext, userService, userManager);
+            timePlanningDbContext, baseDbContext, userService, userManager, reconciliationService);
 
         return new OperationDataResult<int>(result.Success,
             backendConfigurationLocalizationService.GetString(result.Message), result.Model);

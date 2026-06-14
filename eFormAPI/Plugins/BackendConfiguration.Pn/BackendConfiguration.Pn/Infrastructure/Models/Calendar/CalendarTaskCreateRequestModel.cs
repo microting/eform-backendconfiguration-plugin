@@ -17,6 +17,8 @@ public class CalendarTaskCreateRequestModel
     public int RepeatEvery { get; set; }
     public int Status { get; set; }
     public List<int> Sites { get; set; } = [];
+    // SDK Tag ids selected as "worker tags" — expand live to all sites carrying the tag.
+    public List<int> WorkerTagIds { get; set; } = [];
     public bool ComplianceEnabled { get; set; }
     public double StartHour { get; set; }
     public double Duration { get; set; }

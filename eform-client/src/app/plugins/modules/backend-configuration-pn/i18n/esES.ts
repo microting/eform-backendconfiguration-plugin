@@ -508,4 +508,7 @@ export const esES = {
   'Edit repeat': 'Editar repetir',
   'Move repeat': 'Mover repetir',
   'Delete repeat': 'Eliminar repetir',
+  'At least one worker or worker tag must be assigned': 'Se debe asignar al menos un trabajador o una etiqueta de trabajador.',
+  'Assign to worker tags': 'Asignar a etiquetas de trabajador',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Esto eliminará permanentemente el tablero y sus {{count}} eventos. Esta acción no se puede deshacer.',
 };

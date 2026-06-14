@@ -48,6 +48,7 @@ export interface TaskCreateEditModalData {
   selectedBoardId?: number;
   employees: CommonDictionaryModel[];
   tags: string[];
+  workerTags: CommonDictionaryModel[];
   propertyId: number;
   properties: CommonDictionaryModel[];
   eforms: Observable<{id: number; label: string}[]>;
@@ -138,6 +139,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   endTimeControl = new FormControl('10:00');
   repeatControl = new FormControl('none');
   assigneeControl = new FormControl<number[]>([]);
+  workerTagsControl = new FormControl<number[]>([]);
   tagsControl = new FormControl<string[]>([]);
   descriptionControl = new FormControl('');
   driveLinkControl = new FormControl('');
@@ -306,6 +308,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatControl.setValue(task.repeatRule ?? 'none');
       }
       this.assigneeControl.setValue(task.assigneeIds ?? []);
+      this.workerTagsControl.setValue(task.workerTagIds ?? []);
       this.tagsControl.setValue(task.tags ?? []);
       this.descriptionControl.setValue(task.descriptionHtml ?? '');
       // Prefill the per-language Title/Description fields from the saved
@@ -345,6 +348,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.repeatControl.setValue(sourceTask.repeatRule ?? 'none');
       }
       this.assigneeControl.setValue(sourceTask.assigneeIds ?? []);
+      this.workerTagsControl.setValue(sourceTask.workerTagIds ?? []);
       this.tagsControl.setValue(sourceTask.tags ?? []);
       this.descriptionControl.setValue(sourceTask.descriptionHtml ?? '');
       this.driveLinkControl.setValue(sourceTask.driveLink ?? '');
@@ -390,6 +394,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.endTimeControl.disable();
         this.repeatControl.disable();
         this.assigneeControl.disable();
+        this.workerTagsControl.disable();
         this.tagsControl.disable();
         this.descriptionControl.disable();
         this.driveLinkControl.disable();
@@ -950,6 +955,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       startHour,
       duration,
       sites: this.assigneeControl.value ?? [],
+      workerTagIds: this.workerTagsControl.value ?? [],
       tagIds: (this.tagsControl.value ?? []).map((t: any) => {
         if (typeof t === 'number') return t;
         const match = this.data.planningTags.find(pt => pt.name === t);

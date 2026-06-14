@@ -508,4 +508,7 @@ export const csCZ = {
   'Edit repeat': 'Upravit opakování',
   'Move repeat': 'Opakování pohybu',
   'Delete repeat': 'Smazat opakování',
+  'At least one worker or worker tag must be assigned': 'Musí být přiřazen alespoň jeden pracovník nebo tag pracovníka.',
+  'Assign to worker tags': 'Přiřadit k tagům pracovníka',
+  'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tímto se nástěnka a její {{count}} události trvale smažou. Tuto akci nelze vrátit zpět.',
 };
