@@ -207,34 +207,42 @@ public class EventDeployService(
         // C4 — also retain plannings where this site qualifies through a worker
         // tag assigned to the event (not just explicit PlanningSites), so
         // not-yet-deployed occurrences materialise against live tag membership.
-        // Uses a short-lived SDK context (the pass-wide one is opened below).
-        var sdkCoreForTags = await coreHelper.GetCore().ConfigureAwait(false);
-        await using (var sdkDbContextForTags = sdkCoreForTags.DbContextHelper.GetDbContext())
+        // Cheap backend-config check first: only when some candidate event
+        // actually carries worker tags do we touch the SDK core to resolve the
+        // calling site's tag membership. This preserves the no-op / no-tag fast
+        // paths, which must never reach coreHelper.GetCore().
+        if (candidatePlanningIds.Count > 0)
         {
-            var siteTagIds = await sdkDbContextForTags.SiteTags
+            var candidateArpIdsWithWorkerTags = await dbContext.AreaRulePlannings
                 .AsNoTracking()
-                .Where(st => st.SiteId == sdkSiteId
-                             && st.TagId != null
-                             && st.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(st => st.TagId!.Value)
+                .Where(arp => candidatePlanningIds.Contains(arp.ItemPlanningId)
+                              && arp.WorkflowState != Constants.WorkflowStates.Removed
+                              && arp.AreaRulePlanningWorkerTags.Any(wt =>
+                                  wt.WorkflowState != Constants.WorkflowStates.Removed))
+                .Select(arp => arp.Id)
                 .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-            if (siteTagIds.Count > 0)
+            if (candidateArpIdsWithWorkerTags.Count > 0)
             {
-                var arpIdsViaTag = await dbContext.AreaRulePlanningWorkerTags
+                var sdkCoreForTags = await coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContextForTags = sdkCoreForTags.DbContextHelper.GetDbContext();
+                var siteTagIds = await sdkDbContextForTags.SiteTags
                     .AsNoTracking()
-                    .Where(wt => siteTagIds.Contains(wt.TagId)
-                                 && wt.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Select(wt => wt.AreaRulePlanningId)
+                    .Where(st => st.SiteId == sdkSiteId
+                                 && st.TagId != null
+                                 && st.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(st => st.TagId!.Value)
                     .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-                if (arpIdsViaTag.Count > 0)
+                if (siteTagIds.Count > 0)
                 {
                     var planningIdsViaTag = await dbContext.AreaRulePlannings
                         .AsNoTracking()
-                        .Where(arp => arpIdsViaTag.Contains(arp.Id)
+                        .Where(arp => candidateArpIdsWithWorkerTags.Contains(arp.Id)
                                       && arp.ItemPlanningId > 0
-                                      && arp.WorkflowState != Constants.WorkflowStates.Removed)
+                                      && arp.AreaRulePlanningWorkerTags.Any(wt =>
+                                          wt.WorkflowState != Constants.WorkflowStates.Removed
+                                          && siteTagIds.Contains(wt.TagId)))
                         .Select(arp => arp.ItemPlanningId)
                         .ToListAsync(cancellationToken).ConfigureAwait(false);
 
