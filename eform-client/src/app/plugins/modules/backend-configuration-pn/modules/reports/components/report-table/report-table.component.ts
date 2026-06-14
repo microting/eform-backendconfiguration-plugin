@@ -10,6 +10,8 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  TemplateRef,
+  ViewChild,
   inject
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../../models';
@@ -46,6 +48,18 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
   @Input() newPostModal: any;
   @Input() highlightId?: number;
 
+  @ViewChild('itemIdHeaderTpl') itemIdHeaderTpl!: TemplateRef<any>;
+  @ViewChild('eFormIdHeaderTpl') eFormIdHeaderTpl!: TemplateRef<any>;
+  @ViewChild('serverTimeHeaderTpl') serverTimeHeaderTpl!: TemplateRef<any>;
+
+  get adminHeaderTpls(): { [field: string]: TemplateRef<any> } {
+    return {
+      itemId: this.itemIdHeaderTpl,
+      eFormId: this.eFormIdHeaderTpl,
+      serverTime: this.serverTimeHeaderTpl,
+    };
+  }
+
   @Output() planningCaseDeleted: EventEmitter<void> = new EventEmitter<void>();
   @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }>
     = new EventEmitter<{ reportIndex: number, caseId: number }>();
@@ -59,7 +73,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
     {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
     {header: this.translateService.stream('Pictures'), field: 'imagesCount', type: 'button', buttons: [
         {
@@ -76,10 +89,9 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy, After
     {header: this.translateService.stream('Planning Id'), field: 'itemId'},
     {header: this.translateService.stream('eForm Id'), field: 'eFormId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
+    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Employee no'), field: 'employeeNo'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
     {header: this.translateService.stream('Pictures'), field: 'imagesCount', type: 'button', buttons: [
         {

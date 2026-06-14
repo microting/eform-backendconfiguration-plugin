@@ -7,6 +7,7 @@
            *ngFor="let task of getAllDayTasksForColumn(i)"
            [class.completed]="task.completed"
            [style.background-color]="task.color"
+           [style.color]="task.completed ? null : boardTextColor(task.color)"
            (click)="onAllDayTaskClicked($event, task, i)">
         <span *ngIf="isAdmin" class="task-id">{{ task.id }}</span> {{ task.title }}
       </div>
@@ -49,6 +50,7 @@
     [style.width.px]="dragGhostWidth"
     [style.height.px]="draggingTask.duration * hourHeight - 4"
     [style.background-color]="draggingTask.color"
+    [style.color]="boardTextColor(draggingTask.color)"
   >
     <div class="drag-ghost-title">{{ draggingTask.title }}</div>
     <div class="drag-ghost-time" *ngIf="draggingTask.duration >= 0.5 && dragIndicatorHour !== null">

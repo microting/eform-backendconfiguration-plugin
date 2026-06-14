@@ -39,8 +39,9 @@ const worker: PropertyWorker = {
 
 let seeded = false;
 
-// HOUR_HEIGHT = 52 px; resize snaps to 15-min (13 px) increments.
-const HOUR_PX = 52;
+// HOUR_HEIGHT = 65 px; resize snaps to 15-min (16.25 px) increments.
+// Must match HOUR_HEIGHT in calendar-task-block.component.ts.
+const HOUR_PX = 65;
 
 test.describe.serial('Calendar event resize', () => {
   test.beforeEach(async ({ page }) => {
@@ -190,7 +191,7 @@ test.describe.serial('Calendar event resize', () => {
         const block = calendarPage.findEventBlock(title);
         const box = await block.boundingBox();
         expect(box).not.toBeNull();
-        // 30 min = 26 px (half of HOUR_PX); -4 padding = 22 px height.
+        // 30 min = 32.5 px (half of HOUR_PX); -4 padding = 28.5 px height.
         expect(box!.height).toBeLessThan(40);
       }
     });

@@ -133,6 +133,11 @@ export {
     MtxSelectModule,
     MtxGridModule,
   ],
+  exports: [
+    // Re-export the create/edit modal so a sibling module (the calendar
+    // task-list page) can open it without re-declaring it.
+    TaskCreateEditModalComponent,
+  ],
   providers: [
     // Override MAT_DATE_FORMATS only inside this module so the event-modal
     // date input renders the long Danish form ("Mandag, 21. april") while

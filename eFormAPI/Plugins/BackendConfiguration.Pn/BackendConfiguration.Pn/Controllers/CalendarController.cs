@@ -29,6 +29,14 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.GetTasksForWeek(requestModel);
     }
 
+    [HttpPost]
+    [Route("tasks/index")]
+    public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(
+        [FromBody] CalendarTaskIndexRequestModel requestModel)
+    {
+        return await _backendConfigurationCalendarService.Index(requestModel);
+    }
+
     [HttpPost("tasks")]
     public async Task<OperationDataResult<int>> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
     {
@@ -81,6 +89,12 @@ public class CalendarController : Controller
     public async Task<OperationResult> DeleteBoard(int id)
     {
         return await _backendConfigurationCalendarService.DeleteBoard(id);
+    }
+
+    [HttpGet("boards/{id:int}/event-count")]
+    public async Task<OperationDataResult<int>> GetBoardEventCount(int id)
+    {
+        return await _backendConfigurationCalendarService.GetBoardEventCount(id);
     }
 
     [HttpPut("tasks/{id:int}/complete")]

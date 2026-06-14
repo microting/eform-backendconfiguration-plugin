@@ -238,7 +238,7 @@
 
 .board-edit-popover {
   padding: 12px 16px;
-  min-width: 328px;
+  min-width: 352px;
 
   .field-label {
     font-size: 13px;
@@ -288,4 +288,13 @@
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+// The board edit popover renders inside a mat-menu panel in the CDK overlay
+// (outside :host), so this override must be global — NOT :host-scoped — to
+// reach the panel and lift Material's default 280px panel cap, fitting all
+// 8 colour swatches (8×32px + 7×8px gaps + padding = 352px) without clipping.
+::ng-deep .board-edit-menu.mat-mdc-menu-panel {
+  max-width: none;
+  min-width: 352px;
 }

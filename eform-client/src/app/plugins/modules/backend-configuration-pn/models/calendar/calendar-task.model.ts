@@ -22,6 +22,9 @@ export interface CalendarTaskModel {
   boardId: number;
   color: string;
   descriptionHtml: string;
+  // Per-language Title + Description for edit-mode prefill of the multi-language
+  // fields (mirrors the backend CalendarTaskResponseModel.Translations).
+  translations?: { languageId: number; name: string; description: string }[];
   repeatRule: CalendarRepeatRule;
   repeatMeta?: CalendarRepeatMeta;
   taskDate: string;          // ISO "YYYY-MM-DD"
@@ -38,6 +41,13 @@ export interface CalendarTaskModel {
   planningId?: number;
   isAllDay?: boolean;
   exceptionId?: number;
+
+  // Surfaced from the AreaRulePlanning by the calendar `tasks/index` endpoint so
+  // the "Opgaver og handlinger" table can resolve the eForm label and the
+  // "Overskrift" (planning-tag) name from the option lists. Both optional —
+  // the week endpoint does not populate them.
+  eformId?: number | null;
+  itemPlanningTagId?: number | null;
 
   // Persisted custom-repeat fields surfaced from AreaRulePlanning so the
   // edit-modal can reconstruct a full CalendarRepeatMeta for an existing row.
@@ -87,6 +97,29 @@ export interface CalendarTaskAttachment {
   driveRevoked?: boolean;
 }
 
+// Request models for the calendar "task list" page (POST /calendar/tasks/index).
+// Mirrors the backend CalendarTaskListRequestModel: a filter block + pagination.
+export interface CalendarTaskListFiltrationModel {
+  propertyIds: number[];
+  boardIds: number[];
+  eformIds: number[];
+  assignToIds: number[];
+  tagIds: number[];
+  status: boolean | null;
+  complianceEnabled: boolean | null;
+  nameFilter: string | null;
+}
+
+export interface CalendarTaskListPaginationModel {
+  sort: string;
+  isSortDsc: boolean;
+}
+
+export interface CalendarTaskIndexRequestModel {
+  filters: CalendarTaskListFiltrationModel;
+  pagination: CalendarTaskListPaginationModel;
+}
+
 export interface CalendarRepeatMeta {
   kind: string;
   n?: number;
@@ -110,6 +143,10 @@ export interface CalendarTaskLayoutModel extends CalendarTaskModel {
   _left: number;    // left edge in % of day-column usable width
   _width: number;   // width in % of day-column usable width
   _zIndex: number;  // default stacking order within the conflict group
+  // True when this card belongs to a multi-card overlap group. Drives the
+  // click-to-raise behaviour (isInCascade) — geometry alone can't tell, since
+  // the leftmost card in a group has _width === 100 just like a solo card.
+  _inGroup?: boolean;
 }
 
 // Result returned by `PUT /calendar/tasks/{id}/complete`. Three shapes the

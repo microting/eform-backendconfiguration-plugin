@@ -12,7 +12,6 @@ import {
 } from '../../../../services';
 import {
   CalendarBoardModel,
-  CalendarRepeatRule,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
   CalendarToggleCompleteResult,
@@ -20,6 +19,7 @@ import {
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
+import {mapResponseToCalendarTask} from '../../services/calendar-task.mapper';
 import {CalendarStateService} from '../store';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {TaskCreateEditModalComponent, TaskCreateEditModalData} from '../../modals/task-create-edit-modal/task-create-edit-modal.component';
@@ -72,6 +72,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
   viewMode: 'week' | 'day' | 'schedule' = 'week';
   activeBoardIds: number[] = [];
+  // The board the user most recently turned ON in the sidebar. Transient
+  // (in-memory only) — used to default the create-task modal to that board
+  // even when several boards stay checked. Re-seeded on board load.
+  lastActivatedBoardId: number | null = null;
   activeSiteIds: number[] = [];
   activeTeamIds: number[] = [];
   activeTagNames: string[] = [];
@@ -174,6 +178,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         if (autoSelectDefault && this.boards.length > 0) {
           const defaultBoard = this.boards.reduce((min, b) => b.id < min.id ? b : min);
           this.stateService.setActiveBoardIds([defaultBoard.id]);
+          this.lastActivatedBoardId = defaultBoard.id;
         }
         this.propertiesService.getLinkedFolderDtos(propertyId).subscribe(folderRes => {
           if (folderRes && folderRes.success) {
@@ -274,10 +279,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       )
       .subscribe(res => {
         if (res && res.success) {
-          this.tasks = (res.model || []).map((t: any) => ({
-            ...t,
-            repeatRule: this.mapRepeatType(t.repeatType ?? 0, t.repeatEvery ?? 1),
-          }));
+          this.tasks = (res.model || []).map((t: any) => mapResponseToCalendarTask(t));
           this.rebuildLayout(monday);
         }
       });
@@ -348,7 +350,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       date: event.date,
       startHour: event.startHour,
       boards: this.boards,
-      selectedBoardId: this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined,
+      selectedBoardId:
+        (this.lastActivatedBoardId != null && this.activeBoardIds.includes(this.lastActivatedBoardId))
+          ? this.lastActivatedBoardId
+          : (this.activeBoardIds.length === 1 ? this.activeBoardIds[0] : undefined),
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       propertyId: this.currentPropertyId!,
@@ -466,6 +471,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onBoardToggled(boardId: number) {
+    // The store update is async, so activeBoardIds here still reflects the
+    // pre-toggle state: if the board is not currently active, this click is
+    // turning it ON — remember it as the default for new tasks.
+    if (!this.activeBoardIds.includes(boardId)) {
+      this.lastActivatedBoardId = boardId;
+    }
     this.stateService.toggleBoard(boardId);
     this.loadTasks();
   }
@@ -606,11 +617,20 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     let selectedWorkerId: number | undefined;
 
     if (needsWorkerSelect) {
-      const sites: CommonDictionaryModel[] = task.assigneeIds.map((id, i) => ({
-        id,
-        name: task.workerNames[i] ?? '',
-        description: '',
-      }));
+      // List ALL workers assigned to the event's PROPERTY (not just the
+      // task-assigned subset), sorted alphabetically by name. Mirrors the
+      // task-tracker change (openSelectWorkerModal). getLinkedSites(propertyId,
+      // true) returns the property's non-removed PropertyWorkers as
+      // CommonDictionaryModel ({id, name, languageId}) — the exact shape the
+      // modal's `sites` input expects. Locale-aware 'da' sort so Danish
+      // characters (æ/ø/å) order correctly; copy the array first (no in-place
+      // mutation of the service response).
+      const linked = await firstValueFrom(
+        this.propertiesService.getLinkedSites(task.propertyId, true),
+      );
+      if (!linked?.success || !linked.model) return;
+      const sites: CommonDictionaryModel[] =
+        [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
 
       const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
         minWidth: '400px',
@@ -907,17 +927,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const modalWidth = 500;
     const spaceRight = window.innerWidth - cellRight;
     return spaceRight >= modalWidth + 16 ? cellRight : cellLeft;
-  }
-
-  private mapRepeatType(repeatType: number, repeatEvery: number): CalendarRepeatRule {
-    if (!repeatType || repeatType === 0) return 'none';
-    switch (repeatType) {
-      case 1: return repeatEvery === 1 ? 'daily' : 'custom';
-      case 2: return repeatEvery === 1 ? 'weeklyOne' : 'custom';
-      case 3: return repeatEvery === 1 ? 'monthlyDom' : 'custom';
-      case 4: return repeatEvery === 1 ? 'yearlyOne' : 'custom';
-      default: return 'custom';
-    }
   }
 
   private toLocalDateString(d: Date): string {

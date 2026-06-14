@@ -5,6 +5,7 @@ import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {
   CalendarBoardModel,
   CalendarTaskCreateModel,
+  CalendarTaskIndexRequestModel,
   CalendarTaskModel,
   CalendarTaskUpdateModel,
   CalendarToggleCompleteResult,
@@ -14,6 +15,7 @@ import {
 
 export let BackendConfigurationPnCalendarMethods = {
   TasksWeek: 'api/backend-configuration-pn/calendar/tasks/week',
+  Index: 'api/backend-configuration-pn/calendar/tasks/index',
   Tasks: 'api/backend-configuration-pn/calendar/tasks',
   MoveTask: 'api/backend-configuration-pn/calendar/tasks/move',
   ResizeTask: 'api/backend-configuration-pn/calendar/tasks/resize',
@@ -40,6 +42,10 @@ export class BackendConfigurationPnCalendarService {
       tagNames,
       siteIds,
     });
+  }
+
+  getTasksIndex(model: CalendarTaskIndexRequestModel): Observable<OperationDataResult<CalendarTaskModel[]>> {
+    return this.apiBaseService.post(BackendConfigurationPnCalendarMethods.Index, model);
   }
 
   createTask(model: CalendarTaskCreateModel): Observable<OperationDataResult<number>> {
@@ -105,5 +111,9 @@ export class BackendConfigurationPnCalendarService {
 
   deleteBoard(id: number): Observable<OperationResult> {
     return this.apiBaseService.delete(`${BackendConfigurationPnCalendarMethods.Boards}/${id}`);
+  }
+
+  getBoardEventCount(id: number): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.get(`${BackendConfigurationPnCalendarMethods.Boards}/${id}/event-count`);
   }
 }

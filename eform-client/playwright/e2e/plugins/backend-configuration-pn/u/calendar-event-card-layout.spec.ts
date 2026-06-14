@@ -124,7 +124,7 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     const title = `L1-${generateRandmString(5)}`;
 
     // Open the modal at Monday 08:00. Default duration is 1h; shrink the end
-    // to 08:30 so we get a 30-min event (~22px tall at HOUR_HEIGHT=52 → compact).
+    // to 08:30 so we get a 30-min event (~28.5px tall at HOUR_HEIGHT=65 → compact).
     await calendarPage.openCreateModalAtSlot(0, 8);
     await calendarPage.fillAndSaveEvent(title, { endTime: '08:30' });
 

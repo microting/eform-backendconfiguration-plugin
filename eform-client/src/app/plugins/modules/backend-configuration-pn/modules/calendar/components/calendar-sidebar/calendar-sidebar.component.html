@@ -24,15 +24,15 @@
     <div class="board-list">
       <div class="board-item" *ngFor="let board of boards">
         <span class="board-checkbox" [class.active]="isBoardActive(board.id)" [style.background]="isBoardActive(board.id) ? board.color : 'transparent'" [style.border-color]="isBoardActive(board.id) ? board.color : '#9e9e9e'" (click)="boardToggled.emit(board.id)">
-          <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon">check</mat-icon>
+          <mat-icon *ngIf="isBoardActive(board.id)" class="board-check-icon" [style.color]="boardTextColor(board.color)">check</mat-icon>
         </span>
         <span class="board-name" (click)="boardToggled.emit(board.id)">{{ board.name }}</span>
         <button mat-icon-button class="board-menu-btn" [matMenuTriggerFor]="boardMenu" (click)="startEditBoard(board); $event.stopPropagation()">
           <mat-icon>more_vert</mat-icon>
         </button>
-        <mat-menu #boardMenu="matMenu">
+        <mat-menu #boardMenu="matMenu" class="board-edit-menu">
           <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-            <label class="field-label">{{ 'Navn tavle' | translate }}</label>
+            <label class="field-label">{{ 'Board name' | translate }}</label>
             <mat-form-field appearance="outline" style="width: 100%;">
               <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">
             </mat-form-field>
@@ -47,7 +47,7 @@
             </div>
             <button mat-menu-item class="btn-delete-menu" (click)="onDeleteBoard(board)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Slet tavle' | translate }}</span>
+              <span>{{ 'Delete board' | translate }}</span>
             </button>
           </div>
         </mat-menu>
@@ -55,7 +55,7 @@
     </div>
     <a class="sidebar-action-link" (click)="createBoard.emit()">
       <mat-icon class="sidebar-action-icon">add</mat-icon>
-      <span>{{ 'Opret tavle' | translate }}</span>
+      <span>{{ 'Create board' | translate }}</span>
     </a>
   </mat-expansion-panel>
 
@@ -72,19 +72,19 @@
         </button>
         <mat-menu #teamMenu="matMenu" class="team-edit-menu">
           <div class="team-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-            <label class="team-field-label">{{ 'Teamnavn' | translate }}</label>
+            <label class="team-field-label">{{ 'Team name' | translate }}</label>
             <mat-form-field appearance="outline" style="width: 100%;">
               <input matInput [(ngModel)]="editingTeamName" (keydown.enter)="submitEditTeam()">
             </mat-form-field>
             <button mat-menu-item class="btn-delete-menu" (click)="onDeleteTeam(team)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Slet team' | translate }}</span>
+              <span>{{ 'Delete team' | translate }}</span>
             </button>
           </div>
         </mat-menu>
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="openCreateTeamDialog()">+ {{ 'Opret team' | translate }}</a>
+    <a class="sidebar-action-link" (click)="openCreateTeamDialog()">+ {{ 'Create team' | translate }}</a>
   </mat-expansion-panel>
   -->
 
@@ -120,19 +120,19 @@
         </button>
         <mat-menu #tagMenu="matMenu">
           <div class="team-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-            <label class="team-field-label">{{ 'Tagnavn' | translate }}</label>
+            <label class="team-field-label">{{ 'Tag name' | translate }}</label>
             <mat-form-field appearance="outline" style="width: 100%;">
               <input matInput [(ngModel)]="editingTagName" (keydown.enter)="confirmEdit(tag)">
             </mat-form-field>
             <button mat-menu-item class="btn-delete-menu" (click)="onDeleteTag(tag)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Slet tag' | translate }}</span>
+              <span>{{ 'Delete tag' | translate }}</span>
             </button>
           </div>
         </mat-menu>
       </div>
     </div>
-    <a class="sidebar-action-link" (click)="openCreateTagDialog()">+ {{ 'Opret tag' | translate }}</a>
+    <a class="sidebar-action-link" (click)="openCreateTagDialog()">+ {{ 'Create tag' | translate }}</a>
   </mat-expansion-panel>
   -->
 

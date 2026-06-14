@@ -16,7 +16,7 @@ import {
 import {CdkDragEnd, CdkDragMove} from '@angular/cdk/drag-drop';
 import {interval, Subject} from 'rxjs';
 import {startWith, takeUntil} from 'rxjs/operators';
-import {CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
+import {boardTextColor, CalendarBoardModel, CalendarTaskLayoutModel, CalendarTaskModel} from '../../../../models/calendar';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {HOUR_HEIGHT, TaskResizePayload} from '../calendar-task-block/calendar-task-block.component';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
@@ -53,6 +53,7 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @Output() toggleCompleteRequested = new EventEmitter<CalendarTaskLayoutModel>();
 
   private destroy$ = new Subject<void>();
+  readonly boardTextColor = boardTextColor;
   readonly hourHeight = HOUR_HEIGHT;
   readonly hours = Array.from({length: 24}, (_, i) => i);
   nowTopPx = 0;

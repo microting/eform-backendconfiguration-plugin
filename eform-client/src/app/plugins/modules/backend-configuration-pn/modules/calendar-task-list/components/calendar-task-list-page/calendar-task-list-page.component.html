@@ -1,0 +1,21 @@
+<mat-card>
+  <mat-card-content>
+    <div class="ctl-header">
+      <h1>{{ 'Tasks and actions' | translate }}</h1>
+      <button mat-raised-button color="primary" (click)="exportCsv()">
+        <mat-icon>file_download</mat-icon> {{ 'Export CSV' | translate }}
+      </button>
+    </div>
+    <app-calendar-task-list-filters
+      [properties]="properties" [boards]="boards" [eforms]="eforms"
+      [workers]="workers" [tags]="tags"
+      (filtersChanged)="onFiltersChanged($event)"
+      (propertyChanged)="onPropertyChanged($event)">
+    </app-calendar-task-list-filters>
+    <app-calendar-task-list-table
+      [tasks]="tasks" [properties]="properties" [boards]="boards"
+      [eforms]="eforms" [planningTags]="tags"
+      (editTask)="onEditTask($event)">
+    </app-calendar-task-list-table>
+  </mat-card-content>
+</mat-card>

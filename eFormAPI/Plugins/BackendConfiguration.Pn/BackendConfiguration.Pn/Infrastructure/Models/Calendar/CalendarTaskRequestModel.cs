@@ -24,4 +24,13 @@ public class CalendarTaskRequestModel
     /// and completed ones, so the admin can audit the full week.
     /// </summary>
     public bool ActionableOnly { get; set; } = false;
+
+    /// <summary>
+    /// Optional explicit language for Title/Description selection. Set by the
+    /// mobile-worker gRPC path (<c>EventsGrpcService</c>) to the worker's
+    /// SDK <c>Site.LanguageId</c> so the worker sees the task in their own
+    /// language. Null (angular admin REST / <c>CalendarGrpcService</c>) → the
+    /// current user's language, preserving existing behaviour.
+    /// </summary>
+    public int? LanguageId { get; set; }
 }

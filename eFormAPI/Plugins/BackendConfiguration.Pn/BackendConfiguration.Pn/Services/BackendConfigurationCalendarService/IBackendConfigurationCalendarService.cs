@@ -9,6 +9,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 public interface IBackendConfigurationCalendarService
 {
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(CalendarTaskRequestModel requestModel);
+    Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(CalendarTaskIndexRequestModel requestModel);
 
     /// <summary>
     /// Returns the FULL property-scoped compliance list (no deadline window):
@@ -29,7 +30,7 @@ public interface IBackendConfigurationCalendarService
     /// disable site filtering (admin context).
     /// </summary>
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTaskTrackerList(
-        int propertyId, int? sdkSiteIdForFilter);
+        int propertyId, int? sdkSiteIdForFilter, int? languageId = null);
     Task<OperationDataResult<int>> CreateTask(CalendarTaskCreateRequestModel createModel);
     Task<OperationResult> UpdateTask(CalendarTaskUpdateRequestModel updateModel);
     Task<OperationResult> DeleteTask(CalendarTaskDeleteRequestModel deleteModel);
@@ -41,6 +42,7 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);
     Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model);
     Task<OperationResult> DeleteBoard(int id);
+    Task<OperationDataResult<int>> GetBoardEventCount(int id);
     Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int taskId, IFormFile file);
     Task<OperationDataResult<List<CalendarTaskAttachmentDto>>> ListFiles(int taskId);
     Task<CalendarFileDownload?> DownloadFile(int taskId, int fileId);

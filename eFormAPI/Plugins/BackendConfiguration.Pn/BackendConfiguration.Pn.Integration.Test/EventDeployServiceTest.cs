@@ -906,6 +906,161 @@ public class EventDeployServiceTest : TestBaseSetup
     }
 
     // ------------------------------------------------------------------
+    // 12b. EnsureComplianceForOccurrence_SiteIsActivePropertyWorkerNotInPlanningSites_Deploys
+    //
+    // Positive counterpart to the pin test above, locking in the #932/#1377
+    // guard RELAXATION. The on-demand calendar materialisation now lets a user
+    // complete a future/on-demand occurrence on behalf of ANY active worker of
+    // the event's PROPERTY (the worker pickers list every property worker, same
+    // source as GetLinkedSites). Such a worker is legitimately tied to the event
+    // even though it is NOT in the planning's PlanningSites, so the guard's
+    // second branch (PropertyWorkers probe) must accept it and DEPLOY rather
+    // than throw. Setup mirrors the pin test (target site absent from
+    // PlanningSites) but adds a real eForm template + the full BC graph so the
+    // deploy path runs to completion (ReadeForm + CaseCreateLocalOnly + the
+    // PlanningCaseSite/Compliance writes), plus the one extra row the relaxation
+    // turns on: an active PropertyWorker for (property, target site).
+    // ------------------------------------------------------------------
+    [Test]
+    public async Task EnsureComplianceForOccurrence_SiteIsActivePropertyWorkerNotInPlanningSites_Deploys()
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+
+        // The planning is assigned to A; the target site B is NOT in
+        // PlanningSites but IS an active worker of the planning's property.
+        var assignedSite = new Site
+        {
+            Name = "niels-site-propertyworker",
+            MicrotingUid = 63,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        var targetSite = new Site
+        {
+            Name = "soren-site-propertyworker",
+            MicrotingUid = 62,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddRangeAsync(assignedSite, targetSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // Real eForm template so DeployForRotationAsync's ReadeForm +
+        // CaseCreateLocalOnly succeed and a real PlanningCaseSite + Compliance
+        // row are written once the guard lets the deploy through.
+        var template = await core.TemplateFromXml(CommentTemplateXml);
+        var templateId = await core.TemplateCreate(template);
+
+        // The guard's PropertyWorkers probe keys on areaRulePlanning.PropertyId,
+        // so the ARP must point at a real Property and the seeded PropertyWorker
+        // must reference that same PropertyId. Seed the minimal BC graph
+        // (Area → Property → AreaRule) the deploy path reads.
+        var area = new Area
+        {
+            Type = AreaTypesEnum.Type1, ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Areas.AddAsync(area);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var property = new Property
+        {
+            Name = $"PropertyWorkerProp-{Guid.NewGuid()}", ItemPlanningTagId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.Properties.AddAsync(property);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var areaRule = new AreaRule
+        {
+            AreaId = area.Id, PropertyId = property.Id, EformId = templateId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // The relaxation: target site B is an ACTIVE PropertyWorker of the
+        // planning's property even though it is absent from PlanningSites. This
+        // single row is what flips the guard from throw to deploy.
+        await BackendConfigurationPnDbContext.PropertyWorkers.AddAsync(new PropertyWorker
+        {
+            PropertyId = property.Id,
+            WorkerId = targetSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var deadline = DateTime.UtcNow.Date.AddDays(2);
+
+        var planning = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning
+        {
+            WorkflowState = Constants.WorkflowStates.Created,
+            StartDate = deadline.AddDays(-7),
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month,
+            NextExecutionTime = deadline,
+            DayOfMonth = deadline.Day,
+            RepeatUntil = deadline.AddMonths(6),
+            RelatedEFormId = templateId,
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // Planning is assigned ONLY to assignedSite — NOT the target site.
+        ItemsPlanningPnDbContext.PlanningSites.Add(new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        {
+            PlanningId = planning.Id,
+            SiteId = assignedSite.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        });
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        // In-memory ARP (as in the pin test): the call only reads
+        // .ItemPlanningId and .PropertyId off it; the Planning itself is looked
+        // up from the DB. PropertyId MUST match the seeded PropertyWorker.
+        var areaRulePlanning = new AreaRulePlanning
+        {
+            AreaRuleId = areaRule.Id,
+            ItemPlanningId = planning.Id,
+            PropertyId = property.Id,
+            AreaId = area.Id,
+        };
+
+        var (calendar, coreHelper) = MakeMocks([], core);
+        var service = MakeService(calendar, coreHelper);
+
+        // Act — target site B (an active property worker, absent from
+        // PlanningSites) materialises the occurrence. The guard must NOT throw.
+        EnsureComplianceResult? result = null;
+        Assert.DoesNotThrowAsync(async () =>
+            result = await service.EnsureComplianceForOccurrenceAsync(
+                areaRulePlanning, deadline, targetSite.Id, CancellationToken.None));
+
+        // Assert — it DEPLOYED: a fresh Compliance with a real SDK case, and a
+        // PlanningCaseSite written for the target site (inverse of the pin test).
+        Assert.That(result, Is.Not.Null,
+            "An active property worker must get a deploy result, not a null skip.");
+        Assert.That(result!.Created, Is.True,
+            "The occurrence must be newly materialised for the property worker.");
+        Assert.That(result.ComplianceId, Is.GreaterThan(0),
+            "A valid (non-zero) ComplianceId must be returned on deploy.");
+        Assert.That(result.SdkCaseId, Is.GreaterThan(0),
+            "A real SDK case must back the deploy (MicrotingSdkCaseId > 0).");
+
+        var planningCaseSiteCount = await ItemsPlanningPnDbContext.PlanningCaseSites
+            .CountAsync(pcs => pcs.PlanningId == planning.Id
+                               && pcs.MicrotingSdkSiteId == targetSite.Id
+                               && pcs.WorkflowState != Constants.WorkflowStates.Removed);
+        Assert.That(planningCaseSiteCount, Is.EqualTo(1),
+            "A PlanningCaseSite must be written for an active property worker "
+            + "even when the site is absent from PlanningSites (#932/#1377 relaxation).");
+    }
+
+    // ------------------------------------------------------------------
     // 13. EnsureDeployedAsync_ConcurrentPassesSameRotation_CreatesExactlyOnePlanningCaseSite
     //
     // Regression for #934. The forensic snapshot showed four identical

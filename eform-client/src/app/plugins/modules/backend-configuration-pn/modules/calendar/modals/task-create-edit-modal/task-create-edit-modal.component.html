@@ -11,10 +11,34 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon gcal-icon--hidden">schedule</mat-icon>
       <div class="gcal-row-content">
-        <mat-form-field class="w-100">
+        <mat-form-field class="w-100 gcal-translatable-field">
           <mat-label>{{ 'Title' | translate }}</mat-label>
           <input matInput id="calendarEventTitle" [formControl]="titleControl" autocomplete="off">
+          <button mat-icon-button matIconSuffix type="button"
+                  *ngIf="showTranslate"
+                  id="calendarEventTitleTranslate"
+                  class="gcal-translate-btn"
+                  [matTooltip]="'Translate' | translate"
+                  (click)="toggleTitleTranslate(); $event.stopPropagation()">
+            <mat-icon>translate</mat-icon>
+          </button>
         </mat-form-field>
+
+        <!-- Per-language Title fields (Danish above is the source) -->
+        <div class="gcal-translate-fields" *ngIf="showTranslate && titleTranslateExpanded">
+          <mat-form-field class="w-100 gcal-translatable-field" *ngFor="let lang of targetLanguages">
+            <mat-label>{{ 'Title' | translate }} ({{ lang.name }})</mat-label>
+            <input matInput autocomplete="off"
+                   [ngModel]="titleByLang[lang.id]"
+                   (ngModelChange)="titleByLang[lang.id] = $event">
+            <button mat-icon-button matIconSuffix type="button"
+                    class="gcal-translate-btn"
+                    [matTooltip]="'Translate' | translate"
+                    (click)="retranslateField('title', lang.id); $event.stopPropagation()">
+              <mat-icon>autorenew</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
       </div>
     </div>
 
@@ -234,12 +258,36 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">notes</mat-icon>
       <div class="gcal-row-content">
-        <mat-form-field class="w-100 gcal-description-field">
+        <mat-form-field class="w-100 gcal-description-field gcal-translatable-field">
           <mat-label>{{ 'Add description' | translate }}</mat-label>
           <textarea #descriptionTextarea id="calendarEventDescription" class="gcal-description-textarea" matInput
                     [formControl]="descriptionControl" rows="2"
                     (input)="autoGrowTextarea($event)"></textarea>
+          <button mat-icon-button matIconSuffix type="button"
+                  *ngIf="showTranslate"
+                  id="calendarEventDescriptionTranslate"
+                  class="gcal-translate-btn"
+                  [matTooltip]="'Translate' | translate"
+                  (click)="toggleDescTranslate(); $event.stopPropagation()">
+            <mat-icon>translate</mat-icon>
+          </button>
         </mat-form-field>
+
+        <!-- Per-language Description fields (Danish above is the source) -->
+        <div class="gcal-translate-fields" *ngIf="showTranslate && descTranslateExpanded">
+          <mat-form-field class="w-100 gcal-description-field gcal-translatable-field" *ngFor="let lang of targetLanguages">
+            <mat-label>{{ 'Description' | translate }} ({{ lang.name }})</mat-label>
+            <textarea matInput rows="2"
+                      [ngModel]="descByLang[lang.id]"
+                      (ngModelChange)="descByLang[lang.id] = $event"></textarea>
+            <button mat-icon-button matIconSuffix type="button"
+                    class="gcal-translate-btn"
+                    [matTooltip]="'Translate' | translate"
+                    (click)="retranslateField('desc', lang.id); $event.stopPropagation()">
+              <mat-icon>autorenew</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
       </div>
     </div>
 
@@ -398,6 +446,7 @@
         <mat-form-field class="w-100">
           <mat-label>{{ 'My boards' | translate }}</mat-label>
           <mtx-select
+            id="calendarEventBoard"
             [formControl]="boardControl"
             [items]="filteredBoards"
             bindValue="id"

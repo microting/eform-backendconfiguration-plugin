@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142876</Id>
+  <Repeated>0</Repeated>
+  <Label>03. Konstruktion beholder|03. Construction tank|03. Konstruktion Behälter|03. Конструкція резервуара|03. Konstrukcja zbiornika|03. Konstruksjon beholder|03. Konstruktion behållare|03. Rakenne säiliö|03. Construcție rezervor</Label>
+  <StartDate>2026-05-27</StartDate>
+  <EndDate>2036-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142876</Id>
+      <Label>03. Konstruktion beholder|03. Construction tank|03. Konstruktion Behälter|03. Конструкція резервуара|03. Konstrukcja zbiornika|03. Konstruksjon beholder|03. Konstruktion behållare|03. Rakenne säiliö|03. Construcție rezervor</Label>
+      <Description><![CDATA[<br>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>378109</Id>
+          <Label>Kabler OK|Cables OK|Kabel OK|Кабелі OK|Kable OK|Kabler OK|Kablar OK|Kaapelit OK|Cabluri OK</Label>
+          <Description><![CDATA[Der må ikke være synlige skader på kablerne.|There shall be no visible damage to the cables.|Es dürfen keine sichtbaren Schäden an den Kabeln vorhanden sein.|На кабелях не повинно бути видимих пошкоджень.|Na kablach nie mogą być widoczne uszkodzenia.|Det skal ikke være synlige skader på kablene.|Det får inte finnas synliga skador på kablarna.|Kaapeleissa ei saa olla näkyviä vaurioita.|Nu trebuie să existe deteriorări vizibile ale cablurilor.]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378113</Id>
+          <Label>Kabelomslutning OK|Cable enclosure OK|Kabelummantelung OK|Кабельна оболонка OK|Osłona kabla OK|Kabelomslutning OK|Kabelomslutning OK|Kaapelin suojakotelo OK|Înveliș cablu OK</Label>
+          <Description><![CDATA[Huller på kabelomslutning kan oftest ses ved, at fedtet er løbet ud af omslutningen og har skabt mørke pletter på beholderen.|Holes in the cable enclosure are most commonly identified by grease leaking out and forming dark stains on the tank surface.|Löcher in der Kabelummantelung sind meist daran zu erkennen, dass Fett aus der Ummantelung ausgetreten ist und dunkle Flecken auf dem Behälter hinterlassen hat.|Отвори в кабельній оболонці найчастіше можна виявити за тим, що мастило витекло з оболонки та утворило темні плями на резервуарі.|Otwory w osłonie kabla można najczęściej rozpoznać po tym, że smar wyciekł z osłony i pozostawił ciemne plamy na zbiorniku.|Hull i kabelomslutningen kan oftest sees ved at fettet har lekket ut av omslutningen og dannet mørke flekker på beholderen.|Hål i kabelomslutningen kan oftast ses genom att fettet har läckt ut ur omslutningen och bildat mörka fläckar på behållaren.|Kaapelin suojakotelon reiät voidaan useimmiten havaita siitä, että rasva on valunut suojakotelosta ulos ja muodostanut tummia tahroja säiliöön.|Găurile în învelișul cablului pot fi cel mai adesea identificate prin faptul că unsoarea a scurs din înveliș și a creat pete întunecate pe rezervor.]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>378114</Id>
+          <Label>Fugemassen OK|Sealant OK|Dichtmasse OK|Герметик OK|Uszczelniacz OK|Fugemassen OK|Fogmassan OK|Tiivistemassa OK|Masa de etanșare OK</Label>
+          <Description><![CDATA[Fugemassen må ikke være mørnet.|The sealant must not have deteriorated.|Die Dichtmasse darf nicht weich/zersetzt sein.|Герметик не повинен бути розм'якшеним.|Uszczelniacz nie może być zmiękczony/zdegradowany.|Fugemassen må ikke være mørnet.|Fogmassan får inte vara mjuknad/nedbruten.|Tiivistemassa ei saa olla pehmentynyt/hajonnut.|Masa de etanșare nu trebuie să fie înmuiată/deteriorată.]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>378110</Id>
+          <Label>Foto|Photo|Foto|Фото|Zdjęcie|Foto|Foto|Kuva|Fotografie</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>378111</Id>
+          <Label>Note|Note|Notiz|Примітка|Notatka|Notat|Anteckning|Huomio|Notă</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

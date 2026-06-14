@@ -204,6 +204,8 @@ public static class BackendConfigurationAreaRulesServiceHelper
                             CreatedByUserId = userId,
                             UpdatedByUserId = userId
                         }).ToList();
+                    await AreaRuleLanguageHelper
+                        .RemapSeedLanguageIdsAsync(translations, sdkDbContext).ConfigureAwait(false);
                 }
 
                 if (areaProperty.Area.Type is AreaTypesEnum.Type8)
@@ -217,6 +219,8 @@ public static class BackendConfigurationAreaRulesServiceHelper
                             CreatedByUserId = userId,
                             UpdatedByUserId = userId
                         }).ToList();
+                    await AreaRuleLanguageHelper
+                        .RemapSeedLanguageIdsAsync(translations, sdkDbContext).ConfigureAwait(false);
                 }
 
                 // if (areaProperty.Area.Type is AreaTypesEnum.Type10)

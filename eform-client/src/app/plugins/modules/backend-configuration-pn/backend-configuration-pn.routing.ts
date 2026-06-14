@@ -155,6 +155,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'calendar-task-list',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/calendar-task-list/calendar-task-list.module').then(
+            (m) => m.CalendarTaskListModule
+          ),
+      },
+      {
         // Google OAuth popup landing route. The backend's
         // GoogleDriveController.OAuthFinish redirects here with either
         // ?gdrive_success=true or ?gdrive_err=<reason>. The component

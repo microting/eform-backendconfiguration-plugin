@@ -5,6 +5,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService
 using BackendConfigurationLocalizationService;
 using Infrastructure;
 using Infrastructure.Enums;
+using Infrastructure.Helpers;
 using Infrastructure.Models.TaskWizard;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -301,7 +302,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PropertyId = x.PropertyId,
                     Translations = x.AreaRule.AreaRuleTranslations
                         .Select(y => new CommonTranslationsModel()
-                            { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name })
+                            { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name, Description = y.Description })
                         .ToList(),
                     RepeatEvery = (int)x.RepeatEvery,
                     StartDate = (DateTime)x.StartDate,
@@ -381,6 +382,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            // Remap each translate's LanguageId to the real SDK Languages.Id before it is persisted
+            // into PlanningNameTranslation and AreaRuleTranslations below. The calendar modal
+            // hardcodes the Danish source title to app-locale id 1, which is not a valid SDK id and
+            // would otherwise store the title under a language no reader ever queries (blank title).
+            await AreaRuleLanguageHelper
+                .RemapCommonTranslationLanguageIdsAsync(createModel.Translates, sdkDbContext, _logger)
+                .ConfigureAwait(false);
 
             var eformName = sdkDbContext.CheckListTranslations
                 .Where(x => x.CheckListId == createModel.EformId)
@@ -522,6 +531,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .Select(t => new AreaRuleTranslation
                     {
                         Name = t.Name,
+                        Description = t.Description,
                         LanguageId = t.LanguageId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId
@@ -699,6 +709,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+            // Remap each translate's LanguageId to the real SDK Languages.Id before it is persisted
+            // into AreaRuleTranslations and PlanningNameTranslation below (same fix as CreateTask).
+            await AreaRuleLanguageHelper
+                .RemapCommonTranslationLanguageIdsAsync(updateModel.Translates, sdkDbContext, _logger)
+                .ConfigureAwait(false);
+
             var eformName = sdkDbContext.CheckListTranslations
                 .Where(x => x.CheckListId == updateModel.EformId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -833,9 +849,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         && nt.WorkflowState != Constants.WorkflowStates.Removed);
                 if (existing != null)
                 {
-                    if (existing.Name != t.Name)
+                    if (existing.Name != t.Name || existing.Description != t.Description)
                     {
                         existing.Name = t.Name;
+                        existing.Description = t.Description;
                         existing.UpdatedByUserId = _userService.UserId;
                         await existing.Update(_backendConfigurationPnDbContext);
                     }
@@ -845,6 +862,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     await new AreaRuleTranslation
                     {
                         Name = t.Name,
+                        Description = t.Description,
                         LanguageId = t.LanguageId,
                         AreaRuleId = areaRulePlanning.AreaRuleId,
                         CreatedByUserId = _userService.UserId,

@@ -393,6 +393,8 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
+                            await AreaRuleLanguageHelper
+                                .RemapSeedLanguageIdsAsync(areaRule, sdkDbContext).ConfigureAwait(false);
                             await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
@@ -432,6 +434,8 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
+                            await AreaRuleLanguageHelper
+                                .RemapSeedLanguageIdsAsync(areaRule, sdkDbContext).ConfigureAwait(false);
                             await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 

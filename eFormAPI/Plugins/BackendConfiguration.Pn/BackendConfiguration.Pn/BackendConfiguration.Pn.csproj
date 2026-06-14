@@ -18,6 +18,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="BackendConfiguration.Pn.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
       <None Remove="Resources\eForms\01. Vandforbrug.xml" />
       <None Remove="Resources\eForms\02. Brandudstyr.xml" />
@@ -211,6 +215,62 @@
       <EmbeddedResource Include="Resources\eForms\Kvittering.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\01. Standard.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Standard.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\02. Flydelag beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Flydelag beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\03. Konstruktion beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\03. Konstruktion beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\04. Aktivitet beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\04. Aktivitet beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\05. Kontrol telt.xml" />
+      <EmbeddedResource Include="Resources\eForms\05. Kontrol telt.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\06. Numerisk.xml" />
+      <EmbeddedResource Include="Resources\eForms\06. Numerisk.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\09. Medarbejder (APV-new).xml" />
+      <EmbeddedResource Include="Resources\eForms\09. Medarbejder (APV-new).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\10. Anhugningsgrej (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\10. Anhugningsgrej (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\11. Brandslukkere (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\11. Brandslukkere (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\12. Elværktøj (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\12. Elværktøj (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\14. Hejseredskaber og spil (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\14. Hejseredskaber og spil (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\15. Løfteredskaber (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\15. Løfteredskaber (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\16. Maskiner (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\16. Maskiner (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\17. Stiger (APV).xml" />
+      <EmbeddedResource Include="Resources\eForms\17. Stiger (APV).xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\Gyllebeholder - Aktivitet i beholder.xml" />
     </ItemGroup>
 
@@ -225,7 +285,7 @@
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.35" />
     <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.28" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.41" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.42" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.32" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.33" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.50" />
