@@ -55,6 +55,7 @@ public class BackendConfigurationCalendarService(
             // worker sees Title/Description in their own language; web/REST passes
             // null and keeps the current-user language (#unchanged).
             var userLanguageId = requestModel.LanguageId ?? (await userService.GetCurrentUserLanguage()).Id;
+            var dateTimeNow = DateTime.UtcNow;
             var result = new List<CalendarTaskResponseModel>();
 
             // Get the default board for this property (first created board)
@@ -82,7 +83,7 @@ public class BackendConfigurationCalendarService(
             // Bug A fix side-dict — see ActionableOnly branch below for rationale.
             // Empty for non-ActionableOnly callers (angular admin REST + CalendarGrpcService);
             // the recurrence-emit lookup below tolerates that as a no-op.
-            Dictionary<(int PlanningId, DateTime Date), (int ComplianceId, int SdkCaseId)> nonActionableByPlanningDate
+            Dictionary<(int PlanningId, DateTime Date), (int ComplianceId, int SdkCaseId, bool TaskIsExpired)> nonActionableByPlanningDate
                 = new();
             // The set of compliances whose (PlanningId, Deadline) tuples should
             // suppress recurrence-expansion emit for that date. Default branch
@@ -265,8 +266,13 @@ public class BackendConfigurationCalendarService(
                     .GroupBy(c => (c.PlanningId, c.Deadline.Date))
                     // GroupBy + first-wins guards against the (unlikely) case of multiple
                     // non-actionable compliance rows sharing a (planning, day) tuple.
-                    .ToDictionary(g => g.Key, g => (ComplianceId: g.First().Id,
-                        SdkCaseId: g.First().MicrotingSdkCaseId));
+                    .ToDictionary(g => g.Key, g =>
+                    {
+                        var first = g.First();
+                        var sc = first.MicrotingSdkCaseId > 0 ? sdkCasesById.GetValueOrDefault(first.MicrotingSdkCaseId) : null;
+                        var expired = ComputeTaskIsExpired(sc, first.Deadline, dateTimeNow);
+                        return (ComplianceId: first.Id, SdkCaseId: first.MicrotingSdkCaseId, TaskIsExpired: expired);
+                    });
 
                 // Recurrence-dedup union: the actionable subset (compliancesInWeek)
                 // PLUS the removed-COMPLETED subset. The latter doesn't render to
@@ -627,6 +633,11 @@ public class BackendConfigurationCalendarService(
                     {
                         model.ComplianceId = stripped.ComplianceId;
                         model.SdkCaseId = stripped.SdkCaseId;
+                        model.TaskIsExpired = stripped.TaskIsExpired;
+                    }
+                    else
+                    {
+                        model.TaskIsExpired = effectiveDate < dateTimeNow.Date;
                     }
 
                     if (ShouldIncludeTask(model, requestModel))
@@ -721,6 +732,8 @@ public class BackendConfigurationCalendarService(
 
                         ApplyOccurrenceFieldOverrides(orphanModel, orphan);
 
+                        orphanModel.TaskIsExpired = orphan.OriginalDate.Date < dateTimeNow.Date;
+
                         if (ShouldIncludeTask(orphanModel, requestModel))
                         {
                             result.Add(orphanModel);
@@ -807,6 +820,8 @@ public class BackendConfigurationCalendarService(
                 };
 
                 ApplyOccurrenceFieldOverrides(movedModel, movedIn);
+
+                movedModel.TaskIsExpired = movedIn.NewDate!.Value.Date < dateTimeNow.Date;
 
                 if (ShouldIncludeTask(movedModel, requestModel))
                 {
@@ -971,6 +986,11 @@ public class BackendConfigurationCalendarService(
                 var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
                 var effectiveDuration = complianceException?.Duration ?? calConfig?.Duration ?? 1.0;
 
+                var compSdkCase = compliance.MicrotingSdkCaseId > 0
+                    ? weekComplianceCasesById.GetValueOrDefault(compliance.MicrotingSdkCaseId)
+                    : null;
+                var compTaskIsExpired = ComputeTaskIsExpired(compSdkCase, effectiveTaskDate, dateTimeNow);
+
                 var model = new CalendarTaskResponseModel
                 {
                     Id = arp?.Id ?? 0,
@@ -999,6 +1019,7 @@ public class BackendConfigurationCalendarService(
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = complianceCompleted,
+                    TaskIsExpired = compTaskIsExpired,
                     // Orphan compliance rows (no live ARP) render as dimmed
                     // inactive — visually distinct from a healthy active row.
                     Status = arp?.Status ?? false,
@@ -3799,6 +3820,23 @@ public class BackendConfigurationCalendarService(
         return occurrences;
     }
 
+    // Shared expiry predicate for compliance/calendar rows: a row is expired
+    // when its SDK case is retracted (WorkflowState=Removed AND Status=77) OR it
+    // is past due (effectiveDate < now) and not completed (Status != 100). Rows
+    // with no live SDK case fall back to the deadline-only check.
+    private static bool ComputeTaskIsExpired(
+        Microting.eForm.Infrastructure.Data.Entities.Case? sdkCase,
+        DateTime effectiveDate,
+        DateTime now)
+    {
+        if (sdkCase == null)
+        {
+            return effectiveDate.Date < now.Date;
+        }
+        var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed && sdkCase.Status == 77;
+        return retracted || (effectiveDate.Date < now.Date && sdkCase.Status != 100);
+    }
+
     private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)
     {
         if (filter.BoardIds is { Count: > 0 } && task.BoardId.HasValue &&
@@ -4540,23 +4578,11 @@ public class BackendConfigurationCalendarService(
                 // Recurrence-only or missing-Case rows fall back to the
                 // deadline-only check (no Status to consult, so they are
                 // treated as not-completed).
-                bool completed = false;
-                bool taskIsExpired;
-                if (compliance.MicrotingSdkCaseId > 0
-                    && sdkCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var sdkCase)
-                    && sdkCase != null)
-                {
-                    completed = sdkCase.Status == 100;
-                    var retracted = sdkCase.WorkflowState == Constants.WorkflowStates.Removed
-                                    && sdkCase.Status == 77;
-                    var pastDueIncomplete = effectiveDate < dateTimeNow.Date
-                                            && sdkCase.Status != 100;
-                    taskIsExpired = retracted || pastDueIncomplete;
-                }
-                else
-                {
-                    taskIsExpired = effectiveDate < dateTimeNow.Date;
-                }
+                var sdkCase = compliance.MicrotingSdkCaseId > 0
+                    ? sdkCasesById.GetValueOrDefault(compliance.MicrotingSdkCaseId)
+                    : null;
+                bool completed = sdkCase?.Status == 100;
+                var taskIsExpired = ComputeTaskIsExpired(sdkCase, effectiveDate, dateTimeNow);
 
                 var model = new CalendarTaskResponseModel
                 {

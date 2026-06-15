@@ -308,7 +308,8 @@ public class EventsGrpcService(
                 // no backing case yet — kept legacy fallback handles that
                 // path safely.
                 ComplianceId = task.ComplianceId ?? 0,
-                MicrotingSdkCaseId = task.SdkCaseId ?? 0
+                MicrotingSdkCaseId = task.SdkCaseId ?? 0,
+                TaskIsExpired = task.TaskIsExpired
                 // updated_at: Timestamp default (zero) — no source field in CalendarTaskResponseModel.
             };
 
@@ -1135,7 +1136,8 @@ public class EventsGrpcService(
                 // See comment in ListEvents: stable-identity round-trip so
                 // write handlers can resolve compliance + sdk case directly.
                 ComplianceId = task.ComplianceId ?? 0,
-                MicrotingSdkCaseId = task.SdkCaseId ?? 0
+                MicrotingSdkCaseId = task.SdkCaseId ?? 0,
+                TaskIsExpired = task.TaskIsExpired
             };
 
             if (fieldsByTaskId.TryGetValue(task.Id, out var fields))
