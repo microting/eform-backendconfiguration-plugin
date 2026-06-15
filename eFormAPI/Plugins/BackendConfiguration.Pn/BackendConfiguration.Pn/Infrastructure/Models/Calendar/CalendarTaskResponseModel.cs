@@ -56,9 +56,8 @@ public class CalendarTaskResponseModel
 
     /// <summary>
     /// True when the underlying compliance/case is past deadline AND not
-    /// completed (or retracted with SDK Case Status=77). Populated by the
-    /// task-tracker service path; the calendar-week path leaves this as
-    /// false (it pre-filters non-actionable rows out).
+    /// completed (or retracted with SDK Case Status=77). Populated by both
+    /// the GetTaskTrackerList and GetTasksForWeek service paths.
     /// </summary>
     public bool TaskIsExpired { get; set; }
 }
