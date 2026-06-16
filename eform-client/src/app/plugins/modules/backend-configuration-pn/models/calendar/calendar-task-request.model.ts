@@ -28,4 +28,4 @@ export interface CalendarTaskUpdateModel extends CalendarTaskCreateModel {
 }
 
 export type RepeatEditScope = 'this' | 'thisAndFollowing' | 'all';
-export type RepeatDeleteScope = 'this' | 'thisAndFollowing' | 'all';
+export type RepeatDeleteScope = 'this' | 'thisAndFollowing' | 'thisAndFollowingIncludingCompleted' | 'all';

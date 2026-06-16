@@ -511,4 +511,5 @@ export const ptBR = {
   'At least one worker or worker tag must be assigned': 'Pelo menos um trabalhador ou uma etiqueta de trabalhador deve ser atribuída.',
   'Assign to worker tags': 'Atribuir às etiquetas do trabalhador',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Isso excluirá permanentemente o quadro e seus {{count}} eventos. Essa ação não pode ser desfeita.',
+  'This and following (incl. completed)': 'Isto e o seguinte (incluindo o já concluído)',
 };

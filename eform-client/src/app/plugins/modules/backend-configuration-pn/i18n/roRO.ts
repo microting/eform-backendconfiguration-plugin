@@ -511,4 +511,5 @@ export const roRO = {
   'At least one worker or worker tag must be assigned': 'Trebuie atribuit cel puțin un lucrător sau o etichetă de lucrător',
   'Assign to worker tags': 'Atribuiți etichetelor lucrătorilor',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Aceasta acțiune va șterge definitiv forumul și {{count}} evenimentele sale. Această acțiune nu poate fi anulată.',
+  'This and following (incl. completed)': 'Aceasta și următoarele (inclusiv finalizate)',
 };

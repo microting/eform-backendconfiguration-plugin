@@ -514,6 +514,7 @@ export const enUS= {
   'Complete task': 'Complete task',
   'Only this': 'Only this',
   'This and following': 'This and following',
+  'This and following (incl. completed)': 'This and following (incl. completed)',
   'All in series': 'All in series',
   'Date is required': 'Date is required',
   'Open link': 'Open link',

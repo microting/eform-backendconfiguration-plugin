@@ -511,4 +511,5 @@ export const svSE = {
   'At least one worker or worker tag must be assigned': 'Minst en arbetare eller arbetartagg måste tilldelas',
   'Assign to worker tags': 'Tilldela till arbetartaggar',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Detta kommer att permanent radera brädet och dess {{count}} händelser. Detta kan inte ångras.',
+  'This and following (incl. completed)': 'Detta och följande (inkl. färdigställda)',
 };

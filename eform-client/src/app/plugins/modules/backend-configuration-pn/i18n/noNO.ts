@@ -511,4 +511,5 @@ export const noNO = {
   'At least one worker or worker tag must be assigned': 'Minst én arbeider eller arbeidermerke må tilordnes',
   'Assign to worker tags': 'Tildel til arbeider-tagger',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dette vil slette brettet og dets {{count}} hendelser permanent. Dette kan ikke angres.',
+  'This and following (incl. completed)': 'Dette og følgende (inkl. fullført)',
 };

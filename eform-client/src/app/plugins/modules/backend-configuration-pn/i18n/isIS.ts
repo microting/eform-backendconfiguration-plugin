@@ -511,4 +511,5 @@ export const isIS = {
   'At least one worker or worker tag must be assigned': 'Að minnsta kosti einn starfsmaður eða starfsmannamerki verður að vera úthlutað',
   'Assign to worker tags': 'Úthluta til starfsmannamerkja',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Þetta mun eyða borðinu og {{count}} atburðum þess fyrir fullt og allt. Þetta er ekki hægt að afturkalla.',
+  'This and following (incl. completed)': 'Þetta og eftirfarandi (þar með talið lokið)',
 };
