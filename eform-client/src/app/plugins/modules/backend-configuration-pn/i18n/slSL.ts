@@ -511,4 +511,5 @@ export const slSL = {
   'At least one worker or worker tag must be assigned': 'Dodeljen mora biti vsaj en delavec ali oznaka delavca',
   'Assign to worker tags': 'Dodeli oznakam delavcev',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'S tem boste trajno izbrisali tablo in {{count}} dogodkov na njej. Tega ni mogoče razveljaviti.',
+  'This and following (incl. completed)': 'To in naslednje (vključno z dokončanim)',
 };

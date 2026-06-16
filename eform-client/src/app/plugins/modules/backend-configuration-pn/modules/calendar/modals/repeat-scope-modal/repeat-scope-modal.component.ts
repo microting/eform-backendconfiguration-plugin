@@ -1,6 +1,6 @@
 import {Component, Inject} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {RepeatEditScope} from '../../../../models/calendar';
+import {RepeatDeleteScope, RepeatEditScope} from '../../../../models/calendar';
 
 export interface RepeatScopeModalData {
   mode: 'edit' | 'delete' | 'move';
@@ -12,7 +12,7 @@ export interface RepeatScopeModalData {
   templateUrl: './repeat-scope-modal.component.html',
 })
 export class RepeatScopeModalComponent {
-  scope: RepeatEditScope = 'this';
+  scope: RepeatEditScope | RepeatDeleteScope = 'this';
 
   constructor(
     private dialogRef: MatDialogRef<RepeatScopeModalComponent>,

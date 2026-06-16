@@ -511,4 +511,5 @@ export const huHU = {
   'At least one worker or worker tag must be assigned': 'Legalább egy munkavállalót vagy munkavállalói címkét hozzá kell rendelni',
   'Assign to worker tags': 'Munkavállalói címkék hozzárendelése',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ez véglegesen törli a táblát és a hozzá tartozó {{count}} eseményt. A művelet nem vonható vissza.',
+  'This and following (incl. completed)': 'Ez és a következő (beleértve a befejezetteket is)',
 };

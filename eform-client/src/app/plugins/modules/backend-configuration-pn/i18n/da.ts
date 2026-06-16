@@ -512,4 +512,5 @@ export const da = {
   'Delete repeat': 'Slet gentagelse',
   'At least one worker or worker tag must be assigned': 'Mindst én medarbejder eller medarbejder-tag skal tildeles',
   'Assign to worker tags': 'Tildel til medarbejder-tags',
+  'This and following (incl. completed)': 'Dette og følgende (inkl. færdiggjorte)',
 };

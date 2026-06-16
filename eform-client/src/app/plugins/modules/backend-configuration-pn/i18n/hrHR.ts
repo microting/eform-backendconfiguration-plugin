@@ -511,4 +511,5 @@ export const hrHR = {
   'At least one worker or worker tag must be assigned': 'Mora biti dodijeljen barem jedan radnik ili oznaka radnika',
   'Assign to worker tags': 'Dodijeli oznakama radnika',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ovim će se trajno izbrisati ploča i njezinih {{count}} događaja. Ova radnja se ne može poništiti.',
+  'This and following (incl. completed)': 'Ovo i sljedeće (uklj. dovršeno)',
 };

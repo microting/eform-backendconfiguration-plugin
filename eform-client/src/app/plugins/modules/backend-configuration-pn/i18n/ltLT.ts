@@ -511,4 +511,5 @@ export const ltLT = {
   'At least one worker or worker tag must be assigned': 'Turi būti priskirtas bent vienas darbuotojas arba darbuotojo žymė',
   'Assign to worker tags': 'Priskirti darbuotojo žymes',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tai visam laikui ištrins lentą ir jos {{count}} įvykius. Šio veiksmo atšaukti negalima.',
+  'This and following (incl. completed)': 'Šis ir tolesni (įskaitant užbaigtus)',
 };

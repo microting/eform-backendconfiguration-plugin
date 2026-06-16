@@ -510,4 +510,5 @@ export const frFR = {
   'At least one worker or worker tag must be assigned': 'Au moins un travailleur ou une étiquette de travailleur doit être attribué(e).',
   'Assign to worker tags': 'Attribuer aux étiquettes de travailleur',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Cette action supprimera définitivement le plateau et ses {{count}} événements. Elle est irréversible.',
+  'This and following (incl. completed)': 'Ceci et les suivants (y compris les éléments terminés)',
 };

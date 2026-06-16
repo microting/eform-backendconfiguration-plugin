@@ -511,4 +511,5 @@ export const fiFI = {
   'At least one worker or worker tag must be assigned': 'Vähintään yksi työntekijä tai työntekijätunniste on liitettävä',
   'Assign to worker tags': 'Määritä työntekijätunnisteille',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tämä poistaa pysyvästi taulun ja sen {{count}} tapahtumaa. Tätä ei voi perua.',
+  'This and following (incl. completed)': 'Tämä ja seuraavat (mukaan lukien valmiit)',
 };

@@ -2076,8 +2076,15 @@ public class BackendConfigurationCalendarService(
                 return new OperationResult(true,
                     localizationService.GetString("CalendarTaskDeletedSuccessfully"));
             }
-            else if (scope == "thisAndFollowing" && !string.IsNullOrEmpty(deleteModel.OriginalDate))
+            else if ((scope == "thisAndFollowing" || scope == "thisAndFollowingIncludingCompleted")
+                     && !string.IsNullOrEmpty(deleteModel.OriginalDate))
             {
+                // thisAndFollowingIncludingCompleted behaves identically to
+                // thisAndFollowing EXCEPT it ALSO retracts completed occurrences
+                // (backing SDK Case Status==100) on/after originalDate — full
+                // removal, the way DeleteEntireSeries treats the whole series.
+                var includeCompleted = scope == "thisAndFollowingIncludingCompleted";
+
                 var originalDate = DateTime.Parse(deleteModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
 
@@ -2122,6 +2129,130 @@ public class BackendConfigurationCalendarService(
                 foreach (var stale in staleExceptions)
                 {
                     await stale.Delete(backendConfigurationPnDbContext);
+                }
+
+                // Trimming RepeatUntil/EndDate stops FUTURE (never-deployed)
+                // occurrences from being emitted by the recurrence loop, but the
+                // compliance-render loop in GetTasksForWeek is NOT bounded by
+                // RepeatUntil — it emits every live Compliance row regardless of
+                // date. So already-DEPLOYED occurrences on/after originalDate keep
+                // rendering ("not deleted"). Retract them the same way
+                // DeleteEntireSeries / CalendarAssignmentReconciliation do:
+                // delete the backing SDK case, retract the PlanningCase bookkeeping
+                // and soft-delete the Compliance row. COMPLETED occurrences
+                // (backing SDK Case Status==100) are frozen history — left intact.
+                // Compliance.Deadline is stored as a non-Kind DateTime (deploy
+                // writes it at midnight); strip Kind off originalDate so the
+                // EF >= comparison is not offset by the parsed UTC kind.
+                var originalDateMidnight = DateTime.SpecifyKind(originalDate.Date, DateTimeKind.Unspecified);
+                var deployedToRetract = await backendConfigurationPnDbContext.Compliances
+                    .Where(c => c.PlanningId == arp.ItemPlanningId
+                                && c.Deadline >= originalDateMidnight
+                                && c.MicrotingSdkCaseId > 0
+                                && c.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync();
+
+                // Only reach for the SDK core when there is actually something to
+                // retract — a delete with no deployed occurrences must not require
+                // coreHelper.GetCore() (it may be absent for never-deployed series).
+                if (deployedToRetract.Count > 0)
+                {
+                var core = await coreHelper.GetCore();
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                foreach (var compliance in deployedToRetract)
+                {
+                    var sdkCase = await sdkDbContext.Cases
+                        .SingleOrDefaultAsync(x => x.Id == compliance.MicrotingSdkCaseId);
+
+                    // Completed occurrences are immutable history — never retract
+                    // under the default scope. The includeCompleted scope opts in
+                    // to removing them too.
+                    var isCompleted = sdkCase?.Status == 100;
+                    if (!includeCompleted && isCompleted)
+                    {
+                        continue;
+                    }
+
+                    if (sdkCase?.MicrotingUid != null)
+                    {
+                        await core.CaseDelete((int)sdkCase.MicrotingUid);
+                    }
+
+                    // The compliance-render loop in GetTasksForWeek emits
+                    // removed-but-COMPLETED Compliance rows (backing SDK Case
+                    // Status==100) so a just-completed occurrence doesn't snap
+                    // back to uncompleted. Soft-deleting the Compliance + the SDK
+                    // case is therefore NOT enough to hide a completed occurrence
+                    // we deliberately remove here — that render branch keys off
+                    // Status==100, which CaseDelete does not change. Write an
+                    // IsDeleted occurrence exception so the render loop's
+                    // `complianceException?.IsDeleted == true → continue` gate
+                    // suppresses it. Only for the includeCompleted scope and only
+                    // for completed occurrences we retract.
+                    if (includeCompleted && isCompleted)
+                    {
+                        var occurrenceDate = DateTime.SpecifyKind(
+                            compliance.Deadline.Date, DateTimeKind.Utc);
+                        var existingException = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                            .Where(x => x.AreaRulePlanningId == deleteModel.Id)
+                            .Where(x => x.OriginalDate == occurrenceDate)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync();
+
+                        if (existingException != null)
+                        {
+                            existingException.IsDeleted = true;
+                            existingException.UpdatedByUserId = userService.UserId;
+                            await existingException.Update(backendConfigurationPnDbContext);
+                        }
+                        else
+                        {
+                            var deletedException = new CalendarOccurrenceException
+                            {
+                                AreaRulePlanningId = deleteModel.Id,
+                                OriginalDate = occurrenceDate,
+                                IsDeleted = true,
+                                CreatedByUserId = userService.UserId,
+                                UpdatedByUserId = userService.UserId
+                            };
+                            await deletedException.Create(backendConfigurationPnDbContext);
+                        }
+                    }
+
+                    var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                        .Where(pcs => pcs.MicrotingSdkCaseId == compliance.MicrotingSdkCaseId
+                                      && pcs.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+
+                    foreach (var pcs in planningCaseSites)
+                    {
+                        var planningCase = await itemsPlanningPnDbContext.PlanningCases
+                            .Where(x => x.Id == pcs.PlanningCaseId
+                                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync();
+
+                        await pcs.Delete(itemsPlanningPnDbContext);
+
+                        if (planningCase != null)
+                        {
+                            // Retract the owning PlanningCase only when no live
+                            // PlanningCaseSite children remain (calendar deploy is
+                            // 1:1 site→case, but a shared case with other live sites
+                            // must survive) — mirrors RetractSiteForOccurrenceAsync.
+                            var remainingLiveSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                                .CountAsync(x => x.PlanningCaseId == planningCase.Id
+                                                 && x.WorkflowState != Constants.WorkflowStates.Removed);
+                            if (remainingLiveSites == 0)
+                            {
+                                planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+                                await planningCase.Update(itemsPlanningPnDbContext);
+                            }
+                        }
+                    }
+
+                    await compliance.Delete(backendConfigurationPnDbContext);
+                }
                 }
 
                 return new OperationResult(true,

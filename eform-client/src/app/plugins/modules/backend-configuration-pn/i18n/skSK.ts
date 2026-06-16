@@ -511,4 +511,5 @@ export const skSK = {
   'At least one worker or worker tag must be assigned': 'Musí byť priradený aspoň jeden pracovník alebo značka pracovníka',
   'Assign to worker tags': 'Priradiť k značkám pracovníka',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Týmto sa natrvalo vymaže nástenka a jej {{count}} udalostí. Túto akciu nie je možné vrátiť späť.',
+  'This and following (incl. completed)': 'Toto a nasledujúce (vrátane dokončených)',
 };

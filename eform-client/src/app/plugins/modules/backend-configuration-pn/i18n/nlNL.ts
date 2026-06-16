@@ -511,4 +511,5 @@ export const nlNL = {
   'At least one worker or worker tag must be assigned': 'Er moet ten minste één medewerker of medewerkerslabel worden toegewezen.',
   'Assign to worker tags': 'Wijs toe aan werknemerslabels',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dit verwijdert het bord en de bijbehorende {{count}} gebeurtenissen permanent. Dit kan niet ongedaan worden gemaakt.',
+  'This and following (incl. completed)': 'Dit en het volgende (inclusief voltooid)',
 };

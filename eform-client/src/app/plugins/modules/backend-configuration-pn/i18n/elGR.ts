@@ -511,4 +511,5 @@ export const elGR = {
   'At least one worker or worker tag must be assigned': 'Πρέπει να αντιστοιχιστεί τουλάχιστον ένας εργαζόμενος ή ετικέτα εργαζομένου',
   'Assign to worker tags': 'Ανάθεση σε ετικέτες εργαζομένων',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Αυτό θα διαγράψει οριστικά τον πίνακα και τα {{count}} συμβάντα που τον αποτελούν. Δεν είναι δυνατή η αναίρεση αυτής της ενέργειας.',
+  'This and following (incl. completed)': 'Αυτό και τα επόμενα (συμπεριλαμβανομένων των ολοκληρωμένων)',
 };

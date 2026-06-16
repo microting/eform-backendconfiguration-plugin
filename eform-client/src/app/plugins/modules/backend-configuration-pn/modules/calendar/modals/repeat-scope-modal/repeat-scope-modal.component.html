@@ -6,6 +6,7 @@
   <mat-radio-group [(ngModel)]="scope" class="scope-group">
     <mat-radio-button value="this">{{ 'Only this' | translate }}</mat-radio-button>
     <mat-radio-button value="thisAndFollowing">{{ 'This and following' | translate }}</mat-radio-button>
+    <mat-radio-button *ngIf="data.mode === 'delete'" value="thisAndFollowingIncludingCompleted">{{ 'This and following (incl. completed)' | translate }}</mat-radio-button>
     <mat-radio-button value="all">{{ 'All in series' | translate }}</mat-radio-button>
   </mat-radio-group>
 </div>

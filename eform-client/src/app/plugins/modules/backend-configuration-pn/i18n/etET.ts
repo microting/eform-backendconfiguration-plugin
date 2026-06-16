@@ -511,4 +511,5 @@ export const etET = {
   'At least one worker or worker tag must be assigned': 'Vähemalt üks töötaja või töötaja silt peab olema määratud',
   'Assign to worker tags': 'Määra töötaja siltidele',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'See kustutab tahvli ja selle {{count}} sündmust jäädavalt. Seda ei saa tagasi võtta.',
+  'This and following (incl. completed)': 'See ja järgnev (sh lõpetatud)',
 };

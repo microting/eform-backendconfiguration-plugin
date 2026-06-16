@@ -511,4 +511,5 @@ export const itIT = {
   'At least one worker or worker tag must be assigned': 'Deve essere assegnato almeno un lavoratore o un tag lavoratore',
   'Assign to worker tags': 'Assegnare ai tag dei lavoratori',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Questa operazione eliminerà definitivamente la bacheca e i suoi {{count}} eventi. Non è possibile annullare l&#39;operazione.',
+  'This and following (incl. completed)': 'Questo e i seguenti (compresi quelli completati)',
 };
