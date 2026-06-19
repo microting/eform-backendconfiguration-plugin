@@ -216,7 +216,7 @@
 
   <ItemGroup>
     <PackageReference Include="ChemicalsBase" Version="10.0.14" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.74.0.4061" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.75.0.4178" />
     <PackageReference Include="Google.Protobuf" Version="3.35.1" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageReference Include="HtmlToOpenXml.dll" Version="3.4.1" />
@@ -228,7 +228,7 @@
     <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.44" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.33" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.34" />
-    <PackageReference Include="Microting.TimePlanningBase" Version="10.0.51" />
+    <PackageReference Include="Microting.TimePlanningBase" Version="10.0.52" />
     <PackageReference Include="QuestPDF" Version="2026.6.0" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
