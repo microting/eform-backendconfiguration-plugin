@@ -1335,6 +1335,7 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.Description = createModel.DescriptionHtml ?? string.Empty;
+                    planning.RepeatOrdinalWeek = createModel.RepeatOrdinalWeek;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -1580,6 +1581,7 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+                    planning.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
 
@@ -1913,6 +1915,7 @@ public class BackendConfigurationCalendarService(
         if (planning != null)
         {
             planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+            planning.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
             planning.UpdatedByUserId = userService.UserId;
             await planning.Update(itemsPlanningPnDbContext);
         }
@@ -2661,6 +2664,7 @@ public class BackendConfigurationCalendarService(
                     // new weekday so NextExecutionTime does not pull the series
                     // back to the old day (the two-master defect, #925/#926).
                     oldPlanning.DayOfWeek = newDate.DayOfWeek;
+                    oldPlanning.RepeatOrdinalWeek = arp.RepeatOrdinalWeek;
                     if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
                     {
                         oldPlanning.DayOfMonth = newDate.Day;
@@ -2740,6 +2744,7 @@ public class BackendConfigurationCalendarService(
                 {
                     planning.StartDate = newDate;
                     planning.DayOfWeek = newDate.DayOfWeek;
+                    planning.RepeatOrdinalWeek = arp.RepeatOrdinalWeek;
                     if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
                     {
                         planning.DayOfMonth = newDate.Day;
