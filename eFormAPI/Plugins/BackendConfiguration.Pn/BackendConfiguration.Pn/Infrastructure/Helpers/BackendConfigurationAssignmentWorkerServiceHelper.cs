@@ -861,6 +861,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                                         IsManager = deviceUserModel.IsManager ?? false,
+                                        UseOneMinuteIntervals = true,
                                         GpsEnabled = globalSettings is { Value: "1" }
                                         // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
@@ -1156,6 +1157,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                             IsManager = deviceUserModel.IsManager ?? false,
+                            UseOneMinuteIntervals = true,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
                         Console.WriteLine($"[CreateDeviceUser] Creating AssignedSite for siteId={site.MicrotingUid} user={user?.Id}");
