@@ -291,7 +291,7 @@
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.52" />
     <PackageReference Include="QuestPDF" Version="2026.6.0" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.5" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.148.0" />
     <PackageReference Include="Sentry" Version="6.6.0" />
   </ItemGroup>
 
