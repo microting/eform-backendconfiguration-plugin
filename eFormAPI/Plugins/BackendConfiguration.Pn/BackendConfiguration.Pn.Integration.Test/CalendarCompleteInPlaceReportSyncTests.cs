@@ -257,10 +257,16 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
                 "PlanningCase.MicrotingSdkCaseDoneAt must be populated (report filter field)");
             Assert.That(reloadedCase.MicrotingSdkCaseDoneAt, Is.EqualTo(expectedDoneAt),
                 "done date must be the scheduled PAST event-start, not now");
+            Assert.That(reloadedCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Processed),
+                "PlanningCase WorkflowState must be set to Processed");
+            Assert.That(reloadedCase.DoneByUserId, Is.EqualTo(sdkCase.SiteId!.Value),
+                "PlanningCase DoneByUserId must be the completing site");
 
             Assert.That(reloadedSite.Status, Is.EqualTo(100), "PlanningCaseSite must be marked done");
             Assert.That(reloadedSite.MicrotingSdkCaseDoneAt, Is.EqualTo(expectedDoneAt),
                 "PlanningCaseSite done date must be the scheduled PAST event-start");
+            Assert.That(reloadedSite.DoneByUserId, Is.EqualTo(sdkCase.SiteId!.Value),
+                "PlanningCaseSite DoneByUserId must be the completing site");
         });
     }
 }
