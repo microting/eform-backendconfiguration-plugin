@@ -394,7 +394,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
-            var globalSettings = await timePlanningDbContext.PluginConfigurationValues.FirstOrDefaultAsync(x => x.Name == "TimePlanningBaseSettings:GpsEnabled");
             try
             {
                 if (deviceUserModel.SiteMicrotingUid == 0)
@@ -621,7 +620,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             {
                                 assignment.Resigned = deviceUserModel.Resigned;
                                 assignment.ResignedAtDate = deviceUserModel.ResignedAtDate;
-                                assignment.GpsEnabled = globalSettings is { Value: "1" };
                                 await assignment.Update(timePlanningDbContext).ConfigureAwait(false);
                             }
                         }
@@ -861,7 +859,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                                         IsManager = deviceUserModel.IsManager ?? false,
-                                        GpsEnabled = globalSettings is { Value: "1" }
+                                        UseOneMinuteIntervals = true
                                         // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
@@ -1156,6 +1154,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                             IsManager = deviceUserModel.IsManager ?? false,
+                            UseOneMinuteIntervals = true,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
                         Console.WriteLine($"[CreateDeviceUser] Creating AssignedSite for siteId={site.MicrotingUid} user={user?.Id}");

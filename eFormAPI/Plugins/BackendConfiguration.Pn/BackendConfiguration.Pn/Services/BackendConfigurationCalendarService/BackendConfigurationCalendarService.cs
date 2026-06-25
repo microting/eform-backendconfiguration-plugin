@@ -1335,6 +1335,7 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.Description = createModel.DescriptionHtml ?? string.Empty;
+                    planning.RepeatOrdinalWeek = createModel.RepeatOrdinalWeek;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
                 }
@@ -1580,6 +1581,7 @@ public class BackendConfigurationCalendarService(
                 if (planning != null)
                 {
                     planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+                    planning.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
                     planning.UpdatedByUserId = userService.UserId;
                     await planning.Update(itemsPlanningPnDbContext);
 
@@ -1913,6 +1915,7 @@ public class BackendConfigurationCalendarService(
         if (planning != null)
         {
             planning.Description = updateModel.DescriptionHtml ?? string.Empty;
+            planning.RepeatOrdinalWeek = updateModel.RepeatOrdinalWeek;
             planning.UpdatedByUserId = userService.UserId;
             await planning.Update(itemsPlanningPnDbContext);
         }
@@ -2661,6 +2664,7 @@ public class BackendConfigurationCalendarService(
                     // new weekday so NextExecutionTime does not pull the series
                     // back to the old day (the two-master defect, #925/#926).
                     oldPlanning.DayOfWeek = newDate.DayOfWeek;
+                    oldPlanning.RepeatOrdinalWeek = arp.RepeatOrdinalWeek;
                     if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
                     {
                         oldPlanning.DayOfMonth = newDate.Day;
@@ -2740,6 +2744,7 @@ public class BackendConfigurationCalendarService(
                 {
                     planning.StartDate = newDate;
                     planning.DayOfWeek = newDate.DayOfWeek;
+                    planning.RepeatOrdinalWeek = arp.RepeatOrdinalWeek;
                     if (arp.RepeatType == (int)Infrastructure.Enums.RepeatType.Year)
                     {
                         planning.DayOfMonth = newDate.Day;
@@ -3285,6 +3290,51 @@ public class BackendConfigurationCalendarService(
             sdkCase.DoneAt = eventStart;
             sdkCase.DoneAtUserModifiable = eventStart;
             await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
+
+            // Mirror the gRPC completion sync (EventsGrpcService:1668-1705) so the
+            // admin reports (reportsv2 → PlanningCases WHERE Status=100 AND
+            // MicrotingSdkCaseDoneAt in range) pick up this in-place completion.
+            // Without this, only the SDK Case is updated and the completion is
+            // invisible in reports. We write eventStart (the scheduled, possibly
+            // PAST, moment — equal to sdkCase.DoneAt) so the row lands in the
+            // period the event was placed in, not "now".
+            var siteName = (await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .FirstOrDefaultAsync(x => x.Id == sdkCase.SiteId)
+                .ConfigureAwait(false))?.Name ?? string.Empty;
+
+            var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == sdkCase.Id)
+                .ConfigureAwait(false);
+
+            if (planningCaseSite != null)
+            {
+                planningCaseSite.Status = 100;
+                planningCaseSite.MicrotingSdkCaseId = sdkCase.Id;
+                planningCaseSite.MicrotingSdkCaseDoneAt = eventStart;
+                planningCaseSite.DoneByUserId = sdkCase.SiteId ?? 0;
+                planningCaseSite.DoneByUserName = siteName;
+                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                var planningCase = await itemsPlanningPnDbContext.PlanningCases
+                    .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId)
+                    .ConfigureAwait(false);
+
+                if (planningCase.Status != 100)
+                {
+                    planningCase.Status = 100;
+                    planningCase.MicrotingSdkCaseDoneAt = eventStart;
+                    planningCase.MicrotingSdkCaseId = sdkCase.Id;
+                    planningCase.DoneByUserId = sdkCase.SiteId ?? 0;
+                    planningCase.DoneByUserName = siteName;
+                    planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+                    await planningCase.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
+                planningCaseSite.PlanningCaseId = planningCase.Id;
+                await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
 
             return new OperationDataResult<CalendarToggleCompleteResult>(true,
                 new CalendarToggleCompleteResult

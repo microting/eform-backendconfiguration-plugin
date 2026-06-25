@@ -136,6 +136,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Assert timeregistrationSiteAssignments
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+
+        // Newly-created AssignedSite must default UseOneMinuteIntervals to true (CreateDeviceUser path)
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
     }
 
     // Should test the UpdateDeviceUser method and return success
@@ -338,6 +341,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Assert timeregistrationSiteAssignments
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+
+        // Newly-created AssignedSite must default UseOneMinuteIntervals to true (UpdateDeviceUser create path)
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to false and return success
