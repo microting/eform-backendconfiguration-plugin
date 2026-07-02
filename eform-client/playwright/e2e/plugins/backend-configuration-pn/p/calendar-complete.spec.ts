@@ -134,8 +134,9 @@ async function closeComplianceDialog(page: import('@playwright/test').Page): Pro
 // seeded property worker (falling back to the first option) before confirming.
 async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
   const workerModal = page.locator('app-calendar-select-worker-modal');
-  const appeared = await workerModal.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
-  if (!appeared) return;
+  // The modal is part of the completion contract now — fail loudly if it
+  // does not appear instead of silently letting the PUT fire without it.
+  await workerModal.waitFor({ state: 'visible', timeout: 10000 });
   const confirmBtn = page.locator('app-calendar-select-worker-modal button.btn-primary');
   if (await confirmBtn.isDisabled()) {
     // The mtx-select dropdown appends to body, so the options live outside
