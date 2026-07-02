@@ -19,9 +19,12 @@ public class CalendarToggleCompleteModel
     // task.taskDate from the calendar response.
     public string? OccurrenceDate { get; set; }
 
-    // Worker to attribute the completion to. When the task has multiple
-    // assignees (or a single assignee who isn't the current user), the
-    // frontend shows a "Vælg medarbejder" picker and sends the selected
-    // site-user id here. Null means "use the caller's own identity".
+    // SDK site id to attribute the completion to. The calendar frontend
+    // ALWAYS shows the "Vælg medarbejder" picker when completing — listing
+    // every worker assigned to the event's property
+    // (GetLinkedSites(propertyId, compliance: false)) — and sends the
+    // picked id here. Null (gRPC / legacy callers) falls back to the
+    // historical defaults: the task's first PlanningSite when the case is
+    // materialised on demand, or the case's deployed site otherwise.
     public int? WorkerId { get; set; }
 }

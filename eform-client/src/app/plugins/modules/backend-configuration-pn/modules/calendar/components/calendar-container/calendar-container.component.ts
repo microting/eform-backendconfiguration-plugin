@@ -5,7 +5,7 @@ import {Router} from '@angular/router';
 import {BehaviorSubject, firstValueFrom, Observable, Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserFullName, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
+import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
@@ -81,7 +81,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   activeTagNames: string[] = [];
   sidebarOpen = true;
   isAdmin = false;
-  private currentUserFullName = '';
 
   constructor(
     private overlay: Overlay,
@@ -99,8 +98,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => this.isAdmin = isAdmin);
-    this.store.select(selectCurrentUserFullName).pipe(takeUntil(this.destroy$))
-      .subscribe(name => (this.currentUserFullName = name ?? ''));
   }
 
   ngOnInit(): void {
@@ -620,43 +617,39 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
-    const needsWorkerSelect =
-      task.assigneeIds.length > 1 ||
-      (task.assigneeIds.length === 1 && task.workerNames[0] !== this.currentUserFullName);
+    // ALWAYS ask who completed the event — even when the task has a single
+    // assignee or none at all — so the completion is explicitly attributed.
+    // The list is ALL workers assigned to the event's PROPERTY (not just the
+    // task-assigned subset), sorted alphabetically by name.
+    // getLinkedSites(propertyId, false) returns exactly the property's
+    // non-removed PropertyWorkers as CommonDictionaryModel ({id, name,
+    // languageId}) — the shape the modal's `sites` input expects. compliance
+    // must be FALSE here: true appends the calling user's own SDK site, which
+    // EventDeployService's leak guard (#932/#1377) rejects on the on-demand
+    // completion path when that user is not a property worker. Locale-aware
+    // 'da' sort so Danish characters (æ/ø/å) order correctly; copy the array
+    // first (no in-place mutation of the service response).
+    const linked = await firstValueFrom(
+      this.propertiesService.getLinkedSites(task.propertyId, false),
+    );
+    if (!linked?.success || !linked.model) return;
+    const sites: CommonDictionaryModel[] =
+      [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
 
-    let selectedWorkerId: number | undefined;
-
-    if (needsWorkerSelect) {
-      // List ALL workers assigned to the event's PROPERTY (not just the
-      // task-assigned subset), sorted alphabetically by name. Mirrors the
-      // task-tracker change (openSelectWorkerModal). getLinkedSites(propertyId,
-      // true) returns the property's non-removed PropertyWorkers as
-      // CommonDictionaryModel ({id, name, languageId}) — the exact shape the
-      // modal's `sites` input expects. Locale-aware 'da' sort so Danish
-      // characters (æ/ø/å) order correctly; copy the array first (no in-place
-      // mutation of the service response).
-      const linked = await firstValueFrom(
-        this.propertiesService.getLinkedSites(task.propertyId, true),
-      );
-      if (!linked?.success || !linked.model) return;
-      const sites: CommonDictionaryModel[] =
-        [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
-
-      const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
-        minWidth: '400px',
-        autoFocus: false,
-      });
-      const instance = ref.componentInstance;
-      instance.sites = sites;
-      if (sites.length === 1) {
-        instance.selectedSite = sites[0];
-      }
-
-      const selected: CommonDictionaryModel | null = await firstValueFrom(ref.afterClosed());
-      if (!selected) return;
-
-      selectedWorkerId = selected.id;
+    const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
+      minWidth: '400px',
+      autoFocus: false,
+    });
+    const instance = ref.componentInstance;
+    instance.sites = sites;
+    if (sites.length === 1) {
+      instance.selectedSite = sites[0];
     }
+
+    const selected: CommonDictionaryModel | null = await firstValueFrom(ref.afterClosed());
+    if (!selected) return;
+
+    const selectedWorkerId = selected.id;
 
     this.calendarService
       .toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate, selectedWorkerId)
