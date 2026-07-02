@@ -127,14 +127,31 @@ async function closeComplianceDialog(page: import('@playwright/test').Page): Pro
     .catch(() => undefined);
 }
 
-// Dismiss the worker-selection modal that appears when the task's assigned
-// worker is not the current user. With a single worker the modal opens
-// pre-selected — clicking the primary button confirms immediately.
+// Confirm the worker-selection modal that ALWAYS appears when completing an
+// event. It lists every worker assigned to the event's property; with exactly
+// one worker (this seed) it opens preselected, otherwise nothing is selected
+// and the confirm button is disabled — in that case explicitly pick the
+// seeded property worker (falling back to the first option) before confirming.
 async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
   const workerModal = page.locator('app-calendar-select-worker-modal');
   const appeared = await workerModal.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
   if (!appeared) return;
-  await page.locator('app-calendar-select-worker-modal button.btn-primary').click();
+  const confirmBtn = page.locator('app-calendar-select-worker-modal button.btn-primary');
+  if (await confirmBtn.isDisabled()) {
+    // The mtx-select dropdown appends to body, so the options live outside
+    // the modal element.
+    await workerModal.locator('mtx-select').click();
+    const seededOption = page
+      .locator('.ng-dropdown-panel .ng-option')
+      .filter({ hasText: `${worker.name} ${worker.surname}` })
+      .first();
+    if ((await seededOption.count()) > 0) {
+      await seededOption.click();
+    } else {
+      await page.locator('.ng-dropdown-panel .ng-option').first().click();
+    }
+  }
+  await confirmBtn.click();
   await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 

@@ -3085,6 +3085,29 @@ public class BackendConfigurationCalendarService(
                     localizationService.GetString("AreaRulePlanningNotFound"));
             }
 
+            // The calendar's worker picker lists GetLinkedSites(propertyId, false):
+            // exactly the active PropertyWorkers of the event's property. Accept
+            // only that set — and reject anything else up front, so a stray id
+            // can never attribute a completion to an unrelated site on either the
+            // on-demand-materialise path or the pre-existing-compliance path
+            // below. (This also matches EventDeployService's leak guard, which
+            // refuses to deploy an on-demand case to a non-property-worker site —
+            // #932/#1377.)
+            if (workerId.HasValue)
+            {
+                var workerAllowed = await backendConfigurationPnDbContext.PropertyWorkers
+                    .AsNoTracking()
+                    .AnyAsync(pw =>
+                        pw.PropertyId == arp.PropertyId
+                        && pw.WorkerId == workerId.Value
+                        && pw.WorkflowState != Constants.WorkflowStates.Removed);
+                if (!workerAllowed)
+                {
+                    return new OperationDataResult<CalendarToggleCompleteResult>(false,
+                        localizationService.GetString("SelectedWorkerNotAssignedToTask"));
+                }
+            }
+
             // Look up the SPECIFIC compliance row the user clicked. Previously
             // this queried by PlanningId and took "latest by Deadline" — that
             // silently picked the wrong week when a planning had multiple
@@ -3120,32 +3143,15 @@ public class BackendConfigurationCalendarService(
 
                 // Resolve the SDK site to materialise the on-demand case for.
                 //
-                // When the caller picks a worker, allow ANY active worker of the
-                // event's PROPERTY — not just the task's assigned PlanningSites.
-                // The calendar / task-tracker worker pickers now list every
-                // property worker (same source as GetLinkedSites:
-                // PropertyWorkers WHERE PropertyId = <property> AND not removed),
-                // so a user can complete a future/on-demand occurrence on behalf
-                // of any property worker. We still reject an arbitrary site id
-                // that is NOT a property worker, so a stray id can never leak a
-                // case to an unrelated worker.
+                // When the caller picks a worker (already validated against the
+                // property's workers above), the case is materialised for that
+                // site so the completion is attributed to the picked worker.
                 //
                 // When no worker is picked, keep the historical default: pick the
                 // first non-removed PlanningSite assigned to the task.
                 int targetSiteId;
                 if (workerId.HasValue)
                 {
-                    var isActivePropertyWorker = await backendConfigurationPnDbContext.PropertyWorkers
-                        .AsNoTracking()
-                        .AnyAsync(pw =>
-                            pw.PropertyId == arp.PropertyId
-                            && pw.WorkerId == workerId.Value
-                            && pw.WorkflowState != Constants.WorkflowStates.Removed);
-                    if (!isActivePropertyWorker)
-                    {
-                        return new OperationDataResult<CalendarToggleCompleteResult>(false,
-                            localizationService.GetString("SelectedWorkerNotAssignedToTask"));
-                    }
                     targetSiteId = workerId.Value;
                 }
                 else
@@ -3256,7 +3262,13 @@ public class BackendConfigurationCalendarService(
                         TemplateId = sdkCase.CheckListId,
                         PropertyId = compliance.PropertyId,
                         ComplianceId = compliance.Id,
-                        WorkerId = sdkCase.SiteId,
+                        // Route the compliance form to the worker the user picked
+                        // in the calendar's select-worker modal (any property
+                        // worker), falling back to the case's deployed site when
+                        // no explicit pick was made (gRPC / legacy callers).
+                        // Mirrors the task-tracker, which routes the selected
+                        // worker even for pre-existing cases.
+                        WorkerId = workerId ?? sdkCase.SiteId,
                         // ISO 8601 with millisecond precision to match the format
                         // the task-tracker uses (`task.deadlineTask.toISOString()`
                         // at task-tracker-table.component.ts:187). The
@@ -3289,6 +3301,15 @@ public class BackendConfigurationCalendarService(
             sdkCase.WorkflowState = Constants.WorkflowStates.Created;
             sdkCase.DoneAt = eventStart;
             sdkCase.DoneAtUserModifiable = eventStart;
+            // Re-home the case to the picked worker so SDK-level attribution
+            // matches the form route (BackendConfigurationCompliancesService.
+            // UpdateCase sets foundCase.SiteId = model.SiteId) — otherwise the
+            // same user gesture would attribute differently depending on
+            // whether the template happens to have mandatory fields.
+            if (workerId.HasValue)
+            {
+                sdkCase.SiteId = workerId.Value;
+            }
             await sdkCase.Update(sdkDbContext).ConfigureAwait(false);
 
             // Mirror the gRPC completion sync (EventsGrpcService:1668-1705) so the
@@ -3298,9 +3319,14 @@ public class BackendConfigurationCalendarService(
             // invisible in reports. We write eventStart (the scheduled, possibly
             // PAST, moment — equal to sdkCase.DoneAt) so the row lands in the
             // period the event was placed in, not "now".
+            // Attribute the completion to the worker picked in the calendar's
+            // select-worker modal when one was picked (validated above as a
+            // property worker); otherwise keep the historical attribution to
+            // the case's deployed site.
+            var doneBySiteId = workerId ?? sdkCase.SiteId ?? 0;
             var siteName = (await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
-                .FirstOrDefaultAsync(x => x.Id == sdkCase.SiteId)
+                .FirstOrDefaultAsync(x => x.Id == doneBySiteId)
                 .ConfigureAwait(false))?.Name ?? string.Empty;
 
             var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
@@ -3313,7 +3339,7 @@ public class BackendConfigurationCalendarService(
                 planningCaseSite.Status = 100;
                 planningCaseSite.MicrotingSdkCaseId = sdkCase.Id;
                 planningCaseSite.MicrotingSdkCaseDoneAt = eventStart;
-                planningCaseSite.DoneByUserId = sdkCase.SiteId ?? 0;
+                planningCaseSite.DoneByUserId = doneBySiteId;
                 planningCaseSite.DoneByUserName = siteName;
                 await planningCaseSite.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
 
@@ -3326,7 +3352,7 @@ public class BackendConfigurationCalendarService(
                     planningCase.Status = 100;
                     planningCase.MicrotingSdkCaseDoneAt = eventStart;
                     planningCase.MicrotingSdkCaseId = sdkCase.Id;
-                    planningCase.DoneByUserId = sdkCase.SiteId ?? 0;
+                    planningCase.DoneByUserId = doneBySiteId;
                     planningCase.DoneByUserName = siteName;
                     planningCase.WorkflowState = Constants.WorkflowStates.Processed;
                     await planningCase.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
