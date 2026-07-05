@@ -137,8 +137,86 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite must default UseOneMinuteIntervals to true (CreateDeviceUser path)
+        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
+        // false when the DeviceUserModel does not specify it (CreateDeviceUser path)
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
+    }
+
+    // Should test the CreateDeviceUser method with TimeRegistrationEnabled, UseOneMinuteIntervals and
+    // PayRuleSetId set, verifying both new fields pass through onto the created AssignedSite
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_UseOneMinuteIntervalsAndPayRuleSetId_ReturnsSuccess()
+    {
+        // Arrange
+        var core = await GetCore();
+
+        // PayRuleSetId is a real FK on AssignedSite, so seed a PayRuleSet row
+        // to reference rather than an arbitrary int. Inserted via raw SQL
+        // (rather than the PayRuleSet EF entity) because the integration
+        // tests' checked-in SQL/420_eform-angular-time-planning-plugin.sql
+        // fixture predates PayRuleSet's HolidayPaidOff* columns — an EF
+        // Create() against the full entity 500s with "Unknown column
+        // 'HolidayPaidOffFixedSeconds'". The FK only cares that the row
+        // exists, so a minimal insert is sufficient here.
+        int payRuleSetId;
+        {
+            var connection = TimePlanningPnDbContext!.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                "INSERT INTO PayRuleSets (Name, CreatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version) " +
+                "VALUES (@name, UTC_TIMESTAMP(), 'created', 1, 1, 1); SELECT LAST_INSERT_ID();";
+            var nameParam = command.CreateParameter();
+            nameParam.ParameterName = "@name";
+            nameParam.Value = Guid.NewGuid().ToString();
+            command.Parameters.Add(nameParam);
+            payRuleSetId = Convert.ToInt32(await command.ExecuteScalarAsync());
+        }
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UseOneMinuteIntervals = true,
+            PayRuleSetId = payRuleSetId,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        // Act
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!,
+        userService,
+        userManager);
+
+        // Assert
+        var sites = await MicrotingDbContext!.Sites.ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(sites.Count, Is.EqualTo(3));
+
+        // Assert timeregistrationSiteAssignments
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+
+        // Newly-created AssignedSite must pass through UseOneMinuteIntervals and PayRuleSetId from the DeviceUserModel
         Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        Assert.That(timeregistrationSiteAssignments[30].PayRuleSetId, Is.EqualTo(payRuleSetId));
     }
 
     // Should test the UpdateDeviceUser method and return success
@@ -342,8 +420,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
         Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
 
-        // Newly-created AssignedSite must default UseOneMinuteIntervals to true (UpdateDeviceUser create path)
-        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.True);
+        // Newly-created AssignedSite no longer hardcodes UseOneMinuteIntervals to true; it defaults to
+        // false when the DeviceUserModel does not specify it (UpdateDeviceUser create path)
+        Assert.That(timeregistrationSiteAssignments[30].UseOneMinuteIntervals, Is.False);
     }
 
     // Should test the UpdateDeviceUser method with timeRegistration set to false and return success

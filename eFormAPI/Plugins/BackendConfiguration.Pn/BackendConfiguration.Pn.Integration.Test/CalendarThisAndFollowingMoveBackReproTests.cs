@@ -35,15 +35,24 @@ using NSubstitute;
 /// "1st Saturday" task's date to Friday (an earlier day in the SAME period)
 /// with scope "thisAndFollowing" lands the routine on Thursday and/or copies it.
 ///
-/// Scenario: monthly 1st Saturday, anchored Sat 6 Jun 2026. User edits the
-/// July occurrence (Sat 4 Jul) → Fri 3 Jul, scope=thisAndFollowing.
-/// July 2026: 1st Thu=Jul 2, 1st Fri=Jul 3, 1st Sat=Jul 4.
+/// Scenario: monthly 1st Saturday, anchored on the 1st Saturday of a future
+/// "anchor month". User edits the following month's occurrence (1st Saturday)
+/// → the preceding Friday, scope=thisAndFollowing.
+/// Target month: 1st Thu, 1st Fri, 1st Sat are three consecutive days.
 ///
-/// A UTC+2 browser serialises the picked "Fri 3 Jul" (local-midnight Date)
-/// as 2026-07-02T22:00:00Z (toISOString). On a UTC server the BE reads that
-/// StartDate as Thu 2 Jul (it does NOT apply the AssumeUniversal|AdjustToUniversal
-/// normalisation it uses for OriginalDate), so the series re-anchors to the
-/// 1st THURSDAY.
+/// A UTC+2 browser serialises the picked "Friday, local-midnight" Date as
+/// 22:00Z the day before (toISOString). On a UTC server the BE reads that
+/// StartDate as the preceding Thursday (it does NOT apply the
+/// AssumeUniversal|AdjustToUniversal normalisation it uses for OriginalDate),
+/// so the series re-anchors to the 1st THURSDAY.
+///
+/// All dates below are computed relative to DateTime.UtcNow (rather than
+/// hardcoded) so the tests stay valid regardless of which real-world date CI
+/// runs them on — UpdateTask legitimately rejects moving a task's StartDate
+/// into the past (see BackendConfigurationCalendarService.UpdateTask's
+/// "CannotCreateTaskInThePast" guard), so any hardcoded past-year date would
+/// eventually go stale and start failing for reasons unrelated to what these
+/// tests exercise.
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
@@ -52,6 +61,34 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
     private static string IsoUtc(DateTime d) =>
         DateTime.SpecifyKind(d, DateTimeKind.Utc).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
     private static string Key(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    // Mirrors BackendConfigurationCalendarService.NthWeekdayOfMonth exactly so
+    // the computed anchor/target dates can never drift from the production
+    // "Nth weekday of month" convention (targetDow: 0=Sun..6=Sat).
+    private static DateTime NthWeekdayOfMonth(int year, int month, int ordinal, int targetDow)
+    {
+        var firstOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var dowOffset = (targetDow - (int)firstOfMonth.DayOfWeek + 7) % 7;
+        return firstOfMonth.AddDays(dowOffset + (ordinal - 1) * 7);
+    }
+
+    // Anchor everything 2 months ahead of "now" so the scenario's dates are
+    // always safely in the future (comfortably clear of the production
+    // "cannot move a task into the past" guard) no matter what day-of-week or
+    // day-of-month the test happens to run on.
+    private static readonly DateTime AnchorMonthStart =
+        new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(2);
+    private static readonly DateTime SeriesAnchorSaturday =
+        NthWeekdayOfMonth(AnchorMonthStart.Year, AnchorMonthStart.Month, 1, (int)DayOfWeek.Saturday);
+    private static readonly DateTime TargetMonthStart = AnchorMonthStart.AddMonths(1);
+    private static readonly DateTime TargetSaturday =
+        NthWeekdayOfMonth(TargetMonthStart.Year, TargetMonthStart.Month, 1, (int)DayOfWeek.Saturday);
+    private static readonly DateTime TargetFriday = TargetSaturday.AddDays(-1);
+    private static readonly DateTime TargetThursday = TargetSaturday.AddDays(-2);
+    private static readonly DateTime TargetWeekMonday =
+        TargetSaturday.AddDays(-(((int)TargetSaturday.DayOfWeek + 6) % 7));
+    private static readonly string TargetMonthPrefix =
+        TargetSaturday.ToString("yyyy-MM", CultureInfo.InvariantCulture);
 
     // The fixture shares one MariaDb container across its test methods and
     // TestBaseSetup only disposes the contexts between tests (no DB reset), so
@@ -94,7 +131,7 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
 
     private sealed record Seed(int PropertyId, int ArpId, int SiteId, int PlanningId, int AreaId);
 
-    // Seeds a monthly 1st-Saturday series anchored on Sat 6 Jun 2026.
+    // Seeds a monthly 1st-Saturday series anchored on SeriesAnchorSaturday.
     private async Task<Seed> SeedFirstSaturdaySeries()
     {
         var language = await MicrotingDbContext!.Languages.FirstAsync();
@@ -121,7 +158,7 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         { AreaRuleId = areaRule.Id, LanguageId = language.Id, Name = "Tank 4", WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1 });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        var startDate = new DateTime(2026, 6, 6, 0, 0, 0, DateTimeKind.Utc); // 1st Saturday of June 2026
+        var startDate = SeriesAnchorSaturday; // 1st Saturday of the (future) anchor month
         var planning = new Planning
         {
             Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Month, StartDate = startDate,
@@ -149,7 +186,7 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
     private CalendarTaskUpdateRequestModel BuildEdit(Seed s, DateTime startDateUtc, string scope = "thisAndFollowing") => new()
     {
         Id = s.ArpId, Scope = scope,
-        OriginalDate = "2026-07-04T00:00:00Z", // clicked occurrence = 1st Saturday of July
+        OriginalDate = IsoUtc(TargetSaturday), // clicked occurrence = 1st Saturday of the target month
         StartDate = startDateUtc,
         StartHour = 9.0, Duration = 1.0, Status = 1,
         RepeatType = 3, RepeatEvery = 1, RepeatOrdinalWeek = 1, DayOfMonth = 0,
@@ -159,7 +196,7 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
 
     private async Task<List<string>> JulyWeekTiles(BackendConfigurationCalendarService svc, int propertyId)
     {
-        var weekStart = new DateTime(2026, 6, 29, 0, 0, 0, DateTimeKind.Utc); // Mon containing Jul 2-4
+        var weekStart = TargetWeekMonday; // Mon containing the target Thu/Fri/Sat
         var res = await svc.GetTasksForWeek(new CalendarTaskRequestModel
         {
             PropertyId = propertyId, WeekStart = IsoUtc(weekStart),
@@ -178,20 +215,20 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         var s = await SeedFirstSaturdaySeries();
         var svc = BuildService(core);
 
-        // 2026-07-02T22:00:00Z == Fri 3 Jul local-midnight in UTC+2 (Denmark).
-        await svc.UpdateTask(BuildEdit(s, new DateTime(2026, 7, 2, 22, 0, 0, DateTimeKind.Utc)));
+        // TargetFriday 00:00Z minus 2 hours == TargetFriday local-midnight in UTC+2 (Denmark).
+        await svc.UpdateTask(BuildEdit(s, TargetFriday.AddHours(-2)));
 
         var tiles = await JulyWeekTiles(svc, s.PropertyId);
-        TestContext.WriteLine("Rendered July-week tiles (tz-shifted): " + string.Join(", ", tiles));
+        TestContext.WriteLine("Rendered target-week tiles (tz-shifted): " + string.Join(", ", tiles));
 
-        // EXPECTED (correct) behaviour: a single tile on Friday 3 Jul.
-        Assert.That(tiles, Does.Contain(Key(new DateTime(2026, 7, 3))),
-            "routine should move to Friday 3 Jul");
-        Assert.That(tiles, Does.Not.Contain(Key(new DateTime(2026, 7, 2))),
-            "routine must NOT land on Thursday 2 Jul");
+        // EXPECTED (correct) behaviour: a single tile on the target Friday.
+        Assert.That(tiles, Does.Contain(Key(TargetFriday)),
+            "routine should move to the target Friday");
+        Assert.That(tiles, Does.Not.Contain(Key(TargetThursday)),
+            "routine must NOT land on the target Thursday");
     }
 
-    // ---- Control: tz-stable StartDate (Fri 3 Jul 00:00Z) → correct weekday ----
+    // ---- Control: tz-stable StartDate (target Friday 00:00Z) → correct weekday ----
     [Test]
     public async Task Control_ThisAndFollowing_TzStableFriday_LandsOnFriday()
     {
@@ -199,25 +236,25 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         var s = await SeedFirstSaturdaySeries();
         var svc = BuildService(core);
 
-        await svc.UpdateTask(BuildEdit(s, new DateTime(2026, 7, 3, 0, 0, 0, DateTimeKind.Utc)));
+        await svc.UpdateTask(BuildEdit(s, TargetFriday));
 
         var tiles = await JulyWeekTiles(svc, s.PropertyId);
-        TestContext.WriteLine("Rendered July-week tiles (tz-stable): " + string.Join(", ", tiles));
+        TestContext.WriteLine("Rendered target-week tiles (tz-stable): " + string.Join(", ", tiles));
 
-        Assert.That(tiles, Does.Contain(Key(new DateTime(2026, 7, 3))), "Friday 3 Jul present");
-        Assert.That(tiles, Does.Not.Contain(Key(new DateTime(2026, 7, 2))), "no Thursday");
-        Assert.That(tiles.Count(t => t.StartsWith("2026-07")), Is.EqualTo(1),
-            "exactly one July tile (no copy)");
+        Assert.That(tiles, Does.Contain(Key(TargetFriday)), "target Friday present");
+        Assert.That(tiles, Does.Not.Contain(Key(TargetThursday)), "no Thursday");
+        Assert.That(tiles.Count(t => t.StartsWith(TargetMonthPrefix)), Is.EqualTo(1),
+            "exactly one target-month tile (no copy)");
     }
 
-    // ---- Repro 2: deployed (not completed) compliance at Jul 4 → duplicate? ----
+    // ---- Repro 2: deployed (not completed) compliance at the target Saturday → duplicate? ----
     [Test]
     public async Task Repro_ThisAndFollowing_WithDeployedComplianceAtJul4_NoDuplicate()
     {
         var core = await GetCore();
         var s = await SeedFirstSaturdaySeries();
 
-        // A deployed-but-not-completed occurrence already exists at Sat 4 Jul.
+        // A deployed-but-not-completed occurrence already exists at the target Saturday.
         var sdkCase = new Microting.eForm.Infrastructure.Data.Entities.Case
         { SiteId = s.SiteId, Status = 66, WorkflowState = Constants.WorkflowStates.Created };
         await MicrotingDbContext!.Cases.AddAsync(sdkCase);
@@ -225,20 +262,20 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         await BackendConfigurationPnDbContext!.Compliances.AddAsync(new Compliance
         {
             PlanningId = s.PlanningId, PropertyId = s.PropertyId, AreaId = s.AreaId,
-            Deadline = new DateTime(2026, 7, 4, 0, 0, 0, DateTimeKind.Utc), StartDate = new DateTime(2026, 6, 4, 0, 0, 0, DateTimeKind.Utc),
+            Deadline = TargetSaturday, StartDate = TargetSaturday.AddMonths(-1),
             MicrotingSdkCaseId = sdkCase.Id, MicrotingSdkeFormId = 0, WorkflowState = Constants.WorkflowStates.Created
         });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
         var svc = BuildService(core);
         // Use the tz-stable Friday to isolate the duplicate from the weekday bug.
-        await svc.UpdateTask(BuildEdit(s, new DateTime(2026, 7, 3, 0, 0, 0, DateTimeKind.Utc)));
+        await svc.UpdateTask(BuildEdit(s, TargetFriday));
 
         var tiles = await JulyWeekTiles(svc, s.PropertyId);
-        TestContext.WriteLine("Rendered July-week tiles (compliance@Jul4): " + string.Join(", ", tiles));
+        TestContext.WriteLine("Rendered target-week tiles (compliance@target Saturday): " + string.Join(", ", tiles));
 
-        Assert.That(tiles.Count(t => t.StartsWith("2026-07")), Is.EqualTo(1),
-            "exactly one July tile after move — original Sat 4 Jul must not remain as a copy");
+        Assert.That(tiles.Count(t => t.StartsWith(TargetMonthPrefix)), Is.EqualTo(1),
+            "exactly one target-month tile after move — original target Saturday must not remain as a copy");
     }
 
     // ---- RC1 parity: the tz-shift bug affects every entry point that reads
@@ -256,14 +293,14 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         var s = await SeedFirstSaturdaySeries();
         var svc = BuildService(core);
 
-        await svc.UpdateTask(BuildEdit(s, new DateTime(2026, 7, 2, 22, 0, 0, DateTimeKind.Utc), "this"));
+        await svc.UpdateTask(BuildEdit(s, TargetFriday.AddHours(-2), "this"));
 
         var tiles = await JulyWeekTiles(svc, s.PropertyId);
-        TestContext.WriteLine("Rendered July-week tiles (this, tz-shifted): " + string.Join(", ", tiles));
+        TestContext.WriteLine("Rendered target-week tiles (this, tz-shifted): " + string.Join(", ", tiles));
 
-        Assert.That(tiles, Does.Contain(Key(new DateTime(2026, 7, 3))), "occurrence should move to Friday 3 Jul");
-        Assert.That(tiles, Does.Not.Contain(Key(new DateTime(2026, 7, 2))), "must NOT land on Thursday 2 Jul");
-        Assert.That(tiles.Count(t => t.StartsWith("2026-07")), Is.EqualTo(1), "exactly one July tile");
+        Assert.That(tiles, Does.Contain(Key(TargetFriday)), "occurrence should move to the target Friday");
+        Assert.That(tiles, Does.Not.Contain(Key(TargetThursday)), "must NOT land on the target Thursday");
+        Assert.That(tiles.Count(t => t.StartsWith(TargetMonthPrefix)), Is.EqualTo(1), "exactly one target-month tile");
     }
 
     // scope="all" re-anchors the whole series; arp.DayOfWeek is derived from
@@ -276,13 +313,13 @@ public class CalendarThisAndFollowingMoveBackReproTests : TestBaseSetup
         var s = await SeedFirstSaturdaySeries();
         var svc = BuildService(core);
 
-        await svc.UpdateTask(BuildEdit(s, new DateTime(2026, 7, 2, 22, 0, 0, DateTimeKind.Utc), "all"));
+        await svc.UpdateTask(BuildEdit(s, TargetFriday.AddHours(-2), "all"));
 
         var tiles = await JulyWeekTiles(svc, s.PropertyId);
-        TestContext.WriteLine("Rendered July-week tiles (all, tz-shifted): " + string.Join(", ", tiles));
+        TestContext.WriteLine("Rendered target-week tiles (all, tz-shifted): " + string.Join(", ", tiles));
 
-        Assert.That(tiles, Does.Contain(Key(new DateTime(2026, 7, 3))), "series should re-pattern to 1st Friday 3 Jul");
-        Assert.That(tiles, Does.Not.Contain(Key(new DateTime(2026, 7, 2))), "must NOT re-pattern to 1st Thursday 2 Jul");
+        Assert.That(tiles, Does.Contain(Key(TargetFriday)), "series should re-pattern to the 1st target Friday");
+        Assert.That(tiles, Does.Not.Contain(Key(TargetThursday)), "must NOT re-pattern to the 1st target Thursday");
     }
 
     private BackendConfigurationCalendarService BuildService(eFormCore.Core core)
