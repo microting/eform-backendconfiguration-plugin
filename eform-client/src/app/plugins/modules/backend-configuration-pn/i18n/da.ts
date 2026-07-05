@@ -513,4 +513,13 @@ export const da = {
   'At least one worker or worker tag must be assigned': 'Mindst én medarbejder eller medarbejder-tag skal tildeles',
   'Assign to worker tags': 'Tildel til medarbejder-tags',
   'This and following (incl. completed)': 'Dette og følgende (inkl. færdiggjorte)',
+  'Payroll rules': 'Lønregler',
+  'Pay Rule Set': 'Lønregelsæt',
+  'Select the pay rule set for this worker': 'Vælg lønregelsættet for denne arbejder',
+  'View pay rule set': 'Vis lønregelsæt',
+  None: 'Ingen',
+  'Advanced settings': 'Avancerede indstillinger',
+  'Use 1-minute intervals': 'Brug 1-minutters intervaller',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktiver 1-minutters granularitet for tidsregistrering. Standardintervaller er 5 eller 15 minutter.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Når 1-minutters intervaller er aktiveret, kan de ikke slås fra',
 };

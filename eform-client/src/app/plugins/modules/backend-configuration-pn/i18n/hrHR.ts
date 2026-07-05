@@ -512,4 +512,13 @@ export const hrHR = {
   'Assign to worker tags': 'Dodijeli oznakama radnika',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ovim će se trajno izbrisati ploča i njezinih {{count}} događaja. Ova radnja se ne može poništiti.',
   'This and following (incl. completed)': 'Ovo i sljedeće (uklj. dovršeno)',
+  'Payroll rules': 'Pravila o obračunu plaća',
+  'Pay Rule Set': 'Skup pravila plaćanja',
+  'Select the pay rule set for this worker': 'Odaberite skup pravila plaćanja za ovog radnika',
+  'View pay rule set': 'Prikaži skup pravila plaćanja',
+  None: 'Ništa',
+  'Advanced settings': 'Napredne postavke',
+  'Use 1-minute intervals': 'Koristite intervale od 1 minute',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Omogućite granularnost od 1 minute za unos vremena. Zadani koraci su 5 ili 15 minuta.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Nakon što su omogućeni, intervali od 1 minute ne mogu se isključiti',
 };

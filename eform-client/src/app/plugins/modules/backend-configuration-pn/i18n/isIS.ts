@@ -512,4 +512,13 @@ export const isIS = {
   'Assign to worker tags': 'Úthluta til starfsmannamerkja',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Þetta mun eyða borðinu og {{count}} atburðum þess fyrir fullt og allt. Þetta er ekki hægt að afturkalla.',
   'This and following (incl. completed)': 'Þetta og eftirfarandi (þar með talið lokið)',
+  'Payroll rules': 'Launareglur',
+  'Pay Rule Set': 'Launareglur settar',
+  'Select the pay rule set for this worker': 'Veldu launareglusettið fyrir þennan starfsmann',
+  'View pay rule set': 'Skoða greiðslureglusett',
+  None: 'Enginn',
+  'Advanced settings': 'Ítarlegar stillingar',
+  'Use 1-minute intervals': 'Notið 1 mínútu millibil',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Virkjaðu 1 mínútu nákvæmni fyrir tímaskráningu. Sjálfgefin þrep eru 5 eða 15 mínútur.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Þegar 1 mínútu millibili hefur verið virkjað er ekki hægt að slökkva á því',
 };

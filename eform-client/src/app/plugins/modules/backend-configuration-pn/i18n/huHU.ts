@@ -512,4 +512,13 @@ export const huHU = {
   'Assign to worker tags': 'Munkavállalói címkék hozzárendelése',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Ez véglegesen törli a táblát és a hozzá tartozó {{count}} eseményt. A művelet nem vonható vissza.',
   'This and following (incl. completed)': 'Ez és a következő (beleértve a befejezetteket is)',
+  'Payroll rules': 'Bérszámfejtési szabályok',
+  'Pay Rule Set': 'Fizetési szabályok',
+  'Select the pay rule set for this worker': 'Válassza ki a munkavállalóhoz tartozó fizetési szabálykészletet',
+  'View pay rule set': 'Fizetési szabálykészlet megtekintése',
+  None: 'Egyik sem',
+  'Advanced settings': 'Speciális beállítások',
+  'Use 1-minute intervals': 'Használjon 1 perces intervallumokat',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': '1 perces részletesség engedélyezése az időbevitelhez. Az alapértelmezett lépésköz 5 vagy 15 perc.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Engedélyezés után az 1 perces intervallumok nem kapcsolhatók ki.',
 };

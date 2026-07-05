@@ -512,4 +512,13 @@ export const slSL = {
   'Assign to worker tags': 'Dodeli oznakam delavcev',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'S tem boste trajno izbrisali tablo in {{count}} dogodkov na njej. Tega ni mogoče razveljaviti.',
   'This and following (incl. completed)': 'To in naslednje (vključno z dokončanim)',
+  'Payroll rules': 'Pravila za obračun plač',
+  'Pay Rule Set': 'Nabor pravil za plačilo',
+  'Select the pay rule set for this worker': 'Izberite nabor pravil plačila za tega delavca',
+  'View pay rule set': 'Ogled nabora pravil za plačilo',
+  None: 'Nobena',
+  'Advanced settings': 'Napredne nastavitve',
+  'Use 1-minute intervals': 'Uporabite 1-minutne intervale',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Omogočite 1-minutno natančnost za vnos časa. Privzeti koraki so 5 ali 15 minut.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Ko so omogočeni, 1-minutnih intervalov ni mogoče izklopiti.',
 };

@@ -531,4 +531,13 @@ export const enUS= {
   'Edit repeat': 'Edit repeat',
   'Move repeat': 'Move repeat',
   'Delete repeat': 'Delete repeat',
+  'Payroll rules': 'Payroll rules',
+  'Pay Rule Set': 'Pay Rule Set',
+  'Select the pay rule set for this worker': 'Select the pay rule set for this worker',
+  'View pay rule set': 'View pay rule set',
+  None: 'None',
+  'Advanced settings': 'Advanced settings',
+  'Use 1-minute intervals': 'Use 1-minute intervals',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Once enabled, 1-minute intervals cannot be turned off',
 };

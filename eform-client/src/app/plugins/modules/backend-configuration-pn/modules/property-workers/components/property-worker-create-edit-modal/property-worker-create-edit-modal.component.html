@@ -256,6 +256,35 @@
             <div class="modal-columns">
               <div class="d-flex flex-column" id="timeRegistrationColumn">
 
+                <!-- ========= Payroll rules ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0 && (selectAuthIsAdmin$ | async)">{{ 'Payroll rules' | translate }}</h3>
+
+                <div class="d-flex flex-row align-items-center pay-rule-set-row" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0 && (selectAuthIsAdmin$ | async)">
+                  <mat-form-field class="p-1 flex-grow-1">
+                    <mat-label>{{ 'Pay Rule Set' | translate }}</mat-label>
+                    <mtx-select
+                      id="payRuleSetIdSelect"
+                      [items]="availablePayRuleSets"
+                      bindLabel="name"
+                      bindValue="id"
+                      [multiple]="false"
+                      [clearable]="true"
+                      [placeholder]="'None' | translate"
+                      formControlName="payRuleSetId">
+                    </mtx-select>
+                    <mat-hint>{{ 'Select the pay rule set for this worker' | translate }}</mat-hint>
+                  </mat-form-field>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    id="viewPayRuleSetBtn"
+                    [disabled]="!form.get('payRuleSetId')?.value"
+                    matTooltip="{{ 'View pay rule set' | translate }}"
+                    (click)="openPayRuleSetView()">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                </div>
+
                 <!-- ========= Break calculation ========= -->
                 <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned">{{ 'Break calculation' | translate }}</h3>
 
@@ -403,6 +432,21 @@
                     </mtx-select>
                     <mat-hint>{{ 'Select tags that this manager is responsible for' | translate }}</mat-hint>
                   </mat-form-field>
+                </div>
+
+                <!-- ========= Advanced settings ========= -->
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned && (selectAuthIsAdmin$ | async)">{{ 'Advanced settings' | translate }}</h3>
+
+                <div class="d-flex flex-row" *ngIf="!selectedDeviceUser.resigned && (selectAuthIsAdmin$ | async)">
+                  <mat-checkbox class="p-1"
+                                id="useOneMinuteIntervals"
+                                formControlName="useOneMinuteIntervals">
+                    <div>
+                      <div>{{ 'Use 1-minute intervals' | translate }}</div>
+                      <small class="checkbox-description">{{ 'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.' | translate }}</small>
+                      <small class="checkbox-description">{{ 'Once enabled, 1-minute intervals cannot be turned off' | translate }}</small>
+                    </div>
+                  </mat-checkbox>
                 </div>
               </div>
             </div>

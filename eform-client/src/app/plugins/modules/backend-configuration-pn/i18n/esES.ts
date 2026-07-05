@@ -512,4 +512,13 @@ export const esES = {
   'Assign to worker tags': 'Asignar a etiquetas de trabajador',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Esto eliminará permanentemente el tablero y sus {{count}} eventos. Esta acción no se puede deshacer.',
   'This and following (incl. completed)': 'Esto y lo siguiente (incluidos los completados)',
+  'Payroll rules': 'Normas de nómina',
+  'Pay Rule Set': 'Conjunto de reglas de pago',
+  'Select the pay rule set for this worker': 'Seleccione el conjunto de reglas de pago para este trabajador.',
+  'View pay rule set': 'Ver conjunto de reglas de pago',
+  None: 'Ninguno',
+  'Advanced settings': 'Configuración avanzada',
+  'Use 1-minute intervals': 'Utilice intervalos de 1 minuto.',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Habilite la granularidad de 1 minuto para el registro de tiempo. Los incrementos predeterminados son de 5 o 15 minutos.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Una vez activados, los intervalos de 1 minuto no se pueden desactivar.',
 };

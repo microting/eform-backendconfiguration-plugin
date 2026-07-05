@@ -512,4 +512,13 @@ export const elGR = {
   'Assign to worker tags': 'Ανάθεση σε ετικέτες εργαζομένων',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Αυτό θα διαγράψει οριστικά τον πίνακα και τα {{count}} συμβάντα που τον αποτελούν. Δεν είναι δυνατή η αναίρεση αυτής της ενέργειας.',
   'This and following (incl. completed)': 'Αυτό και τα επόμενα (συμπεριλαμβανομένων των ολοκληρωμένων)',
+  'Payroll rules': 'Κανόνες μισθοδοσίας',
+  'Pay Rule Set': 'Σύνολο κανόνων πληρωμής',
+  'Select the pay rule set for this worker': 'Επιλέξτε τον κανόνα πληρωμής που έχει οριστεί για αυτόν τον εργαζόμενο',
+  'View pay rule set': 'Δείτε το σύνολο κανόνων πληρωμής',
+  None: 'Κανένας',
+  'Advanced settings': 'Προηγμένες ρυθμίσεις',
+  'Use 1-minute intervals': 'Χρησιμοποιήστε διαστήματα 1 λεπτού',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Ενεργοποιήστε την ευαισθησία 1 λεπτού για την εισαγωγή χρόνου. Τα προεπιλεγμένα βήματα είναι 5 ή 15 λεπτά.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Μόλις ενεργοποιηθεί, τα διαστήματα 1 λεπτού δεν μπορούν να απενεργοποιηθούν',
 };

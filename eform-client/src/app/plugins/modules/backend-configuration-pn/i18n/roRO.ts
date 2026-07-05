@@ -512,4 +512,13 @@ export const roRO = {
   'Assign to worker tags': 'Atribuiți etichetelor lucrătorilor',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Aceasta acțiune va șterge definitiv forumul și {{count}} evenimentele sale. Această acțiune nu poate fi anulată.',
   'This and following (incl. completed)': 'Aceasta și următoarele (inclusiv finalizate)',
+  'Payroll rules': 'Reguli de salarizare',
+  'Pay Rule Set': 'Set de reguli de plată',
+  'Select the pay rule set for this worker': 'Selectați regula de plată setată pentru acest lucrător',
+  'View pay rule set': 'Vizualizați setul de reguli de plată',
+  None: 'Nici unul',
+  'Advanced settings': 'Setări avansate',
+  'Use 1-minute intervals': 'Folosește intervale de 1 minut',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Activați granularitatea de 1 minut pentru introducerea timpului. Incrementele implicite sunt de 5 sau 15 minute.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Odată activate, intervalele de 1 minut nu pot fi dezactivate',
 };

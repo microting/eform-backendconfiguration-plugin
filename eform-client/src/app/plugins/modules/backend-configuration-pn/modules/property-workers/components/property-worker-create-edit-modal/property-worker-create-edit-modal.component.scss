@@ -118,3 +118,12 @@
   vertical-align: middle;
 }
 
+.pay-rule-set-row {
+  // Outranks the theme cap "body.theme-workspace .mat-mdc-form-field.mat-mdc-form-field-type-mtx-select { max-width: 320px }"
+  mat-form-field.mat-mdc-form-field-type-mtx-select {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+  }
+}
+

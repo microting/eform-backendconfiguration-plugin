@@ -46,7 +46,7 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {TimePlanningPnSettingsService} from 'src/app/plugins/modules/time-planning-pn/services';
+import {TimePlanningPnSettingsService, TimePlanningPnPayRuleSetsService} from 'src/app/plugins/modules/time-planning-pn/services';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {StoreModule} from '@ngrx/store';
 import {
@@ -140,7 +140,8 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
     BackendConfigurationPnChemicalsService,
     BackendConfigurationPnTaskTrackerService,
     ItemsPlanningPnTagsService,
-    TimePlanningPnSettingsService
+    TimePlanningPnSettingsService,
+    TimePlanningPnPayRuleSetsService
   ],
 })
 export class BackendConfigurationPnModule {

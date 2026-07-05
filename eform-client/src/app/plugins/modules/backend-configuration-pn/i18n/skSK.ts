@@ -512,4 +512,13 @@ export const skSK = {
   'Assign to worker tags': 'Priradiť k značkám pracovníka',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Týmto sa natrvalo vymaže nástenka a jej {{count}} udalostí. Túto akciu nie je možné vrátiť späť.',
   'This and following (incl. completed)': 'Toto a nasledujúce (vrátane dokončených)',
+  'Payroll rules': 'Pravidlá pre výplaty miezd',
+  'Pay Rule Set': 'Sada pravidiel pre platby',
+  'Select the pay rule set for this worker': 'Vyberte pravidlo odmeňovania nastavené pre tohto pracovníka',
+  'View pay rule set': 'Zobraziť sadu pravidiel platieb',
+  None: 'Žiadne',
+  'Advanced settings': 'Rozšírené nastavenia',
+  'Use 1-minute intervals': 'Používajte 1-minútové intervaly',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Povoľte 1-minútovú granularitu pre zadávanie času. Predvolené prírastky sú 5 alebo 15 minút.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Po zapnutí nie je možné minútové intervaly vypnúť.',
 };

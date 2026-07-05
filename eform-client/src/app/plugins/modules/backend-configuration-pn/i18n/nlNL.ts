@@ -512,4 +512,13 @@ export const nlNL = {
   'Assign to worker tags': 'Wijs toe aan werknemerslabels',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dit verwijdert het bord en de bijbehorende {{count}} gebeurtenissen permanent. Dit kan niet ongedaan worden gemaakt.',
   'This and following (incl. completed)': 'Dit en het volgende (inclusief voltooid)',
+  'Payroll rules': 'Regels voor de loonadministratie',
+  'Pay Rule Set': 'Regels voor de betaling',
+  'Select the pay rule set for this worker': 'Selecteer de loonregelset voor deze werknemer.',
+  'View pay rule set': 'Bekijk de regels voor salarisbetalingen',
+  None: 'Geen',
+  'Advanced settings': 'Geavanceerde instellingen',
+  'Use 1-minute intervals': 'Gebruik intervallen van 1 minuut.',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Schakel de mogelijkheid in om tijdsintervallen van 1 minuut in te voeren. De standaardintervallen zijn 5 of 15 minuten.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Eenmaal ingeschakeld, kunnen intervallen van 1 minuut niet meer worden uitgeschakeld.',
 };
