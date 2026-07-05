@@ -512,4 +512,13 @@ export const lvLV = {
   'Assign to worker tags': 'Piešķirt darbinieka tagiem',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tas neatgriezeniski izdzēsīs tāfeli un tā {{count}} notikumus. Šo darbību nevar atsaukt.',
   'This and following (incl. completed)': 'Šis un turpmākie (ieskaitot pabeigtos)',
+  'Payroll rules': 'Algu aprēķināšanas noteikumi',
+  'Pay Rule Set': 'Maksājumu noteikumu kopa',
+  'Select the pay rule set for this worker': 'Atlasiet šim darbiniekam noteikto algas noteikumu kopu',
+  'View pay rule set': 'Skatīt algas noteikumu kopu',
+  None: 'Neviens',
+  'Advanced settings': 'Papildu iestatījumi',
+  'Use 1-minute intervals': 'Izmantojiet 1 minūtes intervālus',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Iespējot 1 minūtes granularitāti laika ievadei. Noklusējuma intervāli ir 5 vai 15 minūtes.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Kad 1 minūtes intervāli ir iespējoti, tos nevar izslēgt.',
 };

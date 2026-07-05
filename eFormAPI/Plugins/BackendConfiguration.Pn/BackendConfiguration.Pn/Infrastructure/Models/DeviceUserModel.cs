@@ -133,6 +133,8 @@ public class DeviceUserModel
     public bool? FifthShiftActive { get; set; }
     public bool? IsManager { get; set; }
     public List<int> ManagingTagIds { get; set; } = [];
+    public int? PayRuleSetId { get; set; }
+    public bool? UseOneMinuteIntervals { get; set; }
 
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {

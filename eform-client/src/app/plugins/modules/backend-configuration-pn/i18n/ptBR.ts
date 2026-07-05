@@ -512,4 +512,13 @@ export const ptBR = {
   'Assign to worker tags': 'Atribuir às etiquetas do trabalhador',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Isso excluirá permanentemente o quadro e seus {{count}} eventos. Essa ação não pode ser desfeita.',
   'This and following (incl. completed)': 'Isto e o seguinte (incluindo o já concluído)',
+  'Payroll rules': 'Regras de folha de pagamento',
+  'Pay Rule Set': 'Conjunto de regras de pagamento',
+  'Select the pay rule set for this worker': 'Selecione o conjunto de regras de pagamento para este funcionário.',
+  'View pay rule set': 'Visualizar conjunto de regras de pagamento',
+  None: 'Nenhum',
+  'Advanced settings': 'Configurações avançadas',
+  'Use 1-minute intervals': 'Use intervalos de 1 minuto.',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Ative a granularidade de 1 minuto para a entrada de tempo. Os incrementos padrão são de 5 ou 15 minutos.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Uma vez ativado, o intervalo de 1 minuto não pode ser desativado.',
 };

@@ -512,4 +512,13 @@ export const fiFI = {
   'Assign to worker tags': 'Määritä työntekijätunnisteille',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tämä poistaa pysyvästi taulun ja sen {{count}} tapahtumaa. Tätä ei voi perua.',
   'This and following (incl. completed)': 'Tämä ja seuraavat (mukaan lukien valmiit)',
+  'Payroll rules': 'Palkanlaskentasäännöt',
+  'Pay Rule Set': 'Maksusääntöjoukko',
+  'Select the pay rule set for this worker': 'Valitse tälle työntekijälle asetettu palkkasääntö',
+  'View pay rule set': 'Näytä maksusääntöjoukko',
+  None: 'Ei mitään',
+  'Advanced settings': 'Lisäasetukset',
+  'Use 1-minute intervals': 'Käytä 1 minuutin välein',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Ota käyttöön 1 minuutin tarkkuudella ajan syöttö. Oletusarvoinen lisäys on 5 tai 15 minuuttia.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Kun 1 minuutin välein on otettu käyttöön, niitä ei voi poistaa käytöstä.',
 };

@@ -810,6 +810,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     assignments.First().FourthShiftActive = deviceUserModel.FourthShiftActive ?? false;
                                     assignments.First().FifthShiftActive = deviceUserModel.FifthShiftActive ?? false;
                                     assignments.First().IsManager = deviceUserModel.IsManager ?? false;
+                                    // PayRuleSetId/UseOneMinuteIntervals intentionally not updated here —
+                                    // for existing sites they are owned by TimePlanning's updateAssignedSite PUT
+                                    // (UseOneMinuteIntervals is one-way there and must never be reset from this path)
                                     // assignments.First().// ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately; // TODO: Handle ManagingTagIds separately
                                     await assignments.First().Update(timePlanningDbContext).ConfigureAwait(false);
                                     return new OperationDataResult<int>(true, siteDto.SiteId);
@@ -859,7 +862,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                                         FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                                         IsManager = deviceUserModel.IsManager ?? false,
-                                        UseOneMinuteIntervals = true
+                                        UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                                        PayRuleSetId = deviceUserModel.PayRuleSetId
                                         // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                                     };
                                     await assignmentSite.Create(timePlanningDbContext).ConfigureAwait(false);
@@ -1154,7 +1158,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             FourthShiftActive = deviceUserModel.FourthShiftActive ?? false,
                             FifthShiftActive = deviceUserModel.FifthShiftActive ?? false,
                             IsManager = deviceUserModel.IsManager ?? false,
-                            UseOneMinuteIntervals = true,
+                            UseOneMinuteIntervals = deviceUserModel.UseOneMinuteIntervals ?? false,
+                            PayRuleSetId = deviceUserModel.PayRuleSetId,
                             // ManagingTagIds = deviceUserModel.ManagingTagIds ?? [] // TODO: Handle ManagingTagIds separately
                         };
                         Console.WriteLine($"[CreateDeviceUser] Creating AssignedSite for siteId={site.MicrotingUid} user={user?.Id}");

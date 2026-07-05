@@ -512,4 +512,13 @@ export const csCZ = {
   'Assign to worker tags': 'Přiřadit k tagům pracovníka',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tímto se nástěnka a její {{count}} události trvale smažou. Tuto akci nelze vrátit zpět.',
   'This and following (incl. completed)': 'Toto a následující (včetně dokončených)',
+  'Payroll rules': 'Pravidla pro výplaty',
+  'Pay Rule Set': 'Sada pravidel pro platby',
+  'Select the pay rule set for this worker': 'Vyberte sadu pravidel pro odměňování pro tohoto pracovníka',
+  'View pay rule set': 'Zobrazit sadu pravidel pro platby',
+  None: 'Žádný',
+  'Advanced settings': 'Pokročilá nastavení',
+  'Use 1-minute intervals': 'Používejte minutové intervaly',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Povolte zadávání času s granularitou po 1 minutě. Výchozí přírůstky jsou 5 nebo 15 minut.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Po zapnutí nelze minutové intervaly vypnout.',
 };

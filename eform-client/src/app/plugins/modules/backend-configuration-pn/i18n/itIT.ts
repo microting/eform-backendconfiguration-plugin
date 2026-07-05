@@ -512,4 +512,13 @@ export const itIT = {
   'Assign to worker tags': 'Assegnare ai tag dei lavoratori',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Questa operazione eliminerà definitivamente la bacheca e i suoi {{count}} eventi. Non è possibile annullare l&#39;operazione.',
   'This and following (incl. completed)': 'Questo e i seguenti (compresi quelli completati)',
+  'Payroll rules': 'Regole di gestione delle retribuzioni',
+  'Pay Rule Set': 'Set di regole di pagamento',
+  'Select the pay rule set for this worker': 'Seleziona il set di regole di pagamento per questo lavoratore',
+  'View pay rule set': 'Visualizza il set di regole di pagamento',
+  None: 'Nessuno',
+  'Advanced settings': 'Impostazioni avanzate',
+  'Use 1-minute intervals': 'Utilizzare intervalli di 1 minuto',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Abilita la granularità di 1 minuto per l&#39;inserimento dell&#39;ora. Gli incrementi predefiniti sono 5 o 15 minuti.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Una volta attivati, gli intervalli di 1 minuto non possono essere disattivati.',
 };

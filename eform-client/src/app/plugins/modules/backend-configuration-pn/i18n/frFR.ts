@@ -511,4 +511,13 @@ export const frFR = {
   'Assign to worker tags': 'Attribuer aux étiquettes de travailleur',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Cette action supprimera définitivement le plateau et ses {{count}} événements. Elle est irréversible.',
   'This and following (incl. completed)': 'Ceci et les suivants (y compris les éléments terminés)',
+  'Payroll rules': 'Règles de paie',
+  'Pay Rule Set': 'Règles de rémunération',
+  'Select the pay rule set for this worker': 'Sélectionnez le régime de rémunération applicable à ce travailleur.',
+  'View pay rule set': 'Afficher les règles de rémunération',
+  None: 'Aucun',
+  'Advanced settings': 'Paramètres avancés',
+  'Use 1-minute intervals': 'Utilisez des intervalles d&#39;une minute.',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Activez la granularité à la minute pour la saisie de l&#39;heure. Les incréments par défaut sont de 5 ou 15 minutes.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Une fois activées, les intervalles d&#39;une minute ne peuvent pas être désactivés.',
 };

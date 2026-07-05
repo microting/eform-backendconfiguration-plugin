@@ -512,4 +512,13 @@ export const bgBG = {
   'Assign to worker tags': 'Присвояване на етикети на работници',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Това ще изтрие завинаги дъската и нейните {{count}} събития. Това действие не може да бъде отменено.',
   'This and following (incl. completed)': 'Това и следващите (вкл. завършени)',
+  'Payroll rules': 'Правила за изплащане на заплати',
+  'Pay Rule Set': 'Набор от правила за плащане',
+  'Select the pay rule set for this worker': 'Изберете набор от правила за заплащане за този работник',
+  'View pay rule set': 'Преглед на набора от правила за плащане',
+  None: 'Няма',
+  'Advanced settings': 'Разширени настройки',
+  'Use 1-minute intervals': 'Използвайте интервали от 1 минута',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Активирайте гранулиране от 1 минута за въвеждане на време. Стъпките по подразбиране са 5 или 15 минути.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'След като са активирани, интервалите от 1 минута не могат да бъдат изключени',
 };

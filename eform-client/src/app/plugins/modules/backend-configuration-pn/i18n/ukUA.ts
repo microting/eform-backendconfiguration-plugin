@@ -512,4 +512,13 @@ export const ukUA = {
   'Assign to worker tags': 'Призначити тегам працівника',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Це назавжди видалить дошку та її {{count}} подій. Цю дію неможливо скасувати.',
   'This and following (incl. completed)': 'Це та наступні (включно з завершеними)',
+  'Payroll rules': 'Правила нарахування заробітної плати',
+  'Pay Rule Set': 'Набір правил оплати',
+  'Select the pay rule set for this worker': 'Виберіть правило оплати праці, встановлене для цього працівника',
+  'View pay rule set': 'Переглянути набір правил оплати',
+  None: 'Жоден',
+  'Advanced settings': 'Розширені налаштування',
+  'Use 1-minute intervals': 'Використовуйте інтервали в 1 хвилину',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Увімкнути точність введення часу з кроком 1 хвилина. Крок за замовчуванням становить 5 або 15 хвилин.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Після ввімкнення інтервали в 1 хвилину не можна вимкнути',
 };

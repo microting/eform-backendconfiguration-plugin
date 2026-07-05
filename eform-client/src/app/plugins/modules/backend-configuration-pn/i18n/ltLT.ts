@@ -512,4 +512,13 @@ export const ltLT = {
   'Assign to worker tags': 'Priskirti darbuotojo žymes',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Tai visam laikui ištrins lentą ir jos {{count}} įvykius. Šio veiksmo atšaukti negalima.',
   'This and following (incl. completed)': 'Šis ir tolesni (įskaitant užbaigtus)',
+  'Payroll rules': 'Darbo užmokesčio taisyklės',
+  'Pay Rule Set': 'Mokėjimo taisyklių rinkinys',
+  'Select the pay rule set for this worker': 'Pasirinkite šiam darbuotojui nustatytą mokėjimo taisyklę',
+  'View pay rule set': 'Peržiūrėti mokėjimo taisyklių rinkinį',
+  None: 'Nėra',
+  'Advanced settings': 'Išplėstiniai nustatymai',
+  'Use 1-minute intervals': 'Naudokite 1 minutės intervalus',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Įgalinti 1 minutės tikslumą laiko įvedimui. Numatytieji žingsniai yra 5 arba 15 minučių.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Įjungus 1 minutės intervalus, jų išjungti negalima.',
 };

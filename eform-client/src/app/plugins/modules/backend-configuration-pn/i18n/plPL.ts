@@ -512,4 +512,13 @@ export const plPL = {
   'Assign to worker tags': 'Przypisz do tagów pracownika',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Spowoduje to trwałe usunięcie tablicy i {{count}} jej zdarzeń. Tej czynności nie można cofnąć.',
   'This and following (incl. completed)': 'To i następne (w tym ukończone)',
+  'Payroll rules': 'Zasady dotyczące płac',
+  'Pay Rule Set': 'Zestaw zasad płatności',
+  'Select the pay rule set for this worker': 'Wybierz zestaw zasad płatności dla tego pracownika',
+  'View pay rule set': 'Wyświetl zestaw zasad dotyczących płatności',
+  None: 'Nic',
+  'Advanced settings': 'Ustawienia zaawansowane',
+  'Use 1-minute intervals': 'Używaj interwałów 1-minutowych',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Włącz dokładność wprowadzania czasu co 1 minutę. Domyślne wartości to 5 lub 15 minut.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Po włączeniu nie można wyłączyć interwałów 1-minutowych',
 };

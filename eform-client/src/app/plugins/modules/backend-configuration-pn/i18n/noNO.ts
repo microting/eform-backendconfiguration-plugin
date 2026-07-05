@@ -512,4 +512,13 @@ export const noNO = {
   'Assign to worker tags': 'Tildel til arbeider-tagger',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dette vil slette brettet og dets {{count}} hendelser permanent. Dette kan ikke angres.',
   'This and following (incl. completed)': 'Dette og følgende (inkl. fullført)',
+  'Payroll rules': 'Lønnsregler',
+  'Pay Rule Set': 'Sett med lønnsregler',
+  'Select the pay rule set for this worker': 'Velg lønnsregelsettet for denne arbeideren',
+  'View pay rule set': 'Vis sett med lønnsregler',
+  None: 'Ingen',
+  'Advanced settings': 'Avanserte innstillinger',
+  'Use 1-minute intervals': 'Bruk intervaller på 1 minutt',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktiver 1-minutts granularitet for tidsregistrering. Standardintervaller er 5 eller 15 minutter.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Når intervaller på 1 minutt er aktivert, kan de ikke slås av',
 };

@@ -512,4 +512,13 @@ export const svSE = {
   'Assign to worker tags': 'Tilldela till arbetartaggar',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Detta kommer att permanent radera brädet och dess {{count}} händelser. Detta kan inte ångras.',
   'This and following (incl. completed)': 'Detta och följande (inkl. färdigställda)',
+  'Payroll rules': 'Löneregler',
+  'Pay Rule Set': 'Löneregeluppsättning',
+  'Select the pay rule set for this worker': 'Välj löneregeluppsättningen för den här arbetaren',
+  'View pay rule set': 'Visa uppsättning löneregler',
+  None: 'Ingen',
+  'Advanced settings': 'Avancerade inställningar',
+  'Use 1-minute intervals': 'Använd 1-minutsintervaller',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktivera 1-minuts granularitet för tidsinmatning. Standardintervallen är 5 eller 15 minuter.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'När 1-minutsintervaller är aktiverade kan de inte stängas av',
 };

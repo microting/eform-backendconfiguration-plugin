@@ -563,4 +563,13 @@ export const deDE = {
   'Assign to worker tags': 'Mitarbeiter-Tags zuweisen',
   'This will permanently delete the board and its {{count}} events. This cannot be undone.': 'Dadurch werden das Board und alle darin enthaltenen {{count}} Ereignisse endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
   'This and following (incl. completed)': 'Dies und Folgendes (einschließlich abgeschlossener)',
+  'Payroll rules': 'Lohnabrechnungsregeln',
+  'Pay Rule Set': 'Gehaltsregeln',
+  'Select the pay rule set for this worker': 'Wählen Sie die für diesen Mitarbeiter festgelegte Vergütungsregel aus.',
+  'View pay rule set': 'Gehaltsregelsatz anzeigen',
+  None: 'Keiner',
+  'Advanced settings': 'Erweiterte Einstellungen',
+  'Use 1-minute intervals': 'Verwenden Sie 1-Minuten-Intervalle.',
+  'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktivieren Sie die 1-Minuten-Granularität für die Zeiteingabe. Standardmäßig werden 5 oder 15 Minuten eingestellt.',
+  'Once enabled, 1-minute intervals cannot be turned off': 'Sobald die 1-Minuten-Intervalle aktiviert sind, können sie nicht mehr deaktiviert werden.',
 };

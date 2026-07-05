@@ -11,12 +11,12 @@ import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {AuthStateService} from 'src/app/common/store';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {debounceTime, filter, first, startWith, switchMap, tap} from 'rxjs/operators';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {TimePlanningPnSettingsService} from 'src/app/plugins/modules/time-planning-pn/services';
+import {TimePlanningPnSettingsService, TimePlanningPnPayRuleSetsService} from 'src/app/plugins/modules/time-planning-pn/services';
 import {
   AbstractControl,
   FormBuilder,
@@ -27,9 +27,10 @@ import {
   Validators
 } from '@angular/forms';
 import validator from 'validator';
-import {AssignedSiteModel, GlobalAutoBreakSettingsModel} from 'src/app/plugins/modules/time-planning-pn/models';
+import {AssignedSiteModel, GlobalAutoBreakSettingsModel, PayRuleSetSimpleModel} from 'src/app/plugins/modules/time-planning-pn/models';
 import {Store} from '@ngrx/store';
 import {selectAuthIsAdmin} from 'src/app/state';
+import {PayRuleSetsViewModalComponent} from 'src/app/plugins/modules/time-planning-pn/modules/pay-rule-sets/components/pay-rule-sets-view-modal/pay-rule-sets-view-modal.component';
 
 @AutoUnsubscribe()
 @Component({
@@ -47,6 +48,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   public dialogRef = inject(MatDialogRef<PropertyWorkerCreateEditModalComponent>);
   private appSettingsStateService = inject(AppSettingsStateService);
   private timePlanningPnSettingsService = inject(TimePlanningPnSettingsService);
+  private dialog = inject(MatDialog);
+  private payRuleSetsService = inject(TimePlanningPnPayRuleSetsService);
   private model = inject<{
     deviceUser: DeviceUserModel,
     assignments: PropertyAssignmentWorkerModel[],
@@ -67,6 +70,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   timeRegistrationEnabled: boolean = false;
   availableTags: CommonDictionaryModel[] = [];
   alreadyUsedEmails: string[] = [];
+  availablePayRuleSets: PayRuleSetSimpleModel[] = [];
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
@@ -115,6 +119,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         }
       }
     });
+    // One-way: a saved 1-minute-intervals=true can never be re-enabled for editing
+    if (this.selectedAssignedSite.useOneMinuteIntervals) {
+      this.form.get('useOneMinuteIntervals')?.disable({emitEvent: false});
+    }
   }
 
   get languages() {
@@ -238,7 +246,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       fourthShiftActive: false,
       fifthShiftActive: false,
       isManager: false,
-      managingTagIds: []
+      managingTagIds: [],
+      payRuleSetId: [null as number | null],
+      useOneMinuteIntervals: [false],
     });
 
     // Build autoBreakSettings form group
@@ -258,6 +268,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     // here — the form is fully constructed, so even a synchronously-replayed
     // cached store value inside the tap callback can call `form.patchValue`.
     this.getEnabledLanguages();
+    this.loadPayRuleSets();
 
     // Fetch global auto break calculation settings
     this.timePlanningPnSettingsService.getGlobalAutoBreakCalculationSettings().subscribe(result => {
@@ -286,7 +297,13 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
               fifthShiftActive: this.selectedAssignedSite.fifthShiftActive || false,
               isManager: this.selectedAssignedSite.isManager || false,
               managingTagIds: this.selectedAssignedSite.managingTagIds || [],
+              payRuleSetId: this.selectedAssignedSite.payRuleSetId ?? null,
+              useOneMinuteIntervals: this.selectedAssignedSite.useOneMinuteIntervals || false,
             });
+
+            if (this.selectedAssignedSite.useOneMinuteIntervals) {
+              this.form.get('useOneMinuteIntervals')?.disable({emitEvent: false});
+            }
 
             // Patch auto break settings from assigned site
             const autoBreakFg = this.form.get('autoBreakSettings') as FormGroup;
@@ -619,6 +636,31 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         this.languagesLoaded$.complete();
       }))
       .subscribe();
+  }
+
+  loadPayRuleSets(): void {
+    this.payRuleSetsService.getPayRuleSets({offset: 0, pageSize: 1000}).subscribe({
+      next: (result) => {
+        if (result && result.success) {
+          this.availablePayRuleSets = result.model?.payRuleSets || [];
+        }
+      },
+      error: () => {
+        this.availablePayRuleSets = [];
+      }
+    });
+  }
+
+  openPayRuleSetView(): void {
+    const payRuleSetId = this.form.get('payRuleSetId')?.value;
+    if (!payRuleSetId) {
+      return;
+    }
+    this.dialog.open(PayRuleSetsViewModalComponent, {
+      data: { payRuleSetId },
+      minWidth: 800,
+      maxWidth: 1000,
+    });
   }
 
   generateRandomEmail(): void {
