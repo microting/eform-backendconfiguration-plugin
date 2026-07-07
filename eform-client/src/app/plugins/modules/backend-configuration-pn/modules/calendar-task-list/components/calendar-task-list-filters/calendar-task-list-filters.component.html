@@ -10,7 +10,7 @@
                 [(ngModel)]="filters.eformIds" (ngModelChange)="emit()"></mtx-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-label>{{ 'Board' | translate }}</mat-label>
+    <mat-label>{{ 'Calendar' | translate }}</mat-label>
     <mtx-select [items]="boards" bindValue="id" bindLabel="name" [multiple]="true"
                 [disabled]="filters.propertyIds.length !== 1"
                 [(ngModel)]="filters.boardIds" (ngModelChange)="emit()"></mtx-select>

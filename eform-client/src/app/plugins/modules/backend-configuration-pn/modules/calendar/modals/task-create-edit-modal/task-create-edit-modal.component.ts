@@ -364,9 +364,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.startTimeControl.setValue(this.hourToTimeStr(startHour));
       this.endTimeControl.setValue(this.hourToTimeStr(startHour + 1));
       this.propertyControl.setValue(this.data.propertyId);
-      // Prefer the sidebar-selected board when exactly one is active and it
-      // still exists in the available boards list; otherwise fall back to
-      // the smallest-ID board.
+      // Prefer the sidebar-selected calendar when exactly one is active and
+      // it still exists in the available boards list; otherwise fall back to
+      // the smallest-ID calendar.
       const sidebarSelected = this.data.selectedBoardId != null
         ? this.data.boards.find(b => b.id === this.data.selectedBoardId) ?? null
         : null;
@@ -434,7 +434,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     });
 
-    // When property changes, reload boards, reload filtered employees, clear stale assignee selections
+    // When property changes, reload calendars (boards), reload filtered employees, clear stale assignee selections
     this.propertyControl.valueChanges.subscribe(propertyId => {
       if (propertyId) {
         this.calendarService.getBoards(propertyId).subscribe(res => {

@@ -47,7 +47,7 @@ export class CalendarTaskListFiltersComponent implements OnInit, OnDestroy {
 
   onPropertyChange(ids: number[]) {
     this.filters.propertyIds = ids ?? [];
-    // Board/worker option-lists depend on a single chosen property; clear the
+    // Calendar/worker option-lists depend on a single chosen property; clear the
     // selections that no longer apply when the property set changes.
     if (this.filters.propertyIds.length !== 1) {
       this.filters.boardIds = [];
