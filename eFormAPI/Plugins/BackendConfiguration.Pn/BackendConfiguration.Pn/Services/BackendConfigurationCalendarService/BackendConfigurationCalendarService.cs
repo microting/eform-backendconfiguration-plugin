@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
+using Infrastructure.Helpers;
 using CalendarAssignmentReconciliation;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
@@ -3473,6 +3474,14 @@ public class BackendConfigurationCalendarService(
                     PropertyId = defaultBoard.PropertyId,
                 });
             }
+
+            // Alphabetical in the CALLER'S language — a Danish user must see
+            // æ/ø/å sorted after z (a…zæøå), not interleaved among a/o as the
+            // default comparer does; an English user keeps plain a–z order.
+            // The frontend picks the DEFAULT board by lowest id, not by list
+            // position, so reordering here is display-only.
+            var nameComparer = await UserNameComparerHelper.GetForCurrentUser(userService, logger);
+            boards = boards.OrderBy(x => x.Name, nameComparer).ToList();
 
             return new OperationDataResult<List<CalendarBoardModel>>(true, boards);
         }
