@@ -23,9 +23,10 @@ const boardB = 'B-' + generateRandmString(5);
 // --- helpers --------------------------------------------------------------
 
 async function createBoard(page: import('@playwright/test').Page, name: string) {
-  // The "Create board" sidebar link renders as "Opret tavle" in the Danish e2e
-  // locale (key 'Create board' → da 'Opret tavle'); it's the only board link.
-  await page.locator('a.sidebar-action-link', { hasText: 'Opret tavle' }).click();
+  // The "Create board" sidebar link renders as "Opret kalender" in the Danish
+  // e2e locale (key 'Create board' → da 'Opret kalender' — boards are named
+  // "calendars" in the UI); it's the only board link.
+  await page.locator('a.sidebar-action-link', { hasText: 'Opret kalender' }).click();
   const dialog = page.locator('mat-dialog-container');
   await dialog.locator('input[formcontrolname="name"]').fill(name);
   // The board-create dialog has a single primary button — match by class, not
