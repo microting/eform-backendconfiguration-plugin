@@ -521,4 +521,5 @@ export const svSE = {
   'Use 1-minute intervals': 'Använd 1-minutsintervaller',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktivera 1-minuts granularitet för tidsinmatning. Standardintervallen är 5 eller 15 minuter.',
   'Once enabled, 1-minute intervals cannot be turned off': 'När 1-minutsintervaller är aktiverade kan de inte stängas av',
+  OK: 'OK',
 };

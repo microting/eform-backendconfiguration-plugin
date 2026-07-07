@@ -521,4 +521,5 @@ export const roRO = {
   'Use 1-minute intervals': 'Folosește intervale de 1 minut',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Activați granularitatea de 1 minut pentru introducerea timpului. Incrementele implicite sunt de 5 sau 15 minute.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Odată activate, intervalele de 1 minut nu pot fi dezactivate',
+  OK: 'OK',
 };

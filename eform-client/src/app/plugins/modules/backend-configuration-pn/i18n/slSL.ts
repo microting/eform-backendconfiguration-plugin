@@ -521,4 +521,5 @@ export const slSL = {
   'Use 1-minute intervals': 'Uporabite 1-minutne intervale',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Omogočite 1-minutno natančnost za vnos časa. Privzeti koraki so 5 ali 15 minut.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Ko so omogočeni, 1-minutnih intervalov ni mogoče izklopiti.',
+  OK: 'OK',
 };

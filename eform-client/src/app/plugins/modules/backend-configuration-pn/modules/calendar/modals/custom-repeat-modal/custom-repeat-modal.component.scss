@@ -13,7 +13,9 @@
 .custom-repeat-dialog {
   padding: 0;
   min-width: 320px;
-  max-width: 360px;
+  // Wide enough that the "Til og med" row keeps the radio, label and the
+  // full long-format date field (300px) on one line.
+  max-width: 480px;
 }
 
 .custom-repeat-title {
@@ -49,7 +51,9 @@
   }
 
   .unit-select {
-    width: 120px;
+    // Wide enough for the longest unit label + the select arrow — at 120px
+    // da 'måned' (and e.g. de 'Monat') got ellipsized.
+    width: 160px;
   }
 }
 
@@ -83,6 +87,9 @@
 .weekday-row {
   display: flex;
   align-items: center;
+  // Wrap rather than squeeze: with a long "Repeat on" label (de/da) the row
+  // overflows the dialog and flex-shrink deformed the circles into ovals.
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 20px;
   padding: 4px 0;
@@ -95,6 +102,8 @@
   }
 
   .day-circle {
+    flex: 0 0 32px;
+    box-sizing: border-box;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -133,6 +142,9 @@
   .end-option {
     display: flex;
     align-items: center;
+    // Below the dialog's max width (narrow viewports) the 290px date field
+    // wraps under the radio + label instead of overflowing the row.
+    flex-wrap: wrap;
     min-height: 40px;
     gap: 8px;
 
@@ -156,7 +168,11 @@
     }
 
     .date-input {
-      width: 140px;
+      // Fits the longest full-format until-date ("Onsdag den 23. september
+      // 2026" in da, "Donnerstag, 24. September 2026" in de) plus the
+      // calendar icon suffix — at 140px the value was cut right after the
+      // day number.
+      width: 300px;
     }
   }
 }

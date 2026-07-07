@@ -521,4 +521,5 @@ export const csCZ = {
   'Use 1-minute intervals': 'Používejte minutové intervaly',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Povolte zadávání času s granularitou po 1 minutě. Výchozí přírůstky jsou 5 nebo 15 minut.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Po zapnutí nelze minutové intervaly vypnout.',
+  OK: 'OK',
 };

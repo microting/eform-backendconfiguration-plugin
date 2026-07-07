@@ -521,4 +521,5 @@ export const lvLV = {
   'Use 1-minute intervals': 'Izmantojiet 1 minūtes intervālus',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Iespējot 1 minūtes granularitāti laika ievadei. Noklusējuma intervāli ir 5 vai 15 minūtes.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Kad 1 minūtes intervāli ir iespējoti, tos nevar izslēgt.',
+  OK: 'OK',
 };

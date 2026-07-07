@@ -521,4 +521,5 @@ export const ptBR = {
   'Use 1-minute intervals': 'Use intervalos de 1 minuto.',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Ative a granularidade de 1 minuto para a entrada de tempo. Os incrementos padrão são de 5 ou 15 minutos.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Uma vez ativado, o intervalo de 1 minuto não pode ser desativado.',
+  OK: 'OK',
 };

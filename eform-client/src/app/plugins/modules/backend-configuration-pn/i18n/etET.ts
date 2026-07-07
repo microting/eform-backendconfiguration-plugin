@@ -521,4 +521,5 @@ export const etET = {
   'Use 1-minute intervals': 'Kasutage 1-minutilisi intervalle',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Luba aja sisestamisel 1-minutiline täpsus. Vaikimisi sammud on 5 või 15 minutit.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Kui see on lubatud, ei saa 1-minutilisi intervalle välja lülitada.',
+  OK: 'OK',
 };
