@@ -1,12 +1,12 @@
 <h2 mat-dialog-title>
   <mat-icon style="vertical-align: middle; margin-right: 8px;">dashboard</mat-icon>
-  {{ 'Create board' | translate }}
+  {{ 'Create calendar' | translate }}
 </h2>
 <mat-dialog-content>
   <form [formGroup]="form">
     <label class="field-label">{{ 'Name' | translate }}</label>
     <mat-form-field appearance="outline" style="width: 100%;">
-      <input matInput formControlName="name" [placeholder]="'Enter board name' | translate">
+      <input matInput formControlName="name" [placeholder]="'Enter calendar name' | translate">
     </mat-form-field>
 
     <div class="color-picker-grid">

@@ -62,7 +62,7 @@ export class CalendarTaskListTableComponent {
       field: 'property', header: this.translate.stream('Property'),
       formatter: (t: CalendarTaskModel) => this.propertyName(t.propertyId),
     },
-    {field: 'board', header: this.translate.stream('Board')},
+    {field: 'board', header: this.translate.stream('Calendar')},
     {
       field: 'overskrift', header: this.translate.stream('Report headline'),
       formatter: (t: CalendarTaskModel) => this.planningTagName(t.itemPlanningTagId),

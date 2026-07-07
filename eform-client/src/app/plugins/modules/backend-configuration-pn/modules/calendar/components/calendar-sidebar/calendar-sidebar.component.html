@@ -19,7 +19,7 @@
 
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
-      <mat-panel-title>{{ 'My boards' | translate }}</mat-panel-title>
+      <mat-panel-title>{{ 'My calendars' | translate }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="board-list">
       <div class="board-item" *ngFor="let board of boards">
@@ -32,7 +32,7 @@
         </button>
         <mat-menu #boardMenu="matMenu" class="board-edit-menu">
           <div class="board-edit-popover" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-            <label class="field-label">{{ 'Board name' | translate }}</label>
+            <label class="field-label">{{ 'Calendar name' | translate }}</label>
             <mat-form-field appearance="outline" style="width: 100%;">
               <input matInput [(ngModel)]="editingBoardName" (keydown.enter)="submitEditBoard()">
             </mat-form-field>
@@ -47,7 +47,7 @@
             </div>
             <button mat-menu-item class="btn-delete-menu" (click)="onDeleteBoard(board)">
               <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Delete board' | translate }}</span>
+              <span>{{ 'Delete calendar' | translate }}</span>
             </button>
           </div>
         </mat-menu>
@@ -55,7 +55,7 @@
     </div>
     <a class="sidebar-action-link" (click)="createBoard.emit()">
       <mat-icon class="sidebar-action-icon">add</mat-icon>
-      <span>{{ 'Create board' | translate }}</span>
+      <span>{{ 'Create calendar' | translate }}</span>
     </a>
   </mat-expansion-panel>
 

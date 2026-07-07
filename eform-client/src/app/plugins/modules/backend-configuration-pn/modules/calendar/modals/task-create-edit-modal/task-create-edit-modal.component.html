@@ -428,13 +428,13 @@
           id="calendarEventStatusActive"
           [checked]="statusControl.value"
           (change)="onPickStatusActive()">
-          {{ 'Task visible on board and shown in app' | translate }}
+          {{ 'Task visible on calendar and shown in app' | translate }}
         </mat-slide-toggle>
         <mat-slide-toggle
           id="calendarEventStatusInactive"
           [checked]="!statusControl.value"
           (change)="onPickStatusInactive()">
-          {{ 'Task dimmed on board and not shown in app' | translate }}
+          {{ 'Task dimmed on calendar and not shown in app' | translate }}
         </mat-slide-toggle>
       </div>
     </div>
@@ -458,12 +458,12 @@
       </div>
     </div>
 
-    <!-- Board row -->
+    <!-- Calendar (board) row -->
     <div class="gcal-row" *ngIf="filteredBoards.length > 0">
       <mat-icon class="gcal-icon">calendar_today</mat-icon>
       <div class="gcal-row-content">
         <mat-form-field class="w-100">
-          <mat-label>{{ 'My boards' | translate }}</mat-label>
+          <mat-label>{{ 'My calendars' | translate }}</mat-label>
           <mtx-select
             id="calendarEventBoard"
             [formControl]="boardControl"

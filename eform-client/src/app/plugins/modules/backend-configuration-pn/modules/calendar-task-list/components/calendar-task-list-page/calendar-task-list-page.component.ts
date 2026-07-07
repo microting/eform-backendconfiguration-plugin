@@ -133,7 +133,7 @@ export class CalendarTaskListPageComponent implements OnInit {
     this.loadTasks();
   }
 
-  // Board names/colors are resolved from the property-scoped board list, so they only appear
+  // Calendar names/colors are resolved from the property-scoped board list, so they only appear
   // when a single property is selected (table swatch falls back to task.color).
   onPropertyChanged(propertyId: number | null) {
     this.boards = [];
@@ -186,13 +186,13 @@ export class CalendarTaskListPageComponent implements OnInit {
   }
 
   exportCsv() {
-    const headers = ['Id', 'Property', 'Board', 'Report headline', 'Task name', 'eForm',
+    const headers = ['Id', 'Property', 'Calendar', 'Report headline', 'Task name', 'eForm',
       'Assigned to', 'Tags', 'Start date', 'Repeat', 'Active', 'Compliance']
       .map(h => this.translate.instant(h));
     const rows = this.tasks.map(t => [
       t.id,
       this.properties.find(p => p.id === t.propertyId)?.name ?? '',
-      // Board names only resolve when a single property is selected (boards is property-scoped).
+      // Calendar names only resolve when a single property is selected (boards is property-scoped).
       this.boards.find(b => b.id === t.boardId)?.name ?? '',
       this.tags.find(x => x.id === t.itemPlanningTagId)?.name ?? '',
       t.title ?? '',
