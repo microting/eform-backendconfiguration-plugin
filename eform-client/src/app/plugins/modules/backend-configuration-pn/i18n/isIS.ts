@@ -521,4 +521,5 @@ export const isIS = {
   'Use 1-minute intervals': 'Notið 1 mínútu millibil',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Virkjaðu 1 mínútu nákvæmni fyrir tímaskráningu. Sjálfgefin þrep eru 5 eða 15 mínútur.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Þegar 1 mínútu millibili hefur verið virkjað er ekki hægt að slökkva á því',
+  OK: 'OK',
 };

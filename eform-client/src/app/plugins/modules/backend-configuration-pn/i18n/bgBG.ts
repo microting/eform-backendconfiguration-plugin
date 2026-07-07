@@ -521,4 +521,5 @@ export const bgBG = {
   'Use 1-minute intervals': 'Използвайте интервали от 1 минута',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Активирайте гранулиране от 1 минута за въвеждане на време. Стъпките по подразбиране са 5 или 15 минути.',
   'Once enabled, 1-minute intervals cannot be turned off': 'След като са активирани, интервалите от 1 минута не могат да бъдат изключени',
+  OK: 'OK',
 };

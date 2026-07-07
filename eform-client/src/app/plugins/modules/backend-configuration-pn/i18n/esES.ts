@@ -521,4 +521,5 @@ export const esES = {
   'Use 1-minute intervals': 'Utilice intervalos de 1 minuto.',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Habilite la granularidad de 1 minuto para el registro de tiempo. Los incrementos predeterminados son de 5 o 15 minutos.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Una vez activados, los intervalos de 1 minuto no se pueden desactivar.',
+  OK: 'OK',
 };

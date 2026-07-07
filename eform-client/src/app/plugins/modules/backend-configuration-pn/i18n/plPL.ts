@@ -521,4 +521,5 @@ export const plPL = {
   'Use 1-minute intervals': 'Używaj interwałów 1-minutowych',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Włącz dokładność wprowadzania czasu co 1 minutę. Domyślne wartości to 5 lub 15 minut.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Po włączeniu nie można wyłączyć interwałów 1-minutowych',
+  OK: 'OK',
 };

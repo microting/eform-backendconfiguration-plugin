@@ -572,4 +572,5 @@ export const deDE = {
   'Use 1-minute intervals': 'Verwenden Sie 1-Minuten-Intervalle.',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Aktivieren Sie die 1-Minuten-Granularität für die Zeiteingabe. Standardmäßig werden 5 oder 15 Minuten eingestellt.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Sobald die 1-Minuten-Intervalle aktiviert sind, können sie nicht mehr deaktiviert werden.',
+  OK: 'OK',
 };

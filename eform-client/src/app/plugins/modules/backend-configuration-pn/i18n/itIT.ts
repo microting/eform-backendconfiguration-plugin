@@ -521,4 +521,5 @@ export const itIT = {
   'Use 1-minute intervals': 'Utilizzare intervalli di 1 minuto',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Abilita la granularità di 1 minuto per l&#39;inserimento dell&#39;ora. Gli incrementi predefiniti sono 5 o 15 minuti.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Una volta attivati, gli intervalli di 1 minuto non possono essere disattivati.',
+  OK: 'OK',
 };

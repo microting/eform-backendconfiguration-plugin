@@ -521,4 +521,5 @@ export const ukUA = {
   'Use 1-minute intervals': 'Використовуйте інтервали в 1 хвилину',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Увімкнути точність введення часу з кроком 1 хвилина. Крок за замовчуванням становить 5 або 15 хвилин.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Після ввімкнення інтервали в 1 хвилину не можна вимкнути',
+  OK: 'OK',
 };

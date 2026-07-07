@@ -521,4 +521,5 @@ export const ltLT = {
   'Use 1-minute intervals': 'Naudokite 1 minutės intervalus',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Įgalinti 1 minutės tikslumą laiko įvedimui. Numatytieji žingsniai yra 5 arba 15 minučių.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Įjungus 1 minutės intervalus, jų išjungti negalima.',
+  OK: 'OK',
 };

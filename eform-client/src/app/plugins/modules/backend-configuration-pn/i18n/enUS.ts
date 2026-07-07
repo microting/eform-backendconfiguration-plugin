@@ -450,6 +450,7 @@ export const enUS= {
   'After': 'After',
   'occurrences': 'occurrences',
   'Done': 'Done',
+  'OK': 'OK',
   'Could not save the event': 'Could not save the event',
   'Could not create report headline': 'Could not create report headline',
   'Create new': 'Create new',

@@ -59,14 +59,18 @@ export class CustomRepeatModalComponent implements OnInit {
       {value: 'month', label: this.translate.instant('month')},
       {value: 'year', label: this.translate.instant('year')},
     ];
+    // Uppercase the initial — several locales translate the short weekday
+    // names in lowercase (da: 'man' → 'm'), and the circles must read
+    // "M T O T F L S", not "m T O T F L S".
+    const dayInitial = (key: string) => this.translate.instant(key).charAt(0).toUpperCase();
     this.weekdays = [
-      {label: this.translate.instant('Mon').charAt(0), value: 1, active: false},
-      {label: this.translate.instant('Tue').charAt(0), value: 2, active: false},
-      {label: this.translate.instant('Wed').charAt(0), value: 3, active: false},
-      {label: this.translate.instant('Thu').charAt(0), value: 4, active: false},
-      {label: this.translate.instant('Fri').charAt(0), value: 5, active: false},
-      {label: this.translate.instant('Sat').charAt(0), value: 6, active: false},
-      {label: this.translate.instant('Sun').charAt(0), value: 0, active: false},
+      {label: dayInitial('Mon'), value: 1, active: false},
+      {label: dayInitial('Tue'), value: 2, active: false},
+      {label: dayInitial('Wed'), value: 3, active: false},
+      {label: dayInitial('Thu'), value: 4, active: false},
+      {label: dayInitial('Fri'), value: 5, active: false},
+      {label: dayInitial('Sat'), value: 6, active: false},
+      {label: dayInitial('Sun'), value: 0, active: false},
     ];
 
     this.monthlyKindOptions = [
@@ -182,7 +186,8 @@ export class CustomRepeatModalComponent implements OnInit {
 
   get formattedUntilDate(): string {
     if (!this.untilDateObj) return '';
-    const formatted = this.untilDateObj.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'});
+    const formatted = this.untilDateObj.toLocaleDateString(getCurrentLocale(this.translate),
+      {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 

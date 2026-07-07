@@ -521,4 +521,5 @@ export const nlNL = {
   'Use 1-minute intervals': 'Gebruik intervallen van 1 minuut.',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Schakel de mogelijkheid in om tijdsintervallen van 1 minuut in te voeren. De standaardintervallen zijn 5 of 15 minuten.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Eenmaal ingeschakeld, kunnen intervallen van 1 minuut niet meer worden uitgeschakeld.',
+  OK: 'OK',
 };

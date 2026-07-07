@@ -521,4 +521,5 @@ export const skSK = {
   'Use 1-minute intervals': 'Používajte 1-minútové intervaly',
   'Enable 1-minute granularity for time entry. Default increments are 5 or 15 minutes.': 'Povoľte 1-minútovú granularitu pre zadávanie času. Predvolené prírastky sú 5 alebo 15 minút.',
   'Once enabled, 1-minute intervals cannot be turned off': 'Po zapnutí nie je možné minútové intervaly vypnúť.',
+  OK: 'OK',
 };
