@@ -492,13 +492,17 @@ public class BackendConfigurationPropertiesService(
                     x.CHR,
                     x.Name
                 }).ToListAsync().ConfigureAwait(false);
+            // Alphabetical in the CALLER'S language — a Danish user must see
+            // æ/ø/å sorted after z (a…zæøå), not interleaved among a/o as the
+            // default comparer does; an English user keeps plain a–z order.
+            var nameComparer = await UserNameComparerHelper.GetForCurrentUser(userService, logger);
             var result = properties
                 .Select(x => new CommonDictionaryModel
                 {
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).OrderBy(x => x.Name).ToList();
+                }).OrderBy(x => x.Name, nameComparer).ToList();
             return new OperationDataResult<List<CommonDictionaryModel>>(true, result);
         }
         catch (Exception ex)
