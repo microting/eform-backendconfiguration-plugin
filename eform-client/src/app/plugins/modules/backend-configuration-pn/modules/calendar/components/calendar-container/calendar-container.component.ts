@@ -16,6 +16,7 @@ import {
   CalendarTaskModel,
   CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
+import {CalendarComplianceReportRowModel} from '../../../../models';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
@@ -34,6 +35,7 @@ import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/c
 import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
+import {CalendarComplianceViewComponent} from '../calendar-compliance-view/calendar-compliance-view.component';
 
 @Component({
   standalone: false,
@@ -43,6 +45,7 @@ import {RepeatEditScope} from '../../../../models/calendar';
 })
 export class CalendarContainerComponent implements OnInit, OnDestroy {
   @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
+  @ViewChild('complianceView') complianceView?: CalendarComplianceViewComponent;
   private destroy$ = new Subject<void>();
   private createOverlayRef: OverlayRef | null = null;
   private previewOverlayRef: OverlayRef | null = null;
@@ -70,7 +73,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
-  viewMode: 'week' | 'day' | 'schedule' = 'week';
+  viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
   activeBoardIds: number[] = [];
   // The calendar (board) the user most recently turned ON in the sidebar.
   // Transient (in-memory only) — used to default the create-task modal to
@@ -257,6 +260,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   loadTasks() {
+    if (this.viewMode === 'compliance') { return; }
     if (!this.currentPropertyId) return;
 
     const monday = this.getMondayOfWeek(new Date(this.currentDate));
@@ -454,7 +458,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onViewModeChange(viewMode: 'week' | 'day' | 'schedule') {
+  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'compliance') {
     // Switching out of week view: snap currentDate to Monday of the
     // currently-viewed week so day-view lands on the first day of that
     // week and schedule-view shows that same week — preserving the
@@ -612,8 +616,26 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // Always reload — even on cancel — so any partial state (the
       // freshly-materialised Compliance row, route timing, etc.) re-renders
       // from the canonical server view.
-      this.loadTasks();
+      this.reloadAfterCompletion();
     });
+  }
+
+  onComplianceRowCompleteRequested(row: CalendarComplianceReportRowModel) {
+    this.onToggleCompleteRequested({
+      id: row.areaRulePlanningId ?? 0,
+      completed: false,
+      complianceId: row.complianceId,
+      taskDate: row.taskDate,
+      propertyId: row.propertyId,
+    } as CalendarTaskLayoutModel);
+  }
+
+  private reloadAfterCompletion() {
+    if (this.viewMode === 'compliance') {
+      this.complianceView?.refresh();
+      return;
+    }
+    this.loadTasks();
   }
 
   async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
@@ -659,7 +681,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           this.onCompleteRequiresForm(res.model);
           return;
         }
-        this.loadTasks();
+        this.reloadAfterCompletion();
       });
   }
 

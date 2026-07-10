@@ -1,5 +1,6 @@
-<div class="calendar-shell" [class.sidebar-closed]="!sidebarOpen">
+<div class="calendar-shell" [class.sidebar-closed]="!sidebarOpen || viewMode === 'compliance'">
   <app-calendar-sidebar
+    *ngIf="viewMode !== 'compliance'"
     [properties]="properties"
     [boards]="boards"
     [teams]="teams"
@@ -83,6 +84,17 @@
         (tasksReload)="loadTasks()"
         (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-schedule-view>
+
+      <app-calendar-compliance-view
+        *ngSwitchCase="'compliance'"
+        #complianceView
+        [properties]="properties"
+        [boards]="boards"
+        [tags]="tags"
+        [employees]="employees"
+        [currentPropertyId]="currentPropertyId"
+        (completeRequested)="onComplianceRowCompleteRequested($event)"
+      ></app-calendar-compliance-view>
     </ng-container>
   </div>
 </div>

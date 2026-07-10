@@ -36,7 +36,7 @@ export class CalendarStateService {
     this.dispatch({propertyId, activeBoardIds: [], activeSiteIds: [], activeTeamIds: [], activeTagNames: []});
   }
 
-  updateViewMode(viewMode: 'week' | 'day' | 'schedule') {
+  updateViewMode(viewMode: 'week' | 'day' | 'schedule' | 'compliance') {
     this.dispatch({viewMode});
   }
 

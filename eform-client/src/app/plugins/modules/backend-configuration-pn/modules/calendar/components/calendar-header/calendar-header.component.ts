@@ -10,7 +10,7 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 })
 export class CalendarHeaderComponent implements OnInit {
   @Input() currentDate: string = '';
-  @Input() viewMode: 'week' | 'day' | 'schedule' = 'week';
+  @Input() viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
   @Input() sidebarOpen = true;
   @Input() propertyName: string = '';
 
@@ -18,7 +18,7 @@ export class CalendarHeaderComponent implements OnInit {
 
   @Output() navigate = new EventEmitter<-1 | 1>();
   @Output() goToToday = new EventEmitter<void>();
-  @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule'>();
+  @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule' | 'compliance'>();
   @Output() toggleSidebar = new EventEmitter<void>();
   @Output() propertyPillClicked = new EventEmitter<void>();
 
@@ -29,6 +29,7 @@ export class CalendarHeaderComponent implements OnInit {
       {value: 'day', label: this.translate.instant('Day')},
       {value: 'week', label: this.translate.instant('Week')},
       {value: 'schedule', label: this.translate.instant('List')},
+      {value: 'compliance', label: this.translate.instant('Compliance')},
     ];
   }
 

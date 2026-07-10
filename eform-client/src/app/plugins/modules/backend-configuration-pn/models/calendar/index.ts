@@ -3,3 +3,4 @@ export * from './calendar-board.model';
 export * from './repeat-rule.model';
 export * from './calendar-task-request.model';
 export * from './google-drive-status.model';
+export * from './calendar-compliance-report.model';
