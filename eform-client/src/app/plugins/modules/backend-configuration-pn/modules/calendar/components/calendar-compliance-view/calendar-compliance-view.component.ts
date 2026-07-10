@@ -106,22 +106,38 @@ export class CalendarComplianceViewComponent implements OnInit {
       case 'ytd': return new Date(today.getFullYear(), 0, 1);
       case 'custom': return this.customFrom ?? today;
       default: {
-        const d = new Date(today);
         const months = parseInt(this.periodPreset, 10);
-        const targetMonthIndex = d.getMonth() - months;
-        d.setMonth(targetMonthIndex);
-        // setMonth overflows at month ends (May 31 − 3 → Mar 3); clamp back
-        // to the last day of the intended month.
-        if (d.getMonth() !== ((targetMonthIndex % 12) + 12) % 12) {
-          d.setDate(0);
-        }
-        return d;
+        return this.addClampedMonths(today, -months);
       }
     }
   }
 
   get dateTo(): Date {
-    return this.periodPreset === 'custom' && this.customTo ? this.customTo : new Date();
+    const today = new Date();
+    switch (this.periodPreset) {
+      case 'custom': return this.customTo ?? today;
+      case 'ytd':
+        // Open/all tasks can have future deadlines; only "done" stays
+        // retrospective (bounded by today).
+        return this.filterStatus === 'done' ? today : new Date(today.getFullYear(), 11, 31);
+      default: {
+        if (this.filterStatus === 'done') { return today; }
+        const months = parseInt(this.periodPreset, 10);
+        return this.addClampedMonths(today, months);
+      }
+    }
+  }
+
+  // setMonth overflows at month ends (May 31 + 3 → Sep 1); clamp back to the
+  // last day of the intended month. `months` may be negative.
+  private addClampedMonths(date: Date, months: number): Date {
+    const d = new Date(date);
+    const targetMonthIndex = d.getMonth() + months;
+    d.setMonth(targetMonthIndex);
+    if (d.getMonth() !== ((targetMonthIndex % 12) + 12) % 12) {
+      d.setDate(0);
+    }
+    return d;
   }
 
   get periodDisplay(): string {

@@ -32,10 +32,11 @@ import {
  * materialised Compliance row in the OPEN (not completed) state, which is
  * exactly the fixture this suite needs.
  *
- * The Compliance report's built-in period presets (1/3/6/12 months, YTD) are
- * all backward-looking from today (dateTo is hard-clamped to `new Date()` —
- * calendar-compliance-view.component.ts `get dateTo()`), so they can never
- * include a task dated next week. Every report-fetching test here uses the
+ * The Compliance report's built-in period presets are backward-looking from
+ * today only for the "done" status; for open/all statuses they span
+ * symmetrically into the future (calendar-compliance-view.component.ts
+ * `get dateTo()`). These tests predate that and need a deterministic window
+ * anyway, so every report-fetching test here uses the
  * "Set period" (custom) preset with an explicit range spanning
  * [today-2, nextMonday+8] (the whole retry week, see selectCompliancePeriodCustom)
  * instead.
