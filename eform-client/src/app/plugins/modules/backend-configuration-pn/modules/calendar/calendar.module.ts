@@ -38,6 +38,7 @@ import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete
 
 import {CalendarRouting} from './calendar.routing';
 import {
+  CalendarComplianceViewComponent,
   CalendarContainerComponent,
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
@@ -83,6 +84,7 @@ export {
     CalendarTaskBlockComponent,
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
+    CalendarComplianceViewComponent,
     // Modals
     TaskCreateEditModalComponent,
     TaskPreviewModalComponent,

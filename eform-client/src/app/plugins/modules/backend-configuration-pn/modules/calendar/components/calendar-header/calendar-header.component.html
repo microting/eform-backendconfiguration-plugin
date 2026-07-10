@@ -1,11 +1,13 @@
 <div class="calendar-header">
-  <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    (click)="toggleSidebar.emit()"
-    [matTooltip]="sidebarOpen ? ('Close sidebar' | translate) : ('Open sidebar' | translate)"
-  >
-    <mat-icon>menu</mat-icon>
-  </button>
+  <ng-container *ngIf="viewMode !== 'compliance'">
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      (click)="toggleSidebar.emit()"
+      [matTooltip]="sidebarOpen ? ('Close sidebar' | translate) : ('Open sidebar' | translate)"
+    >
+      <mat-icon>menu</mat-icon>
+    </button>
+  </ng-container>
 
   <button
     type="button"
@@ -17,31 +19,37 @@
     {{ propertyName }}
   </button>
 
-  <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    (click)="goToToday.emit()"
-    [matTooltip]="'Today' | translate"
-  >
-    {{ 'Today' | translate }}
-  </button>
+  <ng-container *ngIf="viewMode !== 'compliance'">
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      (click)="goToToday.emit()"
+      [matTooltip]="'Today' | translate"
+    >
+      {{ 'Today' | translate }}
+    </button>
+  </ng-container>
 
-  <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    (click)="navigate.emit(-1)"
-    [matTooltip]="prevTooltipKey | translate"
-  >
-    <mat-icon color="primary">chevron_left</mat-icon>
-  </button>
-  <button
-    class="btn-secondary btn-secondary--icon-rounded-border"
-    (click)="navigate.emit(1)"
-    [matTooltip]="nextTooltipKey | translate"
-  >
-    <mat-icon color="primary">chevron_right</mat-icon>
-  </button>
+  <ng-container *ngIf="viewMode !== 'compliance'">
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      (click)="navigate.emit(-1)"
+      [matTooltip]="prevTooltipKey | translate"
+    >
+      <mat-icon color="primary">chevron_left</mat-icon>
+    </button>
+    <button
+      class="btn-secondary btn-secondary--icon-rounded-border"
+      (click)="navigate.emit(1)"
+      [matTooltip]="nextTooltipKey | translate"
+    >
+      <mat-icon color="primary">chevron_right</mat-icon>
+    </button>
+  </ng-container>
 
-  <span class="date-range">{{ displayDate }}</span>
-  <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
+  <ng-container *ngIf="viewMode !== 'compliance'">
+    <span class="date-range">{{ displayDate }}</span>
+    <span class="week-badge" *ngIf="viewMode === 'week' && weekBadge">{{ weekBadge }}</span>
+  </ng-container>
 
   <span class="spacer"></span>
 

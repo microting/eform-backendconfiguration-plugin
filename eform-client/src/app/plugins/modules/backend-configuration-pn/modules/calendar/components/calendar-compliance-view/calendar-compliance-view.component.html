@@ -1,0 +1,189 @@
+<div class="compliance-view">
+  <div class="compliance-filters">
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="properties"
+          bindValue="id"
+          bindLabel="name"
+          [ngModel]="filterPropertyId"
+          (ngModelChange)="onPropertyFilterChanged($event)"
+          [clearable]="true"
+          [placeholder]="'All properties' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="boards"
+          bindValue="id"
+          bindLabel="name"
+          [(ngModel)]="filterBoardId"
+          [clearable]="true"
+          [placeholder]="'All calendars' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="tags"
+          bindValue="id"
+          bindLabel="name"
+          [(ngModel)]="filterTagId"
+          [clearable]="true"
+          [placeholder]="'All tags' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="statusOptions"
+          bindValue="value"
+          bindLabel="label"
+          [(ngModel)]="filterStatus"
+          [clearable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="employees"
+          bindValue="id"
+          bindLabel="name"
+          [(ngModel)]="filterSiteId"
+          [clearable]="true"
+          [placeholder]="'All employees' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="periodOptions"
+          bindValue="value"
+          bindLabel="label"
+          [(ngModel)]="periodPreset"
+          [clearable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <mat-form-field *ngIf="periodPreset === 'custom'" class="compliance-custom-range">
+      <mat-date-range-input [rangePicker]="rangePicker">
+        <input matStartDate [(ngModel)]="customFrom" />
+        <input matEndDate [(ngModel)]="customTo" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="rangePicker"></mat-datepicker-toggle>
+      <mat-date-range-picker #rangePicker></mat-date-range-picker>
+    </mat-form-field>
+    <span class="compliance-period-display">{{ periodDisplay }}</span>
+
+    <button
+      mat-stroked-button
+      color="primary"
+      class="compliance-show-report-btn"
+      [disabled]="!canShowReport || loading"
+      (click)="showReport()"
+    >
+      {{ 'Show report' | translate }}
+    </button>
+    <div class="text-field--rounded">
+      <mat-form-field>
+        <mtx-select
+          [items]="exportOptions"
+          bindValue="value"
+          bindLabel="label"
+          [(ngModel)]="exportFormat"
+          [clearable]="false"
+          [placeholder]="'Download as' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+    <button mat-flat-button [disabled]="!canDownload" (click)="download()">
+      {{ 'Download' | translate }}
+    </button>
+  </div>
+
+  <section class="compliance-cases">
+    <div *ngIf="!hasFetched" class="compliance-placeholder">
+      {{ 'Select filters and click Show report' | translate }}
+    </div>
+    <div *ngIf="hasFetched && totalRows === 0" class="compliance-placeholder">
+      {{ 'No tasks in the selected period' | translate }}
+    </div>
+
+    <div *ngFor="let group of visibleGroups; trackBy: trackByGroup" class="compliance-week-group">
+      <div class="compliance-week-header">{{ group.label }}</div>
+      <div
+        *ngFor="let row of group.rows; trackBy: trackByRow"
+        class="compliance-row"
+        [class.compliance-row--done]="row.completed"
+        [class.compliance-row--clickable]="isRowCompletable(row)"
+        (click)="onRowClicked(row)"
+      >
+        <span class="compliance-cell-date">{{ formatDayLabel(row.taskDate) }}</span>
+        <span class="compliance-cell-board">{{ row.boardName }}</span>
+        <mat-icon class="compliance-status-icon" [class.done]="row.completed">
+          {{ row.completed ? 'check_circle' : 'radio_button_unchecked' }}
+        </mat-icon>
+        <span class="compliance-cell-time" *ngIf="!row.isAllDay">
+          {{ 'At' | translate }} {{ formatTimeRange(row) }}
+        </span>
+        <span class="compliance-cell-title">{{ row.title }}</span>
+        <span class="compliance-cell-property">{{ row.propertyName }}</span>
+        <span class="compliance-chip compliance-chip--worker" *ngIf="row.workerNames.length > 0">
+          {{ row.workerNames[0] }}<ng-container *ngIf="row.workerNames.length > 1"> +{{ row.workerNames.length - 1 }}</ng-container>
+        </span>
+        <span class="compliance-chip" *ngFor="let tag of row.tags">{{ tag }}</span>
+        <span class="compliance-row-spacer"></span>
+        <button
+          *ngIf="!row.completed"
+          mat-icon-button
+          class="compliance-delete-btn"
+          [matTooltip]="'Delete log' | translate"
+          (click)="openDeleteConfirm(row, $event)"
+        >
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <nav class="compliance-pagination" *ngIf="hasFetched && totalRows > 0">
+    <button mat-stroked-button [disabled]="showAll || pageIndex === 0" (click)="prevPage()">
+      {{ 'Previous' | translate }}
+    </button>
+    <ng-container *ngFor="let p of pageNumbers">
+      <span *ngIf="p === 'gap'" class="compliance-page-gap">&hellip;</span>
+      <button
+        *ngIf="p !== 'gap'"
+        mat-stroked-button
+        [color]="!showAll && p === pageIndex ? 'primary' : undefined"
+        (click)="goToPage(p)"
+      >
+        {{ p + 1 }}
+      </button>
+    </ng-container>
+    <button mat-stroked-button [disabled]="showAll || pageIndex >= totalPages - 1" (click)="nextPage()">
+      {{ 'Next' | translate }}
+    </button>
+    <button mat-stroked-button [disabled]="showAll" (click)="toggleShowAll()">
+      {{ 'Show all' | translate }}
+    </button>
+    <span class="compliance-showing">
+      {{ 'Showing' | translate }} {{ showingFrom }}–{{ showingTo }} {{ 'of' | translate }} {{ totalRows }}
+    </span>
+  </nav>
+</div>
+
+<ng-template #deleteConfirmTpl>
+  <h3 mat-dialog-title>{{ 'Delete log' | translate }}</h3>
+  <mat-dialog-content>{{ 'This action cannot be undone' | translate }}</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
+    <button mat-flat-button color="warn" (click)="confirmDelete()">{{ 'Delete' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

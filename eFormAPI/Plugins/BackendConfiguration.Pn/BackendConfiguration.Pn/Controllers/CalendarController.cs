@@ -37,6 +37,13 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.Index(requestModel);
     }
 
+    [HttpPost("compliance-report")]
+    public async Task<OperationDataResult<List<CalendarComplianceReportRowModel>>> GetComplianceReport(
+        [FromBody] CalendarComplianceReportRequestModel requestModel)
+    {
+        return await _backendConfigurationCalendarService.GetComplianceReport(requestModel);
+    }
+
     [HttpPost("tasks")]
     public async Task<OperationDataResult<int>> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
     {
