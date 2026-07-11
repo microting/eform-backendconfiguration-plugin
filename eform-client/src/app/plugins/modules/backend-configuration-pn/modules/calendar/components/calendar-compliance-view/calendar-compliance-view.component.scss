@@ -4,7 +4,11 @@
   gap: 12px;
   padding: 12px 16px;
   overflow-y: auto;
-  height: 100%;
+  // Bounded by the flex host (see app-calendar-compliance-view rule in
+  // calendar-container.component.scss); min-height: 0 is what actually
+  // allows this flex child to shrink below content height and scroll.
+  flex: 1;
+  min-height: 0;
 }
 
 .compliance-filters {
