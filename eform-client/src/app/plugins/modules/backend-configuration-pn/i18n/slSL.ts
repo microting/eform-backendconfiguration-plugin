@@ -547,4 +547,5 @@ export const slSL = {
   Employees: 'Zaposleni',
   At: 'Ob',
   'Time of day': 'Čas dneva',
+  'Done date': 'Datum zaključka',
 };

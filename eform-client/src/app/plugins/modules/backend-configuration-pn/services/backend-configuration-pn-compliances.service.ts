@@ -8,6 +8,7 @@ export let BackendConfigurationPnCompliancesMethods = {
   Compliances: 'api/backend-configuration-pn/compliances/index',
   ComplianceStatus: 'api/backend-configuration-pn/compliances/compliance',
   GetCases: 'api/backend-configuration-pn/compliances/cases',
+  UpdateCaseFromCalendar: 'api/backend-configuration-pn/compliances/cases/calendar',
   DeleteCompliance: 'api/backend-configuration-pn/compliances/delete',
 };
 
@@ -50,6 +51,16 @@ export class BackendConfigurationPnCompliancesService {
   ): Observable<OperationResult> {
     return this.apiBaseService.put<ReplyRequest>(
       BackendConfigurationPnCompliancesMethods.GetCases,
+      model
+    );
+  }
+
+  updateCaseFromCalendar(
+    model: ReplyRequest,
+    templateId: number
+  ): Observable<OperationResult> {
+    return this.apiBaseService.put<ReplyRequest>(
+      BackendConfigurationPnCompliancesMethods.UpdateCaseFromCalendar,
       model
     );
   }

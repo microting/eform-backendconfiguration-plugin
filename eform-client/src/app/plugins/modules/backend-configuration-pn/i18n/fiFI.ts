@@ -547,4 +547,5 @@ export const fiFI = {
   Employees: 'Työntekijät',
   At: 'Klo',
   'Time of day': 'Kellonaika',
+  'Done date': 'Valmistumispäivämäärä',
 };

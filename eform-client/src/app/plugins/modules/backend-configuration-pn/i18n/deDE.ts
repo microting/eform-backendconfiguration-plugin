@@ -596,4 +596,5 @@ export const deDE = {
   Employees: 'Mitarbeiter',
   At: 'Bei',
   'Time of day': 'Uhrzeit',
+  'Done date': 'Fertigstellungsdatum',
 };

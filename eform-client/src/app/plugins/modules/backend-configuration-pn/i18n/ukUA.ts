@@ -547,4 +547,5 @@ export const ukUA = {
   Employees: 'Співробітники',
   At: 'О',
   'Time of day': 'Час доби',
+  'Done date': 'Дата виконання',
 };

@@ -547,4 +547,5 @@ export const noNO = {
   Employees: 'Ansatte',
   At: 'På',
   'Time of day': 'Tid på dagen',
+  'Done date': 'Ferdigdato',
 };

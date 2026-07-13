@@ -547,4 +547,5 @@ export const nlNL = {
   Employees: 'Medewerkers',
   At: 'Bij',
   'Time of day': 'Tijdstip van de dag',
+  'Done date': 'Voltooiingsdatum',
 };

@@ -547,4 +547,5 @@ export const elGR = {
   Employees: 'Υπάλληλοι',
   At: 'Στο',
   'Time of day': 'Ώρα της ημέρας',
+  'Done date': 'Ημερομηνία ολοκλήρωσης',
 };

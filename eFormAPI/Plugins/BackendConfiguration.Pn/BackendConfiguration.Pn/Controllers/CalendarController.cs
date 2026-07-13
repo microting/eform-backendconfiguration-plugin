@@ -111,6 +111,14 @@ public class CalendarController : Controller
             id, model.Completed, model.ComplianceId, model.OccurrenceDate, model.WorkerId);
     }
 
+    [HttpPost("tasks/{id:int}/prepare-complete")]
+    public async Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
+        int id, [FromBody] CalendarPrepareCompleteModel model)
+    {
+        return await _backendConfigurationCalendarService.PrepareComplete(
+            id, model.ComplianceId, model.OccurrenceDate);
+    }
+
     [HttpPost("tasks/{id:int}/files")]
     [RequestSizeLimit(26_214_400)]
     public async Task<OperationDataResult<CalendarTaskAttachmentDto>> UploadFile(int id, IFormFile file)

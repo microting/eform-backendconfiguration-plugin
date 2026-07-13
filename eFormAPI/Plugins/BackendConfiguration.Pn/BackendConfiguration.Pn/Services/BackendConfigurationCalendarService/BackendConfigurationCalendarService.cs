@@ -3379,6 +3379,147 @@ public class BackendConfigurationCalendarService(
     }
 
     /// <summary>
+    /// Materialises/resolves the occurrence the combined complete modal is about
+    /// to fill, WITHOUT completing anything and WITHOUT a worker (the worker is
+    /// committed on save via PUT compliances/cases). Deliberately duplicates
+    /// <see cref="ToggleComplete"/>'s resolution steps rather than refactoring
+    /// them out — <see cref="ToggleComplete"/> backs mobile/gRPC and must stay
+    /// byte-identical.
+    /// </summary>
+    public async Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
+        int id, int? complianceId, string occurrenceDate)
+    {
+        try
+        {
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Include(x => x.AreaRule)
+                .Include(x => x.PlanningSites)
+                .Where(x => x.Id == id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (arp == null)
+            {
+                return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                    localizationService.GetString("AreaRulePlanningNotFound"));
+            }
+
+            Compliance? compliance = null;
+            if (complianceId is > 0)
+            {
+                compliance = await backendConfigurationPnDbContext.Compliances
+                    .Where(c => c.Id == complianceId.Value
+                             && c.PlanningId == arp.ItemPlanningId
+                             && c.WorkflowState != Constants.WorkflowStates.Removed
+                             && c.MicrotingSdkCaseId > 0)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (compliance == null)
+            {
+                if (arp.AreaRule == null
+                    || arp.AreaRule.EformId == null
+                    || arp.AreaRule.EformId == 0)
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                var planningSite = arp.PlanningSites?.FirstOrDefault(s =>
+                    s.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planningSite == null)
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("NoAssignedWorker"));
+                }
+                var targetSiteId = planningSite.SiteId;
+
+                if (string.IsNullOrWhiteSpace(occurrenceDate))
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                if (!DateTime.TryParseExact(occurrenceDate, "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+                var deadline = parsedDate.Date;
+
+                var ensure = await eventDeployService
+                    .EnsureComplianceForOccurrenceAsync(arp, deadline, targetSiteId)
+                    .ConfigureAwait(false);
+                if (ensure == null || ensure.ComplianceId <= 0)
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+
+                compliance = await backendConfigurationPnDbContext.Compliances
+                    .FirstOrDefaultAsync(c => c.Id == ensure.ComplianceId
+                                           && c.WorkflowState != Constants.WorkflowStates.Removed
+                                           && c.MicrotingSdkCaseId > 0);
+
+                if (compliance == null)
+                {
+                    return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                        localizationService.GetString("TaskHasNoComplianceCase"));
+                }
+            }
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+
+            var sdkCase = await sdkDbContext.Cases
+                .FirstOrDefaultAsync(c => c.Id == compliance.MicrotingSdkCaseId);
+
+            if (sdkCase == null || sdkCase.CheckListId == null)
+            {
+                return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                    localizationService.GetString("SdkCaseNotFound"));
+            }
+
+            // Canonical event start — same triple as ToggleComplete (~line 3237).
+            var calConfig = await backendConfigurationPnDbContext.CalendarConfigurations
+                .Where(x => x.AreaRulePlanningId == arp.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+            var complianceException = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+                .Where(x => x.AreaRulePlanningId == arp.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.OriginalDate.Date == compliance.Deadline.Date)
+                .FirstOrDefaultAsync();
+            var effectiveStartHour = complianceException?.StartHour ?? calConfig?.StartHour ?? 9.0;
+            var startHourWhole = (int)Math.Floor(effectiveStartHour);
+            var startMinuteWhole = (int)Math.Round((effectiveStartHour - startHourWhole) * 60);
+            var deadlineDayUtc = DateTime.SpecifyKind(compliance.Deadline.Date, DateTimeKind.Utc);
+            var eventStart = deadlineDayUtc.AddHours(startHourWhole).AddMinutes(startMinuteWhole);
+
+            return new OperationDataResult<CalendarPrepareCompleteResult>(true,
+                new CalendarPrepareCompleteResult
+                {
+                    SdkCaseId = sdkCase.Id,
+                    TemplateId = sdkCase.CheckListId,
+                    PropertyId = compliance.PropertyId,
+                    ComplianceId = compliance.Id,
+                    AssignedSiteId = sdkCase.SiteId,
+                    Deadline = DateTime.SpecifyKind(compliance.Deadline, DateTimeKind.Utc)
+                        .ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
+                    EventStart = eventStart.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture)
+                });
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationCalendarService.PrepareComplete: {Message}", e.Message);
+            return new OperationDataResult<CalendarPrepareCompleteResult>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
+    }
+
+    /// <summary>
     /// Returns true iff the eForm template referenced by <paramref name="checkListId"/>
     /// contains at least one mandatory <see cref="Field"/>. Recurses through
     /// <see cref="FieldContainer"/> so grouped/container-nested fields are inspected too.

@@ -547,4 +547,5 @@ export const plPL = {
   Employees: 'Pracownicy',
   At: 'Na ',
   'Time of day': 'Pora dnia',
+  'Done date': 'Data wykonania',
 };

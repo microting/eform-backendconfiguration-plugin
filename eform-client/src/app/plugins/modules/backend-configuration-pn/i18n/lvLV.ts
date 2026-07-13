@@ -547,4 +547,5 @@ export const lvLV = {
   Employees: 'Darbinieki',
   At: 'Plkst.',
   'Time of day': 'Dienas laiks',
+  'Done date': 'Pabeigšanas datums',
 };

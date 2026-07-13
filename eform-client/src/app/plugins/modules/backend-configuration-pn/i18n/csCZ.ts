@@ -547,4 +547,5 @@ export const csCZ = {
   Employees: 'Zaměstnanci',
   At: 'Na',
   'Time of day': 'Denní doba',
+  'Done date': 'Datum dokončení',
 };

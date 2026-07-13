@@ -100,4 +100,11 @@ public class CompliancesController : Controller
 
         return Ok(await _backendConfigurationCompliancesService.Update(model).ConfigureAwait(false));
     }
+
+    [HttpPut]
+    [Route("cases/calendar")]
+    public async Task<OperationResult> UpdateFromCalendar([FromBody] ReplyRequest model)
+    {
+        return await _backendConfigurationCompliancesService.UpdateFromCalendar(model);
+    }
 }

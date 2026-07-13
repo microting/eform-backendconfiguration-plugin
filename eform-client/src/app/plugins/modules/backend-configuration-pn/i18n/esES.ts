@@ -547,4 +547,5 @@ export const esES = {
   Employees: 'Empleados',
   At: 'En',
   'Time of day': 'Hora del día',
+  'Done date': 'Fecha de finalización',
 };

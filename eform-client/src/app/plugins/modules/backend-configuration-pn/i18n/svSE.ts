@@ -547,4 +547,5 @@ export const svSE = {
   Employees: 'Anställda',
   At: 'På',
   'Time of day': 'Tid på dagen',
+  'Done date': 'Klardatum',
 };

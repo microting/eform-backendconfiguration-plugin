@@ -548,4 +548,5 @@ export const da = {
   Employees: 'Medarbejdere',
   At: 'Kl.',
   'Time of day': 'Tidspunkt',
+  'Done date': 'Udført dato',
 };

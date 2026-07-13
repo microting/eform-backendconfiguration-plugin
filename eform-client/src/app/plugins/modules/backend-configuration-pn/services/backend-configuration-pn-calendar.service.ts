@@ -6,6 +6,7 @@ import {
   CalendarBoardModel,
   CalendarComplianceReportRequestModel,
   CalendarComplianceReportRowModel,
+  CalendarPrepareCompleteResult,
   CalendarTaskCreateModel,
   CalendarTaskIndexRequestModel,
   CalendarTaskModel,
@@ -103,6 +104,17 @@ export class BackendConfigurationPnCalendarService {
     return this.apiBaseService.put(
       `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
       {completed, complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null, workerId}
+    );
+  }
+
+  prepareComplete(
+    taskId: number,
+    complianceId: number | null | undefined,
+    occurrenceDate: string | null | undefined,
+  ): Observable<OperationDataResult<CalendarPrepareCompleteResult>> {
+    return this.apiBaseService.post(
+      `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/prepare-complete`,
+      {complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null}
     );
   }
 

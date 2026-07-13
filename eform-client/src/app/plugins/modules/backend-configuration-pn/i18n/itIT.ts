@@ -547,4 +547,5 @@ export const itIT = {
   Employees: 'Dipendenti',
   At: 'A',
   'Time of day': 'ora del giorno',
+  'Done date': 'Data di completamento',
 };
