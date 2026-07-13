@@ -21,14 +21,15 @@ import {
  * Self-seeded: creates its own property + worker + a single one-off task
  * next week, then MATERIALISES an open Compliance row by clicking the task's
  * `.completion-btn` — the same on-demand path exercised by
- * `p/calendar-complete.spec.ts` (X06/X04): `ToggleComplete` calls
+ * `p/calendar-complete.spec.ts` (X06/X04): `PrepareComplete` calls
  * `IEventDeployService.EnsureComplianceForOccurrenceAsync` synchronously
- * inside the PUT `/tasks/{id}/complete` request whenever no Compliance row
- * exists yet for the occurrence, regardless of how far in the future the
- * date is (BackendConfigurationCalendarService.cs ToggleComplete, ~line
- * 3117-3206). We never submit the compliance-case eForm dialog that pops
- * afterwards (its mandatory fields make submission impractical in e2e, see
- * calendar-complete.spec.ts file header) — cancelling it leaves the
+ * inside the POST `/tasks/{id}/prepare-complete` request that opens the
+ * combined complete modal (`app-calendar-complete-event-modal`) whenever no
+ * Compliance row exists yet for the occurrence, regardless of how far in the
+ * future the date is (BackendConfigurationCalendarService.cs PrepareComplete,
+ * ~line 3389-3512). We never save the modal's embedded eForm (its mandatory
+ * fields make submission impractical in e2e, see calendar-complete.spec.ts
+ * file header) — cancelling it via `#completeCancelBtn` leaves the
  * materialised Compliance row in the OPEN (not completed) state, which is
  * exactly the fixture this suite needs.
  *
@@ -188,14 +189,25 @@ function complianceRowByTitle(page: Page, title: string) {
   return page.locator('.compliance-row').filter({ hasText: title });
 }
 
-// Confirm the worker-selection modal that appears when completing an event
-// (mirrors handleWorkerSelectModal in p/calendar-complete.spec.ts).
+// Ensure the combined complete-event modal (app-calendar-complete-event-modal)
+// that appears when completing an event has a worker selected — mirrors
+// handleWorkerSelectModal in p/calendar-complete.spec.ts.
 async function handleWorkerSelectModal(page: Page): Promise<void> {
-  const workerModal = page.locator('app-calendar-select-worker-modal');
-  await workerModal.waitFor({ state: 'visible', timeout: 10000 });
-  const confirmBtn = page.locator('app-calendar-select-worker-modal button.btn-primary');
-  if (await confirmBtn.isDisabled()) {
-    await workerModal.locator('mtx-select').click();
+  const modal = page.locator('app-calendar-complete-event-modal');
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  const workerSelect = page.locator('#completeWorkerSelect');
+  await workerSelect.waitFor({ state: 'visible', timeout: 10000 });
+  // The preselect (single-assignee seed) applies asynchronously once the
+  // linked-sites call resolves — give it a moment before falling back to an
+  // explicit pick.
+  const preselected = await workerSelect
+    .locator('.ng-value-label')
+    .first()
+    .waitFor({ state: 'attached', timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!preselected) {
+    await workerSelect.click();
     const seededOption = page
       .locator('.ng-dropdown-panel .ng-option')
       .filter({ hasText: `${worker.name} ${worker.surname}` })
@@ -206,28 +218,21 @@ async function handleWorkerSelectModal(page: Page): Promise<void> {
       await page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
   }
-  await confirmBtn.click();
-  await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 
-// Close the compliance-case eForm dialog (mat-dialog-container) without
-// submitting it — mirrors closeComplianceDialog in p/calendar-complete.spec.ts.
+// Cancel the combined complete-event modal without saving — mirrors
+// cancelCompleteModal in p/calendar-complete.spec.ts. Leaves the
+// materialised Compliance row in the OPEN (not completed) state.
 async function closeComplianceCaseDialog(page: Page): Promise<void> {
-  const dialog = page.locator('mat-dialog-container').first();
-  if ((await dialog.count()) === 0) return;
-  const cancelBtn = page
-    .locator('mat-dialog-container button')
-    .filter({ hasText: /Annuller|Cancel/i })
-    .first();
+  const modal = page.locator('app-calendar-complete-event-modal').first();
+  if ((await modal.count()) === 0) return;
+  const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
     await cancelBtn.click();
   } else {
     await page.keyboard.press('Escape');
   }
-  await page
-    .locator('mat-dialog-container')
-    .waitFor({ state: 'detached', timeout: 5000 })
-    .catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 
 /**
@@ -357,17 +362,16 @@ test.describe.serial('Calendar Compliance view', () => {
   // Seed 2 — a one-off task next week, materialised into an OPEN Compliance
   // row via the completion-indicator on-demand deploy path.
   //
-  // Whether clicking .completion-btn opens the compliance-case eForm dialog
-  // (RequiresForm=true → row stays OPEN when cancelled) or completes the SDK
-  // case in place (no mandatory fields on the picked template → row is
-  // immediately DONE) depends entirely on which eForm template the
-  // environment's data happens to put first in the #calendarEventEform list
-  // (ToggleComplete → HasMandatoryFields, BackendConfigurationCalendarService.cs
-  // ~line 3253). This is environment seed data, not app behaviour under test,
-  // so rather than hardcode "the first eForm has mandatory fields" (true in
-  // the CI fixture per p/calendar-complete.spec.ts's file header, but not
-  // guaranteed everywhere) we try eForm options in order — one per weekday of
-  // next week — until one actually produces an open row.
+  // Clicking .completion-btn now ALWAYS opens the combined complete modal
+  // (app-calendar-complete-event-modal) — the modal's own POST
+  // /tasks/{id}/prepare-complete materialises the Compliance row server-side
+  // (EnsureComplianceForOccurrenceAsync) unconditionally, regardless of
+  // whether the picked eForm template has mandatory fields. Cancelling the
+  // modal (never saving it) therefore always leaves the row in the OPEN
+  // state — the fixture this suite needs. The eForm-index retry loop below
+  // predates this (it used to matter which eForm produced the RequiresForm
+  // dialog vs. an in-place auto-complete); it is kept as a harmless no-op
+  // safety net since the first attempt now always succeeds.
   // =========================================================================
   test('seed: create a next-week task and materialise an open compliance row', async ({ page }) => {
     test.setTimeout(180000);
@@ -389,30 +393,30 @@ test.describe.serial('Calendar Compliance view', () => {
       await expect(block).toBeVisible();
 
       const completionWait = page.waitForResponse(
-        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/.test(r.url())
-          && r.request().method() === 'PUT',
+        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url())
+          && r.request().method() === 'POST',
         { timeout: 30000 }
       );
       await block.locator('.completion-btn').click();
-      await handleWorkerSelectModal(page);
       await completionWait;
+      await handleWorkerSelectModal(page);
 
       const opened = await page
-        .locator('app-compliance-case-modal')
+        .locator('app-calendar-complete-event-modal')
         .waitFor({ state: 'visible', timeout: 4000 })
         .then(() => true)
         .catch(() => false);
 
       if (opened) {
-        // RequiresForm=true — cancel WITHOUT submitting so the Compliance row
-        // materialised server-side (EnsureComplianceForOccurrenceAsync) stays
-        // in the OPEN state, which is what this suite needs as its fixture.
+        // Cancel WITHOUT saving so the Compliance row materialised
+        // server-side (EnsureComplianceForOccurrenceAsync) stays in the
+        // OPEN state, which is what this suite needs as its fixture.
         await closeComplianceCaseDialog(page);
         openTitle = title;
         break;
       }
-      // No mandatory fields on this eForm → the task auto-completed in place.
-      // Discard it (harmless leftover DONE row) and try the next eForm option.
+      // Not expected to happen now that the modal always opens, but kept as
+      // a defensive fallback — try the next eForm option.
     }
 
     expect(

@@ -411,13 +411,14 @@ test.describe.serial('Calendar resize scope (#889)', () => {
     // no-op and no /tasks/resize round-trip fires.
     //
     // fixme — same rationale as calendar-move.spec.ts M08: fully completing
-    // an event in e2e requires submitting the eForm dialog (the seeded task's
-    // template opens one); merely opening and closing it leaves the task NOT
-    // completed, so the resize handle stays enabled and the gesture would
-    // succeed. Left as a documented placeholder encoding the intended
-    // behaviour; the completed-occurrence resize rejection is covered
-    // server-side (CalendarResizeTests) and by the handle-hidden /
-    // [cdkDragDisabled] binding for completed tasks.
+    // an event in e2e requires filling + submitting the combined complete
+    // modal's embedded eForm (the seeded task's template opens one); merely
+    // opening and cancelling it leaves the task NOT completed, so the resize
+    // handle stays enabled and the gesture would succeed. Left as a
+    // documented placeholder encoding the intended behaviour; the
+    // completed-occurrence resize rejection is covered server-side
+    // (CalendarResizeTests) and by the handle-hidden / [cdkDragDisabled]
+    // binding for completed tasks.
     // ---------------------------------------------------------------------
     test.fixme('R09: a completed occurrence cannot be resized', async ({ page }) => {
       test.setTimeout(180000);
@@ -431,14 +432,14 @@ test.describe.serial('Calendar resize scope (#889)', () => {
       expect(pre).toContain('09:00');
       expect(pre).toContain('10:00');
 
-      // Trigger the completion flow. The PUT fires and the eForm submission
-      // dialog opens (mirrors M08 in calendar-move.spec.ts). We close the
-      // dialog without submitting — which, as documented above, does NOT
-      // actually complete the task, hence the test.fixme.
+      // Trigger the completion flow. The combined complete modal opens
+      // (mirrors M08 in calendar-move.spec.ts). We cancel it without saving —
+      // which, as documented above, does NOT actually complete the task,
+      // hence the test.fixme.
       const block = calendarPage.findEventBlock(title);
       const completionWait = page.waitForResponse(
-        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/.test(r.url())
-          && r.request().method() === 'PUT',
+        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url())
+          && r.request().method() === 'POST',
         { timeout: 30000 }
       ).catch(() => undefined);
       const completionBtn = block.locator('.completion-btn');
@@ -446,17 +447,13 @@ test.describe.serial('Calendar resize scope (#889)', () => {
         await completionBtn.click();
         await completionWait;
 
-        const dialog = page.locator('mat-dialog-container').first();
-        if ((await dialog.count()) > 0) {
-          await dialog.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
-          const cancelBtn = page
-            .locator('mat-dialog-container button')
-            .filter({ hasText: /Annuller|Cancel/i })
-            .first();
+        const modal = page.locator('app-calendar-complete-event-modal').first();
+        if ((await modal.count()) > 0) {
+          await modal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
+          const cancelBtn = page.locator('#completeCancelBtn');
           if ((await cancelBtn.count()) > 0) {
             await cancelBtn.click();
-            await page
-              .locator('mat-dialog-container')
+            await modal
               .waitFor({ state: 'detached', timeout: 5000 })
               .catch(() => undefined);
           } else {
