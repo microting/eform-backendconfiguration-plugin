@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges} from '@angular/core';
 import {TranslateService} from '@ngx-translate/core';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 
@@ -8,11 +8,12 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
   templateUrl: './calendar-header.component.html',
   styleUrls: ['./calendar-header.component.scss'],
 })
-export class CalendarHeaderComponent implements OnInit {
+export class CalendarHeaderComponent implements OnInit, OnChanges {
   @Input() currentDate: string = '';
   @Input() viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
   @Input() sidebarOpen = true;
   @Input() propertyName: string = '';
+  @Input() isAdmin = false;
 
   viewModeOptions: {value: string; label: string}[] = [];
 
@@ -25,11 +26,24 @@ export class CalendarHeaderComponent implements OnInit {
   constructor(private translate: TranslateService) {}
 
   ngOnInit() {
+    this.buildViewModeOptions();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // isAdmin arrives asynchronously from the store after this component has
+    // already initialised, so the option list must be rebuilt whenever it
+    // changes (not just once in ngOnInit).
+    if (changes['isAdmin']) {
+      this.buildViewModeOptions();
+    }
+  }
+
+  private buildViewModeOptions() {
     this.viewModeOptions = [
       {value: 'day', label: this.translate.instant('Day')},
       {value: 'week', label: this.translate.instant('Week')},
       {value: 'schedule', label: this.translate.instant('List')},
-      {value: 'compliance', label: this.translate.instant('Compliance')},
+      ...(this.isAdmin ? [{value: 'compliance', label: this.translate.instant('Compliance')}] : []),
     ];
   }
 

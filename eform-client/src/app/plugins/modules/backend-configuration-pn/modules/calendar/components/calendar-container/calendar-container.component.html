@@ -33,6 +33,7 @@
       [viewMode]="viewMode"
       [sidebarOpen]="sidebarOpen"
       [propertyName]="selectedPropertyName"
+      [isAdmin]="isAdmin"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
       (viewModeChange)="onViewModeChange($event)"
@@ -85,16 +86,18 @@
         (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-schedule-view>
 
-      <app-calendar-compliance-view
-        *ngSwitchCase="'compliance'"
-        #complianceView
-        [properties]="properties"
-        [boards]="boards"
-        [tags]="tags"
-        [employees]="employees"
-        [currentPropertyId]="currentPropertyId"
-        (completeRequested)="onComplianceRowCompleteRequested($event)"
-      ></app-calendar-compliance-view>
+      <ng-container *ngSwitchCase="'compliance'">
+        <app-calendar-compliance-view
+          *ngIf="isAdmin"
+          #complianceView
+          [properties]="properties"
+          [boards]="boards"
+          [tags]="tags"
+          [employees]="employees"
+          [currentPropertyId]="currentPropertyId"
+          (completeRequested)="onComplianceRowCompleteRequested($event)"
+        ></app-calendar-compliance-view>
+      </ng-container>
     </ng-container>
   </div>
 </div>
