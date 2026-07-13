@@ -48,6 +48,8 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> ResizeTask(CalendarTaskResizeRequestModel resizeModel);
     Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(
         int id, bool completed, int? complianceId, string? occurrenceDate, int? workerId = null);
+    Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
+        int id, int? complianceId, string occurrenceDate);
     Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId);
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);
     Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model);

@@ -15,52 +15,69 @@ import {
  * Calendar task-completion paths suite for GitHub issue #894.
  *
  * Exercises the completion indicator end-to-end: clicking the `.completion-btn`
- * fires PUT /tasks/{id}/complete; the backend (ToggleComplete in
- * BackendConfigurationCalendarService) then either
+ * fires POST /tasks/{id}/prepare-complete and opens ONE combined modal,
+ * `app-calendar-complete-event-modal` (CalendarCompleteEventModalComponent),
+ * with stable ids `#completeWorkerSelect` / `#completeDoneAt` /
+ * `#completeSaveBtn` / `#completeCancelBtn`. Server-side, `PrepareComplete`
+ * (BackendConfigurationCalendarService) then either
  *   (a) errors "TaskHasNoComplianceCase" when the AreaRule has no EformId, or
- *   (b) returns RequiresForm=true and the UI opens the compliance-case eForm
- *       submission dialog (mat-dialog-container / app-compliance-case-modal), or
- *   (c) completes the SDK case in place (DoneAt = event-start) when the
- *       template has NO mandatory fields.
+ *   (b) resolves (materialising the Compliance row on demand via
+ *       `EnsureComplianceForOccurrenceAsync` if it doesn't exist yet) and the
+ *       modal opens with the case's eForm embedded inline (`app-case-edit-element`
+ *       elements inside the same dialog — there is no separate submission
+ *       dialog anymore).
+ * Saving (`#completeSaveBtn`, gated on a selected worker + doneAt) PUTs the
+ * full reply — including the embedded eForm fields — to
+ * `api/backend-configuration-pn/compliances/cases/calendar`
+ * (`updateCaseFromCalendar`), which both marks the SDK case done and (async,
+ * server-side) retracts the case.
  *
  * REALITY CHECK (drives which rows are real vs. test.fixme):
  *
  *  1. Every event created through the calendar create modal must select an
  *     eForm (`#calendarEventEform` is required and auto-/non-clearable in the
  *     fillAndSaveEvent helper). So a "no-eForm / no-compliance" task (the
- *     TaskHasNoComplianceCase branch — server lines ~2100-2128) CANNOT be
- *     produced via the UI. → X01, X11 are test.fixme.
+ *     TaskHasNoComplianceCase branch) CANNOT be produced via the UI.
+ *     → X01, X11 are test.fixme.
  *
- *  2. The compliance dialog opens ONLY when the backend returns
- *     RequiresForm=true, and that flag is set EXCLUSIVELY when
- *     HasMandatoryFields(template) is true (server lines 2198-2231). In other
- *     words: whenever the dialog appears in e2e, its embedded eForm
- *     (`app-case-edit-element`) by definition contains mandatory fields. The
- *     Save button (`#submit_form`) is gated only on `replyElement.doneAt`
- *     (which is pre-filled), so it is *clickable* — but `saveCase()` submits
- *     the nested eForm reply via `updateCase`, and reliably satisfying
- *     arbitrary mandatory field types (text, picture, signature, …) by
- *     driving the embedded reply UI is impractical and flaky in e2e. So a
- *     FULL completion (form submit → task flips to `completed`) is not
- *     automatable here. → X03, X07, X09, X10 are test.fixme; the reachable
- *     core is "PUT fires + dialog opens" (X06/X04) and the same from the
- *     schedule view (X05).
+ *  2. The combined modal now opens UNCONDITIONALLY on every completion click
+ *     — there is no more "opens a dialog only for mandatory-field templates,
+ *     else completes silently in place" branch in the UI (that used to gate
+ *     on the old ToggleComplete's RequiresForm flag). Every modal opened in
+ *     e2e embeds the seeded task's eForm (`app-case-edit-element`), which
+ *     carries mandatory fields (see calendar-compliance-view.spec.ts's seed
+ *     comment). `#completeSaveBtn` is gated only on
+ *     `selectedWorkerId != null && !!replyElement.doneAt` (both auto-filled
+ *     for a single-worker seed), so it is *clickable* — but `saveCase()`
+ *     submits the nested eForm reply via `updateCaseFromCalendar`, and
+ *     reliably satisfying arbitrary mandatory field types (text, picture,
+ *     signature, …) by driving the embedded reply UI is impractical and
+ *     flaky in e2e. So a FULL completion (save → task flips to `completed`)
+ *     is not automatable here. → X03, X07, X09, X10 are test.fixme; the
+ *     reachable core is "prepare-complete fires + the combined modal opens"
+ *     (X06/X04) and the same from the schedule view (X05).
  *
  *     The in-place no-mandatory-fields completion branch (X02) is likewise
- *     unreachable from the default seed: an eForm with NO mandatory fields
- *     would never set RequiresForm=true, so to hit it the seed would need a
- *     dedicated compliance-enabled, no-mandatory-field template — which the
- *     property/worker seed below does not provision. → X02 is test.fixme.
+ *     unreachable from the default seed: reaching it needs a dedicated
+ *     compliance-enabled, no-mandatory-field template — which the
+ *     property/worker seed below does not provision (and, per the point
+ *     above, wouldn't skip the modal even if it existed — only Save's
+ *     mandatory-field burden would disappear, which still isn't automated
+ *     here). → X02 is test.fixme.
  *
  * Server-side coverage for the branches we cannot reach in e2e lives in
  * BackendConfiguration.Pn.Integration.Test/CalendarCompleteOccurrenceTests.cs
- * (notably GetTasksForWeek_MultiDaySeries_CompleteOneDay_KeepsOtherDays — the
- * X07 dedup-by-(planning,date) regression guard) and CalendarActionableOnlyTests.cs.
+ * and CalendarPrepareCompleteTests.cs (notably
+ * GetTasksForWeek_MultiDaySeries_CompleteOneDay_KeepsOtherDays — the X07
+ * dedup-by-(planning,date) regression guard) and CalendarActionableOnlyTests.cs.
  *
- * The exact PUT matcher used throughout (mirrors L6 in
- * calendar-event-card-layout.spec.ts and the toggleComplete service URL
- * `${Tasks}/${taskId}/complete`):
- *   /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/  (method PUT)
+ * The exact matchers used throughout (mirrors L6 in
+ * calendar-event-card-layout.spec.ts):
+ *   prepare-complete (fires when the modal opens):
+ *     /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/  (method POST)
+ *   save (fires only on a full #completeSaveBtn submit — not exercised by the
+ *   reachable tests here, see point 2 above):
+ *     /\/api\/backend-configuration-pn\/compliances\/cases\/calendar/  (method PUT)
  *
  * Lives in `r/` to share the matrix slot with the resize / move / edit-scope /
  * copy suites; reuses CalendarUiEnhancementsPage and the same property/worker
@@ -70,14 +87,14 @@ import {
  *   X01 — no-eForm task → TaskHasNoComplianceCase.        [fixme — not creatable via modal]
  *   X02 — non-mandatory eForm completes in place,
  *         DoneAt = event-start.                            [fixme — branch unreachable from seed]
- *   X03 — full completion submits the compliance dialog.   [fixme — eForm submit not automatable]
- *   X04 — completing fires the complete PUT.               [here — folded into X06]
- *   X05 — completion from the schedule view fires the PUT. [here]
- *   X06 — completing a compliance event opens the eForm dialog. [here]
- *   X07 — weekly Mon–Fri series, complete Monday only.     [fixme — needs form submit; server-covered]
- *   X08 — compliance dialog doneAt picker default ≠ blank/now. [here]
+ *   X03 — full completion saves the combined modal.        [fixme — eForm submit not automatable]
+ *   X04 — completing fires the prepare-complete POST.      [here — folded into X06]
+ *   X05 — completion from the schedule view fires the POST. [here]
+ *   X06 — completing a compliance event opens the combined modal. [here]
+ *   X07 — weekly Mon–Fri series, complete Monday only.     [fixme — needs full save; server-covered]
+ *   X08 — combined modal doneAt picker default ≠ blank/now. [here]
  *   X09 — uncomplete not supported.                        [fixme — needs a completed task first]
- *   X10 — future-occurrence materialize on completion.     [fixme — needs form submit]
+ *   X10 — future-occurrence materialize on completion.     [fixme — needs full save]
  *   X11 — complianceId present + EformId=0.                [fixme — not creatable via modal]
  */
 
@@ -98,50 +115,56 @@ const worker: PropertyWorker = {
 
 let seeded = false;
 
-// The completion backend call (PUT .../calendar/tasks/{id}/complete). This is
-// the single canonical matcher used by every test in this suite.
-function isCompletePut(r: import('@playwright/test').Response): boolean {
+// The completion backend call (POST .../calendar/tasks/{id}/prepare-complete)
+// that fires when the combined complete modal opens. This is the single
+// canonical matcher used by every test in this suite.
+function isPrepareComplete(r: import('@playwright/test').Response): boolean {
   return (
-    /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/.test(r.url()) &&
-    r.request().method() === 'PUT'
+    /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url()) &&
+    r.request().method() === 'POST'
   );
 }
 
-// Close the compliance-case eForm dialog (mat-dialog-container) without
-// submitting — clicks its Cancel/Annuller button, falling back to Escape.
+// Cancel the combined complete-event modal (app-calendar-complete-event-modal)
+// without saving — clicks `#completeCancelBtn`, falling back to Escape.
 async function closeComplianceDialog(page: import('@playwright/test').Page): Promise<void> {
-  const dialog = page.locator('mat-dialog-container').first();
-  if ((await dialog.count()) === 0) return;
-  const cancelBtn = page
-    .locator('mat-dialog-container button')
-    .filter({ hasText: /Annuller|Cancel/i })
-    .first();
+  const modal = page.locator('app-calendar-complete-event-modal').first();
+  if ((await modal.count()) === 0) return;
+  const cancelBtn = page.locator('#completeCancelBtn');
   if ((await cancelBtn.count()) > 0) {
     await cancelBtn.click();
   } else {
     await page.keyboard.press('Escape');
   }
-  await page
-    .locator('mat-dialog-container')
-    .waitFor({ state: 'detached', timeout: 5000 })
-    .catch(() => undefined);
+  await modal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 
-// Confirm the worker-selection modal that ALWAYS appears when completing an
-// event. It lists every worker assigned to the event's property; with exactly
-// one worker (this seed) it opens preselected, otherwise nothing is selected
-// and the confirm button is disabled — in that case explicitly pick the
-// seeded property worker (falling back to the first option) before confirming.
+// Ensure the combined complete-event modal that ALWAYS appears when
+// completing an event has a worker selected. `#completeWorkerSelect` lists
+// every worker assigned to the event's property; with exactly one worker
+// (this seed) it preselects automatically, otherwise nothing is selected and
+// `#completeSaveBtn` stays disabled — in that case explicitly pick the
+// seeded property worker (falling back to the first option).
 async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
-  const workerModal = page.locator('app-calendar-select-worker-modal');
+  const modal = page.locator('app-calendar-complete-event-modal');
   // The modal is part of the completion contract now — fail loudly if it
-  // does not appear instead of silently letting the PUT fire without it.
-  await workerModal.waitFor({ state: 'visible', timeout: 10000 });
-  const confirmBtn = page.locator('app-calendar-select-worker-modal button.btn-primary');
-  if (await confirmBtn.isDisabled()) {
+  // does not appear instead of silently letting the flow proceed without it.
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  const workerSelect = page.locator('#completeWorkerSelect');
+  await workerSelect.waitFor({ state: 'visible', timeout: 10000 });
+  // The preselect (single-assignee seed) applies asynchronously once the
+  // linked-sites call resolves — give it a moment before falling back to an
+  // explicit pick.
+  const preselected = await workerSelect
+    .locator('.ng-value-label')
+    .first()
+    .waitFor({ state: 'attached', timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!preselected) {
     // The mtx-select dropdown appends to body, so the options live outside
     // the modal element.
-    await workerModal.locator('mtx-select').click();
+    await workerSelect.click();
     const seededOption = page
       .locator('.ng-dropdown-panel .ng-option')
       .filter({ hasText: `${worker.name} ${worker.surname}` })
@@ -152,8 +175,6 @@ async function handleWorkerSelectModal(page: import('@playwright/test').Page): P
       await page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
   }
-  await confirmBtn.click();
-  await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 
 test.describe.serial('Calendar task completion (#894)', () => {
@@ -222,17 +243,17 @@ test.describe.serial('Calendar task completion (#894)', () => {
   });
 
   // =======================================================================
-  // X06 / X04 — completing a compliance event fires the complete PUT and
-  //   opens the eForm submission dialog.
+  // X06 / X04 — completing a compliance event fires the prepare-complete
+  //   POST and opens the combined complete modal.
   //
   //   This is the reachable CORE of #894: it proves the completion indicator
-  //   is wired to PUT /tasks/{id}/complete and that a RequiresForm=true
-  //   response opens app-compliance-case-modal. X04 (the PUT fires) is folded
-  //   in — the same waitForResponse asserts it. We do NOT submit the form
-  //   (its mandatory fields make submission impractical — see file header);
-  //   we close the dialog so it does not leak into the next test.
+  //   is wired to POST /tasks/{id}/prepare-complete and opens
+  //   app-calendar-complete-event-modal. X04 (the POST fires) is folded
+  //   in — the same waitForResponse asserts it. We do NOT save the modal
+  //   (its embedded eForm's mandatory fields make submission impractical —
+  //   see file header); we cancel it so it does not leak into the next test.
   // =======================================================================
-  test('X06/X04: completing a compliance event fires the complete PUT and opens the eForm dialog', async ({ page }) => {
+  test('X06/X04: completing a compliance event fires the prepare-complete POST and opens the combined modal', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `X06-${generateRandmString(5)}`;
 
@@ -243,35 +264,36 @@ test.describe.serial('Calendar task completion (#894)', () => {
     const block = calendarPage.findEventBlock(title);
     await expect(block).toBeVisible();
 
-    const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
+    const completionWait = page.waitForResponse(isPrepareComplete, { timeout: 30000 });
     await block.locator('.completion-btn').click();
-    await handleWorkerSelectModal(page);
     const resp = await completionWait;
+    await handleWorkerSelectModal(page);
 
-    // X04: the PUT fired and was accepted.
-    expect(resp.request().method()).toBe('PUT');
-    expect(resp.url()).toMatch(/\/calendar\/tasks\/\d+\/complete$/);
+    // X04: the POST fired and was accepted.
+    expect(resp.request().method()).toBe('POST');
+    expect(resp.url()).toMatch(/\/calendar\/tasks\/\d+\/prepare-complete$/);
 
-    // X06: the compliance-case eForm dialog opens in response (the seeded
-    // task carries an eForm template WITH mandatory fields → RequiresForm=true).
-    await expect(page.locator('mat-dialog-container').first())
+    // X06: the combined complete modal opens in response (the seeded task
+    // carries an eForm template WITH mandatory fields).
+    await expect(page.locator('app-calendar-complete-event-modal').first())
       .toBeVisible({ timeout: 10000 });
-    await expect(page.locator('app-compliance-case-modal')).toHaveCount(1);
+    await expect(page.locator('#completeSaveBtn')).toHaveCount(1);
 
     await closeComplianceDialog(page);
   });
 
   // =======================================================================
-  // X05 — completion from the SCHEDULE (list) view fires the same complete
-  //   PUT and opens the same dialog.
+  // X05 — completion from the SCHEDULE (list) view fires the same
+  //   prepare-complete POST and opens the same combined modal.
   //
-  //   The schedule row's `.completion-btn` calls onCompletionClick →
-  //   toggleComplete → the SAME PUT /tasks/{id}/complete, and emits
-  //   completeRequiresForm to open app-compliance-case-modal (identical to the
-  //   week-grid path — see calendar-container.html lines 84-85). This proves
-  //   the list view shares the completion plumbing.
+  //   The schedule row's `.completion-btn` emits toggleCompleteRequested →
+  //   onToggleCompleteRequested, which opens the SAME
+  //   app-calendar-complete-event-modal as the week-grid path (identical to
+  //   calendar-container.component.html — both grid and schedule bind
+  //   `(toggleCompleteRequested)="onToggleCompleteRequested($event)"`). This
+  //   proves the list view shares the completion plumbing.
   // =======================================================================
-  test('X05: completion from the schedule view fires the same complete PUT', async ({ page }) => {
+  test('X05: completion from the schedule view fires the same prepare-complete POST', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `X05-${generateRandmString(5)}`;
 
@@ -284,32 +306,32 @@ test.describe.serial('Calendar task completion (#894)', () => {
     const row = calendarPage.findScheduleItem(title);
     await expect(row).toBeVisible({ timeout: 10000 });
 
-    const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
+    const completionWait = page.waitForResponse(isPrepareComplete, { timeout: 30000 });
     await row.locator('.completion-btn').click();
-    await handleWorkerSelectModal(page);
     const resp = await completionWait;
+    await handleWorkerSelectModal(page);
 
-    // Same PUT as the week-grid path.
-    expect(resp.request().method()).toBe('PUT');
-    expect(resp.url()).toMatch(/\/calendar\/tasks\/\d+\/complete$/);
+    // Same POST as the week-grid path.
+    expect(resp.request().method()).toBe('POST');
+    expect(resp.url()).toMatch(/\/calendar\/tasks\/\d+\/prepare-complete$/);
 
-    // Same dialog opens.
-    await expect(page.locator('mat-dialog-container').first())
+    // Same combined modal opens.
+    await expect(page.locator('app-calendar-complete-event-modal').first())
       .toBeVisible({ timeout: 10000 });
-    await expect(page.locator('app-compliance-case-modal')).toHaveCount(1);
+    await expect(page.locator('#completeSaveBtn')).toHaveCount(1);
 
     await closeComplianceDialog(page);
   });
 
   // =======================================================================
-  // X08 — the compliance dialog's doneAt picker defaults to the event-start,
+  // X08 — the combined modal's doneAt picker defaults to the event-start,
   //   NOT a blank value and NOT the current wall-clock date.
   //
-  //   ComplianceCaseModalComponent.loadCase() sets
+  //   CalendarCompleteEventModalComponent.loadCase() sets
   //     replyElement.doneAt = eventStart ?? deadline ?? new Date()
-  //   and the picker input binds `[value]="replyElement.doneAt"`. The event is
-  //   created on NEXT week (openCreateModalAtSlot advances one week), so the
-  //   scheduled date differs from today — letting us distinguish the
+  //   and `#completeDoneAt` binds `[value]="replyElement.doneAt"`. The event
+  //   is created on NEXT week (openCreateModalAtSlot advances one week), so
+  //   the scheduled date differs from today — letting us distinguish the
   //   event-start default from a naive "now" fallback. The picker is a
   //   mat-datepicker (date-only), so we assert the input is (a) non-empty and
   //   (b) does NOT render today's date — proving doneAt was seeded from the
@@ -322,7 +344,7 @@ test.describe.serial('Calendar task completion (#894)', () => {
   //   server-side in CalendarCompleteOccurrenceTests. Left as a documented
   //   placeholder.
   // =======================================================================
-  test.fixme('X08: compliance dialog doneAt picker defaults to the event date, not blank/now', async ({ page }) => {
+  test.fixme('X08: combined modal doneAt picker defaults to the event date, not blank/now', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `X08-${generateRandmString(5)}`;
 
@@ -331,23 +353,22 @@ test.describe.serial('Calendar task completion (#894)', () => {
     await calendarPage.fillAndSaveEvent(title);
 
     const block = calendarPage.findEventBlock(title);
-    const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
+    const completionWait = page.waitForResponse(isPrepareComplete, { timeout: 30000 });
     await block.locator('.completion-btn').click();
     await completionWait;
 
-    await expect(page.locator('mat-dialog-container').first())
+    await expect(page.locator('app-calendar-complete-event-modal').first())
       .toBeVisible({ timeout: 10000 });
 
-    // The doneAt picker is the first matInput bound to a matDatepicker inside
-    // the dialog (compliance-case-modal.component.html lines 15-22).
-    const doneAtInput = page
-      .locator('mat-dialog-container input[matInput]')
-      .first();
+    // The doneAt picker is `#completeDoneAt` (calendar-complete-event-modal.
+    // component.html lines 31-40).
+    const doneAtInput = page.locator('#completeDoneAt');
     await expect(doneAtInput).toBeVisible({ timeout: 5000 });
     const value = (await doneAtInput.inputValue()).trim();
 
-    // (a) Not blank — doneAt was pre-filled (Save is `[disabled]="!doneAt"`,
-    //     so a blank value would also block submission).
+    // (a) Not blank — doneAt was pre-filled (`#completeSaveBtn` requires
+    //     `canSave`, which needs `!!replyElement.doneAt`, so a blank value
+    //     would also block submission).
     expect(value.length).toBeGreaterThan(0);
 
     // (b) Not today's wall-clock date. The event lives on next week, so a
@@ -377,21 +398,20 @@ test.describe.serial('Calendar task completion (#894)', () => {
   });
 
   // =======================================================================
-  // X03 — full completion: submit the compliance dialog so the SDK case is
+  // X03 — full completion: save the combined modal so the SDK case is
   //   marked done and the task flips to `completed`.
   //
-  //   fixme rationale: the compliance dialog opens ONLY when the backend
-  //   returns RequiresForm=true, which it does EXCLUSIVELY when the template
-  //   HasMandatoryFields (BackendConfigurationCalendarService lines 2198-2231).
-  //   Therefore every dialog reachable in e2e contains mandatory eForm fields.
-  //   Save (`#submit_form`) is clickable (gated only on the pre-filled doneAt),
-  //   but `saveCase()` submits the nested `app-case-edit-element` reply via
-  //   updateCase; satisfying arbitrary mandatory field types (text, picture,
-  //   signature, dropdown, …) by driving the embedded reply UI is impractical
-  //   and flaky. Full eForm submission is therefore not automatable here.
+  //   fixme rationale: the combined modal now opens on EVERY completion
+  //   click, and the seeded task's template carries mandatory eForm fields
+  //   (see file header point 2). `#completeSaveBtn` is clickable (gated only
+  //   on a selected worker + the pre-filled doneAt), but `saveCase()` submits
+  //   the nested `app-case-edit-element` reply via `updateCaseFromCalendar`;
+  //   satisfying arbitrary mandatory field types (text, picture, signature,
+  //   dropdown, …) by driving the embedded reply UI is impractical and
+  //   flaky. Full eForm submission is therefore not automatable here.
   //   Covered server-side by CalendarCompleteOccurrenceTests.cs.
   // =======================================================================
-  test.fixme('X03: submitting the compliance dialog fully completes the task', async ({ page }) => {
+  test.fixme('X03: saving the combined modal fully completes the task', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `X03-${generateRandmString(5)}`;
 
@@ -399,17 +419,18 @@ test.describe.serial('Calendar task completion (#894)', () => {
     await calendarPage.fillAndSaveEvent(title);
 
     const block = calendarPage.findEventBlock(title);
-    const completionWait = page.waitForResponse(isCompletePut, { timeout: 30000 });
+    const completionWait = page.waitForResponse(isPrepareComplete, { timeout: 30000 });
     await block.locator('.completion-btn').click();
     await completionWait;
+    await handleWorkerSelectModal(page);
 
-    await expect(page.locator('app-compliance-case-modal')).toHaveCount(1);
+    await expect(page.locator('app-calendar-complete-event-modal')).toHaveCount(1);
 
-    // Intended: fill all mandatory eForm fields, then click Save and await the
-    // updateCase PUT; then assert the block flips to `.completed`.
-    // Not implementable: mandatory field types vary per template and the
-    // embedded reply UI is not reliably drivable in e2e.
-    await page.locator('mat-dialog-container button#submit_form').click();
+    // Intended: fill all mandatory eForm fields, then click #completeSaveBtn
+    // and await the updateCaseFromCalendar PUT; then assert the block flips
+    // to `.completed`. Not implementable: mandatory field types vary per
+    // template and the embedded reply UI is not reliably drivable in e2e.
+    await page.locator('#completeSaveBtn').click();
     await expect(block).toHaveClass(/(^|\s)completed(\s|$)/, { timeout: 10000 });
   });
 
@@ -419,8 +440,8 @@ test.describe.serial('Calendar task completion (#894)', () => {
   //   navigate +1 week and all five present/fresh (dedup-by-(planning,date)
   //   regression guard).
   //
-  //   fixme rationale: completing the Monday occurrence requires SUBMITTING
-  //   the compliance dialog (RequiresForm=true → mandatory fields), which is
+  //   fixme rationale: completing the Monday occurrence requires SAVING the
+  //   combined complete modal (mandatory eForm fields embedded in it), which is
   //   not automatable in e2e (see X03). Without a committed completion the
   //   per-occurrence completed/open state cannot be asserted. This exact
   //   regression — completing ONE day of a multi-day series keeps the other
@@ -454,13 +475,14 @@ test.describe.serial('Calendar task completion (#894)', () => {
     await page.locator('#calendarEventSaveBtn').click();
     await page.waitForTimeout(1500);
 
-    // Intended: complete ONLY the Monday occurrence (submit the dialog), then
+    // Intended: complete ONLY the Monday occurrence (save the combined
+    //   modal), then
     //   - assert Mon shows `.completed` and Tue–Fri the same week stay open,
     //   - navigate +1 week and assert all five weekdays render fresh/open
     //     (no duplicate, no dropped occurrence — the dedup-by-(planning,date)
     //     regression guard).
-    // Not implementable: completing the Monday occurrence requires submitting
-    // the mandatory-field compliance dialog (see X03). Covered server-side by
+    // Not implementable: completing the Monday occurrence requires saving
+    // the mandatory-field combined complete modal (see X03). Covered server-side by
     // CalendarCompleteOccurrenceTests.GetTasksForWeek_MultiDaySeries_CompleteOneDay_KeepsOtherDays.
   });
 
@@ -477,9 +499,10 @@ test.describe.serial('Calendar task completion (#894)', () => {
   // =======================================================================
   test.fixme('X01: completing a no-eForm task returns TaskHasNoComplianceCase', async () => {
     // Intended: create a task whose AreaRule.EformId is null, click complete,
-    // assert the PUT returns success=false with the TaskHasNoComplianceCase
-    // message and NO dialog opens. Not reachable: the create modal force-
-    // selects an eForm, so a no-eForm task cannot exist via the UI.
+    // assert the prepare-complete POST returns success=false with the
+    // TaskHasNoComplianceCase message and the combined modal does NOT open.
+    // Not reachable: the create modal force-selects an eForm, so a no-eForm
+    // task cannot exist via the UI.
   });
 
   // =======================================================================
@@ -495,23 +518,26 @@ test.describe.serial('Calendar task completion (#894)', () => {
   });
 
   // =======================================================================
-  // X02 — a NON-mandatory eForm completes IN PLACE (no dialog), and the SDK
-  //   case DoneAt is set to the event-start (server lines 2233-2243).
+  // X02 — a NON-mandatory eForm's SDK case DoneAt is set to the event-start
+  //   on save (server lines 2233-2243).
   //
-  //   fixme rationale: this branch fires only when HasMandatoryFields is false
-  //   — but in that case the backend NEVER sets RequiresForm=true, so no
-  //   dialog opens and the task completes silently. Reaching it needs a
-  //   compliance-enabled eForm template with NO mandatory fields; the default
-  //   property/worker seed used by this suite provisions no such template (the
-  //   eForms surfaced in `#calendarEventEform` open the dialog, i.e. they HAVE
-  //   mandatory fields), so the requiresForm=false branch is unreachable here.
-  //   Covered server-side by CalendarCompleteOccurrenceTests.cs.
+  //   fixme rationale: the combined complete modal now opens
+  //   UNCONDITIONALLY (see file header point 2), so there is no longer a
+  //   "silent in-place, no dialog" branch to distinguish in the UI — a
+  //   no-mandatory-field template would just make `#completeSaveBtn`
+  //   trivially automatable (no embedded fields to fill). But the default
+  //   property/worker seed used by this suite provisions no such template
+  //   (the eForms surfaced in `#calendarEventEform` all carry mandatory
+  //   fields — see X06/X03), so this remains unreachable from the seed, not
+  //   because of a UI branch. Covered server-side by
+  //   CalendarCompleteOccurrenceTests.cs.
   // =======================================================================
-  test.fixme('X02: a non-mandatory eForm completes in place with DoneAt = event-start', async () => {
-    // Intended: with a no-mandatory-field compliance template, click complete,
-    // assert NO dialog opens, the block flips to `.completed`, and the SDK
-    // case DoneAt equals the scheduled event-start. Not reachable from the
-    // default seed (its templates carry mandatory fields → dialog path).
+  test.fixme('X02: a non-mandatory eForm completes with DoneAt = event-start', async () => {
+    // Intended: with a no-mandatory-field compliance template, click
+    // complete, save the combined modal (trivial — no embedded fields), and
+    // assert the block flips to `.completed` and the SDK case DoneAt equals
+    // the scheduled event-start. Not reachable from the default seed (its
+    // templates all carry mandatory fields).
   });
 
   // =======================================================================
@@ -522,27 +548,32 @@ test.describe.serial('Calendar task completion (#894)', () => {
   //   calendar-task-block.component.html `*ngIf="!task.completed"`), and the
   //   schedule view's onCompletionClick early-returns when `task.completed`.
   //   So uncomplete has no UI affordance — and we cannot even reach a
-  //   completed state without submitting the compliance dialog (see X03).
+  //   completed state without saving the combined complete modal (see X03).
   //   Covered server-side.
   // =======================================================================
   test.fixme('X09: a completed task cannot be un-completed from the calendar', async () => {
     // Intended: fully complete a task (X03 path), then assert there is no
     // enabled completion control to toggle it back open. Not feasible: we
-    // cannot produce a completed task in e2e (form submit, see X03).
+    // cannot produce a completed task in e2e (modal save, see X03).
   });
 
   // =======================================================================
   // X10 — completing a FUTURE occurrence materializes its Compliance row.
   //
-  //   fixme rationale: materialization happens on the completion submit path;
-  //   reaching it requires submitting the compliance dialog for a future
-  //   occurrence (see X03). Not automatable in e2e. Covered server-side
-  //   (the EnsureComplianceForOccurrence path exercised by the calendar
-  //   service tests).
+  //   fixme rationale: materialization now actually happens as soon as the
+  //   combined modal opens — `PrepareComplete` calls
+  //   `EnsureComplianceForOccurrenceAsync` synchronously inside the
+  //   prepare-complete POST (see calendar-compliance-view.spec.ts's seed,
+  //   which already exercises this on-demand-materialize-then-cancel path).
+  //   What remains unautomatable here is asserting the row PERSISTS through
+  //   a full completion (block flips to `.completed`), which needs saving
+  //   the modal — not automatable (see X03). Covered server-side (the
+  //   EnsureComplianceForOccurrence path exercised by the calendar service
+  //   tests).
   // =======================================================================
   test.fixme('X10: completing a future occurrence materializes its compliance row', async () => {
-    // Intended: navigate forward, complete a future occurrence (submit the
-    // dialog), assert the row materialises and persists. Not feasible without
-    // automatable form submission (see X03).
+    // Intended: navigate forward, complete a future occurrence (save the
+    // combined modal), assert the row materialises and persists. Not
+    // feasible without automatable modal-save (see X03).
   });
 });

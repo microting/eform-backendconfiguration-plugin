@@ -36,6 +36,7 @@ import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
 import {CalendarComplianceViewComponent} from '../calendar-compliance-view/calendar-compliance-view.component';
+import {CalendarCompleteEventModalComponent, CalendarCompleteEventModalData} from '../../modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
 
 @Component({
   standalone: false,
@@ -650,6 +651,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       complianceId: row.complianceId,
       taskDate: row.taskDate,
       propertyId: row.propertyId,
+      assigneeIds: [],
     } as CalendarTaskLayoutModel);
   }
 
@@ -662,50 +664,24 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
-    // ALWAYS ask who completed the event — even when the task has a single
-    // assignee or none at all — so the completion is explicitly attributed.
-    // The list is ALL workers assigned to the event's PROPERTY (not just the
-    // task-assigned subset), sorted alphabetically by name.
-    // getLinkedSites(propertyId, false) returns exactly the property's
-    // non-removed PropertyWorkers as CommonDictionaryModel ({id, name,
-    // languageId}) — the shape the modal's `sites` input expects. compliance
-    // must be FALSE here: true appends the calling user's own SDK site, which
-    // EventDeployService's leak guard (#932/#1377) rejects on the on-demand
-    // completion path when that user is not a property worker. Locale-aware
-    // 'da' sort so Danish characters (æ/ø/å) order correctly; copy the array
-    // first (no in-place mutation of the service response).
-    const linked = await firstValueFrom(
-      this.propertiesService.getLinkedSites(task.propertyId, false),
-    );
-    if (!linked?.success || !linked.model) return;
-    const sites: CommonDictionaryModel[] =
-      [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
-
-    const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
-      minWidth: '400px',
+    if (task.completed) { return; }
+    const ref = this.dialog.open(CalendarCompleteEventModalComponent, {
+      data: {
+        taskId: task.id,
+        complianceId: task.complianceId ?? null,
+        occurrenceDate: task.taskDate,
+        propertyId: task.propertyId,
+        assigneeIds: task.assigneeIds ?? [],
+      } as CalendarCompleteEventModalData,
+      width: 'min(90vw, 1080px)',
+      maxWidth: '95vw',
       autoFocus: false,
+      restoreFocus: false,
     });
-    const instance = ref.componentInstance;
-    instance.sites = sites;
-    if (sites.length === 1) {
-      instance.selectedSite = sites[0];
+    const result = await firstValueFrom(ref.afterClosed());
+    if (result?.saved) {
+      this.reloadAfterCompletion();
     }
-
-    const selected: CommonDictionaryModel | null = await firstValueFrom(ref.afterClosed());
-    if (!selected) return;
-
-    const selectedWorkerId = selected.id;
-
-    this.calendarService
-      .toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate, selectedWorkerId)
-      .subscribe(res => {
-        if (!res?.success) return;
-        if (res.model?.requiresForm) {
-          this.onCompleteRequiresForm(res.model);
-          return;
-        }
-        this.reloadAfterCompletion();
-      });
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

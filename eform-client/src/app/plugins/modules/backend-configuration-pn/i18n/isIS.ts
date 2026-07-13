@@ -547,4 +547,5 @@ export const isIS = {
   Employees: 'Starfsmenn',
   At: 'Á',
   'Time of day': 'Tími dags',
+  'Done date': 'Lokadagur',
 };

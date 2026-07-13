@@ -547,4 +547,5 @@ export const skSK = {
   Employees: 'Zamestnanci',
   At: 'O',
   'Time of day': 'Denný čas',
+  'Done date': 'Dátum dokončenia',
 };

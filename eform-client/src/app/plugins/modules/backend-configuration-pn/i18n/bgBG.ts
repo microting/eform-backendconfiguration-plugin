@@ -547,4 +547,5 @@ export const bgBG = {
   Employees: 'Служители',
   At: 'В',
   'Time of day': 'Време на деня',
+  'Done date': 'Дата на завършване',
 };

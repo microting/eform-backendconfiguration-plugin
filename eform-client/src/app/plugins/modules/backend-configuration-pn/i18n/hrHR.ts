@@ -547,4 +547,5 @@ export const hrHR = {
   Employees: 'Zaposlenici',
   At: 'Na',
   'Time of day': 'Doba dana',
+  'Done date': 'Datum završetka',
 };

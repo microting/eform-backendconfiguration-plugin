@@ -547,4 +547,5 @@ export const ltLT = {
   Employees: 'Darbuotojai',
   At: 'Prie',
   'Time of day': 'Paros laikas',
+  'Done date': 'Atlikimo data',
 };

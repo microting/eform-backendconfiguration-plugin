@@ -547,4 +547,5 @@ export const roRO = {
   Employees: 'Angajați',
   At: 'La',
   'Time of day': 'Momentul zilei',
+  'Done date': 'Data finalizării',
 };

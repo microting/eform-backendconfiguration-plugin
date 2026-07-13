@@ -547,4 +547,5 @@ export const etET = {
   Employees: 'Töötajad',
   At: 'Kell',
   'Time of day': 'Kellaaeg',
+  'Done date': 'Valmis kuupäev',
 };

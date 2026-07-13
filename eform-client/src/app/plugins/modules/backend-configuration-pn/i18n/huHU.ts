@@ -547,4 +547,5 @@ export const huHU = {
   Employees: 'Alkalmazottak',
   At: 'At',
   'Time of day': 'Napszak',
+  'Done date': 'Kész dátum',
 };

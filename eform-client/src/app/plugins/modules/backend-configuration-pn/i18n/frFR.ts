@@ -546,4 +546,5 @@ export const frFR = {
   Employees: 'Employés',
   At: 'À',
   'Time of day': 'Heure de la journée',
+  'Done date': 'Date de réalisation',
 };

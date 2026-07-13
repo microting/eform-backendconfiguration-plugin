@@ -547,4 +547,5 @@ export const ptPT = {
   Employees: 'Funcionários',
   At: 'No',
   'Time of day': 'Hora do dia',
+  'Done date': 'Data de conclusão',
 };

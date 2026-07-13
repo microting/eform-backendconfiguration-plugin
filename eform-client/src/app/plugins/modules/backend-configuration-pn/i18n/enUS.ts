@@ -513,6 +513,7 @@ export const enUS= {
   Confirm: 'Confirm',
   'Save changes': 'Save changes',
   'Complete task': 'Complete task',
+  'Done date': 'Done date',
   'Only this': 'Only this',
   'This and following': 'This and following',
   'This and following (incl. completed)': 'This and following (incl. completed)',
