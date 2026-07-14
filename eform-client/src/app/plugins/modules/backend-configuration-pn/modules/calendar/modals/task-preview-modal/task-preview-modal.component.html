@@ -26,10 +26,14 @@
     <!-- Title -->
     <div class="preview-title">{{ data.task.title }}</div>
 
-    <!-- Schedule: day name + date + time -->
-    <div class="preview-row">
+    <!-- Schedule: day name + date, time on a smaller second line (mockup layout) -->
+    <div class="preview-row preview-row--schedule">
       <mat-icon class="preview-icon">schedule</mat-icon>
-      <span>{{ scheduleDateLabel }}<ng-container *ngIf="data.task.isAllDay">; {{ 'All day' | translate }}</ng-container><ng-container *ngIf="!data.task.isAllDay && timeDisplay">; {{ timeDisplay }}</ng-container></span>
+      <span class="preview-schedule">
+        {{ scheduleDateLabel }}
+        <span class="preview-schedule-sub" *ngIf="data.task.isAllDay">{{ 'All day' | translate }}</span>
+        <span class="preview-schedule-sub" *ngIf="!data.task.isAllDay && timeDisplay">{{ timeDisplay }}</span>
+      </span>
     </div>
 
     <!-- Repeat (always shown — "Does not repeat" for one-off tasks) -->
@@ -124,7 +128,7 @@
     <div class="preview-row" *ngIf="!isHistorical">
       <mat-icon class="preview-icon preview-toggle--on" *ngIf="data.task.status">toggle_on</mat-icon>
       <mat-icon class="preview-icon preview-toggle--off" *ngIf="!data.task.status">toggle_off</mat-icon>
-      <span>{{ (data.task.status ? 'Task visible on calendar and shown in app' : 'Task dimmed on calendar and not shown in app') | translate }}</span>
+      <span>{{ (data.task.status ? 'Task visible on calendar' : 'Task dimmed on calendar') | translate }}</span>
     </div>
 
     <!-- Compliance/overdue policy (future cards only) -->

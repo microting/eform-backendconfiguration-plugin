@@ -550,4 +550,6 @@ export const ptBR = {
   'Done date': 'Data de conclusão',
   'Completed by': 'Concluído por',
   View: 'Visualizar',
+  'Task visible on calendar': 'Tarefa visível no calendário',
+  'Task dimmed on calendar': 'Tarefa esmaecida no calendário',
 };

@@ -550,4 +550,6 @@ export const huHU = {
   'Done date': 'Kész dátum',
   'Completed by': 'Befejezte',
   View: 'Kilátás',
+  'Task visible on calendar': 'Feladat látható a naptárban',
+  'Task dimmed on calendar': 'Feladat szürkítve a naptárban',
 };

@@ -550,4 +550,6 @@ export const svSE = {
   'Done date': 'Klardatum',
   'Completed by': 'Slutförd av',
   View: 'Se',
+  'Task visible on calendar': 'Uppgift synlig i kalendern',
+  'Task dimmed on calendar': 'Uppgift nedtonad i kalendern',
 };

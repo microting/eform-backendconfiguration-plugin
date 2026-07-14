@@ -550,4 +550,6 @@ export const slSL = {
   'Done date': 'Datum zaključka',
   'Completed by': 'Dokončal/a',
   View: 'Ogled',
+  'Task visible on calendar': 'Opravilo vidno v koledarju',
+  'Task dimmed on calendar': 'Opravilo je v koledarju zatemnjeno',
 };

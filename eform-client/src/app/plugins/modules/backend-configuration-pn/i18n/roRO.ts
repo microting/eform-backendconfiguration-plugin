@@ -550,4 +550,6 @@ export const roRO = {
   'Done date': 'Data finalizării',
   'Completed by': 'Completat de',
   View: 'Vedere',
+  'Task visible on calendar': 'Sarcină vizibilă în calendar',
+  'Task dimmed on calendar': 'Sarcină estompată în calendar',
 };

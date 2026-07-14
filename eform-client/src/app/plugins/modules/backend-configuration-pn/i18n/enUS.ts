@@ -569,4 +569,6 @@ export const enUS= {
   'Time of day': 'Time of day',
   'Completed by': 'Completed by',
   View: 'View',
+  'Task visible on calendar': 'Task visible on calendar',
+  'Task dimmed on calendar': 'Task dimmed on calendar',
 };

@@ -550,4 +550,6 @@ export const ltLT = {
   'Done date': 'Atlikimo data',
   'Completed by': 'Užbaigė',
   View: 'Peržiūrėti',
+  'Task visible on calendar': 'Užduotis matoma kalendoriuje',
+  'Task dimmed on calendar': 'Užduotis kalendoriuje rodoma blankiai',
 };

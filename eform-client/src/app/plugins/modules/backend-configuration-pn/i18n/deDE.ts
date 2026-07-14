@@ -598,4 +598,6 @@ export const deDE = {
   'Time of day': 'Uhrzeit',
   'Done date': 'Fertigstellungsdatum',
   'Completed by': 'Abgeschlossen von',
+  'Task visible on calendar': 'Aufgabe im Kalender sichtbar',
+  'Task dimmed on calendar': 'Aufgabe im Kalender ausgegraut',
 };

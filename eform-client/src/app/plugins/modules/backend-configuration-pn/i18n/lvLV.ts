@@ -550,4 +550,6 @@ export const lvLV = {
   'Done date': 'Pabeigšanas datums',
   'Completed by': 'Pabeidzis',
   View: 'Skatīt',
+  'Task visible on calendar': 'Uzdevums ir redzams kalendārā',
+  'Task dimmed on calendar': 'Uzdevums kalendārā ir aptumšots',
 };

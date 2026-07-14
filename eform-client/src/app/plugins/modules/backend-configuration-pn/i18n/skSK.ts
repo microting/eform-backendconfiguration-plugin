@@ -550,4 +550,6 @@ export const skSK = {
   'Done date': 'Dátum dokončenia',
   'Completed by': 'Dokončil/a',
   View: 'Zobraziť',
+  'Task visible on calendar': 'Úloha viditeľná v kalendári',
+  'Task dimmed on calendar': 'Úloha je v kalendári zobrazená sivou farbou',
 };

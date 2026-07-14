@@ -550,4 +550,6 @@ export const csCZ = {
   'Done date': 'Datum dokončení',
   'Completed by': 'Dokončeno kým',
   View: 'Pohled',
+  'Task visible on calendar': 'Úkol viditelný v kalendáři',
+  'Task dimmed on calendar': 'Úkol je v kalendáři zobrazen šedě',
 };

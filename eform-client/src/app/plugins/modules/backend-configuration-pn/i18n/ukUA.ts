@@ -550,4 +550,6 @@ export const ukUA = {
   'Done date': 'Дата виконання',
   'Completed by': 'Завершено',
   View: 'Переглянути',
+  'Task visible on calendar': 'Завдання відображається в календарі',
+  'Task dimmed on calendar': 'Завдання затемнене в календарі',
 };
