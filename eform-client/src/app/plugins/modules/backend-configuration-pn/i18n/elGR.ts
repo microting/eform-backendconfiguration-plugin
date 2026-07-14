@@ -550,4 +550,6 @@ export const elGR = {
   'Done date': 'Ημερομηνία ολοκλήρωσης',
   'Completed by': 'Ολοκληρώθηκε από',
   View: 'Θέα',
+  'Task visible on calendar': 'Εργασία ορατή στο ημερολόγιο',
+  'Task dimmed on calendar': 'Η εργασία είναι απενεργοποιημένη στο ημερολόγιο',
 };

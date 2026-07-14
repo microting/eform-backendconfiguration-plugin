@@ -550,4 +550,6 @@ export const noNO = {
   'Done date': 'Ferdigdato',
   'Completed by': 'Fullført av',
   View: 'Utsikt',
+  'Task visible on calendar': 'Oppgave synlig i kalenderen',
+  'Task dimmed on calendar': 'Oppgave nedtonet i kalenderen',
 };

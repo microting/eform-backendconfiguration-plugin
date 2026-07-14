@@ -550,4 +550,6 @@ export const esES = {
   'Done date': 'Fecha de finalización',
   'Completed by': 'Completado por',
   View: 'Vista',
+  'Task visible on calendar': 'Tarea visible en el calendario',
+  'Task dimmed on calendar': 'La tarea aparece atenuada en el calendario.',
 };

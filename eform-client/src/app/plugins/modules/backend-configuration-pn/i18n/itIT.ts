@@ -550,4 +550,6 @@ export const itIT = {
   'Done date': 'Data di completamento',
   'Completed by': 'Completato da',
   View: 'Visualizzazione',
+  'Task visible on calendar': 'Attività visibile sul calendario',
+  'Task dimmed on calendar': 'Attività oscurata sul calendario',
 };

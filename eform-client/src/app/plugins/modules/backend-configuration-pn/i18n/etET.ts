@@ -550,4 +550,6 @@ export const etET = {
   'Done date': 'Valmis kuupäev',
   'Completed by': 'Lõpetanud',
   View: 'Vaade',
+  'Task visible on calendar': 'Ülesanne kalendris nähtav',
+  'Task dimmed on calendar': 'Ülesanne on kalendris tuhmitud',
 };

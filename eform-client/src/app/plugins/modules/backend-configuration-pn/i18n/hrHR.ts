@@ -550,4 +550,6 @@ export const hrHR = {
   'Done date': 'Datum završetka',
   'Completed by': 'Završio/la',
   View: 'Pogled',
+  'Task visible on calendar': 'Zadatak vidljiv u kalendaru',
+  'Task dimmed on calendar': 'Zadatak je zatamnjen u kalendaru',
 };

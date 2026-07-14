@@ -550,4 +550,6 @@ export const fiFI = {
   'Done date': 'Valmistumispäivämäärä',
   'Completed by': 'Valmistui',
   View: 'Näytä',
+  'Task visible on calendar': 'Tehtävä näkyy kalenterissa',
+  'Task dimmed on calendar': 'Tehtävä himmennettynä kalenterissa',
 };

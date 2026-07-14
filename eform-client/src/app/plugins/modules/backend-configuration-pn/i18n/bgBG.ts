@@ -550,4 +550,6 @@ export const bgBG = {
   'Done date': 'Дата на завършване',
   'Completed by': 'Завършено от',
   View: 'Преглед',
+  'Task visible on calendar': 'Задачата е видима в календара',
+  'Task dimmed on calendar': 'Задачата е затъмнена в календара',
 };

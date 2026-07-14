@@ -550,4 +550,6 @@ export const plPL = {
   'Done date': 'Data wykonania',
   'Completed by': 'Ukończone przez',
   View: 'Pogląd',
+  'Task visible on calendar': 'Zadanie widoczne w kalendarzu',
+  'Task dimmed on calendar': 'Zadanie przyciemnione w kalendarzu',
 };

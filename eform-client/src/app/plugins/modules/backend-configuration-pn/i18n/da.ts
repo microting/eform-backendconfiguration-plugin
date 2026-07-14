@@ -551,4 +551,6 @@ export const da = {
   'Done date': 'Udført dato',
   'Completed by': 'Udført af',
   View: 'Vis',
+  'Task visible on calendar': 'Opgave synlig i kalender',
+  'Task dimmed on calendar': 'Opgave nedtonet i kalender',
 };

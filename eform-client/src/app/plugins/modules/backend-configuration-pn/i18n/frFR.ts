@@ -549,4 +549,6 @@ export const frFR = {
   'Done date': 'Date de réalisation',
   'Completed by': 'Terminé par',
   View: 'Voir',
+  'Task visible on calendar': 'Tâche visible sur le calendrier',
+  'Task dimmed on calendar': 'Tâche grisée dans le calendrier',
 };

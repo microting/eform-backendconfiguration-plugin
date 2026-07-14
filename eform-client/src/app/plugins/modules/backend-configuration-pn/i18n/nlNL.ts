@@ -550,4 +550,6 @@ export const nlNL = {
   'Done date': 'Voltooiingsdatum',
   'Completed by': 'Voltooid door',
   View: 'Weergave',
+  'Task visible on calendar': 'Taak zichtbaar op de kalender',
+  'Task dimmed on calendar': 'Taak grijs weergegeven op de kalender',
 };

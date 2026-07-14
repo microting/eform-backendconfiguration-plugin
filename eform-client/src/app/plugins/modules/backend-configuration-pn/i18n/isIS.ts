@@ -550,4 +550,6 @@ export const isIS = {
   'Done date': 'Lokadagur',
   'Completed by': 'Lokið af',
   View: 'Skoða',
+  'Task visible on calendar': 'Verkefni sýnilegt á dagatali',
+  'Task dimmed on calendar': 'Verkefni dimmt í dagatali',
 };

@@ -81,6 +81,26 @@
   flex-shrink: 0;
 }
 
+// Mockup layout: date on the first line, time (or "All day") on a smaller
+// muted second line. The icon top-aligns with the date line.
+.preview-row--schedule {
+  align-items: flex-start;
+
+  .preview-icon {
+    margin-top: 2px;
+  }
+}
+
+.preview-schedule {
+  display: flex;
+  flex-direction: column;
+
+  .preview-schedule-sub {
+    font-size: 12px;
+    color: #5f6368;
+  }
+}
+
 // Description can span multiple lines: top-align the icon and preserve the
 // line breaks / whitespace the user typed in the Beskrivelse field so the
 // formatting is reflected here. Long words wrap instead of overflowing.
