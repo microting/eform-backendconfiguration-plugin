@@ -548,4 +548,6 @@ export const huHU = {
   At: 'At',
   'Time of day': 'Napszak',
   'Done date': 'Kész dátum',
+  'Completed by': 'Befejezte',
+  View: 'Kilátás',
 };

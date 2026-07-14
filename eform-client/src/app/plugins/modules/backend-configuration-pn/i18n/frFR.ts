@@ -547,4 +547,6 @@ export const frFR = {
   At: 'À',
   'Time of day': 'Heure de la journée',
   'Done date': 'Date de réalisation',
+  'Completed by': 'Terminé par',
+  View: 'Voir',
 };

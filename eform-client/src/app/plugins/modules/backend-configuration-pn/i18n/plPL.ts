@@ -548,4 +548,6 @@ export const plPL = {
   At: 'Na ',
   'Time of day': 'Pora dnia',
   'Done date': 'Data wykonania',
+  'Completed by': 'Ukończone przez',
+  View: 'Pogląd',
 };

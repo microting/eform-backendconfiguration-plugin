@@ -548,4 +548,6 @@ export const hrHR = {
   At: 'Na',
   'Time of day': 'Doba dana',
   'Done date': 'Datum završetka',
+  'Completed by': 'Završio/la',
+  View: 'Pogled',
 };

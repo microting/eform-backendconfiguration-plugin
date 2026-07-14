@@ -59,6 +59,7 @@ import {
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 } from './modals';
 
 // Re-export modal components for barrel
@@ -73,6 +74,7 @@ export {
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 };
 
 @NgModule({
@@ -98,6 +100,7 @@ export {
     ComplianceCaseModalComponent,
     CalendarSelectWorkerModalComponent,
     CalendarCompleteEventModalComponent,
+    CalendarImageLightboxComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
     TagCreateDialogComponent,

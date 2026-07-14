@@ -548,4 +548,6 @@ export const svSE = {
   At: 'På',
   'Time of day': 'Tid på dagen',
   'Done date': 'Klardatum',
+  'Completed by': 'Slutförd av',
+  View: 'Se',
 };

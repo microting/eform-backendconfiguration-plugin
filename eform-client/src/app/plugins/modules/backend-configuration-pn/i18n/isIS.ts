@@ -548,4 +548,6 @@ export const isIS = {
   At: 'Á',
   'Time of day': 'Tími dags',
   'Done date': 'Lokadagur',
+  'Completed by': 'Lokið af',
+  View: 'Skoða',
 };

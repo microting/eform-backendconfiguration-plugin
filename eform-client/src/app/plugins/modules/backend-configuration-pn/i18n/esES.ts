@@ -548,4 +548,6 @@ export const esES = {
   At: 'En',
   'Time of day': 'Hora del día',
   'Done date': 'Fecha de finalización',
+  'Completed by': 'Completado por',
+  View: 'Vista',
 };

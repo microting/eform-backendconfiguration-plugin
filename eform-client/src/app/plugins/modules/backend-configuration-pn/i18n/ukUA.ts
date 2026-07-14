@@ -548,4 +548,6 @@ export const ukUA = {
   At: 'О',
   'Time of day': 'Час доби',
   'Done date': 'Дата виконання',
+  'Completed by': 'Завершено',
+  View: 'Переглянути',
 };

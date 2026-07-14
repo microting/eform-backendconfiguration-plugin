@@ -548,4 +548,6 @@ export const elGR = {
   At: 'Στο',
   'Time of day': 'Ώρα της ημέρας',
   'Done date': 'Ημερομηνία ολοκλήρωσης',
+  'Completed by': 'Ολοκληρώθηκε από',
+  View: 'Θέα',
 };
