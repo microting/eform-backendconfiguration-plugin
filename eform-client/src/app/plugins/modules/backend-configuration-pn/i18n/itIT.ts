@@ -548,4 +548,6 @@ export const itIT = {
   At: 'A',
   'Time of day': 'ora del giorno',
   'Done date': 'Data di completamento',
+  'Completed by': 'Completato da',
+  View: 'Visualizzazione',
 };

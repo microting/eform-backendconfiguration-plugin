@@ -687,6 +687,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
     this.closePreviewOverlay();
 
+    // Refresh the eForm option list so the preview card can resolve the
+    // task's eformId to a display name (same pattern as openEditModal).
+    this.loadEforms();
+
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
@@ -712,6 +716,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       properties: this.properties,
+      eforms: this.eforms$,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
 
     const popoverInjector = Injector.create({

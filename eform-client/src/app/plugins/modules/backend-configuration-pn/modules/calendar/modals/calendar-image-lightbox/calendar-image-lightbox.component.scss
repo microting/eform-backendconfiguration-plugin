@@ -1,0 +1,75 @@
+// Dark centered lightbox. The component fills the MDC dialog surface, so a
+// dark background here (with the surface's border-radius) reads as a dark
+// modal without any global panel-class overrides.
+.lightbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.97);
+  border-radius: inherit;
+  padding: 48px 72px;
+  min-width: 320px;
+  min-height: 240px;
+}
+
+.lightbox-image {
+  max-width: min(80vw, 1200px);
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.lightbox-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  &--prev {
+    left: 16px;
+  }
+
+  &--next {
+    right: 16px;
+  }
+}
+
+.lightbox-counter {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+}

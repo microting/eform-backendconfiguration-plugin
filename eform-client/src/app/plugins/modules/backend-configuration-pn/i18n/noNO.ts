@@ -548,4 +548,6 @@ export const noNO = {
   At: 'På',
   'Time of day': 'Tid på dagen',
   'Done date': 'Ferdigdato',
+  'Completed by': 'Fullført av',
+  View: 'Utsikt',
 };

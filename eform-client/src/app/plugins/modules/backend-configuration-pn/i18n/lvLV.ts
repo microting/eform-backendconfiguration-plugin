@@ -548,4 +548,6 @@ export const lvLV = {
   At: 'Plkst.',
   'Time of day': 'Dienas laiks',
   'Done date': 'Pabeigšanas datums',
+  'Completed by': 'Pabeidzis',
+  View: 'Skatīt',
 };

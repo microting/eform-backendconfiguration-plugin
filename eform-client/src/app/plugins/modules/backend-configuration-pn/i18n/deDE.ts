@@ -597,4 +597,5 @@ export const deDE = {
   At: 'Bei',
   'Time of day': 'Uhrzeit',
   'Done date': 'Fertigstellungsdatum',
+  'Completed by': 'Abgeschlossen von',
 };

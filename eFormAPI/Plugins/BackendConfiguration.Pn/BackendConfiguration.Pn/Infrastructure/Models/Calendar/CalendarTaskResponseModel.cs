@@ -60,4 +60,12 @@ public class CalendarTaskResponseModel
     /// the GetTaskTrackerList and GetTasksForWeek service paths.
     /// </summary>
     public bool TaskIsExpired { get; set; }
+
+    /// <summary>
+    /// Completion metadata for completed compliance-backed rows: the site
+    /// (worker) name that checked the case and when it was done. Null for
+    /// uncompleted rows and recurrence-derived rows.
+    /// </summary>
+    public string? DoneByName { get; set; }
+    public DateTime? DoneAt { get; set; }
 }

@@ -548,4 +548,6 @@ export const slSL = {
   At: 'Ob',
   'Time of day': 'Čas dneva',
   'Done date': 'Datum zaključka',
+  'Completed by': 'Dokončal/a',
+  View: 'Ogled',
 };

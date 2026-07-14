@@ -548,4 +548,6 @@ export const ltLT = {
   At: 'Prie',
   'Time of day': 'Paros laikas',
   'Done date': 'Atlikimo data',
+  'Completed by': 'Užbaigė',
+  View: 'Peržiūrėti',
 };

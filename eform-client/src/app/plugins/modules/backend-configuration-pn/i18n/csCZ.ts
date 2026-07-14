@@ -548,4 +548,6 @@ export const csCZ = {
   At: 'Na',
   'Time of day': 'Denní doba',
   'Done date': 'Datum dokončení',
+  'Completed by': 'Dokončeno kým',
+  View: 'Pohled',
 };

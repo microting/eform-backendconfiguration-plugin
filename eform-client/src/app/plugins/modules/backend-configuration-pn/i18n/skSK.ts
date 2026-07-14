@@ -548,4 +548,6 @@ export const skSK = {
   At: 'O',
   'Time of day': 'Denný čas',
   'Done date': 'Dátum dokončenia',
+  'Completed by': 'Dokončil/a',
+  View: 'Zobraziť',
 };

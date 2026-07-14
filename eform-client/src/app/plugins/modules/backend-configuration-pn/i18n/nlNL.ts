@@ -548,4 +548,6 @@ export const nlNL = {
   At: 'Bij',
   'Time of day': 'Tijdstip van de dag',
   'Done date': 'Voltooiingsdatum',
+  'Completed by': 'Voltooid door',
+  View: 'Weergave',
 };

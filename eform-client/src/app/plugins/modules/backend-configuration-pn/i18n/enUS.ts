@@ -567,4 +567,6 @@ export const enUS= {
   Employees: 'Employees',
   At: 'At',
   'Time of day': 'Time of day',
+  'Completed by': 'Completed by',
+  View: 'View',
 };

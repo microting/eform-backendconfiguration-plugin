@@ -548,4 +548,6 @@ export const etET = {
   At: 'Kell',
   'Time of day': 'Kellaaeg',
   'Done date': 'Valmis kuupäev',
+  'Completed by': 'Lõpetanud',
+  View: 'Vaade',
 };

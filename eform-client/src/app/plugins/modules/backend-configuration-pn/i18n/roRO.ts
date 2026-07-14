@@ -548,4 +548,6 @@ export const roRO = {
   At: 'La',
   'Time of day': 'Momentul zilei',
   'Done date': 'Data finalizării',
+  'Completed by': 'Completat de',
+  View: 'Vedere',
 };

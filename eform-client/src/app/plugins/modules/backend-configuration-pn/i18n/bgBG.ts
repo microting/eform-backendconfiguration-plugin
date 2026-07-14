@@ -548,4 +548,6 @@ export const bgBG = {
   At: 'В',
   'Time of day': 'Време на деня',
   'Done date': 'Дата на завършване',
+  'Completed by': 'Завършено от',
+  View: 'Преглед',
 };

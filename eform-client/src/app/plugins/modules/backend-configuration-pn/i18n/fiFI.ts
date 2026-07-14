@@ -548,4 +548,6 @@ export const fiFI = {
   At: 'Klo',
   'Time of day': 'Kellonaika',
   'Done date': 'Valmistumispäivämäärä',
+  'Completed by': 'Valmistui',
+  View: 'Näytä',
 };

@@ -548,4 +548,6 @@ export const ptBR = {
   At: 'No',
   'Time of day': 'Hora do dia',
   'Done date': 'Data de conclusão',
+  'Completed by': 'Concluído por',
+  View: 'Visualizar',
 };

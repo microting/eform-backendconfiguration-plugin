@@ -549,4 +549,6 @@ export const da = {
   At: 'Kl.',
   'Time of day': 'Tidspunkt',
   'Done date': 'Udført dato',
+  'Completed by': 'Udført af',
+  View: 'Vis',
 };
