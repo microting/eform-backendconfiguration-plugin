@@ -489,7 +489,6 @@ export const lvLV = {
   'Open link': 'Atvērt saiti',
   'No worker found': 'Nav atrasts neviens darbinieks',
   'My tags': 'Manas atzīmes',
-  'This task is part of a recurring series. What do you want to': 'Šis uzdevums ir daļa no atkārtotas sērijas. Ko jūs vēlaties?',
   ID: 'ID',
   Save: 'Saglabāt',
   Delete: 'Dzēst',
@@ -552,4 +551,8 @@ export const lvLV = {
   View: 'Skatīt',
   'Task visible on calendar': 'Uzdevums ir redzams kalendārā',
   'Task dimmed on calendar': 'Uzdevums kalendārā ir aptumšots',
+  'This task is part of a recurring series. What do you want to edit?': 'Šis uzdevums ir daļa no atkārtotas virknes. Ko vēlaties rediģēt?',
+  'This task is part of a recurring series. What do you want to move?': 'Šis uzdevums ir daļa no atkārtotas sērijas. Ko vēlaties pārvietot?',
+  'This task is part of a recurring series. What do you want to delete?': 'Šis uzdevums ir daļa no atkārtotas virknes. Ko vēlaties dzēst?',
+  'Updated.': 'Atjaunināts.',
 };

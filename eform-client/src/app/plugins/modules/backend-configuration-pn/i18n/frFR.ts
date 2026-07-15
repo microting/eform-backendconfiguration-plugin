@@ -488,7 +488,6 @@ export const frFR = {
   'Open link': 'Ouvrir le lien',
   'No worker found': 'Aucun travailleur trouvé',
   'My tags': 'Mes étiquettes',
-  'This task is part of a recurring series. What do you want to': 'Cette tâche fait partie d&#39;une série récurrente. Que souhaitez-vous faire ?',
   ID: 'ID',
   Save: 'Sauvegarder',
   Delete: 'Supprimer',
@@ -551,4 +550,8 @@ export const frFR = {
   View: 'Voir',
   'Task visible on calendar': 'Tâche visible sur le calendrier',
   'Task dimmed on calendar': 'Tâche grisée dans le calendrier',
+  'This task is part of a recurring series. What do you want to edit?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous modifier ?',
+  'This task is part of a recurring series. What do you want to move?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous déplacer ?',
+  'This task is part of a recurring series. What do you want to delete?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous supprimer ?',
+  'Updated.': 'Mis à jour.',
 };

@@ -489,7 +489,6 @@ export const itIT = {
   'Open link': 'Apri il link',
   'No worker found': 'Nessun lavoratore trovato',
   'My tags': 'I miei tag',
-  'This task is part of a recurring series. What do you want to': 'Questo compito fa parte di una serie ricorrente. Cosa vuoi fare?',
   ID: 'ID',
   Save: 'Salva',
   Delete: 'Eliminare',
@@ -552,4 +551,8 @@ export const itIT = {
   View: 'Visualizzazione',
   'Task visible on calendar': 'Attività visibile sul calendario',
   'Task dimmed on calendar': 'Attività oscurata sul calendario',
+  'This task is part of a recurring series. What do you want to edit?': 'Questo compito fa parte di una serie ricorrente. Cosa desideri modificare?',
+  'This task is part of a recurring series. What do you want to move?': 'Questo compito fa parte di una serie ricorrente. Cosa vuoi spostare?',
+  'This task is part of a recurring series. What do you want to delete?': 'Questa operazione fa parte di una serie ricorrente. Cosa desideri eliminare?',
+  'Updated.': 'Aggiornato.',
 };

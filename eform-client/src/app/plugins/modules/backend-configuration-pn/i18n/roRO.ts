@@ -489,7 +489,6 @@ export const roRO = {
   'Open link': 'Deschide linkul',
   'No worker found': 'Nu s-a găsit niciun lucrător',
   'My tags': 'Etichetele mele',
-  'This task is part of a recurring series. What do you want to': 'Această sarcină face parte dintr-o serie recurentă. Ce vrei să faci',
   ID: 'ID',
   Save: 'Salva',
   Delete: 'Şterge',
@@ -552,4 +551,8 @@ export const roRO = {
   View: 'Vedere',
   'Task visible on calendar': 'Sarcină vizibilă în calendar',
   'Task dimmed on calendar': 'Sarcină estompată în calendar',
+  'This task is part of a recurring series. What do you want to edit?': 'Această sarcină face parte dintr-o serie recurentă. Ce doriți să editați?',
+  'This task is part of a recurring series. What do you want to move?': 'Această sarcină face parte dintr-o serie recurentă. Ce vrei să muți?',
+  'This task is part of a recurring series. What do you want to delete?': 'Această sarcină face parte dintr-o serie recurentă. Ce doriți să ștergeți?',
+  'Updated.': 'Actualizat.',
 };

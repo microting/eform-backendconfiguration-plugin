@@ -489,7 +489,6 @@ export const bgBG = {
   'Open link': 'Отвори линка',
   'No worker found': 'Не е намерен работник',
   'My tags': 'Моите тагове',
-  'This task is part of a recurring series. What do you want to': 'Тази задача е част от повтаряща се поредица. Какво искате да',
   ID: 'ID',
   Save: 'Запазване',
   Delete: 'Изтриване',
@@ -552,4 +551,8 @@ export const bgBG = {
   View: 'Преглед',
   'Task visible on calendar': 'Задачата е видима в календара',
   'Task dimmed on calendar': 'Задачата е затъмнена в календара',
+  'This task is part of a recurring series. What do you want to edit?': 'Тази задача е част от повтаряща се поредица. Какво искате да редактирате?',
+  'This task is part of a recurring series. What do you want to move?': 'Тази задача е част от повтаряща се поредица. Какво искате да преместите?',
+  'This task is part of a recurring series. What do you want to delete?': 'Тази задача е част от повтаряща се поредица. Какво искате да изтриете?',
+  'Updated.': 'Актуализирано.',
 };

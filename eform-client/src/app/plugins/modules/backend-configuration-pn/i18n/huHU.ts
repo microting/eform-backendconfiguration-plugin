@@ -489,7 +489,6 @@ export const huHU = {
   'Open link': 'Link megnyitása',
   'No worker found': 'Nem találtak munkást',
   'My tags': 'Saját címkék',
-  'This task is part of a recurring series. What do you want to': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne?',
   ID: 'ID',
   Save: 'Megtakarítás',
   Delete: 'Töröl',
@@ -552,4 +551,8 @@ export const huHU = {
   View: 'Kilátás',
   'Task visible on calendar': 'Feladat látható a naptárban',
   'Task dimmed on calendar': 'Feladat szürkítve a naptárban',
+  'This task is part of a recurring series. What do you want to edit?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne szerkeszteni?',
+  'This task is part of a recurring series. What do you want to move?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne áthelyezni?',
+  'This task is part of a recurring series. What do you want to delete?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne törölni?',
+  'Updated.': 'Frissítve.',
 };

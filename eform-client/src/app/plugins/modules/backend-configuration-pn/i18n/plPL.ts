@@ -489,7 +489,6 @@ export const plPL = {
   'Open link': 'Otwórz link',
   'No worker found': 'Nie znaleziono pracownika',
   'My tags': 'Moje tagi',
-  'This task is part of a recurring series. What do you want to': 'To zadanie jest częścią powtarzającej się serii. Co chcesz zrobić?',
   ID: 'ID',
   Save: 'Ratować',
   Delete: 'Usuwać',
@@ -552,4 +551,8 @@ export const plPL = {
   View: 'Pogląd',
   'Task visible on calendar': 'Zadanie widoczne w kalendarzu',
   'Task dimmed on calendar': 'Zadanie przyciemnione w kalendarzu',
+  'This task is part of a recurring series. What do you want to edit?': 'To zadanie jest częścią cyklicznej serii. Co chcesz edytować?',
+  'This task is part of a recurring series. What do you want to move?': 'To zadanie jest częścią cyklicznej serii. Co chcesz przenieść?',
+  'This task is part of a recurring series. What do you want to delete?': 'To zadanie jest częścią cyklicznej serii. Co chcesz usunąć?',
+  'Updated.': 'Zaktualizowano.',
 };

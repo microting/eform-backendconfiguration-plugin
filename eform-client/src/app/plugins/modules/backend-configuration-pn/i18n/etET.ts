@@ -489,7 +489,6 @@ export const etET = {
   'Open link': 'Ava link',
   'No worker found': 'Töötajat ei leitud',
   'My tags': 'Minu sildid',
-  'This task is part of a recurring series. What do you want to': 'See ülesanne on osa korduvast seeriast. Mida sa tahad?',
   ID: 'ID',
   Save: 'Salvesta',
   Delete: 'Kustuta',
@@ -552,4 +551,8 @@ export const etET = {
   View: 'Vaade',
   'Task visible on calendar': 'Ülesanne kalendris nähtav',
   'Task dimmed on calendar': 'Ülesanne on kalendris tuhmitud',
+  'This task is part of a recurring series. What do you want to edit?': 'See ülesanne on osa korduvast seeriast. Mida soovite muuta?',
+  'This task is part of a recurring series. What do you want to move?': 'See ülesanne on osa korduvast seeriast. Mida sa liigutada tahad?',
+  'This task is part of a recurring series. What do you want to delete?': 'See ülesanne on osa korduvast seeriast. Mida soovite kustutada?',
+  'Updated.': 'Uuendatud.',
 };

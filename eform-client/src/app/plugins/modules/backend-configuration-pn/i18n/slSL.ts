@@ -489,7 +489,6 @@ export const slSL = {
   'Open link': 'Odpri povezavo',
   'No worker found': 'Ni najdenega delavca',
   'My tags': 'Moje oznake',
-  'This task is part of a recurring series. What do you want to': 'Ta naloga je del ponavljajoče se serije. Kaj želite',
   ID: 'ID',
   Save: 'Shrani',
   Delete: 'Izbriši',
@@ -552,4 +551,8 @@ export const slSL = {
   View: 'Ogled',
   'Task visible on calendar': 'Opravilo vidno v koledarju',
   'Task dimmed on calendar': 'Opravilo je v koledarju zatemnjeno',
+  'This task is part of a recurring series. What do you want to edit?': 'To opravilo je del ponavljajoče se serije. Kaj želite urediti?',
+  'This task is part of a recurring series. What do you want to move?': 'Ta naloga je del ponavljajoče se serije. Kaj želite premakniti?',
+  'This task is part of a recurring series. What do you want to delete?': 'To opravilo je del ponavljajoče se serije. Kaj želite izbrisati?',
+  'Updated.': 'Posodobljeno.',
 };

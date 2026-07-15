@@ -489,7 +489,6 @@ export const ptPT = {
   'Open link': 'Abrir link',
   'No worker found': 'Nenhum trabalhador encontrado',
   'My tags': 'Minhas tags',
-  'This task is part of a recurring series. What do you want to': 'Esta tarefa faz parte de uma série recorrente. O que você deseja fazer?',
   ID: 'ID',
   Save: 'Salvar',
   Delete: 'Excluir',
@@ -552,4 +551,8 @@ export const ptPT = {
   View: 'Visualizar',
   'Task visible on calendar': 'Tarefa visível no calendário',
   'Task dimmed on calendar': 'Tarefa esmaecida no calendário',
+  'This task is part of a recurring series. What do you want to edit?': 'Esta tarefa faz parte de uma série recorrente. O que você deseja editar?',
+  'This task is part of a recurring series. What do you want to move?': 'Esta tarefa faz parte de uma série recorrente. O que você deseja mover?',
+  'This task is part of a recurring series. What do you want to delete?': 'Esta tarefa faz parte de uma série recorrente. O que você deseja excluir?',
+  'Updated.': 'Atualizado.',
 };

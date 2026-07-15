@@ -489,7 +489,6 @@ export const ltLT = {
   'Open link': 'Atidaryti nuorodą',
   'No worker found': 'Nerasta jokio darbuotojo',
   'My tags': 'Mano žymės',
-  'This task is part of a recurring series. What do you want to': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite?',
   ID: 'ID',
   Save: 'Išsaugoti',
   Delete: 'Ištrinti',
@@ -552,4 +551,8 @@ export const ltLT = {
   View: 'Peržiūrėti',
   'Task visible on calendar': 'Užduotis matoma kalendoriuje',
   'Task dimmed on calendar': 'Užduotis kalendoriuje rodoma blankiai',
+  'This task is part of a recurring series. What do you want to edit?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite redaguoti?',
+  'This task is part of a recurring series. What do you want to move?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite perkelti?',
+  'This task is part of a recurring series. What do you want to delete?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite ištrinti?',
+  'Updated.': 'Atnaujinta.',
 };

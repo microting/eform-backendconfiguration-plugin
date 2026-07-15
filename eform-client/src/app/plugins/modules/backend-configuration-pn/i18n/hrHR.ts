@@ -489,7 +489,6 @@ export const hrHR = {
   'Open link': 'Otvori poveznicu',
   'No worker found': 'Nije pronađen radnik',
   'My tags': 'Moje oznake',
-  'This task is part of a recurring series. What do you want to': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite',
   ID: 'ID',
   Save: 'Uštedjeti',
   Delete: 'Izbrisati',
@@ -552,4 +551,8 @@ export const hrHR = {
   View: 'Pogled',
   'Task visible on calendar': 'Zadatak vidljiv u kalendaru',
   'Task dimmed on calendar': 'Zadatak je zatamnjen u kalendaru',
+  'This task is part of a recurring series. What do you want to edit?': 'Ovaj zadatak je dio ponavljajuće serije. Što želite urediti?',
+  'This task is part of a recurring series. What do you want to move?': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite premjestiti?',
+  'This task is part of a recurring series. What do you want to delete?': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite izbrisati?',
+  'Updated.': 'Ažurirano.',
 };
