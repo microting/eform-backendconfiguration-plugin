@@ -63,11 +63,22 @@ export class CalendarHeaderComponent implements OnInit, OnChanges {
       // Capitalize first letter (Danish locale returns "lørdag, …" lowercase).
       return formatted.charAt(0).toUpperCase() + formatted.slice(1);
     }
-    // Week view: "Month Year" (e.g. "April 2026").
+    // Week view: month(s) of the week's Monday and Sunday, rendered exactly
+    // as the locale produces them — Danish stays lowercase ("juli 2026").
+    // A week straddling a month border names both months with a spaced
+    // hyphen ("juni - juli 2026"); a year border keeps each month's own
+    // year ("december 2026 - januar 2027"). See
+    // 2026-07-15-calendar-week-title-two-months-design.md.
     const monday = this.getMondayOfWeek(d);
-    const formatted = monday.toLocaleDateString(locale, {month: 'long', year: 'numeric'});
-    // Capitalize first letter (Danish locale returns "april 2026" lowercase).
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const m1 = monday.toLocaleDateString(locale, {month: 'long'});
+    const m2 = sunday.toLocaleDateString(locale, {month: 'long'});
+    const y1 = monday.getFullYear();
+    const y2 = sunday.getFullYear();
+    if (m1 === m2 && y1 === y2) return `${m1} ${y1}`;
+    if (y1 === y2) return `${m1} - ${m2} ${y1}`;
+    return `${m1} ${y1} - ${m2} ${y2}`;
   }
 
   get weekBadge(): string {
