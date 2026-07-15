@@ -648,6 +648,47 @@ test.describe.serial('Calendar UI enhancements', () => {
       const after = await calendarPage.getCalendarHeaderDateText();
       expect(after).toBe(formatLongDate(addDays(mondayOfThisWeekLocal(), 7)));
     });
+
+    // Mirror calendar-header.component.ts displayDate for WEEK view: locale
+    // month names untouched (da-DK ⇒ lowercase, never capitalized); a week
+    // straddling a month border names both months ("juni - juli 2026"); a
+    // year border keeps each month's own year ("december 2026 - januar 2027").
+    // See 2026-07-15-calendar-week-title-two-months-design.md.
+    function formatWeekTitle(monday: Date, locale = 'da-DK'): string {
+      const sunday = addDays(monday, 6);
+      const m1 = monday.toLocaleDateString(locale, { month: 'long' });
+      const m2 = sunday.toLocaleDateString(locale, { month: 'long' });
+      const y1 = monday.getFullYear();
+      const y2 = sunday.getFullYear();
+      if (m1 === m2 && y1 === y2) return `${m1} ${y1}`;
+      if (y1 === y2) return `${m1} - ${m2} ${y1}`;
+      return `${m1} ${y1} - ${m2} ${y2}`;
+    }
+
+    test('H4: week title is lowercase and names both months on border weeks', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Current week: title must match the rule exactly — in particular the
+      // month name keeps the locale's lowercase (no manual capitalization).
+      let monday = mondayOfThisWeekLocal();
+      const initial = await calendarPage.getCalendarHeaderDateText();
+      expect(initial).toBe(formatWeekTitle(monday));
+      expect(initial.charAt(0)).toBe(initial.charAt(0).toLowerCase());
+
+      // Walk forward to the next month-border week (always within 5 steps)
+      // and assert both month names appear, joined by the spaced hyphen.
+      let steps = 0;
+      while (monday.getMonth() === addDays(monday, 6).getMonth() && steps < 5) {
+        await calendarPage.navigateToNextWeek();
+        monday = addDays(monday, 7);
+        steps++;
+      }
+      expect(monday.getMonth()).not.toBe(addDays(monday, 6).getMonth());
+      const crossTitle = await calendarPage.getCalendarHeaderDateText();
+      expect(crossTitle).toBe(formatWeekTitle(monday));
+      expect(crossTitle).toContain(' - ');
+    });
   });
 
   // =======================================================================
