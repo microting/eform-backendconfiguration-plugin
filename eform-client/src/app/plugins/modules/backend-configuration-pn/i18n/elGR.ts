@@ -489,7 +489,6 @@ export const elGR = {
   'Open link': 'Άνοιγμα συνδέσμου',
   'No worker found': 'Δεν βρέθηκε εργαζόμενος',
   'My tags': 'Οι ετικέτες μου',
-  'This task is part of a recurring series. What do you want to': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να κάνετε;',
   ID: 'ID',
   Save: 'Εκτός',
   Delete: 'Διαγράφω',
@@ -552,4 +551,8 @@ export const elGR = {
   View: 'Θέα',
   'Task visible on calendar': 'Εργασία ορατή στο ημερολόγιο',
   'Task dimmed on calendar': 'Η εργασία είναι απενεργοποιημένη στο ημερολόγιο',
+  'This task is part of a recurring series. What do you want to edit?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς. Τι θέλετε να επεξεργαστείτε;',
+  'This task is part of a recurring series. What do you want to move?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να μετακινήσετε;',
+  'This task is part of a recurring series. What do you want to delete?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να διαγράψετε;',
+  'Updated.': 'Ενημερώθηκε.',
 };

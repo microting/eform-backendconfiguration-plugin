@@ -1053,12 +1053,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
               await this.uploadStagedFilesSequential(newId);
             }
             this.close(true);
-          } else {
-            const msg = (res && res.message)
-              ? res.message
-              : this.translate.instant('Could not save the event');
-            this.toastr.error(msg, this.translate.instant('Error'));
           }
+          // success=false: the calendar service already toasts the uniform
+          // "Error [key]" — the modal stays open so the user can retry.
         },
         error: err => {
           const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');

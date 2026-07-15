@@ -489,7 +489,6 @@ export const skSK = {
   'Open link': 'Otvoriť odkaz',
   'No worker found': 'Nenašiel sa žiadny pracovník',
   'My tags': 'Moje značky',
-  'This task is part of a recurring series. What do you want to': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete',
   ID: 'ID',
   Save: 'Uložiť',
   Delete: 'Odstrániť',
@@ -552,4 +551,8 @@ export const skSK = {
   View: 'Zobraziť',
   'Task visible on calendar': 'Úloha viditeľná v kalendári',
   'Task dimmed on calendar': 'Úloha je v kalendári zobrazená sivou farbou',
+  'This task is part of a recurring series. What do you want to edit?': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete upraviť?',
+  'This task is part of a recurring series. What do you want to move?': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete presunúť?',
+  'This task is part of a recurring series. What do you want to delete?': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete odstrániť?',
+  'Updated.': 'Aktualizované.',
 };

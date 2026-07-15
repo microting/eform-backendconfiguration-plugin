@@ -489,7 +489,6 @@ export const csCZ = {
   'Open link': 'Otevřít odkaz',
   'No worker found': 'Nenalezen žádný pracovník',
   'My tags': 'Moje štítky',
-  'This task is part of a recurring series. What do you want to': 'Tento úkol je součástí opakující se série. Co chcete',
   ID: 'ID',
   Save: 'Uložit',
   Delete: 'Vymazat',
@@ -552,4 +551,8 @@ export const csCZ = {
   View: 'Pohled',
   'Task visible on calendar': 'Úkol viditelný v kalendáři',
   'Task dimmed on calendar': 'Úkol je v kalendáři zobrazen šedě',
+  'This task is part of a recurring series. What do you want to edit?': 'Tento úkol je součástí opakující se série. Co chcete upravit?',
+  'This task is part of a recurring series. What do you want to move?': 'Tento úkol je součástí opakující se série. Co chcete přesunout?',
+  'This task is part of a recurring series. What do you want to delete?': 'Tento úkol je součástí opakující se série. Co chcete smazat?',
+  'Updated.': 'Aktualizováno.',
 };

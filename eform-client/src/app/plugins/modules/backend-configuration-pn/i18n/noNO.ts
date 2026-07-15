@@ -489,7 +489,6 @@ export const noNO = {
   'Open link': 'Åpne lenken',
   'No worker found': 'Ingen arbeider funnet',
   'My tags': 'Mine tagger',
-  'This task is part of a recurring series. What do you want to': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du',
   ID: 'ID',
   Save: 'Spare',
   Delete: 'Slett',
@@ -552,4 +551,8 @@ export const noNO = {
   View: 'Utsikt',
   'Task visible on calendar': 'Oppgave synlig i kalenderen',
   'Task dimmed on calendar': 'Oppgave nedtonet i kalenderen',
+  'This task is part of a recurring series. What do you want to edit?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du redigere?',
+  'This task is part of a recurring series. What do you want to move?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du flytte?',
+  'This task is part of a recurring series. What do you want to delete?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du slette?',
+  'Updated.': 'Oppdatert.',
 };

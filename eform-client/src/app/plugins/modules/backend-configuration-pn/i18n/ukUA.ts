@@ -489,7 +489,6 @@ export const ukUA = {
   'Open link': 'Відкрити посилання',
   'No worker found': 'Працівника не знайдено',
   'My tags': 'Мої теги',
-  'This task is part of a recurring series. What do you want to': 'Це завдання є частиною повторюваної серії. Що ви хочете',
   ID: 'ID',
   Save: 'Зберегти',
   Delete: 'Видалити',
@@ -552,4 +551,8 @@ export const ukUA = {
   View: 'Переглянути',
   'Task visible on calendar': 'Завдання відображається в календарі',
   'Task dimmed on calendar': 'Завдання затемнене в календарі',
+  'This task is part of a recurring series. What do you want to edit?': 'Це завдання є частиною повторюваної серії. Що ви хочете редагувати?',
+  'This task is part of a recurring series. What do you want to move?': 'Це завдання є частиною повторюваної серії. Що ви хочете перемістити?',
+  'This task is part of a recurring series. What do you want to delete?': 'Це завдання є частиною повторюваної серії. Що ви хочете видалити?',
+  'Updated.': 'Оновлено.',
 };

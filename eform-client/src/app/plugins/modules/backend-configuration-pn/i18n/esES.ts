@@ -489,7 +489,6 @@ export const esES = {
   'Open link': 'Abrir enlace',
   'No worker found': 'No se encontró ningún trabajador.',
   'My tags': 'Mis etiquetas',
-  'This task is part of a recurring series. What do you want to': 'Esta tarea forma parte de una serie recurrente. ¿Qué quieres hacer?',
   ID: 'ID',
   Save: 'Ahorrar',
   Delete: 'Borrar',
@@ -552,4 +551,8 @@ export const esES = {
   View: 'Vista',
   'Task visible on calendar': 'Tarea visible en el calendario',
   'Task dimmed on calendar': 'La tarea aparece atenuada en el calendario.',
+  'This task is part of a recurring series. What do you want to edit?': 'Esta tarea forma parte de una serie recurrente. ¿Qué quieres editar?',
+  'This task is part of a recurring series. What do you want to move?': 'Esta tarea forma parte de una serie recurrente. ¿Qué quieres mover?',
+  'This task is part of a recurring series. What do you want to delete?': 'Esta tarea forma parte de una serie recurrente. ¿Qué desea eliminar?',
+  'Updated.': 'Actualizado.',
 };

@@ -489,7 +489,6 @@ export const isIS = {
   'Open link': 'Opna tengil',
   'No worker found': 'Enginn verkamaður fannst',
   'My tags': 'Merkin mín',
-  'This task is part of a recurring series. What do you want to': 'Þetta verkefni er hluti af endurtekinni seríu. Hvað viltu',
   ID: 'ID',
   Save: 'Vista',
   Delete: 'Eyða',
@@ -552,4 +551,8 @@ export const isIS = {
   View: 'Skoða',
   'Task visible on calendar': 'Verkefni sýnilegt á dagatali',
   'Task dimmed on calendar': 'Verkefni dimmt í dagatali',
+  'This task is part of a recurring series. What do you want to edit?': 'Þetta verkefni er hluti af endurtekinni seríu. Hvað viltu breyta?',
+  'This task is part of a recurring series. What do you want to move?': 'Þetta verkefni er hluti af endurtekinni seríu. Hvað viltu færa?',
+  'This task is part of a recurring series. What do you want to delete?': 'Þetta verkefni er hluti af endurtekinni röð. Hvað viltu eyða?',
+  'Updated.': 'Uppfært.',
 };

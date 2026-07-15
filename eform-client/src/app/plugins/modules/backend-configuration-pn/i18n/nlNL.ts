@@ -489,7 +489,6 @@ export const nlNL = {
   'Open link': 'Open link',
   'No worker found': 'Geen werknemer gevonden',
   'My tags': 'Mijn tags',
-  'This task is part of a recurring series. What do you want to': 'Deze opdracht maakt deel uit van een terugkerende reeks. Wat wil je?',
   ID: 'ID',
   Save: 'Redden',
   Delete: 'Verwijderen',
@@ -552,4 +551,8 @@ export const nlNL = {
   View: 'Weergave',
   'Task visible on calendar': 'Taak zichtbaar op de kalender',
   'Task dimmed on calendar': 'Taak grijs weergegeven op de kalender',
+  'This task is part of a recurring series. What do you want to edit?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u bewerken?',
+  'This task is part of a recurring series. What do you want to move?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u verplaatsen?',
+  'This task is part of a recurring series. What do you want to delete?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u verwijderen?',
+  'Updated.': 'Bijgewerkt.',
 };

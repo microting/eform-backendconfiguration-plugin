@@ -541,7 +541,6 @@ export const deDE = {
   'Open link': 'Link öffnen',
   'No worker found': 'Kein Arbeiter gefunden',
   'My tags': 'Meine Tags',
-  'This task is part of a recurring series. What do you want to': 'Diese Aufgabe ist Teil einer wiederkehrenden Reihe. Was möchten Sie tun?',
   ID: 'ID',
   Save: 'Speichern',
   Delete: 'Löschen',
@@ -600,4 +599,8 @@ export const deDE = {
   'Completed by': 'Abgeschlossen von',
   'Task visible on calendar': 'Aufgabe im Kalender sichtbar',
   'Task dimmed on calendar': 'Aufgabe im Kalender ausgegraut',
+  'This task is part of a recurring series. What do you want to edit?': 'Diese Aufgabe ist Teil einer wiederkehrenden Serie. Was möchten Sie bearbeiten?',
+  'This task is part of a recurring series. What do you want to move?': 'Diese Aufgabe ist Teil einer wiederkehrenden Serie. Was möchten Sie bewegen?',
+  'This task is part of a recurring series. What do you want to delete?': 'Diese Aufgabe ist Teil einer wiederkehrenden Serie. Was möchten Sie löschen?',
+  'Updated.': 'Aktualisiert.',
 };

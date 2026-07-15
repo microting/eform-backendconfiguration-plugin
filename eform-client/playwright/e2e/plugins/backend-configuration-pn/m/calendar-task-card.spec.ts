@@ -467,6 +467,10 @@ test.describe.serial('Calendar task-card preview (task-card-preview-fields)', ()
     );
     await page.locator('#calendarEventSaveBtn').click();
     await putWait;
+    // Uniform calendar toasts: every successful mutation shows the
+    // translated 'Updated.' (runtime locale is da → 'Opdateret.').
+    await expect(page.locator('.toast-success .toast-message').first())
+      .toHaveText('Opdateret.', { timeout: 10000 });
     await reloadWait;
     await page.waitForTimeout(800);
 

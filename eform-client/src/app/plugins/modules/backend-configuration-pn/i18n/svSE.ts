@@ -489,7 +489,6 @@ export const svSE = {
   'Open link': 'Öppna länken',
   'No worker found': 'Ingen arbetare hittades',
   'My tags': 'Mina taggar',
-  'This task is part of a recurring series. What do you want to': 'Den här uppgiften är en del av en återkommande serie. Vad vill du',
   ID: 'ID',
   Save: 'Spara',
   Delete: 'Radera',
@@ -552,4 +551,8 @@ export const svSE = {
   View: 'Se',
   'Task visible on calendar': 'Uppgift synlig i kalendern',
   'Task dimmed on calendar': 'Uppgift nedtonad i kalendern',
+  'This task is part of a recurring series. What do you want to edit?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du redigera?',
+  'This task is part of a recurring series. What do you want to move?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du flytta?',
+  'This task is part of a recurring series. What do you want to delete?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du ta bort?',
+  'Updated.': 'Uppdaterad.',
 };

@@ -489,7 +489,6 @@ export const fiFI = {
   'Open link': 'Avaa linkki',
   'No worker found': 'Työntekijää ei löytynyt',
   'My tags': 'Omat tunnisteet',
-  'This task is part of a recurring series. What do you want to': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat',
   ID: 'ID',
   Save: 'Tallentaa',
   Delete: 'Poistaa',
@@ -552,4 +551,8 @@ export const fiFI = {
   View: 'Näytä',
   'Task visible on calendar': 'Tehtävä näkyy kalenterissa',
   'Task dimmed on calendar': 'Tehtävä himmennettynä kalenterissa',
+  'This task is part of a recurring series. What do you want to edit?': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat muokata?',
+  'This task is part of a recurring series. What do you want to move?': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat siirtää?',
+  'This task is part of a recurring series. What do you want to delete?': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat poistaa?',
+  'Updated.': 'Päivitetty.',
 };
