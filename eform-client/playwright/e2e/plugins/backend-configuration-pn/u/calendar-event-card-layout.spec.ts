@@ -39,21 +39,31 @@ const worker: PropertyWorker = {
 
 let seeded = false;
 
-// Confirm the worker-selection modal that ALWAYS appears when completing an
-// event. It lists every worker assigned to the event's property; with exactly
-// one worker (this seed) it opens preselected, otherwise nothing is selected
-// and the confirm button is disabled — in that case explicitly pick the
-// seeded property worker (falling back to the first option) before confirming.
+// Ensure the combined complete-event modal (app-calendar-complete-event-modal)
+// that ALWAYS appears when completing an event has a worker selected. With
+// exactly one worker assigned (this seed) `#completeWorkerSelect` preselects
+// it automatically; otherwise explicitly pick the seeded property worker
+// (falling back to the first option) so `#completeSaveBtn` can become enabled.
 async function handleWorkerSelectModal(page: import('@playwright/test').Page): Promise<void> {
-  const workerModal = page.locator('app-calendar-select-worker-modal');
+  const modal = page.locator('app-calendar-complete-event-modal');
   // The modal is part of the completion contract now — fail loudly if it
-  // does not appear instead of silently letting the PUT fire without it.
-  await workerModal.waitFor({ state: 'visible', timeout: 10000 });
-  const confirmBtn = page.locator('app-calendar-select-worker-modal button.btn-primary');
-  if (await confirmBtn.isDisabled()) {
+  // does not appear instead of silently letting completion proceed without it.
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  const workerSelect = page.locator('#completeWorkerSelect');
+  await workerSelect.waitFor({ state: 'visible', timeout: 10000 });
+  // The preselect (single-assignee seed) applies asynchronously once the
+  // linked-sites call resolves — give it a moment before falling back to an
+  // explicit pick.
+  const preselected = await workerSelect
+    .locator('.ng-value-label')
+    .first()
+    .waitFor({ state: 'attached', timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!preselected) {
     // The mtx-select dropdown appends to body, so the options live outside
     // the modal element.
-    await workerModal.locator('mtx-select').click();
+    await workerSelect.click();
     const seededOption = page
       .locator('.ng-dropdown-panel .ng-option')
       .filter({ hasText: `${worker.name} ${worker.surname}` })
@@ -64,8 +74,6 @@ async function handleWorkerSelectModal(page: import('@playwright/test').Page): P
       await page.locator('.ng-dropdown-panel .ng-option').first().click();
     }
   }
-  await confirmBtn.click();
-  await workerModal.waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
 }
 
 test.describe.serial('Calendar event card — adaptive layout', () => {
@@ -292,11 +300,12 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
   // =======================================================================
   // L6. The 12-px completion circle on a compact card is still a reachable
   //     click target. We assert the click triggers the completion flow —
-  //     PUT /tasks/{id}/complete fires and the eForm submission dialog
-  //     opens. The actual `completed` class transition requires submitting
-  //     that form (the seeded task has an associated eForm template),
-  //     which is out of scope for the layout suite — what matters here is
-  //     that the shrunken hit target still receives the click.
+  //     the prepare-complete POST fires and the combined complete modal
+  //     (app-calendar-complete-event-modal, with its embedded eForm) opens.
+  //     The actual `completed` class transition requires saving that modal
+  //     (the seeded task has an associated eForm template), which is out of
+  //     scope for the layout suite — what matters here is that the shrunken
+  //     hit target still receives the click.
   // =======================================================================
   test('L6: completion button is clickable on compact card', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
@@ -311,30 +320,27 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     await expect(block).toHaveClass(/(^|\s)compact(\s|$)/);
 
     const completionWait = page.waitForResponse(
-      r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/.test(r.url())
-        && r.request().method() === 'PUT',
+      r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url())
+        && r.request().method() === 'POST',
       { timeout: 30000 }
     );
     await block.locator('.completion-btn').click();
-    await handleWorkerSelectModal(page);
     await completionWait;
+    await handleWorkerSelectModal(page);
 
-    // The eForm submission dialog opens in response to the PUT (the seeded
-    // task carries an eForm template). The dialog's mere appearance proves
+    // The combined complete modal opens in response to the click (the seeded
+    // task carries an eForm template). The modal's mere appearance proves
     // the click landed and the completion workflow kicked off; we don't
-    // need to submit the form here.
-    await expect(page.locator('mat-dialog-container').first())
+    // need to save it here.
+    await expect(page.locator('app-calendar-complete-event-modal').first())
       .toBeVisible({ timeout: 10000 });
 
-    // Cancel so the dialog doesn't leak into the next test.
-    const cancelBtn = page
-      .locator('mat-dialog-container button')
-      .filter({ hasText: /Annuller|Cancel/i })
-      .first();
+    // Cancel so the modal doesn't leak into the next test.
+    const cancelBtn = page.locator('#completeCancelBtn');
     if ((await cancelBtn.count()) > 0) {
       await cancelBtn.click();
       await page
-        .locator('mat-dialog-container')
+        .locator('app-calendar-complete-event-modal')
         .waitFor({ state: 'detached', timeout: 5000 })
         .catch(() => undefined);
     }

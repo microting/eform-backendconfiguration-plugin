@@ -648,6 +648,47 @@ test.describe.serial('Calendar UI enhancements', () => {
       const after = await calendarPage.getCalendarHeaderDateText();
       expect(after).toBe(formatLongDate(addDays(mondayOfThisWeekLocal(), 7)));
     });
+
+    // Mirror calendar-header.component.ts displayDate for WEEK view: locale
+    // month names untouched (da-DK ⇒ lowercase, never capitalized); a week
+    // straddling a month border names both months ("juni - juli 2026"); a
+    // year border keeps each month's own year ("december 2026 - januar 2027").
+    // See 2026-07-15-calendar-week-title-two-months-design.md.
+    function formatWeekTitle(monday: Date, locale = 'da-DK'): string {
+      const sunday = addDays(monday, 6);
+      const m1 = monday.toLocaleDateString(locale, { month: 'long' });
+      const m2 = sunday.toLocaleDateString(locale, { month: 'long' });
+      const y1 = monday.getFullYear();
+      const y2 = sunday.getFullYear();
+      if (m1 === m2 && y1 === y2) return `${m1} ${y1}`;
+      if (y1 === y2) return `${m1} - ${m2} ${y1}`;
+      return `${m1} ${y1} - ${m2} ${y2}`;
+    }
+
+    test('H4: week title is lowercase and names both months on border weeks', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Current week: title must match the rule exactly — in particular the
+      // month name keeps the locale's lowercase (no manual capitalization).
+      let monday = mondayOfThisWeekLocal();
+      const initial = await calendarPage.getCalendarHeaderDateText();
+      expect(initial).toBe(formatWeekTitle(monday));
+      expect(initial.charAt(0)).toBe(initial.charAt(0).toLowerCase());
+
+      // Walk forward to the next month-border week (always within 5 steps)
+      // and assert both month names appear, joined by the spaced hyphen.
+      let steps = 0;
+      while (monday.getMonth() === addDays(monday, 6).getMonth() && steps < 5) {
+        await calendarPage.navigateToNextWeek();
+        monday = addDays(monday, 7);
+        steps++;
+      }
+      expect(monday.getMonth()).not.toBe(addDays(monday, 6).getMonth());
+      const crossTitle = await calendarPage.getCalendarHeaderDateText();
+      expect(crossTitle).toBe(formatWeekTitle(monday));
+      expect(crossTitle).toContain(' - ');
+    });
   });
 
   // =======================================================================
@@ -850,6 +891,41 @@ test.describe.serial('Calendar UI enhancements', () => {
         .locator('.custom-repeat-dialog')
         .waitFor({ state: 'detached', timeout: 5000 });
       await calendarPage.closeEventModal();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // N. Now-line (current-time indicator) stacking — regression lock for
+  //    PR #992: the red timeline must render in FRONT of task tiles
+  //    ("Tidslinje skal ligge forrest ift. grid"). A clicked/raised tile
+  //    gets z-index 999 (calendar-task-block.component.ts click-to-raise);
+  //    the now-line sits at z-index 1000 (calendar-week-grid.component.scss
+  //    .now-line). Both resolve in the same stacking context
+  //    (.day-cell-content), so comparing computed z-indexes is a faithful
+  //    proxy for paint order.
+  // =======================================================================
+  test.describe('Calendar — now-line above task tiles', () => {
+    test('N1: now-line is visible today and stacks above raised tiles', async ({ page }) => {
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Exactly one line — rendered only in today's column of the current week.
+      const nowLine = page.locator('app-calendar-week-grid .now-line');
+      await expect(nowLine).toHaveCount(1);
+      await expect(nowLine).toBeVisible();
+
+      const zIndex = await nowLine.evaluate(
+        el => parseInt(getComputedStyle(el).zIndex, 10)
+      );
+      const RAISED_TILE_Z = 999; // calendar-task-block.component.ts raise value
+      expect(zIndex).toBeGreaterThan(RAISED_TILE_Z);
+    });
+
+    test('N2: now-line disappears when navigating away from the current week', async ({ page }) => {
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.navigateToNextWeek();
+      await expect(page.locator('app-calendar-week-grid .now-line')).toHaveCount(0);
     });
   });
 });

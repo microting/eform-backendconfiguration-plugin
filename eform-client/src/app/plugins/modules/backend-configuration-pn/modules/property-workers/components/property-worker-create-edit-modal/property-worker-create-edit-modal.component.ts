@@ -639,7 +639,19 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   loadPayRuleSets(): void {
-    this.payRuleSetsService.getPayRuleSets({offset: 0, pageSize: 1000}).subscribe({
+    // GET api/time-planning-pn/pay-rule-sets is admin-only
+    // ([Authorize(Roles = Admin)] on PayRuleSetController.Index). Calling it as
+    // a non-admin returns 403, which the global HttpErrorInterceptor escalates
+    // into a forced logout (refresh token → retry → still 403 → logout) — the
+    // local error callback below never runs. The template already hides the
+    // whole payroll-rules block behind selectAuthIsAdmin$, so for non-admins
+    // we skip the fetch entirely; an admin-assigned payRuleSetId is still
+    // preserved on save via the assigned-site form patch.
+    this.selectAuthIsAdmin$.pipe(
+      first(),
+      filter((isAdmin) => isAdmin),
+      switchMap(() => this.payRuleSetsService.getPayRuleSets({offset: 0, pageSize: 1000}))
+    ).subscribe({
       next: (result) => {
         if (result && result.success) {
           this.availablePayRuleSets = result.model?.payRuleSets || [];

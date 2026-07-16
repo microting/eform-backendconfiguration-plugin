@@ -382,11 +382,13 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       });
     }
 
-    // Disable all controls for past tasks
+    // Disable all controls for past tasks. Completed tasks are readonly
+    // regardless of date (R2 immutability) — a completed-but-future task
+    // must open readonly too.
     if (this.isEditMode && this.dateControl.value) {
       const taskDate = this.dateControl.value;
       const endTime = this.endTimeControl.value || '00:00';
-      if (this.isInPast(taskDate, endTime)) {
+      if (this.isInPast(taskDate, endTime) || task?.completed) {
         this.isReadonly = true;
         this.titleControl.disable();
         this.dateControl.disable();
@@ -868,7 +870,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // date seeded from the source event; the user is expected to pick a new
     // date before saving, and we surface that via the standard datepicker
     // min-date validator rather than silently returning.
-    if (this.isEditMode && this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
+    if (this.isEditMode && (this.isInPast(this.dateControl.value!, this.startTimeControl.value!) || this.data.task?.completed)) {
       return;
     }
 
@@ -1051,12 +1053,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
               await this.uploadStagedFilesSequential(newId);
             }
             this.close(true);
-          } else {
-            const msg = (res && res.message)
-              ? res.message
-              : this.translate.instant('Could not save the event');
-            this.toastr.error(msg, this.translate.instant('Error'));
           }
+          // success=false: the calendar service already toasts the uniform
+          // "Error [key]" — the modal stays open so the user can retry.
         },
         error: err => {
           const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');

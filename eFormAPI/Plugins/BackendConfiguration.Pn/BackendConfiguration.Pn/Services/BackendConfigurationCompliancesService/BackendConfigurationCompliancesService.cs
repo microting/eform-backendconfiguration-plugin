@@ -410,6 +410,194 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         }
     }
 
+    // Calendar-specific variant of Update: identical behaviour except the
+    // device retraction (core.CaseDelete) is resolved synchronously but
+    // executed fire-and-forget, since it is an external platform call that
+    // can block for minutes in dev. Retraction was already best-effort in
+    // Update (failures are swallowed), so this changes latency, not
+    // guarantees.
+    public async Task<OperationResult> UpdateFromCalendar(ReplyRequest model)
+    {
+        var checkListValueList = new List<string>();
+        var fieldValueList = new List<string>();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+        var currentUser = await _userService.GetCurrentUserAsync().ConfigureAwait(false);
+        try
+        {
+            model.ElementList.ForEach(element =>
+            {
+                checkListValueList.AddRange(CaseUpdateHelper.GetCheckList(element));
+                fieldValueList.AddRange(CaseUpdateHelper.GetFieldList(element));
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.LogException(ex.Message);
+            Log.LogException(ex.StackTrace);
+            return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")} Exception: {ex.Message}");
+        }
+
+        try
+        {
+            var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId).ConfigureAwait(false);
+            if (compliance != null)
+            {
+                await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+            else
+            {
+                return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
+            }
+
+
+            await core.CaseUpdate(model.Id, fieldValueList, checkListValueList).ConfigureAwait(false);
+            await core.CaseUpdateFieldValues(model.Id, language).ConfigureAwait(false);
+
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+            var foundCase = await sdkDbContext.Cases
+                .Where(x => x.Id == model.Id)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+
+            if(foundCase != null) {
+                // Preserve the caller-supplied time-of-day so calendar
+                // event.start (Deadline day + CalendarConfiguration.StartHour)
+                // survives the round-trip. Existing consumers (task-tracker,
+                // compliance-list) keep submitting their previous values —
+                // task-tracker uses `task.deadlineTask.toISOString()` and
+                // Compliance.Deadline is stored as midnight UTC, so their
+                // observable behaviour is unchanged. SpecifyKind re-tags
+                // without shifting (model.DoneAt arrives as Unspecified-kind
+                // from the JSON binder).
+                var newDoneAt = DateTime.SpecifyKind(model.DoneAt, DateTimeKind.Utc);
+                foundCase.DoneAtUserModifiable = newDoneAt;
+                foundCase.DoneAt = newDoneAt;
+
+                var site = await sdkDbContext.Sites
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
+
+                foundCase.SiteId = model.SiteId;
+                foundCase.Status = 100;
+                foundCase.WorkflowState = Constants.WorkflowStates.Created;
+                await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+
+                if (CaseUpdateDelegates.CaseUpdateDelegate != null)
+                {
+                    var invocationList = CaseUpdateDelegates.CaseUpdateDelegate
+                        .GetInvocationList();
+                    foreach (var func in invocationList)
+                    {
+                        func.DynamicInvoke(model.Id);
+                    }
+                }
+                var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    .FirstOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
+                if (planningCaseSite != null)
+                {
+                    planningCaseSite.Status = 100;
+                    planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
+
+                    planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                    planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                    planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                    planningCaseSite.DoneByUserName = site.Name;
+                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                    var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                        .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
+                    if (planningCase.Status != 100)
+                    {
+                        planningCase.Status = 100;
+                        planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                        planningCase.MicrotingSdkCaseId = foundCase.Id;
+                        planningCase.DoneByUserId = (int)foundCase.SiteId;
+                        planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                        planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+
+                        planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    }
+                    planningCaseSite.PlanningCaseId = planningCase.Id;
+                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
+            }
+
+            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
+
+            if (_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                    x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
+                    x.WorkflowState != Constants.WorkflowStates.Removed))
+            {
+                property.ComplianceStatus = 2;
+                property.ComplianceStatusThirty = 2;
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            }
+            else
+            {
+                if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                        x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
+                        x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    property.ComplianceStatusThirty = 0;
+                    await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
+                if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                        x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
+                        x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    property.ComplianceStatus = 0;
+                    await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+            }
+
+            // Resolve the uid to retract BEFORE returning; the actual CaseDelete is an
+            // external platform call that can block for minutes (dev) — run it
+            // fire-and-forget. Retraction is best-effort today as well (the shared
+            // Update swallows its failures), so guarantees are unchanged.
+            int? microtingUidToRetract = foundCase.MicrotingUid;
+            if (microtingUidToRetract == null)
+            {
+                var checkListSite = await sdkDbContext.CheckListSites
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == model.Id)
+                    .ConfigureAwait(false);
+                microtingUidToRetract = checkListSite?.MicrotingUid;
+            }
+            if (microtingUidToRetract != null)
+            {
+                var uidToRetract = (int)microtingUidToRetract;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var retractionCore = await _coreHelper.GetCore().ConfigureAwait(false);
+                        await retractionCore.CaseDelete(uidToRetract).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogException(ex.Message);
+                        Log.LogException(ex.StackTrace);
+                    }
+                });
+            }
+
+            return new OperationResult(true, _localizationService.GetString("CaseHasBeenUpdated"));
+        }
+        catch (Exception ex)
+        {
+            Log.LogException(ex.Message);
+            Log.LogException(ex.StackTrace);
+            return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
+        }
+    }
+
     public async Task<OperationResult> Delete(int id)
     {
         var compliance = await _backendConfigurationPnDbContext.Compliances.FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);

@@ -38,6 +38,7 @@ import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete
 
 import {CalendarRouting} from './calendar.routing';
 import {
+  CalendarComplianceViewComponent,
   CalendarContainerComponent,
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
@@ -57,6 +58,8 @@ import {
   BoardDeleteModalComponent,
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
+  CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 } from './modals';
 
 // Re-export modal components for barrel
@@ -70,6 +73,8 @@ export {
   BoardDeleteModalComponent,
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
+  CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 };
 
 @NgModule({
@@ -83,6 +88,7 @@ export {
     CalendarTaskBlockComponent,
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
+    CalendarComplianceViewComponent,
     // Modals
     TaskCreateEditModalComponent,
     TaskPreviewModalComponent,
@@ -93,6 +99,8 @@ export {
     BoardDeleteModalComponent,
     ComplianceCaseModalComponent,
     CalendarSelectWorkerModalComponent,
+    CalendarCompleteEventModalComponent,
+    CalendarImageLightboxComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
     TagCreateDialogComponent,

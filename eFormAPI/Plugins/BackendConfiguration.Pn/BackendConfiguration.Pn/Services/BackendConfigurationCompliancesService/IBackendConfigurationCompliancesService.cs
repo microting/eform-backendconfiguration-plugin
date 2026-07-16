@@ -39,6 +39,7 @@ public interface IBackendConfigurationCompliancesService
     Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
     Task<OperationDataResult<ReplyElement>> Read(int id);
     Task<OperationResult> Update(ReplyRequest model);
+    Task<OperationResult> UpdateFromCalendar(ReplyRequest model);
     Task<OperationResult> Delete(int id);
     Task<OperationDataResult<CompliancesStatsModel>> Stats();
 }

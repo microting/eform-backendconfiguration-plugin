@@ -457,6 +457,9 @@ test.describe.serial('Calendar event resize', () => {
       await expect(calendarPage.getPreviewEditButton()).toBeVisible();
       await expect(calendarPage.getPreviewCopyButton()).toBeVisible();
       await expect(calendarPage.getPreviewDeleteButton()).toBeVisible();
+      // Tense-aware action row: a FUTURE event renders the edit pencil, not
+      // the historical View (visibility) replacement.
+      await expect(calendarPage.getPreviewViewButton()).toHaveCount(0);
     });
 
     test('F2: clicking Edit in the popover opens the edit modal with the title pre-filled', async ({ page }) => {

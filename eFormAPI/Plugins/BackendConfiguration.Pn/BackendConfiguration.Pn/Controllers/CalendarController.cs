@@ -37,6 +37,13 @@ public class CalendarController : Controller
         return await _backendConfigurationCalendarService.Index(requestModel);
     }
 
+    [HttpPost("compliance-report")]
+    public async Task<OperationDataResult<List<CalendarComplianceReportRowModel>>> GetComplianceReport(
+        [FromBody] CalendarComplianceReportRequestModel requestModel)
+    {
+        return await _backendConfigurationCalendarService.GetComplianceReport(requestModel);
+    }
+
     [HttpPost("tasks")]
     public async Task<OperationDataResult<int>> CreateTask([FromBody] CalendarTaskCreateRequestModel createModel)
     {
@@ -102,6 +109,14 @@ public class CalendarController : Controller
     {
         return await _backendConfigurationCalendarService.ToggleComplete(
             id, model.Completed, model.ComplianceId, model.OccurrenceDate, model.WorkerId);
+    }
+
+    [HttpPost("tasks/{id:int}/prepare-complete")]
+    public async Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
+        int id, [FromBody] CalendarPrepareCompleteModel model)
+    {
+        return await _backendConfigurationCalendarService.PrepareComplete(
+            id, model.ComplianceId, model.OccurrenceDate);
     }
 
     [HttpPost("tasks/{id:int}/files")]

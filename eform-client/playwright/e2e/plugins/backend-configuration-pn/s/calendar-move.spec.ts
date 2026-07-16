@@ -552,27 +552,29 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
     // cdkDrag handle is inert — a mouse-drag on its body produces no move.
     //
     // WEAKENED — read before changing the assertion:
-    // Fully completing an event in e2e opens the eForm submission dialog
-    // (the seeded task carries an eForm template — see L6 in
-    // calendar-event-card-layout.spec.ts) and submitting that form is
-    // impractical/flaky here. So we do NOT drive a full completion. Instead
-    // we trigger the completion button (PUT /tasks/{id}/complete fires and
-    // the eForm dialog opens — same as L6), close the dialog, then attempt a
-    // drag and assert the robust invariant: NO /tasks/move POST fires and
-    // the block stays on its original slot. If the optimistic UI does not
-    // flip the block to completed before the form is submitted (so cdkDrag
-    // is still enabled), the drag could still succeed; to keep the test
-    // deterministic and non-flaky we treat the "no move POST" + "still on
-    // original slot" as the asserted invariant and DOCUMENT that a fully
-    // committed-completed move-block is covered server-side
-    // (CalendarMoveTests.cs rejects a move on a completed occurrence).
+    // Fully completing an event in e2e opens the combined complete modal
+    // (app-calendar-complete-event-modal, the seeded task carries an eForm
+    // template — see L6 in calendar-event-card-layout.spec.ts) and filling +
+    // submitting its embedded eForm is impractical/flaky here. So we do NOT
+    // drive a full completion. Instead we trigger the completion button (the
+    // prepare-complete POST fires and the modal opens — same as L6), cancel
+    // it, then attempt a drag and assert the robust invariant: NO
+    // /tasks/move POST fires and the block stays on its original slot. If
+    // the optimistic UI does not flip the block to completed before the form
+    // is submitted (so cdkDrag is still enabled), the drag could still
+    // succeed; to keep the test deterministic and non-flaky we treat the "no
+    // move POST" + "still on original slot" as the asserted invariant and
+    // DOCUMENT that a fully committed-completed move-block is covered
+    // server-side (CalendarMoveTests.cs rejects a move on a completed
+    // occurrence).
     // ---------------------------------------------------------------------
-    // fixme: fully completing an event in e2e requires submitting the eForm
-    // dialog (the seeded task's template opens one — see L6); merely opening
-    // and closing it leaves the task NOT completed, so cdkDrag stays enabled
-    // and the drag would succeed. Left as a documented placeholder; the
-    // completed-occurrence move rejection is covered server-side
-    // (CalendarMoveTests) and by the [cdkDragDisabled]="task.completed" binding.
+    // fixme: fully completing an event in e2e requires filling + submitting
+    // the combined complete modal's embedded eForm (the seeded task's
+    // template opens one — see L6); merely opening and cancelling it leaves
+    // the task NOT completed, so cdkDrag stays enabled and the drag would
+    // succeed. Left as a documented placeholder; the completed-occurrence
+    // move rejection is covered server-side (CalendarMoveTests) and by the
+    // [cdkDragDisabled]="task.completed" binding.
     test.fixme('M08: a completed occurrence cannot be dragged (best-effort)', async ({ page }) => {
       test.setTimeout(180000);
       const calendarPage = new CalendarUiEnhancementsPage(page);
@@ -583,12 +585,13 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
       await createSimpleEvent(page, calendarPage, title, dayX, 9);
       expect(await calendarPage.getEventDayIndex(title)).toBe(dayX);
 
-      // Trigger the completion flow. The PUT fires and the eForm submission
-      // dialog opens (mirrors L6). We close the dialog without submitting.
+      // Trigger the completion flow. The prepare-complete POST fires and the
+      // combined complete modal opens (mirrors L6). We cancel it without
+      // saving.
       const block = calendarPage.findEventBlock(title);
       const completionWait = page.waitForResponse(
-        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/complete/.test(r.url())
-          && r.request().method() === 'PUT',
+        r => /\/api\/backend-configuration-pn\/calendar\/tasks\/\d+\/prepare-complete/.test(r.url())
+          && r.request().method() === 'POST',
         { timeout: 30000 }
       ).catch(() => undefined);
       const completionBtn = block.locator('.completion-btn');
@@ -596,18 +599,14 @@ test.describe.serial('Calendar drag-move scope (#887)', () => {
         await completionBtn.click();
         await completionWait;
 
-        // Close any eForm submission dialog so it doesn't intercept the drag.
-        const dialog = page.locator('mat-dialog-container').first();
-        if ((await dialog.count()) > 0) {
-          await dialog.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
-          const cancelBtn = page
-            .locator('mat-dialog-container button')
-            .filter({ hasText: /Annuller|Cancel/i })
-            .first();
+        // Cancel the complete modal so it doesn't intercept the drag.
+        const modal = page.locator('app-calendar-complete-event-modal').first();
+        if ((await modal.count()) > 0) {
+          await modal.waitFor({ state: 'visible', timeout: 10000 }).catch(() => undefined);
+          const cancelBtn = page.locator('#completeCancelBtn');
           if ((await cancelBtn.count()) > 0) {
             await cancelBtn.click();
-            await page
-              .locator('mat-dialog-container')
+            await modal
               .waitFor({ state: 'detached', timeout: 5000 })
               .catch(() => undefined);
           } else {

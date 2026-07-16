@@ -50,7 +50,7 @@ export interface CalendarTaskModel {
   // Surfaced from the AreaRulePlanning by the calendar `tasks/index` endpoint so
   // the "Opgaver og handlinger" table can resolve the eForm label and the
   // "Overskrift" (planning-tag) name from the option lists. Both optional —
-  // the week endpoint does not populate them.
+  // populated by both the tasks/index and week endpoints.
   eformId?: number | null;
   itemPlanningTagId?: number | null;
 
@@ -72,6 +72,14 @@ export interface CalendarTaskModel {
   // recurring rule share the same attachment list — see
   // 2026-05-06-calendar-event-attachments-design.md (Q1 master-rule scope).
   attachments?: CalendarTaskAttachment[];
+
+  // Completed-case fields for the historical preview card (backend
+  // CalendarTaskResponseModel.SdkCaseId / DoneByName / DoneAt). `sdkCaseId`
+  // enables the Picture-thumbnail row; `doneByName` feeds the "Completed by"
+  // group row. All optional — future/uncompleted rows omit them.
+  sdkCaseId?: number | null;
+  doneByName?: string | null;
+  doneAt?: string | null;
 }
 
 export interface CalendarTaskAttachment {

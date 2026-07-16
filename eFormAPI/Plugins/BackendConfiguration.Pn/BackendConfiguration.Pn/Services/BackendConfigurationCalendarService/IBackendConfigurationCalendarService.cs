@@ -12,6 +12,16 @@ public interface IBackendConfigurationCalendarService
     Task<OperationDataResult<List<CalendarTaskResponseModel>>> Index(CalendarTaskIndexRequestModel requestModel);
 
     /// <summary>
+    /// Returns a flat, filterable compliance report row list for the given
+    /// date window (deadline-scoped, exception-aware). Status classification:
+    /// done = backing SDK case Status == 100; open = row not soft-removed and
+    /// not done; soft-removed rows that are not done were user-deleted and
+    /// are never shown.
+    /// </summary>
+    Task<OperationDataResult<List<CalendarComplianceReportRowModel>>> GetComplianceReport(
+        CalendarComplianceReportRequestModel requestModel);
+
+    /// <summary>
     /// Returns the FULL property-scoped compliance list (no deadline window):
     /// actionable + missed + completed rotations, each annotated with
     /// <see cref="CalendarTaskResponseModel.Completed"/> (Case.Status=100)
@@ -38,6 +48,8 @@ public interface IBackendConfigurationCalendarService
     Task<OperationResult> ResizeTask(CalendarTaskResizeRequestModel resizeModel);
     Task<OperationDataResult<CalendarToggleCompleteResult>> ToggleComplete(
         int id, bool completed, int? complianceId, string? occurrenceDate, int? workerId = null);
+    Task<OperationDataResult<CalendarPrepareCompleteResult>> PrepareComplete(
+        int id, int? complianceId, string occurrenceDate);
     Task<OperationDataResult<List<CalendarBoardModel>>> GetBoards(int propertyId);
     Task<OperationResult> CreateBoard(CalendarBoardCreateModel model);
     Task<OperationResult> UpdateBoard(CalendarBoardUpdateModel model);

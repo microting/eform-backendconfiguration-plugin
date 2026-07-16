@@ -16,7 +16,7 @@ export interface CalendarFiltersModel {
   activeTeamIds: number[];
   activeTagNames: string[];
   currentDate: string;           // ISO "YYYY-MM-DD"
-  viewMode: 'week' | 'day' | 'schedule';
+  viewMode: 'week' | 'day' | 'schedule' | 'compliance';
   sidebarOpen: boolean;
   sidebarSections: CalendarSidebarSections;
 }

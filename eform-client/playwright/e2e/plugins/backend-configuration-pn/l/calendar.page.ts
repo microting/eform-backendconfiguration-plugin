@@ -272,9 +272,96 @@ export class CalendarPage {
   }
 
   // Click Edit in the preview popover to open the edit modal.
+  // Delegates to clickEditOrViewInPreview — the preview renders
+  // #calendarEventEditBtn for future tasks but #calendarEventViewBtn for
+  // historical ones (completed, or taskDate+endTime in the past), and both
+  // open the same edit modal (readonly in the historical case).
   async clickEditInPreview(): Promise<void> {
-    await this.page.locator('#calendarEventEditBtn').click();
+    await this.clickEditOrViewInPreview();
+  }
+
+  // Click whichever of Edit (#calendarEventEditBtn, future tasks) or View
+  // (#calendarEventViewBtn, historical tasks) the preview popover renders.
+  // Exactly one of the two exists at a time (*ngIf on isHistorical), so the
+  // combined locator never violates strict mode.
+  async clickEditOrViewInPreview(): Promise<void> {
+    await this.getPreviewEditOrViewButton().click();
     await this.page.locator('#calendarEventTitle').waitFor({ state: 'visible', timeout: 15000 });
     await this.page.waitForTimeout(800); // let form rehydrate
+  }
+
+  // Edit button in the preview popover — rendered for FUTURE tasks only.
+  getPreviewEditButton(): Locator {
+    return this.page.locator('#calendarEventEditBtn');
+  }
+
+  // View (visibility) button in the preview popover — rendered for
+  // HISTORICAL tasks (completed, or taskDate+endTime in the past). Opens
+  // the edit modal in readonly mode.
+  getPreviewViewButton(): Locator {
+    return this.page.locator('#calendarEventViewBtn');
+  }
+
+  // Whichever of Edit/View the popover currently renders (exactly one).
+  getPreviewEditOrViewButton(): Locator {
+    return this.page.locator('#calendarEventEditBtn, #calendarEventViewBtn');
+  }
+
+  // ----- Preview-card (task card) row helpers ------------------------------
+  // The preview popover body renders one `.preview-row` per populated field,
+  // each led by a `mat-icon.preview-icon` whose ligature text identifies the
+  // row: schedule, repeat, domain (property), calendar_today (board), group
+  // (assignees / "Completed by"), style (tags), stacks (report headline),
+  // checklist (eForm), attach_file, notes, add_to_drive, image,
+  // toggle_on/toggle_off (status), policy. Empty rows are not rendered.
+
+  // Locator for the preview row led by the given icon ligature (exact match,
+  // so e.g. "toggle_on" never matches "toggle_off").
+  getPreviewRowByIcon(icon: string): Locator {
+    return this.page
+      .locator('app-task-preview-modal .preview-row')
+      .filter({
+        has: this.page.locator('mat-icon.preview-icon', {
+          hasText: new RegExp(`^${icon}$`),
+        }),
+      });
+  }
+
+  // Trimmed visible text of the preview row led by the given icon (includes
+  // the icon ligature text itself — callers should assert with toContain).
+  async getPreviewRowText(icon: string): Promise<string> {
+    return ((await this.getPreviewRowByIcon(icon).textContent()) ?? '').trim();
+  }
+
+  // Chip texts of a chip-style preview row (group / style / attach_file).
+  async getPreviewChipTexts(icon: string): Promise<string[]> {
+    const chips = this.getPreviewRowByIcon(icon).locator('.preview-chip');
+    const count = await chips.count();
+    const out: string[] = [];
+    for (let i = 0; i < count; i++) {
+      out.push(((await chips.nth(i).textContent()) ?? '').trim());
+    }
+    return out;
+  }
+
+  // The preview card's title line.
+  async getPreviewTitleText(): Promise<string> {
+    return ((await this.page.locator('app-task-preview-modal .preview-title').textContent()) ?? '').trim();
+  }
+
+  // Close the preview popover via its X action button (the close button has
+  // no id — match it by the `close` mat-icon, same pattern as the delete
+  // button in calendar-ui-enhancements.page.ts).
+  async closePreviewPopover(): Promise<void> {
+    await this.page
+      .locator('app-task-preview-modal .preview-actions-row button')
+      .filter({ has: this.page.locator('mat-icon', { hasText: 'close' }) })
+      .first()
+      .click();
+    await this.page
+      .locator('app-task-preview-modal')
+      .waitFor({ state: 'detached', timeout: 5000 })
+      .catch(() => undefined);
+    await this.page.waitForTimeout(300);
   }
 }

@@ -16,6 +16,7 @@ import {
   CalendarTaskModel,
   CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
+import {CalendarComplianceReportRowModel} from '../../../../models';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
 import {CalendarLayoutService} from '../../services/calendar-layout.service';
@@ -34,6 +35,8 @@ import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/c
 import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
+import {CalendarComplianceViewComponent} from '../calendar-compliance-view/calendar-compliance-view.component';
+import {CalendarCompleteEventModalComponent, CalendarCompleteEventModalData} from '../../modals/calendar-complete-event-modal/calendar-complete-event-modal.component';
 
 @Component({
   standalone: false,
@@ -43,6 +46,7 @@ import {RepeatEditScope} from '../../../../models/calendar';
 })
 export class CalendarContainerComponent implements OnInit, OnDestroy {
   @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
+  @ViewChild('complianceView') complianceView?: CalendarComplianceViewComponent;
   private destroy$ = new Subject<void>();
   private createOverlayRef: OverlayRef | null = null;
   private previewOverlayRef: OverlayRef | null = null;
@@ -70,7 +74,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
-  viewMode: 'week' | 'day' | 'schedule' = 'week';
+  viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
   activeBoardIds: number[] = [];
   // The calendar (board) the user most recently turned ON in the sidebar.
   // Transient (in-memory only) — used to default the create-task modal to
@@ -97,7 +101,17 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private router: Router,
   ) {
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
-      .subscribe(isAdmin => this.isAdmin = isAdmin);
+      .subscribe(isAdmin => {
+        this.isAdmin = isAdmin;
+        // isAdmin resolves async from the store after init — if it turns out
+        // the user is not an admin while compliance view is still active
+        // (e.g. deep link, or a stale admin session), force back to week
+        // view so a non-admin can never remain in the admin-only mode.
+        if (!isAdmin && this.viewMode === 'compliance') {
+          this.stateService.updateViewMode('week');
+          this.loadTasks();
+        }
+      });
   }
 
   ngOnInit(): void {
@@ -110,6 +124,19 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeTeamIds = filters.activeTeamIds;
       this.activeTagNames = filters.activeTagNames;
       this.sidebarOpen = filters.sidebarOpen;
+
+      // Defense in depth (mirrors the constructor's isAdmin-subscription
+      // guard): NgRx calendar state persists across in-app navigations, so
+      // a non-admin can land on this component with a stale 'compliance'
+      // viewMode inherited from a previous admin session, with no admin
+      // check ever having run. Force back to week — the updateViewMode
+      // dispatch re-emits filters$ with 'week', which this same
+      // subscription then processes normally, so no extra loadTasks() call
+      // is needed here.
+      if (this.viewMode === 'compliance' && !this.isAdmin) {
+        this.stateService.updateViewMode('week');
+        return;
+      }
     });
 
     this.loadProperties();
@@ -257,6 +284,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   loadTasks() {
+    if (this.viewMode === 'compliance') { return; }
     if (!this.currentPropertyId) return;
 
     const monday = this.getMondayOfWeek(new Date(this.currentDate));
@@ -454,7 +482,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onViewModeChange(viewMode: 'week' | 'day' | 'schedule') {
+  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'compliance') {
     // Switching out of week view: snap currentDate to Monday of the
     // currently-viewed week so day-view lands on the first day of that
     // week and schedule-view shows that same week — preserving the
@@ -612,59 +640,56 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // Always reload — even on cancel — so any partial state (the
       // freshly-materialised Compliance row, route timing, etc.) re-renders
       // from the canonical server view.
-      this.loadTasks();
+      this.reloadAfterCompletion();
     });
   }
 
-  async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
-    // ALWAYS ask who completed the event — even when the task has a single
-    // assignee or none at all — so the completion is explicitly attributed.
-    // The list is ALL workers assigned to the event's PROPERTY (not just the
-    // task-assigned subset), sorted alphabetically by name.
-    // getLinkedSites(propertyId, false) returns exactly the property's
-    // non-removed PropertyWorkers as CommonDictionaryModel ({id, name,
-    // languageId}) — the shape the modal's `sites` input expects. compliance
-    // must be FALSE here: true appends the calling user's own SDK site, which
-    // EventDeployService's leak guard (#932/#1377) rejects on the on-demand
-    // completion path when that user is not a property worker. Locale-aware
-    // 'da' sort so Danish characters (æ/ø/å) order correctly; copy the array
-    // first (no in-place mutation of the service response).
-    const linked = await firstValueFrom(
-      this.propertiesService.getLinkedSites(task.propertyId, false),
-    );
-    if (!linked?.success || !linked.model) return;
-    const sites: CommonDictionaryModel[] =
-      [...linked.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+  onComplianceRowCompleteRequested(row: CalendarComplianceReportRowModel) {
+    this.onToggleCompleteRequested({
+      id: row.areaRulePlanningId ?? 0,
+      completed: false,
+      complianceId: row.complianceId,
+      taskDate: row.taskDate,
+      propertyId: row.propertyId,
+      assigneeIds: [],
+    } as CalendarTaskLayoutModel);
+  }
 
-    const ref = this.dialog.open(CalendarSelectWorkerModalComponent, {
-      minWidth: '400px',
-      autoFocus: false,
-    });
-    const instance = ref.componentInstance;
-    instance.sites = sites;
-    if (sites.length === 1) {
-      instance.selectedSite = sites[0];
+  private reloadAfterCompletion() {
+    if (this.viewMode === 'compliance') {
+      this.complianceView?.refresh();
+      return;
     }
+    this.loadTasks();
+  }
 
-    const selected: CommonDictionaryModel | null = await firstValueFrom(ref.afterClosed());
-    if (!selected) return;
-
-    const selectedWorkerId = selected.id;
-
-    this.calendarService
-      .toggleComplete(task.id, !task.completed, task.complianceId, task.taskDate, selectedWorkerId)
-      .subscribe(res => {
-        if (!res?.success) return;
-        if (res.model?.requiresForm) {
-          this.onCompleteRequiresForm(res.model);
-          return;
-        }
-        this.loadTasks();
-      });
+  async onToggleCompleteRequested(task: CalendarTaskLayoutModel) {
+    if (task.completed) { return; }
+    const ref = this.dialog.open(CalendarCompleteEventModalComponent, {
+      data: {
+        taskId: task.id,
+        complianceId: task.complianceId ?? null,
+        occurrenceDate: task.taskDate,
+        propertyId: task.propertyId,
+        assigneeIds: task.assigneeIds ?? [],
+      } as CalendarCompleteEventModalData,
+      width: 'min(90vw, 1080px)',
+      maxWidth: '95vw',
+      autoFocus: false,
+      restoreFocus: false,
+    });
+    const result = await firstValueFrom(ref.afterClosed());
+    if (result?.saved) {
+      this.reloadAfterCompletion();
+    }
   }
 
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
     this.closePreviewOverlay();
+
+    // Refresh the eForm option list so the preview card can resolve the
+    // task's eformId to a display name (same pattern as openEditModal).
+    this.loadEforms();
 
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
@@ -691,6 +716,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       properties: this.properties,
+      eforms: this.eforms$,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
 
     const popoverInjector = Injector.create({
