@@ -893,4 +893,39 @@ test.describe.serial('Calendar UI enhancements', () => {
       await calendarPage.closeEventModal();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // N. Now-line (current-time indicator) stacking — regression lock for
+  //    PR #992: the red timeline must render in FRONT of task tiles
+  //    ("Tidslinje skal ligge forrest ift. grid"). A clicked/raised tile
+  //    gets z-index 999 (calendar-task-block.component.ts click-to-raise);
+  //    the now-line sits at z-index 1000 (calendar-week-grid.component.scss
+  //    .now-line). Both resolve in the same stacking context
+  //    (.day-cell-content), so comparing computed z-indexes is a faithful
+  //    proxy for paint order.
+  // =======================================================================
+  test.describe('Calendar — now-line above task tiles', () => {
+    test('N1: now-line is visible today and stacks above raised tiles', async ({ page }) => {
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // Exactly one line — rendered only in today's column of the current week.
+      const nowLine = page.locator('app-calendar-week-grid .now-line');
+      await expect(nowLine).toHaveCount(1);
+      await expect(nowLine).toBeVisible();
+
+      const zIndex = await nowLine.evaluate(
+        el => parseInt(getComputedStyle(el).zIndex, 10)
+      );
+      const RAISED_TILE_Z = 999; // calendar-task-block.component.ts raise value
+      expect(zIndex).toBeGreaterThan(RAISED_TILE_Z);
+    });
+
+    test('N2: now-line disappears when navigating away from the current week', async ({ page }) => {
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+
+      await calendarPage.navigateToNextWeek();
+      await expect(page.locator('app-calendar-week-grid .now-line')).toHaveCount(0);
+    });
+  });
 });
