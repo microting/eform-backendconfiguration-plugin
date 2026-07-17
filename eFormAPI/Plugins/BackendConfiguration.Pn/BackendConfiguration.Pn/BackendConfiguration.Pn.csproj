@@ -275,7 +275,7 @@
     </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ChemicalsBase" Version="10.0.14" />
+    <PackageReference Include="ChemicalsBase" Version="10.0.15" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.75.0.4178" />
     <PackageReference Include="Google.Protobuf" Version="3.35.1" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
