@@ -451,3 +451,14 @@ mat-form-field.w-100.mat-mdc-form-field-type-mtx-select {
   padding-left: 12px;
   border-left: 2px solid rgba(0, 0, 0, 0.08);
 }
+
+// Report headline row: the checkbox carries the label. When unchecked the
+// label dims to Material's disabled tone; the select greys itself via the
+// control's disabled state.
+.gcal-report-headline-toggle {
+  margin-left: -10px; // compensate the MDC checkbox touch-target padding so the box aligns with the field edge
+}
+
+.gcal-label-dim {
+  color: rgba(0, 0, 0, 0.38);
+}

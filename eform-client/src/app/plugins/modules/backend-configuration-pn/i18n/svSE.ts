@@ -555,4 +555,5 @@ export const svSE = {
   'This task is part of a recurring series. What do you want to move?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du flytta?',
   'This task is part of a recurring series. What do you want to delete?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du ta bort?',
   'Updated.': 'Uppdaterad.',
+  'Select / create report headline': 'Välj/skapa rapportrubrik',
 };

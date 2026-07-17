@@ -555,4 +555,5 @@ export const noNO = {
   'This task is part of a recurring series. What do you want to move?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du flytte?',
   'This task is part of a recurring series. What do you want to delete?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du slette?',
   'Updated.': 'Oppdatert.',
+  'Select / create report headline': 'Velg / opprett rapportoverskrift',
 };

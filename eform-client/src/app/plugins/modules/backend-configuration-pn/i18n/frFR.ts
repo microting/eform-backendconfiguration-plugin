@@ -554,4 +554,5 @@ export const frFR = {
   'This task is part of a recurring series. What do you want to move?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous déplacer ?',
   'This task is part of a recurring series. What do you want to delete?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous supprimer ?',
   'Updated.': 'Mis à jour.',
+  'Select / create report headline': 'Sélectionner / créer un titre de rapport',
 };

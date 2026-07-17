@@ -555,4 +555,5 @@ export const plPL = {
   'This task is part of a recurring series. What do you want to move?': 'To zadanie jest częścią cyklicznej serii. Co chcesz przenieść?',
   'This task is part of a recurring series. What do you want to delete?': 'To zadanie jest częścią cyklicznej serii. Co chcesz usunąć?',
   'Updated.': 'Zaktualizowano.',
+  'Select / create report headline': 'Wybierz/utwórz nagłówek raportu',
 };

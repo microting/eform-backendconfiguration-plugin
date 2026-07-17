@@ -555,4 +555,5 @@ export const esES = {
   'This task is part of a recurring series. What do you want to move?': 'Esta tarea forma parte de una serie recurrente. ¿Qué quieres mover?',
   'This task is part of a recurring series. What do you want to delete?': 'Esta tarea forma parte de una serie recurrente. ¿Qué desea eliminar?',
   'Updated.': 'Actualizado.',
+  'Select / create report headline': 'Seleccione / cree el título del informe',
 };

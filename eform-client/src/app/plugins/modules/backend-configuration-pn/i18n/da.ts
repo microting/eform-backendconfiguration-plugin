@@ -556,4 +556,5 @@ export const da = {
   'This task is part of a recurring series. What do you want to move?': 'Denne opgave er en del af en tilbagevendende serie. Hvad vil du flytte?',
   'This task is part of a recurring series. What do you want to delete?': 'Denne opgave er en del af en tilbagevendende serie. Hvad vil du slette?',
   'Updated.': 'Opdateret.',
+  'Select / create report headline': 'Vælg / opret rapportoverskrift',
 };

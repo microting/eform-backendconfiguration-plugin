@@ -555,4 +555,5 @@ export const huHU = {
   'This task is part of a recurring series. What do you want to move?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne áthelyezni?',
   'This task is part of a recurring series. What do you want to delete?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne törölni?',
   'Updated.': 'Frissítve.',
+  'Select / create report headline': 'Jelentés címsorának kiválasztása/létrehozása',
 };

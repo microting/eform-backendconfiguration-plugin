@@ -555,4 +555,5 @@ export const bgBG = {
   'This task is part of a recurring series. What do you want to move?': 'Тази задача е част от повтаряща се поредица. Какво искате да преместите?',
   'This task is part of a recurring series. What do you want to delete?': 'Тази задача е част от повтаряща се поредица. Какво искате да изтриете?',
   'Updated.': 'Актуализирано.',
+  'Select / create report headline': 'Изберете/създайте заглавие на отчета',
 };

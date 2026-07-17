@@ -555,4 +555,5 @@ export const skSK = {
   'This task is part of a recurring series. What do you want to move?': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete presunúť?',
   'This task is part of a recurring series. What do you want to delete?': 'Táto úloha je súčasťou opakujúcej sa série. Čo chcete odstrániť?',
   'Updated.': 'Aktualizované.',
+  'Select / create report headline': 'Vybrať/vytvoriť nadpis prehľadu',
 };

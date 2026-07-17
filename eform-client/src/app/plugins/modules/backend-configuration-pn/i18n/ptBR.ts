@@ -555,4 +555,5 @@ export const ptBR = {
   'This task is part of a recurring series. What do you want to move?': 'Esta tarefa faz parte de uma série recorrente. O que você deseja mover?',
   'This task is part of a recurring series. What do you want to delete?': 'Esta tarefa faz parte de uma série recorrente. O que você deseja excluir?',
   'Updated.': 'Atualizado.',
+  'Select / create report headline': 'Selecionar/criar título do relatório',
 };

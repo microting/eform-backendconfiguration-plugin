@@ -555,4 +555,5 @@ export const nlNL = {
   'This task is part of a recurring series. What do you want to move?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u verplaatsen?',
   'This task is part of a recurring series. What do you want to delete?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u verwijderen?',
   'Updated.': 'Bijgewerkt.',
+  'Select / create report headline': 'Selecteer/maak een rapportkop',
 };

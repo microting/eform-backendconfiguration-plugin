@@ -555,4 +555,5 @@ export const ukUA = {
   'This task is part of a recurring series. What do you want to move?': 'Це завдання є частиною повторюваної серії. Що ви хочете перемістити?',
   'This task is part of a recurring series. What do you want to delete?': 'Це завдання є частиною повторюваної серії. Що ви хочете видалити?',
   'Updated.': 'Оновлено.',
+  'Select / create report headline': 'Вибрати / створити заголовок звіту',
 };
