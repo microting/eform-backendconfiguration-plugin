@@ -555,4 +555,5 @@ export const lvLV = {
   'This task is part of a recurring series. What do you want to move?': 'Šis uzdevums ir daļa no atkārtotas sērijas. Ko vēlaties pārvietot?',
   'This task is part of a recurring series. What do you want to delete?': 'Šis uzdevums ir daļa no atkārtotas virknes. Ko vēlaties dzēst?',
   'Updated.': 'Atjaunināts.',
+  'Select / create report headline': 'Atlasīt/izveidot pārskata virsrakstu',
 };

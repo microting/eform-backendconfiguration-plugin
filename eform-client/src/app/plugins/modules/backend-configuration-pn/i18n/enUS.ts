@@ -435,6 +435,7 @@ export const enUS= {
   'Copy of': 'Copy of',
   'eForm': 'eForm',
   'Report headline': 'Report headline',
+  'Select / create report headline': 'Select / create report headline',
   // Calendar sidebar
   'My properties': 'My properties',
   'My calendars': 'My calendars',

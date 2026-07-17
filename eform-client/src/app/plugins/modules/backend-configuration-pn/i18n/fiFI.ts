@@ -555,4 +555,5 @@ export const fiFI = {
   'This task is part of a recurring series. What do you want to move?': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat siirtää?',
   'This task is part of a recurring series. What do you want to delete?': 'Tämä tehtävä on osa toistuvaa sarjaa. Mitä haluat poistaa?',
   'Updated.': 'Päivitetty.',
+  'Select / create report headline': 'Valitse/luo raportin otsikko',
 };

@@ -555,4 +555,5 @@ export const isIS = {
   'This task is part of a recurring series. What do you want to move?': 'Þetta verkefni er hluti af endurtekinni seríu. Hvað viltu færa?',
   'This task is part of a recurring series. What do you want to delete?': 'Þetta verkefni er hluti af endurtekinni röð. Hvað viltu eyða?',
   'Updated.': 'Uppfært.',
+  'Select / create report headline': 'Velja / búa til fyrirsögn skýrslu',
 };

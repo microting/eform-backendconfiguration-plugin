@@ -555,4 +555,5 @@ export const csCZ = {
   'This task is part of a recurring series. What do you want to move?': 'Tento úkol je součástí opakující se série. Co chcete přesunout?',
   'This task is part of a recurring series. What do you want to delete?': 'Tento úkol je součástí opakující se série. Co chcete smazat?',
   'Updated.': 'Aktualizováno.',
+  'Select / create report headline': 'Vybrat/vytvořit nadpis zprávy',
 };

@@ -366,12 +366,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     /// <inheritdoc />
     public async Task<OperationResult> CreateTask(TaskWizardCreateModel createModel)
     {
-        if (!createModel.ItemPlanningTagId.HasValue) // This is the report table header tag
-        {
-            return new OperationResult(false,
-                _localizationService.GetString("ReportTableHeaderTagIsRequired"));
-        }
-
         if (createModel.FolderId == null)
         {
             return new OperationResult(false,
@@ -453,7 +447,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 DayOfMonth = dayOfMonth,
                 UpdatedByUserId = _userService.UserId,
                 CreatedByUserId = _userService.UserId,
-                ReportGroupPlanningTagId = (int)createModel.ItemPlanningTagId!
+                ReportGroupPlanningTagId = createModel.ItemPlanningTagId
             };
 
 
@@ -884,7 +878,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.Enabled = true;
                     planning.DayOfWeek = planning.StartDate.DayOfWeek;
                     planning.RepeatEvery = updateModel.RepeatEvery;
-                    planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
                     planning.ShowExpireDate = true;
@@ -1055,7 +1049,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
                     planning.UpdatedByUserId = _userService.UserId;
-                    planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     planning.ShowExpireDate = true;
                     await planning.Update(_itemsPlanningPnDbContext);
 

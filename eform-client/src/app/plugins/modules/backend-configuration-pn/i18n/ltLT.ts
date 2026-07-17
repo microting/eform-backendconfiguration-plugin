@@ -555,4 +555,5 @@ export const ltLT = {
   'This task is part of a recurring series. What do you want to move?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite perkelti?',
   'This task is part of a recurring series. What do you want to delete?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite ištrinti?',
   'Updated.': 'Atnaujinta.',
+  'Select / create report headline': 'Pasirinkti / sukurti ataskaitos antraštę',
 };

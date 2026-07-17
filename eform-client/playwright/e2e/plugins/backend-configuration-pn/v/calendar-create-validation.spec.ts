@@ -16,19 +16,25 @@ import {
  *
  * Proves the create modal's save-guard and the backend's create-time
  * validation legs behave correctly. The modal's Save button
- * (`#calendarEventSaveBtn`) is DISABLED when the title is empty OR there are
- * zero assignees (task-create-edit-modal.component.html ~line 415:
- *   [disabled]="titleControl.invalid || !(assigneeControl.value?.length)"
- * ). The planning tag is NOT part of that guard, so a save WITHOUT a planning
- * tag is reachable through the UI and is rejected server-side instead.
+ * (`#calendarEventSaveBtn`) is DISABLED when the title is empty, there are
+ * zero assignees, OR the report-headline checkbox is checked with no
+ * planning tag selected (task-create-edit-modal.component.html ~line 415:
+ *   [disabled]="titleControl.invalid || !(assigneeControl.value?.length) ||
+ *     (reportHeadlineEnabledControl.value && !planningTagControl.value)"
+ * ). The report-headline checkbox (`#calendarEventReportHeadlineToggle`)
+ * defaults to CHECKED in create mode, so the planning tag is required
+ * client-side UNLESS the user unchecks it — at which point the dropdown is
+ * disabled, the value is excluded from the payload (`itemPlanningTagId:
+ * null`), and the create succeeds (the old server-side
+ * `ReportTableHeaderTagIsRequired` rejection has been removed).
  *
  * This determines which validation legs are reachable end-to-end:
- *   - empty-title          → Save disabled            (UI guard)        [V01]
- *   - zero-assignee        → Save disabled            (UI guard)        [V02]
- *   - past-slot create     → modal never opens        (grid guard)      [V03]
- *   - sub-15-min duration  → clamps to 0.25 h         (modal clamp)     [V04]
- *   - missing planning tag → backend success=false    (server guard)    [V06]
- *   - Active + no sites    → unreachable (Save disabled w/ 0 assignees) [V05 fixme]
+ *   - empty-title            → Save disabled            (UI guard)        [V01]
+ *   - zero-assignee          → Save disabled            (UI guard)        [V02]
+ *   - past-slot create       → modal never opens        (grid guard)      [V03]
+ *   - sub-15-min duration    → clamps to 0.25 h         (modal clamp)     [V04]
+ *   - checked + no headline  → Save disabled            (UI guard)        [V06]
+ *   - Active + no sites      → unreachable (Save disabled w/ 0 assignees) [V05 fixme]
  *
  * The backend `AtLeastOneWorkerMustBeAssigned` leg (CalendarService.CreateTask
  * ~line 882) is unreachable via the UI because Save is disabled with zero
@@ -351,27 +357,13 @@ test.describe.serial('Calendar create-event validation (#892)', () => {
   });
 
   // =======================================================================
-  // V06 — a missing planning tag is rejected by the backend.
+  // V06 — the report-headline checkbox gates save client-side.
   // =======================================================================
-  // The planning tag is NOT part of the save guard, so with title + assignee
-  // present Save is ENABLED even when no planning tag is selected. In create
-  // mode planningTagControl defaults to null (component ~line 124) and is NOT
-  // auto-seeded (only the eForm + board get defaults), so simply NOT picking a
-  // tag leaves it empty — no clear-control interaction is required.
-  //
-  // The backend rejects this: CalendarService.CreateTask delegates to
-  // taskWizardService.CreateTask, which returns
-  //   OperationResult(false, GetString("ReportTableHeaderTagIsRequired"))
-  // when ItemPlanningTagId has no value (TaskWizardService ~line 347-351).
-  //
-  // ASSERTION (with documented robustness): the message is LOCALIZED
-  // (en-US: "Report tag is required"; da: "Rapport ettiket er påkrævet"), so
-  // we do NOT assert on a single fixed string. We assert the strong,
-  // language-independent invariants — `success === false` and that NO event
-  // block was created — and additionally accept the message if it matches the
-  // resource KEY or either the en/da localized text (whichever the
-  // localization service returns for the test user's language).
-  test('V06: missing planning tag is rejected by the backend', async ({ page }) => {
+  // Checked (default) + no tag selected => #calendarEventSaveBtn disabled.
+  // Unchecking the checkbox lifts the gate and the create succeeds with
+  // itemPlanningTagId: null (server guard was removed; data is excluded
+  // from reports because the null ReportGroupPlanningTagId group is skipped).
+  test('V06: report headline required only while its checkbox is checked', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
     const title = `V06-${generateRandmString(5)}`;
 
@@ -383,39 +375,27 @@ test.describe.serial('Calendar create-event validation (#892)', () => {
     // Deliberately DO NOT pick a planning tag (stays null in create mode).
     await pickFirstAssignee(page);
 
-    // Save is enabled (title + assignee present).
-    await expect(page.locator('#calendarEventSaveBtn')).toBeEnabled();
+    // Report-headline checkbox defaults to CHECKED + no tag selected =>
+    // Save must be disabled by the client-side guard.
+    const saveBtn = page.locator('#calendarEventSaveBtn');
+    await expect(saveBtn, 'checked + empty headline must block save').toBeDisabled();
 
-    // Pre-register the create-POST response waiter BEFORE clicking save.
-    const respPromise = page.waitForResponse(
-      r => isCreatePost(r.request().method(), r.url()),
-      { timeout: 30000 }
-    );
-    await page.locator('#calendarEventSaveBtn').click();
-    const resp = await respPromise;
-    const body = await resp.json().catch(() => null);
+    // Uncheck the report-headline toggle — the gate lifts and Save enables.
+    await page.locator('#calendarEventReportHeadlineToggle').click();
+    await expect(saveBtn, 'unchecked headline must allow save').toBeEnabled();
+
+    const [response] = await Promise.all([
+      page.waitForResponse(r => isCreatePost(r.request().method(), r.url()), { timeout: 30000 }),
+      saveBtn.click(),
+    ]);
+    const body = await response.json().catch(() => null);
     console.log(
-      `V06 create (no planning tag): status=${resp.status()}, success=${body?.success}, message=${body?.message}`
+      `V06 create (headline unchecked): status=${response.status()}, success=${body?.success}, message=${body?.message}`
     );
+    expect(body?.success, 'create without a report headline must succeed').toBeTruthy();
 
-    // Strong, language-independent invariant: the backend rejected the create.
-    expect(body?.success, 'create without a planning tag must be rejected').toBeFalsy();
-
-    // The message is localized; accept the resource key OR the en/da text.
-    const msg = (body?.message ?? '').toString();
-    expect(
-      /ReportTableHeaderTagIsRequired|Report tag is required|Rapport ettiket er p[åa]kr[æa]vet/i.test(msg),
-      `message should reference the planning-tag-required rejection; got "${msg}"`
-    ).toBeTruthy();
-
-    // And no event block was created on the grid.
     await page.waitForTimeout(1000);
-    expect(
-      await page.locator('.task-block').filter({ hasText: title }).count(),
-      'no event block should be created when the planning tag is missing'
-    ).toBe(0);
-
-    await calendarPage.closeEventModal();
+    await calendarPage.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
   });
 
   // =======================================================================

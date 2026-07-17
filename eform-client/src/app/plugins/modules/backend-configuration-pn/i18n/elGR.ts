@@ -555,4 +555,5 @@ export const elGR = {
   'This task is part of a recurring series. What do you want to move?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να μετακινήσετε;',
   'This task is part of a recurring series. What do you want to delete?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να διαγράψετε;',
   'Updated.': 'Ενημερώθηκε.',
+  'Select / create report headline': 'Επιλογή / δημιουργία τίτλου αναφοράς',
 };

@@ -555,4 +555,5 @@ export const hrHR = {
   'This task is part of a recurring series. What do you want to move?': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite premjestiti?',
   'This task is part of a recurring series. What do you want to delete?': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite izbrisati?',
   'Updated.': 'Ažurirano.',
+  'Select / create report headline': 'Odaberite/izradite naslov izvješća',
 };

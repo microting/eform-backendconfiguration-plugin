@@ -555,4 +555,5 @@ export const roRO = {
   'This task is part of a recurring series. What do you want to move?': 'Această sarcină face parte dintr-o serie recurentă. Ce vrei să muți?',
   'This task is part of a recurring series. What do you want to delete?': 'Această sarcină face parte dintr-o serie recurentă. Ce doriți să ștergeți?',
   'Updated.': 'Actualizat.',
+  'Select / create report headline': 'Selectați/creați titlul raportului',
 };

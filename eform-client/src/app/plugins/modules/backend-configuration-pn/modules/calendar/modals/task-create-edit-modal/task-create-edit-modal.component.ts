@@ -148,6 +148,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   boardControl = new FormControl<number | null>(null);
   eformControl = new FormControl<number | null>(null);
   planningTagControl = new FormControl<number | null>(null);
+  reportHeadlineEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
   statusControl = new FormControl<boolean>(true, {nonNullable: true});
   complianceEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
 
@@ -169,6 +170,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     private translationService: TranslationService,
     private appSettingsStateService: AppSettingsStateService,
   ) {}
+
+  onReportHeadlineToggled(checked: boolean) {
+    if (checked) {
+      this.planningTagControl.enable();
+    } else {
+      this.planningTagControl.disable();
+    }
+  }
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
     return this.persistTag(name).then(tag => {
@@ -323,6 +332,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+      this.reportHeadlineEnabledControl.setValue(!!task['itemPlanningTagId']);
+      if (!task['itemPlanningTagId']) {
+        this.planningTagControl.disable();
+      }
       this.statusControl.setValue(task.status ?? true);
       this.complianceEnabledControl.setValue(task.complianceEnabled ?? true);
       // Seed attachments from the task DTO. The backend mapper populates
@@ -358,6 +371,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(sourceTask['eformId'] ?? null);
       this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
+      this.reportHeadlineEnabledControl.setValue(!!sourceTask['itemPlanningTagId']);
+      if (!sourceTask['itemPlanningTagId']) {
+        this.planningTagControl.disable();
+      }
       this.statusControl.setValue(sourceTask.status ?? true);
       this.complianceEnabledControl.setValue(sourceTask.complianceEnabled ?? true);
     } else {
@@ -405,6 +422,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.boardControl.disable();
         this.eformControl.disable();
         this.planningTagControl.disable();
+        this.reportHeadlineEnabledControl.disable();
         this.statusControl.disable();
         this.complianceEnabledControl.disable();
       }
@@ -1027,7 +1045,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       complianceEnabled: this.complianceEnabledControl.value,
       folderId: this.data.folderId,
       eformId: this.eformControl.value,
-      itemPlanningTagId: this.planningTagControl.value,
+      itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
 
       // Keep these for local/UI use and backward compat
       title: this.titleControl.value,

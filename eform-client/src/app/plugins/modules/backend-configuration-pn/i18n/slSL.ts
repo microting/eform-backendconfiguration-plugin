@@ -555,4 +555,5 @@ export const slSL = {
   'This task is part of a recurring series. What do you want to move?': 'Ta naloga je del ponavljajoče se serije. Kaj želite premakniti?',
   'This task is part of a recurring series. What do you want to delete?': 'To opravilo je del ponavljajoče se serije. Kaj želite izbrisati?',
   'Updated.': 'Posodobljeno.',
+  'Select / create report headline': 'Izberite/ustvarite naslov poročila',
 };
