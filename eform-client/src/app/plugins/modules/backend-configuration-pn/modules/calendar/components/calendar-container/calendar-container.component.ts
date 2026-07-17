@@ -487,9 +487,18 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     // currently-viewed week so day-view lands on the first day of that
     // week and schedule-view shows that same week — preserving the
     // user's navigation context instead of jumping back to today.
+    // Exception: switching to DAY view while the visible week is the
+    // current week lands on today ("dags dato") rather than Monday — the
+    // user expects to see the current day, not the start of the week.
+    // Schedule keeps Monday even on the current week (locked by e2e H3
+    // in r/calendar-ui-enhancements.spec.ts; the current-week day case
+    // is locked by H5).
     if (viewMode !== 'week' && this.viewMode === 'week') {
       const monday = this.getMondayOfWeek(new Date(this.currentDate));
-      this.stateService.updateCurrentDate(this.toLocalDateString(monday));
+      const isCurrentWeek =
+        this.toLocalDateString(monday) === this.toLocalDateString(this.getMondayOfWeek(new Date()));
+      const target = viewMode === 'day' && isCurrentWeek ? new Date() : monday;
+      this.stateService.updateCurrentDate(this.toLocalDateString(target));
     }
     this.stateService.updateViewMode(viewMode);
     this.loadTasks();

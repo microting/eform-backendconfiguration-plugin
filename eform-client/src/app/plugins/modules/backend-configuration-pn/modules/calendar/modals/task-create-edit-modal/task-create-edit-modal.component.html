@@ -13,7 +13,7 @@
       <div class="gcal-row-content">
         <mat-form-field class="w-100 gcal-translatable-field">
           <mat-label>{{ 'Title' | translate }}</mat-label>
-          <input matInput id="calendarEventTitle" [formControl]="titleControl" autocomplete="off">
+          <input matInput id="calendarEventTitle" #titleInput [formControl]="titleControl" autocomplete="off">
           <button mat-icon-button matIconSuffix type="button"
                   *ngIf="showTranslate"
                   id="calendarEventTitleTranslate"
