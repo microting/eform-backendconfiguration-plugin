@@ -172,7 +172,7 @@ test.describe.serial('Calendar report-headline checkbox', () => {
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
     await page.locator('.ng-dropdown-panel .ng-option').first().click();
     await page.waitForTimeout(300);
-    const chosen = await select.locator('.ng-value').innerText();
+    const chosen = (await select.locator('.ng-value-label').innerText()).trim();
     await toggle.click();
     await page.waitForTimeout(300);
     await expect(toggle.locator('input')).not.toBeChecked();
@@ -183,7 +183,7 @@ test.describe.serial('Calendar report-headline checkbox', () => {
     await toggle.click();
     await page.waitForTimeout(300);
     await expect(select.locator('input')).toBeEnabled();
-    await expect(select.locator('.ng-value')).toHaveText(chosen);
+    await expect(select.locator('.ng-value-label')).toHaveText(chosen);
 
     await calendarPage.closeEventModal();
   });
