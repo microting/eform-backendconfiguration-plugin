@@ -32,6 +32,18 @@ import {
  * to make Save reachable, and none of these tests need a multi-assignee
  * list. Lives in `v/` to share the matrix slot with
  * calendar-create-validation.spec.ts and reuse CalendarUiEnhancementsPage.
+ *
+ * Slot strategy: each test gets a fresh page (beforeEach re-navigates to the
+ * calendar's real current week), so every `openCreateModalAtSlot`/
+ * `openCreateModalAt9AM()` call independently advances one week (chevron
+ * click) and lands on next week's target day — it never compounds across
+ * tests. What DOES compound is a same-day collision: two persisting tests
+ * both targeting next-week Monday would race for the same cell. Per the
+ * sibling calendar-create-validation.spec.ts convention ("Each test uses a
+ * DISTINCT weekday ... so the serial suite never collides on a shared
+ * week"), T01 (non-persisting, cancels) and T02 (persists) share Monday
+ * (day 0) safely since T01 never saves; T03 (persists) uses Tuesday (day 1)
+ * to avoid colliding with T02's saved block.
  */
 
 const property: PropertyCreateUpdate = {
@@ -162,11 +174,14 @@ test.describe.serial('Calendar report-headline checkbox', () => {
     await page.waitForTimeout(300);
     const chosen = await select.locator('.ng-value').innerText();
     await toggle.click();
+    await page.waitForTimeout(300);
     await expect(toggle.locator('input')).not.toBeChecked();
     await expect(select.locator('input')).toBeDisabled();
+    await expect(select).toHaveClass(/mtx-select-disabled/);
 
     // re-check: enabled again with the same value
     await toggle.click();
+    await page.waitForTimeout(300);
     await expect(select.locator('input')).toBeEnabled();
     await expect(select.locator('.ng-value')).toHaveText(chosen);
 
@@ -201,6 +216,7 @@ test.describe.serial('Calendar report-headline checkbox', () => {
     // Deliberately DO NOT pick a planning tag — uncheck the report-headline
     // toggle instead so Save is reachable without one.
     await page.locator('#calendarEventReportHeadlineToggle').click();
+    await page.waitForTimeout(300);
 
     const [response] = await Promise.all([
       page.waitForResponse(
@@ -226,14 +242,22 @@ test.describe.serial('Calendar report-headline checkbox', () => {
   // =======================================================================
   // T03 — unchecking on edit removes the headline from the task.
   // =======================================================================
+  // Uses Tuesday (day offset 1) rather than openCreateModalAt9AM()'s Monday
+  // (day 0) — T02 already persists a saved block on next-week Monday, and
+  // each test gets a fresh page (openCreateModalAtSlot always lands on
+  // "next week" from a freshly-loaded current week), so reusing Monday here
+  // would race T02's block for the same cell. Distinct weekday per
+  // persisting test matches the convention in
+  // calendar-create-validation.spec.ts (V01-V06 each use their own day).
   test('unchecking on edit removes the headline from the task', async ({ page }) => {
     const title = `remove-headline-${generateRandmString(5)}`;
-    await calendarPage.openCreateModalAt9AM();
+    await calendarPage.openCreateModalAtSlot(1, 9);
     await calendarPage.fillAndSaveEvent(title); // creates WITH a headline
 
     await calendarPage.openEditModal(title);
     await expect(page.locator('#calendarEventReportHeadlineToggle input')).toBeChecked();
     await page.locator('#calendarEventReportHeadlineToggle').click(); // uncheck
+    await page.waitForTimeout(300);
     await calendarPage.clickSaveInEditModal();
     await page.waitForTimeout(1000);
 
