@@ -689,6 +689,33 @@ test.describe.serial('Calendar UI enhancements', () => {
       expect(crossTitle).toBe(formatWeekTitle(monday));
       expect(crossTitle).toContain(' - ');
     });
+
+    test('H5: day view from the CURRENT week lands on today (dags dato)', async ({ page }) => {
+      const calendarPage = new CalendarUiEnhancementsPage(page);
+      await page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 10000 });
+
+      // NO navigation — the visible week is the current week. Switching to
+      // day view must show today, not the week's Monday (2026-07-17 design:
+      // "Når jeg i kalenderen står i ugevisning og vælger Dag, så skal dags
+      // dato vises"). H2 keeps covering the navigated-week → Monday case.
+      await calendarPage.switchToDayView();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const actualHeader = await calendarPage.getCalendarHeaderDateText();
+      expect(actualHeader).toBe(formatLongDate(today));
+
+      // The single day-grid column header shows today's weekday + number
+      // (same two-line stack assertions as H2).
+      const dayCol = page
+        .locator('app-calendar-week-grid .mat-mdc-header-cell:not(.mat-column-time-axis)')
+        .first();
+      const expectedWeekdayShort = today
+        .toLocaleDateString('da-DK', { weekday: 'short' })
+        .toUpperCase();
+      await expect(dayCol.locator('.day-header-weekday')).toHaveText(expectedWeekdayShort);
+      await expect(dayCol.locator('.day-header-number')).toHaveText(String(today.getDate()));
+    });
   });
 
   // =======================================================================

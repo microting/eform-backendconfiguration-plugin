@@ -74,6 +74,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   @Output() popoverClose = new EventEmitter<boolean | null>();
   @Output() timeChanged = new EventEmitter<{startHour: number; endHour: number}>();
   @ViewChild('descriptionTextarea') descriptionTextarea?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('titleInput') titleInput?: ElementRef<HTMLInputElement>;
   usePopoverMode = false;
 
   isEditMode = false;
@@ -808,6 +809,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     setTimeout(() => {
       if (this.descriptionControl.value) {
         this.growTextarea(this.descriptionTextarea?.nativeElement ?? null);
+      }
+      // Pure create mode only: place the cursor in Titel so the user can
+      // type immediately. Edit keeps focus untouched; copy has a pre-filled
+      // title. The popover is a bare CDK overlay (no focus trap), so an
+      // imperative focus is required; the setTimeout already defers past
+      // the overlay's ensureOverlayInViewport repositioning.
+      if (!this.isEditMode && !this.data.sourceTask) {
+        this.titleInput?.nativeElement.focus({preventScroll: true});
       }
     });
   }

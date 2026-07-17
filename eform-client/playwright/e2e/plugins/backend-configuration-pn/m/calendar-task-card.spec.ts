@@ -447,6 +447,12 @@ test.describe.serial('Calendar task-card preview (task-card-preview-fields)', ()
     await uiPage.openEventPreview(kc01Title);
     await calendarPage.clickEditOrViewInPreview();
 
+    // Edit mode must NOT steal focus to Titel — autofocus is create-only
+    // (2026-07-17 design; the create-side assertion lives in
+    // o/calendar-create-fields.spec.ts).
+    await page.waitForTimeout(500);
+    await expect(page.locator('#calendarEventTitle')).not.toBeFocused();
+
     // New title + a second inline-created planning tag, also added as a
     // set-tag (same dual-pool mechanics as KC01).
     await page.locator('#calendarEventTitle').fill(newTitle);

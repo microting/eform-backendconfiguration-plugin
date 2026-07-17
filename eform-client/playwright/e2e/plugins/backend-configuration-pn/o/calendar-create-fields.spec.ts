@@ -168,6 +168,9 @@ test.describe.serial('Calendar create-event field combinations (#890)', () => {
     await page.waitForTimeout(1000);
 
     await calendarPage.openCreateModalAtSlot(0, 8);
+    // Create mode places the cursor in Titel so the user can type
+    // immediately (2026-07-17 design; edit/copy modes do NOT autofocus).
+    await expect(page.locator('#calendarEventTitle')).toBeFocused();
     const assignee = page.locator('#calendarEventAssignee');
     await assignee.click();
     await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
