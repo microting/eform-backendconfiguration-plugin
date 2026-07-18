@@ -1,7 +1,20 @@
+// Mirror the week grid's :host block: .calendar-main is a flex column and
+// stretches app-calendar-week-grid via an explicit flex:1 rule, but custom
+// elements default to inline — without this the month view sizes to content
+// and leaves dead space below instead of filling the viewport.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .month-view {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 8px 16px 16px;
   overflow: auto;
 }
