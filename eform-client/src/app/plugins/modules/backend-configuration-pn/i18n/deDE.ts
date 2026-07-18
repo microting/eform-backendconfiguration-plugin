@@ -604,4 +604,8 @@ export const deDE = {
   'This task is part of a recurring series. What do you want to delete?': 'Diese Aufgabe ist Teil einer wiederkehrenden Serie. Was möchten Sie löschen?',
   'Updated.': 'Aktualisiert.',
   'Select / create report headline': 'Berichtsüberschrift auswählen/erstellen',
+  'No tasks this month': 'Diesen Monat keine Aufgaben',
+  'Previous month': 'Vorheriger Monat',
+  'Next month': 'Nächster Monat',
+  'No tasks this week': 'Diese Woche keine Aufgaben',
 };

@@ -34,6 +34,7 @@
       [sidebarOpen]="sidebarOpen"
       [propertyName]="selectedPropertyName"
       [isAdmin]="isAdmin"
+      [scheduleScope]="scheduleScope"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
       (viewModeChange)="onViewModeChange($event)"
@@ -78,13 +79,26 @@
 
       <app-calendar-schedule-view
         *ngSwitchCase="'schedule'"
-        [tasksByDay]="tasksByDay"
+        [tasksByDay]="scheduleScope === 'month' ? monthScheduleTasksByDay : tasksByDay"
         [currentDate]="currentDate"
         [boards]="boards"
+        [rangeStart]="scheduleRangeStart"
+        [emptyTextKey]="scheduleScope === 'month' ? 'No tasks this month' : 'No tasks this week'"
         (taskClicked)="onTaskClickedFromGrid($event)"
         (tasksReload)="loadTasks()"
         (toggleCompleteRequested)="onToggleCompleteRequested($event)"
       ></app-calendar-schedule-view>
+
+      <ng-container *ngSwitchCase="'month'">
+        <app-calendar-month-view
+          *ngIf="isAdmin"
+          [monthDate]="currentDate"
+          [tasksByDate]="monthTasksByDate"
+          (weekClicked)="onMonthWeekClicked($event)"
+          (dayClicked)="onMonthDayClicked($event)"
+          (scheduleClicked)="onMonthScheduleClicked()"
+        ></app-calendar-month-view>
+      </ng-container>
 
       <ng-container *ngSwitchCase="'compliance'">
         <app-calendar-compliance-view

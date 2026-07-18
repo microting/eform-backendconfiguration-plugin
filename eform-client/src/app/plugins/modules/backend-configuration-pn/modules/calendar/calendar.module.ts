@@ -43,6 +43,7 @@ import {
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
   CalendarMiniCalendarComponent,
+  CalendarMonthViewComponent,
   CalendarScheduleViewComponent,
   CalendarSidebarComponent,
   CalendarTaskBlockComponent,
@@ -89,6 +90,7 @@ export {
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
     CalendarComplianceViewComponent,
+    CalendarMonthViewComponent,
     // Modals
     TaskCreateEditModalComponent,
     TaskPreviewModalComponent,

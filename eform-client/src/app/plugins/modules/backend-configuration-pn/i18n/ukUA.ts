@@ -556,4 +556,8 @@ export const ukUA = {
   'This task is part of a recurring series. What do you want to delete?': 'Це завдання є частиною повторюваної серії. Що ви хочете видалити?',
   'Updated.': 'Оновлено.',
   'Select / create report headline': 'Вибрати / створити заголовок звіту',
+  'No tasks this month': 'Цього місяця немає завдань',
+  'Previous month': 'Попередній місяць',
+  'Next month': 'Наступний місяць',
+  'No tasks this week': 'Цього тижня немає завдань',
 };

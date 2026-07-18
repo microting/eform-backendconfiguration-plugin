@@ -10,16 +10,17 @@ import {getCurrentLocale} from '../../services/calendar-locale.helper';
 })
 export class CalendarHeaderComponent implements OnInit, OnChanges {
   @Input() currentDate: string = '';
-  @Input() viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
+  @Input() viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance' = 'week';
   @Input() sidebarOpen = true;
   @Input() propertyName: string = '';
   @Input() isAdmin = false;
+  @Input() scheduleScope: 'week' | 'month' = 'week';
 
   viewModeOptions: {value: string; label: string}[] = [];
 
   @Output() navigate = new EventEmitter<-1 | 1>();
   @Output() goToToday = new EventEmitter<void>();
-  @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule' | 'compliance'>();
+  @Output() viewModeChange = new EventEmitter<'week' | 'day' | 'schedule' | 'month' | 'compliance'>();
   @Output() toggleSidebar = new EventEmitter<void>();
   @Output() propertyPillClicked = new EventEmitter<void>();
 
@@ -42,6 +43,8 @@ export class CalendarHeaderComponent implements OnInit, OnChanges {
     this.viewModeOptions = [
       {value: 'day', label: this.translate.instant('Day')},
       {value: 'week', label: this.translate.instant('Week')},
+      // Month is admin-only, mirroring the Compliance gating below.
+      ...(this.isAdmin ? [{value: 'month', label: this.translate.instant('Month')}] : []),
       {value: 'schedule', label: this.translate.instant('List')},
       ...(this.isAdmin ? [{value: 'compliance', label: this.translate.instant('Compliance')}] : []),
     ];
@@ -51,6 +54,11 @@ export class CalendarHeaderComponent implements OnInit, OnChanges {
     if (!this.currentDate) return '';
     const d = new Date(this.currentDate);
     const locale = getCurrentLocale(this.translate);
+    // Month view (and month-scoped Tidsplan) titles the whole month:
+    // "juli 2026" — locale casing kept, matching the week title style.
+    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) {
+      return d.toLocaleDateString(locale, {month: 'long', year: 'numeric'});
+    }
     // Day + schedule/list views show a single date in long form, matching
     // the event-modal label style: "Lørdag, 21. april 2026".
     if (this.viewMode === 'day' || this.viewMode === 'schedule') {
@@ -96,11 +104,15 @@ export class CalendarHeaderComponent implements OnInit, OnChanges {
   }
 
   get prevTooltipKey(): string {
-    return this.viewMode === 'day' ? 'Previous day' : 'Previous week';
+    if (this.viewMode === 'day') return 'Previous day';
+    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) return 'Previous month';
+    return 'Previous week';
   }
 
   get nextTooltipKey(): string {
-    return this.viewMode === 'day' ? 'Next day' : 'Next week';
+    if (this.viewMode === 'day') return 'Next day';
+    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) return 'Next month';
+    return 'Next week';
   }
 
   private getMondayOfWeek(d: Date): Date {

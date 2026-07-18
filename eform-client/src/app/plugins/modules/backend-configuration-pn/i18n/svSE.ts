@@ -556,4 +556,8 @@ export const svSE = {
   'This task is part of a recurring series. What do you want to delete?': 'Den här uppgiften är en del av en återkommande serie. Vad vill du ta bort?',
   'Updated.': 'Uppdaterad.',
   'Select / create report headline': 'Välj/skapa rapportrubrik',
+  'No tasks this month': 'Inga uppgifter denna månad',
+  'Previous month': 'Föregående månad',
+  'Next month': 'Nästa månad',
+  'No tasks this week': 'Inga uppgifter denna vecka',
 };

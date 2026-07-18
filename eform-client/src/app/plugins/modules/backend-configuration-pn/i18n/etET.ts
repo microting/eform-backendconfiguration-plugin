@@ -556,4 +556,8 @@ export const etET = {
   'This task is part of a recurring series. What do you want to delete?': 'See ülesanne on osa korduvast seeriast. Mida soovite kustutada?',
   'Updated.': 'Uuendatud.',
   'Select / create report headline': 'Valige/looge aruande pealkiri',
+  'No tasks this month': 'Sel kuul ülesandeid pole',
+  'Previous month': 'Eelmine kuu',
+  'Next month': 'Järgmisel kuul',
+  'No tasks this week': 'Sel nädalal ülesandeid pole',
 };

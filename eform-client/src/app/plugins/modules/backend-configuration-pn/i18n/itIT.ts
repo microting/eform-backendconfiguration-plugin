@@ -556,4 +556,8 @@ export const itIT = {
   'This task is part of a recurring series. What do you want to delete?': 'Questa operazione fa parte di una serie ricorrente. Cosa desideri eliminare?',
   'Updated.': 'Aggiornato.',
   'Select / create report headline': 'Seleziona/crea il titolo del report',
+  'No tasks this month': 'Nessun compito questo mese',
+  'Previous month': 'Mese precedente',
+  'Next month': 'Il mese prossimo',
+  'No tasks this week': 'Nessun compito questa settimana',
 };

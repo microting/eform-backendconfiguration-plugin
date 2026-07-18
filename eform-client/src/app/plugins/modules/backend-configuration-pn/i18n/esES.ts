@@ -556,4 +556,8 @@ export const esES = {
   'This task is part of a recurring series. What do you want to delete?': 'Esta tarea forma parte de una serie recurrente. ¿Qué desea eliminar?',
   'Updated.': 'Actualizado.',
   'Select / create report headline': 'Seleccione / cree el título del informe',
+  'No tasks this month': 'No hay tareas este mes',
+  'Previous month': 'Mes anterior',
+  'Next month': 'Mes próximo',
+  'No tasks this week': 'Esta semana no hay tareas',
 };

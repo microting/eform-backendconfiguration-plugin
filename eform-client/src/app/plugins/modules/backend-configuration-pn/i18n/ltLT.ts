@@ -556,4 +556,8 @@ export const ltLT = {
   'This task is part of a recurring series. What do you want to delete?': 'Ši užduotis yra pasikartojančios serijos dalis. Ką norite ištrinti?',
   'Updated.': 'Atnaujinta.',
   'Select / create report headline': 'Pasirinkti / sukurti ataskaitos antraštę',
+  'No tasks this month': 'Šį mėnesį užduočių nėra',
+  'Previous month': 'Praėjusį mėnesį',
+  'Next month': 'Kitą mėnesį',
+  'No tasks this week': 'Šią savaitę užduočių nėra',
 };

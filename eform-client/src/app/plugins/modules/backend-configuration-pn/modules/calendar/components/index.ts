@@ -7,4 +7,5 @@ export * from './calendar-task-block/calendar-task-block.component';
 export * from './calendar-schedule-view/calendar-schedule-view.component';
 export * from './calendar-mini-calendar/calendar-mini-calendar.component';
 export * from './calendar-compliance-view/calendar-compliance-view.component';
+export * from './calendar-month-view/calendar-month-view.component';
 export * from './store';

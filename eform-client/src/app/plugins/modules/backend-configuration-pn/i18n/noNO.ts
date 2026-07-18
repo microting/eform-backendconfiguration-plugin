@@ -556,4 +556,8 @@ export const noNO = {
   'This task is part of a recurring series. What do you want to delete?': 'Denne oppgaven er en del av en gjentakende serie. Hva vil du slette?',
   'Updated.': 'Oppdatert.',
   'Select / create report headline': 'Velg / opprett rapportoverskrift',
+  'No tasks this month': 'Ingen oppgaver denne måneden',
+  'Previous month': 'Forrige måned',
+  'Next month': 'Neste måned',
+  'No tasks this week': 'Ingen oppgaver denne uken',
 };

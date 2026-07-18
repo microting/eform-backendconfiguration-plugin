@@ -555,4 +555,8 @@ export const frFR = {
   'This task is part of a recurring series. What do you want to delete?': 'Cette tâche fait partie d\'une série récurrente. Que souhaitez-vous supprimer ?',
   'Updated.': 'Mis à jour.',
   'Select / create report headline': 'Sélectionner / créer un titre de rapport',
+  'No tasks this month': 'Aucune tâche ce mois-ci',
+  'Previous month': 'Le mois précédent',
+  'Next month': 'Mois prochain',
+  'No tasks this week': 'Pas de tâches cette semaine',
 };

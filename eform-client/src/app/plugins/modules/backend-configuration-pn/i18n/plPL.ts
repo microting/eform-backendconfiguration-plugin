@@ -556,4 +556,8 @@ export const plPL = {
   'This task is part of a recurring series. What do you want to delete?': 'To zadanie jest częścią cyklicznej serii. Co chcesz usunąć?',
   'Updated.': 'Zaktualizowano.',
   'Select / create report headline': 'Wybierz/utwórz nagłówek raportu',
+  'No tasks this month': 'Brak zadań w tym miesiącu',
+  'Previous month': 'Poprzedni miesiąc',
+  'Next month': 'Przyszły miesiąc',
+  'No tasks this week': 'Brak zadań w tym tygodniu',
 };
