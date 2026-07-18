@@ -12,7 +12,7 @@ import {
 } from '../BackendConfigurationPropertyWorkers.page';
 
 /**
- * Calendar Compliance view (4th view-mode option) suite.
+ * Calendar Compliance view (5th view-mode option, after Day/Week/Måned/Tidsplan) suite.
  *
  * Lives in `r/` alongside calendar-ui-enhancements.spec.ts — this shard has
  * the fewest calendar specs (1) in the n–w calendar range, so it absorbs the
@@ -42,15 +42,15 @@ import {
  * [today-2, nextMonday+8] (the whole retry week, see selectCompliancePeriodCustom)
  * instead.
  *
- * Locators favour class/id matching throughout. The one exception convention
- * already established by sibling suites (switchToScheduleView/
- * switchToDayView in calendar-ui-enhancements.page.ts) is picking mtx-select
- * dropdown options by POSITION rather than translated text — the option
- * order is fixed in source (calendar-header.component.ts viewModeOptions;
- * calendar-compliance-view.component.ts statusOptions/periodOptions), so
- * positional picks are locale-independent and at least as robust as text
- * matching. This suite follows that same convention for the view-mode,
- * status, and period selects.
+ * Locators favour class/id matching throughout. The compliance-filters
+ * status/period mtx-selects (statusOptions/periodOptions in
+ * calendar-compliance-view.component.ts) are still picked by POSITION, since
+ * their option order is fixed and locale-independent. The header view-mode
+ * select is the exception: it's picked by translated label (see
+ * switchToComplianceView below), matching switchToScheduleView/
+ * switchToDayView in calendar-ui-enhancements.page.ts — positional picks
+ * there broke once the admin-only "Måned" option was inserted between Uge
+ * and Tidsplan, shifting every index after it.
  */
 
 const property: PropertyCreateUpdate = {
@@ -123,17 +123,18 @@ async function pickComplianceDropdownOption(page: Page, filterIndex: number, opt
 }
 
 /** Switch the calendar header's view-mode select to Compliance.
- * viewModeOptions order (calendar-header.component.ts ngOnInit):
- * 0=Day, 1=Week, 2=List, 3=Compliance. Scoped to the header so it never
- * collides with the many mtx-selects inside `.compliance-filters` once
- * the view has switched. */
+ * Selected by label ("Compliance") rather than position — the admin-only
+ * "Måned" option inserted between Uge and Tidsplan shifts every index-based
+ * pick after it, so positional selection is no longer safe here. Scoped to
+ * the header so it never collides with the many mtx-selects inside
+ * `.compliance-filters` once the view has switched. */
 async function switchToComplianceView(page: Page): Promise<void> {
   const viewSelect = page
     .locator('app-calendar-header .text-field--rounded mtx-select .ng-select-container')
     .first();
   await viewSelect.click();
   await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-  await page.locator('.ng-dropdown-panel .ng-option').nth(3).click();
+  await page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Compliance' }).first().click();
   await page.locator('.compliance-filters').waitFor({ state: 'visible', timeout: 10000 });
   await page.waitForTimeout(300);
 }
