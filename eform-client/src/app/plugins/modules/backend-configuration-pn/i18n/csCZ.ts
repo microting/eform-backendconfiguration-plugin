@@ -556,4 +556,8 @@ export const csCZ = {
   'This task is part of a recurring series. What do you want to delete?': 'Tento úkol je součástí opakující se série. Co chcete smazat?',
   'Updated.': 'Aktualizováno.',
   'Select / create report headline': 'Vybrat/vytvořit nadpis zprávy',
+  'No tasks this month': 'Žádné úkoly tento měsíc',
+  'Previous month': 'Předchozí měsíc',
+  'Next month': 'Příští měsíc',
+  'No tasks this week': 'Žádné úkoly tento týden',
 };

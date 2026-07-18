@@ -556,4 +556,8 @@ export const lvLV = {
   'This task is part of a recurring series. What do you want to delete?': 'Šis uzdevums ir daļa no atkārtotas virknes. Ko vēlaties dzēst?',
   'Updated.': 'Atjaunināts.',
   'Select / create report headline': 'Atlasīt/izveidot pārskata virsrakstu',
+  'No tasks this month': 'Šomēnes nav uzdevumu',
+  'Previous month': 'Iepriekšējais mēnesis',
+  'Next month': 'Nākamajā mēnesī',
+  'No tasks this week': 'Šonedēļ nav uzdevumu',
 };

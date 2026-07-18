@@ -556,4 +556,8 @@ export const slSL = {
   'This task is part of a recurring series. What do you want to delete?': 'To opravilo je del ponavljajoče se serije. Kaj želite izbrisati?',
   'Updated.': 'Posodobljeno.',
   'Select / create report headline': 'Izberite/ustvarite naslov poročila',
+  'No tasks this month': 'Ta mesec ni opravil',
+  'Previous month': 'Prejšnji mesec',
+  'Next month': 'Naslednji mesec',
+  'No tasks this week': 'Ta teden ni opravil',
 };

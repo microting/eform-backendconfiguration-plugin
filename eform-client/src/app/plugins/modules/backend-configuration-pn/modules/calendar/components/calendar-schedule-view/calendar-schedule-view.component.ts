@@ -19,6 +19,12 @@ export class CalendarScheduleViewComponent implements OnChanges {
   @Input() currentDate: string = '';
   @Input() boards: CalendarBoardModel[] = [];
 
+  // Month-scoped Tidsplan: the container passes the 1st of the month and a
+  // tasksByDay array covering every day of it. Absent (week scope), groups
+  // start on the Monday derived from currentDate — the original behavior.
+  @Input() rangeStart: string = '';
+  @Input() emptyTextKey = 'No tasks this week';
+
   @Output() tasksReload = new EventEmitter<void>();
   @Output() taskClicked = new EventEmitter<{task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}>();
   @Output() toggleCompleteRequested = new EventEmitter<CalendarTaskLayoutModel>();
@@ -51,17 +57,22 @@ export class CalendarScheduleViewComponent implements OnChanges {
   }
 
   private buildGroups() {
-    if (!this.currentDate) return;
-    const d = new Date(this.currentDate);
-    const day = d.getDay();
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-    monday.setHours(0, 0, 0, 0);
+    if (!this.currentDate && !this.rangeStart) return;
+    let start: Date;
+    if (this.rangeStart) {
+      start = new Date(this.rangeStart);
+    } else {
+      const d = new Date(this.currentDate);
+      const day = d.getDay();
+      start = new Date(d);
+      start.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    }
+    start.setHours(0, 0, 0, 0);
 
     this.groups = this.tasksByDay
       .map((tasks, i) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
         return {
           dateLabel: date.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'}),
           tasks: tasks.slice().sort((a, b) => a.startHour - b.startHour),

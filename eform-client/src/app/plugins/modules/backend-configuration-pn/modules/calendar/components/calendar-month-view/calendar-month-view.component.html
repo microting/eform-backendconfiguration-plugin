@@ -1,0 +1,35 @@
+<div class="month-view">
+  <div class="month-toolbar">
+    <a id="monthScheduleLink" class="month-schedule-link" (click)="scheduleClicked.emit()">{{ 'List' | translate }}</a>
+  </div>
+
+  <div class="month-grid">
+    <div class="month-grid-header">
+      <div class="wk-header">{{ 'Wk' | translate }}</div>
+      <div class="dow-header" *ngFor="let dow of dowLabels">{{ dow }}</div>
+    </div>
+
+    <div class="month-week-row" *ngFor="let week of weeks">
+      <button type="button" class="wk-cell" (click)="weekClicked.emit(week.mondayIso)">{{ week.weekNumber }}</button>
+      <div
+        class="month-day-cell"
+        *ngFor="let day of week.days"
+        [class.out-month]="!day.inCurrentMonth"
+        [class.today]="day.isToday"
+      >
+        <button type="button" class="day-number" [class.today-ring]="day.isToday" (click)="dayClicked.emit(day.dateIso)">{{ day.dayNum }}</button>
+        <div
+          class="month-chip"
+          *ngFor="let task of day.visibleTasks"
+          [class.completed]="task.completed"
+          [style.background-color]="task.color"
+          [style.color]="task.completed ? null : boardTextColor(task.color)"
+        >
+          <span class="chip-time" *ngIf="!task.isAllDay">{{ task.startText }}</span>
+          <span class="chip-title">{{ task.title }}</span>
+        </div>
+        <div class="month-chip-overflow" *ngIf="day.overflow > 0">+{{ day.overflow }}</div>
+      </div>
+    </div>
+  </div>
+</div>

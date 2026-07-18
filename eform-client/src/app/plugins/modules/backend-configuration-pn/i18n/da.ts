@@ -557,4 +557,8 @@ export const da = {
   'This task is part of a recurring series. What do you want to delete?': 'Denne opgave er en del af en tilbagevendende serie. Hvad vil du slette?',
   'Updated.': 'Opdateret.',
   'Select / create report headline': 'Vælg / opret rapportoverskrift',
+  'No tasks this month': 'Ingen opgaver denne måned',
+  'Previous month': 'Forrige måned',
+  'Next month': 'Næste måned',
+  'No tasks this week': 'Ingen opgaver denne uge',
 };

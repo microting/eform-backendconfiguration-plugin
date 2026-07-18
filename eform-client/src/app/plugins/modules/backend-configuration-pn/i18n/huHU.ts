@@ -556,4 +556,8 @@ export const huHU = {
   'This task is part of a recurring series. What do you want to delete?': 'Ez a feladat egy ismétlődő sorozat része. Mit szeretne törölni?',
   'Updated.': 'Frissítve.',
   'Select / create report headline': 'Jelentés címsorának kiválasztása/létrehozása',
+  'No tasks this month': 'Nincsenek feladatok ebben a hónapban',
+  'Previous month': 'Előző hónap',
+  'Next month': 'Következő hónap',
+  'No tasks this week': 'Nincsenek feladatok ezen a héten',
 };

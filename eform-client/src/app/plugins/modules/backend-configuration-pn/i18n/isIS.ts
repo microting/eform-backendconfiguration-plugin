@@ -556,4 +556,8 @@ export const isIS = {
   'This task is part of a recurring series. What do you want to delete?': 'Þetta verkefni er hluti af endurtekinni röð. Hvað viltu eyða?',
   'Updated.': 'Uppfært.',
   'Select / create report headline': 'Velja / búa til fyrirsögn skýrslu',
+  'No tasks this month': 'Engin verkefni þennan mánuðinn',
+  'Previous month': 'Fyrri mánuður',
+  'Next month': 'Næsti mánuður',
+  'No tasks this week': 'Engin verkefni í þessari viku',
 };

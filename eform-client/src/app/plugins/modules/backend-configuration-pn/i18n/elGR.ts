@@ -556,4 +556,8 @@ export const elGR = {
   'This task is part of a recurring series. What do you want to delete?': 'Αυτή η εργασία αποτελεί μέρος μιας επαναλαμβανόμενης σειράς εργασιών. Τι θέλετε να διαγράψετε;',
   'Updated.': 'Ενημερώθηκε.',
   'Select / create report headline': 'Επιλογή / δημιουργία τίτλου αναφοράς',
+  'No tasks this month': 'Δεν υπάρχουν εργασίες αυτόν τον μήνα',
+  'Previous month': 'Προηγούμενος μήνας',
+  'Next month': 'Επόμενος μήνας',
+  'No tasks this week': 'Δεν υπάρχουν εργασίες αυτήν την εβδομάδα',
 };

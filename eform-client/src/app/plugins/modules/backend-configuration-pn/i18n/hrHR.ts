@@ -556,4 +556,8 @@ export const hrHR = {
   'This task is part of a recurring series. What do you want to delete?': 'Ovaj zadatak je dio ponavljajućeg niza. Što želite izbrisati?',
   'Updated.': 'Ažurirano.',
   'Select / create report headline': 'Odaberite/izradite naslov izvješća',
+  'No tasks this month': 'Nema zadataka ovaj mjesec',
+  'Previous month': 'Prethodni mjesec',
+  'Next month': 'Sljedeći mjesec',
+  'No tasks this week': 'Nema zadataka ovaj tjedan',
 };

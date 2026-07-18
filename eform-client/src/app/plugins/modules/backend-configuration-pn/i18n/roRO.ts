@@ -556,4 +556,8 @@ export const roRO = {
   'This task is part of a recurring series. What do you want to delete?': 'Această sarcină face parte dintr-o serie recurentă. Ce doriți să ștergeți?',
   'Updated.': 'Actualizat.',
   'Select / create report headline': 'Selectați/creați titlul raportului',
+  'No tasks this month': 'Nicio sarcină luna aceasta',
+  'Previous month': 'Luna precedentă',
+  'Next month': 'Luna viitoare',
+  'No tasks this week': 'Nicio sarcină săptămâna aceasta',
 };

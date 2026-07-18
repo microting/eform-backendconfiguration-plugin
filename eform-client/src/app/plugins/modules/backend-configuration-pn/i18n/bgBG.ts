@@ -556,4 +556,8 @@ export const bgBG = {
   'This task is part of a recurring series. What do you want to delete?': 'Тази задача е част от повтаряща се поредица. Какво искате да изтриете?',
   'Updated.': 'Актуализирано.',
   'Select / create report headline': 'Изберете/създайте заглавие на отчета',
+  'No tasks this month': 'Няма задачи този месец',
+  'Previous month': 'Предишен месец',
+  'Next month': 'Следващия месец',
+  'No tasks this week': 'Няма задачи тази седмица',
 };

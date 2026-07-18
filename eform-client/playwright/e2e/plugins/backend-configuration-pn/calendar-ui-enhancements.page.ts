@@ -753,8 +753,9 @@ export class CalendarUiEnhancementsPage {
 
   /**
    * Switch the calendar from week view to the schedule (list) view via the
-   * view-mode mtx-select in the header. Index 2 = "List" (per
-   * calendar-header.component.ts:28-32 viewModeOptions order: Day, Week, List).
+   * view-mode mtx-select in the header. Selected by label ("Tidsplan") rather
+   * than position — the admin-only "Måned" option can shift index-based picks
+   * whenever the viewModeOptions order changes.
    */
   async switchToScheduleView(): Promise<void> {
     // Open the view-mode select. It's the only mtx-select inside the
@@ -762,8 +763,7 @@ export class CalendarUiEnhancementsPage {
     const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
     await viewSelect.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    // Index 2 is List per the modal's viewModeOptions order.
-    await this.page.locator('.ng-dropdown-panel .ng-option').nth(2).click();
+    await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Tidsplan' }).first().click();
     await this.page.locator('.schedule-view').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.waitForTimeout(300);
   }
@@ -978,17 +978,15 @@ export class CalendarUiEnhancementsPage {
 
   /**
    * Switch the calendar to day view via the view-mode mtx-select in the
-   * header. viewModeOptions order is fixed in calendar-header.component.ts
-   * ngOnInit: 0=Day, 1=Week, 2=List — so day view is index 0. Using the
-   * positional index keeps the helper locale-agnostic (the visible labels
-   * are translated, e.g. "Dag" in Danish).
+   * header. Selected by label ("Dag") rather than position — index-based
+   * picks silently break whenever viewModeOptions order changes (e.g. the
+   * admin-only "Måned" option inserted between Uge and Tidsplan).
    */
   async switchToDayView(): Promise<void> {
     const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
     await viewSelect.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    // Index 0 = Day per viewModeOptions order in calendar-header.component.ts.
-    await this.page.locator('.ng-dropdown-panel .ng-option').nth(0).click();
+    await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Dag' }).first().click();
     // Day view also renders <app-calendar-week-grid>, just with dayViewMode=true.
     await this.page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.waitForTimeout(300);

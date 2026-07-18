@@ -556,4 +556,8 @@ export const nlNL = {
   'This task is part of a recurring series. What do you want to delete?': 'Deze taak maakt deel uit van een terugkerende reeks. Wat wilt u verwijderen?',
   'Updated.': 'Bijgewerkt.',
   'Select / create report headline': 'Selecteer/maak een rapportkop',
+  'No tasks this month': 'Geen taken deze maand',
+  'Previous month': 'Vorige maand',
+  'Next month': 'Volgende maand',
+  'No tasks this week': 'Geen taken deze week',
 };
