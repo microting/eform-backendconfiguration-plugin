@@ -12,10 +12,12 @@ import { Page, Locator } from '@playwright/test';
  *     `.mat-column-<field>` — field ids: id, property, board, overskrift,
  *     title, eform, assignedTo, tags, taskDate, repeat, status, compliance).
  *   - `#taskListShowAllToggle` — custom toggle button; flips
- *     `[pageOnFront]`/`[showPaginator]`, which mounts/unmounts the grid's
- *     built-in `mat-paginator` entirely (not just CSS-hidden). NOTE: a
- *     SECOND "Vis alle" button belongs to mtx-grid's own paginator — always
- *     use `#taskListShowAllToggle` by id, never text.
+ *     `[pageOnFront]`/`[showPaginator]`. NOTE: mtx-grid keeps its
+ *     `mat-paginator` mounted permanently and only CSS-hides it when
+ *     `[showPaginator]` is false (`.mat-paginator-hidden`, `display:none` —
+ *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
+ *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
+ *     own paginator — always use `#taskListShowAllToggle` by id, never text.
  *   - `#taskListBatchAction` — mtx-select (single); options list is
  *     4-wide (changeEform/addTags/removeTags/delete) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected,
@@ -152,18 +154,50 @@ export class TaskListPage {
   }
 
   /**
-   * Waits for any currently-open ng-select panel to fully detach. Selecting
-   * an option normally auto-closes ng-select's panel, but under CI load the
-   * close can lag a tick behind the option click's resolution — when a
-   * modal chains TWO+ appendTo="body" selects back to back (e.g. the
-   * reassign modal's `batchWorkerFromSelect` -> `batchWorkerToSelect`), a
-   * not-yet-closed panel from the FIRST select is a body-level sibling that
-   * can visually/functionally overlap and intercept pointer events aimed at
-   * the SECOND select's trigger. Called after every option pick below so
-   * callers never have to reason about this themselves.
+   * Opens the panel of the given in-modal select IDEMPOTENTLY.
+   *
+   * Why not just `.click()` the trigger: ng-select opens on MOUSEDOWN
+   * (`handleMousedown` -> `open()`), its options select on CLICK, and modals
+   * here stack multiple `appendTo="body"` selects vertically (reassign:
+   * `batchWorkerFromSelect` directly above `batchWorkerToSelect`), with the
+   * open panel of one select physically overlapping the trigger of the
+   * next. CI round 2's WK3 failure showed `#batchWorkerToSelect` ALREADY
+   * `aria-expanded="true"` — its own body-appended `.ng-dropdown-panel`
+   * covering its trigger — before the spec ever clicked it (pointer
+   * fall-out from picking in the previous select). A trigger click in that
+   * state is intercepted by the panel forever (observed 120s timeout).
+   *
+   * So: if the target select is already open, done. If some OTHER select's
+   * panel lingers, dismiss it with a neutral click on the dialog title —
+   * NOT Escape, because the surrounding mat-dialog also closes on Escape —
+   * then open the target and wait for its panel.
    */
-  private async waitForDropdownPanelClosed(): Promise<void> {
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  private async openModalSelect(selectId: string): Promise<void> {
+    const select = this.page.locator(`#${selectId}`);
+    const panel = this.page.locator('.ng-dropdown-panel');
+    if ((await select.getAttribute('aria-expanded')) === 'true') {
+      await panel.waitFor({ state: 'visible', timeout: 5000 });
+      return;
+    }
+    if ((await panel.count()) > 0) {
+      // A different select's panel is open — ng-select closes on outside
+      // click; the dialog title is a safe, always-present neutral target
+      // (top of the dialog, never covered by the below-field panels).
+      await this.page.locator('mat-dialog-container [mat-dialog-title]').click({ position: { x: 5, y: 5 } });
+      await panel.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+    await select.click();
+    await panel.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Post-pick settle: single-selects auto-close their panel on option pick;
+   * give that a short grace (residual open state is handled by the next
+   * `openModalSelect` anyway) plus the usual model-propagation pause.
+   */
+  private async settleAfterOptionPick(): Promise<void> {
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+    await this.page.waitForTimeout(400);
   }
 
   /**
@@ -173,13 +207,27 @@ export class TaskListPage {
    * `batchCopyBoardSelect`, `batchCopyWorkerSelect`). All are single-select
    * (or, for `batchTagsSelect`, multi but the panel closes on outside click
    * which callers don't need here) and close automatically on option pick.
+   *
+   * Verifies the picked value actually landed in the select's
+   * `.ng-value-label` (text-only child — `.ng-value` itself includes the ×
+   * clear-icon glyph) and retries once if not, so a pointer-race dropped
+   * pick fails loudly at the pick site instead of obscurely at submit.
    */
   async selectModalOption(selectId: string, labelOrRegex: string | RegExp): Promise<void> {
-    await this.page.locator(`#${selectId}`).click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: labelOrRegex }).first().click();
-    await this.waitForDropdownPanelClosed();
-    await this.page.waitForTimeout(400);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      await this.openModalSelect(selectId);
+      await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: labelOrRegex }).first().click();
+      await this.settleAfterOptionPick();
+      const valueText = ((await this.page.locator(`#${selectId} .ng-value-label`).first()
+        .innerText().catch(() => '')) ?? '').trim();
+      const picked = typeof labelOrRegex === 'string'
+        ? valueText.includes(labelOrRegex)
+        : labelOrRegex.test(valueText);
+      if (picked) {
+        return;
+      }
+    }
+    throw new Error(`Picking "${labelOrRegex}" in #${selectId} did not stick after 2 attempts`);
   }
 
   /**
@@ -190,11 +238,9 @@ export class TaskListPage {
    * selection against a multi-entry list.
    */
   async selectModalOptionFirst(selectId: string): Promise<void> {
-    await this.page.locator(`#${selectId}`).click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.openModalSelect(selectId);
     await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
-    await this.waitForDropdownPanelClosed();
-    await this.page.waitForTimeout(400);
+    await this.settleAfterOptionPick();
   }
 
   /**
@@ -206,16 +252,14 @@ export class TaskListPage {
    * specific known entity.
    */
   async selectAnyOptionExcept(selectId: string, excludeText: string): Promise<string> {
-    await this.page.locator(`#${selectId}`).click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await this.openModalSelect(selectId);
     const options = this.page.locator('.ng-dropdown-panel .ng-option');
     const count = await options.count();
     for (let i = 0; i < count; i++) {
       const text = ((await options.nth(i).innerText()) ?? '').trim();
       if (text && text !== excludeText.trim()) {
         await options.nth(i).click();
-        await this.waitForDropdownPanelClosed();
-        await this.page.waitForTimeout(400);
+        await this.settleAfterOptionPick();
         return text;
       }
     }

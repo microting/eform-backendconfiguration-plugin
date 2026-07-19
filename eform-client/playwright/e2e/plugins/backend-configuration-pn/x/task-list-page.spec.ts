@@ -22,8 +22,8 @@ import {
  * (`#taskListSearch`), a batch-action dropdown (`#taskListBatchAction`,
  * gated wider when exactly one property is filtered — not exercised here,
  * see `x/task-list-batch-*.spec.ts`), a CSV export producing `opgaveliste.csv`
- * and a custom `#taskListShowAllToggle` that unmounts mtx-grid's own
- * paginator entirely (there are TWO "Vis alle" buttons on the page — the
+ * and a custom `#taskListShowAllToggle` that CSS-hides mtx-grid's own
+ * paginator (there are TWO "Vis alle" buttons on the page — the
  * built-in paginator's own plus ours; tests must always target
  * `#taskListShowAllToggle` by id).
  *
@@ -43,7 +43,9 @@ import {
  *      nonsense string empties the grid.
  * PP5: sorting by the Task name column reorders rows (alphabetic asc/desc).
  * PP6: pagination controls (`mat-paginator`) render by default.
- * PP7: `#taskListShowAllToggle` unmounts/remounts the paginator.
+ * PP7: `#taskListShowAllToggle` hides/reshows the paginator (CSS
+ *      `display:none` via mtx-grid's `.mat-paginator-hidden`, never
+ *      unmounted from the DOM).
  * PP8: the CSV export button triggers a `download` event named
  *      `opgaveliste.csv`.
  */
@@ -240,16 +242,21 @@ test.describe.serial('Task list page', () => {
 
   // =======================================================================
   // PP6/PP7 — pagination controls render by default and
-  // `#taskListShowAllToggle` unmounts/remounts them.
+  // `#taskListShowAllToggle` hides/reshows them. NOTE: mtx-grid's template
+  // keeps `mat-paginator` in the DOM permanently and merely toggles
+  // `.mat-paginator-hidden` (`display: none`) when `[showPaginator]` is
+  // false (`mtxGrid.mjs`: `[class.mat-paginator-hidden]="!showPaginator"`)
+  // — so the hidden state must be asserted with `not.toBeVisible()`, NOT
+  // `toHaveCount(0)` (CI round 2 proved count stays 1).
   // =======================================================================
-  test('PP6/PP7: paginator renders by default; show-all toggle unmounts it', async ({ page }) => {
+  test('PP6/PP7: paginator renders by default; show-all toggle hides it', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
     await taskListPage.goto();
     await taskListPage.selectProperty(property.name);
     await expect(taskListPage.getPaginator()).toBeVisible();
 
     await taskListPage.toggleShowAll();
-    await expect(taskListPage.getPaginator()).toHaveCount(0);
+    await expect(taskListPage.getPaginator()).not.toBeVisible();
 
     await taskListPage.toggleShowAll();
     await expect(taskListPage.getPaginator()).toBeVisible();

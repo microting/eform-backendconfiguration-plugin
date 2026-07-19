@@ -198,29 +198,31 @@ test.describe.serial('Task list — non-admin route gating', () => {
     await loginAs(page, userEmail, USER_PASSWORD);
     expect(page.url()).not.toContain('/auth');
 
+    // Positive app-shell assertion BEFORE the guarded navigation: proves the
+    // SPA renders and the login works for this non-admin, so the negative
+    // denial assertions below can be trusted. It MUST come before the
+    // `page.goto(task-list)` below, not after: `page.goto` is a full page
+    // load, so the SPA re-bootstraps with the guarded URL as its INITIAL
+    // navigation — when `IsAdminGuard` cancels that navigation, NO route
+    // activates at all, including the `''` parent route whose component
+    // (`FullLayoutComponent`, `app.routing.ts`) hosts the sidebar and the
+    // footer. The result is an empty shell: CI round 1 proved `#backend-
+    // configuration-pn` absent post-goto and round 2 proved even the
+    // claim-independent footer `#sign-out-dropdown` absent post-goto. Here
+    // (post-login, on the group's `redirectLink` landing page inside the
+    // full layout) the footer must exist for any authenticated user.
+    await expect(page.locator('#sign-out-dropdown')).toBeVisible();
+
     const taskListPage = new TaskListPage(page);
     await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/task-list`);
     await page.waitForTimeout(3000);
 
-    // Positive app-shell assertion FIRST: proves the SPA actually rendered
-    // for this non-admin (not a blank page / crashed bootstrap) before the
-    // negative denial assertions below are trusted. NOTE: `#backend-
-    // configuration-pn` (the plugin's sidebar group button) is NOT a valid
-    // choice here — per `r/property-workers-nonadmin-no-logout.spec.ts`
-    // (line ~227, "the sidebar plugin menu is not rendered for this claims
-    // set"), this exact `setupNonAdminUser` claim set does not render the
-    // plugin's left-menu group at all, so that locator would never appear
-    // regardless of the admin-gating behavior under test. `#sign-out-
-    // dropdown` (footer profile-menu trigger, `footer.component.html`) is
-    // claim-independent — it renders for any authenticated user — so it
-    // reliably proves the SPA bootstrapped and is logged in, independent of
-    // locale/i18n text or this group's specific menu permissions.
-    await expect(page.locator('#sign-out-dropdown')).toBeVisible();
-
     // IsAdminGuard denies without an explicit redirect — assert the guarded
-    // content never rendered (the load-bearing assertion) and note the URL
-    // for diagnostics without hard-failing on its exact value, since Angular
-    // Router's post-denial URL isn't itself the contract being protected.
+    // content never rendered (the load-bearing assertion; for a direct URL
+    // the denial manifests as a fully-blank shell, per above) and note the
+    // URL for diagnostics without hard-failing on its exact value, since
+    // Angular Router's post-denial URL isn't itself the contract being
+    // protected.
     await expect(taskListPage.getGrid()).toHaveCount(0);
     await expect(page.locator('app-task-list-page')).toHaveCount(0);
     console.log(`non-admin task-list attempt landed on: ${page.url()}`);
