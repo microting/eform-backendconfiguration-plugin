@@ -1,0 +1,268 @@
+import { test, expect } from '@playwright/test';
+import { LoginPage } from '../../../Page objects/Login.page';
+import { generateRandmString } from '../../../helper-functions';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
+import { TaskListPage } from '../task-list.page';
+import {
+  BackendConfigurationPropertiesPage,
+  PropertyCreateUpdate,
+} from '../BackendConfigurationProperties.page';
+import {
+  BackendConfigurationPropertyWorkersPage,
+  PropertyWorker,
+} from '../BackendConfigurationPropertyWorkers.page';
+
+/**
+ * Task list PAGE suite (backend-configuration-task-list-page feature).
+ *
+ * `/plugins/backend-configuration-pn/task-list` is an admin-only
+ * (`IsAdminGuard`), read-and-batch-action page: an mtx-grid (`#taskListGrid`)
+ * over every AreaRulePlanning task across all properties, with property/
+ * eForm/board/worker/status/compliance/tags filters + a free-text search
+ * (`#taskListSearch`), a batch-action dropdown (`#taskListBatchAction`,
+ * gated wider when exactly one property is filtered — not exercised here,
+ * see `x/task-list-batch-*.spec.ts`), a CSV export producing `opgaveliste.csv`
+ * and a custom `#taskListShowAllToggle` that unmounts mtx-grid's own
+ * paginator entirely (there are TWO "Vis alle" buttons on the page — the
+ * built-in paginator's own plus ours; tests must always target
+ * `#taskListShowAllToggle` by id).
+ *
+ * Seed: one property ("full") with a worker + TWO calendar-created tasks
+ * (titles chosen `zz-*`/`aa-*` so the alphabetic sort order is predictable
+ * and differs from insertion order), plus a second, task-less property
+ * ("empty") used only to prove the property filter actually narrows the
+ * grid (an absolute row-count assertion isn't reliable against a shared CI
+ * DB that may carry other properties' tasks).
+ *
+ * PP1: menu navigation (E2EId `backend-configuration-pn-task-list`) + direct
+ *      URL both reach the grid.
+ * PP2: seeded task renders as a grid row.
+ * PP3: property filter narrows — "empty" property shows 0 rows, "full"
+ *      shows the seeded rows.
+ * PP4: free-text search narrows — matching substring keeps the row, a
+ *      nonsense string empties the grid.
+ * PP5: sorting by the Task name column reorders rows (alphabetic asc/desc).
+ * PP6: pagination controls (`mat-paginator`) render by default.
+ * PP7: `#taskListShowAllToggle` unmounts/remounts the paginator.
+ * PP8: the CSV export button triggers a `download` event named
+ *      `opgaveliste.csv`.
+ */
+
+const property: PropertyCreateUpdate = {
+  name: `tlp-full-${generateRandmString(5)}`,
+  chrNumber: generateRandmString(5),
+  address: generateRandmString(5),
+  cvrNumber: '1111111',
+};
+
+const emptyProperty: PropertyCreateUpdate = {
+  name: `tlp-empty-${generateRandmString(5)}`,
+  chrNumber: generateRandmString(5),
+  address: generateRandmString(5),
+  cvrNumber: '1111111',
+};
+
+const worker: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
+};
+
+const rand = generateRandmString(6);
+const taskZ = `zz-task-${rand}`; // created first (seed test) — sorts LAST ascending
+const taskA = `aa-task-${rand}`; // created second (PP5) — sorts FIRST ascending
+
+let seeded = false;
+
+test.describe.serial('Task list page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('http://localhost:4200');
+    await new LoginPage(page).login();
+    await page.waitForTimeout(1500);
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    const cleanup = async () => {
+      await page.goto('http://localhost:4200');
+      await new LoginPage(page).login();
+
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      await workersPage.goToPropertyWorkers();
+      await page.waitForTimeout(1000);
+      await workersPage.clearTable();
+
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+      await propertiesPage.goToProperties();
+      await page.waitForTimeout(1000);
+      await propertiesPage.clearTable();
+    };
+    try {
+      await Promise.race([
+        cleanup(),
+        new Promise(resolve => setTimeout(resolve, 60000)),
+      ]);
+    } catch (err: any) {
+      console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
+    }
+    try { await page.close(); } catch {}
+  });
+
+  // -----------------------------------------------------------------------
+  // Seed — two properties (one task-bearing, one empty), one worker, and
+  // the FIRST seeded task (taskZ). Runs first via describe.serial.
+  // -----------------------------------------------------------------------
+  test('seed: create properties + worker + task', async ({ page }) => {
+    test.setTimeout(600000);
+
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+
+    await propertiesPage.goToProperties();
+    await propertiesPage.createProperty(property);
+    await propertiesPage.createProperty(emptyProperty);
+    await workersPage.goToPropertyWorkers();
+    await workersPage.create(worker);
+
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    await calendarPage.goToCalendar();
+    await calendarPage.ensureSidebarOpen();
+    await calendarPage.selectProperty(property.name);
+    await page.waitForTimeout(1000);
+
+    await calendarPage.openCreateModalAtSlot(0, 9);
+    await calendarPage.fillAndSaveEvent(taskZ);
+
+    seeded = true;
+  });
+
+  // =======================================================================
+  // PP1 — reachable via the menu (E2EId) and via a direct URL.
+  // =======================================================================
+  test('PP1: page loads for admin via menu and via direct URL', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+
+    await taskListPage.goToViaMenu();
+    await expect(taskListPage.getGrid()).toBeVisible();
+    expect(page.url()).toContain('/plugins/backend-configuration-pn/task-list');
+
+    await taskListPage.goto();
+    await expect(taskListPage.getGrid()).toBeVisible();
+  });
+
+  // =======================================================================
+  // PP2 — the seeded task renders as a grid row once its property is
+  // filtered in.
+  // =======================================================================
+  test('PP2: table shows the seeded task', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+  });
+
+  // =======================================================================
+  // PP3 — property filter narrows: the task-less property shows 0 rows,
+  // the seeded property shows the task.
+  // =======================================================================
+  test('PP3: property filter narrows the grid', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+
+    await taskListPage.selectProperty(emptyProperty.name);
+    expect(await taskListPage.rowCount()).toBe(0);
+    await expect(taskListPage.row(taskZ)).toHaveCount(0);
+
+    // Reload (resets filters) and select the task-bearing property instead —
+    // simpler and less fragile than toggling the multi-select option back off.
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+  });
+
+  // =======================================================================
+  // PP4 — free-text search narrows.
+  // =======================================================================
+  test('PP4: search narrows the grid', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+
+    await taskListPage.search(taskZ);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+
+    await taskListPage.search(`no-such-task-${generateRandmString(10)}`);
+    await expect(taskListPage.row(taskZ)).toHaveCount(0);
+  });
+
+  // =======================================================================
+  // PP5 — sort by Task name (creates the second task here, so the two
+  // sort tests below aren't order-dependent on PP1-4 having run).
+  // =======================================================================
+  test('PP5: sort by task name reorders rows', async ({ page }) => {
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    await calendarPage.goToCalendar();
+    await calendarPage.ensureSidebarOpen();
+    await calendarPage.selectProperty(property.name);
+    await page.waitForTimeout(1000);
+    await calendarPage.openCreateModalAtSlot(1, 10);
+    await calendarPage.fillAndSaveEvent(taskA);
+
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+    await expect(taskListPage.row(taskA)).toBeVisible();
+
+    const rowsText = async () => (await taskListPage.getGrid().locator('.mat-mdc-row').allInnerTexts());
+
+    // First click sorts ascending — 'aa-task-*' before 'zz-task-*'.
+    await taskListPage.columnHeader('title').click();
+    await page.waitForTimeout(500);
+    let texts = await rowsText();
+    let indexA = texts.findIndex(t => t.includes(taskA));
+    let indexZ = texts.findIndex(t => t.includes(taskZ));
+    expect(indexA).toBeGreaterThanOrEqual(0);
+    expect(indexZ).toBeGreaterThanOrEqual(0);
+    expect(indexA).toBeLessThan(indexZ);
+
+    // Second click sorts descending — order flips.
+    await taskListPage.columnHeader('title').click();
+    await page.waitForTimeout(500);
+    texts = await rowsText();
+    indexA = texts.findIndex(t => t.includes(taskA));
+    indexZ = texts.findIndex(t => t.includes(taskZ));
+    expect(indexZ).toBeLessThan(indexA);
+  });
+
+  // =======================================================================
+  // PP6/PP7 — pagination controls render by default and
+  // `#taskListShowAllToggle` unmounts/remounts them.
+  // =======================================================================
+  test('PP6/PP7: paginator renders by default; show-all toggle unmounts it', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.getPaginator()).toBeVisible();
+
+    await taskListPage.toggleShowAll();
+    await expect(taskListPage.getPaginator()).toHaveCount(0);
+
+    await taskListPage.toggleShowAll();
+    await expect(taskListPage.getPaginator()).toBeVisible();
+  });
+
+  // =======================================================================
+  // PP8 — CSV export triggers a download named opgaveliste.csv.
+  // =======================================================================
+  test('PP8: CSV export downloads opgaveliste.csv', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    const filename = await taskListPage.exportCsvAndGetFilename();
+    expect(filename).toBe('opgaveliste.csv');
+  });
+});
