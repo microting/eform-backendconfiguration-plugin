@@ -204,12 +204,18 @@ test.describe.serial('Task list — non-admin route gating', () => {
 
     // Positive app-shell assertion FIRST: proves the SPA actually rendered
     // for this non-admin (not a blank page / crashed bootstrap) before the
-    // negative denial assertions below are trusted. `#backend-configuration-pn`
-    // is the plugin's sidebar group button (same element `TaskListPage.
-    // goToViaMenu()` clicks to expand the submenu) — it renders for any user
-    // whose group has backend_configuration_plugin_access (this non-admin
-    // does, per `setupNonAdminUser`), independent of locale/i18n text.
-    await expect(page.locator('#backend-configuration-pn')).toBeVisible();
+    // negative denial assertions below are trusted. NOTE: `#backend-
+    // configuration-pn` (the plugin's sidebar group button) is NOT a valid
+    // choice here — per `r/property-workers-nonadmin-no-logout.spec.ts`
+    // (line ~227, "the sidebar plugin menu is not rendered for this claims
+    // set"), this exact `setupNonAdminUser` claim set does not render the
+    // plugin's left-menu group at all, so that locator would never appear
+    // regardless of the admin-gating behavior under test. `#sign-out-
+    // dropdown` (footer profile-menu trigger, `footer.component.html`) is
+    // claim-independent — it renders for any authenticated user — so it
+    // reliably proves the SPA bootstrapped and is logged in, independent of
+    // locale/i18n text or this group's specific menu permissions.
+    await expect(page.locator('#sign-out-dropdown')).toBeVisible();
 
     // IsAdminGuard denies without an explicit redirect — assert the guarded
     // content never rendered (the load-bearing assertion) and note the URL

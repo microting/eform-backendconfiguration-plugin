@@ -152,6 +152,21 @@ export class TaskListPage {
   }
 
   /**
+   * Waits for any currently-open ng-select panel to fully detach. Selecting
+   * an option normally auto-closes ng-select's panel, but under CI load the
+   * close can lag a tick behind the option click's resolution — when a
+   * modal chains TWO+ appendTo="body" selects back to back (e.g. the
+   * reassign modal's `batchWorkerFromSelect` -> `batchWorkerToSelect`), a
+   * not-yet-closed panel from the FIRST select is a body-level sibling that
+   * can visually/functionally overlap and intercept pointer events aimed at
+   * the SECOND select's trigger. Called after every option pick below so
+   * callers never have to reason about this themselves.
+   */
+  private async waitForDropdownPanelClosed(): Promise<void> {
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  }
+
+  /**
    * Generic ng-select/mtx-select-by-id helper for the fields inside batch
    * modals (`batchWorkerSelect`, `batchWorkerFromSelect`, `batchWorkerToSelect`,
    * `batchEformSelect`, `batchTagsSelect`, `batchCopyPropertySelect`,
@@ -163,6 +178,7 @@ export class TaskListPage {
     await this.page.locator(`#${selectId}`).click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: labelOrRegex }).first().click();
+    await this.waitForDropdownPanelClosed();
     await this.page.waitForTimeout(400);
   }
 
@@ -177,6 +193,7 @@ export class TaskListPage {
     await this.page.locator(`#${selectId}`).click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
+    await this.waitForDropdownPanelClosed();
     await this.page.waitForTimeout(400);
   }
 
@@ -197,6 +214,7 @@ export class TaskListPage {
       const text = ((await options.nth(i).innerText()) ?? '').trim();
       if (text && text !== excludeText.trim()) {
         await options.nth(i).click();
+        await this.waitForDropdownPanelClosed();
         await this.page.waitForTimeout(400);
         return text;
       }

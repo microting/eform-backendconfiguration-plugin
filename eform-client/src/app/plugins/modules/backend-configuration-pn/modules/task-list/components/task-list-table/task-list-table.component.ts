@@ -55,9 +55,17 @@ export class TaskListTableComponent {
     return d && m && y ? `${d}-${m}-${y}` : '';
   }
 
+  // `[sortOnFront]="true"` (see the .html) means mtx-grid sorts client-side
+  // via MatTableDataSource's default `data[sortHeaderId]` accessor, where
+  // `sortHeaderId = col.sortProp?.id || col.field` (mtx-grid template). Do
+  // NOT set `sortProp.id` to a PascalCase server-sort key here — there is no
+  // server-side sort for this grid, and a `sortProp.id` that doesn't match
+  // the row's actual (camelCase) property name makes clicking that header a
+  // silent no-op (data[mismatchedKey] is undefined for every row, so the
+  // comparator treats all rows as equal and the array order never changes).
   columns: MtxGridColumn[] = [
     {
-      field: 'id', header: this.translate.stream('Id'), sortable: true, sortProp: {id: 'Id'},
+      field: 'id', header: this.translate.stream('Id'), sortable: true,
       formatter: (t: CalendarTaskModel) =>
         `${t.id} <small class="microting-uid">(${t.planningId ?? ''})</small>`,
     },
@@ -70,7 +78,7 @@ export class TaskListTableComponent {
       field: 'overskrift', header: this.translate.stream('Report headline'),
       formatter: (t: CalendarTaskModel) => this.planningTagName(t.itemPlanningTagId),
     },
-    {field: 'title', header: this.translate.stream('Task name'), sortable: true, sortProp: {id: 'Title'}},
+    {field: 'title', header: this.translate.stream('Task name'), sortable: true},
     {
       field: 'eform', header: this.translate.stream('eForm'),
       formatter: (t: CalendarTaskModel) => this.eformLabel(t.eformId),
@@ -91,7 +99,7 @@ export class TaskListTableComponent {
       field: 'repeat', header: this.translate.stream('Repeat'),
       formatter: (t: CalendarTaskModel) => this.repeatText(t),
     },
-    {field: 'status', header: this.translate.stream('Active'), sortable: true, sortProp: {id: 'Status'}},
+    {field: 'status', header: this.translate.stream('Active'), sortable: true},
     {field: 'compliance', header: this.translate.stream('Compliance')},
   ];
 

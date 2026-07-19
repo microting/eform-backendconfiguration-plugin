@@ -172,7 +172,11 @@ test.describe.serial('Task list — batch eForm/tags actions', () => {
   test('ET2: add tags adds a tag to the selected row', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
     const before = (await taskListPage.columnCell(task, 'tags').innerText()).trim();
-    expect(before).toBe('');
+    // mtx-grid's `MtxGridCell._getText()` substitutes its `placeholder`
+    // ('--' by default) for any formatter result it considers "empty"
+    // (`_utils.isEmpty(value)`, which treats '' as empty) — so a tag-less
+    // task's cell renders literal "--", never "".
+    expect(before).toBe('--');
 
     await taskListPage.selectRow(task);
     await taskListPage.pickBatchAction(new RegExp(LABEL_ADD_TAGS));
@@ -209,6 +213,7 @@ test.describe.serial('Task list — batch eForm/tags actions', () => {
     await page.waitForTimeout(1000);
 
     const after = (await taskListPage.columnCell(task, 'tags').innerText()).trim();
-    expect(after).toBe('');
+    // Same mtx-grid empty-cell placeholder as ET2's "before" assertion.
+    expect(after).toBe('--');
   });
 });
