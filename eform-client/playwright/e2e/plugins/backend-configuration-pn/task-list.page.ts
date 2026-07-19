@@ -161,21 +161,30 @@ export class TaskListPage {
    * here stack multiple `appendTo="body"` selects vertically (reassign:
    * `batchWorkerFromSelect` directly above `batchWorkerToSelect`), with the
    * open panel of one select physically overlapping the trigger of the
-   * next. CI round 2's WK3 failure showed `#batchWorkerToSelect` ALREADY
-   * `aria-expanded="true"` — its own body-appended `.ng-dropdown-panel`
-   * covering its trigger — before the spec ever clicked it (pointer
-   * fall-out from picking in the previous select). A trigger click in that
-   * state is intercepted by the panel forever (observed 120s timeout).
+   * next — CI rounds 1/2 saw a lingering panel intercept the next trigger
+   * click for the full 120s test timeout (WK3).
    *
-   * So: if the target select is already open, done. If some OTHER select's
-   * panel lingers, dismiss it with a neutral click on the dialog title —
-   * NOT Escape, because the surrounding mat-dialog also closes on Escape —
-   * then open the target and wait for its panel.
+   * Open-state detection MUST use the inner ng-select's `ng-select-opened`
+   * host class, NOT `aria-expanded` on the `mtx-select` host: MtxSelect
+   * binds that attribute to `panelOpen` = `!!this.ngSelect.isOpen`, and in
+   * the signals-based ng-select v20 `isOpen` is the signal FUNCTION itself
+   * (always truthy), so the host's `aria-expanded` is permanently `"true"`
+   * whether open or closed (verified in `mtxSelect.mjs` — `get panelOpen()
+   * { return !!this.ngSelect.isOpen; }` vs ng-select's own correctly-
+   * invoked `'[class.ng-select-opened]': 'isOpen()'` host binding; CI
+   * round 3 failed deterministically on every first in-modal select by
+   * trusting `aria-expanded`).
+   *
+   * So: if the target select is genuinely open, reuse its panel. If some
+   * OTHER select's panel lingers, dismiss it with a neutral click on the
+   * dialog title — NOT Escape, because the surrounding mat-dialog also
+   * closes on Escape — then open the target and wait for its panel.
    */
   private async openModalSelect(selectId: string): Promise<void> {
     const select = this.page.locator(`#${selectId}`);
+    const opened = this.page.locator(`#${selectId} ng-select.ng-select-opened`);
     const panel = this.page.locator('.ng-dropdown-panel');
-    if ((await select.getAttribute('aria-expanded')) === 'true') {
+    if ((await opened.count()) > 0) {
       await panel.waitFor({ state: 'visible', timeout: 5000 });
       return;
     }
