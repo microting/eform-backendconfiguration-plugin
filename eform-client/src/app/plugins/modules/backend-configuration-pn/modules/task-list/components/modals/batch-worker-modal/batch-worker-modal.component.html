@@ -30,7 +30,8 @@
         [clearable]="true"
         [searchable]="true"
         appendTo="body"
-        [(ngModel)]="fromSiteId"
+        [ngModel]="fromSiteId"
+        (ngModelChange)="onFromSiteIdChange($event)"
         [placeholder]="'From employee' | translate">
       </mtx-select>
     </mat-form-field>
@@ -43,7 +44,8 @@
         [clearable]="true"
         [searchable]="true"
         appendTo="body"
-        [(ngModel)]="toSiteId"
+        [ngModel]="toSiteId"
+        (ngModelChange)="onToSiteIdChange($event)"
         [placeholder]="'To employee' | translate">
       </mtx-select>
     </mat-form-field>

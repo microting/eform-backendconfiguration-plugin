@@ -19,11 +19,24 @@ export class BatchWorkerModalComponent {
   fromSiteId: number | null = null;  // reassign
   toSiteId: number | null = null;    // reassign
 
+  // The two reassign selects exclude each other's chosen id so the same
+  // worker can't be picked as both source and target. These MUST be stable
+  // field references refreshed only on an actual selection change — NOT
+  // getters computing `.filter()` on the fly: a getter bound to ng-select's
+  // `[items]` returns a NEW array instance on every change-detection pass,
+  // which makes ng-select rebuild and re-render its option list continuously
+  // (each mousemove-triggered CD swaps the option DOM nodes), so pointer
+  // interactions with the open dropdown never settle.
+  fromWorkers: CommonDictionaryModel[] = [];
+  toWorkers: CommonDictionaryModel[] = [];
+
   constructor(
     public dialogRef: MatDialogRef<BatchWorkerModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: TaskListBatchModalData,
     private taskListService: BackendConfigurationPnTaskListService,
-  ) {}
+  ) {
+    this.refreshWorkerLists();
+  }
 
   get isReassign(): boolean {
     return this.data.mode === 'reassign';
@@ -41,14 +54,19 @@ export class BatchWorkerModalComponent {
     }
   }
 
-  // The two reassign selects exclude each other's chosen id so the same
-  // worker can't be picked as both source and target.
-  get fromWorkers(): CommonDictionaryModel[] {
-    return (this.data.workers ?? []).filter(w => w.id !== this.toSiteId);
+  onFromSiteIdChange(id: number | null) {
+    this.fromSiteId = id;
+    this.refreshWorkerLists();
   }
 
-  get toWorkers(): CommonDictionaryModel[] {
-    return (this.data.workers ?? []).filter(w => w.id !== this.fromSiteId);
+  onToSiteIdChange(id: number | null) {
+    this.toSiteId = id;
+    this.refreshWorkerLists();
+  }
+
+  private refreshWorkerLists() {
+    this.fromWorkers = (this.data.workers ?? []).filter(w => w.id !== this.toSiteId);
+    this.toWorkers = (this.data.workers ?? []).filter(w => w.id !== this.fromSiteId);
   }
 
   get valid(): boolean {
