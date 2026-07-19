@@ -1,0 +1,27 @@
+<h3 mat-dialog-title>{{ title | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Tags' | translate }}</mat-label>
+    <mtx-select
+      id="batchTagsSelect"
+      [items]="data.tags"
+      bindValue="id" bindLabel="name"
+      [multiple]="true"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [(ngModel)]="tagIds"
+      [placeholder]="'Tags' | translate">
+    </mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

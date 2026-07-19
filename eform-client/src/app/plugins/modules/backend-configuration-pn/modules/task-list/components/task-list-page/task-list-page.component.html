@@ -1,0 +1,37 @@
+<mat-card>
+  <mat-card-content>
+    <div class="tl-header">
+      <h1>{{ 'Tasks and actions' | translate }}</h1>
+    </div>
+    <app-task-list-filters
+      [properties]="properties" [boards]="boards" [eforms]="eforms"
+      [workers]="workers" [tags]="tags"
+      (filtersChanged)="onFiltersChanged($event)"
+      (propertyChanged)="onPropertyChanged($event)">
+    </app-task-list-filters>
+    <div class="task-list-toolbar">
+      <mat-form-field>
+        <mtx-select id="taskListBatchAction"
+                    [items]="batchActions"
+                    bindValue="id" bindLabel="label"
+                    [disabled]="selection.size === 0"
+                    [(ngModel)]="pendingAction"
+                    (change)="onBatchActionPicked($event)"
+                    [placeholder]="'Action' | translate">
+        </mtx-select>
+      </mat-form-field>
+      <span id="taskListSelectionCount" *ngIf="selection.size > 0">
+        {{ selection.size }} {{ 'tasks selected' | translate }}
+      </span>
+      <button mat-raised-button color="accent" id="taskListCsvExportBtn" (click)="exportCsv()">
+        <mat-icon>download</mat-icon>{{ 'Export CSV' | translate }}
+      </button>
+    </div>
+    <app-task-list-table
+      [tasks]="tasks" [properties]="properties" [boards]="boards"
+      [eforms]="eforms" [planningTags]="tags"
+      (editTask)="onEditTask($event)"
+      (selectionChanged)="onSelectionChanged($event)">
+    </app-task-list-table>
+  </mat-card-content>
+</mat-card>

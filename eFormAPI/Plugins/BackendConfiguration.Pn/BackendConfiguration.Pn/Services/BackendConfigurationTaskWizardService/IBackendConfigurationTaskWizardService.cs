@@ -15,4 +15,12 @@ public interface IBackendConfigurationTaskWizardService
     Task<OperationResult> DeactivateList(List<int> ids);
     Task<OperationResult> UpdateTask(TaskWizardCreateModel updateModel);
     Task<OperationResult> DeleteTask(int id);
+
+    /// <summary>
+    /// Same DB soft-deletes as <see cref="DeleteTask"/>, but retracts the SDK
+    /// cases fire-and-forget so the call returns immediately even when
+    /// core.CaseDelete blocks (dev has no eform-core consumer). Used by the
+    /// task-list batch delete.
+    /// </summary>
+    Task<OperationResult> DeleteTaskDeferredRetraction(int id);
 }
