@@ -176,7 +176,10 @@ test.describe.serial('Task list — batch-action dropdown gating', () => {
     // navigation. `onFiltersChanged` -> `loadTasks()` also clears
     // `selection` (a fresh grid load never carries selection forward), so
     // the row must be reselected before the dropdown (disabled while
-    // `selection.size === 0`) can be opened again.
+    // `selection.size === 0`) can be opened again. `selectProperty` awaits
+    // the tasks/index reload response before returning (CI shard-y round 1:
+    // reselecting against the stale pre-reload render got the selection
+    // wiped by the late rebind, leaving the dropdown disabled).
     await taskListPage.selectProperty(property.name);
     await expect(taskListPage.row(task)).toBeVisible();
     await taskListPage.selectRow(task);

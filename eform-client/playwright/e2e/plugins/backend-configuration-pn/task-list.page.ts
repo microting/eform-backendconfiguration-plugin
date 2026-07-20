@@ -67,10 +67,25 @@ export class TaskListPage {
   // ----- Filters ---------------------------------------------------------------
 
   async selectProperty(name: string): Promise<void> {
+    // Toggling a property option (ON or OFF) fires onFiltersChanged ->
+    // loadTasks(), an async tasks/index round-trip. Until the response
+    // lands, the PREVIOUS grid render (and any row selection) stays
+    // visible; on arrival mtx-grid rebinds [data] and loadTasks rebuilds
+    // `selection` EMPTY. A caller that clicks a row checkbox right after
+    // this method could otherwise race that rebind — the click lands on the
+    // stale render and the selection is wiped moments later, leaving the
+    // batch dropdown disabled (observed in CI as shard-y DG2's 120s
+    // timeout). Await the reload response before returning so the grid the
+    // caller sees is the fresh one.
+    const reload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 15000 },
+    ).catch(() => null);
     await this.page.locator('#taskListPropertyFilter').click();
     await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: name }).first().click();
     // Multi-select stays open after picking an option — close it explicitly.
     await this.page.keyboard.press('Escape');
+    await reload;
     await this.page.waitForTimeout(800);
   }
 
