@@ -34,11 +34,12 @@ import {
  *     SAME action id twice in a row still fires `(change)` a second time —
  *     it does, because the bound value passes through `null` in between.
  *
- * Note property.propertyIds filter reselect: `selectProperty(name)` just
- * clicks the option under the (multi-select) `#taskListPropertyFilter` —
- * calling it again on an ALREADY-selected property toggles it back OFF
- * (standard ng-select multi-select behavior), which is exactly how this
- * suite clears the filter without a page reload.
+ * Note property.propertyIds filter clear: this suite clears the filter
+ * without a page reload via `clearPropertyFilter()` (ng-select's clear-all
+ * × button). An earlier approach re-clicked the selected option to toggle
+ * it off, but this ng-select build doesn't reliably deselect that way (see
+ * DG2's inline comment / CI shard-y rounds 1-2), so the explicit clear-all
+ * is used instead.
  *
  * Seed: one property + one worker + one task (dropdown gating doesn't
  * exercise any modal's submit path, so a single row is enough).
@@ -172,15 +173,17 @@ test.describe.serial('Task list — batch-action dropdown gating', () => {
     expect(await taskListPage.countDisabledBatchActions()).toBe(0);
     await page.keyboard.press('Escape');
 
-    // Toggle the SAME property option off — clears the filter live, no
-    // navigation. `onFiltersChanged` -> `loadTasks()` also clears
-    // `selection` (a fresh grid load never carries selection forward), so
-    // the row must be reselected before the dropdown (disabled while
-    // `selection.size === 0`) can be opened again. `selectProperty` awaits
-    // the tasks/index reload response before returning (CI shard-y round 1:
-    // reselecting against the stale pre-reload render got the selection
-    // wiped by the late rebind, leaving the dropdown disabled).
-    await taskListPage.selectProperty(property.name);
+    // Clear the property filter live (no navigation) via ng-select's
+    // clear-all (×) button. NOT by re-clicking the selected option:
+    // CI shard-y rounds 1-2 proved that reclick, in this ng-select build,
+    // leaves the chip in place while still firing a filters change +
+    // tasks reload — so the filter wasn't actually cleared AND the row
+    // selection got wiped, permanently disabling the dropdown.
+    // `onFiltersChanged` -> `loadTasks()` clears `selection` (a fresh grid
+    // load never carries selection forward), so the row is reselected
+    // afterwards; `clearPropertyFilter`/`selectRow` both await the reload
+    // and verify the checkbox stuck.
+    await taskListPage.clearPropertyFilter();
     await expect(taskListPage.row(task)).toBeVisible();
     await taskListPage.selectRow(task);
 

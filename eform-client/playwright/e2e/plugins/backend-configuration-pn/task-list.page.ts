@@ -89,6 +89,25 @@ export class TaskListPage {
     await this.page.waitForTimeout(800);
   }
 
+  /**
+   * Clears ALL selected properties via ng-select's clear-all (×) button.
+   * Do NOT try to clear by re-clicking the selected option in the panel:
+   * CI evidence (shard-y DG2 rounds 1-2 failure snapshots) shows the
+   * reclick leaves the chip/value in place in this ng-select build while
+   * STILL firing a filters change + tasks reload — the worst of both
+   * worlds (filter kept, selection wiped).
+   */
+  async clearPropertyFilter(): Promise<void> {
+    // Same reload-await rationale as selectProperty above.
+    const reload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 15000 },
+    ).catch(() => null);
+    await this.page.locator('#taskListPropertyFilter .ng-clear-wrapper').click();
+    await reload;
+    await this.page.waitForTimeout(800);
+  }
+
   async search(text: string): Promise<void> {
     await this.page.locator('#taskListSearch').fill(text);
     // TaskListFiltersComponent debounces search 300ms before emitting.
@@ -109,9 +128,25 @@ export class TaskListPage {
     return this.row(taskName).locator('mat-checkbox');
   }
 
+  /**
+   * Ensures the row is SELECTED (every caller means "select", never
+   * "toggle"). Verifies the checkbox actually ended up checked and retries:
+   * a tasks/index reload rebinding the grid around the click can swallow
+   * (or invert) the toggle — CI shard-y DG2 rounds 1-2 both ended with the
+   * clicked checkbox focused-but-UNCHECKED and the batch dropdown disabled
+   * for the remaining ~100s of the test budget.
+   */
   async selectRow(taskName: string): Promise<void> {
-    await this.rowCheckbox(taskName).click();
-    await this.page.waitForTimeout(300);
+    const nativeCheckbox = this.rowCheckbox(taskName).locator('input[type="checkbox"]');
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await this.rowCheckbox(taskName).click();
+      await this.page.waitForTimeout(300);
+      if (await nativeCheckbox.isChecked().catch(() => false)) {
+        return;
+      }
+      await this.page.waitForTimeout(500);
+    }
+    throw new Error(`Row checkbox for "${taskName}" did not become checked after 3 attempts`);
   }
 
   async selectAll(): Promise<void> {
