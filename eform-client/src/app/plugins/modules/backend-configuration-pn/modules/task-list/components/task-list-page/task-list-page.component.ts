@@ -289,8 +289,18 @@ export class TaskListPageComponent implements OnInit {
     if (!id) {
       return;
     }
-    this.pendingAction = null; // reset dropdown (mockup behavior)
+    // Open the modal synchronously (it reads the live selection), then reset
+    // the dropdown to its placeholder on a microtask. A SYNCHRONOUS
+    // `pendingAction = null` here is a no-op in the DOM: this handler runs
+    // inside ng-select's own (change) emission, and ng-select re-applies its
+    // just-committed selectedItems after the handler returns, overwriting the
+    // null — so the value label sticks (CI shard-y DG3 showed "Slet valgte"
+    // still displayed while the delete modal was open). Deferring the reset
+    // until that selection flow has fully unwound lets writeValue(null) clear
+    // the ng-select cleanly, restoring the intended "reset dropdown (mockup
+    // behavior)".
     this.openBatchModal(id);
+    Promise.resolve().then(() => (this.pendingAction = null));
   }
 
   openBatchModal(action: TaskListBatchAction) {
