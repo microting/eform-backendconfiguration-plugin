@@ -68,7 +68,12 @@ const LABEL_DELETE = 'Slet valgte';
 
 let seeded = false;
 
-test.describe.serial('Task list — batch modal cancel', () => {
+// NOT serial: MC1-MC5 all CANCEL their modals (never submit), so none mutates
+// persistent state — each is independent given the shared seed. Plain
+// `describe` (with `workers:1` + `fullyParallel:false`, the seed test still
+// runs first by declaration order) lets every test run even if one fails, so
+// all failures surface in a single CI round instead of one-per-round.
+test.describe('Task list — batch modal cancel', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
     await new LoginPage(page).login();

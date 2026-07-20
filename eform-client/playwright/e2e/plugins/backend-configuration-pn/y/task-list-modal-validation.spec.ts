@@ -100,7 +100,13 @@ const LABEL_COPY = 'Kopiér til ejendom';
 
 let seeded = false;
 
-test.describe.serial('Task list — batch modal validation', () => {
+// NOT serial: V1-V5 only exercise submit-button GATING then cancel (V3 reaches
+// the eForm confirm phase but cancels there — none commits a batch action), so
+// no test mutates persistent state or depends on another. Plain `describe`
+// (with `workers:1` + `fullyParallel:false`, the seed test still runs first by
+// declaration order) lets every test run even if one fails, so all failures
+// surface in a single CI round instead of one-per-round.
+test.describe('Task list — batch modal validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
     await new LoginPage(page).login();

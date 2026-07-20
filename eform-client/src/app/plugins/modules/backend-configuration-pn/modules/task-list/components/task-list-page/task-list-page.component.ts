@@ -289,18 +289,17 @@ export class TaskListPageComponent implements OnInit {
     if (!id) {
       return;
     }
-    // Open the modal synchronously (it reads the live selection), then reset
-    // the dropdown to its placeholder on a microtask. A SYNCHRONOUS
-    // `pendingAction = null` here is a no-op in the DOM: this handler runs
-    // inside ng-select's own (change) emission, and ng-select re-applies its
-    // just-committed selectedItems after the handler returns, overwriting the
-    // null — so the value label sticks (CI shard-y DG3 showed "Slet valgte"
-    // still displayed while the delete modal was open). Deferring the reset
-    // until that selection flow has fully unwound lets writeValue(null) clear
-    // the ng-select cleanly, restoring the intended "reset dropdown (mockup
-    // behavior)".
+    // NB: the dropdown keeps showing the picked action while its modal is
+    // open; it resets to the placeholder in `openBatchModal`'s afterClosed
+    // (below). Resetting here — synchronously OR on a microtask — does NOT
+    // clear the ng-select in the DOM: this handler runs inside ng-select's
+    // own (change) emission and ng-select re-applies its just-committed
+    // selectedItems afterwards, so the value label sticks behind the modal
+    // (verified from CI shard-y DG3 trace + video across two rounds). The
+    // functional guarantee (a repeat pick of the same action re-fires
+    // (change)) is provided by the afterClosed reset, which clears
+    // ng-select's internal selection cleanly once no overlay is in the way.
     this.openBatchModal(id);
-    Promise.resolve().then(() => (this.pendingAction = null));
   }
 
   openBatchModal(action: TaskListBatchAction) {
@@ -344,6 +343,14 @@ export class TaskListPageComponent implements OnInit {
     }
     const ref = this.dialog.open(component, dialogConfigHelper(this.overlay, data));
     ref.afterClosed().subscribe(result => {
+      // Reset the batch dropdown to its placeholder once the modal closes
+      // (whether confirmed or cancelled), ready for the next pick. Done here
+      // rather than on pick because the modal/overlay is gone by now, so
+      // writeValue(null) cleanly clears BOTH the ng-select's displayed value
+      // AND its internal selectedItems — the latter is what lets a repeat
+      // pick of the SAME action fire (change) again instead of being a
+      // no-op (CI shard-y DG3).
+      this.pendingAction = null;
       if (result) {
         // The modal itself relies on the underlying service call's built-in
         // toast (see BackendConfigurationPnTaskListService — its methods use

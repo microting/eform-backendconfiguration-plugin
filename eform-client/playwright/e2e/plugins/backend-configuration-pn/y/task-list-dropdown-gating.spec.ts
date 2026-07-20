@@ -71,7 +71,13 @@ const LABEL_DELETE = 'Slet valgte';
 
 let seeded = false;
 
-test.describe.serial('Task list — batch-action dropdown gating', () => {
+// NOT serial: DG1-DG3 are mutation-independent — each does its own `goto()`
+// and only reads/gates against the shared seeded task (DG3 cancels its delete
+// modal, never submits), so none depends on another's state. Plain `describe`
+// (with `workers:1` + `fullyParallel:false`, the seed test still runs first by
+// declaration order) lets every test run even if one fails, so all failures
+// surface in a single CI round instead of one-per-round.
+test.describe('Task list — batch-action dropdown gating', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:4200');
     await new LoginPage(page).login();
@@ -193,14 +199,18 @@ test.describe.serial('Task list — batch-action dropdown gating', () => {
   });
 
   // =======================================================================
-  // DG3 — the dropdown resets to its placeholder as soon as an action is
-  // picked (before the modal even opens); cancelling out of the resulting
-  // modal and picking the SAME action again still opens a fresh modal —
-  // the regression this guards is `pendingAction` staying stuck at a
-  // non-null value, which would make ng-select treat a repeat pick of the
-  // same id as a no-op change.
+  // DG3 — the dropdown resets to its placeholder once the action's modal
+  // CLOSES (task-list-page.component.ts resets `pendingAction` in the
+  // dialog's afterClosed, not on pick — while the modal is open the dropdown
+  // legitimately still shows the picked action, and resetting mid-overlay
+  // fights ng-select's just-committed selection; see the component comment /
+  // CI shard-y DG3 rounds 3-4). Cancelling out and picking the SAME action
+  // again must still open a fresh modal — the real regression this guards is
+  // `pendingAction`/ng-select's internal selection staying stuck at a
+  // non-null value, which would make a repeat pick of the same id a no-op
+  // change.
   // =======================================================================
-  test('DG3: dropdown resets on pick; picking the same action again still opens the modal', async ({ page }) => {
+  test('DG3: dropdown resets after the modal closes; picking the same action again still opens the modal', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
     await taskListPage.goto();
     await taskListPage.search(task);
@@ -209,18 +219,18 @@ test.describe.serial('Task list — batch-action dropdown gating', () => {
 
     await taskListPage.pickBatchAction(new RegExp(LABEL_DELETE));
     await expect(taskListPage.getModalTaskList()).toBeVisible();
-    // pendingAction was reset to null the instant the pick was handled —
-    // already true while the modal is open, not just after it closes.
-    await expect(page.locator('#taskListBatchAction .ng-value-label')).toHaveCount(0);
 
     await taskListPage.cancelModal();
     await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+    // afterClosed reset the dropdown to its placeholder — no bound value.
     await expect(page.locator('#taskListBatchAction .ng-value-label')).toHaveCount(0);
 
     // Selection survives a cancel (task-list-page.component.ts only clears
     // it inside the `if (result)` branch) — the row is still selected, so
     // picking Delete again should reopen the modal without needing to
-    // reselect the row.
+    // reselect the row. This is the load-bearing assertion: it only passes
+    // if the afterClosed reset actually cleared ng-select's internal
+    // selection, so re-picking Delete fires a fresh (change).
     await taskListPage.pickBatchAction(new RegExp(LABEL_DELETE));
     await expect(taskListPage.getModalTaskList()).toBeVisible();
     await taskListPage.cancelModal();
