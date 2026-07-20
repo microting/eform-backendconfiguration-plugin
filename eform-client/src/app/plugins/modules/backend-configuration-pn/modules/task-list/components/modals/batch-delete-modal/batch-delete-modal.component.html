@@ -6,6 +6,6 @@
   <p>{{ 'Collected data will not be deleted' | translate }}</p>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
   <button id="batchModalSubmit" class="btn-delete" (click)="submit()">{{ 'Delete' | translate }}</button>
 </div>

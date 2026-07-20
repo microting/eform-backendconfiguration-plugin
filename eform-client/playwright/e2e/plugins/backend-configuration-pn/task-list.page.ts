@@ -27,9 +27,10 @@ import { Page, Locator } from '@playwright/test';
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
  *     they are never removed from the list, only grayed out.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
- *     (primary action) and — only the two-phase eForm-change modal —
- *     `#batchModalConfirm` (second step, after `#batchModalSubmit` flips the
- *     modal into a confirmation state).
+ *     (primary action), `#batchModalCancel` (all five modals — closes with no
+ *     result, so selection/grid stay untouched) and — only the two-phase
+ *     eForm-change modal — `#batchModalConfirm` (second step, after
+ *     `#batchModalSubmit` flips the modal into a confirmation state).
  */
 export class TaskListPage {
   constructor(private page: Page) {}
@@ -161,6 +162,41 @@ export class TaskListPage {
   async confirmModal(): Promise<void> {
     await this.page.locator('#batchModalConfirm').click();
     await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Clicks the shared `#batchModalCancel` button present on all five batch
+   * modals (`btn-cancel` in every modal template; the id was added
+   * specifically so cancel-flow specs don't have to fall back to a
+   * class/text selector). Calls `hide()` -> `dialogRef.close()` with no
+   * result, which `openBatchModal`'s `afterClosed()` subscriber treats as
+   * falsy — selection is NOT cleared and `loadTasks()` is NOT re-run (see
+   * `task-list-page.component.ts`), so callers should expect the grid and
+   * `#taskListSelectionCount` to be exactly as they were before the modal
+   * opened.
+   */
+  async cancelModal(): Promise<void> {
+    await this.page.locator('#batchModalCancel').click();
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Counts `.ng-option-disabled` entries in the currently-open batch-action
+   * panel — shared by the gating specs (`x/task-list-page.spec.ts` PP9 and
+   * `y/task-list-dropdown-gating.spec.ts`) instead of each redefining the
+   * same class-scan loop.
+   */
+  async countDisabledBatchActions(): Promise<number> {
+    const options = this.batchActionOptions();
+    const total = await options.count();
+    let disabled = 0;
+    for (let i = 0; i < total; i++) {
+      const cls = (await options.nth(i).getAttribute('class')) ?? '';
+      if (cls.includes('ng-option-disabled')) {
+        disabled++;
+      }
+    }
+    return disabled;
   }
 
   /**

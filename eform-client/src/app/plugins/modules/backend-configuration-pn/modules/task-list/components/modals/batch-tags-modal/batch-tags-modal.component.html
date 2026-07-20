@@ -20,7 +20,7 @@
   </mat-form-field>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
   <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
     {{ 'Save' | translate }}
   </button>

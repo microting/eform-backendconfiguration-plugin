@@ -1,0 +1,228 @@
+import { test, expect } from '@playwright/test';
+import { LoginPage } from '../../../Page objects/Login.page';
+import { generateRandmString } from '../../../helper-functions';
+import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
+import { TaskListPage } from '../task-list.page';
+import {
+  BackendConfigurationPropertiesPage,
+  PropertyCreateUpdate,
+} from '../BackendConfigurationProperties.page';
+import {
+  BackendConfigurationPropertyWorkersPage,
+  PropertyWorker,
+} from '../BackendConfigurationPropertyWorkers.page';
+
+/**
+ * Task list BATCH-DROPDOWN GATING suite (backend-configuration-task-list-page
+ * feature, shard y). Complements `x/task-list-page.spec.ts` PP9 (which
+ * proves the 8-option/3-group shape, the 4-disabled/0-disabled counts, and
+ * that clicking a disabled option is a no-op) with three angles PP9 does
+ * NOT cover, all read directly off `task-list-page.component.ts`/`.html`
+ * while writing this suite:
+ *   - `#taskListBatchAction`'s bound value (`.ng-value-label`), not just the
+ *     modal, after a no-op disabled-option click.
+ *   - Going from a single-property filter BACK to no filter in the same
+ *     session (not a page reload) — `batchActions` is memoized on
+ *     `${singleSelectedPropertyId}|${lang}` (`_batchActionsCache`), so this
+ *     is the one path that actually exercises the cache-invalidation branch;
+ *     PP9 only ever goes no-filter -> single-property, never back.
+ *   - `pendingAction` — `onBatchActionPicked` resets it to `null` the
+ *     instant an action is picked (BEFORE the modal opens, "reset dropdown
+ *     (mockup behavior)"), so the dropdown already shows its placeholder
+ *     while the modal is still open; cancelling doesn't need to reset
+ *     anything further. The real regression surface is whether picking the
+ *     SAME action id twice in a row still fires `(change)` a second time —
+ *     it does, because the bound value passes through `null` in between.
+ *
+ * Note property.propertyIds filter reselect: `selectProperty(name)` just
+ * clicks the option under the (multi-select) `#taskListPropertyFilter` —
+ * calling it again on an ALREADY-selected property toggles it back OFF
+ * (standard ng-select multi-select behavior), which is exactly how this
+ * suite clears the filter without a page reload.
+ *
+ * Seed: one property + one worker + one task (dropdown gating doesn't
+ * exercise any modal's submit path, so a single row is enough).
+ */
+
+const property: PropertyCreateUpdate = {
+  name: `tlg-${generateRandmString(5)}`,
+  chrNumber: generateRandmString(5),
+  address: generateRandmString(5),
+  cvrNumber: '1111111',
+};
+
+const worker: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
+};
+
+const rand = generateRandmString(6);
+const task = `dg-task-${rand}`;
+
+// Danish translations of the relevant batch-action dropdown labels
+// (BackendConfiguration da.ts, lines 574/579) — same source as the other
+// x/ batch specs.
+const LABEL_ASSIGN = 'Flyt valgte til medarbejder';
+const LABEL_DELETE = 'Slet valgte';
+
+let seeded = false;
+
+test.describe.serial('Task list — batch-action dropdown gating', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('http://localhost:4200');
+    await new LoginPage(page).login();
+    await page.waitForTimeout(1500);
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    const cleanup = async () => {
+      await page.goto('http://localhost:4200');
+      await new LoginPage(page).login();
+
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      await workersPage.goToPropertyWorkers();
+      await page.waitForTimeout(1000);
+      await workersPage.clearTable();
+
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+      await propertiesPage.goToProperties();
+      await page.waitForTimeout(1000);
+      await propertiesPage.clearTable();
+    };
+    try {
+      await Promise.race([
+        cleanup(),
+        new Promise(resolve => setTimeout(resolve, 60000)),
+      ]);
+    } catch (err: any) {
+      console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
+    }
+    try { await page.close(); } catch {}
+  });
+
+  // -----------------------------------------------------------------------
+  // Seed — one property + one worker + one task.
+  // -----------------------------------------------------------------------
+  test('seed: create property + worker + task', async ({ page }) => {
+    test.setTimeout(600000);
+
+    const propertiesPage = new BackendConfigurationPropertiesPage(page);
+    const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+
+    await propertiesPage.goToProperties();
+    await propertiesPage.createProperty(property);
+    await workersPage.goToPropertyWorkers();
+    await workersPage.create(worker);
+
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    await calendarPage.goToCalendar();
+    await calendarPage.ensureSidebarOpen();
+    await calendarPage.selectProperty(property.name);
+    await page.waitForTimeout(1000);
+    await calendarPage.openCreateModalAtSlot(0, 9);
+    await calendarPage.fillAndSaveEvent(task);
+
+    seeded = true;
+  });
+
+  // =======================================================================
+  // DG1 — clicking a disabled option is a no-op: no modal opens AND the
+  // dropdown's own bound value stays empty (PP9 only asserts the former).
+  // =======================================================================
+  test('DG1: clicking a disabled option opens no modal and leaves the dropdown value empty', async ({ page }) => {
+    expect(seeded).toBe(true);
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    // No property filter -> assign/reassign/addWorker/copy are disabled.
+    await taskListPage.search(task);
+    await expect(taskListPage.row(task)).toBeVisible();
+    await taskListPage.selectRow(task);
+
+    await taskListPage.openBatchActionPanel();
+    const assignOption = taskListPage.batchActionOption(new RegExp(LABEL_ASSIGN));
+    await expect(assignOption).toHaveClass(/ng-option-disabled/);
+    await assignOption.click();
+    await page.waitForTimeout(400);
+
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+    await expect(taskListPage.getModalTaskList()).toHaveCount(0);
+    // The click never registered a selection, so #taskListBatchAction still
+    // renders its placeholder, not a `.ng-value-label`.
+    await expect(page.locator('#taskListBatchAction .ng-value-label')).toHaveCount(0);
+
+    await page.keyboard.press('Escape');
+  });
+
+  // =======================================================================
+  // DG2 — gating recomputes live: single-property filter -> 0 disabled;
+  // clearing the SAME filter (no reload) -> back to 4 disabled.
+  // =======================================================================
+  test('DG2: disabled count recomputes when the property filter is cleared without a reload', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(task)).toBeVisible();
+    await taskListPage.selectRow(task);
+
+    await taskListPage.openBatchActionPanel();
+    expect(await taskListPage.countDisabledBatchActions()).toBe(0);
+    await page.keyboard.press('Escape');
+
+    // Toggle the SAME property option off — clears the filter live, no
+    // navigation. `onFiltersChanged` -> `loadTasks()` also clears
+    // `selection` (a fresh grid load never carries selection forward), so
+    // the row must be reselected before the dropdown (disabled while
+    // `selection.size === 0`) can be opened again.
+    await taskListPage.selectProperty(property.name);
+    await expect(taskListPage.row(task)).toBeVisible();
+    await taskListPage.selectRow(task);
+
+    await taskListPage.openBatchActionPanel();
+    expect(await taskListPage.countDisabledBatchActions()).toBe(4);
+    await page.keyboard.press('Escape');
+  });
+
+  // =======================================================================
+  // DG3 — the dropdown resets to its placeholder as soon as an action is
+  // picked (before the modal even opens); cancelling out of the resulting
+  // modal and picking the SAME action again still opens a fresh modal —
+  // the regression this guards is `pendingAction` staying stuck at a
+  // non-null value, which would make ng-select treat a repeat pick of the
+  // same id as a no-op change.
+  // =======================================================================
+  test('DG3: dropdown resets on pick; picking the same action again still opens the modal', async ({ page }) => {
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.search(task);
+    await expect(taskListPage.row(task)).toBeVisible();
+    await taskListPage.selectRow(task);
+
+    await taskListPage.pickBatchAction(new RegExp(LABEL_DELETE));
+    await expect(taskListPage.getModalTaskList()).toBeVisible();
+    // pendingAction was reset to null the instant the pick was handled —
+    // already true while the modal is open, not just after it closes.
+    await expect(page.locator('#taskListBatchAction .ng-value-label')).toHaveCount(0);
+
+    await taskListPage.cancelModal();
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+    await expect(page.locator('#taskListBatchAction .ng-value-label')).toHaveCount(0);
+
+    // Selection survives a cancel (task-list-page.component.ts only clears
+    // it inside the `if (result)` branch) — the row is still selected, so
+    // picking Delete again should reopen the modal without needing to
+    // reselect the row.
+    await taskListPage.pickBatchAction(new RegExp(LABEL_DELETE));
+    await expect(taskListPage.getModalTaskList()).toBeVisible();
+    await taskListPage.cancelModal();
+    await expect(page.locator('mat-dialog-container')).toHaveCount(0);
+
+    // The task must still exist — this suite never submits Delete.
+    await taskListPage.goto();
+    await taskListPage.search(task);
+    await expect(taskListPage.row(task)).toBeVisible();
+  });
+});
