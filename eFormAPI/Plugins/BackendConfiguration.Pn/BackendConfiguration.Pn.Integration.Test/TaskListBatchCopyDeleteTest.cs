@@ -130,6 +130,14 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
             BackendConfigurationPnDbContext.PropertyWorkers);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // CalendarBoards has no DB-level FK on PropertyId, but clear it before
+        // Properties for the same reason as PropertyWorkers above (added for
+        // the Copy TargetBoardId/TargetProperty validation guard — see
+        // SeedTargetBoard).
+        BackendConfigurationPnDbContext.CalendarBoards.RemoveRange(
+            BackendConfigurationPnDbContext.CalendarBoards);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.Areas.RemoveRange(
             BackendConfigurationPnDbContext.Areas);
         BackendConfigurationPnDbContext.Properties.RemoveRange(
@@ -293,6 +301,26 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Seeds a real CalendarBoard row belonging to <paramref name="propertyId"/>
+    /// to stand in as a Copy TargetBoardId. Copy's new TargetBoardId/
+    /// TargetProperty guard does a real CalendarBoards lookup scoped to
+    /// (Id, PropertyId), so — unlike the old tests, which passed the bare
+    /// literal 777 with no backing row — the target board must actually
+    /// exist on the target property. Ids are DB-identity-generated, so the
+    /// caller must use the returned Id, not a literal.
+    /// </summary>
+    private async Task<int> SeedTargetBoard(int propertyId)
+    {
+        var board = new CalendarBoard
+        {
+            Name = $"CopyTargetBoard-{Guid.NewGuid()}", PropertyId = propertyId,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await board.Create(BackendConfigurationPnDbContext!);
+        return board.Id;
+    }
+
     // ---- Copy ----
 
     [Test]
@@ -301,11 +329,12 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         var arpId = await SeedTask([100], workerTagIds: [42]);
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
         var startDate = DateTime.UtcNow.Date.AddDays(7);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777, StartDate = startDate,
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId, StartDate = startDate,
             SiteId = 900
         });
 
@@ -315,7 +344,7 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         Assert.Multiple(() =>
         {
             Assert.That(call.PropertyId, Is.EqualTo(targetPropertyId));
-            Assert.That(call.BoardId, Is.EqualTo(777));
+            Assert.That(call.BoardId, Is.EqualTo(targetBoardId));
             Assert.That(call.StartDate, Is.EqualTo(startDate));
             // TaskWizardStatuses.NotActive == 2.
             Assert.That(call.Status, Is.EqualTo(2));
@@ -330,10 +359,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         var arpId = await SeedTask([100, 101], workerTagIds: [42, 43]);
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -371,10 +401,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         var planning = await ItemsPlanningPnDbContext!.Plannings.FirstAsync(x => x.Id == arp.ItemPlanningId);
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -401,10 +432,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
             .AsNoTracking().FirstAsync(x => x.Id == arpId);
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -431,10 +463,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         const int unknownArpId = 999_999;
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [unknownArpId, validArpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [unknownArpId, validArpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -450,10 +483,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         var arpId = await SeedTask([100], workerTagIds: [42], createdInGuide: false);
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -467,10 +501,11 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
     {
         var targetPropertyId = await SeedTargetProperty();
         await SeedPropertyWorker(targetPropertyId, 900);
+        var targetBoardId = await SeedTargetBoard(targetPropertyId);
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
-            TaskIds = [], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            TaskIds = [], TargetPropertyId = targetPropertyId, TargetBoardId = targetBoardId,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 
@@ -485,13 +520,42 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
         // Seed the target property WITHOUT linking site 900 as a
         // PropertyWorker — the defense-in-depth guard must refuse the
         // whole batch before touching any task, even though the source
-        // task itself is perfectly valid.
+        // task itself is perfectly valid. Board is deliberately not seeded
+        // either: the SiteId guard runs first and must short-circuit before
+        // the TargetBoardId guard is ever reached, so an arbitrary literal
+        // TargetBoardId here is fine — it should never be evaluated.
         var arpId = await SeedTask([100], workerTagIds: [42]);
         var targetPropertyId = await SeedTargetProperty();
 
         var result = await _taskListService.Copy(new TaskListBatchCopyModel
         {
             TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = 777,
+            StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
+        });
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(_createCalls, Is.Empty);
+    }
+
+    [Test]
+    public async Task Copy_BoardNotOnTargetProperty_FailsWholeBatch_WithoutCreateCalls()
+    {
+        // Seed a source task, a target property, and a PropertyWorker link
+        // for the site so the SiteId guard passes — but seed the
+        // CalendarBoard on a DIFFERENT (unrelated) property. The
+        // TargetBoardId/TargetProperty guard must refuse the whole batch
+        // before touching any task, even though the source task and site
+        // are both perfectly valid, exactly mirroring
+        // Copy_SiteNotOnTargetProperty_FailsWholeBatch_WithoutCreateCalls.
+        var arpId = await SeedTask([100], workerTagIds: [42]);
+        var targetPropertyId = await SeedTargetProperty();
+        await SeedPropertyWorker(targetPropertyId, 900);
+        var otherPropertyId = await SeedTargetProperty();
+        var boardOnOtherProperty = await SeedTargetBoard(otherPropertyId);
+
+        var result = await _taskListService.Copy(new TaskListBatchCopyModel
+        {
+            TaskIds = [arpId], TargetPropertyId = targetPropertyId, TargetBoardId = boardOnOtherProperty,
             StartDate = DateTime.UtcNow.Date.AddDays(7), SiteId = 900
         });
 

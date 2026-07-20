@@ -5126,6 +5126,37 @@
     }
   },
   {
+    "Key": "SelectedBoardDoesNotBelongToTargetProperty",
+    "LocalizedValue": {
+      "en-US": "Selected board does not belong to the target property",
+      "da": "Den valgte tavle tilhører ikke den valgte ejendom",
+      "de": "Die ausgewählte Tafel gehört nicht zur Zielimmobilie",
+      "uk-UA": "Вибрана дошка не належить до цільового об'єкта",
+      "pl-PL": "Wybrana tablica nie należy do docelowej nieruchomości",
+      "no-NO": "Den valgte tavlen tilhører ikke den valgte eiendommen",
+      "sv-SE": "Den valda tavlan tillhör inte den valda fastigheten",
+      "es-ES": "El tablero seleccionado no pertenece a la propiedad de destino",
+      "fr-FR": "Le tableau sélectionné n'appartient pas à la propriété cible",
+      "it-IT": "La bacheca selezionata non appartiene alla proprietà di destinazione",
+      "nl-NL": "Het geselecteerde bord hoort niet bij de doellocatie",
+      "pt-BR": "O quadro selecionado não pertence à propriedade de destino",
+      "pt-PT": "O quadro selecionado não pertence à propriedade de destino",
+      "fi-FI": "Valittu taulu ei kuulu kohdekiinteistöön",
+      "et-ET": "Valitud tahvel ei kuulu sihtkinnistule",
+      "lv-LV": "Izvēlētā tāfele nepieder mērķa īpašumam",
+      "lt-LT": "Pasirinkta lenta nepriklauso tikslinei nuosavybei",
+      "ro-RO": "Panoul selectat nu aparține proprietății țintă",
+      "hr-HR": "Odabrana ploča ne pripada ciljnoj nekretnini",
+      "sl-SL": "Izbrana tabla ne pripada ciljni nepremičnini",
+      "cs-CZ": "Vybraná tabule nepatří k cílové nemovitosti",
+      "sk-SK": "Vybraná tabuľa nepatrí k cieľovej nehnuteľnosti",
+      "hu-HU": "A kiválasztott tábla nem tartozik a célingatlanhoz",
+      "bg-BG": "Избраната дъска не принадлежи към целевия имот",
+      "el-GR": "Ο επιλεγμένος πίνακας δεν ανήκει στο ακίνητο-στόχο",
+      "is-IS": "Valið borð tilheyrir ekki markfasteigninni"
+    }
+  },
+  {
     "Key": "PartiallyCompleted",
     "LocalizedValue": {
       "en-US": "Partially completed",

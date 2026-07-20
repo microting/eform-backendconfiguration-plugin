@@ -176,6 +176,24 @@ public class BackendConfigurationTaskListService(
                 localizationService.GetString("SelectedWorkerDoesNotBelongToTargetProperty"));
         }
 
+        // Defense-in-depth (mirrors the SiteId guard above): model.TargetBoardId
+        // ends up as CalendarTaskCreateRequestModel.BoardId, which CreateTask
+        // persists verbatim with no cross-check against model.TargetPropertyId —
+        // so a stale/crafted TargetBoardId from another property would silently
+        // land in the copy's CalendarConfiguration. Validate once, before
+        // touching any task, so a failure here never creates a partial batch.
+        var boardIsOnTargetProperty = await backendConfigurationPnDbContext.CalendarBoards
+            .AsNoTracking()
+            .AnyAsync(b =>
+                b.Id == model.TargetBoardId
+                && b.PropertyId == model.TargetPropertyId
+                && b.WorkflowState != Constants.WorkflowStates.Removed);
+        if (!boardIsOnTargetProperty)
+        {
+            return new OperationResult(false,
+                localizationService.GetString("SelectedBoardDoesNotBelongToTargetProperty"));
+        }
+
         return await RunPerTask(model.TaskIds, async id =>
         {
             var source = await BuildUpdateModel(id);
