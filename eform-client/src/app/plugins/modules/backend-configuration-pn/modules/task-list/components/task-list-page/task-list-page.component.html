@@ -21,6 +21,17 @@
                     [(ngModel)]="pendingAction"
                     (change)="onBatchActionPicked($event)"
                     [placeholder]="'Select batch action' | translate">
+          <!-- The mtx-select panel is body-appended (mtx appendTo defaults to
+               'body'), so component-scoped SCSS can't reach it. These templates
+               emit classes unique to THIS dropdown; the matching rules live in
+               the shared _material-dropdown.scss (mockup typography: bold group
+               headers, regular options, native-select-gray disabled options). -->
+          <ng-template ng-optgroup-tmp let-item$="item$">
+            <span class="tl-batch-action-group-label">{{ item$.label }}</span>
+          </ng-template>
+          <ng-template ng-option-tmp let-item$="item$">
+            <span class="tl-batch-action-option-label">{{ item$.label }}</span>
+          </ng-template>
         </mtx-select>
       </mat-form-field>
       <span id="taskListSelectionCount" *ngIf="selection.size > 0">
