@@ -1,0 +1,32 @@
+.tl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+  }
+}
+
+.task-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  mat-form-field {
+    width: 260px;
+    margin-bottom: -1.25em; // mat-form-field reserves space for hint/error; toolbar row is compact
+  }
+
+  #taskListSelectionCount {
+    font-weight: 600;
+  }
+
+  #taskListCsvExportBtn {
+    margin-left: auto;
+  }
+}

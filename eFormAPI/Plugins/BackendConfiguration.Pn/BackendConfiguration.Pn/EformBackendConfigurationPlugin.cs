@@ -83,6 +83,7 @@ using Services.BackendConfigurationPropertiesService;
 using Services.BackendConfigurationPropertyAreasService;
 using Services.BackendConfigurationReportService;
 using Services.BackendConfigurationStatsService;
+using Services.BackendConfigurationTaskListService;
 using Services.BackendConfigurationTaskManagementService;
 using Services.BackendConfigurationTaskTrackerService;
 using Services.BackendConfigurationTaskWizardService;
@@ -92,6 +93,7 @@ using Services.GoogleDrive;
 using Services.TaskUpdateCompletionService;
 using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
+using Services.CalendarConfigurationBackfillService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -133,6 +135,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
         services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
         services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
+        services.AddTransient<IBackendConfigurationTaskListService, BackendConfigurationTaskListService>();
         services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
         services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
         services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
@@ -144,6 +147,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IChemicalService, ChemicalService>();
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
+        services.AddTransient<CalendarConfigurationBackfillService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -828,6 +832,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         using var scope = serviceProvider.CreateScope();
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
         backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
+
+        var calendarBackfill = scope.ServiceProvider
+            .GetRequiredService<CalendarConfigurationBackfillService>();
+        calendarBackfill.RunIfNeededAsync().GetAwaiter().GetResult();
 
         appBuilder.UseEndpoints(endpoints =>
         {
@@ -1669,6 +1677,81 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     {
                         LocaleName = LocaleNames.Ukrainian,
                         Name = "Підключені облікові записи Google Drive",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
+            },
+            new()
+            {
+                Name = "Task list",
+                E2EId = "backend-configuration-pn-task-list",
+                Link = "/plugins/backend-configuration-pn/task-list",
+                Type = MenuItemTypeEnum.Link,
+                Position = 11,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Task list",
+                    E2EId = "backend-configuration-pn-task-list",
+                    DefaultLink = "/plugins/backend-configuration-pn/task-list",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Task list",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Aufgabenliste",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Opgaveliste",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Список завдань",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Task list",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Aufgabenliste",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Opgaveliste",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Список завдань",
                         Language = LanguageNames.Ukrainian
                     }
                 ]

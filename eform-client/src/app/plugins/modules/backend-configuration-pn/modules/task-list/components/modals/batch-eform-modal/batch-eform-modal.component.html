@@ -1,0 +1,34 @@
+<h3 mat-dialog-title>{{ 'Change eForm' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'eForm' | translate }}</mat-label>
+    <mtx-select
+      id="batchEformSelect"
+      [items]="data.eforms"
+      bindValue="id" bindLabel="label"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [disabled]="confirming"
+      [(ngModel)]="eformId"
+      [placeholder]="'eForm' | translate">
+    </mtx-select>
+  </mat-form-field>
+
+  <p *ngIf="confirming" id="batchEformConfirmText" class="text-warning">
+    {{ 'The eForm will be changed immediately for the selected tasks' | translate }}
+  </p>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button *ngIf="!confirming" id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+  <button *ngIf="confirming" id="batchModalConfirm" class="btn-primary" (click)="confirm()">
+    {{ 'Confirm' | translate }}
+  </button>
+</div>
