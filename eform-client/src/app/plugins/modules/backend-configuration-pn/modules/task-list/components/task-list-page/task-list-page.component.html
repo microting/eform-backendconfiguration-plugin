@@ -11,13 +11,16 @@
     </app-task-list-filters>
     <div class="task-list-toolbar">
       <mat-form-field>
+        <mat-label>{{ 'Batch action' | translate }}</mat-label>
         <mtx-select id="taskListBatchAction"
                     [items]="batchActions"
                     bindValue="id" bindLabel="label"
+                    groupBy="group"
+                    [selectableGroup]="false"
                     [disabled]="selection.size === 0"
                     [(ngModel)]="pendingAction"
                     (change)="onBatchActionPicked($event)"
-                    [placeholder]="'Action' | translate">
+                    [placeholder]="'Select batch action' | translate">
         </mtx-select>
       </mat-form-field>
       <span id="taskListSelectionCount" *ngIf="selection.size > 0">

@@ -577,4 +577,7 @@ export const itIT = {
   'Copy to property': 'Copia nella proprietà',
   'Delete selected': 'Elimina selezionati',
   'Collected data will not be deleted': 'I dati raccolti non verranno cancellati',
+  Tasks: 'Compiti',
+  'Batch action': 'Azione batch',
+  'Select batch action': 'Seleziona l\'azione batch',
 };

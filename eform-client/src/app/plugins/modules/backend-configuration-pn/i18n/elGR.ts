@@ -577,4 +577,7 @@ export const elGR = {
   'Copy to property': 'Αντιγραφή στην ιδιότητα',
   'Delete selected': 'Διαγραφή επιλεγμένων',
   'Collected data will not be deleted': 'Τα δεδομένα που συλλέγονται δεν θα διαγραφούν',
+  Tasks: 'Εργασίες',
+  'Batch action': 'Μαζική ενέργεια',
+  'Select batch action': 'Επιλογή μαζικής ενέργειας',
 };

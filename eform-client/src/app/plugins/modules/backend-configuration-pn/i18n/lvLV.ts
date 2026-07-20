@@ -577,4 +577,7 @@ export const lvLV = {
   'Copy to property': 'Kopēt uz īpašumu',
   'Delete selected': 'Dzēst atlasīto',
   'Collected data will not be deleted': 'Apkopotie dati netiks dzēsti',
+  Tasks: 'Uzdevumi',
+  'Batch action': 'Partijas darbība',
+  'Select batch action': 'Atlasīt partijas darbību',
 };

@@ -577,4 +577,7 @@ export const ptPT = {
   'Copy to property': 'Cópia para a propriedade',
   'Delete selected': 'Excluir selecionados',
   'Collected data will not be deleted': 'Os dados coletados não serão apagados.',
+  Tasks: 'Tarefas',
+  'Batch action': 'Ação em lote',
+  'Select batch action': 'Selecione a ação em lote',
 };

@@ -625,4 +625,7 @@ export const deDE = {
   'Copy to property': 'Kopie an Eigentum',
   'Delete selected': 'Ausgewählte löschen',
   'Collected data will not be deleted': 'Die erhobenen Daten werden nicht gelöscht.',
+  Tasks: 'Aufgaben',
+  'Batch action': 'Stapelverarbeitung',
+  'Select batch action': 'Stapelaktion auswählen',
 };

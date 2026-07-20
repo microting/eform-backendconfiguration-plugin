@@ -577,4 +577,7 @@ export const esES = {
   'Copy to property': 'Copiar a la propiedad',
   'Delete selected': 'Eliminar seleccionado',
   'Collected data will not be deleted': 'Los datos recopilados no serán eliminados.',
+  Tasks: 'Tareas',
+  'Batch action': 'Acción por lotes',
+  'Select batch action': 'Seleccione la acción por lotes',
 };

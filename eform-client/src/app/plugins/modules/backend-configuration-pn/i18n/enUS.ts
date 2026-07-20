@@ -596,4 +596,7 @@ export const enUS= {
   'Copy to property': 'Copy to property',
   'Delete selected': 'Delete selected',
   'Collected data will not be deleted': 'Collected data will not be deleted',
+  Tasks: 'Tasks',
+  'Batch action': 'Batch action',
+  'Select batch action': 'Select batch action',
 };

@@ -18,10 +18,14 @@ import { Page, Locator } from '@playwright/test';
  *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
  *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
  *     own paginator — always use `#taskListShowAllToggle` by id, never text.
- *   - `#taskListBatchAction` — mtx-select (single); options list is
- *     4-wide (changeEform/addTags/removeTags/delete) unless the property
- *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected,
- *     in which case assign/reassign/addWorker/copy are also present (8-wide).
+ *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 8
+ *     options across 3 optgroups (`.ng-optgroup`), matching the mockup
+ *     (opgaveliste.html #opgavelisteFilterHandling): "Medarbejdere"/Employees
+ *     (assign/reassign/addWorker), "Opgaver"/Tasks (changeEform/addTags/
+ *     removeTags/copy), "Slet"/Delete (delete). assign/reassign/addWorker/copy
+ *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
+ *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
+ *     they are never removed from the list, only grayed out.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
  *     (primary action) and — only the two-phase eForm-change modal —
  *     `#batchModalConfirm` (second step, after `#batchModalSubmit` flips the
@@ -126,6 +130,23 @@ export class TaskListPage {
     await this.page.locator('#taskListBatchAction').click();
     await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: labelRegex }).first().click();
     await this.page.waitForTimeout(500);
+  }
+
+  async openBatchActionPanel(): Promise<void> {
+    await this.page.locator('#taskListBatchAction').click();
+    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  batchActionOptions(): Locator {
+    return this.page.locator('.ng-dropdown-panel .ng-option');
+  }
+
+  batchActionGroups(): Locator {
+    return this.page.locator('.ng-dropdown-panel .ng-optgroup');
+  }
+
+  batchActionOption(labelRegex: RegExp): Locator {
+    return this.batchActionOptions().filter({ hasText: labelRegex }).first();
   }
 
   getModalTaskList(): Locator {

@@ -577,4 +577,7 @@ export const fiFI = {
   'Copy to property': 'Kopioi omaisuuteen',
   'Delete selected': 'Poista valitut',
   'Collected data will not be deleted': 'Kerättyjä tietoja ei poisteta',
+  Tasks: 'Tehtävät',
+  'Batch action': 'Erätoiminto',
+  'Select batch action': 'Valitse erätoiminto',
 };

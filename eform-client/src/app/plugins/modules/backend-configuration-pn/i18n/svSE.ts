@@ -577,4 +577,7 @@ export const svSE = {
   'Copy to property': 'Kopiera till egendom',
   'Delete selected': 'Ta bort markerade',
   'Collected data will not be deleted': 'Insamlad data kommer inte att raderas',
+  Tasks: 'Uppgifter',
+  'Batch action': 'Batchåtgärd',
+  'Select batch action': 'Välj batchåtgärd',
 };

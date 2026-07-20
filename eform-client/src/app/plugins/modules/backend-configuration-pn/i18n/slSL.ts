@@ -577,4 +577,7 @@ export const slSL = {
   'Copy to property': 'Kopiraj v lastnost',
   'Delete selected': 'Izbriši izbrano',
   'Collected data will not be deleted': 'Zbrani podatki ne bodo izbrisani',
+  Tasks: 'Naloge',
+  'Batch action': 'Paketno dejanje',
+  'Select batch action': 'Izberite paketno dejanje',
 };

@@ -576,4 +576,7 @@ export const frFR = {
   'Copy to property': 'Copier à la propriété',
   'Delete selected': 'Supprimer la sélection',
   'Collected data will not be deleted': 'Les données collectées ne seront pas supprimées.',
+  Tasks: 'Tâches',
+  'Batch action': 'Action par lots',
+  'Select batch action': 'Sélectionner l\'action par lots',
 };

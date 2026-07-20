@@ -577,4 +577,7 @@ export const skSK = {
   'Copy to property': 'Kopírovať do vlastnosti',
   'Delete selected': 'Odstrániť vybrané',
   'Collected data will not be deleted': 'Zhromaždené údaje nebudú vymazané',
+  Tasks: 'Úlohy',
+  'Batch action': 'Dávková akcia',
+  'Select batch action': 'Vybrať dávkovú akciu',
 };

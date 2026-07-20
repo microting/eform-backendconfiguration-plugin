@@ -577,4 +577,7 @@ export const bgBG = {
   'Copy to property': 'Копиране в имота',
   'Delete selected': 'Изтриване на избраното',
   'Collected data will not be deleted': 'Събраните данни няма да бъдат изтрити',
+  Tasks: 'Задачи',
+  'Batch action': 'Групово действие',
+  'Select batch action': 'Изберете действие за пакет',
 };

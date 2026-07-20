@@ -577,4 +577,7 @@ export const isIS = {
   'Copy to property': 'Afrita í eign',
   'Delete selected': 'Eyða völdum',
   'Collected data will not be deleted': 'Safnað gögn verða ekki eytt',
+  Tasks: 'Verkefni',
+  'Batch action': 'Hópaaðgerð',
+  'Select batch action': 'Veldu hópaðgerð',
 };

@@ -577,4 +577,7 @@ export const noNO = {
   'Copy to property': 'Kopier til eiendom',
   'Delete selected': 'Slett valgte',
   'Collected data will not be deleted': 'Innsamlede data vil ikke bli slettet',
+  Tasks: 'Oppgaver',
+  'Batch action': 'Gruppehandling',
+  'Select batch action': 'Velg batchhandling',
 };

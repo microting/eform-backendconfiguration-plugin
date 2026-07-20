@@ -577,4 +577,7 @@ export const ukUA = {
   'Copy to property': 'Копіювати до ресурсу',
   'Delete selected': 'Видалити вибране',
   'Collected data will not be deleted': 'Зібрані дані не будуть видалені',
+  Tasks: 'Завдання',
+  'Batch action': 'Пакетна дія',
+  'Select batch action': 'Виберіть пакетну дію',
 };

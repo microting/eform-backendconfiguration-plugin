@@ -44,6 +44,7 @@ export type TaskListBatchAction =
 interface TaskListBatchActionOption {
   id: TaskListBatchAction;
   label: string;
+  group: string;
   disabled: boolean;
 }
 
@@ -234,9 +235,9 @@ export class TaskListPageComponent implements OnInit {
     return this.currentFilters.propertyIds.length === 1 ? this.currentFilters.propertyIds[0] : null;
   }
 
-  // Memoized on the property-scope key: `batchActions` is read directly from
-  // the template ([items]="batchActions"), so without caching this getter
-  // reruns on every change-detection tick and returns a fresh array/object
+  // Memoized on the property-scope + current-language key: `batchActions` is read
+  // directly from the template ([items]="batchActions"), so without caching this
+  // getter reruns on every change-detection tick and returns a fresh array/object
   // literals each time. mtx-select (ng-select) treats that as the `items`
   // input changing identity and tears down + rebuilds its option list
   // continuously — in practice this happens fast enough that a real mouse
@@ -244,32 +245,46 @@ export class TaskListPageComponent implements OnInit {
   // the click completes; discovered while browser-testing Task 11's batch
   // modals — the dropdown was unusable by mouse without this).
   private _batchActionsCache: TaskListBatchActionOption[] | null = null;
-  private _batchActionsCacheKey: number | null = null;
+  private _batchActionsCacheKey: string | null = null;
 
   get batchActions(): TaskListBatchActionOption[] {
-    const key = this.singleSelectedPropertyId;
+    const key = `${this.singleSelectedPropertyId}|${this.translate.currentLang}`;
     if (this._batchActionsCache && this._batchActionsCacheKey === key) {
       return this._batchActionsCache;
     }
-    const propertyScoped = key == null;
+    const propertyScoped = this.singleSelectedPropertyId == null;
+    const employees = this.translate.instant('Employees');
+    const tasksGroup = this.translate.instant('Tasks');
+    const deleteGroup = this.translate.instant('Delete');
+    // Mockup rule: all 8 options are always shown, grouped exactly as the mockup's
+    // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
+    // (assign/reassign/addWorker/copy) are disabled — not removed — when no single
+    // property is filtered, since their option-lists (workers, target property) are
+    // otherwise ambiguous or unavailable. ng-select reads `.disabled` directly off
+    // each bound item, so disabling in place (rather than filtering) is sufficient
+    // for it to render them grayed and non-selectable.
     const all: TaskListBatchActionOption[] = [
-      {id: 'assign', label: this.translate.instant('Move selected to employee'), disabled: propertyScoped},
-      {id: 'reassign', label: this.translate.instant('Move from employee to employee'), disabled: propertyScoped},
-      {id: 'addWorker', label: this.translate.instant('Add employee'), disabled: propertyScoped},
-      {id: 'changeEform', label: this.translate.instant('Change eForm'), disabled: false},
-      {id: 'addTags', label: this.translate.instant('Add tags'), disabled: false},
-      {id: 'removeTags', label: this.translate.instant('Remove tags'), disabled: false},
-      {id: 'copy', label: this.translate.instant('Copy to property'), disabled: propertyScoped},
-      {id: 'delete', label: this.translate.instant('Delete selected'), disabled: false},
+      {id: 'assign', label: this.translate.instant('Move selected to employee'), group: employees, disabled: propertyScoped},
+      {id: 'reassign', label: this.translate.instant('Move from employee to employee'), group: employees, disabled: propertyScoped},
+      {id: 'addWorker', label: this.translate.instant('Add employee'), group: employees, disabled: propertyScoped},
+      {id: 'changeEform', label: this.translate.instant('Change eForm'), group: tasksGroup, disabled: false},
+      {id: 'addTags', label: this.translate.instant('Add tags'), group: tasksGroup, disabled: false},
+      {id: 'removeTags', label: this.translate.instant('Remove tags'), group: tasksGroup, disabled: false},
+      {id: 'copy', label: this.translate.instant('Copy to property'), group: tasksGroup, disabled: propertyScoped},
+      {id: 'delete', label: this.translate.instant('Delete selected'), group: deleteGroup, disabled: false},
     ];
-    // mtx-select (ng-select) has no reliable per-item disabled affordance here, so
-    // property-scoped actions are simply excluded from the list (mockup rule).
-    this._batchActionsCache = all.filter(a => !a.disabled);
+    this._batchActionsCache = all;
     this._batchActionsCacheKey = key;
     return this._batchActionsCache;
   }
 
-  onBatchActionPicked(action: {id: TaskListBatchAction} | TaskListBatchAction | null) {
+  onBatchActionPicked(action: {id: TaskListBatchAction; disabled?: boolean} | TaskListBatchAction | null) {
+    if (action && typeof action === 'object' && action.disabled) {
+      // Defensive: ng-select already refuses to select disabled items, but guard
+      // here too in case a disabled id is ever picked programmatically.
+      this.pendingAction = null;
+      return;
+    }
     const id = typeof action === 'object' ? action?.id : action;
     if (!id) {
       return;

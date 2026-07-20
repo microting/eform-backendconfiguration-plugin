@@ -577,4 +577,7 @@ export const nlNL = {
   'Copy to property': 'Kopie naar eigendom',
   'Delete selected': 'Verwijder geselecteerde',
   'Collected data will not be deleted': 'De verzamelde gegevens worden niet verwijderd.',
+  Tasks: 'Taken',
+  'Batch action': 'Batchactie',
+  'Select batch action': 'Selecteer batchactie',
 };

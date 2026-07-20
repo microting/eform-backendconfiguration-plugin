@@ -577,4 +577,7 @@ export const plPL = {
   'Copy to property': 'Kopiuj do właściwości',
   'Delete selected': 'Usuń wybrane',
   'Collected data will not be deleted': 'Zebrane dane nie zostaną usunięte',
+  Tasks: 'Zadania',
+  'Batch action': 'Akcja wsadowa',
+  'Select batch action': 'Wybierz akcję wsadową',
 };

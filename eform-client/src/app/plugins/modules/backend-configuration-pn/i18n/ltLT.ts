@@ -577,4 +577,7 @@ export const ltLT = {
   'Copy to property': 'Kopijuoti į nuosavybę',
   'Delete selected': 'Ištrinti pasirinktus',
   'Collected data will not be deleted': 'Surinkti duomenys nebus ištrinti',
+  Tasks: 'Užduotys',
+  'Batch action': 'Paketinis veiksmas',
+  'Select batch action': 'Pasirinkite paketinį veiksmą',
 };

@@ -577,4 +577,7 @@ export const csCZ = {
   'Copy to property': 'Kopírovat do vlastnosti',
   'Delete selected': 'Smazat vybrané',
   'Collected data will not be deleted': 'Shromážděná data nebudou smazána',
+  Tasks: 'Úkoly',
+  'Batch action': 'Dávková akce',
+  'Select batch action': 'Vyberte dávkovou akci',
 };

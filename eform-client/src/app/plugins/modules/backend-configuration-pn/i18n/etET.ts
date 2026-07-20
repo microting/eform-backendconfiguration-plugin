@@ -577,4 +577,7 @@ export const etET = {
   'Copy to property': 'Kopeeri atribuuti',
   'Delete selected': 'Kustuta valitud',
   'Collected data will not be deleted': 'Kogutud andmeid ei kustutata',
+  Tasks: 'Ülesanded',
+  'Batch action': 'Paketttoiming',
+  'Select batch action': 'Valige partiitoiming',
 };

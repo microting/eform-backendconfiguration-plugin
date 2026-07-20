@@ -577,4 +577,7 @@ export const huHU = {
   'Copy to property': 'Másolás a tulajdonságba',
   'Delete selected': 'Kijelölt törlése',
   'Collected data will not be deleted': 'A gyűjtött adatok nem törlődnek',
+  Tasks: 'Feladatok',
+  'Batch action': 'Kötegelt művelet',
+  'Select batch action': 'Kötegelt művelet kiválasztása',
 };

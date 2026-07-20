@@ -577,4 +577,7 @@ export const hrHR = {
   'Copy to property': 'Kopiraj u svojstvo',
   'Delete selected': 'Izbriši odabrano',
   'Collected data will not be deleted': 'Prikupljeni podaci neće biti izbrisani',
+  Tasks: 'Zadaci',
+  'Batch action': 'Skupna radnja',
+  'Select batch action': 'Odaberite skupnu radnju',
 };

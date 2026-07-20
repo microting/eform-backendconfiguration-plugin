@@ -578,4 +578,7 @@ export const da = {
   'Copy to property': 'Kopiér til ejendom',
   'Delete selected': 'Slet valgte',
   'Collected data will not be deleted': 'Indsamlet data slettes ikke',
+  Tasks: 'Opgaver',
+  'Batch action': 'Handling batch',
+  'Select batch action': 'Vælg handling batch',
 };

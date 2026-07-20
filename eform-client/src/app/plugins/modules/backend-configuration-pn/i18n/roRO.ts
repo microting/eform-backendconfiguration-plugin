@@ -577,4 +577,7 @@ export const roRO = {
   'Copy to property': 'Copiați în proprietate',
   'Delete selected': 'Ștergeți selecția',
   'Collected data will not be deleted': 'Datele colectate nu vor fi șterse',
+  Tasks: 'Sarcini',
+  'Batch action': 'Acțiune în lot',
+  'Select batch action': 'Selectați acțiunea în lot',
 };
