@@ -281,11 +281,11 @@
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
     <PackageReference Include="HtmlToOpenXml.dll" Version="3.4.1" />
     <PackageReference Include="Ical.Net" Version="5.2.3" />
-    <PackageReference Include="Microting.eForm" Version="10.0.35" />
+    <PackageReference Include="Microting.eForm" Version="10.0.36" />
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.35" />
-    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.29" />
+    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.30" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.44" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.46" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.33" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.35" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.54" />
