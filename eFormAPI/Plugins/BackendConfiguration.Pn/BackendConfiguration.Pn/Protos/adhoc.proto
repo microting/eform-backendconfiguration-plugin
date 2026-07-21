@@ -1,0 +1,281 @@
+syntax = "proto3";
+
+// Wire contract for ad-hoc tasks (mobile gRPC + future dashboard REST facade
+// share this service layer), per
+// docs/superpowers/plans/2026-07-21-flutter-adhoc-m3-backend-transport.md.
+// Worker ids everywhere on this contract (created_by, assigned_worker_ids,
+// completed_by, comment author_id) are decimal-string renderings of the SDK
+// site id — the same id GrpcSiteResolver.GetSdkSiteIdAsync() returns. Empty
+// string means "unset/null" for optional id/timestamp fields.
+
+package backend_configuration;
+
+option csharp_namespace = "BackendConfiguration.Pn.Grpc.Adhoc";
+
+import "google/protobuf/timestamp.proto";
+
+service AdhocGrpc {
+  rpc GetCurrentWorker(GetCurrentWorkerRequest) returns (CurrentWorker);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc CreateTask(CreateTaskRequest) returns (TaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse);
+  rpc SetCompleted(SetCompletedRequest) returns (TaskResponse);
+  rpc Archive(ArchiveRequest) returns (TaskResponse);
+  rpc Reopen(ReopenRequest) returns (TaskResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc AddComment(AddCommentRequest) returns (TaskResponse);
+  rpc ListProperties(ListAdhocPropertiesRequest) returns (ListAdhocPropertiesResponse);
+  rpc ListAreas(ListAreasRequest) returns (ListAreasResponse);
+  rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse);
+  rpc ListTags(ListTagsRequest) returns (ListTagsResponse);
+  rpc CreateTag(CreateTagRequest) returns (TagResponse);
+  rpc RenameTag(RenameTagRequest) returns (TagResponse);
+  rpc DeleteTag(DeleteTagRequest) returns (DeleteTagResponse);
+  rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
+  rpc GetPhoto(GetPhotoRequest) returns (stream PhotoChunk);
+}
+
+// Who is visible in ListTasks, mirroring TaskVisibility.matchesScope.
+// UNSPECIFIED returns the caller's full visible set (canSee); the mobile
+// client requests UNSPECIFIED and filters scope locally, while the
+// dashboard (M5) can request a narrower scope server-side.
+enum TaskScope {
+  TASK_SCOPE_UNSPECIFIED = 0;
+  TASK_SCOPE_MINE = 1;
+  TASK_SCOPE_EVERYONE = 2;
+  TASK_SCOPE_COMPLETED = 3;
+  TASK_SCOPE_CREATED_BY_ME = 4;
+}
+
+// Mirrors AdhocTaskEntity.ExecutionRule (int column: 0/1).
+enum ExecutionRule {
+  EXECUTION_RULE_ASSIGNED_ONLY = 0;
+  EXECUTION_RULE_EVERYONE = 1;
+}
+
+// Mirrors AdhocTaskEntity.DeadlineReminderRepeat (int column: 0/1).
+enum ReminderRepeat {
+  REMINDER_REPEAT_NONE = 0;
+  REMINDER_REPEAT_WEEKDAYS = 1;
+}
+
+// Caller identity, resolved server-side via GrpcSiteResolver. The JWT alone
+// does not carry the SDK site id, so the client fetches it once per session
+// to drive TaskVisibility filtering and "created_by == me" UI.
+message GetCurrentWorkerRequest {}
+message CurrentWorker {
+  string worker_id = 1;
+  string display_name = 2;
+  repeated string property_ids = 3;
+}
+
+message ListTasksRequest {
+  TaskScope scope = 1;
+  string property_id = 2; // "" = all accessible properties
+}
+message ListTasksResponse { repeated AdhocTask tasks = 1; }
+
+message GetTaskRequest { string task_id = 1; }
+message GetTaskResponse { AdhocTask task = 1; }
+
+// Carries exactly the AdhocTaskDraft fields (the client-editable subset of
+// AdhocTask). photo_ids references AdhocTaskPhoto rows already created via
+// UploadPhoto — the client uploads pending photos inline before calling
+// CreateTask/UpdateTask (see GrpcTaskRepository).
+message CreateTaskRequest {
+  string title = 1;
+  string description = 2;
+  bool urgent = 3;
+  string property_id = 4;
+  string area_id = 5; // "" = none
+  repeated string tag_ids = 6;
+  repeated string photo_ids = 7;
+  google.protobuf.Timestamp visible_from = 8; // unset = null
+  google.protobuf.Timestamp deadline = 9; // unset = null
+  bool visible_reminder = 10;
+  bool deadline_reminder = 11;
+  ReminderRepeat deadline_reminder_repeat = 12;
+  int32 visible_reminder_minutes = 13;
+  int32 deadline_reminder_minutes = 14;
+  ExecutionRule execution_rule = 15;
+  repeated string assigned_worker_ids = 16;
+}
+
+// id + the same draft fields, full-replace of every editable field
+// (matches TaskRepository.update(AdhocTask)). The server reconciles
+// AdhocTaskPhoto rows against photo_ids (soft-deleting any missing) and
+// AdhocTaskAssignment rows against assigned_worker_ids (appending one
+// AdhocTaskAssignmentLog row when the set changed).
+message UpdateTaskRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  bool urgent = 4;
+  string property_id = 5;
+  string area_id = 6; // "" = none
+  repeated string tag_ids = 7;
+  repeated string photo_ids = 8;
+  google.protobuf.Timestamp visible_from = 9; // unset = null
+  google.protobuf.Timestamp deadline = 10; // unset = null
+  bool visible_reminder = 11;
+  bool deadline_reminder = 12;
+  ReminderRepeat deadline_reminder_repeat = 13;
+  int32 visible_reminder_minutes = 14;
+  int32 deadline_reminder_minutes = 15;
+  ExecutionRule execution_rule = 16;
+  repeated string assigned_worker_ids = 17;
+}
+
+// Every mutating RPC returns the updated AdhocTask so the client refreshes
+// its snapshot without a re-list.
+message TaskResponse { AdhocTask task = 1; }
+
+message SetCompletedRequest {
+  string task_id = 1;
+  bool completed = 2;
+}
+
+message ArchiveRequest { string task_id = 1; }
+message ReopenRequest { string task_id = 1; }
+
+message DeleteRequest { string task_id = 1; }
+message DeleteResponse {}
+
+message AddCommentRequest {
+  string task_id = 1;
+  string text = 2;
+}
+
+message ListAdhocPropertiesRequest {}
+message ListAdhocPropertiesResponse { repeated PropertyRef properties = 1; }
+
+message ListAreasRequest { string property_id = 1; }
+message ListAreasResponse { repeated AreaRef areas = 1; }
+
+message ListWorkersRequest { string property_id = 1; }
+message ListWorkersResponse { repeated WorkerRef workers = 1; }
+
+message ListTagsRequest {}
+message ListTagsResponse { repeated AdhocTag tags = 1; }
+
+message CreateTagRequest { string name = 1; }
+message TagResponse { AdhocTag tag = 1; }
+
+message RenameTagRequest {
+  string id = 1;
+  string name = 2;
+}
+message DeleteTagRequest { string id = 1; }
+message DeleteTagResponse {}
+
+// events.proto-style meta-first oneof client-streaming upload: the first
+// message on the stream carries UploadPhotoMeta, every subsequent message
+// carries a 64KB-ish chunk of bytes.
+message UploadPhotoChunk {
+  oneof kind {
+    UploadPhotoMeta meta = 1;
+    bytes chunk = 2;
+  }
+}
+message UploadPhotoMeta {
+  string task_id = 1;
+  string content_type = 2;
+}
+message UploadPhotoResponse { string photo_id = 1; }
+
+message GetPhotoRequest { string photo_id = 1; }
+
+// Mirrors UploadPhotoChunk: an optional first PhotoMeta-carrying message,
+// then 64KB chunks of bytes.
+message PhotoChunk {
+  oneof kind {
+    PhotoMeta meta = 1;
+    bytes chunk = 2;
+  }
+}
+message PhotoMeta {
+  string content_type = 1;
+}
+
+// --- Reference types (spec §4.3) ---
+
+// Mirrors AdhocTag{Id, Name, OwnerWorkerId} (OwnerWorkerId null = global tag).
+message AdhocTag {
+  string id = 1;
+  string name = 2;
+  // True when this tag is private to the caller (OwnerWorkerId == caller's
+  // SDK site id); false = global tag (OwnerWorkerId is null).
+  bool is_user_tag = 3;
+}
+
+message PropertyRef {
+  string id = 1;
+  string name = 2;
+}
+
+message AreaRef {
+  string id = 1;
+  string property_id = 2;
+  string name = 3;
+}
+
+message WorkerRef {
+  string id = 1;
+  string display_name = 2;
+}
+
+// A photo attached to a task. localPath/pendingUpload are client-only
+// concepts (TaskPhoto in flutter-adhoc) — the wire only ever carries an
+// already-uploaded photo's id and content type.
+message AdhocPhoto {
+  string id = 1;
+  string content_type = 2;
+}
+
+// One entry in AdhocTask.assignment_log — a single change to the assigned
+// worker set, mirroring AdhocTaskAssignmentLog.
+message AssignmentLogEntry {
+  string changed_by = 1;
+  google.protobuf.Timestamp changed_at = 2;
+  repeated string from_worker_ids = 3;
+  repeated string to_worker_ids = 4;
+}
+
+// A single comment on a task, mirroring AdhocTaskComment.
+message AdhocComment {
+  string author_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  string text = 3;
+}
+
+// Canonical task shape. Field numbers below are load-bearing — they match
+// the "Canonical field mapping" table in the M3 plan 1:1; do not renumber.
+message AdhocTask {
+  string id = 1;
+  string created_by = 2;
+  google.protobuf.Timestamp created_at = 3;
+  string title = 4;
+  string description = 5;
+  bool urgent = 6;
+  string property_id = 7;
+  string area_id = 8; // "" = none
+  repeated string tag_ids = 9;
+  repeated AdhocPhoto photos = 10;
+  google.protobuf.Timestamp visible_from = 11; // unset = null
+  google.protobuf.Timestamp deadline = 12; // unset = null
+  bool visible_reminder = 13;
+  bool deadline_reminder = 14;
+  ReminderRepeat deadline_reminder_repeat = 15;
+  int32 visible_reminder_minutes = 16;
+  int32 deadline_reminder_minutes = 17;
+  ExecutionRule execution_rule = 18;
+  repeated string assigned_worker_ids = 19;
+  repeated AssignmentLogEntry assignment_log = 20;
+  bool completed = 21;
+  string completed_by = 22; // "" = null
+  google.protobuf.Timestamp completed_at = 23; // unset = null
+  bool archived = 24;
+  google.protobuf.Timestamp archived_at = 25; // unset = null
+  repeated AdhocComment comments = 26;
+}
