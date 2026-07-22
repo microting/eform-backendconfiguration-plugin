@@ -29,13 +29,25 @@ public class AdhocServicePhotoTests : TestBaseSetup
 {
     private FakeAdhocPhotoStorage _photoStorage = new();
 
-    private BackendConfigurationAdhocService CreateSut()
+    /// <summary>
+    /// SavePhoto/GetPhoto write the SDK's own <c>UploadedData</c> row via
+    /// <c>coreHelper.GetCore().DbContextHelper</c>, so - unlike the other
+    /// Adhoc*Tests fixtures, which never reach the SDK path - the substitute
+    /// must be wired to a real <see cref="eFormCore.Core"/> from
+    /// <see cref="TestBaseSetup.GetCore"/> (same pattern as
+    /// EventDeployServiceTest/CalendarMultiLanguageTitleDescriptionTests).
+    /// An unstubbed <c>Substitute.For&lt;IEFormCoreService&gt;()</c> returns a
+    /// null Core, which NREs the moment SavePhoto dereferences it.
+    /// </summary>
+    private BackendConfigurationAdhocService CreateSut(eFormCore.Core core)
     {
         _photoStorage = new FakeAdhocPhotoStorage();
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
         return new BackendConfigurationAdhocService(
             BackendConfigurationPnDbContext!,
             new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!),
-            Substitute.For<IEFormCoreService>(),
+            coreHelper,
             _photoStorage);
     }
 
@@ -88,7 +100,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
@@ -107,7 +120,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var bytes = SomeBytes("round-trip-bytes");
 
@@ -126,7 +140,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
         await GrantPropertyAccessAsync(property.Id, 7);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id, assignedWorkerIds: [7]));
 
         var photoId = await sut.SavePhoto(7, created.Id, SomeBytes(), "image/png");
@@ -140,7 +155,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
         await GrantPropertyAccessAsync(property.Id, 99);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         // assignedOnly, not assigned to 99, not the creator -> not visible.
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
@@ -153,7 +169,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
         // Worker 0 (B6's dashboard caller identity) has no PropertyWorker row
@@ -167,7 +184,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     [Test]
     public async Task SavePhoto_Throws_NotFound_ForUnknownTask()
     {
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
 
         Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.SavePhoto(1, 987654, SomeBytes(), "image/png"));
@@ -178,7 +196,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
         Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -190,7 +209,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
 
         Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -202,7 +222,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     [Test]
     public async Task GetPhoto_Throws_NotFound_ForUnknownPhotoId()
     {
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
 
         Assert.ThrowsAsync<AdhocTaskPhotoNotFoundException>(async () =>
             await sut.GetPhoto(1, 987654));
@@ -213,7 +234,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
 
@@ -231,7 +253,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
         await GrantPropertyAccessAsync(property.Id, 99);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
 
@@ -244,7 +267,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var bytes = SomeBytes("admin-bypass-bytes");
         var photoId = await sut.SavePhoto(1, created.Id, bytes, "image/png");
@@ -268,7 +292,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
 
@@ -286,7 +311,8 @@ public class AdhocServicePhotoTests : TestBaseSetup
     {
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
-        var sut = CreateSut();
+        var core = await GetCore();
+        var sut = CreateSut(core);
         var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var photoId = await sut.SavePhoto(1, created.Id, SomeBytes(), "image/png");
 
