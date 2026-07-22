@@ -28,7 +28,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Infrastructure.Models.Adhoc;
@@ -38,6 +40,7 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using UserPropertyAccess;
+using SdkUploadedData = Microting.eForm.Infrastructure.Data.Entities.UploadedData;
 
 /// <summary>
 /// Shared task CRUD + visibility implementation. Every read/authorization
@@ -50,7 +53,8 @@ using UserPropertyAccess;
 public class BackendConfigurationAdhocService(
     BackendConfigurationPnDbContext dbContext,
     IBackendConfigurationUserPropertyAccess propertyAccess,
-    IEFormCoreService coreHelper)
+    IEFormCoreService coreHelper,
+    IAdhocPhotoStorage photoStorage)
     : IBackendConfigurationAdhocService
 {
     public async Task<List<AdhocTaskModel>> ListTasks(int workerId, TaskScopeFilter scope, int? propertyId, bool isAdmin = false)
@@ -489,6 +493,118 @@ public class BackendConfigurationAdhocService(
         }
 
         return tag;
+    }
+
+    // --- Photos (S3 + SDK UploadedData) ---
+
+    public async Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType)
+    {
+        if (bytes == null || bytes.Length == 0)
+        {
+            throw new ArgumentException("Photo bytes must not be empty.", nameof(bytes));
+        }
+
+        var extension = NormalizePhotoExtension(contentType);
+
+        var task = await LoadTaskOrThrowAsync(taskId);
+        var assignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
+        var hasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
+
+        if (!CanSee(task, workerId, false, hasPropertyAccess, assignedWorkerIds))
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} may not attach a photo to adhoc task {taskId}.");
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        string checksum;
+        using (var md5 = MD5.Create())
+        {
+            checksum = BitConverter.ToString(md5.ComputeHash(bytes))
+                .Replace("-", string.Empty)
+                .ToLowerInvariant();
+        }
+
+        // Two-phase FileName write mirrors EventsGrpcService.UploadPhoto /
+        // BackendConfigurationTaskManagementService.CreateTask: create first
+        // to get the row's Id, then fold it into the final S3 key so rows
+        // sharing a checksum (re-uploads) don't collide in the shared bucket.
+        // FileLocation is left blank - mobile photos are S3/IAdhocPhotoStorage
+        // only, no local file is materialised (same contract EventsGrpcService.
+        // UploadPhoto documents for its own UploadedData rows).
+        var uploadedData = new SdkUploadedData
+        {
+            Checksum = checksum,
+            FileName = $"{checksum}.{extension}",
+            FileLocation = "",
+            Extension = $".{extension}",
+        };
+        await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
+
+        var fileName = $"{uploadedData.Id}_{uploadedData.FileName}";
+        uploadedData.FileName = fileName;
+        await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
+
+        using (var stream = new MemoryStream(bytes))
+        {
+            await photoStorage.PutAsync(fileName, stream).ConfigureAwait(false);
+        }
+
+        var photo = new AdhocTaskPhoto
+        {
+            AdhocTaskId = taskId,
+            UploadedDataId = uploadedData.Id,
+            ContentType = contentType,
+        };
+        await photo.Create(dbContext).ConfigureAwait(false);
+
+        return photo.Id;
+    }
+
+    public async Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId)
+    {
+        var photo = await dbContext.AdhocTaskPhotos
+            .FirstOrDefaultAsync(p => p.Id == photoId && p.WorkflowState != Constants.WorkflowStates.Removed);
+        if (photo == null)
+        {
+            throw new AdhocTaskPhotoNotFoundException(photoId);
+        }
+
+        var task = await LoadTaskOrThrowAsync(photo.AdhocTaskId);
+        var assignedWorkerIds = await LoadAssignedWorkerIdsAsync(task.Id);
+        var hasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
+
+        if (!CanSee(task, workerId, false, hasPropertyAccess, assignedWorkerIds))
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} may not view photo {photoId} on adhoc task {task.Id}.");
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var uploadedData = await sdkDbContext.UploadedDatas
+            .FirstOrDefaultAsync(u => u.Id == photo.UploadedDataId).ConfigureAwait(false);
+        if (uploadedData == null)
+        {
+            throw new AdhocTaskPhotoNotFoundException(photoId);
+        }
+
+        var content = await photoStorage.GetAsync(uploadedData.FileName).ConfigureAwait(false);
+        return (content, photo.ContentType);
+    }
+
+    private static string NormalizePhotoExtension(string contentType)
+    {
+        return contentType?.Trim().ToLowerInvariant() switch
+        {
+            "image/jpeg" or "image/jpg" => "jpg",
+            "image/png" => "png",
+            _ => throw new ArgumentException(
+                $"contentType must be image/jpeg, image/jpg, or image/png (was '{contentType}').",
+                nameof(contentType)),
+        };
     }
 
     // --- Visibility predicates (mirror TaskVisibility.canSee/matchesScope exactly) ---

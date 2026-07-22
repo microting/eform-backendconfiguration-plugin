@@ -27,7 +27,8 @@ public class AdhocServiceVisibilityTests : TestBaseSetup
         return new BackendConfigurationAdhocService(
             BackendConfigurationPnDbContext!,
             new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!),
-            Substitute.For<IEFormCoreService>());
+            Substitute.For<IEFormCoreService>(),
+            new FakeAdhocPhotoStorage());
     }
 
     private async Task<Property> CreatePropertyAsync()

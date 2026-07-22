@@ -27,6 +27,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Infrastructure.Models.Adhoc;
 
@@ -112,4 +113,22 @@ public interface IBackendConfigurationAdhocService
     /// owned by another worker.
     /// </summary>
     Task DeleteTag(int workerId, int tagId);
+
+    /// <summary>
+    /// Persists a photo via <see cref="IAdhocPhotoStorage"/> (the same
+    /// <c>core.PutFileToS3Storage</c> pipeline as
+    /// <c>EventsGrpcService.UploadPhoto</c>/<c>BackendConfigurationTaskManagementService.CreateTask</c>),
+    /// creates the SDK <c>UploadedData</c> row and an <c>AdhocTaskPhoto</c>
+    /// row, and returns the new photo's id. Authorization mirrors
+    /// <see cref="GetTask"/>'s <c>canSee</c> gate.
+    /// </summary>
+    Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType);
+
+    /// <summary>
+    /// Streams a photo's bytes back via <see cref="IAdhocPhotoStorage"/> (the
+    /// same <c>core.GetFileFromS3Storage</c> pipeline). Authorization mirrors
+    /// <see cref="GetTask"/>'s <c>canSee</c> gate, applied to the photo's
+    /// owning task.
+    /// </summary>
+    Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId);
 }

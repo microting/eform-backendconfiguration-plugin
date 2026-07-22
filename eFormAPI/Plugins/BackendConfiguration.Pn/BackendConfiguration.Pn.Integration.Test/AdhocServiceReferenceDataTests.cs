@@ -54,7 +54,8 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         return new BackendConfigurationAdhocService(
             BackendConfigurationPnDbContext!,
             new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!),
-            coreHelper ?? Substitute.For<IEFormCoreService>());
+            coreHelper ?? Substitute.For<IEFormCoreService>(),
+            new FakeAdhocPhotoStorage());
     }
 
     private async Task<Property> CreatePropertyAsync(string? name = null)
