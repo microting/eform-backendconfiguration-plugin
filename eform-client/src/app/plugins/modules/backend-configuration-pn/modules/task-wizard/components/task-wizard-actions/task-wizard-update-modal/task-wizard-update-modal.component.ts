@@ -100,7 +100,11 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   get disabledSaveButton(): boolean {
-    return R.equals(this.taskForm.value, this.copyModel);
+    // Require a report headline only when the loaded task had one: removal is
+    // blocked here, but tasks created without a headline (calendar checkbox
+    // unchecked) stay editable without forcing one back on.
+    return R.equals(this.taskForm.value, this.copyModel)
+      || (!this.taskForm.value.itemPlanningTagId && !!this.copyModel?.itemPlanningTagId);
   }
 
 

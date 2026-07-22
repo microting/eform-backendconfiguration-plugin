@@ -1,0 +1,42 @@
+<div class="lightbox" id="calendarLightbox">
+  <button
+    class="lightbox-btn lightbox-close"
+    id="calendarLightboxClose"
+    (click)="close()"
+    [attr.aria-label]="'Close' | translate"
+    [title]="'Close' | translate"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <button
+    *ngIf="data.images.length > 1"
+    class="lightbox-btn lightbox-nav lightbox-nav--prev"
+    id="calendarLightboxPrev"
+    (click)="prev()"
+    [attr.aria-label]="'Previous' | translate"
+    [title]="'Previous' | translate"
+  >
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+
+  <img
+    class="lightbox-image"
+    id="calendarLightboxImage"
+    [src]="currentSrc | authImage | async"
+    alt=""
+  />
+
+  <button
+    *ngIf="data.images.length > 1"
+    class="lightbox-btn lightbox-nav lightbox-nav--next"
+    id="calendarLightboxNext"
+    (click)="next()"
+    [attr.aria-label]="'Next' | translate"
+    [title]="'Next' | translate"
+  >
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+
+  <div class="lightbox-counter">{{ currentIndex + 1 }} / {{ data.images.length }}</div>
+</div>

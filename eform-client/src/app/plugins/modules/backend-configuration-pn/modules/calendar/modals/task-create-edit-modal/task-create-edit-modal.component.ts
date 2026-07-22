@@ -74,6 +74,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   @Output() popoverClose = new EventEmitter<boolean | null>();
   @Output() timeChanged = new EventEmitter<{startHour: number; endHour: number}>();
   @ViewChild('descriptionTextarea') descriptionTextarea?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('titleInput') titleInput?: ElementRef<HTMLInputElement>;
   usePopoverMode = false;
 
   isEditMode = false;
@@ -147,6 +148,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   boardControl = new FormControl<number | null>(null);
   eformControl = new FormControl<number | null>(null);
   planningTagControl = new FormControl<number | null>(null);
+  reportHeadlineEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
   statusControl = new FormControl<boolean>(true, {nonNullable: true});
   complianceEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
 
@@ -168,6 +170,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     private translationService: TranslationService,
     private appSettingsStateService: AppSettingsStateService,
   ) {}
+
+  onReportHeadlineToggled(checked: boolean) {
+    if (checked) {
+      this.planningTagControl.enable();
+    } else {
+      this.planningTagControl.disable();
+    }
+  }
 
   addPlanningTag = (name: string): Promise<{id: number; name: string}> => {
     return this.persistTag(name).then(tag => {
@@ -322,6 +332,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(task['eformId'] ?? null);
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
+      this.reportHeadlineEnabledControl.setValue(!!task['itemPlanningTagId']);
+      if (!task['itemPlanningTagId']) {
+        this.planningTagControl.disable();
+      }
       this.statusControl.setValue(task.status ?? true);
       this.complianceEnabledControl.setValue(task.complianceEnabled ?? true);
       // Seed attachments from the task DTO. The backend mapper populates
@@ -357,6 +371,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.propertyControl.setValue(sourceTask.propertyId ?? this.data.propertyId);
       this.eformControl.setValue(sourceTask['eformId'] ?? null);
       this.planningTagControl.setValue(sourceTask['itemPlanningTagId'] ?? null);
+      this.reportHeadlineEnabledControl.setValue(!!sourceTask['itemPlanningTagId']);
+      if (!sourceTask['itemPlanningTagId']) {
+        this.planningTagControl.disable();
+      }
       this.statusControl.setValue(sourceTask.status ?? true);
       this.complianceEnabledControl.setValue(sourceTask.complianceEnabled ?? true);
     } else {
@@ -382,11 +400,13 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       });
     }
 
-    // Disable all controls for past tasks
+    // Disable all controls for past tasks. Completed tasks are readonly
+    // regardless of date (R2 immutability) — a completed-but-future task
+    // must open readonly too.
     if (this.isEditMode && this.dateControl.value) {
       const taskDate = this.dateControl.value;
       const endTime = this.endTimeControl.value || '00:00';
-      if (this.isInPast(taskDate, endTime)) {
+      if (this.isInPast(taskDate, endTime) || task?.completed) {
         this.isReadonly = true;
         this.titleControl.disable();
         this.dateControl.disable();
@@ -402,6 +422,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         this.boardControl.disable();
         this.eformControl.disable();
         this.planningTagControl.disable();
+        this.reportHeadlineEnabledControl.disable();
         this.statusControl.disable();
         this.complianceEnabledControl.disable();
       }
@@ -807,6 +828,14 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       if (this.descriptionControl.value) {
         this.growTextarea(this.descriptionTextarea?.nativeElement ?? null);
       }
+      // Pure create mode only: place the cursor in Titel so the user can
+      // type immediately. Edit keeps focus untouched; copy has a pre-filled
+      // title. The popover is a bare CDK overlay (no focus trap), so an
+      // imperative focus is required; the setTimeout already defers past
+      // the overlay's ensureOverlayInViewport repositioning.
+      if (!this.isEditMode && !this.data.sourceTask) {
+        this.titleInput?.nativeElement.focus({preventScroll: true});
+      }
     });
   }
 
@@ -868,7 +897,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // date seeded from the source event; the user is expected to pick a new
     // date before saving, and we surface that via the standard datepicker
     // min-date validator rather than silently returning.
-    if (this.isEditMode && this.isInPast(this.dateControl.value!, this.startTimeControl.value!)) {
+    if (this.isEditMode && (this.isInPast(this.dateControl.value!, this.startTimeControl.value!) || this.data.task?.completed)) {
       return;
     }
 
@@ -1016,7 +1045,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       complianceEnabled: this.complianceEnabledControl.value,
       folderId: this.data.folderId,
       eformId: this.eformControl.value,
-      itemPlanningTagId: this.planningTagControl.value,
+      itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
 
       // Keep these for local/UI use and backward compat
       title: this.titleControl.value,
@@ -1051,12 +1080,9 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
               await this.uploadStagedFilesSequential(newId);
             }
             this.close(true);
-          } else {
-            const msg = (res && res.message)
-              ? res.message
-              : this.translate.instant('Could not save the event');
-            this.toastr.error(msg, this.translate.instant('Error'));
           }
+          // success=false: the calendar service already toasts the uniform
+          // "Error [key]" — the modal stays open so the user can retry.
         },
         error: err => {
           const msg = err?.error?.message || err?.message || this.translate.instant('Could not save the event');

@@ -1,0 +1,59 @@
+<h3 mat-dialog-title>{{ title | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <div *ngIf="!isReassign" class="d-flex flex-column">
+    <mat-form-field>
+      <mat-label>{{ 'Employee' | translate }}</mat-label>
+      <mtx-select
+        id="batchWorkerSelect"
+        [items]="data.workers"
+        bindValue="id" bindLabel="name"
+        [clearable]="true"
+        [searchable]="true"
+        appendTo="body"
+        [(ngModel)]="siteId"
+        [placeholder]="'Employee' | translate">
+      </mtx-select>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="isReassign" class="d-flex flex-column">
+    <mat-form-field>
+      <mat-label>{{ 'From employee' | translate }}</mat-label>
+      <mtx-select
+        id="batchWorkerFromSelect"
+        [items]="fromWorkers"
+        bindValue="id" bindLabel="name"
+        [clearable]="true"
+        [searchable]="true"
+        appendTo="body"
+        [ngModel]="fromSiteId"
+        (ngModelChange)="onFromSiteIdChange($event)"
+        [placeholder]="'From employee' | translate">
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'To employee' | translate }}</mat-label>
+      <mtx-select
+        id="batchWorkerToSelect"
+        [items]="toWorkers"
+        bindValue="id" bindLabel="name"
+        [clearable]="true"
+        [searchable]="true"
+        appendTo="body"
+        [ngModel]="toSiteId"
+        (ngModelChange)="onToSiteIdChange($event)"
+        [placeholder]="'To employee' | translate">
+      </mtx-select>
+    </mat-form-field>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

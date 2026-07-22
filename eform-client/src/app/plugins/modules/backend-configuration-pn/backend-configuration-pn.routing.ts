@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
+import { AuthGuard, IsAdminGuard, PermissionGuard } from 'src/app/common/guards';
 import {
   GoogleDriveAccountsComponent,
   GoogleDriveOAuthFinishComponent,
@@ -160,6 +160,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/calendar-task-list/calendar-task-list.module').then(
             (m) => m.CalendarTaskListModule
+          ),
+      },
+      {
+        path: 'task-list',
+        canActivate: [IsAdminGuard],
+        loadChildren: () =>
+          import('./modules/task-list/task-list.module').then(
+            (m) => m.TaskListModule
           ),
       },
       {

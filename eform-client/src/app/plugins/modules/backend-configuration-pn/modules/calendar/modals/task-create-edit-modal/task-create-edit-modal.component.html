@@ -13,7 +13,7 @@
       <div class="gcal-row-content">
         <mat-form-field class="w-100 gcal-translatable-field">
           <mat-label>{{ 'Title' | translate }}</mat-label>
-          <input matInput id="calendarEventTitle" [formControl]="titleControl" autocomplete="off">
+          <input matInput id="calendarEventTitle" #titleInput [formControl]="titleControl" autocomplete="off">
           <button mat-icon-button matIconSuffix type="button"
                   *ngIf="showTranslate"
                   id="calendarEventTitleTranslate"
@@ -203,8 +203,15 @@
     <div class="gcal-row">
       <mat-icon class="gcal-icon">view_compact</mat-icon>
       <div class="gcal-row-content">
+        <mat-checkbox
+          id="calendarEventReportHeadlineToggle"
+          class="gcal-report-headline-toggle"
+          [formControl]="reportHeadlineEnabledControl"
+          (change)="onReportHeadlineToggled($event.checked)"
+        >
+          <span [class.gcal-label-dim]="!reportHeadlineEnabledControl.value">{{ 'Report headline' | translate }}</span>
+        </mat-checkbox>
         <mat-form-field class="w-100">
-          <mat-label>{{ 'Report headline' | translate }}</mat-label>
           <mtx-select
             id="calendarEventPlanningTag"
             [formControl]="planningTagControl"
@@ -213,6 +220,7 @@
             bindLabel="name"
             [addTag]="addPlanningTag"
             addTagText="{{ 'Create new' | translate }}"
+            placeholder="{{ 'Select / create report headline' | translate }}"
             [clearable]="true"
             [searchable]="true"
             appendTo="body"
@@ -480,7 +488,7 @@
 
   <div class="gcal-actions" *ngIf="!isReadonly">
     <button id="calendarEventSaveBtn" class="btn-primary btn-primary--icon-left"
-            [disabled]="titleControl.invalid || !((assigneeControl.value?.length) || (workerTagsControl.value?.length))"
+            [disabled]="titleControl.invalid || !((assigneeControl.value?.length) || (workerTagsControl.value?.length)) || (reportHeadlineEnabledControl.value && !planningTagControl.value)"
             [title]="!((assigneeControl.value?.length) || (workerTagsControl.value?.length)) ? ('At least one worker or worker tag must be assigned' | translate) : ''"
             (click)="onSave()">
       {{ isEditMode ? ('Save changes' | translate) : ('Save' | translate) }}

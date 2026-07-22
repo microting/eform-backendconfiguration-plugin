@@ -2,8 +2,8 @@ import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Router} from '@angular/router';
-import {BehaviorSubject, firstValueFrom, Observable, Subject} from 'rxjs';
-import {takeUntil} from 'rxjs/operators';
+import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of, Subject} from 'rxjs';
+import {catchError, takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
 import {
@@ -60,6 +60,31 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
   allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
 
+  // Month view data: tasks keyed by local date ISO across the 6-week grid.
+  // Kept separate from the week arrays so the (fragile) week/day/schedule
+  // pipeline is untouched.
+  monthTasksByDate: Map<string, CalendarTaskLayoutModel[]> = new Map();
+  // Month-scoped Tidsplan: one bucket per day of the current month (timed
+  // tasks only — parity with the week-scoped schedule, which renders
+  // tasksByDay and therefore also excludes all-day tasks).
+  monthScheduleTasksByDay: CalendarTaskLayoutModel[][] = [];
+  // Transient: 'month' only after the month view's Tidsplan link; any
+  // dropdown-driven view change resets it (see onViewModeChange).
+  scheduleScope: 'week' | 'month' = 'week';
+  // Guards loadMonthTasks against out-of-order responses: rapid month
+  // stepping launches overlapping 6-call batches, and forkJoin resolves at
+  // the SLOWEST call — without this, an older batch finishing last would
+  // overwrite the newer month's data and stick.
+  private monthLoadSeq = 0;
+
+  get scheduleRangeStart(): string {
+    if (this.scheduleScope === 'month') {
+      const d = new Date(this.currentDate);
+      return this.toLocalDateString(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
+    return this.toLocalDateString(this.getMondayOfWeek(new Date(this.currentDate)));
+  }
+
   private eformsSubject = new BehaviorSubject<{id: number; label: string}[]>([]);
   eforms$: Observable<{id: number; label: string}[]> = this.eformsSubject.asObservable();
   logboegerFolderId: number | null = null;
@@ -74,7 +99,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
   currentPropertyId: number | null = null;
   currentDate: string = (() => { const d = new Date(); return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`; })();
-  viewMode: 'week' | 'day' | 'schedule' | 'compliance' = 'week';
+  viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance' = 'week';
   activeBoardIds: number[] = [];
   // The calendar (board) the user most recently turned ON in the sidebar.
   // Transient (in-memory only) — used to default the create-task modal to
@@ -107,7 +132,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         // the user is not an admin while compliance view is still active
         // (e.g. deep link, or a stale admin session), force back to week
         // view so a non-admin can never remain in the admin-only mode.
-        if (!isAdmin && this.viewMode === 'compliance') {
+        if (!isAdmin && (this.viewMode === 'compliance' || this.viewMode === 'month')) {
           this.stateService.updateViewMode('week');
           this.loadTasks();
         }
@@ -133,7 +158,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // dispatch re-emits filters$ with 'week', which this same
       // subscription then processes normally, so no extra loadTasks() call
       // is needed here.
-      if (this.viewMode === 'compliance' && !this.isAdmin) {
+      if ((this.viewMode === 'compliance' || this.viewMode === 'month') && !this.isAdmin) {
         this.stateService.updateViewMode('week');
         return;
       }
@@ -287,6 +312,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     if (this.viewMode === 'compliance') { return; }
     if (!this.currentPropertyId) return;
 
+    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) {
+      this.loadMonthTasks();
+      return;
+    }
+
     const monday = this.getMondayOfWeek(new Date(this.currentDate));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
@@ -317,6 +347,70 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
           this.rebuildLayout(monday);
         }
       });
+  }
+
+  // The month grid is 6 fixed Mon–Sun rows. GetTasksForWeek's recurrence
+  // helper assumes a 7-day window (weekly rules emit at most one occurrence
+  // per weekday per call), so the month is fetched as six proper week
+  // windows and merged client-side — bit-identical semantics with the week
+  // view. A failed week degrades to an empty row instead of a blank month.
+  private loadMonthTasks() {
+    const seq = ++this.monthLoadSeq;
+    const anchor = new Date(this.currentDate);
+    const gridStart = this.getMondayOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+    const calls = Array.from({length: 6}, (_, i) => {
+      const monday = new Date(gridStart);
+      monday.setDate(gridStart.getDate() + i * 7);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return this.calendarService
+        .getTasksForWeek(
+          this.currentPropertyId!,
+          this.toLocalDateString(monday),
+          this.toLocalDateString(sunday),
+          this.activeBoardIds,
+          this.activeTagNames,
+          this.activeSiteIds,
+        )
+        .pipe(catchError(() => of(null)));
+    });
+
+    forkJoin(calls).subscribe(results => {
+      if (seq !== this.monthLoadSeq) return;
+      const teamNameById = new Map(this.teams.map(t => [t.id, t.name]));
+      const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
+      const byDate = new Map<string, CalendarTaskLayoutModel[]>();
+      results.forEach(res => {
+        if (!res || !res.success) return;
+        (res.model || []).forEach((t: any) => {
+          const task = mapResponseToCalendarTask(t);
+          task.workerTagNames = (task.workerTagIds ?? [])
+            .map(id => teamNameById.get(id))
+            .filter((name): name is string => !!name);
+          const color = (task.boardId && boardColorMap.get(task.boardId)) || task.color;
+          const startText = task.startText || this.hourToTimeStr(task.startHour);
+          const endText = task.endText || this.hourToTimeStr(task.startHour + task.duration);
+          const key = this.toLocalDateString(new Date(task.taskDate));
+          const list = byDate.get(key) ?? [];
+          list.push({...task, color, startText, endText, _left: 0, _width: 100, _zIndex: 10});
+          byDate.set(key, list);
+        });
+      });
+      // All-day chips first, then by start time.
+      byDate.forEach(list =>
+        list.sort((a, b) => (Number(b.isAllDay) - Number(a.isAllDay)) || a.startHour - b.startHour));
+      this.monthTasksByDate = byDate;
+      this.rebuildMonthSchedule();
+    });
+  }
+
+  private rebuildMonthSchedule() {
+    const d = new Date(this.currentDate);
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    this.monthScheduleTasksByDay = Array.from({length: daysInMonth}, (_, i) => {
+      const dateIso = this.toLocalDateString(new Date(d.getFullYear(), d.getMonth(), i + 1));
+      return (this.monthTasksByDate.get(dateIso) ?? []).filter(t => !t.isAllDay);
+    });
   }
 
   private hourToTimeStr(hour: number): string {
@@ -468,9 +562,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   }
 
   onNavigate(direction: -1 | 1) {
+    // Month view (and month-scoped Tidsplan) steps whole calendar months,
+    // anchored to the 1st; day steps one day; week/schedule step one week.
+    if (this.viewMode === 'month' || (this.viewMode === 'schedule' && this.scheduleScope === 'month')) {
+      const d = new Date(this.currentDate);
+      const target = new Date(d.getFullYear(), d.getMonth() + direction, 1);
+      this.stateService.updateCurrentDate(this.toLocalDateString(target));
+      this.loadTasks();
+      return;
+    }
     const d = new Date(this.currentDate);
-    // Day view advances by one day; week and schedule (list) views both show a
-    // full week of data, so the chevron advances by one full week in those.
     const step = this.viewMode === 'day' ? 1 : 7;
     d.setDate(d.getDate() + direction * step);
     this.stateService.updateCurrentDate(this.toLocalDateString(d));
@@ -482,16 +583,46 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
-  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'compliance') {
+  onViewModeChange(viewMode: 'week' | 'day' | 'schedule' | 'month' | 'compliance') {
+    // Any dropdown-driven change leaves month-scoped Tidsplan; the scope is
+    // only reachable again via the month view's Tidsplan link.
+    this.scheduleScope = 'week';
     // Switching out of week view: snap currentDate to Monday of the
     // currently-viewed week so day-view lands on the first day of that
     // week and schedule-view shows that same week — preserving the
     // user's navigation context instead of jumping back to today.
-    if (viewMode !== 'week' && this.viewMode === 'week') {
+    // Exception: switching to DAY view while the visible week is the
+    // current week lands on today ("dags dato") rather than Monday — the
+    // user expects to see the current day, not the start of the week.
+    // Schedule keeps Monday even on the current week (locked by e2e H3
+    // in r/calendar-ui-enhancements.spec.ts; the current-week day case
+    // is locked by H5).
+    if (viewMode !== 'week' && viewMode !== 'month' && this.viewMode === 'week') {
       const monday = this.getMondayOfWeek(new Date(this.currentDate));
-      this.stateService.updateCurrentDate(this.toLocalDateString(monday));
+      const isCurrentWeek =
+        this.toLocalDateString(monday) === this.toLocalDateString(this.getMondayOfWeek(new Date()));
+      const target = viewMode === 'day' && isCurrentWeek ? new Date() : monday;
+      this.stateService.updateCurrentDate(this.toLocalDateString(target));
     }
     this.stateService.updateViewMode(viewMode);
+    this.loadTasks();
+  }
+
+  onMonthWeekClicked(mondayIso: string) {
+    this.stateService.updateCurrentDate(mondayIso);
+    this.stateService.updateViewMode('week');
+    this.loadTasks();
+  }
+
+  onMonthDayClicked(dateIso: string) {
+    this.stateService.updateCurrentDate(dateIso);
+    this.stateService.updateViewMode('day');
+    this.loadTasks();
+  }
+
+  onMonthScheduleClicked() {
+    this.scheduleScope = 'month';
+    this.stateService.updateViewMode('schedule');
     this.loadTasks();
   }
 
@@ -687,6 +818,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   onTaskClickedFromGrid(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {
     this.closePreviewOverlay();
 
+    // Refresh the eForm option list so the preview card can resolve the
+    // task's eformId to a display name (same pattern as openEditModal).
+    this.loadEforms();
+
     const positions = this.buildPopoverPositions(event.cellLeft, event.cellRight);
     const anchorX = this.pickAnchorX(event.cellLeft, event.cellRight);
 
@@ -712,6 +847,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       employees: this.employees,
       tags: this.tags.map(t => t.name),
       properties: this.properties,
+      eforms: this.eforms$,
+      planningTags: this.tags.map(t => ({id: t.id, name: t.name})),
     };
 
     const popoverInjector = Injector.create({

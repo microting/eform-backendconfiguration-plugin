@@ -1,0 +1,40 @@
+<mtx-grid
+  id="taskListGrid"
+  [data]="tasks"
+  [columns]="columns"
+  [cellTemplate]="{board: boardTpl, title: titleTpl, status: statusTpl, compliance: complianceTpl}"
+  [rowSelectable]="true"
+  [multiSelectable]="true"
+  (rowSelectedChange)="onRowSelected($event)"
+  [pageOnFront]="!showAll"
+  [showPaginator]="!showAll"
+  [pageSizeOptions]="[10, 25, 50, 100]"
+  [pageSize]="10"
+  [sortOnFront]="true"
+  [rowStriped]="true"
+  noResultText="{{ 'No tasks found' | translate }}">
+</mtx-grid>
+<button mat-stroked-button id="taskListShowAllToggle" (click)="toggleShowAll()">
+  {{ (showAll ? 'Show paginated' : 'Show all') | translate }}
+</button>
+
+<ng-template #boardTpl let-row>
+  <span class="swatch" [style.background]="boardColor(row)"></span>
+  <span>{{ board(row.boardId)?.name ?? '' }}</span>
+</ng-template>
+
+<ng-template #titleTpl let-row>
+  <a class="ctl-link" (click)="onEdit(row)">{{ row.title }}</a>
+</ng-template>
+
+<ng-template #statusTpl let-row>
+  <span class="badge" [ngClass]="row.status ? 'ja' : 'nej'">
+    {{ (row.status ? 'Yes' : 'No') | translate }}
+  </span>
+</ng-template>
+
+<ng-template #complianceTpl let-row>
+  <span class="badge" [ngClass]="row.complianceEnabled ? 'ja' : 'nej'">
+    {{ (row.complianceEnabled ? 'Yes' : 'No') | translate }}
+  </span>
+</ng-template>

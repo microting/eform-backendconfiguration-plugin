@@ -366,12 +366,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     /// <inheritdoc />
     public async Task<OperationResult> CreateTask(TaskWizardCreateModel createModel)
     {
-        if (!createModel.ItemPlanningTagId.HasValue) // This is the report table header tag
-        {
-            return new OperationResult(false,
-                _localizationService.GetString("ReportTableHeaderTagIsRequired"));
-        }
-
         if (createModel.FolderId == null)
         {
             return new OperationResult(false,
@@ -453,7 +447,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 DayOfMonth = dayOfMonth,
                 UpdatedByUserId = _userService.UserId,
                 CreatedByUserId = _userService.UserId,
-                ReportGroupPlanningTagId = (int)createModel.ItemPlanningTagId!
+                ReportGroupPlanningTagId = createModel.ItemPlanningTagId
             };
 
 
@@ -884,7 +878,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.Enabled = true;
                     planning.DayOfWeek = planning.StartDate.DayOfWeek;
                     planning.RepeatEvery = updateModel.RepeatEvery;
-                    planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
                     planning.ShowExpireDate = true;
@@ -1055,7 +1049,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
                     planning.UpdatedByUserId = _userService.UserId;
-                    planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.ReportGroupPlanningTagId = updateModel.ItemPlanningTagId;
                     planning.ShowExpireDate = true;
                     await planning.Update(_itemsPlanningPnDbContext);
 
@@ -1283,6 +1277,159 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     await compliance.Delete(_backendConfigurationPnDbContext)
                         .ConfigureAwait(false);
                 }
+            }
+
+            return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
+            return new OperationResult(false,
+                _localizationService.GetString("ErrorWhileDeletingTask"));
+        }
+    }
+
+    /// <summary>
+    /// Batch/calendar variant of <see cref="DeleteTask"/>: performs the exact
+    /// same DB soft-deletes, but the external device retraction
+    /// (core.CaseDelete) — which can block for minutes in dev where no
+    /// eform-core consumer drains the queue — is resolved synchronously and
+    /// then executed fire-and-forget AFTER every DB row (including the
+    /// AreaRulePlanning itself) is soft-deleted.
+    ///
+    /// This mirrors BackendConfigurationCompliancesService.UpdateFromCalendar
+    /// (PR #1049), which made the same retraction fire-and-forget for the
+    /// combined-complete modal. Retraction was already best-effort in DeleteTask
+    /// (its result is never consumed), so this changes latency and ordering, not
+    /// guarantees: the caller returns immediately, the task disappears from
+    /// tasks/index straight away (all rows are already soft-deleted), and the
+    /// SDK cases are retracted in the background.
+    /// </summary>
+    public async Task<OperationResult> DeleteTaskDeferredRetraction(int id)
+    {
+        try
+        {
+            var core = await _coreHelper.GetCore();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var areaRulePlanning = _backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == id)
+                .Include(x => x.AreaRule)
+                .ThenInclude(x => x.AreaRuleTranslations)
+                .Include(x => x.PlanningSites)
+                .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (areaRulePlanning == null)
+            {
+                return new OperationResult(false,
+                    _localizationService.GetString("TaskNotFound"));
+            }
+
+            if (areaRulePlanning.ItemPlanningId != 0)
+            {
+                var planning = _itemsPlanningPnDbContext.Plannings
+                    .First(x => x.Id == areaRulePlanning.ItemPlanningId);
+
+                planning.UpdatedByUserId = _userService.UserId;
+                await planning.Delete(_itemsPlanningPnDbContext);
+            }
+
+            // delete area rule planning and linked object
+            foreach (var areaRuleAreaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
+            {
+                areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
+                await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+            }
+
+            foreach (var planningSite in areaRulePlanning.PlanningSites)
+            {
+                planningSite.UpdatedByUserId = _userService.UserId;
+                await planningSite.Delete(_backendConfigurationPnDbContext);
+            }
+
+            // Resolve the SDK case uids to retract SYNCHRONOUSLY (cheap local DB
+            // reads), but do NOT call core.CaseDelete inline — that is the part
+            // that blocks. Collect the uids and fire them off after all DB
+            // soft-deletes below. This loop has no DB side effects in the
+            // original DeleteTask either (it only calls CaseDelete), so
+            // collecting instead of deleting keeps DB state identical.
+            var microtingUidsToRetract = new List<int>();
+            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                .ToListAsync().ConfigureAwait(false);
+
+            foreach (var planningCase in planningCases)
+            {
+                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    .Where(x => x.PlanningCaseId == planningCase.Id)
+                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
+                                               planningCaseSite.MicrotingCheckListSitId != 0)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
+                foreach (var planningCaseSite in planningCaseSites)
+                {
+                    var result =
+                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+                            .ConfigureAwait(false);
+                    if (result is { MicrotingUid: { } })
+                    {
+                        microtingUidsToRetract.Add((int)result.MicrotingUid);
+                    }
+                    else
+                    {
+                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                        microtingUidsToRetract.Add(clSites.MicrotingUid);
+                    }
+                }
+            }
+
+            areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            await areaRulePlanning.AreaRule.Delete(_backendConfigurationPnDbContext);
+
+            areaRulePlanning.UpdatedByUserId = _userService.UserId;
+            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+
+            var complianceList = await _backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var compliance in complianceList)
+            {
+                if (compliance != null)
+                {
+                    await compliance.Delete(_backendConfigurationPnDbContext)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            // Every DB row is now soft-deleted; the task no longer appears in
+            // tasks/index. Retract the SDK cases fire-and-forget with a fresh
+            // core (external call, can block for minutes in dev). Mirrors
+            // BackendConfigurationCompliancesService.UpdateFromCalendar.
+            if (microtingUidsToRetract.Count > 0)
+            {
+                var uidsToRetract = microtingUidsToRetract;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var retractionCore = await _coreHelper.GetCore().ConfigureAwait(false);
+                        foreach (var uid in uidsToRetract)
+                        {
+                            await retractionCore.CaseDelete(uid).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        SentrySdk.CaptureException(ex);
+                        _logger.LogError(ex.Message);
+                        _logger.LogTrace(ex.StackTrace);
+                    }
+                });
             }
 
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));

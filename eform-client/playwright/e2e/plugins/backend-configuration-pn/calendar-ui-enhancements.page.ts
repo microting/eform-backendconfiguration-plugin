@@ -364,9 +364,10 @@ export class CalendarUiEnhancementsPage {
 
   /**
    * Click a task block's body to open the preview popover
-   * (`app-task-preview-modal`). The popover renders Edit / Duplicate /
-   * Delete actions. The click target is `.task-block-body` (carries the
-   * (click)=onBodyClick handler) rather than the resize handles.
+   * (`app-task-preview-modal`). The popover renders Edit (future tasks) or
+   * View (historical tasks) / Duplicate / Delete actions. The click target
+   * is `.task-block-body` (carries the (click)=onBodyClick handler) rather
+   * than the resize handles.
    */
   async openEventPreview(title: string): Promise<void> {
     const body = this.findEventBlock(title).locator('.task-block-body');
@@ -381,13 +382,23 @@ export class CalendarUiEnhancementsPage {
    * Click Edit in the preview popover and wait for the edit modal's title
    * input to appear and rehydrate. Mirrors clickEditInPreview in
    * l/calendar.page.ts.
+   *
+   * Tense-aware: the popover renders #calendarEventEditBtn for FUTURE tasks
+   * but #calendarEventViewBtn for HISTORICAL ones (completed, or
+   * taskDate+endTime in the past). Both open the same edit modal (readonly
+   * in the historical case), so this clicks whichever is present.
    */
   async clickEditInPreview(): Promise<void> {
-    await this.getPreviewEditButton().click();
+    await this.getPreviewEditOrViewButton().click();
     await this.page
       .locator('#calendarEventTitle')
       .waitFor({ state: 'visible', timeout: 15000 });
     await this.page.waitForTimeout(800);
+  }
+
+  /** Explicit alias for the tense-aware edit/view click. */
+  async clickEditOrViewInPreview(): Promise<void> {
+    await this.clickEditInPreview();
   }
 
   /**
@@ -493,62 +504,6 @@ export class CalendarUiEnhancementsPage {
     } else {
       await this.page.waitForTimeout(500);
     }
-  }
-
-  /**
-   * Create a single (non-recurring) event in the create-modal currently
-   * open, with the given title, start time, end time, and required dropdowns
-   * (first eForm + first planning tag + first assignee, mirroring
-   * createSimpleEvent in calendar-resize.spec.ts). Awaits the create POST
-   * and waits for the resulting `.task-block` to appear on the grid.
-   *
-   * The modal must already be open at the desired day slot — callers should
-   * pair this with `openCreateModalAtSlot(dayOffset, startHour)` first.
-   */
-  async fillAndSaveEvent(
-    title: string,
-    options: { endTime?: string; startTime?: string } = {},
-  ): Promise<void> {
-    await this.page.locator('#calendarEventTitle').fill(title);
-
-    if (options.startTime) {
-      await this.typeStartTime(options.startTime, 'Enter');
-    }
-    if (options.endTime) {
-      await this.typeEndTime(options.endTime, 'Enter');
-    }
-
-    const eform = this.page.locator('#calendarEventEform');
-    await eform.click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
-    await this.page.waitForTimeout(300);
-
-    const planningTag = this.page.locator('#calendarEventPlanningTag');
-    await planningTag.click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
-    await this.page.waitForTimeout(300);
-
-    const assignee = this.page.locator('#calendarEventAssignee');
-    await assignee.click();
-    await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.locator('.ng-dropdown-panel .ng-option').first().click();
-    await this.page.locator('#calendarEventTitle').click();
-    await this.page.waitForTimeout(300);
-
-    const createResp = this.page.waitForResponse(
-      r => r.url().includes('/api/backend-configuration-pn/calendar/tasks')
-        && !r.url().includes('/tasks/week')
-        && !r.url().includes('/tasks/move')
-        && !r.url().includes('/tasks/resize')
-        && r.request().method() === 'POST',
-      { timeout: 30000 }
-    );
-    await this.page.locator('#calendarEventSaveBtn').click();
-    await createResp;
-    await this.page.waitForTimeout(1500);
-    await this.findEventBlock(title).waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -798,8 +753,9 @@ export class CalendarUiEnhancementsPage {
 
   /**
    * Switch the calendar from week view to the schedule (list) view via the
-   * view-mode mtx-select in the header. Index 2 = "List" (per
-   * calendar-header.component.ts:28-32 viewModeOptions order: Day, Week, List).
+   * view-mode mtx-select in the header. Selected by label ("Tidsplan") rather
+   * than position — the admin-only "Måned" option can shift index-based picks
+   * whenever the viewModeOptions order changes.
    */
   async switchToScheduleView(): Promise<void> {
     // Open the view-mode select. It's the only mtx-select inside the
@@ -807,8 +763,7 @@ export class CalendarUiEnhancementsPage {
     const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
     await viewSelect.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    // Index 2 is List per the modal's viewModeOptions order.
-    await this.page.locator('.ng-dropdown-panel .ng-option').nth(2).click();
+    await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Tidsplan' }).first().click();
     await this.page.locator('.schedule-view').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.waitForTimeout(300);
   }
@@ -856,9 +811,30 @@ export class CalendarUiEnhancementsPage {
     ).trim();
   }
 
-  /** Edit button in the preview popover (week-grid + schedule both reuse it). */
+  /**
+   * Edit button in the preview popover (week-grid + schedule both reuse it).
+   * Rendered for FUTURE tasks only — historical tasks (completed, or
+   * taskDate+endTime in the past) render #calendarEventViewBtn instead.
+   */
   getPreviewEditButton(): Locator {
     return this.page.locator('#calendarEventEditBtn');
+  }
+
+  /**
+   * View (visibility) button in the preview popover — the historical-task
+   * replacement for the edit pencil. Opens the edit modal in readonly mode.
+   */
+  getPreviewViewButton(): Locator {
+    return this.page.locator('#calendarEventViewBtn');
+  }
+
+  /**
+   * Whichever of Edit/View the popover currently renders. Exactly one of
+   * the two exists at a time (*ngIf on isHistorical), so the combined
+   * locator never violates strict mode.
+   */
+  getPreviewEditOrViewButton(): Locator {
+    return this.page.locator('#calendarEventEditBtn, #calendarEventViewBtn');
   }
 
   /** Copy/Duplicate button in the preview popover. */
@@ -1002,17 +978,15 @@ export class CalendarUiEnhancementsPage {
 
   /**
    * Switch the calendar to day view via the view-mode mtx-select in the
-   * header. viewModeOptions order is fixed in calendar-header.component.ts
-   * ngOnInit: 0=Day, 1=Week, 2=List — so day view is index 0. Using the
-   * positional index keeps the helper locale-agnostic (the visible labels
-   * are translated, e.g. "Dag" in Danish).
+   * header. Selected by label ("Dag") rather than position — index-based
+   * picks silently break whenever viewModeOptions order changes (e.g. the
+   * admin-only "Måned" option inserted between Uge and Tidsplan).
    */
   async switchToDayView(): Promise<void> {
     const viewSelect = this.page.locator('.text-field--rounded mtx-select .ng-select-container').first();
     await viewSelect.click();
     await this.page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
-    // Index 0 = Day per viewModeOptions order in calendar-header.component.ts.
-    await this.page.locator('.ng-dropdown-panel .ng-option').nth(0).click();
+    await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Dag' }).first().click();
     // Day view also renders <app-calendar-week-grid>, just with dayViewMode=true.
     await this.page.locator('app-calendar-week-grid').waitFor({ state: 'visible', timeout: 5000 });
     await this.page.waitForTimeout(300);

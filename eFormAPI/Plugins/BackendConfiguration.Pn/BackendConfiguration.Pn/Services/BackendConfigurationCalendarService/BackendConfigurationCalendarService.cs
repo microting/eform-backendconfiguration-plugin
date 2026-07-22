@@ -1020,6 +1020,15 @@ public class BackendConfigurationCalendarService(
                     RepeatOrdinalWeek = arp?.RepeatOrdinalWeek,
                     RepeatWeekdaysCsv = arp?.RepeatWeekdaysCsv,
                     Completed = complianceCompleted,
+                    // Completion metadata for the task card — compSdkCase and
+                    // siteNamesById are already batch-loaded above, so this
+                    // adds no DB round-trips.
+                    DoneByName = complianceCompleted && compSdkCase?.SiteId != null
+                        ? siteNamesById.GetValueOrDefault(compSdkCase.SiteId.Value)
+                        : null,
+                    DoneAt = complianceCompleted
+                        ? compSdkCase?.DoneAtUserModifiable ?? compSdkCase?.DoneAt
+                        : null,
                     TaskIsExpired = compTaskIsExpired,
                     // Orphan compliance rows (no live ARP) render as dimmed
                     // inactive — visually distinct from a healthy active row.

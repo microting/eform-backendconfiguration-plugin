@@ -1,0 +1,64 @@
+<h3 mat-dialog-title>{{ 'Copy to property' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select
+      id="batchCopyPropertySelect"
+      [items]="data.properties"
+      bindValue="id" bindLabel="name"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [(ngModel)]="targetPropertyId"
+      (ngModelChange)="onPropertyChange($event)"
+      [placeholder]="'Property' | translate">
+    </mtx-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Calendar' | translate }}</mat-label>
+    <mtx-select
+      id="batchCopyBoardSelect"
+      [items]="boards"
+      bindValue="id" bindLabel="name"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [disabled]="!targetPropertyId"
+      [(ngModel)]="targetBoardId"
+      [placeholder]="'Calendar' | translate">
+    </mtx-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Employee' | translate }}</mat-label>
+    <mtx-select
+      id="batchCopyWorkerSelect"
+      [items]="workers"
+      bindValue="id" bindLabel="name"
+      [clearable]="true"
+      [searchable]="true"
+      appendTo="body"
+      [disabled]="!targetPropertyId"
+      [(ngModel)]="siteId"
+      [placeholder]="'Employee' | translate">
+    </mtx-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Start date' | translate }}</mat-label>
+    <input id="batchCopyDateInput" matInput [matDatepicker]="batchCopyDatePicker" [min]="minDate" [(ngModel)]="startDate">
+    <mat-datepicker-toggle matSuffix [for]="batchCopyDatePicker"></mat-datepicker-toggle>
+    <mat-datepicker #batchCopyDatePicker></mat-datepicker>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

@@ -1,0 +1,181 @@
+// Mirror the week grid's :host block: .calendar-main is a flex column and
+// stretches app-calendar-week-grid via an explicit flex:1 rule, but custom
+// elements default to inline — without this the month view sizes to content
+// and leaves dead space below instead of filling the viewport.
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.month-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 16px 16px;
+  overflow: auto;
+}
+
+.month-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 0 8px;
+}
+
+.month-schedule-link {
+  color: var(--primary, #289694);
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.month-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.month-grid-header {
+  display: grid;
+  grid-template-columns: 44px repeat(7, 1fr);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+
+  .wk-header,
+  .dow-header {
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #5f6368;
+  }
+
+  .wk-header {
+    text-align: center;
+  }
+}
+
+.month-week-row {
+  display: grid;
+  grid-template-columns: 44px repeat(7, 1fr);
+  flex: 1;
+  // Rows share the available height evenly and may COMPRESS below their
+  // content height (cells clip via overflow:hidden) so the grid fits the
+  // viewport without a scrollbar. The floor only kicks in on very short
+  // windows, where .month-view's overflow:auto takes over as a fallback.
+  min-height: 64px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.wk-cell {
+  background: none;
+  border: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  color: #5f6368;
+  font-size: 12px;
+  cursor: pointer;
+  padding-top: 6px;
+
+  &:hover {
+    background: rgba(40, 150, 148, 0.08);
+    color: var(--primary, #289694);
+  }
+}
+
+.month-day-cell {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 2px 4px 4px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  // Chips beyond the compressed row height clip instead of growing the row
+  // (which would overflow the viewport and bring back the scrollbar).
+  overflow: hidden;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &.out-month {
+    background: #fafafa;
+
+    .day-number {
+      color: rgba(0, 0, 0, 0.38);
+    }
+  }
+}
+
+.day-number {
+  background: none;
+  border: none;
+  align-self: flex-start;
+  font-size: 12px;
+  color: #202124;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  line-height: 24px;
+  padding: 0;
+  text-align: center;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &.today-ring {
+    background: var(--primary, #289694);
+    color: #fff;
+  }
+}
+
+// Passive chips: no pointer cursor, no hover affordance — the month view is
+// display-only by spec.
+.month-chip {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: default;
+
+  &.completed {
+    opacity: 0.55;
+    text-decoration: line-through;
+  }
+
+  .chip-time {
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .chip-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.month-chip-overflow {
+  font-size: 11px;
+  color: #5f6368;
+  padding-left: 6px;
+}

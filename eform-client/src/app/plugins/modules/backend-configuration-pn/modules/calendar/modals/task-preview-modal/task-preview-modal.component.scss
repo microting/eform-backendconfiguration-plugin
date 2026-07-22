@@ -81,6 +81,26 @@
   flex-shrink: 0;
 }
 
+// Mockup layout: date on the first line, time (or "All day") on a smaller
+// muted second line. The icon top-aligns with the date line.
+.preview-row--schedule {
+  align-items: flex-start;
+
+  .preview-icon {
+    margin-top: 2px;
+  }
+}
+
+.preview-schedule {
+  display: flex;
+  flex-direction: column;
+
+  .preview-schedule-sub {
+    font-size: 12px;
+    color: #5f6368;
+  }
+}
+
 // Description can span multiple lines: top-align the icon and preserve the
 // line breaks / whitespace the user typed in the Beskrivelse field so the
 // formatting is reflected here. Long words wrap instead of overflowing.
@@ -95,4 +115,83 @@
 .preview-description {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+// Board color dot on the calendar row.
+.preview-board-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+// Chip rows (assignees / tags / attachments) — modeled on the module's
+// compliance-chip style (calendar-compliance-view.component.scss).
+.preview-row--chips {
+  align-items: flex-start;
+
+  .preview-icon {
+    margin-top: 5px;
+  }
+}
+
+.preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.preview-chip {
+  background: #f1f3f4;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--worker {
+    background: #1a73e8;
+    color: #fff;
+  }
+}
+
+// Status toggle row. No theme variable exists for these — the app's SCSS
+// only defines --error (#ea4335); use the spec'd Google green/red directly.
+.preview-toggle--on {
+  color: #188038;
+}
+
+.preview-toggle--off {
+  color: #d93025;
+}
+
+// Completed-case Picture thumbnails (historical cards).
+.preview-row--images {
+  align-items: flex-start;
+
+  .preview-icon {
+    margin-top: 7px;
+  }
+}
+
+.preview-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }

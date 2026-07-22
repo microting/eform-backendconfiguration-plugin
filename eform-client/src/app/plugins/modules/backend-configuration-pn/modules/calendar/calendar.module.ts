@@ -43,6 +43,7 @@ import {
   CalendarDayColumnComponent,
   CalendarHeaderComponent,
   CalendarMiniCalendarComponent,
+  CalendarMonthViewComponent,
   CalendarScheduleViewComponent,
   CalendarSidebarComponent,
   CalendarTaskBlockComponent,
@@ -59,6 +60,7 @@ import {
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 } from './modals';
 
 // Re-export modal components for barrel
@@ -73,6 +75,7 @@ export {
   ComplianceCaseModalComponent,
   CalendarSelectWorkerModalComponent,
   CalendarCompleteEventModalComponent,
+  CalendarImageLightboxComponent,
 };
 
 @NgModule({
@@ -87,6 +90,7 @@ export {
     CalendarScheduleViewComponent,
     CalendarMiniCalendarComponent,
     CalendarComplianceViewComponent,
+    CalendarMonthViewComponent,
     // Modals
     TaskCreateEditModalComponent,
     TaskPreviewModalComponent,
@@ -98,6 +102,7 @@ export {
     ComplianceCaseModalComponent,
     CalendarSelectWorkerModalComponent,
     CalendarCompleteEventModalComponent,
+    CalendarImageLightboxComponent,
     TeamCreateDialogComponent,
     TeamDeleteDialogComponent,
     TagCreateDialogComponent,

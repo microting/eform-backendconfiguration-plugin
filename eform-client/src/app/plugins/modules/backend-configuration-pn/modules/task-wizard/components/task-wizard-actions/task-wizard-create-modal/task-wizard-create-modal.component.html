@@ -301,6 +301,7 @@
       class="btn-primary btn-primary--icon-left"
       id="createTaskBtn"
       (click)="create()"
+      [disabled]="!taskForm.value.itemPlanningTagId"
     >
       <span>{{ 'Create' | translate }}</span>
     </button>
