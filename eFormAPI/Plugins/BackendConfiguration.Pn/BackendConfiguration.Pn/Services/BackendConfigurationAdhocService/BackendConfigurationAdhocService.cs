@@ -113,11 +113,11 @@ public class BackendConfigurationAdhocService(
         return await MapToModelAsync(task, assignedWorkerIds);
     }
 
-    public async Task<AdhocTaskModel> CreateTask(int workerId, AdhocTaskCreateModel model)
+    public async Task<AdhocTaskModel> CreateTask(int workerId, AdhocTaskCreateModel model, bool isAdmin = false)
     {
         await ValidateAreaBelongsToPropertyAsync(model.AreaId, model.PropertyId);
 
-        var hasAccess = await propertyAccess.HasAccessAsync(workerId, model.PropertyId);
+        var hasAccess = isAdmin || await propertyAccess.HasAccessAsync(workerId, model.PropertyId);
         if (!hasAccess)
         {
             throw new AdhocTaskUnauthorizedException(
@@ -497,7 +497,7 @@ public class BackendConfigurationAdhocService(
 
     // --- Photos (S3 + SDK UploadedData) ---
 
-    public async Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType)
+    public async Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType, bool isAdmin = false)
     {
         if (bytes == null || bytes.Length == 0)
         {
@@ -508,9 +508,9 @@ public class BackendConfigurationAdhocService(
 
         var task = await LoadTaskOrThrowAsync(taskId);
         var assignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
-        var hasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
+        var hasPropertyAccess = isAdmin || await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
 
-        if (!CanSee(task, workerId, false, hasPropertyAccess, assignedWorkerIds))
+        if (!CanSee(task, workerId, isAdmin, hasPropertyAccess, assignedWorkerIds))
         {
             throw new AdhocTaskUnauthorizedException(
                 $"Worker {workerId} may not attach a photo to adhoc task {taskId}.");
@@ -563,7 +563,7 @@ public class BackendConfigurationAdhocService(
         return photo.Id;
     }
 
-    public async Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId)
+    public async Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId, bool isAdmin = false)
     {
         var photo = await dbContext.AdhocTaskPhotos
             .FirstOrDefaultAsync(p => p.Id == photoId && p.WorkflowState != Constants.WorkflowStates.Removed);
@@ -574,9 +574,9 @@ public class BackendConfigurationAdhocService(
 
         var task = await LoadTaskOrThrowAsync(photo.AdhocTaskId);
         var assignedWorkerIds = await LoadAssignedWorkerIdsAsync(task.Id);
-        var hasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
+        var hasPropertyAccess = isAdmin || await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
 
-        if (!CanSee(task, workerId, false, hasPropertyAccess, assignedWorkerIds))
+        if (!CanSee(task, workerId, isAdmin, hasPropertyAccess, assignedWorkerIds))
         {
             throw new AdhocTaskUnauthorizedException(
                 $"Worker {workerId} may not view photo {photoId} on adhoc task {task.Id}.");

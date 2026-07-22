@@ -227,3 +227,27 @@ public enum AdhocTaskStatusFilter
     Completed = 1,
     Archived = 2,
 }
+
+// ---------------------------------------------------------------------
+// REST-only request bodies (B6, AdhocController). These don't need a
+// gRPC counterpart — they carry exactly one small piece of caller input
+// each and are bound directly from the request body/query.
+// ---------------------------------------------------------------------
+
+/// <summary>Body for <c>POST {id}/completed</c> — mirrors the gRPC SetCompletedRequest.completed field.</summary>
+public class AdhocSetCompletedModel
+{
+    public bool Completed { get; set; } = true;
+}
+
+/// <summary>Body for <c>POST {id}/comments</c>.</summary>
+public class AdhocCommentCreateModel
+{
+    public string Text { get; set; } = "";
+}
+
+/// <summary>Body for <c>POST tags</c> / <c>PUT tags/{id}</c>.</summary>
+public class AdhocTagCreateModel
+{
+    public string Name { get; set; } = "";
+}

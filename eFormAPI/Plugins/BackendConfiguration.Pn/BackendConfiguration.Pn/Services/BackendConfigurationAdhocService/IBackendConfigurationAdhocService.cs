@@ -50,7 +50,15 @@ public interface IBackendConfigurationAdhocService
 
     Task<AdhocTaskModel> GetTask(int workerId, int taskId, bool isAdmin = false);
 
-    Task<AdhocTaskModel> CreateTask(int workerId, AdhocTaskCreateModel model);
+    /// <summary>
+    /// Creates a task on behalf of <paramref name="workerId"/>, stamping them
+    /// as <c>CreatedByWorkerId</c>. <paramref name="isAdmin"/> (B6 dashboard
+    /// bypass, default false) skips the "caller must have property access to
+    /// <c>model.PropertyId</c>" gate — the dashboard has no real SDK worker
+    /// identity to check access for, so an admin caller creates tasks on the
+    /// customer's behalf directly.
+    /// </summary>
+    Task<AdhocTaskModel> CreateTask(int workerId, AdhocTaskCreateModel model, bool isAdmin = false);
 
     Task<AdhocTaskModel> UpdateTask(int workerId, int taskId, AdhocTaskCreateModel model, bool isAdmin = false);
 
@@ -120,15 +128,17 @@ public interface IBackendConfigurationAdhocService
     /// <c>EventsGrpcService.UploadPhoto</c>/<c>BackendConfigurationTaskManagementService.CreateTask</c>),
     /// creates the SDK <c>UploadedData</c> row and an <c>AdhocTaskPhoto</c>
     /// row, and returns the new photo's id. Authorization mirrors
-    /// <see cref="GetTask"/>'s <c>canSee</c> gate.
+    /// <see cref="GetTask"/>'s <c>canSee</c> gate; <paramref name="isAdmin"/>
+    /// (B6 dashboard bypass, default false) skips it entirely.
     /// </summary>
-    Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType);
+    Task<int> SavePhoto(int workerId, int taskId, byte[] bytes, string contentType, bool isAdmin = false);
 
     /// <summary>
     /// Streams a photo's bytes back via <see cref="IAdhocPhotoStorage"/> (the
     /// same <c>core.GetFileFromS3Storage</c> pipeline). Authorization mirrors
     /// <see cref="GetTask"/>'s <c>canSee</c> gate, applied to the photo's
-    /// owning task.
+    /// owning task; <paramref name="isAdmin"/> (B6 dashboard bypass, default
+    /// false) skips it entirely.
     /// </summary>
-    Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId);
+    Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId, bool isAdmin = false);
 }

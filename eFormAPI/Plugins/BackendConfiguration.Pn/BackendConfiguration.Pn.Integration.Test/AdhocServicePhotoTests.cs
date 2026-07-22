@@ -149,6 +149,22 @@ public class AdhocServicePhotoTests : TestBaseSetup
     }
 
     [Test]
+    public async Task SavePhoto_IsAdmin_BypassesVisibilityCheck()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var sut = CreateSut();
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+
+        // Worker 0 (B6's dashboard caller identity) has no PropertyWorker row
+        // and is not the creator/assigned/everyone-visible - isAdmin must still
+        // let the upload through.
+        var photoId = await sut.SavePhoto(0, created.Id, SomeBytes(), "image/png", isAdmin: true);
+
+        Assert.That(photoId, Is.GreaterThan(0));
+    }
+
+    [Test]
     public async Task SavePhoto_Throws_NotFound_ForUnknownTask()
     {
         var sut = CreateSut();
@@ -221,6 +237,26 @@ public class AdhocServicePhotoTests : TestBaseSetup
 
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.GetPhoto(99, photoId));
+    }
+
+    [Test]
+    public async Task GetPhoto_IsAdmin_BypassesVisibilityCheck()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var sut = CreateSut();
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+        var bytes = SomeBytes("admin-bypass-bytes");
+        var photoId = await sut.SavePhoto(1, created.Id, bytes, "image/png");
+
+        // Worker 0 has no PropertyWorker row and is not creator/assigned -
+        // isAdmin must still let the read through.
+        var (content, contentType) = await sut.GetPhoto(0, photoId, isAdmin: true);
+
+        Assert.That(contentType, Is.EqualTo("image/png"));
+        using var ms = new MemoryStream();
+        await content.CopyToAsync(ms);
+        Assert.That(ms.ToArray(), Is.EqualTo(bytes));
     }
 
     // --- UpdateTask photo-list reconciliation, exercised against a photo

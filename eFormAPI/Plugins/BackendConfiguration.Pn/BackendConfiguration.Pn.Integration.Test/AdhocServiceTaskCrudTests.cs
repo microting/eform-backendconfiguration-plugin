@@ -144,6 +144,20 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
     }
 
     [Test]
+    public async Task CreateTask_IsAdmin_BypassesPropertyAccessCheck()
+    {
+        var property = await CreatePropertyAsync();
+        // Deliberately no PropertyWorker row for worker 0 (B6's dashboard
+        // caller identity) — isAdmin must still let the create through.
+        var sut = CreateSut();
+
+        var result = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        Assert.That(result.PropertyId, Is.EqualTo(property.Id));
+        Assert.That(result.CreatedByWorkerId, Is.EqualTo(0));
+    }
+
+    [Test]
     public async Task UpdateTask_Throws_WhenCallerIsNotCreator()
     {
         var property = await CreatePropertyAsync();
