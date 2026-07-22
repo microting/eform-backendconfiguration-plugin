@@ -17,6 +17,49 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class AdhocServiceTaskCrudTests : TestBaseSetup
 {
+    // FK-safe cleanup so each test starts fresh (mirrors
+    // CalendarUpdateTaskScopeTests / CalendarTaskListIndexTest /
+    // TaskListBatchWorkersTest). The Adhoc* tables were added after the raw
+    // SQL bootstrap script (SQL/420_eform-backend-configuration-plugin.sql)
+    // was last regenerated, so TestBaseSetup.Setup's DROP+CREATE pass never
+    // touches them and rows would otherwise accumulate across every test in
+    // this fixture.
+    [SetUp]
+    public async Task CleanAdhocTables()
+    {
+        BackendConfigurationPnDbContext!.AdhocTaskTags.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTaskTags);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTaskAssignments.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTaskAssignments);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTaskAssignmentLogs.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTaskAssignmentLogs);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTaskComments.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTaskComments);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTaskPhotos.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTaskPhotos);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTasks.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTasks);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocTags.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocTags);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.AdhocAreas.RemoveRange(
+            BackendConfigurationPnDbContext.AdhocAreas);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
     private BackendConfigurationAdhocService CreateSut()
     {
         return new BackendConfigurationAdhocService(
