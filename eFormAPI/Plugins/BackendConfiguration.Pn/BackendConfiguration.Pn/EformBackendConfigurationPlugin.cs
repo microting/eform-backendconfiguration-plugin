@@ -120,6 +120,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,
             Services.GrpcServices.GrpcSiteResolver>();
+        services.AddTransient<Services.BackendConfigurationAdhocService.IBackendConfigurationAdhocService,
+            Services.BackendConfigurationAdhocService.BackendConfigurationAdhocService>();
+        services.AddTransient<Services.BackendConfigurationAdhocService.IAdhocPhotoStorage,
+            Services.BackendConfigurationAdhocService.AdhocPhotoStorage>();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
@@ -845,6 +849,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.CompliancesGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.DocumentsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.EventsGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.AdhocGrpcService>();
         });
     }
 

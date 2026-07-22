@@ -20,6 +20,16 @@ public interface IGrpcSiteResolver
     /// to avoid re-running the worker→site lookup.
     /// </summary>
     Task<int?> GetSiteLanguageIdAsync(int? preResolvedSiteId = null);
+
+    /// <summary>
+    /// The SDK <c>Site.Name</c> for <paramref name="sdkSiteId"/>, or an empty
+    /// string when the site does not exist. Used by <c>AdhocGrpcService.GetCurrentWorker</c>
+    /// (and mirrors the same lookup <c>BackendConfigurationAdhocService.ListWorkers</c>
+    /// performs for other workers) to give the mobile client a human-readable
+    /// label for the caller without requiring every façade to talk to the SDK
+    /// core directly.
+    /// </summary>
+    Task<string> GetDisplayNameAsync(int sdkSiteId);
 }
 
 public class GrpcSiteResolver(
@@ -94,5 +104,21 @@ public class GrpcSiteResolver(
             .Select(s => (int?)s.LanguageId)
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
+    }
+
+    public async Task<string> GetDisplayNameAsync(int sdkSiteId)
+    {
+        if (sdkSiteId == 0)
+        {
+            return string.Empty;
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        return await sdkDbContext.Sites
+            .Where(s => s.Id == sdkSiteId)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false) ?? string.Empty;
     }
 }
