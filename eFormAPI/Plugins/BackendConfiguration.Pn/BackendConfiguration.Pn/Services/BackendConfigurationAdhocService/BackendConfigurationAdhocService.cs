@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Infrastructure.Models.Adhoc;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using UserPropertyAccess;
@@ -48,7 +49,8 @@ using UserPropertyAccess;
 /// </summary>
 public class BackendConfigurationAdhocService(
     BackendConfigurationPnDbContext dbContext,
-    IBackendConfigurationUserPropertyAccess propertyAccess)
+    IBackendConfigurationUserPropertyAccess propertyAccess,
+    IEFormCoreService coreHelper)
     : IBackendConfigurationAdhocService
 {
     public async Task<List<AdhocTaskModel>> ListTasks(int workerId, TaskScopeFilter scope, int? propertyId, bool isAdmin = false)
@@ -324,6 +326,169 @@ public class BackendConfigurationAdhocService(
         await comment.Create(dbContext);
 
         return await MapToModelAsync(task, assignedWorkerIds);
+    }
+
+    // --- Reference data: properties / areas / workers / tags ---
+
+    public async Task<List<AdhocPropertyModel>> ListProperties(int workerId, bool isAdmin = false)
+    {
+        var query = dbContext.Properties
+            .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (!isAdmin)
+        {
+            var accessiblePropertyIds = (await propertyAccess.GetAccessiblePropertyIdsAsync(workerId)).ToHashSet();
+            query = query.Where(p => accessiblePropertyIds.Contains(p.Id));
+        }
+
+        return await query
+            .OrderBy(p => p.Name)
+            .Select(p => new AdhocPropertyModel { Id = p.Id, Name = p.Name })
+            .ToListAsync();
+    }
+
+    public async Task<List<AdhocAreaModel>> ListAreas(int workerId, int propertyId, bool isAdmin = false)
+    {
+        await RequirePropertyAccessAsync(workerId, propertyId, isAdmin);
+
+        return await dbContext.AdhocAreas
+            .Where(a => a.PropertyId == propertyId && a.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(a => a.Name)
+            .Select(a => new AdhocAreaModel { Id = a.Id, PropertyId = a.PropertyId, Name = a.Name })
+            .ToListAsync();
+    }
+
+    public async Task<List<AdhocWorkerModel>> ListWorkers(int workerId, int propertyId, bool isAdmin = false)
+    {
+        await RequirePropertyAccessAsync(workerId, propertyId, isAdmin);
+
+        var siteIds = await dbContext.PropertyWorkers
+            .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(pw => pw.WorkerId)
+            .Distinct()
+            .ToListAsync();
+        if (siteIds.Count == 0)
+        {
+            return [];
+        }
+
+        // Second, narrower query: every property each of those workers has
+        // access to (across ALL properties, not just propertyId), so
+        // AdhocWorkerModel.PropertyIds reflects the worker's full access set.
+        var otherAssignments = await dbContext.PropertyWorkers
+            .Where(pw => siteIds.Contains(pw.WorkerId) && pw.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(pw => new { pw.WorkerId, pw.PropertyId })
+            .ToListAsync();
+        var propertyIdsByWorker = otherAssignments
+            .GroupBy(pw => pw.WorkerId)
+            .ToDictionary(g => g.Key, g => g.Select(pw => pw.PropertyId).Distinct().ToList());
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var siteNames = await sdkDbContext.Sites
+            .Where(s => siteIds.Contains(s.Id))
+            .Select(s => new { s.Id, s.Name })
+            .ToDictionaryAsync(s => s.Id, s => s.Name);
+
+        return siteIds
+            .Select(siteId => new AdhocWorkerModel
+            {
+                WorkerId = siteId,
+                DisplayName = siteNames.GetValueOrDefault(siteId, ""),
+                PropertyIds = propertyIdsByWorker.GetValueOrDefault(siteId, []),
+            })
+            .OrderBy(w => w.DisplayName)
+            .ToList();
+    }
+
+    public async Task<List<AdhocTagModel>> ListTags(int workerId)
+    {
+        return await dbContext.AdhocTags
+            .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed
+                        && (t.OwnerWorkerId == null || t.OwnerWorkerId == workerId))
+            .OrderBy(t => t.Name)
+            .Select(t => new AdhocTagModel { Id = t.Id, Name = t.Name, IsUserTag = t.OwnerWorkerId != null })
+            .ToListAsync();
+    }
+
+    public async Task<AdhocTagModel> CreateTag(int workerId, string name)
+    {
+        var trimmedName = RequireNonEmptyTagName(name);
+
+        var tag = new AdhocTag { Name = trimmedName, OwnerWorkerId = workerId };
+        await tag.Create(dbContext);
+
+        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = true };
+    }
+
+    public async Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name)
+    {
+        var trimmedName = RequireNonEmptyTagName(name);
+
+        var tag = await LoadOwnTagOrThrowAsync(workerId, tagId, "rename");
+
+        tag.Name = trimmedName;
+        await tag.Update(dbContext);
+
+        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = true };
+    }
+
+    public async Task DeleteTag(int workerId, int tagId)
+    {
+        var tag = await LoadOwnTagOrThrowAsync(workerId, tagId, "delete");
+
+        var joins = await dbContext.AdhocTaskTags
+            .Where(tt => tt.AdhocTagId == tagId && tt.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        foreach (var join in joins)
+        {
+            await join.Delete(dbContext);
+        }
+
+        await tag.Delete(dbContext);
+    }
+
+    private async Task RequirePropertyAccessAsync(int workerId, int propertyId, bool isAdmin)
+    {
+        if (isAdmin)
+        {
+            return;
+        }
+
+        if (!await propertyAccess.HasAccessAsync(workerId, propertyId))
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} has no access to property {propertyId}.");
+        }
+    }
+
+    private static string RequireNonEmptyTagName(string name)
+    {
+        var trimmed = name?.Trim() ?? "";
+        if (trimmed.Length == 0)
+        {
+            throw new ArgumentException("Tag name must not be empty.", nameof(name));
+        }
+
+        return trimmed;
+    }
+
+    private async Task<AdhocTag> LoadOwnTagOrThrowAsync(int workerId, int tagId, string action)
+    {
+        var tag = await dbContext.AdhocTags
+            .FirstOrDefaultAsync(t => t.Id == tagId && t.WorkflowState != Constants.WorkflowStates.Removed);
+        if (tag == null)
+        {
+            throw new AdhocTagNotFoundException(tagId);
+        }
+
+        if (tag.OwnerWorkerId != workerId)
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} may not {action} tag {tagId}: not the owner.");
+        }
+
+        return tag;
     }
 
     // --- Visibility predicates (mirror TaskVisibility.canSee/matchesScope exactly) ---

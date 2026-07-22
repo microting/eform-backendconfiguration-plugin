@@ -184,6 +184,12 @@ public class AdhocAreaModel
     public string Name { get; set; } = "";
 }
 
+public class AdhocPropertyModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+}
+
 public class AdhocWorkerModel
 {
     public int WorkerId { get; set; }

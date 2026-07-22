@@ -62,4 +62,54 @@ public interface IBackendConfigurationAdhocService
     Task Delete(int workerId, int taskId, bool isAdmin = false);
 
     Task<AdhocTaskModel> AddComment(int workerId, int taskId, string text, bool isAdmin = false);
+
+    /// <summary>
+    /// Properties accessible to <paramref name="workerId"/> (via
+    /// <c>PropertyWorker</c>), or every non-removed property when
+    /// <paramref name="isAdmin"/> is true (B6 dashboard bypass, matching
+    /// <see cref="ListTasks"/>'s convention).
+    /// </summary>
+    Task<List<AdhocPropertyModel>> ListProperties(int workerId, bool isAdmin = false);
+
+    /// <summary>
+    /// Areas belonging to <paramref name="propertyId"/>. Areas are
+    /// admin-managed - there is no <c>CreateArea</c> here, mobile only lists.
+    /// Throws <see cref="AdhocTaskUnauthorizedException"/> if the caller has
+    /// no access to <paramref name="propertyId"/> and <paramref name="isAdmin"/>
+    /// is false.
+    /// </summary>
+    Task<List<AdhocAreaModel>> ListAreas(int workerId, int propertyId, bool isAdmin = false);
+
+    /// <summary>
+    /// Workers with access to <paramref name="propertyId"/> (via
+    /// <c>PropertyWorker</c>), with display names resolved from the SDK
+    /// <c>Site</c> table. Throws <see cref="AdhocTaskUnauthorizedException"/>
+    /// if the caller has no access to <paramref name="propertyId"/> and
+    /// <paramref name="isAdmin"/> is false.
+    /// </summary>
+    Task<List<AdhocWorkerModel>> ListWorkers(int workerId, int propertyId, bool isAdmin = false);
+
+    /// <summary>
+    /// Global tags (<c>OwnerWorkerId == null</c>) plus <paramref name="workerId"/>'s
+    /// own personal tags.
+    /// </summary>
+    Task<List<AdhocTagModel>> ListTags(int workerId);
+
+    /// <summary>Always creates a personal tag owned by <paramref name="workerId"/>.</summary>
+    Task<AdhocTagModel> CreateTag(int workerId, string name);
+
+    /// <summary>
+    /// Renames a tag <paramref name="workerId"/> owns. Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> for global tags or tags
+    /// owned by another worker.
+    /// </summary>
+    Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name);
+
+    /// <summary>
+    /// Soft-deletes a tag <paramref name="workerId"/> owns, plus every
+    /// <c>AdhocTaskTag</c> join referencing it. Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> for global tags or tags
+    /// owned by another worker.
+    /// </summary>
+    Task DeleteTag(int workerId, int tagId);
 }

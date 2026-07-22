@@ -7,7 +7,9 @@ using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -19,7 +21,8 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
     {
         return new BackendConfigurationAdhocService(
             BackendConfigurationPnDbContext!,
-            new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!));
+            new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!),
+            Substitute.For<IEFormCoreService>());
     }
 
     private async Task<Property> CreatePropertyAsync()
