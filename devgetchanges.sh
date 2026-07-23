@@ -17,6 +17,7 @@ rm -fR Documents/workspace/microting/eform-backendconfiguration-plugin/eform-cli
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Assets
 rm -fR Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Page\ objects/BackendConfiguration
 rm -fR Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn
+rm -fR Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/playwright/e2e/plugins/backend-configuration-pn
 
 # Test files cp
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings
@@ -36,3 +37,4 @@ cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-hea
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/fixtures Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress
 rm Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress/fixtures/example.json
+cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/playwright/e2e/plugins/backend-configuration-pn Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/playwright/e2e/plugins/backend-configuration-pn
