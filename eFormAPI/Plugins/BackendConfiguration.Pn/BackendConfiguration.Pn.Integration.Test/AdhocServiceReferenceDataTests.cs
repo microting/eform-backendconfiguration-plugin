@@ -323,6 +323,24 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     }
 
     [Test]
+    public async Task CreateTag_IsAdmin_CreatesGlobalTag_NotOwnedByCaller()
+    {
+        var sut = CreateSut();
+
+        // Dashboard caller identity (workerId 0) curating a shared tag.
+        var created = await sut.CreateTag(0, "shared", isAdmin: true);
+
+        Assert.That(created.IsUserTag, Is.False);
+
+        var row = await BackendConfigurationPnDbContext!.AdhocTags.FirstAsync(t => t.Id == created.Id);
+        Assert.That(row.OwnerWorkerId, Is.Null);
+
+        // Visible to every worker via ListTags' "global OR own" rule.
+        var listedByOtherWorker = await sut.ListTags(42);
+        Assert.That(listedByOtherWorker.Select(t => t.Id), Does.Contain(created.Id));
+    }
+
+    [Test]
     public async Task RenameTag_RenamesOwnTag()
     {
         var sut = CreateSut();

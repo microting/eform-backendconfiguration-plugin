@@ -79,7 +79,17 @@ public interface IBackendConfigurationAdhocService
 
     Task<AdhocTaskModel> UpdateTask(int workerId, int taskId, AdhocTaskCreateModel model, bool isAdmin = false);
 
-    Task<AdhocTaskModel> SetCompleted(int workerId, int taskId, bool completed, bool isAdmin = false);
+    /// <summary>
+    /// <paramref name="completedByWorkerId"/> (M5/P3, dashboard-only) is the
+    /// "Vælg hvem der udfører opgaven" performer select on the "Udfør
+    /// opgave" modal: when set (only meaningful together with
+    /// <paramref name="completed"/> = true), the worker it names - not
+    /// <paramref name="workerId"/> - is stamped as <c>CompletedByWorkerId</c>,
+    /// after validating that worker has a <c>PropertyWorker</c> row for the
+    /// task's property. Throws <see cref="System.ArgumentException"/> if it
+    /// doesn't. Mobile callers (gRPC) never pass this.
+    /// </summary>
+    Task<AdhocTaskModel> SetCompleted(int workerId, int taskId, bool completed, bool isAdmin = false, int? completedByWorkerId = null);
 
     Task<AdhocTaskModel> Archive(int workerId, int taskId, bool isAdmin = false);
 
@@ -88,6 +98,27 @@ public interface IBackendConfigurationAdhocService
     Task Delete(int workerId, int taskId, bool isAdmin = false);
 
     Task<AdhocTaskModel> AddComment(int workerId, int taskId, string text, bool isAdmin = false);
+
+    /// <summary>
+    /// Duplicates <paramref name="taskId"/> into a new task created by
+    /// <paramref name="workerId"/> (the caller performing the copy, per REST
+    /// "duplicate" semantics - not the original creator): same title/
+    /// description/urgent/property/area/reminder fields/execution rule, tags,
+    /// and assignments (with a fresh assignment-log row, mirroring
+    /// <c>CreateTask</c>'s own "log only when non-empty" rule); starts
+    /// uncompleted/unarchived regardless of the original's state. Photos are
+    /// duplicated as new <c>AdhocTaskPhoto</c> rows referencing the SAME
+    /// <c>UploadedDataId</c> as the original (verified safe: <c>AdhocTaskPhoto</c>
+    /// has no FK cascade to <c>UploadedData</c>, and <c>GetPhoto</c> doesn't
+    /// assert single-owner exclusivity - deleting one task's photo row never
+    /// touches the shared bytes or the sibling task's row). Comments are only
+    /// copied when <paramref name="includeComments"/> is true, as new rows
+    /// preserving <c>AuthorWorkerId</c> and text verbatim; <c>CreatedAt</c>
+    /// itself cannot be preserved through the shared <c>PnBase.Create</c>
+    /// helper (it always stamps "now") - an accepted, documented v1
+    /// limitation rather than a fabricated "copied" annotation on the text.
+    /// </summary>
+    Task<AdhocTaskModel> CopyTask(int workerId, bool isAdmin, int taskId, bool includeComments);
 
     /// <summary>
     /// Properties accessible to <paramref name="workerId"/> (via
@@ -121,8 +152,15 @@ public interface IBackendConfigurationAdhocService
     /// </summary>
     Task<List<AdhocTagModel>> ListTags(int workerId);
 
-    /// <summary>Always creates a personal tag owned by <paramref name="workerId"/>.</summary>
-    Task<AdhocTagModel> CreateTag(int workerId, string name);
+    /// <summary>
+    /// Creates a personal tag owned by <paramref name="workerId"/>, unless
+    /// <paramref name="isAdmin"/> is true (M5/P3 dashboard-only), in which
+    /// case it creates a global tag (<c>OwnerWorkerId = null</c>) - an admin
+    /// curating shared tags for the customer. Mobile <c>CreateTag</c>
+    /// semantics (owner = caller) are unchanged; mobile never passes
+    /// <paramref name="isAdmin"/>.
+    /// </summary>
+    Task<AdhocTagModel> CreateTag(int workerId, string name, bool isAdmin = false);
 
     /// <summary>
     /// Renames a tag <paramref name="workerId"/> owns. Throws

@@ -349,6 +349,39 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
             await sut.SetCompleted(99, created.Id, true));
     }
 
+    // --- SetCompleted with completedByWorkerId (M5/P3 dashboard "Udfør opgave" performer select) ---
+
+    [Test]
+    public async Task SetCompleted_WithCompletedByWorkerId_StampsThatWorkerInstead_OfTheAdminCaller()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var sut = CreateSut();
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+
+        // Dashboard caller identity (workerId 0, isAdmin true) picks worker 7
+        // as the performer from the "Vælg hvem der udfører opgaven" select.
+        var completed = await sut.SetCompleted(0, created.Id, true, isAdmin: true, completedByWorkerId: 7);
+
+        Assert.That(completed.Completed, Is.True);
+        Assert.That(completed.CompletedByWorkerId, Is.EqualTo(7));
+        Assert.That(completed.CompletedAt, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task SetCompleted_WithCompletedByWorkerId_Throws_WhenPerformerHasNoAccessToTheProperty()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        var sut = CreateSut();
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+
+        // Worker 99 has no PropertyWorker row for this property.
+        Assert.ThrowsAsync<ArgumentException>(async () =>
+            await sut.SetCompleted(0, created.Id, true, isAdmin: true, completedByWorkerId: 99));
+    }
+
     [Test]
     public async Task Archive_Throws_ForNonCreator()
     {

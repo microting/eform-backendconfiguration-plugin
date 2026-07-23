@@ -250,10 +250,18 @@ public class AdhocTaskIndexResultModel : Microting.eFormApi.BasePn.Infrastructur
 // each and are bound directly from the request body/query.
 // ---------------------------------------------------------------------
 
-/// <summary>Body for <c>POST {id}/completed</c> — mirrors the gRPC SetCompletedRequest.completed field.</summary>
+/// <summary>
+/// Body for <c>POST {id}/completed</c> - mirrors the gRPC SetCompletedRequest.completed
+/// field, plus the dashboard-only (M5/P3) <see cref="CompletedByWorkerId"/>: the
+/// "Vælg hvem der udfører opgaven" performer select in the "Udfør opgave" modal.
+/// When set, the service stamps that worker as <c>CompletedByWorkerId</c> instead
+/// of the (synthetic, dashboard) caller, after validating the worker belongs to
+/// the task's property.
+/// </summary>
 public class AdhocSetCompletedModel
 {
     public bool Completed { get; set; } = true;
+    public int? CompletedByWorkerId { get; set; }
 }
 
 /// <summary>Body for <c>POST {id}/comments</c>.</summary>
@@ -266,4 +274,10 @@ public class AdhocCommentCreateModel
 public class AdhocTagCreateModel
 {
     public string Name { get; set; } = "";
+}
+
+/// <summary>Body for <c>POST {id}/copy</c> (M5/P3) - mirrors the mockup's Kopier modal's Ja/Nej-med-kommentarer choice.</summary>
+public class AdhocCopyTaskModel
+{
+    public bool IncludeComments { get; set; }
 }

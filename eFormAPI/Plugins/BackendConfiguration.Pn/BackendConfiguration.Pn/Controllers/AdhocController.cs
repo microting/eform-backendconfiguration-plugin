@@ -106,6 +106,15 @@ public class AdhocController : Controller
             "ErrorWhileGettingAdhocHistory");
     }
 
+    [HttpPost]
+    [Route("{id:int}/copy")]
+    public async Task<OperationDataResult<AdhocTaskModel>> CopyTask(int id, [FromBody] AdhocCopyTaskModel model)
+    {
+        return await ExecuteAsync(
+            () => _adhocService.CopyTask(DashboardWorkerId, IsAdmin, id, model?.IncludeComments ?? false),
+            "ErrorWhileCopyingAdhocTask");
+    }
+
     [HttpGet]
     [Route("{id:int}")]
     public async Task<OperationDataResult<AdhocTaskModel>> GetTask(int id)
@@ -138,7 +147,7 @@ public class AdhocController : Controller
     {
         var completed = model?.Completed ?? true;
         return await ExecuteAsync(
-            () => _adhocService.SetCompleted(DashboardWorkerId, id, completed, IsAdmin),
+            () => _adhocService.SetCompleted(DashboardWorkerId, id, completed, IsAdmin, model?.CompletedByWorkerId),
             "ErrorWhileUpdatingAdhocTask");
     }
 
@@ -226,8 +235,12 @@ public class AdhocController : Controller
     [Route("tags")]
     public async Task<OperationDataResult<AdhocTagModel>> CreateTag([FromBody] AdhocTagCreateModel model)
     {
+        // A dashboard admin curates shared tags for the customer - REST
+        // CreateTag creates a global tag (OwnerWorkerId = null) when the
+        // caller is an admin; mobile's CreateTag (gRPC, always isAdmin=false)
+        // keeps its existing "owner = caller" semantics unchanged.
         return await ExecuteAsync(
-            () => _adhocService.CreateTag(DashboardWorkerId, model?.Name ?? string.Empty),
+            () => _adhocService.CreateTag(DashboardWorkerId, model?.Name ?? string.Empty, IsAdmin),
             "ErrorWhileCreatingAdhocTag");
     }
 

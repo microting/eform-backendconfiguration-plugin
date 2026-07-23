@@ -333,7 +333,7 @@ public class BackendConfigurationAdhocService(
         return await MapToModelAsync(task, assignedWorkerIds);
     }
 
-    public async Task<AdhocTaskModel> SetCompleted(int workerId, int taskId, bool completed, bool isAdmin = false)
+    public async Task<AdhocTaskModel> SetCompleted(int workerId, int taskId, bool completed, bool isAdmin = false, int? completedByWorkerId = null)
     {
         var task = await LoadTaskOrThrowAsync(taskId);
         var assignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
@@ -347,8 +347,22 @@ public class BackendConfigurationAdhocService(
 
         if (completed)
         {
+            var stampedWorkerId = workerId;
+            if (completedByWorkerId.HasValue)
+            {
+                var performerHasAccess = await propertyAccess.HasAccessAsync(completedByWorkerId.Value, task.PropertyId);
+                if (!performerHasAccess)
+                {
+                    throw new ArgumentException(
+                        $"Worker {completedByWorkerId.Value} has no access to property {task.PropertyId} and cannot be recorded as the performer.",
+                        nameof(completedByWorkerId));
+                }
+
+                stampedWorkerId = completedByWorkerId.Value;
+            }
+
             task.Completed = true;
-            task.CompletedByWorkerId = workerId;
+            task.CompletedByWorkerId = stampedWorkerId;
             task.CompletedAt = DateTime.UtcNow;
         }
         else
@@ -463,6 +477,104 @@ public class BackendConfigurationAdhocService(
         return await MapToModelAsync(task, assignedWorkerIds);
     }
 
+    public async Task<AdhocTaskModel> CopyTask(int workerId, bool isAdmin, int taskId, bool includeComments)
+    {
+        var source = await LoadTaskOrThrowAsync(taskId);
+        var sourceAssignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
+        var hasPropertyAccess = isAdmin || await propertyAccess.HasAccessAsync(workerId, source.PropertyId);
+
+        if (!CanSee(source, workerId, isAdmin, hasPropertyAccess, sourceAssignedWorkerIds))
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} may not copy adhoc task {taskId}.");
+        }
+
+        // New task, created by the copier (not the original's creator) -
+        // REST "duplicate" semantics; starts uncompleted/unarchived
+        // regardless of the source's current state.
+        var copy = new AdhocTaskEntity
+        {
+            Title = source.Title,
+            Description = source.Description,
+            Urgent = source.Urgent,
+            PropertyId = source.PropertyId,
+            AreaId = source.AreaId,
+            VisibleFrom = source.VisibleFrom,
+            Deadline = source.Deadline,
+            VisibleReminder = source.VisibleReminder,
+            DeadlineReminder = source.DeadlineReminder,
+            DeadlineReminderRepeat = source.DeadlineReminderRepeat,
+            VisibleReminderTimeMinutes = source.VisibleReminderTimeMinutes,
+            DeadlineReminderTimeMinutes = source.DeadlineReminderTimeMinutes,
+            ExecutionRule = source.ExecutionRule,
+            CreatedByWorkerId = workerId,
+            Completed = false,
+            Archived = false,
+        };
+        await copy.Create(dbContext);
+
+        var sourceTagIds = await dbContext.AdhocTaskTags
+            .Where(tt => tt.AdhocTaskId == taskId && tt.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(tt => tt.AdhocTagId)
+            .ToListAsync();
+        foreach (var tagId in sourceTagIds)
+        {
+            var tagJoin = new AdhocTaskTag { AdhocTaskId = copy.Id, AdhocTagId = tagId };
+            await tagJoin.Create(dbContext);
+        }
+
+        foreach (var assignedWorkerId in sourceAssignedWorkerIds)
+        {
+            var assignment = new AdhocTaskAssignment { AdhocTaskId = copy.Id, WorkerId = assignedWorkerId };
+            await assignment.Create(dbContext);
+        }
+
+        if (sourceAssignedWorkerIds.Count > 0)
+        {
+            await AppendAssignmentLogAsync(copy.Id, workerId, [], sourceAssignedWorkerIds);
+        }
+
+        // Photos: new AdhocTaskPhoto rows sharing the SAME UploadedDataId as
+        // the source (verified safe - see IBackendConfigurationAdhocService.
+        // CopyTask's doc comment).
+        var sourcePhotos = await dbContext.AdhocTaskPhotos
+            .Where(p => p.AdhocTaskId == taskId && p.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        foreach (var photo in sourcePhotos)
+        {
+            var photoCopy = new AdhocTaskPhoto
+            {
+                AdhocTaskId = copy.Id,
+                UploadedDataId = photo.UploadedDataId,
+                ContentType = photo.ContentType,
+            };
+            await photoCopy.Create(dbContext);
+        }
+
+        if (includeComments)
+        {
+            var sourceComments = await dbContext.AdhocTaskComments
+                .Where(c => c.AdhocTaskId == taskId && c.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(c => c.CreatedAt)
+                .ToListAsync();
+            foreach (var comment in sourceComments)
+            {
+                // AuthorWorkerId/Text preserved verbatim; CreatedAt cannot be
+                // preserved through the shared PnBase.Create helper (always
+                // stamps "now") - see the interface doc comment.
+                var commentCopy = new AdhocTaskComment
+                {
+                    AdhocTaskId = copy.Id,
+                    AuthorWorkerId = comment.AuthorWorkerId,
+                    Text = comment.Text,
+                };
+                await commentCopy.Create(dbContext);
+            }
+        }
+
+        return await MapToModelAsync(copy, sourceAssignedWorkerIds);
+    }
+
     // --- Reference data: properties / areas / workers / tags ---
 
     public async Task<List<AdhocPropertyModel>> ListProperties(int workerId, bool isAdmin = false)
@@ -546,14 +658,14 @@ public class BackendConfigurationAdhocService(
             .ToListAsync();
     }
 
-    public async Task<AdhocTagModel> CreateTag(int workerId, string name)
+    public async Task<AdhocTagModel> CreateTag(int workerId, string name, bool isAdmin = false)
     {
         var trimmedName = RequireNonEmptyTagName(name);
 
-        var tag = new AdhocTag { Name = trimmedName, OwnerWorkerId = workerId };
+        var tag = new AdhocTag { Name = trimmedName, OwnerWorkerId = isAdmin ? null : workerId };
         await tag.Create(dbContext);
 
-        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = true };
+        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = !isAdmin };
     }
 
     public async Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name)
