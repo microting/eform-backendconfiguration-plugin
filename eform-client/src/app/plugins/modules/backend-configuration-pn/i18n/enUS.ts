@@ -640,4 +640,15 @@ export const enUS= {
   'Deadline reminder': 'Deadline reminder',
   'First visibility reminder': 'First visibility reminder',
   Comments: 'Comments',
+  // Adhoc dashboard (M5/F8) - modals + history tab.
+  Period: 'Period',
+  Filters: 'Filters',
+  From: 'From',
+  To: 'To',
+  'Archive task': 'Archive task',
+  created: 'Created',
+  assigned: 'Assigned',
+  completed: 'Completed',
+  archived: 'Archived',
+  commented: 'Commented',
 };

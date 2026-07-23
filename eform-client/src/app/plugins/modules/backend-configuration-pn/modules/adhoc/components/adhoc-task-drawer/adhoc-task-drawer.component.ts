@@ -26,6 +26,16 @@ export interface AdhocTaskDrawerData {
   task?: AdhocTaskModel;
 }
 
+/**
+ * `MatDialogRef.afterClosed()`'s result shape (M5/F8): a plain `true` means
+ * "task was created/updated - reload the table"; the `{action: 'complete'}`
+ * variant is emitted by the drawer's own "Udfør opgave" button so the
+ * caller (AdhocContainerComponent/AdhocHistoryComponent) can chain
+ * `AdhocCompleteModalComponent` on top without this component needing to
+ * know that modal exists.
+ */
+export type AdhocTaskDrawerCloseResult = boolean | {action: 'complete'; task: AdhocTaskModel};
+
 /** 08:00 - the mockup's default reminder time for both deadline and first-visibility reminders. */
 const DEFAULT_REMINDER_MINUTES = 8 * 60;
 
@@ -91,7 +101,7 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
   viewPhotosSub$: Subscription;
 
   constructor(
-    public dialogRef: MatDialogRef<AdhocTaskDrawerComponent>,
+    public dialogRef: MatDialogRef<AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult>,
     @Inject(MAT_DIALOG_DATA) public data: AdhocTaskDrawerData,
     private fb: FormBuilder,
     public adhocStateService: AdhocStateService,
@@ -113,6 +123,11 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
 
   get visiblePhotos(): AdhocTaskPhotoModel[] {
     return (this.task?.photos ?? []).filter((p) => !this.removedPhotoIds.has(p.id));
+  }
+
+  /** "Udfør opgave" (M5/F8) is offered from view/edit mode on any open (not completed, not archived) task. */
+  get canComplete(): boolean {
+    return !this.isCreate && !!this.task && !this.task.completed && !this.task.archived;
   }
 
   ngOnInit(): void {
@@ -378,5 +393,20 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
 
   onClose(): void {
     this.dialogRef.close(false);
+  }
+
+  /**
+   * Closes the drawer with `{action: 'complete', task}` instead of a plain
+   * boolean - AdhocContainerComponent/AdhocHistoryComponent's `afterClosed`
+   * handler recognizes this shape and opens `AdhocCompleteModalComponent`
+   * on top, satisfying the plan's "triggered ... from the drawer"
+   * requirement (F8) without this component needing to know that modal
+   * exists.
+   */
+  onCompleteTask(): void {
+    if (!this.task) {
+      return;
+    }
+    this.dialogRef.close({action: 'complete', task: this.task});
   }
 }

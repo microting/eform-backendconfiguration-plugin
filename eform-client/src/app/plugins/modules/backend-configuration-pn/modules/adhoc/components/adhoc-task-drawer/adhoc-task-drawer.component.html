@@ -9,12 +9,18 @@
     </button>
   </div>
 
-  <div class="adhoc-drawer__intro" *ngIf="!isCreate">
-    <span>{{ workerName(task?.createdByWorkerId) }}</span>
-    ·
-    <span>{{ propertyName(task?.propertyId) }}</span>
-    ·
-    <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
+  <div class="adhoc-drawer__intro d-flex align-items-center justify-content-between" *ngIf="!isCreate">
+    <div>
+      <span>{{ workerName(task?.createdByWorkerId) }}</span>
+      ·
+      <span>{{ propertyName(task?.propertyId) }}</span>
+      ·
+      <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
+    </div>
+    <button type="button" mat-stroked-button id="adhoc-drawer-complete" *ngIf="canComplete" (click)="onCompleteTask()">
+      <mat-icon fontSet="material-symbols-outlined">task_alt</mat-icon>
+      {{ 'Complete task' | translate }}
+    </button>
   </div>
 
   <div mat-dialog-content class="adhoc-drawer__content" [formGroup]="form">

@@ -1,0 +1,133 @@
+<div id="history-view" class="history-view">
+  <div class="history-period-chips d-flex flex-wrap gap-8 mb-2" id="history-period-chips">
+    <button
+      type="button"
+      *ngFor="let preset of periodPresets"
+      class="btn-secondary"
+      [class.active]="currentFilters?.periodPreset === preset"
+      (click)="onPeriodChange(preset)"
+    >
+      {{ periodLabel(preset) | translate }}
+    </button>
+  </div>
+
+  <div class="history-custom-range d-flex gap-8 mb-2" id="history-custom-range" *ngIf="currentFilters?.periodPreset === 'custom'">
+    <mat-form-field>
+      <mat-label>{{ 'From' | translate }}</mat-label>
+      <input matInput [matDatepicker]="fromPicker" [(ngModel)]="customFrom" (dateChange)="onCustomRangeChange()">
+      <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ 'To' | translate }}</mat-label>
+      <input matInput [matDatepicker]="toPicker" [(ngModel)]="customTo" (dateChange)="onCustomRangeChange()">
+      <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
+    </mat-form-field>
+  </div>
+
+  <div class="history-filter-details mb-3" id="history-filter-details">
+    <button type="button" mat-button (click)="toggleFilterDetails()">
+      <mat-icon>{{ filterDetailsOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      {{ 'Filters' | translate }}
+    </button>
+    <div class="d-flex flex-wrap gap-12" *ngIf="filterDetailsOpen">
+      <mat-form-field>
+        <mat-label>{{ 'Property' | translate }}</mat-label>
+        <mtx-select
+          [items]="adhocStateService.properties"
+          bindLabel="name"
+          bindValue="id"
+          id="history-ejendom"
+          [ngModel]="currentFilters?.propertyId"
+          (ngModelChange)="onPropertyChange($event)"
+        ></mtx-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'Area' | translate }}</mat-label>
+        <mtx-select
+          [items]="areas"
+          bindLabel="name"
+          bindValue="id"
+          id="history-omraade"
+          [disabled]="currentFilters?.propertyId == null"
+          [ngModel]="currentFilters?.areaId"
+          (ngModelChange)="onAreaChange($event)"
+        ></mtx-select>
+      </mat-form-field>
+      <div class="history-tags-fieldset" id="history-tags-fieldset">
+        <div class="adhoc-drawer__section-title">{{ 'Tags' | translate }} ({{ 'And' | translate }})</div>
+        <div class="d-flex flex-wrap gap-4" id="history-tag-filter-rows">
+          <mat-checkbox
+            *ngFor="let tag of adhocStateService.tags"
+            [checked]="isTagSelected(tag.id)"
+            (change)="onToggleTag(tag.id)"
+          >{{ tag.name }}</mat-checkbox>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="history-timeline" id="history-data-table">
+    <div class="history-day-group" *ngFor="let group of groupedEvents">
+      <div class="history-day-group__date">{{ group.dateKey | date: 'dd.MM.yyyy' }}</div>
+      <div
+        class="history-row d-flex align-items-center justify-content-between"
+        *ngFor="let event of group.events"
+      >
+        <div class="history-row__main" (click)="onRowClick(event)">
+          <mat-icon fontSet="material-symbols-outlined" class="history-row__icon">
+            <ng-container [ngSwitch]="event.eventType">
+              <ng-container *ngSwitchCase="'created'">add_task</ng-container>
+              <ng-container *ngSwitchCase="'assigned'">person_add</ng-container>
+              <ng-container *ngSwitchCase="'completed'">task_alt</ng-container>
+              <ng-container *ngSwitchCase="'archived'">archive</ng-container>
+              <ng-container *ngSwitchCase="'commented'">chat_bubble</ng-container>
+            </ng-container>
+          </mat-icon>
+          <div class="history-row__body">
+            <div class="history-row__title">{{ event.taskTitle }}</div>
+            <div class="history-row__meta">
+              {{ event.eventType | translate }} · {{ event.actorName }} · {{ event.propertyName }}
+              <span *ngIf="event.areaName">· {{ event.areaName }}</span>
+            </div>
+            <div class="history-row__comment" *ngIf="event.lastCommentText">
+              {{ event.lastCommentAuthor }}: {{ event.lastCommentText }}
+            </div>
+          </div>
+        </div>
+
+        <div class="row-menu">
+          <button type="button" mat-icon-button id="adhocHistoryActionMenu-{{event.taskId}}" [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item id="adhocHistoryCopyBtn-{{event.taskId}}" (click)="onCopy(event)">
+              <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
+              <span>{{ 'Copy task' | translate }}</span>
+            </button>
+            <button
+              mat-menu-item
+              id="adhocHistoryArchiveBtn-{{event.taskId}}"
+              *ngIf="event.completed && !event.archived"
+              (click)="onArchive(event)"
+            >
+              <mat-icon fontSet="material-symbols-outlined">archive</mat-icon>
+              <span>{{ 'Archive task' | translate }}</span>
+            </button>
+            <button mat-menu-item id="adhocHistoryDeleteBtn-{{event.taskId}}" class="btn-delete-menu" (click)="onDelete(event)">
+              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+              <span>{{ 'Delete task' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+    </div>
+    <div class="cell-muted" *ngIf="!groupedEvents.length">{{ 'No tasks found' | translate }}</div>
+  </div>
+
+  <eform-pagination
+    [pagination]="{total: total, pageSize: pageSize, offset: pageIndex * pageSize}"
+    (paginationChanged)="pageIndex = $event.offset / $event.pageSize; pageSize = $event.pageSize; updateTable()"
+  ></eform-pagination>
+</div>

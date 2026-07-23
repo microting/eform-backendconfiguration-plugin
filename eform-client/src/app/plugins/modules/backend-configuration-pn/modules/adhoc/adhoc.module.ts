@@ -20,17 +20,20 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {AdhocRouting} from './adhoc.routing';
 import {
+  AdhocCompleteModalComponent,
   AdhocContainerComponent,
+  AdhocCopyModalComponent,
+  AdhocDeleteModalComponent,
   AdhocFiltersComponent,
+  AdhocHistoryComponent,
   AdhocTableComponent,
   AdhocTaskDrawerComponent,
 } from './components';
 
 /**
- * Adhoc dashboard module (M5/F4-F7) - import set copied from
- * task-management.module.ts, since the follow-up F8 task (modals/history)
- * will need most of it. F8 adds its components' declarations here as it
- * lands.
+ * Adhoc dashboard module (M5/F4-F8) - import set copied from
+ * task-management.module.ts. All of F4-F8's components are now declared;
+ * the module is feature-complete for the dashboard's UI.
  */
 @NgModule({
   declarations: [
@@ -38,6 +41,10 @@ import {
     AdhocTableComponent,
     AdhocFiltersComponent,
     AdhocTaskDrawerComponent,
+    AdhocDeleteModalComponent,
+    AdhocCopyModalComponent,
+    AdhocCompleteModalComponent,
+    AdhocHistoryComponent,
   ],
   imports: [
     CommonModule,

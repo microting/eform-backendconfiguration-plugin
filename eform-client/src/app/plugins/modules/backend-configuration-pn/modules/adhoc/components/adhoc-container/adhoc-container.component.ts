@@ -11,18 +11,18 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AdhocTaskModel} from '../../../../models';
 import {selectAdhocFilters} from '../../../../state';
 import {AdhocStateService} from '../store';
-import {AdhocTaskDrawerComponent, AdhocTaskDrawerData} from '../adhoc-task-drawer/adhoc-task-drawer.component';
+import {AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult, AdhocTaskDrawerData} from '../adhoc-task-drawer/adhoc-task-drawer.component';
+import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
+import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
+import {AdhocCompleteModalComponent} from '../adhoc-complete-modal/adhoc-complete-modal.component';
 
 /**
  * Top bar + Overblik data orchestration for the "Adhoc overblik" dashboard
- * (M5/F4, extended F5/F7). The Overblik view (toolbar filters + table) is
- * embedded directly in this component's own template (not a routed child -
- * see the routing decision note in adhoc.routing.ts); only Historik is an
- * actual nested route, rendered through the `<router-outlet>` below.
- *
- * The modals (F8) are wired up as those components land - until then the
- * row actions that would open them are inert stubs (same pattern F4 used
- * for "Ny opgave" before F7 landed).
+ * (M5/F4, extended F5/F7/F8). The Overblik view (toolbar filters + table)
+ * is embedded directly in this component's own template (not a routed
+ * child - see the routing decision note in adhoc.routing.ts); only
+ * Historik is an actual nested route, rendered through the
+ * `<router-outlet>` below.
  */
 @AutoUnsubscribe()
 @Component({
@@ -121,8 +121,18 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
         panelClass: 'adhoc-drawer-panel',
       })
       .afterClosed()
-      .subscribe((changed) => {
-        if (changed) {
+      .subscribe((result: AdhocTaskDrawerCloseResult) => {
+        // The drawer's own "Udfør opgave" action (F8) closes with
+        // `{action: 'complete', task}` instead of a plain boolean, so the
+        // complete modal can be chained on top - satisfies the plan's
+        // "triggered from the status cell on open rows AND from the
+        // drawer" requirement without the drawer needing to know about
+        // AdhocCompleteModalComponent itself.
+        if (result && typeof result === 'object' && result.action === 'complete') {
+          this.onCompleteTask(result.task);
+          return;
+        }
+        if (result) {
           this.updateTable();
         }
       });
@@ -140,15 +150,38 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
     this.openDrawer({mode: 'edit', task});
   }
 
-  // TODO(F8): open AdhocCopyModalComponent.
   onCopyTask(task: AdhocTaskModel): void {
+    this.dialog
+      .open(AdhocCopyModalComponent, dialogConfigHelper(this.overlay, {id: task.id, title: task.title}))
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          // The mockup's copy flow always lands the user in the edit
+          // drawer on the freshly-created copy, not back on the table.
+          this.openDrawer({mode: 'edit', task: result});
+        }
+      });
   }
 
-  // TODO(F8): open AdhocDeleteModalComponent.
   onDeleteTask(task: AdhocTaskModel): void {
+    this.dialog
+      .open(AdhocDeleteModalComponent, dialogConfigHelper(this.overlay, {id: task.id, title: task.title}))
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.updateTable();
+        }
+      });
   }
 
-  // TODO(F8): open AdhocCompleteModalComponent.
   onCompleteTask(task: AdhocTaskModel): void {
+    this.dialog
+      .open(AdhocCompleteModalComponent, dialogConfigHelper(this.overlay, {id: task.id, propertyId: task.propertyId, title: task.title}))
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.updateTable();
+        }
+      });
   }
 }

@@ -162,6 +162,19 @@ describe('AdhocTaskDrawerComponent', () => {
       expect(dialogRefSpy.close).toHaveBeenCalledWith(true);
     });
 
+    it('canComplete is true for an open task, and onCompleteTask closes with the {action, task} signal', () => {
+      expect(component.canComplete).toBeTrue();
+      component.onCompleteTask();
+      expect(dialogRefSpy.close).toHaveBeenCalledWith({action: 'complete', task: existingTask});
+    });
+
+    it('canComplete is false once the task is completed or archived', () => {
+      const completed = buildComponent({mode: 'edit', task: {...existingTask, completed: true}});
+      expect(completed.canComplete).toBeFalse();
+      const archived = buildComponent({mode: 'edit', task: {...existingTask, archived: true}});
+      expect(archived.canComplete).toBeFalse();
+    });
+
     it('onAddComment posts the trimmed text and replaces the local task with the response', () => {
       const updated = {...existingTask, comments: [{authorWorkerId: 100, createdAt: '2026-04-02T00:00:00Z', text: 'Looks fixed'}]};
       adhocServiceSpy.addComment.and.returnValue(of({success: true, model: updated}));

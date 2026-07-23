@@ -623,4 +623,15 @@ export const da = {
   'Deadline reminder': 'Påmindelse om frist',
   'First visibility reminder': 'Påmindelse ved første visning',
   Comments: 'Kommentarer',
+  // Adhoc dashboard (M5/F8) - modals + history tab.
+  Period: 'Periode',
+  Filters: 'Filtre',
+  From: 'Fra',
+  To: 'Til',
+  'Archive task': 'Arkivér opgave',
+  created: 'Oprettet',
+  assigned: 'Tildelt',
+  completed: 'Udført',
+  archived: 'Arkiveret',
+  commented: 'Kommenteret',
 };

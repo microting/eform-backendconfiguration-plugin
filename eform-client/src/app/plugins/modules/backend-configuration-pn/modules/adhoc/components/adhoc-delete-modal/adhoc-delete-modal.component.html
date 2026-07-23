@@ -1,0 +1,19 @@
+<h3 mat-dialog-title>{{ 'Are you sure you want to delete' | translate }}?</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{ 'Task' | translate }}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{ data.title }}</strong>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button mat-raised-button id="adhocDeleteCancelBtn" (click)="hide()">
+    {{ 'Cancel' | translate }}
+  </button>
+  <button mat-raised-button color="warn" id="adhocDeleteConfirmBtn" (click)="delete()">
+    {{ 'Delete' | translate }}
+  </button>
+</div>
