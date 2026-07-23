@@ -310,6 +310,35 @@ public class AdhocServiceIndexTests : TestBaseSetup
     }
 
     [Test]
+    public async Task IndexTasks_Paging_ClampsPageSizeTo100()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        // Bulk-insert directly (single SaveChanges) - 105 CreateTask round
+        // trips would dominate this fixture's runtime for no extra coverage.
+        for (var i = 0; i < 105; i++)
+        {
+            BackendConfigurationPnDbContext!.AdhocTasks.Add(new AdhocTaskEntity
+            {
+                Title = $"Bulk {i}",
+                Description = "d",
+                PropertyId = property.Id,
+                CreatedByWorkerId = 1,
+                WorkflowState = Constants.WorkflowStates.Created,
+            });
+        }
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
+
+        // A caller-supplied page size above the cap must be clamped to 100
+        // server-side, never honored verbatim.
+        var result = await sut.IndexTasks(0, isAdmin: true, new AdhocTaskFiltersModel { PageNumber = 1, PageSize = 1000 });
+
+        Assert.That(result.Total, Is.EqualTo(105));
+        Assert.That(result.Entities, Has.Count.EqualTo(100));
+    }
+
+    [Test]
     public async Task IndexTasks_SortByTitle_Ascending()
     {
         var property = await CreatePropertyAsync();

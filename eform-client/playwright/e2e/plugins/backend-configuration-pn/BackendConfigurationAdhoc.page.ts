@@ -104,26 +104,15 @@ export class BackendConfigurationAdhocPage {
   }
 
   async goToHistory(): Promise<void> {
-    // Diagnostic (M5/T-fix-shard-z round 3): the "Historik" tab's own
-    // `AdhocHistoryComponent.ngOnInit` fires its `history/index` POST
-    // immediately on navigation, before any test code could otherwise
-    // observe it - CI has twice shown this tab rendering an empty
-    // "Ingen opgaver fundet" table for a task created seconds earlier, with
-    // no visible cause in the ASP.NET console log (its controller action
-    // wraps every failure into a caught `OperationDataResult(false, ...)`
-    // that's never logged to stdout - only to Sentry). Logging the actual
-    // response here (mirrors BackendConfigurationPropertyWorkers.page.ts's
-    // create-device-user logging) surfaces the real success/model/message
-    // in CI output instead of guessing blind.
+    // Await the `history/index` round-trip the tab fires on navigation
+    // (AdhocHistoryComponent.ngOnInit) so callers see a populated timeline,
+    // not a still-loading one - returning on #history-view visibility alone
+    // would let a subsequent row lookup race the data fetch.
     const historyResponsePromise = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/adhoc/history/index') && r.request().method() === 'POST',
     );
     await this.viewHistoryBtn().click();
-    const historyResponse = await historyResponsePromise;
-    const resBody = await historyResponse.json().catch(() => null);
-    console.log(
-      `adhoc history/index: status=${historyResponse.status()}, success=${resBody?.success}, message=${resBody?.message}, total=${resBody?.model?.total}, entities=${resBody?.model?.entities?.length}`,
-    );
+    await historyResponsePromise;
     await this.historyView().waitFor({ state: 'visible', timeout: 15000 });
   }
 

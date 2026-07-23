@@ -370,6 +370,23 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
     }
 
     [Test]
+    public async Task SetCompleted_AdminWithoutPerformer_StampsNullCompletedByWorkerId()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        // Dashboard admin (synthetic workerId 0) completes WITHOUT selecting
+        // a performer - worker 0 is not a real SDK site, so nothing must be
+        // recorded as the performer (null, not 0).
+        var completed = await sut.SetCompleted(0, created.Id, true, isAdmin: true);
+
+        Assert.That(completed.Completed, Is.True);
+        Assert.That(completed.CompletedByWorkerId, Is.Null);
+        Assert.That(completed.CompletedAt, Is.Not.Null);
+    }
+
+    [Test]
     public async Task SetCompleted_WithCompletedByWorkerId_Throws_WhenPerformerHasNoAccessToTheProperty()
     {
         var property = await CreatePropertyAsync();

@@ -127,7 +127,7 @@ public class BackendConfigurationAdhocService(
         query = ApplyIndexSort(query, filters.SortColumn, filters.SortAscending);
 
         var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
-        var pageSize = filters.PageSize < 1 ? 25 : filters.PageSize;
+        var pageSize = ClampPageSize(filters.PageSize);
 
         var pageEntities = await query
             .Skip((pageNumber - 1) * pageSize)
@@ -362,7 +362,12 @@ public class BackendConfigurationAdhocService(
             }
 
             task.Completed = true;
-            task.CompletedByWorkerId = stampedWorkerId;
+            // A dashboard admin (synthetic workerId 0) completing without
+            // selecting a performer stamps NULL, not 0 - worker id 0 is not
+            // a real SDK site, and history/name resolution treats a null
+            // CompletedByWorkerId as "no recorded performer". gRPC callers
+            // always have a real, positive site id here.
+            task.CompletedByWorkerId = stampedWorkerId == 0 ? null : stampedWorkerId;
             task.CompletedAt = DateTime.UtcNow;
         }
         else
@@ -1062,10 +1067,22 @@ public class BackendConfigurationAdhocService(
         var sorted = filtered.OrderByDescending(e => e.OccurredAt).ToList();
 
         var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
-        var pageSize = filters.PageSize < 1 ? 25 : filters.PageSize;
+        var pageSize = ClampPageSize(filters.PageSize);
         var page = sorted.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
         return new Paged<AdhocTaskHistoryEventModel> { Total = sorted.Count, Entities = page };
+    }
+
+    /// <summary>
+    /// Server-side page-size clamp for the paged REST paths (IndexTasks /
+    /// ListHistory): non-positive values fall back to the default 25, and a
+    /// caller-supplied size is capped at 100 so a single request can never
+    /// hydrate an unbounded page (each page row fans out into tags/photos/
+    /// assignment-log/comment lookups).
+    /// </summary>
+    private static int ClampPageSize(int pageSize)
+    {
+        return pageSize < 1 ? 25 : Math.Min(pageSize, 100);
     }
 
     // --- Visibility predicates (mirror TaskVisibility.canSee/matchesScope exactly) ---
