@@ -1,0 +1,176 @@
+<div class="adhoc-table-toolbar d-flex justify-content-end mb-2">
+  <div class="column-picker-wrap">
+    <button
+      type="button"
+      mat-stroked-button
+      id="column-picker-btn"
+      [disabled]="status !== 'open'"
+      matTooltip="{{ 'Columns' | translate }}"
+      (click)="toggleColumnPicker()"
+    >
+      <mat-icon>view_column</mat-icon>
+      {{ 'Columns' | translate }}
+    </button>
+    <div class="column-picker-panel" id="column-picker-panel" *ngIf="columnPickerOpen">
+      <div class="column-picker-row" *ngFor="let col of toggleableColumns">
+        <mat-checkbox
+          [checked]="!isColumnHidden(col.field)"
+          (change)="onToggleColumn(col.field)"
+        >
+          {{ col.header | async }}
+        </mat-checkbox>
+      </div>
+      <button type="button" mat-button (click)="closeColumnPicker()">{{ 'Close' | translate }}</button>
+    </div>
+  </div>
+</div>
+
+<mtx-grid
+  [data]="tasks"
+  [columns]="visibleColumns"
+  [cellTemplate]="{
+    title: titleTpl,
+    content: contentTpl,
+    propertyName: propertyNameTpl,
+    areaName: areaNameTpl,
+    tags: tagsTpl,
+    createdByName: createdByNameTpl,
+    assignedTo: assignedToTpl,
+    deadline: deadlineTpl,
+    completedByName: completedByNameTpl,
+    status: statusTpl,
+    actions: actionsTpl
+  }"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="false"
+  [showToolbar]="false"
+  [showColumnMenuButton]="false"
+  [sortActive]="selectAdhocPaginationSort$ | async"
+  [sortDirection]="selectAdhocPaginationIsSortDsc$ | async"
+  (sortChange)="sortTable($event)"
+  style="max-height: 60vh;"
+  noResultText="{{ 'No tasks found' | translate }}"
+>
+</mtx-grid>
+
+<ng-template #titleTpl let-row>
+  <div class="cell-title">
+    <strong>{{ row.title }}</strong>
+    <span class="haster-pill" *ngIf="row.urgent">{{ 'Urgent' | translate }}</span>
+  </div>
+</ng-template>
+
+<ng-template #contentTpl let-row>
+  <div class="cell-content d-flex gap-8">
+    <span class="content-count" [class.content-count--zero]="!row.photos?.length">
+      <mat-icon fontSet="material-symbols-outlined">image</mat-icon>{{ row.photos?.length || 0 }}
+    </span>
+    <span class="content-count" [class.content-count--zero]="!row.comments?.length">
+      <mat-icon fontSet="material-symbols-outlined">chat_bubble</mat-icon>{{ row.comments?.length || 0 }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #propertyNameTpl let-row>
+  <span>{{ propertyNameFor(row) }}</span>
+</ng-template>
+
+<ng-template #areaNameTpl let-row>
+  <span>{{ areaNameFor(row) || '—' }}</span>
+</ng-template>
+
+<ng-template #tagsTpl let-row>
+  <div class="cell-tags d-flex flex-wrap gap-4">
+    <mat-chip *ngFor="let name of tagNamesFor(row)">{{ name }}</mat-chip>
+  </div>
+</ng-template>
+
+<ng-template #createdByNameTpl let-row>
+  <span>{{ createdByNameFor(row) }}</span>
+</ng-template>
+
+<ng-template #assignedToTpl let-row>
+  <div class="cell-assigned d-flex flex-wrap gap-4">
+    <mat-chip class="assigned-chip--everyone" *ngIf="assignedToFor(row).everyone">{{ 'Everyone' | translate }}</mat-chip>
+    <ng-container *ngIf="!assignedToFor(row).everyone">
+      <mat-chip *ngFor="let name of assignedToFor(row).names">{{ name }}</mat-chip>
+      <span *ngIf="!assignedToFor(row).names.length">—</span>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #deadlineTpl let-row>
+  <div class="cell-deadline" [attr.aria-label]="deadlineVisualFor(row).band">
+    <ng-container [ngSwitch]="deadlineVisualFor(row).band">
+      <span *ngSwitchCase="'none'" class="cell-muted">{{ 'No deadline' | translate }}</span>
+      <ng-container *ngSwitchDefault>
+        <div class="deadline-bar">
+          <div
+            class="deadline-bar__fill"
+            [style.width.%]="deadlineVisualFor(row).pct"
+            [style.background]="deadlineColor(deadlineVisualFor(row).band)"
+          ></div>
+        </div>
+        <span class="deadline-label">
+          <ng-container [ngSwitch]="deadlineVisualFor(row).band">
+            <span *ngSwitchCase="'overdue'">{{ 'Overdue' | translate }} {{ row.deadline | date: 'dd.MM.yyyy' }}</span>
+            <span *ngSwitchCase="'today'">{{ 'Deadline today' | translate }}</span>
+            <span *ngSwitchDefault>{{ '{{count}} days until deadline' | translate: {count: deadlineVisualFor(row).days} }}</span>
+          </ng-container>
+        </span>
+      </ng-container>
+    </ng-container>
+  </div>
+</ng-template>
+
+<ng-template #completedByNameTpl let-row>
+  <span>{{ completedByNameFor(row) || '—' }}</span>
+</ng-template>
+
+<ng-template #statusTpl let-row>
+  <div class="cell-status d-flex flex-column align-items-start gap-4">
+    <mat-chip color="primary">
+      <span *ngIf="row.status === 'open' || (!row.completed && !row.archived)">{{ 'Open' | translate }}</span>
+      <span *ngIf="row.completed && !row.archived">{{ 'Solved' | translate }}</span>
+      <span *ngIf="row.archived">{{ 'Archived' | translate }}</span>
+    </mat-chip>
+    <button
+      type="button"
+      mat-stroked-button
+      class="btn-complete-task"
+      *ngIf="!row.completed && !row.archived"
+      (click)="onCompleteTask(row)"
+    >
+      <mat-icon fontSet="material-symbols-outlined">task_alt</mat-icon>
+      {{ 'Complete task' | translate }}
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="adhoc-actions" id="action-items-{{i}}">
+    <button id="adhocActionMenu-{{i}}" mat-icon-button [matMenuTriggerFor]="menu" matTooltip="{{ 'Actions' | translate }}">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item id="adhocViewBtn-{{i}}" class="adhocViewBtn" (click)="onViewTask(row)">
+        <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
+        <span>{{ 'View' | translate }}</span>
+      </button>
+      <button mat-menu-item id="adhocEditBtn-{{i}}" class="adhocEditBtn" (click)="onEditTask(row)">
+        <mat-icon fontSet="material-symbols-outlined">edit_square</mat-icon>
+        <span>{{ 'Edit task' | translate }}</span>
+      </button>
+      <button mat-menu-item id="adhocCopyBtn-{{i}}" class="adhocCopyBtn" (click)="onCopyTask(row)">
+        <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
+        <span>{{ 'Copy task' | translate }}</span>
+      </button>
+      <button mat-menu-item id="adhocDeleteBtn-{{i}}" class="adhocDeleteBtn btn-delete-menu" (click)="onDeleteTask(row)">
+        <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+        <span>{{ 'Delete task' | translate }}</span>
+      </button>
+    </mat-menu>
+  </div>
+</ng-template>

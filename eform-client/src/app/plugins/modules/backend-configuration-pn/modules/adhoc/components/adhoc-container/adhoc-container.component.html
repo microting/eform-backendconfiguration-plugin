@@ -32,4 +32,21 @@
   </div>
 </mat-card>
 
+<div *ngIf="!isHistoryView" id="main-list-view">
+  <app-adhoc-table
+    [tasks]="tasks"
+    [status]="status"
+    (updateTable)="updateTable()"
+    (viewTask)="onViewTask($event)"
+    (editTask)="onEditTask($event)"
+    (copyTask)="onCopyTask($event)"
+    (deleteTask)="onDeleteTask($event)"
+    (completeTask)="onCompleteTask($event)"
+  ></app-adhoc-table>
+  <eform-pagination
+    [pagination]="pagination"
+    (paginationChanged)="onPaginationChanged($event)"
+  ></eform-pagination>
+</div>
+
 <router-outlet></router-outlet>

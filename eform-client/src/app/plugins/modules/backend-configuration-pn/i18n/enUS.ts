@@ -626,4 +626,10 @@ export const enUS= {
   'Last 12 months': 'Last 12 months',
   'Last 24 months': 'Last 24 months',
   'Custom period': 'Custom period',
+  // Adhoc dashboard (M5/F5) - table view + column picker.
+  Columns: 'Columns',
+  Created: 'Created',
+  'No deadline': 'No deadline',
+  'Deadline today': 'Deadline today',
+  '{{count}} days until deadline': '{{count}} days until deadline',
 };

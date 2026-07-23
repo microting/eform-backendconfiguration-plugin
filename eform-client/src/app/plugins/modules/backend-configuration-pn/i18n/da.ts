@@ -609,4 +609,10 @@ export const da = {
   'Last 12 months': 'Sidste 12 måneder',
   'Last 24 months': 'Sidste 24 måneder',
   'Custom period': 'Brugerdefineret periode',
+  // Adhoc dashboard (M5/F5) - table view + column picker.
+  Columns: 'Kolonner',
+  Created: 'Oprettet',
+  'No deadline': 'Ingen sidste frist',
+  'Deadline today': 'Sidste frist i dag',
+  '{{count}} days until deadline': '{{count}} dage til sidste frist',
 };
