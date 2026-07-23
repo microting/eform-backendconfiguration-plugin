@@ -33,6 +33,7 @@
 </mat-card>
 
 <div *ngIf="!isHistoryView" id="main-list-view">
+  <app-adhoc-filters [counts]="counts"></app-adhoc-filters>
   <app-adhoc-table
     [tasks]="tasks"
     [status]="status"

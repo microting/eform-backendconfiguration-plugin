@@ -615,4 +615,7 @@ export const da = {
   'No deadline': 'Ingen sidste frist',
   'Deadline today': 'Sidste frist i dag',
   '{{count}} days until deadline': '{{count}} dage til sidste frist',
+  // Adhoc dashboard (M5/F6) - toolbar filters (tag OG/ELLER toggle).
+  And: 'OG',
+  Or: 'ELLER',
 };

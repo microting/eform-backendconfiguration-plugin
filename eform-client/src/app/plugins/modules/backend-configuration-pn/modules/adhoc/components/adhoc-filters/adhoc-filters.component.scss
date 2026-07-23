@@ -1,0 +1,50 @@
+.tag-toolbar {
+  position: relative;
+}
+
+.tag-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #961b1e;
+  color: #fff;
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.tag-filter-panel {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 10;
+  min-width: 260px;
+  background: var(--mdc-theme-surface, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+}
+
+.tag-logic-toggle {
+  margin-bottom: 8px;
+}
+
+.tag-filter-rows {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tag-new-row {
+  margin-top: 8px;
+  align-items: center;
+}
+
+.cell-muted {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  padding: 4px 0;
+}

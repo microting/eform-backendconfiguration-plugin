@@ -632,4 +632,7 @@ export const enUS= {
   'No deadline': 'No deadline',
   'Deadline today': 'Deadline today',
   '{{count}} days until deadline': '{{count}} days until deadline',
+  // Adhoc dashboard (M5/F6) - toolbar filters (tag AND/OR toggle).
+  And: 'AND',
+  Or: 'OR',
 };
