@@ -1835,6 +1835,84 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         Language = LanguageNames.Ukrainian
                     }
                 ]
+            },
+            new()
+            {
+                // Distinct from "Task management" (Danish "Ad-hoc-opgaver"/
+                // "Forefaldende opgaver" above) per the M5 plan's global
+                // constraint #3 - this is the new dashboard, "Adhoc overblik".
+                Name = "Adhoc overview",
+                E2EId = "backend-configuration-pn-adhoc",
+                Link = "/plugins/backend-configuration-pn/adhoc-tasks",
+                Type = MenuItemTypeEnum.Link,
+                Position = 12,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Adhoc overview",
+                    E2EId = "backend-configuration-pn-adhoc",
+                    DefaultLink = "/plugins/backend-configuration-pn/adhoc-tasks",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Adhoc overview",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Adhoc-Übersicht",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Adhoc overblik",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Огляд спеціальних завдань",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Adhoc overview",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Adhoc-Übersicht",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Adhoc overblik",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Огляд спеціальних завдань",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
             }
         };
 
