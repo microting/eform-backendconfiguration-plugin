@@ -139,7 +139,22 @@ export class AdhocStateService {
   // -----------------------------------------------------------------
 
   getTasks(): Observable<OperationDataResult<AdhocTaskIndexResultModel>> {
-    return this.service.getTasks(this.buildFiltersModel());
+    return this.service.getTasks(this.buildFiltersModel()).pipe(
+      tap((res) => {
+        // Propagate the fetched total into the pagination slice - the
+        // container binds `[pagination]` (including `total`) straight into
+        // eform-pagination, so without this dispatch `[length]` stays 0 and
+        // pages past 1 are unreachable (mirrors Historik's local `total`).
+        if (res && res.success && res.model) {
+          this.store.dispatch(
+            adhocUpdatePagination({
+              ...this.currentPagination,
+              total: res.model.total,
+            })
+          );
+        }
+      })
+    );
   }
 
   private buildFiltersModel(): AdhocTaskFiltersModel {

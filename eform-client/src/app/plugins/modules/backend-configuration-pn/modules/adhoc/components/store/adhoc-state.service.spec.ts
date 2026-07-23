@@ -79,6 +79,23 @@ describe('AdhocStateService', () => {
       expect(sentModel.tagsMatchAll).toBeFalse();
     });
 
+    it('dispatches the fetched total into the pagination state (I2: eform-pagination [length])', () => {
+      adhocServiceSpy.getTasks.and.returnValue(
+        of({success: true, model: {total: 42, entities: [], openCount: 0, completedCount: 0, archivedCount: 0} as any})
+      );
+      service.getTasks().subscribe();
+      expect(storeSpy.dispatch).toHaveBeenCalled();
+      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      expect(dispatched.type).toBe('[Adhoc] Update pagination');
+      expect(dispatched.payload.total).toBe(42);
+    });
+
+    it('does not dispatch pagination state when the request fails', () => {
+      adhocServiceSpy.getTasks.and.returnValue(of({success: false} as any));
+      service.getTasks().subscribe();
+      expect(storeSpy.dispatch).not.toHaveBeenCalled();
+    });
+
     it('maps isSortDsc to sortAscending (inverted)', () => {
       adhocServiceSpy.getTasks.and.returnValue(of({success: true, model: {} as any}));
       service.currentPagination = {...service.currentPagination, isSortDsc: true, sort: 'Title'};
