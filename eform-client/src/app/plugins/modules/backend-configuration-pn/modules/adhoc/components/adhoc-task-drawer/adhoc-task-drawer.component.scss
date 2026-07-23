@@ -48,6 +48,82 @@
   margin: 12px 0 4px;
 }
 
+/*
+ * "gcal" flat-row idiom, mirrored from the calendar module's
+ * task-create-edit-modal (calendar/modals/task-create-edit-modal/*.scss):
+ * every field sits in a `gcal-row` led by a muted 20px icon, sections are
+ * plain always-visible blocks separated by a hairline - NO
+ * mat-expansion-panels / floating cards. All rules are scoped under
+ * `.adhoc-drawer` because this component uses ViewEncapsulation.None (see
+ * the panel rules above) and must not restyle the calendar's own gcal
+ * classes.
+ */
+.adhoc-drawer .gcal-modal {
+  padding: 8px 24px 0 16px;
+}
+
+.adhoc-drawer .gcal-section + .gcal-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.adhoc-drawer .gcal-row {
+  display: flex;
+  align-items: flex-start;
+  min-height: 40px;
+  margin-bottom: 4px;
+}
+
+// 30px nudge drops the icon to the input's vertical centre when the row
+// leads with a label-above-input mat-form-field (same rationale as the
+// calendar modal); `--top` is the smaller nudge for rows leading with a
+// checkbox / button group / plain content instead of a form field.
+.adhoc-drawer .gcal-icon {
+  color: #5f6368;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  margin-right: 16px;
+  margin-top: 30px;
+  flex-shrink: 0;
+
+  &--hidden {
+    visibility: hidden;
+  }
+
+  &--top {
+    margin-top: 10px;
+  }
+}
+
+.adhoc-drawer .gcal-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+// Lift the workspace 320px max-width cap on full-width mtx-select fields so
+// they align to the text fields' right edge (mirrors the calendar modal's
+// rule; same !important-vs-theme-specificity reasoning).
+.adhoc-drawer mat-form-field.w-100.mat-mdc-form-field-type-mtx-select {
+  max-width: none !important;
+}
+
+// Reminder time + repeat side by side under their checkbox.
+.adhoc-drawer .gcal-inline-fields {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.adhoc-drawer .gcal-time-field {
+  // Same override as the calendar modal's time pickers: the workspace theme
+  // stretches mtx-select/form fields to 100% width; keep the time input
+  // compact so the repeat select can share the row.
+  width: 120px !important;
+  flex-shrink: 0;
+}
+
 .photo-thumb {
   position: relative;
   width: 64px;

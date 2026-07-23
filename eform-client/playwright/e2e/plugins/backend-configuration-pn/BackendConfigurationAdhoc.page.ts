@@ -36,15 +36,15 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *     full-height `MatDialog` (`.adhoc-drawer` root). Reactive-form fields
  *     have no ids but keep their `formControlName` as a literal
  *     `formcontrolname` DOM attribute (repo convention - see
- *     `n/calendar-default-board.spec.ts`). Three `mat-expansion-panel`
- *     sections: `#ny-sektion-ejendommen` (property/area/title/description/
- *     urgent/tags `#ny-sektion-tags`/photos+comments - the ONLY section
- *     expanded by default), `#ny-sektion-tildeling` (assignment - Kun
- *     tildelte/Alle `.btn-group` toggle, NO teams - collapsed by default),
- *     `#ny-sektion-deadline-paamindelse` (deadline/reminders - collapsed by
- *     default). Collapsed sections must be expanded (click their
- *     `mat-expansion-panel-header`) before their fields are interactable -
- *     `expandSection()` handles this.
+ *     `n/calendar-default-board.spec.ts`). Three flat, always-visible
+ *     sections (calendar-module "gcal" idiom - icon-led rows, NO expansion
+ *     panels): `#ny-sektion-ejendommen` (property/area/title/description/
+ *     urgent/tags `#ny-sektion-tags`/photos+comments),
+ *     `#ny-sektion-tildeling` (assignment - Kun tildelte/Alle `.btn-group`
+ *     toggle, NO teams), `#ny-sektion-deadline-paamindelse`
+ *     (deadline/reminders). `expandSection()` is retained as a no-op-safe
+ *     helper (it only clicks when a `mat-expansion-panel-header` actually
+ *     exists) so specs keep passing against either markup.
  *   - Modals: delete (`#adhocDeleteConfirmBtn`/`-CancelBtn`), copy
  *     (`#adhocCopyWithCommentsBtn`/`-WithoutCommentsBtn`/`-CancelBtn`),
  *     complete (`#adhocCompletePerformerSelect` - optional, no PIN field per
@@ -281,12 +281,22 @@ export class BackendConfigurationAdhocPage {
     return this.page.locator('#adhoc-drawer-complete');
   }
 
-  /** Expands one of the drawer's three `mat-expansion-panel` sections (id = panel id) if not already open. */
+  /**
+   * Ensures one of the drawer's three `ny-sektion-*` sections is interactable.
+   * Since the drawer's calendar-idiom restyle the sections are flat
+   * always-visible blocks (no `mat-expansion-panel`), so this is a no-op
+   * unless a collapsible header actually exists inside the section - kept
+   * expand-capable so specs calling it stay valid against either markup.
+   */
   async expandSection(sectionId: string): Promise<void> {
     const panel = this.page.locator(`#${sectionId}`);
+    const header = panel.locator('mat-expansion-panel-header');
+    if ((await header.count()) === 0) {
+      return; // flat section - always visible, nothing to expand
+    }
     const classAttr = (await panel.getAttribute('class')) ?? '';
     if (!classAttr.includes('mat-expanded')) {
-      await panel.locator('mat-expansion-panel-header').click();
+      await header.click();
       await this.page.waitForTimeout(400);
     }
   }

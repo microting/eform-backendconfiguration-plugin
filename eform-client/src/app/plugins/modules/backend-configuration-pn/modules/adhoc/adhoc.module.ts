@@ -16,7 +16,6 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatChip} from '@angular/material/chips';
-import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {AdhocRouting} from './adhoc.routing';
 import {
@@ -68,7 +67,6 @@ import {
     MatMenuTrigger,
     MatDatepickerModule,
     MatChip,
-    MatExpansionModule,
     MatCheckboxModule,
   ],
   providers: [],

@@ -57,12 +57,13 @@ function timeToMinutes(time: string): number {
  * this with: `position: {top: '0', right: '0'}, height: '100vh'`).
  *
  * Three modes: `create` (Opret opgave), `view` (read-only, closes via ×
- * only) and `edit` (Opdater opgave). Three collapsible sections mirroring
- * the mobile form / mockup `#ny-opgave-drawer`: "Ejendom og opgave"
- * (property/area/title/description/urgent/tags/photos/comments), "Tildel
- * til personer" (worker chips + executionRule + assignment log - NO
- * teams), "Udfør senest og visning første gang" (deadline/visibleFrom +
- * reminders).
+ * only) and `edit` (Opdater opgave). Three always-visible flat sections
+ * (calendar-module "gcal" idiom - icon-led `gcal-row`s, no expansion
+ * panels) mirroring the mobile form / mockup `#ny-opgave-drawer`:
+ * "Ejendom og opgave" (property/area/title/description/urgent/tags/photos/
+ * comments), "Tildel til personer" (worker chips + executionRule +
+ * assignment log - NO teams), "Udfør senest og visning første gang"
+ * (deadline/visibleFrom + reminders).
  */
 @AutoUnsubscribe()
 @Component({
