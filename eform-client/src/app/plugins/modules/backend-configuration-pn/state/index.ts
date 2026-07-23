@@ -1,3 +1,4 @@
+export * from './adhoc';
 export * from './area-rules';
 export * from './documents';
 export * from './files';
