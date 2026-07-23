@@ -618,4 +618,9 @@ export const da = {
   // Adhoc dashboard (M5/F6) - toolbar filters (tag OG/ELLER toggle).
   And: 'OG',
   Or: 'ELLER',
+  // Adhoc dashboard (M5/F7) - task drawer.
+  Weekdays: 'Hverdage',
+  'Deadline reminder': 'Påmindelse om frist',
+  'First visibility reminder': 'Påmindelse ved første visning',
+  Comments: 'Kommentarer',
 };

@@ -5,20 +5,24 @@ import {AppMenuStateService} from 'src/app/common/store';
 import {PaginationModel} from 'src/app/common/models';
 import {Store} from '@ngrx/store';
 import {Subscription, skip} from 'rxjs';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AdhocTaskModel} from '../../../../models';
 import {selectAdhocFilters} from '../../../../state';
 import {AdhocStateService} from '../store';
+import {AdhocTaskDrawerComponent, AdhocTaskDrawerData} from '../adhoc-task-drawer/adhoc-task-drawer.component';
 
 /**
  * Top bar + Overblik data orchestration for the "Adhoc overblik" dashboard
- * (M5/F4, extended F5). The Overblik view (toolbar filters + table) is
+ * (M5/F4, extended F5/F7). The Overblik view (toolbar filters + table) is
  * embedded directly in this component's own template (not a routed child -
  * see the routing decision note in adhoc.routing.ts); only Historik is an
  * actual nested route, rendered through the `<router-outlet>` below.
  *
- * The drawer (F7) and modals (F8) are wired up as those components land -
- * until then the row/toolbar actions that would open them are inert stubs
- * (same pattern F4 used for "Ny opgave").
+ * The modals (F8) are wired up as those components land - until then the
+ * row actions that would open them are inert stubs (same pattern F4 used
+ * for "Ny opgave" before F7 landed).
  */
 @AutoUnsubscribe()
 @Component({
@@ -32,6 +36,8 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private appMenuStateService = inject(AppMenuStateService);
   private store = inject(Store);
+  private dialog = inject(MatDialog);
+  private overlay = inject(Overlay);
   public adhocStateService = inject(AdhocStateService);
 
   // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
@@ -102,17 +108,36 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
     this.updateTable();
   }
 
-  // TODO(F7): open the "Ny opgave" drawer (MatDialog, create mode) once
-  // AdhocTaskDrawerComponent exists.
+  private openDrawer(data: AdhocTaskDrawerData): void {
+    this.dialog
+      .open(AdhocTaskDrawerComponent, {
+        ...dialogConfigHelper(this.overlay, data),
+        // Right-anchored, full-height drawer (M5 plan decision) - see
+        // adhoc-task-drawer.component.scss's `.adhoc-drawer-panel` rules
+        // (ViewEncapsulation.None) for the panel-shape half of this.
+        position: {top: '0', right: '0'},
+        height: '100vh',
+        maxHeight: '100vh',
+        panelClass: 'adhoc-drawer-panel',
+      })
+      .afterClosed()
+      .subscribe((changed) => {
+        if (changed) {
+          this.updateTable();
+        }
+      });
+  }
+
   openCreateTask(): void {
+    this.openDrawer({mode: 'create'});
   }
 
-  // TODO(F7): open AdhocTaskDrawerComponent in 'view' mode.
   onViewTask(task: AdhocTaskModel): void {
+    this.openDrawer({mode: 'view', task});
   }
 
-  // TODO(F7): open AdhocTaskDrawerComponent in 'edit' mode.
   onEditTask(task: AdhocTaskModel): void {
+    this.openDrawer({mode: 'edit', task});
   }
 
   // TODO(F8): open AdhocCopyModalComponent.

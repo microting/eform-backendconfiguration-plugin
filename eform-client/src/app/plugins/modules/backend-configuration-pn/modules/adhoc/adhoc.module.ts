@@ -19,19 +19,25 @@ import {MatChip} from '@angular/material/chips';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {AdhocRouting} from './adhoc.routing';
-import {AdhocContainerComponent, AdhocFiltersComponent, AdhocTableComponent} from './components';
+import {
+  AdhocContainerComponent,
+  AdhocFiltersComponent,
+  AdhocTableComponent,
+  AdhocTaskDrawerComponent,
+} from './components';
 
 /**
- * Adhoc dashboard module (M5/F4-F6) - import set copied from
- * task-management.module.ts, since the follow-up F7-F8 tasks (drawer,
- * modals/history) will need most of it. F7-F8 add their components'
- * declarations here as they land.
+ * Adhoc dashboard module (M5/F4-F7) - import set copied from
+ * task-management.module.ts, since the follow-up F8 task (modals/history)
+ * will need most of it. F8 adds its components' declarations here as it
+ * lands.
  */
 @NgModule({
   declarations: [
     AdhocContainerComponent,
     AdhocTableComponent,
     AdhocFiltersComponent,
+    AdhocTaskDrawerComponent,
   ],
   imports: [
     CommonModule,

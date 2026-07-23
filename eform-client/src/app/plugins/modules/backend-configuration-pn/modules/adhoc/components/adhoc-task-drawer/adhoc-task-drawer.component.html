@@ -1,0 +1,198 @@
+<div class="adhoc-drawer" [class.adhoc-drawer--readonly]="readonly">
+  <div class="adhoc-drawer__header d-flex align-items-center justify-content-between">
+    <h3 mat-dialog-title class="m-0">
+      <span *ngIf="isCreate">{{ 'New task' | translate }}</span>
+      <span *ngIf="!isCreate">{{ task?.title }}</span>
+    </h3>
+    <button type="button" mat-icon-button id="adhoc-drawer-close" (click)="onClose()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="adhoc-drawer__intro" *ngIf="!isCreate">
+    <span>{{ workerName(task?.createdByWorkerId) }}</span>
+    ·
+    <span>{{ propertyName(task?.propertyId) }}</span>
+    ·
+    <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
+  </div>
+
+  <div mat-dialog-content class="adhoc-drawer__content" [formGroup]="form">
+    <mat-accordion multi="true">
+      <mat-expansion-panel [expanded]="true" id="ny-sektion-ejendommen">
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ 'Task' | translate }}</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <mat-form-field>
+          <mat-label>{{ 'Property' | translate }}</mat-label>
+          <mtx-select [items]="adhocStateService.properties" bindLabel="name" bindValue="id" formControlName="propertyId"></mtx-select>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>{{ 'Area' | translate }}</mat-label>
+          <mtx-select [items]="areas" bindLabel="name" bindValue="id" formControlName="areaId"></mtx-select>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>{{ 'Task' | translate }}</mat-label>
+          <input matInput formControlName="title">
+        </mat-form-field>
+
+        <mat-checkbox formControlName="urgent">{{ 'Urgent' | translate }}</mat-checkbox>
+
+        <mat-form-field>
+          <mat-label>{{ 'Description' | translate }}</mat-label>
+          <textarea matInput formControlName="description" rows="3"></textarea>
+        </mat-form-field>
+
+        <div class="adhoc-drawer__tags" id="ny-sektion-tags">
+          <div class="adhoc-drawer__section-title">{{ 'Selected tags' | translate }}</div>
+          <div class="d-flex flex-wrap gap-4" id="ny-tags-valgt-wrap">
+            <mat-chip
+              *ngFor="let tagId of tagIds"
+              [removable]="!readonly"
+              (removed)="onToggleTag(tagId)"
+            >{{ tagName(tagId) }}</mat-chip>
+          </div>
+          <div class="d-flex flex-wrap gap-4" *ngIf="!readonly">
+            <mat-checkbox
+              *ngFor="let tag of adhocStateService.tags"
+              [checked]="isTagSelected(tag.id)"
+              (change)="onToggleTag(tag.id)"
+            >{{ tag.name }}</mat-checkbox>
+          </div>
+          <div class="d-flex gap-8" *ngIf="!readonly">
+            <mat-form-field>
+              <input matInput [(ngModel)]="newTagName" [ngModelOptions]="{standalone: true}" placeholder="{{ 'Enter tag name' | translate }}" (keydown.enter)="onCreateTag()">
+            </mat-form-field>
+            <button type="button" mat-stroked-button (click)="onCreateTag()">{{ 'Create tag' | translate }}</button>
+          </div>
+        </div>
+
+        <div class="adhoc-drawer__photos" id="ny-sektion-komm-billeder">
+          <div class="adhoc-drawer__section-title">{{ 'Content' | translate }}</div>
+          <div class="d-flex flex-wrap gap-8">
+            <div class="photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
+              <img [src]="photoUrl(photo) | authImage | async" alt="">
+              <button type="button" mat-icon-button *ngIf="!readonly" (click)="removeExistingPhoto(photo); $event.stopPropagation()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="photo-thumb photo-thumb--queued" *ngFor="let preview of queuedPhotoPreviews; let i = index">
+              <img [src]="preview" alt="">
+              <button type="button" mat-icon-button (click)="removeQueuedPhoto(i)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <label class="photo-upload-btn" *ngIf="!readonly">
+              <mat-icon>add_a_photo</mat-icon>
+              <input type="file" accept="image/*" multiple hidden (change)="onFilesSelected($event)">
+            </label>
+          </div>
+
+          <div class="adhoc-drawer__comments" *ngIf="!isCreate">
+            <div class="adhoc-drawer__section-title">{{ 'Comments' | translate }}</div>
+            <div class="comment-row" *ngFor="let comment of task?.comments">
+              <div class="comment-row__meta">{{ workerName(comment.authorWorkerId) }} · {{ comment.createdAt | date: 'dd.MM.yyyy HH:mm' }}</div>
+              <div class="comment-row__text">{{ comment.text }}</div>
+            </div>
+            <div class="d-flex gap-8" *ngIf="mode === 'edit'" id="ny-komm-ny">
+              <mat-form-field class="flex-grow-1">
+                <textarea matInput rows="2" [(ngModel)]="newCommentText" [ngModelOptions]="{standalone: true}"></textarea>
+              </mat-form-field>
+              <button type="button" mat-stroked-button (click)="onAddComment()">{{ 'Save' | translate }}</button>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel id="ny-sektion-tildeling">
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ 'Assigned to' | translate }}</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="btn-group" role="group">
+          <button type="button" class="btn-secondary" [class.active]="executionRule === 0" [disabled]="readonly" (click)="onExecutionRuleChange(0)">
+            {{ 'Assigned only' | translate }}
+          </button>
+          <button type="button" class="btn-secondary" [class.active]="executionRule === 1" [disabled]="readonly" (click)="onExecutionRuleChange(1)">
+            {{ 'Everyone' | translate }}
+          </button>
+        </div>
+
+        <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0">
+          <mat-chip
+            *ngFor="let workerId of assignedWorkerIds"
+            [removable]="!readonly"
+            (removed)="onToggleWorker(workerId)"
+          >{{ workerName(workerId) }}</mat-chip>
+        </div>
+        <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0 && !readonly">
+          <mat-checkbox
+            *ngFor="let worker of workers"
+            [checked]="isWorkerAssigned(worker.workerId)"
+            (change)="onToggleWorker(worker.workerId)"
+          >{{ worker.displayName }}</mat-checkbox>
+        </div>
+
+        <div class="assignment-log" *ngIf="task?.assignmentLog?.length">
+          <div class="adhoc-drawer__section-title">{{ 'Assigned to' | translate }}</div>
+          <div class="assignment-log__row" *ngFor="let entry of task.assignmentLog">
+            <span>{{ workerName(entry.changedByWorkerId) }} · {{ entry.changedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel id="ny-sektion-deadline-paamindelse">
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ 'Execute no later than and first display' | translate }}</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <mat-form-field>
+          <mat-label>{{ 'Last deadline' | translate }}</mat-label>
+          <input matInput [matDatepicker]="deadlinePicker" formControlName="deadline">
+          <mat-datepicker-toggle matSuffix [for]="deadlinePicker"></mat-datepicker-toggle>
+          <mat-datepicker #deadlinePicker></mat-datepicker>
+        </mat-form-field>
+        <mat-checkbox formControlName="deadlineReminder">{{ 'Deadline reminder' | translate }}</mat-checkbox>
+        <ng-container *ngIf="form.get('deadlineReminder').value">
+          <mat-form-field>
+            <mat-label>{{ 'At' | translate }}</mat-label>
+            <input matInput type="time" formControlName="deadlineReminderTime">
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'Repeat' | translate }}</mat-label>
+            <mtx-select
+              [items]="[{value: 0, label: ('None' | translate)}, {value: 1, label: ('Weekdays' | translate)}]"
+              bindLabel="label"
+              bindValue="value"
+              [clearable]="false"
+              formControlName="deadlineReminderRepeat"
+            ></mtx-select>
+          </mat-form-field>
+        </ng-container>
+
+        <mat-form-field>
+          <mat-label>{{ 'Date' | translate }}</mat-label>
+          <input matInput [matDatepicker]="visiblePicker" formControlName="visibleFrom">
+          <mat-datepicker-toggle matSuffix [for]="visiblePicker"></mat-datepicker-toggle>
+          <mat-datepicker #visiblePicker></mat-datepicker>
+        </mat-form-field>
+        <mat-checkbox formControlName="visibleReminder">{{ 'First visibility reminder' | translate }}</mat-checkbox>
+        <mat-form-field *ngIf="form.get('visibleReminder').value">
+          <mat-label>{{ 'At' | translate }}</mat-label>
+          <input matInput type="time" formControlName="visibleReminderTime">
+        </mat-form-field>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+
+  <div mat-dialog-actions class="adhoc-drawer__actions d-flex justify-content-end gap-8" *ngIf="!readonly">
+    <button type="button" mat-raised-button (click)="onClose()">{{ 'Cancel' | translate }}</button>
+    <button type="button" mat-raised-button color="primary" [disabled]="saving" (click)="onSave()">
+      <span *ngIf="isCreate">{{ 'Create' | translate }}</span>
+      <span *ngIf="!isCreate">{{ 'Save changes' | translate }}</span>
+    </button>
+  </div>
+</div>

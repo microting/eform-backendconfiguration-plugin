@@ -635,4 +635,9 @@ export const enUS= {
   // Adhoc dashboard (M5/F6) - toolbar filters (tag AND/OR toggle).
   And: 'AND',
   Or: 'OR',
+  // Adhoc dashboard (M5/F7) - task drawer.
+  Weekdays: 'Weekdays',
+  'Deadline reminder': 'Deadline reminder',
+  'First visibility reminder': 'First visibility reminder',
+  Comments: 'Comments',
 };
