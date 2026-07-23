@@ -252,7 +252,7 @@ public class AdhocController : Controller
     public async Task<OperationDataResult<AdhocTagModel>> RenameTag(int id, [FromBody] AdhocTagCreateModel model)
     {
         return await ExecuteAsync(
-            () => _adhocService.RenameTag(DashboardWorkerId, id, model?.Name ?? string.Empty),
+            () => _adhocService.RenameTag(DashboardWorkerId, id, model?.Name ?? string.Empty, IsAdmin),
             "ErrorWhileUpdatingAdhocTag");
     }
 
@@ -261,7 +261,7 @@ public class AdhocController : Controller
     public async Task<OperationResult> DeleteTag(int id)
     {
         return await ExecuteAsync(
-            () => _adhocService.DeleteTag(DashboardWorkerId, id),
+            () => _adhocService.DeleteTag(DashboardWorkerId, id, IsAdmin),
             "ErrorWhileDeletingAdhocTag");
     }
 

@@ -660,6 +660,7 @@ public class BackendConfigurationAdhocService(
 
     public async Task<AdhocTagModel> CreateTag(int workerId, string name, bool isAdmin = false)
     {
+        RequireRealIdentityOrAdmin(workerId, isAdmin, "create");
         var trimmedName = RequireNonEmptyTagName(name);
 
         var tag = new AdhocTag { Name = trimmedName, OwnerWorkerId = isAdmin ? null : workerId };
@@ -668,21 +669,23 @@ public class BackendConfigurationAdhocService(
         return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = !isAdmin };
     }
 
-    public async Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name)
+    public async Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name, bool isAdmin = false)
     {
+        RequireRealIdentityOrAdmin(workerId, isAdmin, "rename");
         var trimmedName = RequireNonEmptyTagName(name);
 
-        var tag = await LoadOwnTagOrThrowAsync(workerId, tagId, "rename");
+        var tag = await LoadManageableTagOrThrowAsync(workerId, tagId, isAdmin, "rename");
 
         tag.Name = trimmedName;
         await tag.Update(dbContext);
 
-        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = true };
+        return new AdhocTagModel { Id = tag.Id, Name = tag.Name, IsUserTag = tag.OwnerWorkerId != null };
     }
 
-    public async Task DeleteTag(int workerId, int tagId)
+    public async Task DeleteTag(int workerId, int tagId, bool isAdmin = false)
     {
-        var tag = await LoadOwnTagOrThrowAsync(workerId, tagId, "delete");
+        RequireRealIdentityOrAdmin(workerId, isAdmin, "delete");
+        var tag = await LoadManageableTagOrThrowAsync(workerId, tagId, isAdmin, "delete");
 
         var joins = await dbContext.AdhocTaskTags
             .Where(tt => tt.AdhocTagId == tagId && tt.WorkflowState != Constants.WorkflowStates.Removed)
@@ -720,7 +723,24 @@ public class BackendConfigurationAdhocService(
         return trimmed;
     }
 
-    private async Task<AdhocTag> LoadOwnTagOrThrowAsync(int workerId, int tagId, string action)
+    /// <summary>
+    /// Tag mutations require a real identity: worker id 0 is the REST
+    /// dashboard's synthetic caller (AdhocController.DashboardWorkerId) and
+    /// owns nothing — a non-admin web user must never create/rename/delete
+    /// tags through the shared pseudo-identity. Admins pass (they curate the
+    /// customer's global tags); gRPC callers always have real, positive SDK
+    /// site ids and never hit this guard.
+    /// </summary>
+    private static void RequireRealIdentityOrAdmin(int workerId, bool isAdmin, string action)
+    {
+        if (workerId == 0 && !isAdmin)
+        {
+            throw new AdhocTaskUnauthorizedException(
+                $"Worker {workerId} may not {action} tags: dashboard callers must be admins.");
+        }
+    }
+
+    private async Task<AdhocTag> LoadManageableTagOrThrowAsync(int workerId, int tagId, bool isAdmin, string action)
     {
         var tag = await dbContext.AdhocTags
             .FirstOrDefaultAsync(t => t.Id == tagId && t.WorkflowState != Constants.WorkflowStates.Removed);
@@ -729,7 +749,10 @@ public class BackendConfigurationAdhocService(
             throw new AdhocTagNotFoundException(tagId);
         }
 
-        if (tag.OwnerWorkerId != workerId)
+        // Admins manage every tag — in particular the global ones
+        // (OwnerWorkerId == null), which no worker owns and which were
+        // otherwise unmanageable by anyone. Non-admins only their own.
+        if (!isAdmin && tag.OwnerWorkerId != workerId)
         {
             throw new AdhocTaskUnauthorizedException(
                 $"Worker {workerId} may not {action} tag {tagId}: not the owner.");

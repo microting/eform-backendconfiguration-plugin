@@ -422,4 +422,72 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.DeleteTag(2, created.Id));
     }
+
+    // --- I1: tag management by the REST caller identity. Admins manage
+    // global tags (OwnerWorkerId == null, previously unmanageable by
+    // anyone); the non-admin REST pseudo-identity (workerId 0, isAdmin
+    // false) is denied create/rename/delete outright - identity 0 owns
+    // nothing (same principle as the C1 creator-gate guard). ---
+
+    [Test]
+    public async Task RenameTag_IsAdmin_RenamesGlobalTag()
+    {
+        var globalTag = new AdhocTag { Name = "global" };
+        await globalTag.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        var renamed = await sut.RenameTag(0, globalTag.Id, "renamed-global", isAdmin: true);
+
+        Assert.That(renamed.Name, Is.EqualTo("renamed-global"));
+        Assert.That(renamed.IsUserTag, Is.False);
+    }
+
+    [Test]
+    public async Task DeleteTag_IsAdmin_DeletesGlobalTag()
+    {
+        var globalTag = new AdhocTag { Name = "global" };
+        await globalTag.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        await sut.DeleteTag(0, globalTag.Id, isAdmin: true);
+
+        var tagRow = await BackendConfigurationPnDbContext!.AdhocTags
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == globalTag.Id);
+        Assert.That(tagRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
+    public void CreateTag_Throws_ForNonAdminWorkerZero()
+    {
+        var sut = CreateSut();
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.CreateTag(0, "not-allowed"));
+    }
+
+    [Test]
+    public async Task RenameTag_Throws_ForNonAdminWorkerZero_EvenOnAWorkerZeroOwnedTag()
+    {
+        // A tag stamped OwnerWorkerId = 0 (e.g. created before the C1/I1
+        // guards existed) must still not be manageable through the shared
+        // pseudo-identity without the admin flag.
+        var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
+        await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.RenameTag(0, zeroOwnedTag.Id, "renamed"));
+    }
+
+    [Test]
+    public async Task DeleteTag_Throws_ForNonAdminWorkerZero_EvenOnAWorkerZeroOwnedTag()
+    {
+        var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
+        await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.DeleteTag(0, zeroOwnedTag.Id));
+    }
 }

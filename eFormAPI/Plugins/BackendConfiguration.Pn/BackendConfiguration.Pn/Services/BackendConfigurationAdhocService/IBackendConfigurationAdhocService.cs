@@ -158,24 +158,31 @@ public interface IBackendConfigurationAdhocService
     /// case it creates a global tag (<c>OwnerWorkerId = null</c>) - an admin
     /// curating shared tags for the customer. Mobile <c>CreateTag</c>
     /// semantics (owner = caller) are unchanged; mobile never passes
-    /// <paramref name="isAdmin"/>.
+    /// <paramref name="isAdmin"/>. Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> for the non-admin REST
+    /// pseudo-identity (workerId 0, isAdmin false) - identity 0 owns nothing.
     /// </summary>
     Task<AdhocTagModel> CreateTag(int workerId, string name, bool isAdmin = false);
 
     /// <summary>
-    /// Renames a tag <paramref name="workerId"/> owns. Throws
-    /// <see cref="AdhocTaskUnauthorizedException"/> for global tags or tags
-    /// owned by another worker.
+    /// Renames a tag <paramref name="workerId"/> owns, or - when
+    /// <paramref name="isAdmin"/> is true - any tag, notably the global ones
+    /// (<c>OwnerWorkerId == null</c>) that no worker owns. Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> for non-admins on global
+    /// tags or tags owned by another worker, and for the non-admin REST
+    /// pseudo-identity (workerId 0, isAdmin false).
     /// </summary>
-    Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name);
+    Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name, bool isAdmin = false);
 
     /// <summary>
-    /// Soft-deletes a tag <paramref name="workerId"/> owns, plus every
+    /// Soft-deletes a tag <paramref name="workerId"/> owns (any tag when
+    /// <paramref name="isAdmin"/> is true, notably global ones), plus every
     /// <c>AdhocTaskTag</c> join referencing it. Throws
-    /// <see cref="AdhocTaskUnauthorizedException"/> for global tags or tags
-    /// owned by another worker.
+    /// <see cref="AdhocTaskUnauthorizedException"/> for non-admins on global
+    /// tags or tags owned by another worker, and for the non-admin REST
+    /// pseudo-identity (workerId 0, isAdmin false).
     /// </summary>
-    Task DeleteTag(int workerId, int tagId);
+    Task DeleteTag(int workerId, int tagId, bool isAdmin = false);
 
     /// <summary>
     /// Persists a photo via <see cref="IAdhocPhotoStorage"/> (the same
