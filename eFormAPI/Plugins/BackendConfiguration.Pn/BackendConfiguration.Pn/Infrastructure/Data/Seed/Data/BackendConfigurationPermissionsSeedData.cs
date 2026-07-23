@@ -71,6 +71,18 @@ public static class BackendConfigurationPermissionsSeedData
         {
             PermissionName = "Enable time registration",
             ClaimName = BackendConfigurationClaims.EnableTimeRegistration
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable adhoc",
+            // TODO upstream to Microting.EformBackendConfigurationBase.Infrastructure.Const.
+            // BackendConfigurationClaims.EnableAdhoc once a base-repo release train is open.
+            // None was open at execution time (base repo is on master, clean, its last change
+            // already shipped as the 10.0.46 release this branch depends on), and the NuGet
+            // publish for that very release is itself still a pending-human step per the M3
+            // status - see the plan's P1 "Claim const placement" note. Plain string literal
+            // used here instead, matching PluginPermission.ClaimName's plain-string contract.
+            ClaimName = "adhoc_enable"
         }
     };
 }

@@ -50,6 +50,7 @@ import {TimePlanningPnSettingsService, TimePlanningPnPayRuleSetsService} from 's
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {StoreModule} from '@ngrx/store';
 import {
+  adhocReducer,
   areaRulesReducer,
   documentsReducer,
   filesReducer,
@@ -97,6 +98,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
     MatCheckboxModule,
     MatDatepickerModule,
     StoreModule.forFeature('backendConfigurationPn', {
+      adhocState: adhocReducer,
       areaRulesState: areaRulesReducer,
       documentsState: documentsReducer,
       filesState: filesReducer,

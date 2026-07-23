@@ -1,0 +1,174 @@
+/*
+ * Right-anchored, full-height drawer look (M5/F7). MatDialogConfig already
+ * sets `position: {top:'0', right:'0'}, height:'100vh'` (see
+ * dialogConfigHelper-style config the callers open this with) - these
+ * rules just remove the default dialog's centered rounding/max-width so it
+ * reads as a slide-in panel, not a centered modal. Global scope is
+ * required (see the component's ViewEncapsulation.None) because
+ * `.adhoc-drawer-panel`/`.mat-mdc-dialog-container` live in the CDK
+ * overlay, outside this component's own template.
+ */
+.adhoc-drawer-panel {
+  .mat-mdc-dialog-container {
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .mdc-dialog__surface {
+    border-radius: 0;
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+.adhoc-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: min(560px, 100vw);
+}
+
+.adhoc-drawer__header {
+  padding: 8px 8px 0 16px;
+}
+
+.adhoc-drawer__intro {
+  padding: 0 16px 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.adhoc-drawer__content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.adhoc-drawer__section-title {
+  font-weight: 600;
+  margin: 12px 0 4px;
+}
+
+/*
+ * "gcal" flat-row idiom, mirrored from the calendar module's
+ * task-create-edit-modal (calendar/modals/task-create-edit-modal/*.scss):
+ * every field sits in a `gcal-row` led by a muted 20px icon, sections are
+ * plain always-visible blocks separated by a hairline - NO
+ * mat-expansion-panels / floating cards. All rules are scoped under
+ * `.adhoc-drawer` because this component uses ViewEncapsulation.None (see
+ * the panel rules above) and must not restyle the calendar's own gcal
+ * classes.
+ */
+.adhoc-drawer .gcal-modal {
+  padding: 8px 24px 0 16px;
+}
+
+.adhoc-drawer .gcal-section + .gcal-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.adhoc-drawer .gcal-row {
+  display: flex;
+  align-items: flex-start;
+  min-height: 40px;
+  margin-bottom: 4px;
+}
+
+// 30px nudge drops the icon to the input's vertical centre when the row
+// leads with a label-above-input mat-form-field (same rationale as the
+// calendar modal); `--top` is the smaller nudge for rows leading with a
+// checkbox / button group / plain content instead of a form field.
+.adhoc-drawer .gcal-icon {
+  color: #5f6368;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  margin-right: 16px;
+  margin-top: 30px;
+  flex-shrink: 0;
+
+  &--hidden {
+    visibility: hidden;
+  }
+
+  &--top {
+    margin-top: 10px;
+  }
+}
+
+.adhoc-drawer .gcal-row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+// Lift the workspace 320px max-width cap on full-width mtx-select fields so
+// they align to the text fields' right edge (mirrors the calendar modal's
+// rule; same !important-vs-theme-specificity reasoning).
+.adhoc-drawer mat-form-field.w-100.mat-mdc-form-field-type-mtx-select {
+  max-width: none !important;
+}
+
+// Reminder time + repeat side by side under their checkbox.
+.adhoc-drawer .gcal-inline-fields {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.adhoc-drawer .gcal-time-field {
+  // Same override as the calendar modal's time pickers: the workspace theme
+  // stretches mtx-select/form fields to 100% width; keep the time input
+  // compact so the repeat select can share the row.
+  width: 120px !important;
+  flex-shrink: 0;
+}
+
+.photo-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+  }
+}
+
+.photo-upload-btn {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.comment-row {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &__meta {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.assignment-log__row {
+  font-size: 12px;
+  padding: 2px 0;
+}

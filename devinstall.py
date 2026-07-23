@@ -37,6 +37,7 @@ test_files_to_remove = [
     os.path.join("eform-client", "e2e", "Assets"),
     os.path.join("eform-client", "wdio-plugin-step2.conf.ts"),
     os.path.join("eform-client", "cypress", "e2e", "plugins", "backend-configuration-pn"),
+    os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn"),
 ]
 
 for rel_path in test_files_to_remove:
@@ -50,6 +51,10 @@ for rel_path in test_files_to_remove:
 # Ensure the plugins directory exists within the Cypress structure
 cypress_plugins_dir = os.path.join(dst_base, "eform-client", "cypress", "e2e", "plugins")
 os.makedirs(cypress_plugins_dir, exist_ok=True)
+
+# Ensure the plugins directory exists within the Playwright structure
+playwright_plugins_dir = os.path.join(dst_base, "eform-client", "playwright", "e2e", "plugins")
+os.makedirs(playwright_plugins_dir, exist_ok=True)
 
 # Test files to copy
 test_files_to_copy = [
@@ -85,6 +90,10 @@ test_files_to_copy = [
      os.path.join("eform-client", "cypress", "e2e", "plugins", "backend-configuration-pn")),
     (os.path.join("eform-client", "cypress", "fixtures"),
      os.path.join("eform-client", "cypress", "fixtures")),
+    (os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn"),
+     os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn")),
+    (os.path.join("eform-client", "playwright.config.ts"),
+     os.path.join("eform-client", "playwright.config.ts")),
 ]
 
 for src_rel_path, dst_rel_path in test_files_to_copy:

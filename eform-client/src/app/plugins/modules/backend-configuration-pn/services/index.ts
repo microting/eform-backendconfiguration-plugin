@@ -1,3 +1,4 @@
+export * from './backend-configuration-pn-adhoc.service';
 export * from './backend-configuration-pn-areas.service';
 export * from './backend-configuration-pn-cases.service';
 export * from './backend-configuration-pn-files.service';

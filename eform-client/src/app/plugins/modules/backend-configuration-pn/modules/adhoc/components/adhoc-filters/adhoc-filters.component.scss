@@ -1,0 +1,71 @@
+// Sibling filter-component convention (task-management-filters,
+// documents-filters): display:contents lets the filter controls join the
+// parent sub-header toolbar's flex row instead of forming a nested row
+// (host + wrapper both bypass layout).
+:host,
+.filters-inline {
+  display: contents;
+}
+
+// Constrain field width so the filters + view toggle + action button share
+// the sub-header row. Naming `.mat-mdc-form-field` in the selector outranks
+// the global `.mat-mdc-form-field { width: 100% }` rule in
+// scss/components/_form.scss (same trick as the sibling filter components).
+:host ::ng-deep .filters-inline mat-form-field.mat-mdc-form-field {
+  width: 200px;
+  min-width: 200px;
+}
+
+.tag-toolbar {
+  position: relative;
+}
+
+.tag-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #961b1e;
+  color: #fff;
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.tag-filter-panel {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  // Must clear the mtx-grid's sticky header row (Material sticky cells sit
+  // at z-index 100) now that the popup anchors in the sub-header card
+  // directly above the table.
+  z-index: 110;
+  min-width: 260px;
+  background: var(--mdc-theme-surface, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+}
+
+.tag-logic-toggle {
+  margin-bottom: 8px;
+}
+
+.tag-filter-rows {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tag-new-row {
+  margin-top: 8px;
+  align-items: center;
+}
+
+.cell-muted {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  padding: 4px 0;
+}

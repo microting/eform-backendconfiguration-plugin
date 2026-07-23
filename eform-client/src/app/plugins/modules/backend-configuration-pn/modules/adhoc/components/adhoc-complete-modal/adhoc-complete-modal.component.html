@@ -1,0 +1,23 @@
+<h3 mat-dialog-title>{{ 'Complete task' | translate }}</h3>
+<div mat-dialog-content>
+  <p>{{ data.title }}</p>
+  <mat-form-field>
+    <mat-label>{{ 'Choose who completes the task' | translate }}</mat-label>
+    <mtx-select
+      [items]="workers"
+      bindLabel="displayName"
+      bindValue="workerId"
+      id="adhocCompletePerformerSelect"
+      [(ngModel)]="completedByWorkerId"
+      [ngModelOptions]="{standalone: true}"
+    ></mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-8">
+  <button mat-raised-button id="adhocCompleteCancelBtn" (click)="cancel()">
+    {{ 'Cancel' | translate }}
+  </button>
+  <button mat-raised-button color="primary" id="adhocCompleteConfirmBtn" (click)="complete()">
+    {{ 'Complete task' | translate }}
+  </button>
+</div>

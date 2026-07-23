@@ -66,6 +66,17 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'adhoc-tasks',
+        canActivate: [PermissionGuard],
+        data: {
+          requiredPermission: BackendConfigurationPnClaims.enableAdhoc,
+        },
+        loadChildren: () =>
+          import('./modules/adhoc/adhoc.module').then(
+            (m) => m.AdhocModule
+          ),
+      },
+      {
         path: 'task-management',
         canActivate: [PermissionGuard],
         data: {

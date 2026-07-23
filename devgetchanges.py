@@ -31,6 +31,7 @@ test_files_to_remove = [
     os.path.join("eform-client", "wdio-headless-plugin-step2.conf.ts"),
     os.path.join("eform-client", "e2e", "Page objects", "BackendConfiguration"),
     os.path.join("eform-client", "cypress", "e2e", "plugins", "backend-configuration-pn"),
+    os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn"),
 ]
 
 for rel_path in test_files_to_remove:
@@ -73,6 +74,8 @@ test_files_to_copy = [
      os.path.join("eform-client", "wdio-headless-plugin-step2j.conf.ts")),
     (os.path.join("eform-client", "cypress", "fixtures"),
      os.path.join("eform-client", "cypress", "fixtures")),
+    (os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn"),
+     os.path.join("eform-client", "playwright", "e2e", "plugins", "backend-configuration-pn")),
 ]
 
 for src_rel_path, dst_rel_path in test_files_to_copy:

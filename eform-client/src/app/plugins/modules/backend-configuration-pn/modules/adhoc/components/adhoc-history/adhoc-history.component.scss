@@ -1,0 +1,37 @@
+.history-day-group__date {
+  font-weight: 600;
+  margin: 12px 0 4px;
+}
+
+.history-row {
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.history-row__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1 1 auto;
+}
+
+.history-row__title {
+  font-weight: 600;
+}
+
+.history-row__meta {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.history-row__comment {
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.cell-muted {
+  color: rgba(0, 0, 0, 0.4);
+  padding: 8px 0;
+}

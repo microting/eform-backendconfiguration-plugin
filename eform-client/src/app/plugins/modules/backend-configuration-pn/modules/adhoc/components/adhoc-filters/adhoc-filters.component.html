@@ -1,0 +1,97 @@
+<div class="filters-inline">
+  <div class="tag-toolbar">
+    <button
+      type="button"
+      mat-stroked-button
+      id="tag-filter-btn"
+      (click)="toggleTagPopup(); $event.stopPropagation()"
+    >
+      <mat-icon>sell</mat-icon>
+      {{ 'Tags' | translate }}
+      <span class="tag-count-badge" *ngIf="currentFilters.tagIds.length">{{ currentFilters.tagIds.length }}</span>
+    </button>
+    <div class="tag-filter-panel" id="tag-filter-panel" *ngIf="tagPopupOpen" (click)="$event.stopPropagation()">
+      <div class="tag-logic-toggle btn-group d-flex gap-8" role="group">
+        <button
+          type="button"
+          [ngClass]="currentFilters.tagLogic === 'or' ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+          (click)="onTagLogicChange('or')"
+        ><span>{{ 'Or' | translate }}</span></button>
+        <button
+          type="button"
+          [ngClass]="currentFilters.tagLogic === 'and' ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+          (click)="onTagLogicChange('and')"
+        ><span>{{ 'And' | translate }}</span></button>
+      </div>
+      <div class="tag-filter-rows" id="tag-filter-rows">
+        <div class="tag-filter-row d-flex align-items-center justify-content-between" *ngFor="let tag of adhocStateService.tags">
+          <mat-checkbox [checked]="isTagSelected(tag.id)" (change)="onToggleTag(tag.id)">{{ tag.name }}</mat-checkbox>
+          <button
+            type="button"
+            mat-icon-button
+            id="toolbar-tag-admin-{{tag.id}}"
+            matTooltip="{{ 'Delete tag' | translate }}"
+            (click)="onDeleteTag(tag)"
+          >
+            <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+          </button>
+        </div>
+        <div class="cell-muted" *ngIf="!adhocStateService.tags.length">{{ 'None found' | translate }}</div>
+      </div>
+      <div class="tag-new-row d-flex gap-8" id="toolbar-tag-ny">
+        <mat-form-field>
+          <input
+            matInput
+            [(ngModel)]="newTagName"
+            placeholder="{{ 'Enter tag name' | translate }}"
+            (keydown.enter)="onCreateTag()"
+          >
+        </mat-form-field>
+        <button type="button" mat-stroked-button (click)="onCreateTag()">{{ 'Create tag' | translate }}</button>
+      </div>
+    </div>
+  </div>
+
+  <mat-form-field>
+    <mat-label>{{ 'Search' | translate }}</mat-label>
+    <input matInput id="search" [formControl]="searchControl">
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select
+      [items]="adhocStateService.properties"
+      bindLabel="name"
+      bindValue="id"
+      id="ejendom"
+      [ngModel]="currentFilters.propertyId"
+      (ngModelChange)="onPropertyChange($event)"
+    ></mtx-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Area' | translate }}</mat-label>
+    <mtx-select
+      [items]="areas"
+      bindLabel="name"
+      bindValue="id"
+      id="toolbar-omraade"
+      [disabled]="currentFilters.propertyId == null"
+      [ngModel]="currentFilters.areaId"
+      (ngModelChange)="onAreaChange($event)"
+    ></mtx-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>{{ 'Status' | translate }}</mat-label>
+    <mtx-select
+      [items]="statusOptions"
+      bindLabel="label"
+      bindValue="value"
+      [clearable]="false"
+      id="task-status-filter"
+      [ngModel]="currentFilters.status"
+      (ngModelChange)="onStatusChange($event)"
+    ></mtx-select>
+  </mat-form-field>
+</div>

@@ -1,0 +1,57 @@
+<mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
+  <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
+  <!--
+    Filters render inline in this sub-header row via the plugin's
+    `.filters-inline` display:contents convention (see
+    task-management-container / documents-container). `.ml-auto` pushes the
+    "Ny opgave" button to the row's right edge.
+  -->
+  <div class="d-flex flex-row flex-wrap align-items-end gap-12">
+    <div class="btn-group d-flex gap-8" role="group">
+      <button
+        type="button"
+        [ngClass]="!isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+        id="backend-configuration-pn-adhoc-view-list"
+        routerLink="."
+      >
+        <span>{{ 'Overview' | translate }}</span>
+      </button>
+      <button
+        type="button"
+        [ngClass]="isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+        id="backend-configuration-pn-adhoc-view-history"
+        routerLink="history"
+      >
+        <span>{{ 'History' | translate }}</span>
+      </button>
+    </div>
+    <app-adhoc-filters *ngIf="!isHistoryView" [counts]="counts"></app-adhoc-filters>
+    <button
+      class="btn-primary btn-primary--icon-left ml-auto"
+      id="backend-configuration-pn-adhoc-new-task"
+      (click)="openCreateTask()"
+    >
+      <mat-icon>add</mat-icon>
+      <span>{{ 'New task' | translate }}</span>
+    </button>
+  </div>
+</mat-card>
+
+<div *ngIf="!isHistoryView" id="main-list-view">
+  <app-adhoc-table
+    [tasks]="tasks"
+    [status]="status"
+    (updateTable)="updateTable()"
+    (viewTask)="onViewTask($event)"
+    (editTask)="onEditTask($event)"
+    (copyTask)="onCopyTask($event)"
+    (deleteTask)="onDeleteTask($event)"
+    (completeTask)="onCompleteTask($event)"
+  ></app-adhoc-table>
+  <eform-pagination
+    [pagination]="pagination"
+    (paginationChanged)="onPaginationChanged($event)"
+  ></eform-pagination>
+</div>
+
+<router-outlet></router-outlet>

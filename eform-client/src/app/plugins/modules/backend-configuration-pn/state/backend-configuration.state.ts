@@ -1,4 +1,5 @@
 import {
+  AdhocState,
   AreaRulesState,
   DocumentsState,
   FilesState,
@@ -15,6 +16,7 @@ import {
 } from './';
 
 export interface BackendConfigurationState {
+  adhocState: AdhocState;
   areaRulesState: AreaRulesState,
   documentsState: DocumentsState,
   filesState: FilesState;

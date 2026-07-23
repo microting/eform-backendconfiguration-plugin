@@ -285,7 +285,7 @@
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.36" />
     <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.30" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.45" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.46" />
     <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.34" />
     <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.36" />
     <PackageReference Include="Microting.TimePlanningBase" Version="10.0.55" />
@@ -307,6 +307,7 @@
       <Protobuf Include="Protos\compliances.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\documents.proto" GrpcServices="Server" ProtoRoot="Protos" />
       <Protobuf Include="Protos\events.proto" GrpcServices="Server" ProtoRoot="Protos" />
+      <Protobuf Include="Protos\adhoc.proto" GrpcServices="Server" ProtoRoot="Protos" />
     </ItemGroup>
 
 </Project>
