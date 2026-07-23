@@ -112,7 +112,13 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   get groupedEvents(): AdhocHistoryDayGroup[] {
     const groups = new Map<string, AdhocTaskHistoryEventModel[]>();
     for (const event of this.events) {
-      const key = (event.occurredAt || '').slice(0, 10);
+      // occurredAt reaches the client as a Date, not a string: the host
+      // frontend's global DateInterceptor converts every ISO-datetime string
+      // in every response body (date.interceptor.ts). Calling a string
+      // method on it throws inside this getter, which aborts every change-
+      // detection pass and freezes the view on its last rendered state.
+      const occurred = event.occurredAt;
+      const key = occurred instanceof Date ? format(occurred, 'yyyy-MM-dd') : String(occurred || '').slice(0, 10);
       const bucket = groups.get(key) ?? [];
       bucket.push(event);
       groups.set(key, bucket);

@@ -14,7 +14,13 @@ export interface AdhocTaskHistoryEventModel {
 
   eventType: 'created' | 'assigned' | 'completed' | 'archived' | 'commented';
 
-  occurredAt: string;
+  /**
+   * ISO string on the wire, but a `Date` by the time it reaches components:
+   * the host frontend's global DateInterceptor converts every ISO-datetime
+   * string in every response body (same reality as e.g.
+   * `DocumentModel.endDate`).
+   */
+  occurredAt: string | Date;
 
   actorName: string;
 
@@ -27,7 +33,7 @@ export interface AdhocTaskHistoryEventModel {
 
   lastCommentText: string | null;
   lastCommentAuthor: string | null;
-  lastCommentAt: string | null;
+  lastCommentAt: string | Date | null;
 
   completed: boolean;
   archived: boolean;
