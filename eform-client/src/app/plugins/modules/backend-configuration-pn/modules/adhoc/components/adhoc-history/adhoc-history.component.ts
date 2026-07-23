@@ -8,7 +8,7 @@ import {format, subDays, subMonths} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {AdhocAreaModel, AdhocHistoryFiltersModel, AdhocTaskHistoryEventModel} from '../../../../models';
-import {AdhocHistoryFiltrationModel, adhocUpdateHistoryFilters, selectAdhocHistoryFilters} from '../../../../state';
+import {AdhocHistoryFiltrationModel, adhocInitialState, adhocUpdateHistoryFilters, selectAdhocHistoryFilters} from '../../../../state';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocTaskDrawerComponent} from '../adhoc-task-drawer/adhoc-task-drawer.component';
@@ -66,7 +66,19 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   customFrom: Date | null = null;
   customTo: Date | null = null;
 
-  currentFilters: AdhocHistoryFiltrationModel;
+  // Defaulted (not left undefined until the store subscription's first
+  // emission) - unlike AdhocFiltersComponent (Overview), whose
+  // `currentFilters` getter delegates to AdhocStateService's own
+  // constructor-time subscription (already hydrated well before any
+  // component's ngOnInit runs), this component owns a fresh, local
+  // subscription to the history filters slice set up inside its own
+  // ngOnInit. That subscription callback is expected to fire synchronously,
+  // but ngOnInit's very next line already reads `this.currentFilters`
+  // unguarded (no `?.`, unlike this same field's template usage) - a
+  // defaulted initial value removes any dependency on that ordering
+  // entirely, so a task created moments earlier is never silently dropped
+  // from the "just navigated to Historik" fetch.
+  currentFilters: AdhocHistoryFiltrationModel = adhocInitialState.historyFilters;
   private selectAdhocHistoryFilters$ = this.store.select(selectAdhocHistoryFilters);
 
   filtersSub$: Subscription;
