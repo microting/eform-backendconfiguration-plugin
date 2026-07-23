@@ -109,7 +109,21 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   }
 
+  // Memoized on the events array's identity: recomputing fresh group objects
+  // on every change-detection pass makes the template's *ngFor (identity-
+  // based diffing) tear down and recreate every row each pass - which
+  // destroys a row's [matMenuTriggerFor] anchor the moment its menu opens,
+  // so the Historik row menus could never stay open.
+  private groupsCache: {source: AdhocTaskHistoryEventModel[]; groups: AdhocHistoryDayGroup[]} | null = null;
+
   get groupedEvents(): AdhocHistoryDayGroup[] {
+    if (!this.groupsCache || this.groupsCache.source !== this.events) {
+      this.groupsCache = {source: this.events, groups: this.buildGroups()};
+    }
+    return this.groupsCache.groups;
+  }
+
+  private buildGroups(): AdhocHistoryDayGroup[] {
     const groups = new Map<string, AdhocTaskHistoryEventModel[]>();
     for (const event of this.events) {
       // occurredAt reaches the client as a Date, not a string: the host
