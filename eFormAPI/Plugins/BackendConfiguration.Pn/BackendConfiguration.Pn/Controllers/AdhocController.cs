@@ -58,9 +58,12 @@ using Services.BackendConfigurationLocalizationService;
 /// <c>isAdmin</c> is true the shared service bypasses its property-access/
 /// creator/assigned/everyone visibility predicates entirely (an admin sees
 /// and mutates every task for the customer); when false, worker id 0 has no
-/// <c>PropertyWorker</c> row and no task ever names it as creator/assignee,
-/// so every call is naturally denied by the same predicates — no separate
-/// authorization code path is needed for the non-admin case.
+/// <c>PropertyWorker</c> row, so the property-access/visibility predicates
+/// deny every read. Note that dashboard-created tasks ARE stamped
+/// <c>CreatedByWorkerId = 0</c>, so the creator gate (and the tag-ownership
+/// gate) additionally treat pseudo-identity 0 as owning nothing unless the
+/// caller is an admin — see <c>RequireCreator</c> and the tag guards in
+/// <c>BackendConfigurationAdhocService</c>.
 /// </summary>
 [Authorize]
 [Route("api/backend-configuration-pn/adhoc")]

@@ -1123,7 +1123,15 @@ public class BackendConfigurationAdhocService(
             return;
         }
 
-        if (task.CreatedByWorkerId != workerId)
+        // Worker id 0 is the REST dashboard's synthetic caller identity
+        // (AdhocController.DashboardWorkerId), and dashboard-created tasks
+        // are themselves stamped CreatedByWorkerId = 0 - so a plain equality
+        // check would let EVERY authenticated non-admin web user pass the
+        // creator gate on every dashboard-created task. Pseudo-identity 0
+        // owns nothing: only an admin (already returned above) may act on
+        // worker-0-created tasks. gRPC callers always resolve to real,
+        // positive SDK site ids and are unaffected by this guard.
+        if (workerId == 0 || task.CreatedByWorkerId != workerId)
         {
             throw new AdhocTaskUnauthorizedException(
                 $"Worker {workerId} may not {action} adhoc task {task.Id}: not the creator.");

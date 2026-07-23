@@ -459,6 +459,78 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
             await sut.Delete(2, created.Id));
     }
 
+    // --- C1: pseudo-identity 0 (REST dashboard caller) never satisfies the
+    // creator gate. Dashboard-created tasks are stamped CreatedByWorkerId = 0,
+    // so without the workerId == 0 guard in RequireCreator ANY authenticated
+    // non-admin web user (workerId 0, isAdmin false) would pass the creator
+    // check on every dashboard-created task. ---
+
+    [Test]
+    public async Task Archive_Throws_ForNonAdminWorkerZero_OnWorkerZeroCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.Archive(0, created.Id));
+    }
+
+    [Test]
+    public async Task Reopen_Throws_ForNonAdminWorkerZero_OnWorkerZeroCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+        await sut.Archive(0, created.Id, isAdmin: true);
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.Reopen(0, created.Id));
+    }
+
+    [Test]
+    public async Task Delete_Throws_ForNonAdminWorkerZero_OnWorkerZeroCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.Delete(0, created.Id));
+    }
+
+    [Test]
+    public async Task UpdateTask_Throws_ForNonAdminWorkerZero_OnWorkerZeroCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.UpdateTask(0, created.Id, MakeCreateModel(property.Id)));
+    }
+
+    [Test]
+    public async Task Archive_Reopen_Delete_Allowed_ForAdminWorkerZero_OnWorkerZeroCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id), isAdmin: true);
+
+        var archived = await sut.Archive(0, created.Id, isAdmin: true);
+        Assert.That(archived.Archived, Is.True);
+
+        var reopened = await sut.Reopen(0, created.Id, isAdmin: true);
+        Assert.That(reopened.Archived, Is.False);
+
+        Assert.DoesNotThrowAsync(async () => await sut.Delete(0, created.Id, isAdmin: true));
+    }
+
     [Test]
     public async Task Delete_CascadesSoftDeleteToAllChildren()
     {
