@@ -40,6 +40,13 @@ describe('AdhocFiltersComponent', () => {
   describe('statusOptions', () => {
     it('renders each option label with its count', () => {
       component.counts = {open: 12, completed: 4, archived: 1};
+      // statusOptions is recomputed from ngOnChanges (not a getter - see the
+      // component's own comment on why an `[items]`-bound array must stay a
+      // stable reference across change-detection ticks), so a direct
+      // `component.counts =` assignment in this non-TestBed spec needs an
+      // explicit ngOnChanges call to mirror what Angular would otherwise
+      // trigger on the real `@Input()` binding.
+      component.ngOnChanges({counts: {currentValue: component.counts, previousValue: null, firstChange: false, isFirstChange: () => false}});
       const options = component.statusOptions;
       expect(options.find((o) => o.value === 'open').label).toBe('Open (12)');
       expect(options.find((o) => o.value === 'completed').label).toBe('Solved (4)');

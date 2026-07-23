@@ -114,7 +114,11 @@ export class BackendConfigurationAdhocPage {
   // ----- Toolbar filters -----------------------------------------------------
 
   searchInput(): Locator {
-    return this.page.locator('#search');
+    // Scoped under #main-list-view: the app shell's own left-nav also has an
+    // unrelated `<a id="search">` (entity-search link) sharing this literal
+    // id, so an unscoped `#search` locator is a Playwright strict-mode
+    // violation (resolves to 2 elements) the moment the nav is rendered.
+    return this.mainListView().locator('#search');
   }
 
   async search(text: string): Promise<void> {

@@ -1,4 +1,4 @@
-import {Component, ElementRef, HostListener, OnDestroy, OnInit, Input} from '@angular/core';
+import {Component, ElementRef, HostListener, OnChanges, OnDestroy, OnInit, Input, SimpleChanges} from '@angular/core';
 import {FormControl} from '@angular/forms';
 import {TranslateService} from '@ngx-translate/core';
 import {Subscription, debounceTime, distinctUntilChanged} from 'rxjs';
@@ -35,13 +35,26 @@ interface AdhocStatusOption {
   styleUrls: ['./adhoc-filters.component.scss'],
   standalone: false,
 })
-export class AdhocFiltersComponent implements OnInit, OnDestroy {
+export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
   @Input() counts = {open: 0, completed: 0, archived: 0};
 
   searchControl = new FormControl('');
   tagPopupOpen = false;
   newTagName = '';
   areas: AdhocAreaModel[] = [];
+
+  // Bound to the status mtx-select's `[items]`. Computed once per actual
+  // `counts` change (`ngOnChanges`) rather than as a getter re-evaluated on
+  // every change-detection pass - `[items]="someGetter()"` would hand
+  // ng-select a brand-new array reference on nearly every CD tick (mouse
+  // moves, keystrokes, unrelated store emissions), and ng-select's own
+  // `ngOnChanges` treats any `items` reference change as a full items-list
+  // reset (`_setItems`), which can null out an in-flight option click before
+  // its mouseup/select handler runs - e.g. selecting a status option would
+  // silently no-op with the dropdown panel left open. Memoizing this array
+  // keeps the reference stable across CD ticks that don't actually change
+  // `counts`, so an option click only ever races a *real* items update.
+  statusOptions: AdhocStatusOption[] = [];
 
   searchSub$: Subscription;
   areasSub$: Subscription;
@@ -61,8 +74,8 @@ export class AdhocFiltersComponent implements OnInit, OnDestroy {
     return this.adhocStateService.currentFilters;
   }
 
-  get statusOptions(): AdhocStatusOption[] {
-    return [
+  private computeStatusOptions(): void {
+    this.statusOptions = [
       {value: 'open', label: `${this.translate.instant('Open')} (${this.counts.open})`},
       {value: 'completed', label: `${this.translate.instant('Solved')} (${this.counts.completed})`},
       {value: 'archived', label: `${this.translate.instant('Archived')} (${this.counts.archived})`},
@@ -70,6 +83,8 @@ export class AdhocFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.computeStatusOptions();
+
     this.searchControl.setValue(this.currentFilters.search, {emitEvent: false});
     this.searchSub$ = this.searchControl.valueChanges
       .pipe(debounceTime(500), distinctUntilChanged())
@@ -77,6 +92,12 @@ export class AdhocFiltersComponent implements OnInit, OnDestroy {
 
     if (this.currentFilters.propertyId != null) {
       this.loadAreas(this.currentFilters.propertyId);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['counts']) {
+      this.computeStatusOptions();
     }
   }
 
