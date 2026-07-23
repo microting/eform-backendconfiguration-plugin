@@ -3,11 +3,10 @@
     <button
       type="button"
       *ngFor="let preset of periodPresets"
-      class="btn-secondary"
-      [class.active]="currentFilters?.periodPreset === preset"
+      [ngClass]="currentFilters?.periodPreset === preset ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
       (click)="onPeriodChange(preset)"
     >
-      {{ periodLabel(preset) | translate }}
+      <span>{{ periodLabel(preset) | translate }}</span>
     </button>
   </div>
 

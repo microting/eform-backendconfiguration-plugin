@@ -367,7 +367,7 @@ export class BackendConfigurationAdhocPage {
   }
 
   drawerSaveBtn(): Locator {
-    return this.page.locator('.adhoc-drawer__actions button[color="primary"]');
+    return this.page.locator('#adhocDrawerSaveBtn');
   }
 
   /** Saves the drawer; `waitForCreate` awaits the `POST .../adhoc/` create round-trip (create mode only). */

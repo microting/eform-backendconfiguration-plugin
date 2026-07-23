@@ -1,24 +1,22 @@
 <mat-card class="eform-sub-header d-flex flex-column gap-12 mb-3 p-3" style="align-items: stretch;">
   <h2 style="margin: 0">{{ pageTitle | translate }}</h2>
   <div class="d-flex flex-row flex-wrap align-items-center justify-content-between gap-12">
-    <div class="btn-group" role="group">
+    <div class="btn-group d-flex gap-8" role="group">
       <button
         type="button"
-        class="btn-secondary"
+        [ngClass]="!isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
         id="backend-configuration-pn-adhoc-view-list"
         routerLink="."
-        [class.active]="!isHistoryView"
       >
-        {{ 'Overview' | translate }}
+        <span>{{ 'Overview' | translate }}</span>
       </button>
       <button
         type="button"
-        class="btn-secondary"
+        [ngClass]="isHistoryView ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
         id="backend-configuration-pn-adhoc-view-history"
         routerLink="history"
-        [class.active]="isHistoryView"
       >
-        {{ 'History' | translate }}
+        <span>{{ 'History' | translate }}</span>
       </button>
     </div>
     <button

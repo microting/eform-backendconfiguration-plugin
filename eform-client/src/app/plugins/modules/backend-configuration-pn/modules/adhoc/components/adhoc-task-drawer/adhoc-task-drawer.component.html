@@ -118,12 +118,22 @@
           <mat-panel-title>{{ 'Assigned to' | translate }}</mat-panel-title>
         </mat-expansion-panel-header>
 
-        <div class="btn-group" role="group">
-          <button type="button" class="btn-secondary" [class.active]="executionRule === 0" [disabled]="readonly" (click)="onExecutionRuleChange(0)">
-            {{ 'Assigned only' | translate }}
+        <div class="btn-group d-flex gap-8" role="group">
+          <button
+            type="button"
+            [ngClass]="executionRule === 0 ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+            [disabled]="readonly"
+            (click)="onExecutionRuleChange(0)"
+          >
+            <span>{{ 'Assigned only' | translate }}</span>
           </button>
-          <button type="button" class="btn-secondary" [class.active]="executionRule === 1" [disabled]="readonly" (click)="onExecutionRuleChange(1)">
-            {{ 'Everyone' | translate }}
+          <button
+            type="button"
+            [ngClass]="executionRule === 1 ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+            [disabled]="readonly"
+            (click)="onExecutionRuleChange(1)"
+          >
+            <span>{{ 'Everyone' | translate }}</span>
           </button>
         </div>
 
@@ -195,8 +205,8 @@
   </div>
 
   <div mat-dialog-actions class="adhoc-drawer__actions d-flex justify-content-end gap-8" *ngIf="!readonly">
-    <button type="button" mat-raised-button (click)="onClose()">{{ 'Cancel' | translate }}</button>
-    <button type="button" mat-raised-button color="primary" [disabled]="saving" (click)="onSave()">
+    <button type="button" class="btn-cancel" id="adhocDrawerCancelBtn" (click)="onClose()">{{ 'Cancel' | translate }}</button>
+    <button type="button" class="btn-primary btn-primary--icon-left" id="adhocDrawerSaveBtn" [disabled]="saving" (click)="onSave()">
       <span *ngIf="isCreate">{{ 'Create' | translate }}</span>
       <span *ngIf="!isCreate">{{ 'Save changes' | translate }}</span>
     </button>

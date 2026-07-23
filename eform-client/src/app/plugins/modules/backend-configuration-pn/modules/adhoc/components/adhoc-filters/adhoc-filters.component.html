@@ -11,19 +11,17 @@
       <span class="tag-count-badge" *ngIf="currentFilters.tagIds.length">{{ currentFilters.tagIds.length }}</span>
     </button>
     <div class="tag-filter-panel" id="tag-filter-panel" *ngIf="tagPopupOpen" (click)="$event.stopPropagation()">
-      <div class="tag-logic-toggle btn-group" role="group">
+      <div class="tag-logic-toggle btn-group d-flex gap-8" role="group">
         <button
           type="button"
-          class="btn-secondary"
-          [class.active]="currentFilters.tagLogic === 'or'"
+          [ngClass]="currentFilters.tagLogic === 'or' ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
           (click)="onTagLogicChange('or')"
-        >{{ 'Or' | translate }}</button>
+        ><span>{{ 'Or' | translate }}</span></button>
         <button
           type="button"
-          class="btn-secondary"
-          [class.active]="currentFilters.tagLogic === 'and'"
+          [ngClass]="currentFilters.tagLogic === 'and' ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
           (click)="onTagLogicChange('and')"
-        >{{ 'And' | translate }}</button>
+        ><span>{{ 'And' | translate }}</span></button>
       </div>
       <div class="tag-filter-rows" id="tag-filter-rows">
         <div class="tag-filter-row d-flex align-items-center justify-content-between" *ngFor="let tag of adhocStateService.tags">
