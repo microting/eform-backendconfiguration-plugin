@@ -51,11 +51,13 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *     F8's documented deviation - `#adhocCompleteConfirmBtn`/`-CancelBtn`).
  *   - Historik (`adhoc-history.component.html`): `#history-view`,
  *     `#history-data-table` (`.history-row` per event, grouped by day). Row
- *     menu buttons are id-suffixed by TASK id (`adhocHistoryActionMenu-
- *     {taskId}`/`adhocHistoryArchiveBtn-{taskId}`/`-CopyBtn-{taskId}`/
- *     `-DeleteBtn-{taskId}`) - Archive is only offered when the task is
- *     completed and not yet archived. This is the ONLY place Archive lives
- *     (the table's row menu never offers it).
+ *     menu button ids start with the task id and end in per-event
+ *     discriminators (`adhocHistoryActionMenu-{taskId}-{eventType}-{gi}-{ei}`,
+ *     same shape for `adhocHistoryArchiveBtn-`/`-CopyBtn-`/`-DeleteBtn-`) so
+ *     a multi-event task never repeats a DOM id - this page object only ever
+ *     matches the stable prefixes via `id^=`. Archive is only offered when
+ *     the task is completed and not yet archived. This is the ONLY place
+ *     Archive lives (the table's row menu never offers it).
  */
 export class BackendConfigurationAdhocPage {
   constructor(private page: Page) {}
@@ -445,9 +447,8 @@ export class BackendConfigurationAdhocPage {
    * A task can have several Historik event rows (created/completed/archived
    * each emit their own row - `adhoc-history.component.ts`'s
    * `AdhocTaskHistoryEventModel` is per-EVENT, not per-task), all sharing
-   * the same task id (and thus the same row-menu button ids). `.first()`
-   * keeps this Playwright-strict-mode-safe regardless of how many event
-   * rows currently exist for the task.
+   * the same task title. `.first()` keeps this Playwright-strict-mode-safe
+   * regardless of how many event rows currently exist for the task.
    */
   historyRow(taskTitle: string): Locator {
     return this.page.locator('#history-data-table .history-row').filter({ hasText: taskTitle }).first();
