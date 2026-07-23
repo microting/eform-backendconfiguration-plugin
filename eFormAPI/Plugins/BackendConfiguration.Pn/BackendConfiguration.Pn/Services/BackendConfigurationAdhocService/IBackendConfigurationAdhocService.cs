@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Infrastructure.Models.Adhoc;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 /// <summary>
 /// Shared task CRUD + visibility service for ad-hoc tasks, consumed by both
@@ -47,6 +48,22 @@ using Infrastructure.Models.Adhoc;
 public interface IBackendConfigurationAdhocService
 {
     Task<List<AdhocTaskModel>> ListTasks(int workerId, TaskScopeFilter scope, int? propertyId, bool isAdmin = false);
+
+    /// <summary>
+    /// The dashboard table query (M5/P2) - unlike <see cref="ListTasks"/>
+    /// (which only scopes by property and leaves area/status/tag/search/sort/
+    /// paging to the caller), this method pushes every one of
+    /// <see cref="AdhocTaskFiltersModel"/>'s filters into SQL and only maps
+    /// the current page's tasks to the full <see cref="AdhocTaskModel"/>
+    /// shape (tags/photos/assignment log/comments), rather than eagerly
+    /// hydrating every visible task before filtering - the scale concern
+    /// B6's own report flagged about the controller's former in-memory
+    /// approach. <paramref name="filters"/>' three status counts
+    /// (<see cref="AdhocTaskIndexResultModel.OpenCount"/> etc.) are computed
+    /// against every filter except <see cref="AdhocTaskFiltersModel.Status"/>
+    /// itself.
+    /// </summary>
+    Task<AdhocTaskIndexResultModel> IndexTasks(int workerId, bool isAdmin, AdhocTaskFiltersModel filters);
 
     Task<AdhocTaskModel> GetTask(int workerId, int taskId, bool isAdmin = false);
 
@@ -141,4 +158,15 @@ public interface IBackendConfigurationAdhocService
     /// false) skips it entirely.
     /// </summary>
     Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId, bool isAdmin = false);
+
+    /// <summary>
+    /// The Historik timeline (M5/P2) - see <see cref="AdhocTaskHistoryEventModel"/>
+    /// for the derivation approach and its accepted v1 limitations.
+    /// Property/area/tag(AND)/property-access filters are pushed into SQL
+    /// against the candidate task set (the dominant scale factor); the
+    /// per-task event explosion (created/assigned/completed/archived/
+    /// commented) and the date-range filter/sort/paging over the resulting
+    /// events happen in memory over that already-bounded candidate set.
+    /// </summary>
+    Task<Paged<AdhocTaskHistoryEventModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters);
 }

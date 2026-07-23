@@ -37,6 +37,7 @@ using Infrastructure.Models.Adhoc;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using UserPropertyAccess;
@@ -96,6 +97,136 @@ public class BackendConfigurationAdhocService(
         }
 
         return result;
+    }
+
+    public async Task<AdhocTaskIndexResultModel> IndexTasks(int workerId, bool isAdmin, AdhocTaskFiltersModel filters)
+    {
+        filters ??= new AdhocTaskFiltersModel();
+
+        var query = BuildIndexCandidateQuery(workerId, isAdmin, filters);
+
+        // Counts reflect every filter above EXCEPT Status, so the mockup's
+        // status-tab counts stay meaningful as the caller switches tabs.
+        var openCount = await query.CountAsync(t => !t.Completed && !t.Archived);
+        var completedCount = await query.CountAsync(t => t.Completed && !t.Archived);
+        var archivedCount = await query.CountAsync(t => t.Archived);
+
+        if (filters.Status.HasValue)
+        {
+            query = filters.Status.Value switch
+            {
+                AdhocTaskStatusFilter.Open => query.Where(t => !t.Completed && !t.Archived),
+                AdhocTaskStatusFilter.Completed => query.Where(t => t.Completed && !t.Archived),
+                AdhocTaskStatusFilter.Archived => query.Where(t => t.Archived),
+                _ => query
+            };
+        }
+
+        var total = await query.CountAsync();
+
+        query = ApplyIndexSort(query, filters.SortColumn, filters.SortAscending);
+
+        var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
+        var pageSize = filters.PageSize < 1 ? 25 : filters.PageSize;
+
+        var pageEntities = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var taskIds = pageEntities.Select(t => t.Id).ToList();
+        var assignmentsByTask = await LoadAssignedWorkerIdsAsync(taskIds);
+
+        var mapped = new List<AdhocTaskModel>(pageEntities.Count);
+        foreach (var task in pageEntities)
+        {
+            mapped.Add(await MapToModelAsync(task, assignmentsByTask.GetValueOrDefault(task.Id, [])));
+        }
+
+        return new AdhocTaskIndexResultModel
+        {
+            Total = total,
+            Entities = mapped,
+            OpenCount = openCount,
+            CompletedCount = completedCount,
+            ArchivedCount = archivedCount,
+        };
+    }
+
+    /// <summary>
+    /// Property-access/visibility/area/tag/search filters, all pushed into
+    /// SQL - the part of the old controller-side <c>ApplyFiltersAndPaging</c>
+    /// that scaled worst (it ran over every visible task, fully hydrated,
+    /// before any of these were applied). Status is deliberately excluded
+    /// here so <see cref="IndexTasks"/> can compute all three status counts
+    /// against the same base query before narrowing to one status.
+    /// </summary>
+    private IQueryable<AdhocTaskEntity> BuildIndexCandidateQuery(int workerId, bool isAdmin, AdhocTaskFiltersModel filters)
+    {
+        var query = dbContext.AdhocTasks
+            .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (!isAdmin)
+        {
+            var everyoneRule = (int)AdhocExecutionRuleValue.Everyone;
+            query = query.Where(t =>
+                dbContext.PropertyWorkers.Any(pw =>
+                    pw.PropertyId == t.PropertyId && pw.WorkerId == workerId && pw.WorkflowState != Constants.WorkflowStates.Removed)
+                && (t.CreatedByWorkerId == workerId
+                    || t.ExecutionRule == everyoneRule
+                    || dbContext.AdhocTaskAssignments.Any(a =>
+                        a.AdhocTaskId == t.Id && a.WorkerId == workerId && a.WorkflowState != Constants.WorkflowStates.Removed)));
+        }
+
+        if (filters.PropertyId.HasValue)
+        {
+            query = query.Where(t => t.PropertyId == filters.PropertyId.Value);
+        }
+
+        if (filters.AreaId.HasValue)
+        {
+            query = query.Where(t => t.AreaId == filters.AreaId.Value);
+        }
+
+        if (filters.TagIds is { Count: > 0 })
+        {
+            if (filters.TagsMatchAll)
+            {
+                // AND: apply one correlated-EXISTS Where per tag, so a task
+                // must satisfy every one of them.
+                foreach (var tagId in filters.TagIds.Distinct())
+                {
+                    query = query.Where(t => dbContext.AdhocTaskTags.Any(tt =>
+                        tt.AdhocTaskId == t.Id && tt.AdhocTagId == tagId && tt.WorkflowState != Constants.WorkflowStates.Removed));
+                }
+            }
+            else
+            {
+                var tagIds = filters.TagIds.Distinct().ToList();
+                query = query.Where(t => dbContext.AdhocTaskTags.Any(tt =>
+                    tt.AdhocTaskId == t.Id && tagIds.Contains(tt.AdhocTagId) && tt.WorkflowState != Constants.WorkflowStates.Removed));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.SearchText))
+        {
+            var needle = filters.SearchText.Trim();
+            query = query.Where(t => t.Title.Contains(needle) || t.Description.Contains(needle));
+        }
+
+        return query;
+    }
+
+    private static IQueryable<AdhocTaskEntity> ApplyIndexSort(IQueryable<AdhocTaskEntity> query, string? sortColumn, bool ascending)
+    {
+        return (sortColumn ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "title" => ascending ? query.OrderBy(t => t.Title) : query.OrderByDescending(t => t.Title),
+            "deadline" => ascending ? query.OrderBy(t => t.Deadline) : query.OrderByDescending(t => t.Deadline),
+            "urgent" => ascending ? query.OrderBy(t => t.Urgent) : query.OrderByDescending(t => t.Urgent),
+            "completed" => ascending ? query.OrderBy(t => t.Completed) : query.OrderByDescending(t => t.Completed),
+            _ => ascending ? query.OrderBy(t => t.CreatedAt) : query.OrderByDescending(t => t.CreatedAt),
+        };
     }
 
     public async Task<AdhocTaskModel> GetTask(int workerId, int taskId, bool isAdmin = false)
@@ -605,6 +736,201 @@ public class BackendConfigurationAdhocService(
                 $"contentType must be image/jpeg, image/jpg, or image/png (was '{contentType}').",
                 nameof(contentType)),
         };
+    }
+
+    // --- History timeline (M5/P2) ---
+
+    public async Task<Paged<AdhocTaskHistoryEventModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters)
+    {
+        filters ??= new AdhocHistoryFiltersModel();
+
+        // Property/area/tag(AND)/access filters pushed into SQL against the
+        // candidate task set - the dominant scale factor for a customer's
+        // total adhoc-task volume. The per-task event explosion and the
+        // date-range filter/sort/paging over the resulting events happen in
+        // memory over that already-bounded candidate set (see the interface
+        // doc comment).
+        var candidateQuery = dbContext.AdhocTasks
+            .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (!isAdmin)
+        {
+            var everyoneRule = (int)AdhocExecutionRuleValue.Everyone;
+            candidateQuery = candidateQuery.Where(t =>
+                dbContext.PropertyWorkers.Any(pw =>
+                    pw.PropertyId == t.PropertyId && pw.WorkerId == workerId && pw.WorkflowState != Constants.WorkflowStates.Removed)
+                && (t.CreatedByWorkerId == workerId
+                    || t.ExecutionRule == everyoneRule
+                    || dbContext.AdhocTaskAssignments.Any(a =>
+                        a.AdhocTaskId == t.Id && a.WorkerId == workerId && a.WorkflowState != Constants.WorkflowStates.Removed)));
+        }
+
+        if (filters.PropertyId.HasValue)
+        {
+            candidateQuery = candidateQuery.Where(t => t.PropertyId == filters.PropertyId.Value);
+        }
+
+        if (filters.AreaId.HasValue)
+        {
+            candidateQuery = candidateQuery.Where(t => t.AreaId == filters.AreaId.Value);
+        }
+
+        if (filters.TagIds is { Count: > 0 })
+        {
+            foreach (var tagId in filters.TagIds.Distinct())
+            {
+                candidateQuery = candidateQuery.Where(t => dbContext.AdhocTaskTags.Any(tt =>
+                    tt.AdhocTaskId == t.Id && tt.AdhocTagId == tagId && tt.WorkflowState != Constants.WorkflowStates.Removed));
+            }
+        }
+
+        var candidates = await candidateQuery.ToListAsync();
+        if (candidates.Count == 0)
+        {
+            return new Paged<AdhocTaskHistoryEventModel> { Total = 0, Entities = [] };
+        }
+
+        var taskIds = candidates.Select(t => t.Id).ToList();
+
+        var assignmentLogs = await dbContext.AdhocTaskAssignmentLogs
+            .Where(l => taskIds.Contains(l.AdhocTaskId) && l.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+
+        var comments = await dbContext.AdhocTaskComments
+            .Where(c => taskIds.Contains(c.AdhocTaskId) && c.WorkflowState != Constants.WorkflowStates.Removed)
+            .OrderBy(c => c.CreatedAt)
+            .ToListAsync();
+        var commentsByTask = comments.GroupBy(c => c.AdhocTaskId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var tagJoins = await dbContext.AdhocTaskTags
+            .Where(tt => taskIds.Contains(tt.AdhocTaskId) && tt.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        var involvedTagIds = tagJoins.Select(tt => tt.AdhocTagId).Distinct().ToList();
+        var tagNamesById = involvedTagIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await dbContext.AdhocTags
+                .Where(t => involvedTagIds.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id, t => t.Name);
+        var tagNamesByTask = tagJoins
+            .GroupBy(tt => tt.AdhocTaskId)
+            .ToDictionary(g => g.Key, g => g.Select(tt => tagNamesById.GetValueOrDefault(tt.AdhocTagId, "")).Where(n => n.Length > 0).ToList());
+
+        var propertyIds = candidates.Select(t => t.PropertyId).Distinct().ToList();
+        var propertyNamesById = await dbContext.Properties
+            .Where(p => propertyIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+        var areaIds = candidates.Where(t => t.AreaId.HasValue).Select(t => t.AreaId!.Value).Distinct().ToList();
+        var areaNamesById = areaIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await dbContext.AdhocAreas.Where(a => areaIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name);
+
+        // Actor/comment-author display names, resolved from the SDK Site
+        // table in one batch - same pattern as ListWorkers.
+        var actorWorkerIds = new HashSet<int>();
+        foreach (var task in candidates)
+        {
+            actorWorkerIds.Add(task.CreatedByWorkerId);
+            if (task.CompletedByWorkerId.HasValue)
+            {
+                actorWorkerIds.Add(task.CompletedByWorkerId.Value);
+            }
+        }
+
+        foreach (var log in assignmentLogs)
+        {
+            actorWorkerIds.Add(log.ChangedByWorkerId);
+        }
+
+        foreach (var comment in comments)
+        {
+            actorWorkerIds.Add(comment.AuthorWorkerId);
+        }
+
+        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var displayNamesById = await sdkDbContext.Sites
+            .Where(s => actorWorkerIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.Name);
+
+        string ActorName(int id) => displayNamesById.GetValueOrDefault(id, "");
+
+        var events = new List<AdhocTaskHistoryEventModel>();
+
+        foreach (var task in candidates)
+        {
+            var taskComments = commentsByTask.GetValueOrDefault(task.Id, []);
+            var lastComment = taskComments.Count > 0 ? taskComments[^1] : null;
+            var tagNames = tagNamesByTask.GetValueOrDefault(task.Id, []);
+            var propertyName = propertyNamesById.GetValueOrDefault(task.PropertyId, "");
+            var areaName = task.AreaId.HasValue ? areaNamesById.GetValueOrDefault(task.AreaId.Value) : null;
+
+            AdhocTaskHistoryEventModel NewEvent(string eventType, DateTime occurredAt, string actorName, string? detail) => new()
+            {
+                TaskId = task.Id,
+                TaskTitle = task.Title,
+                EventType = eventType,
+                OccurredAt = occurredAt,
+                ActorName = actorName,
+                Detail = detail,
+                PropertyName = propertyName,
+                AreaName = areaName,
+                TagNames = tagNames,
+                LastCommentText = lastComment?.Text,
+                LastCommentAuthor = lastComment != null ? ActorName(lastComment.AuthorWorkerId) : null,
+                LastCommentAt = lastComment?.CreatedAt,
+                Completed = task.Completed,
+                Archived = task.Archived,
+            };
+
+            events.Add(NewEvent("created", task.CreatedAt, ActorName(task.CreatedByWorkerId), null));
+
+            foreach (var log in assignmentLogs.Where(l => l.AdhocTaskId == task.Id))
+            {
+                events.Add(NewEvent("assigned", log.CreatedAt, ActorName(log.ChangedByWorkerId), null));
+            }
+
+            // "reopened" is not derivable from scalar state alone (Reopen
+            // clears CompletedAt/ArchivedAt) and is intentionally not emitted
+            // here - see the interface/model doc comments for why this is an
+            // accepted v1 limitation, not an oversight.
+            if (task.Completed && task.CompletedAt.HasValue)
+            {
+                var completedByName = task.CompletedByWorkerId.HasValue ? ActorName(task.CompletedByWorkerId.Value) : "";
+                events.Add(NewEvent("completed", task.CompletedAt.Value, completedByName, null));
+            }
+
+            if (task.Archived && task.ArchivedAt.HasValue)
+            {
+                // Archive is creator-only (RequireCreator) - the archiver is
+                // always the creator, there is no separate ArchivedByWorkerId.
+                events.Add(NewEvent("archived", task.ArchivedAt.Value, ActorName(task.CreatedByWorkerId), null));
+            }
+
+            foreach (var comment in taskComments)
+            {
+                events.Add(NewEvent("commented", comment.CreatedAt, ActorName(comment.AuthorWorkerId), comment.Text));
+            }
+        }
+
+        IEnumerable<AdhocTaskHistoryEventModel> filtered = events;
+        if (filters.DateFrom.HasValue)
+        {
+            filtered = filtered.Where(e => e.OccurredAt >= filters.DateFrom.Value);
+        }
+
+        if (filters.DateTo.HasValue)
+        {
+            filtered = filtered.Where(e => e.OccurredAt <= filters.DateTo.Value);
+        }
+
+        var sorted = filtered.OrderByDescending(e => e.OccurredAt).ToList();
+
+        var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
+        var pageSize = filters.PageSize < 1 ? 25 : filters.PageSize;
+        var page = sorted.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+        return new Paged<AdhocTaskHistoryEventModel> { Total = sorted.Count, Entities = page };
     }
 
     // --- Visibility predicates (mirror TaskVisibility.canSee/matchesScope exactly) ---

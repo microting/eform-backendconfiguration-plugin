@@ -38,10 +38,17 @@ using Services.BackendConfigurationAdhocService;
 using Services.BackendConfigurationLocalizationService;
 
 /// <summary>
-/// REST façade for ad-hoc tasks (Task B6), consumed by the (future, M5)
-/// eFormAPI dashboard. Shares <see cref="IBackendConfigurationAdhocService"/>
+/// REST façade for ad-hoc tasks (Task B6, extended M5/P2-P3), consumed by
+/// the eFormAPI dashboard. Shares <see cref="IBackendConfigurationAdhocService"/>
 /// with <c>AdhocGrpcService</c> (mobile, B5) — every route here is a thin
 /// try/catch wrapper that forwards to the same service methods.
+///
+/// <see cref="Index"/>'s filter/sort/paging/status-counts used to be applied
+/// in-memory in this controller over <c>ListTasks</c>' full result set (a
+/// scale concern flagged in B6's own report); M5/P2 moved that into
+/// <see cref="IBackendConfigurationAdhocService.IndexTasks"/>, which pushes
+/// the SQL-translatable filters down to the database and only maps the
+/// current page's tasks to the full model shape.
 ///
 /// Caller identity: dashboard users authenticate via the eFormAPI web
 /// identity (there is no per-request SDK worker/site to resolve, unlike the
@@ -83,16 +90,20 @@ public class AdhocController : Controller
 
     [HttpPost]
     [Route("index")]
-    public async Task<OperationDataResult<Paged<AdhocTaskModel>>> Index([FromBody] AdhocTaskFiltersModel filters)
+    public async Task<OperationDataResult<AdhocTaskIndexResultModel>> Index([FromBody] AdhocTaskFiltersModel filters)
     {
-        return await ExecuteAsync(async () =>
-        {
-            var effectiveFilters = filters ?? new AdhocTaskFiltersModel();
-            var tasks = await _adhocService
-                .ListTasks(DashboardWorkerId, TaskScopeFilter.All, effectiveFilters.PropertyId, IsAdmin)
-                .ConfigureAwait(false);
-            return ApplyFiltersAndPaging(tasks, effectiveFilters);
-        }, "ErrorWhileGettingAdhocTasks");
+        return await ExecuteAsync(
+            () => _adhocService.IndexTasks(DashboardWorkerId, IsAdmin, filters ?? new AdhocTaskFiltersModel()),
+            "ErrorWhileGettingAdhocTasks");
+    }
+
+    [HttpPost]
+    [Route("history/index")]
+    public async Task<OperationDataResult<Paged<AdhocTaskHistoryEventModel>>> HistoryIndex([FromBody] AdhocHistoryFiltersModel filters)
+    {
+        return await ExecuteAsync(
+            () => _adhocService.ListHistory(DashboardWorkerId, IsAdmin, filters ?? new AdhocHistoryFiltersModel()),
+            "ErrorWhileGettingAdhocHistory");
     }
 
     [HttpGet]
@@ -289,82 +300,6 @@ public class AdhocController : Controller
             SentrySdk.CaptureException(e);
             return StatusCode(500, $"{_localizationService.GetString("ErrorWhileGettingAdhocPhoto")}: {e.Message}");
         }
-    }
-
-    // -----------------------------------------------------------------
-    // Filtering/paging/sorting for Index — the dashboard table query shape
-    // (spec §5.2). IBackendConfigurationAdhocService.ListTasks only knows
-    // scope + a single property filter (mobile's needs); area/status/tag/
-    // search/paging/sort are applied here, in-memory, over the caller's
-    // full visible set (M5 can push this down into the service/DB if the
-    // per-customer task volume ever makes that necessary).
-    // -----------------------------------------------------------------
-
-    private static Paged<AdhocTaskModel> ApplyFiltersAndPaging(List<AdhocTaskModel> tasks, AdhocTaskFiltersModel filters)
-    {
-        IEnumerable<AdhocTaskModel> query = tasks;
-
-        if (filters.AreaId.HasValue)
-        {
-            query = query.Where(t => t.AreaId == filters.AreaId.Value);
-        }
-
-        if (filters.Status.HasValue)
-        {
-            query = filters.Status.Value switch
-            {
-                AdhocTaskStatusFilter.Open => query.Where(t => !t.Completed && !t.Archived),
-                AdhocTaskStatusFilter.Completed => query.Where(t => t.Completed && !t.Archived),
-                AdhocTaskStatusFilter.Archived => query.Where(t => t.Archived),
-                _ => query
-            };
-        }
-
-        if (filters.TagIds is { Count: > 0 })
-        {
-            query = filters.TagsMatchAll
-                ? query.Where(t => filters.TagIds.All(tagId => t.TagIds.Contains(tagId)))
-                : query.Where(t => filters.TagIds.Any(tagId => t.TagIds.Contains(tagId)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(filters.SearchText))
-        {
-            var needle = filters.SearchText.Trim();
-            query = query.Where(t =>
-                (!string.IsNullOrEmpty(t.Title) && t.Title.Contains(needle, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(t.Description) && t.Description.Contains(needle, StringComparison.OrdinalIgnoreCase)));
-        }
-
-        query = ApplySort(query, filters.SortColumn, filters.SortAscending);
-
-        var matched = query.ToList();
-
-        var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
-        var pageSize = filters.PageSize < 1 ? 25 : filters.PageSize;
-
-        var page = matched
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        return new Paged<AdhocTaskModel> { Total = matched.Count, Entities = page };
-    }
-
-    private static IEnumerable<AdhocTaskModel> ApplySort(
-        IEnumerable<AdhocTaskModel> query,
-        string sortColumn,
-        bool ascending)
-    {
-        Func<AdhocTaskModel, IComparable> keySelector = (sortColumn ?? string.Empty).Trim().ToLowerInvariant() switch
-        {
-            "title" => t => t.Title ?? string.Empty,
-            "deadline" => t => t.Deadline ?? DateTime.MaxValue,
-            "urgent" => t => t.Urgent,
-            "completed" => t => t.Completed,
-            _ => t => t.CreatedAt
-        };
-
-        return ascending ? query.OrderBy(keySelector) : query.OrderByDescending(keySelector);
     }
 
     // -----------------------------------------------------------------

@@ -198,10 +198,11 @@ public class AdhocWorkerModel
 }
 
 /// <summary>
-/// Scaffolding for the future (M5) dashboard table query - not consumed by
-/// any B2 service method yet; B6's <c>AdhocController</c> index endpoint
-/// will build one of these from the request and pass it down once the
-/// dashboard-side listing/filtering method exists.
+/// The dashboard table query shape (spec §5.2) - consumed by
+/// <see cref="Services.BackendConfigurationAdhocService.IBackendConfigurationAdhocService.IndexTasks"/>
+/// (M5/P2), which pushes every one of these filters into SQL rather than
+/// filtering an already-loaded <c>List&lt;AdhocTaskModel&gt;</c> in memory
+/// (the scale concern B6's own report flagged).
 /// </summary>
 public class AdhocTaskFiltersModel
 {
@@ -226,6 +227,21 @@ public enum AdhocTaskStatusFilter
     Open = 0,
     Completed = 1,
     Archived = 2,
+}
+
+/// <summary>
+/// <c>IndexTasks</c>' response - the same paged shape <c>ListTasks</c>/
+/// <c>AdhocController.Index</c> used to build in-memory (<c>Paged&lt;AdhocTaskModel&gt;</c>),
+/// plus the three status counts the mockup's status-select tabs render
+/// ("Åbne (12)" / "Løste (4)" / "Arkiverede (1)"). The counts reflect every
+/// filter on the request EXCEPT <see cref="AdhocTaskFiltersModel.Status"/>
+/// itself, so switching status tabs doesn't change the other tabs' counts.
+/// </summary>
+public class AdhocTaskIndexResultModel : Microting.eFormApi.BasePn.Infrastructure.Models.Common.Paged<AdhocTaskModel>
+{
+    public int OpenCount { get; set; }
+    public int CompletedCount { get; set; }
+    public int ArchivedCount { get; set; }
 }
 
 // ---------------------------------------------------------------------
