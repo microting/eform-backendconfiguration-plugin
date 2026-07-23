@@ -1,3 +1,21 @@
+// Sibling filter-component convention (task-management-filters,
+// documents-filters): display:contents lets the filter controls join the
+// parent sub-header toolbar's flex row instead of forming a nested row
+// (host + wrapper both bypass layout).
+:host,
+.filters-inline {
+  display: contents;
+}
+
+// Constrain field width so the filters + view toggle + action button share
+// the sub-header row. Naming `.mat-mdc-form-field` in the selector outranks
+// the global `.mat-mdc-form-field { width: 100% }` rule in
+// scss/components/_form.scss (same trick as the sibling filter components).
+:host ::ng-deep .filters-inline mat-form-field.mat-mdc-form-field {
+  width: 200px;
+  min-width: 200px;
+}
+
 .tag-toolbar {
   position: relative;
 }
@@ -20,7 +38,10 @@
   position: absolute;
   left: 0;
   top: 100%;
-  z-index: 10;
+  // Must clear the mtx-grid's sticky header row (Material sticky cells sit
+  // at z-index 100) now that the popup anchors in the sub-header card
+  // directly above the table.
+  z-index: 110;
   min-width: 260px;
   background: var(--mdc-theme-surface, #fff);
   border: 1px solid rgba(0, 0, 0, 0.12);

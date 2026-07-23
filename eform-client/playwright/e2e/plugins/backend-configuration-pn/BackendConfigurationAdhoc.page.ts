@@ -14,7 +14,9 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *   - Top bar (`adhoc-container.component.html`): Overblik/Historik segment
  *     `#backend-configuration-pn-adhoc-view-list` / `-view-history`; "Ny
  *     opgave" `#backend-configuration-pn-adhoc-new-task`.
- *   - Toolbar filters (`adhoc-filters.component.html`): `#search` (500ms
+ *   - Toolbar filters (`adhoc-filters.component.html`, rendered inline in
+ *     the sub-header card via the plugin's `.filters-inline` convention -
+ *     NOT inside `#main-list-view`): `#search` (500ms
  *     debounce), `#ejendom` (property mtx-select), `#toolbar-omraade` (area,
  *     dependent on property), `#task-status-filter` (status - bindValue is
  *     the raw status, the VISIBLE label is `"<Åben/Løste/Arkiverede>
@@ -124,11 +126,13 @@ export class BackendConfigurationAdhocPage {
   // ----- Toolbar filters -----------------------------------------------------
 
   searchInput(): Locator {
-    // Scoped under #main-list-view: the app shell's own left-nav also has an
-    // unrelated `<a id="search">` (entity-search link) sharing this literal
-    // id, so an unscoped `#search` locator is a Playwright strict-mode
-    // violation (resolves to 2 elements) the moment the nav is rendered.
-    return this.mainListView().locator('#search');
+    // Scoped under app-adhoc-filters (which now renders inside the
+    // sub-header card, OUTSIDE #main-list-view): the app shell's own
+    // left-nav also has an unrelated `<a id="search">` (entity-search link)
+    // sharing this literal id, so an unscoped `#search` locator is a
+    // Playwright strict-mode violation (resolves to 2 elements) the moment
+    // the nav is rendered.
+    return this.page.locator('app-adhoc-filters #search');
   }
 
   async search(text: string): Promise<void> {

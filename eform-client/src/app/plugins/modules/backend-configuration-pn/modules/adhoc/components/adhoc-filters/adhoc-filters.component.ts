@@ -14,8 +14,10 @@ interface AdhocStatusOption {
 }
 
 /**
- * Toolbar filters for the "Adhoc overblik" table (M5/F6) - mirrors the
- * mockup's `.toolbar-card`: tag filter popup (OG/ELLER + inline
+ * Toolbar filters for the "Adhoc overblik" table (M5/F6), rendered inline
+ * in the container's `eform-sub-header` card via the plugin's
+ * `.filters-inline` display:contents convention (see
+ * task-management-filters / documents-filters): tag filter popup (OG/ELLER + inline
  * create/delete - "Administrer/opret tags" per the plan, kept inline
  * rather than as separate modal components since none are named in the F6
  * file list), debounced search, property select, dependent area select,
