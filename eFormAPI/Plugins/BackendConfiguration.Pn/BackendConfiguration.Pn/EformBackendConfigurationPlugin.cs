@@ -850,6 +850,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.DocumentsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.EventsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.AdhocGrpcService>();
+            endpoints.MapGrpcService<Services.GrpcServices.SettingsGrpcService>();
         });
     }
 

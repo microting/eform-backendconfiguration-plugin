@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package microting.settings.v1;
+
+service Settings {
+  rpc RegisterPushToken(RegisterPushTokenRequest) returns (RegisterPushTokenResponse);
+  rpc SetUserPrefs(SetUserPrefsRequest) returns (SetUserPrefsResponse);
+}
+
+message RegisterPushTokenRequest {
+  string fcm_token = 1;
+  string platform = 2;          // "android" | "ios"
+}
+message RegisterPushTokenResponse {}
+
+message SetUserPrefsRequest {
+  string language = 1;          // BCP-47 (e.g. "da", "en")
+  bool biometric_enabled = 2;
+  bool push_enabled = 3;
+}
+message SetUserPrefsResponse {}
