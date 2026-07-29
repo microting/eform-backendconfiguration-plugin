@@ -279,20 +279,20 @@
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.75.0.4178" />
     <PackageReference Include="Google.Protobuf" Version="3.35.1" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
-    <PackageReference Include="HtmlToOpenXml.dll" Version="3.4.1" />
+    <PackageReference Include="HtmlToOpenXml.dll" Version="3.5.0" />
     <PackageReference Include="Ical.Net" Version="5.2.3" />
-    <PackageReference Include="Microting.eForm" Version="10.0.36" />
+    <PackageReference Include="Microting.eForm" Version="10.0.37" />
     <PackageReference Include="Microting.EformAngularFrontendBase" Version="10.0.36" />
-    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.30" />
+    <PackageReference Include="Microting.eFormApi.BasePn" Version="10.0.31" />
     <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.45" />
-    <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.34" />
-    <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.36" />
-    <PackageReference Include="Microting.TimePlanningBase" Version="10.0.55" />
-    <PackageReference Include="QuestPDF" Version="2026.7.1" />
+    <PackageReference Include="Microting.EformBackendConfigurationBase" Version="10.0.48" />
+    <PackageReference Include="Microting.eFormCaseTemplateBase" Version="10.0.35" />
+    <PackageReference Include="Microting.ItemsPlanningBase" Version="10.0.37" />
+    <PackageReference Include="Microting.TimePlanningBase" Version="10.0.56" />
+    <PackageReference Include="QuestPDF" Version="2026.7.2" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.150.1" />
-    <PackageReference Include="Sentry" Version="6.7.0" />
+    <PackageReference Include="Sentry" Version="6.8.0" />
   </ItemGroup>
 
     <ItemGroup>
