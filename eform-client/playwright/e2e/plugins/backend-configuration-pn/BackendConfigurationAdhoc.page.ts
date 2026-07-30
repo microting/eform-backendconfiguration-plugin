@@ -149,6 +149,30 @@ export class BackendConfigurationAdhocPage {
     await selectValueInNgSelector(this.page, '#toolbar-omraade', areaName);
   }
 
+  /**
+   * Opens the toolbar area filter (`#toolbar-omraade`, an `mtx-select` -
+   * itself a thin wrapper around `@ng-select/ng-select`'s `NgSelectComponent`,
+   * per `MtxSelect`'s template in `@ng-matero/extensions/fesm2022/mtxSelect.mjs`),
+   * scrapes the visible option labels straight from the real ng-select
+   * dropdown markup (`ng-dropdown-panel` > `.ng-option` - verified against
+   * `@ng-select/ng-select/fesm2022/*.mjs`, and the same tokens sibling specs
+   * already assert against, e.g. `k/time-registration-dashboard-visibility.spec.ts`'s
+   * `getAvailableSiteNames()` and `y/task-list-modal-validation.spec.ts`), then
+   * closes it with Escape (that same sibling helper's close idiom) - leaving
+   * the current selection untouched, so callers don't need a `''` "clear"
+   * step that has no precedent elsewhere in this suite.
+   */
+  async areaFilterOptions(): Promise<string[]> {
+    const filterSelect = this.page.locator('#toolbar-omraade');
+    await filterSelect.click();
+    const dropdownPanel = this.page.locator('ng-dropdown-panel');
+    await dropdownPanel.waitFor({ state: 'visible', timeout: 10000 });
+    const names = await dropdownPanel.locator('.ng-option').allInnerTexts();
+    await this.page.keyboard.press('Escape');
+    await dropdownPanel.waitFor({ state: 'hidden', timeout: 5000 });
+    return names.map((n) => n.trim());
+  }
+
   async openAreaCreateModal(): Promise<void> {
     await this.page.locator('#adhocToolbarAreaCreateBtn').click();
     await this.page.locator('#adhocAreaCreateTextarea').waitFor({state: 'visible'});

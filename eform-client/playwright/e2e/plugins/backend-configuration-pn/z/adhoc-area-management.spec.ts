@@ -60,7 +60,7 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
   });
 
   test('create two areas and verify in filter and drawer', async ({ page }) => {
-    test.setTimeout(180000);
+    test.setTimeout(120000);
     await login(page);
     const adhocPage = new BackendConfigurationAdhocPage(page);
     await adhocPage.goToAdhoc();
@@ -88,19 +88,16 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
   });
 
   test('deduplicate when re-creating with duplicate + new name', async ({ page }) => {
-    test.setTimeout(180000);
+    test.setTimeout(120000);
     await login(page);
     const adhocPage = new BackendConfigurationAdhocPage(page);
     await adhocPage.goToAdhoc();
     await adhocPage.selectPropertyFilter(property.name);
 
-    // Open create modal and add one duplicate (first area name) + one new name
+    // Re-create with one duplicate (first area name) + one new name
     const newAreaName = `Garage-${rand}`;
     const mixedNames = [areaNames[0], newAreaName]; // Lade (duplicate) + Garage (new)
-    await adhocPage.openAreaCreateModal();
-    await adhocPage.page.locator('#adhocAreaCreateTextarea').fill(mixedNames.join('\n'));
-    await adhocPage.page.locator('#adhocAreaCreateSaveBtn').click();
-    await adhocPage.page.locator('#adhocAreaCreateTextarea').waitFor({state: 'hidden'});
+    await adhocPage.createAreas(mixedNames);
 
     // Open admin modal and verify exactly three areas (dedupe held)
     await adhocPage.openAreaAdminModal();
@@ -121,7 +118,7 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
   });
 
   test('rename area and verify in filter', async ({ page }) => {
-    test.setTimeout(180000);
+    test.setTimeout(120000);
     await login(page);
     const adhocPage = new BackendConfigurationAdhocPage(page);
     await adhocPage.goToAdhoc();
@@ -149,16 +146,16 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
     // Verify the new name appears in the filter
     await adhocPage.selectAreaFilter(newName);
 
-    // Verify the old name is no longer in the filter
-    await adhocPage.selectAreaFilter('');
-    const filterDropdown = adhocPage.page.locator('#toolbar-omraade');
-    await filterDropdown.click();
-    const oldOption = adhocPage.page.locator('mtx-option-panel').locator('text=' + areaNames[1]);
-    await expect(oldOption).toHaveCount(0);
+    // Verify the filter's real option list (ng-select's `ng-dropdown-panel`
+    // > `.ng-option`, scraped by areaFilterOptions()) has the renamed area
+    // and no longer the old name.
+    const filterOptions = await adhocPage.areaFilterOptions();
+    expect(filterOptions).toContain(newName);
+    expect(filterOptions).not.toContain(areaNames[1]);
   });
 
   test('delete area and verify gone from filter', async ({ page }) => {
-    test.setTimeout(180000);
+    test.setTimeout(120000);
     await login(page);
     const adhocPage = new BackendConfigurationAdhocPage(page);
     await adhocPage.goToAdhoc();
@@ -181,16 +178,10 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
 
     await adhocPage.closeAreaAdminModal();
 
-    // Verify the deleted name is gone from the filter options
-    // while the other areas remain
-    await adhocPage.selectAreaFilter('');
-    const filterDropdown = adhocPage.page.locator('#toolbar-omraade');
-    await filterDropdown.click();
-    const deletedOption = adhocPage.page.locator('mtx-option-panel').locator('text=' + newName);
-    await expect(deletedOption).toHaveCount(0);
-
-    // Verify one of the remaining areas (Lade) is still in the filter
-    const remainingOption = adhocPage.page.locator('mtx-option-panel').locator('text=' + areaNames[0]);
-    await expect(remainingOption).toBeVisible();
+    // Verify the deleted name is gone from the filter's real option list
+    // while the other areas (Lade) remain.
+    const filterOptions = await adhocPage.areaFilterOptions();
+    expect(filterOptions).not.toContain(newName);
+    expect(filterOptions).toContain(areaNames[0]);
   });
 });
