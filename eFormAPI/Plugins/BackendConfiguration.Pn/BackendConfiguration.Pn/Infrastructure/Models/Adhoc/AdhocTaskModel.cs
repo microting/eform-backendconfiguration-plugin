@@ -276,6 +276,19 @@ public class AdhocTagCreateModel
     public string Name { get; set; } = "";
 }
 
+/// <summary>Body for <c>POST areas</c> (area-management spec 2026-07-30) - batch create, one name per line in the dashboard modal.</summary>
+public class AdhocAreaCreateModel
+{
+    public int PropertyId { get; set; }
+    public List<string> Names { get; set; } = [];
+}
+
+/// <summary>Body for <c>PUT areas/{id}</c>.</summary>
+public class AdhocAreaRenameModel
+{
+    public string Name { get; set; } = "";
+}
+
 /// <summary>Body for <c>POST {id}/copy</c> (M5/P3) - mirrors the mockup's Kopier modal's Ja/Nej-med-kommentarer choice.</summary>
 public class AdhocCopyTaskModel
 {

@@ -703,6 +703,75 @@ public class BackendConfigurationAdhocService(
         await tag.Delete(dbContext);
     }
 
+    public async Task<List<AdhocAreaModel>> CreateAreas(int workerId, int propertyId, List<string> names, bool isAdmin = false)
+    {
+        await RequirePropertyAccessAsync(workerId, propertyId, isAdmin);
+
+        var propertyExists = await dbContext.Properties
+            .AnyAsync(p => p.Id == propertyId && p.WorkflowState != Constants.WorkflowStates.Removed);
+        if (!propertyExists)
+        {
+            throw new ArgumentException($"Property {propertyId} was not found.", nameof(propertyId));
+        }
+
+        var activeNames = await dbContext.AdhocAreas
+            .Where(a => a.PropertyId == propertyId && a.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(a => a.Name)
+            .ToListAsync();
+        // Case-insensitive skip set seeded with the property's active names;
+        // Add() returning false covers both in-batch and against-active
+        // duplicates (spec: silent skip, idempotent re-submit).
+        var seen = new HashSet<string>(activeNames, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var raw in names ?? [])
+        {
+            var trimmed = raw?.Trim() ?? "";
+            if (trimmed.Length == 0 || !seen.Add(trimmed))
+            {
+                continue;
+            }
+
+            var area = new AdhocArea { PropertyId = propertyId, Name = trimmed };
+            await area.Create(dbContext);
+        }
+
+        return await ListAreas(workerId, propertyId, isAdmin);
+    }
+
+    public async Task<AdhocAreaModel> RenameArea(int workerId, int areaId, string name, bool isAdmin = false)
+    {
+        var trimmedName = RequireNonEmptyAreaName(name);
+        var area = await LoadAreaOrThrowAsync(areaId);
+        await RequirePropertyAccessAsync(workerId, area.PropertyId, isAdmin);
+
+        var duplicate = await dbContext.AdhocAreas
+            .AnyAsync(a => a.Id != areaId
+                           && a.PropertyId == area.PropertyId
+                           && a.WorkflowState != Constants.WorkflowStates.Removed
+                           && a.Name.ToLower() == trimmedName.ToLower());
+        if (duplicate)
+        {
+            throw new ArgumentException(
+                $"An area named '{trimmedName}' already exists on this property.", nameof(name));
+        }
+
+        area.Name = trimmedName;
+        await area.Update(dbContext);
+
+        return new AdhocAreaModel { Id = area.Id, PropertyId = area.PropertyId, Name = area.Name };
+    }
+
+    public async Task DeleteArea(int workerId, int areaId, bool isAdmin = false)
+    {
+        var area = await LoadAreaOrThrowAsync(areaId);
+        await RequirePropertyAccessAsync(workerId, area.PropertyId, isAdmin);
+
+        // Soft-delete only (spec decision 2): tasks keep their AreaId so
+        // history is preserved; ListAreas already filters != Removed, so
+        // pickers self-clean. No join rows exist for areas (unlike tags).
+        await area.Delete(dbContext);
+    }
+
     private async Task RequirePropertyAccessAsync(int workerId, int propertyId, bool isAdmin)
     {
         if (isAdmin)
@@ -726,6 +795,29 @@ public class BackendConfigurationAdhocService(
         }
 
         return trimmed;
+    }
+
+    private static string RequireNonEmptyAreaName(string name)
+    {
+        var trimmed = name?.Trim() ?? "";
+        if (trimmed.Length == 0)
+        {
+            throw new ArgumentException("Area name must not be empty.", nameof(name));
+        }
+
+        return trimmed;
+    }
+
+    private async Task<AdhocArea> LoadAreaOrThrowAsync(int areaId)
+    {
+        var area = await dbContext.AdhocAreas
+            .FirstOrDefaultAsync(a => a.Id == areaId && a.WorkflowState != Constants.WorkflowStates.Removed);
+        if (area == null)
+        {
+            throw new AdhocAreaNotFoundException(areaId);
+        }
+
+        return area;
     }
 
     /// <summary>
