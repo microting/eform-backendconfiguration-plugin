@@ -19,7 +19,10 @@
       </ng-container>
       <ng-template #renameRow>
         <mat-form-field class="rename-field">
-          <input matInput [attr.id]="'adhocAreaRenameInput-' + area.id" [(ngModel)]="editName">
+          <!-- MUST be [id] (MatInput's @Input), not [attr.id]: MatInput's host
+               binding '[id]': 'id' defaults to a generated mat-input-N and
+               overwrites attribute-bound ids, so [attr.id] never reaches the DOM. -->
+          <input matInput [id]="'adhocAreaRenameInput-' + area.id" [(ngModel)]="editName">
         </mat-form-field>
         <button mat-icon-button [attr.id]="'adhocAreaRenameSaveBtn-' + area.id"
                 [disabled]="busy" (click)="saveRename(area)">

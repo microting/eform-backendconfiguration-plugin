@@ -203,14 +203,17 @@ export class BackendConfigurationAdhocPage {
    * `area.id` (component template - frozen), so the id is read straight off
    * this row's own button `id` attribute immediately before clicking it,
    * rather than trusting a value resolved earlier in the test and
-   * re-interpolated into a fresh locator afterwards. That earlier
-   * resolve-then-reuse pattern is how a CI run once got stuck 120s waiting
-   * on `#adhocAreaRenameInput-2` that never appeared: once the click swaps
-   * the row's `<span class="area-name">` for the input, `hasText:
-   * areaName` (an ngModel VALUE, not text content) no longer matches
-   * that row at all, so this resolves the id ONCE, up front, while the
-   * name is still plain text, and never re-queries `.area-row` by name
-   * after that point.
+   * re-interpolated into a fresh locator afterwards. The id is resolved
+   * ONCE, up front, while the name is still plain text, because once the
+   * click swaps the row's `<span class="area-name">` for the input,
+   * `hasText: areaName` (an ngModel VALUE, not text content) no longer
+   * matches that row.
+   *
+   * History: the CI runs that got stuck waiting on `#adhocAreaRenameInput-2`
+   * were ultimately caused by the component template binding `[attr.id]` on
+   * the matInput - MatInput's own host binding (`'[id]': 'id'`, defaulting
+   * to `mat-input-N`) overwrote it, so the id never existed in the DOM. The
+   * template now binds `[id]` (MatInput's @Input) instead.
    */
   async renameAreaInAdminModal(areaName: string, newName: string): Promise<void> {
     const renameBtn = this.areaRowInAdminModal(areaName).locator('button[id^="adhocAreaRenameBtn-"]');
