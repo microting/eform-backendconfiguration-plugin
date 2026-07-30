@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import {Component, Inject, OnDestroy} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -22,7 +22,7 @@ export interface AdhocAreaCreateModalData {
   styleUrls: ['./adhoc-area-create-modal.component.scss'],
   standalone: false,
 })
-export class AdhocAreaCreateModalComponent {
+export class AdhocAreaCreateModalComponent implements OnDestroy {
   namesText = '';
   saving = false;
   createSub$: Subscription;
@@ -32,6 +32,9 @@ export class AdhocAreaCreateModalComponent {
     @Inject(MAT_DIALOG_DATA) public data: AdhocAreaCreateModalData,
     private adhocStateService: AdhocStateService,
   ) {
+  }
+
+  ngOnDestroy(): void {
   }
 
   get parsedNames(): string[] {

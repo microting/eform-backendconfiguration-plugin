@@ -1,4 +1,4 @@
-import {Component, Inject, OnInit} from '@angular/core';
+import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -25,7 +25,7 @@ export interface AdhocAreaAdminModalData {
   styleUrls: ['./adhoc-area-admin-modal.component.scss'],
   standalone: false,
 })
-export class AdhocAreaAdminModalComponent implements OnInit {
+export class AdhocAreaAdminModalComponent implements OnInit, OnDestroy {
   areas: AdhocAreaModel[] = [];
   editingId: number | null = null;
   editName = '';
@@ -46,6 +46,9 @@ export class AdhocAreaAdminModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.reload();
+  }
+
+  ngOnDestroy(): void {
   }
 
   private reload(): void {
