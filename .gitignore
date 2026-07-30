@@ -356,3 +356,4 @@ eform-client/.idea/
 eFormAPI/eFormAPI.Web/
 .claude
 .worktrees/
+.superpowers/
