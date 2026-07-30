@@ -128,11 +128,8 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
     const newName = `Maskinhal-${rand}`;
     await adhocPage.openAreaAdminModal();
 
-    // Find the area id for "Stald-{rand}"
-    const staldId = await adhocPage.areaIdInAdminModal(areaNames[1]);
-
-    // Rename it
-    await adhocPage.renameAreaInAdminModal(staldId, newName);
+    // Rename it (resolves the area id from its own row, keyed by name)
+    await adhocPage.renameAreaInAdminModal(areaNames[1], newName);
 
     // Verify the row updates (the old name should disappear, new name appears)
     const oldRow = adhocPage.page.locator('.area-row', {hasText: areaNames[1]});
@@ -165,8 +162,7 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
     const newName = `Maskinhal-${rand}`;
     await adhocPage.openAreaAdminModal();
 
-    const maskinhalId = await adhocPage.areaIdInAdminModal(newName);
-    await adhocPage.deleteAreaInAdminModal(maskinhalId);
+    await adhocPage.deleteAreaInAdminModal(newName);
 
     // Verify its row disappears
     const deletedRow = adhocPage.page.locator('.area-row', {hasText: newName});

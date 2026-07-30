@@ -190,26 +190,53 @@ export class BackendConfigurationAdhocPage {
     await this.page.locator('#adhocAreaAdminCloseBtn').waitFor({state: 'visible'});
   }
 
-  async renameAreaInAdminModal(areaId: number, newName: string): Promise<void> {
-    await this.page.locator(`#adhocAreaRenameBtn-${areaId}`).click();
-    await this.page.locator(`#adhocAreaRenameInput-${areaId}`).fill(newName);
+  /** The admin-modal `.area-row` currently displaying `areaName`. */
+  private areaRowInAdminModal(areaName: string): Locator {
+    return this.page.locator('.area-row', {hasText: areaName});
+  }
+
+  /**
+   * Renames the area currently shown as `areaName` to `newName`.
+   *
+   * The row's rename button and its `adhocAreaRenameInput-{id}`/
+   * `adhocAreaRenameSaveBtn-{id}` counterparts all key off the SAME
+   * `area.id` (component template - frozen), so the id is read straight off
+   * this row's own button `id` attribute immediately before clicking it,
+   * rather than trusting a value resolved earlier in the test and
+   * re-interpolated into a fresh locator afterwards. That earlier
+   * resolve-then-reuse pattern is how a CI run once got stuck 120s waiting
+   * on `#adhocAreaRenameInput-2` that never appeared: once the click swaps
+   * the row's `<span class="area-name">` for the input, `hasText:
+   * areaName` (an ngModel VALUE, not text content) no longer matches
+   * that row at all, so this resolves the id ONCE, up front, while the
+   * name is still plain text, and never re-queries `.area-row` by name
+   * after that point.
+   */
+  async renameAreaInAdminModal(areaName: string, newName: string): Promise<void> {
+    const renameBtn = this.areaRowInAdminModal(areaName).locator('button[id^="adhocAreaRenameBtn-"]');
+    const btnId = await renameBtn.getAttribute('id');
+    const areaId = btnId!.replace('adhocAreaRenameBtn-', '');
+    await renameBtn.click();
+    const input = this.page.locator(`#adhocAreaRenameInput-${areaId}`);
+    await input.waitFor({state: 'visible', timeout: 15000});
+    await input.fill(newName);
     await this.page.locator(`#adhocAreaRenameSaveBtn-${areaId}`).click();
   }
 
-  async deleteAreaInAdminModal(areaId: number): Promise<void> {
-    await this.page.locator(`#adhocAreaDeleteBtn-${areaId}`).click();
+  /**
+   * Deletes the area currently shown as `areaName`. Unlike rename, delete
+   * never needs the row's numeric id at all - `adhocAreaDeleteBtn-{id}` is
+   * clicked directly off this row (scoped by the row locator, not
+   * reconstructed from a separately-resolved id), and the confirm button is
+   * a single global id shared by whichever area is pending deletion.
+   */
+  async deleteAreaInAdminModal(areaName: string): Promise<void> {
+    await this.areaRowInAdminModal(areaName).locator('button[id^="adhocAreaDeleteBtn-"]').click();
     await this.page.locator('#adhocAreaDeleteConfirmBtn').click();
   }
 
   async closeAreaAdminModal(): Promise<void> {
     await this.page.locator('#adhocAreaAdminCloseBtn').click();
-  }
-
-  /** Resolves the numeric area id from the admin modal row showing `areaName`. */
-  async areaIdInAdminModal(areaName: string): Promise<number> {
-    const row = this.page.locator('.area-row', {hasText: areaName});
-    const btnId = await row.locator('button[id^="adhocAreaRenameBtn-"]').getAttribute('id');
-    return Number(btnId!.replace('adhocAreaRenameBtn-', ''));
   }
 
   /** `labelSubstring` matches the visible "<Label> (<count>)" option text - e.g. "Løste". */
