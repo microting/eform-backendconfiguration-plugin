@@ -2,6 +2,7 @@ import {Component, ElementRef, HostListener, OnChanges, OnDestroy, OnInit, Input
 import {FormControl} from '@angular/forms';
 import {TranslateService} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
+import {ComponentType} from '@angular/cdk/portal';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, debounceTime, distinctUntilChanged} from 'rxjs';
@@ -142,32 +143,22 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   openAreaCreateModal(): void {
-    const propertyId = this.currentFilters.propertyId;
-    if (propertyId == null) {
-      return;
-    }
-    this.dialog
-      .open(AdhocAreaCreateModalComponent, {
-        ...dialogConfigHelper(this.overlay, {propertyId, propertyName: this.propertyName(propertyId)}),
-        minWidth: 400,
-      })
-      .afterClosed()
-      .subscribe((changed) => {
-        if (changed) {
-          this.loadAreas(propertyId);
-        }
-      });
+    this.openAreaModal(AdhocAreaCreateModalComponent, 400);
   }
 
   openAreaAdminModal(): void {
+    this.openAreaModal(AdhocAreaAdminModalComponent, 440);
+  }
+
+  private openAreaModal(component: ComponentType<unknown>, minWidth: number): void {
     const propertyId = this.currentFilters.propertyId;
     if (propertyId == null) {
       return;
     }
     this.dialog
-      .open(AdhocAreaAdminModalComponent, {
+      .open(component, {
         ...dialogConfigHelper(this.overlay, {propertyId, propertyName: this.propertyName(propertyId)}),
-        minWidth: 440,
+        minWidth,
       })
       .afterClosed()
       .subscribe((changed) => {
