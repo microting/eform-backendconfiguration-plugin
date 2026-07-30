@@ -212,6 +212,33 @@ public class AdhocController : Controller
             "ErrorWhileGettingAdhocAreas");
     }
 
+    [HttpPost]
+    [Route("areas")]
+    public async Task<OperationDataResult<List<AdhocAreaModel>>> CreateAreas([FromBody] AdhocAreaCreateModel model)
+    {
+        return await ExecuteAsync(
+            () => _adhocService.CreateAreas(DashboardWorkerId, model?.PropertyId ?? 0, model?.Names ?? [], IsAdmin),
+            "ErrorWhileCreatingAdhocAreas");
+    }
+
+    [HttpPut]
+    [Route("areas/{id:int}")]
+    public async Task<OperationDataResult<AdhocAreaModel>> RenameArea(int id, [FromBody] AdhocAreaRenameModel model)
+    {
+        return await ExecuteAsync(
+            () => _adhocService.RenameArea(DashboardWorkerId, id, model?.Name ?? string.Empty, IsAdmin),
+            "ErrorWhileUpdatingAdhocArea");
+    }
+
+    [HttpDelete]
+    [Route("areas/{id:int}")]
+    public async Task<OperationResult> DeleteArea(int id)
+    {
+        return await ExecuteAsync(
+            () => _adhocService.DeleteArea(DashboardWorkerId, id, IsAdmin),
+            "ErrorWhileDeletingAdhocArea");
+    }
+
     [HttpGet]
     [Route("workers")]
     public async Task<OperationDataResult<List<AdhocWorkerModel>>> ListWorkers(int propertyId)
