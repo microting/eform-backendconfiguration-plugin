@@ -318,8 +318,15 @@ public class BackendConfigurationReportService(
 
                         if (areaRulePlanning != null)
                         {
-                            propertyName = backendConfigurationPnDbContext.Properties
-                                .First(x => x.Id == areaRulePlanning.PropertyId).Name;
+                            var property = await backendConfigurationPnDbContext.Properties
+                                .FirstOrDefaultAsync(x => x.Id == areaRulePlanning.PropertyId);
+                            if (property == null)
+                            {
+                                logger.LogWarning(
+                                    $"Could not find property with id {areaRulePlanning.PropertyId} for planning {planningCase.PlanningId}");
+                            }
+
+                            propertyName = property?.Name ?? "";
                         }
                         else
                         {
@@ -331,8 +338,15 @@ public class BackendConfigurationReportService(
 
                             if (areaRulePlanningVersion != null)
                             {
-                                propertyName = backendConfigurationPnDbContext.Properties
-                                    .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
+                                var property = await backendConfigurationPnDbContext.Properties
+                                    .FirstOrDefaultAsync(x => x.Id == areaRulePlanningVersion.PropertyId);
+                                if (property == null)
+                                {
+                                    logger.LogWarning(
+                                        $"Could not find property with id {areaRulePlanningVersion.PropertyId} for planning {planningCase.PlanningId}");
+                                }
+
+                                propertyName = property?.Name ?? "";
                             }
                         }
 
@@ -737,8 +751,15 @@ public class BackendConfigurationReportService(
 
                         if (areaRulePlanning != null)
                         {
-                            propertyName = backendConfigurationPnDbContext.Properties
-                                .First(x => x.Id == areaRulePlanning.PropertyId).Name;
+                            var property = await backendConfigurationPnDbContext.Properties
+                                .FirstOrDefaultAsync(x => x.Id == areaRulePlanning.PropertyId);
+                            if (property == null)
+                            {
+                                logger.LogWarning(
+                                    $"Could not find property with id {areaRulePlanning.PropertyId} for planning {planningCase.PlanningId}");
+                            }
+
+                            propertyName = property?.Name ?? "";
                         }
                         else
                         {
@@ -750,8 +771,15 @@ public class BackendConfigurationReportService(
 
                             if (areaRulePlanningVersion != null)
                             {
-                                propertyName = backendConfigurationPnDbContext.Properties
-                                    .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
+                                var property = await backendConfigurationPnDbContext.Properties
+                                    .FirstOrDefaultAsync(x => x.Id == areaRulePlanningVersion.PropertyId);
+                                if (property == null)
+                                {
+                                    logger.LogWarning(
+                                        $"Could not find property with id {areaRulePlanningVersion.PropertyId} for planning {planningCase.PlanningId}");
+                                }
+
+                                propertyName = property?.Name ?? "";
                             }
                         }
 
