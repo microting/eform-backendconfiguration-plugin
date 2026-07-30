@@ -1,0 +1,18 @@
+.area-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .area-name {
+    flex: 1;
+  }
+
+  .rename-field {
+    flex: 1;
+  }
+}
+
+.error {
+  color: #b3261e;
+  font-size: 12px;
+}

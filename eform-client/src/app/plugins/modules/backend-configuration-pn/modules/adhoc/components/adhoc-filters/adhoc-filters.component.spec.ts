@@ -12,6 +12,7 @@ describe('AdhocFiltersComponent', () => {
   let adhocServiceSpy: any;
   let translateSpy: any;
   let elementRefSpy: any;
+  let dialogSpy: any;
 
   beforeEach(() => {
     adhocStateServiceSpy = {
@@ -33,8 +34,9 @@ describe('AdhocFiltersComponent', () => {
     };
     translateSpy = {instant: (key: string) => key};
     elementRefSpy = {nativeElement: {contains: () => true}};
+    dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
 
-    component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy);
+    component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy);
   });
 
   describe('statusOptions', () => {
@@ -109,6 +111,50 @@ describe('AdhocFiltersComponent', () => {
       component.areas = [{id: 100, propertyId: 1, name: 'Stald 1'}];
       component.onPropertyChange(null);
       expect(component.areas).toEqual([]);
+    });
+  });
+
+  describe('area create/admin modals', () => {
+    it('openAreaCreateModal is a no-op without a selected property', () => {
+      adhocStateServiceSpy.currentFilters.propertyId = null;
+      component.openAreaCreateModal();
+      expect(dialogSpy.open).not.toHaveBeenCalled();
+    });
+
+    it('openAreaCreateModal opens with the selected property and reloads areas when changed', () => {
+      adhocStateServiceSpy.currentFilters.propertyId = 1;
+      const afterClosedSpy = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
+      afterClosedSpy.afterClosed.and.returnValue(of(true));
+      dialogSpy.open.and.returnValue(afterClosedSpy);
+
+      component.openAreaCreateModal();
+
+      expect(dialogSpy.open).toHaveBeenCalledWith(
+        jasmine.any(Function),
+        jasmine.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
+      );
+      expect(adhocStateServiceSpy.getAreasForProperty).toHaveBeenCalledWith(1);
+    });
+
+    it('openAreaAdminModal is a no-op without a selected property', () => {
+      adhocStateServiceSpy.currentFilters.propertyId = null;
+      component.openAreaAdminModal();
+      expect(dialogSpy.open).not.toHaveBeenCalled();
+    });
+
+    it('openAreaAdminModal opens with the selected property and only reloads areas when something changed', () => {
+      adhocStateServiceSpy.currentFilters.propertyId = 1;
+      const afterClosedSpy = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
+      afterClosedSpy.afterClosed.and.returnValue(of(false));
+      dialogSpy.open.and.returnValue(afterClosedSpy);
+
+      component.openAreaAdminModal();
+
+      expect(dialogSpy.open).toHaveBeenCalledWith(
+        jasmine.any(Function),
+        jasmine.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
+      );
+      expect(adhocStateServiceSpy.getAreasForProperty).not.toHaveBeenCalled();
     });
   });
 });

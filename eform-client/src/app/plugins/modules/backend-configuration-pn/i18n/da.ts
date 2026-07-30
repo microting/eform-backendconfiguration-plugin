@@ -634,4 +634,16 @@ export const da = {
   completed: 'Udført',
   archived: 'Arkiveret',
   commented: 'Kommenteret',
+  // Adhoc dashboard (area management) - toolbar area create/admin.
+  Add: 'Tilføj',
+  'Area name is empty or already exists': 'Områdenavnet er tomt eller findes allerede',
+  'Create areas': 'Opret områder',
+  'Create one or more areas on the selected property (one name per line)': 'Opret ét eller flere områder på den valgte ejendom (ét navn pr. linje)',
+  'Delete area': 'Slet område',
+  'Edit or delete areas for the selected property': 'Rediger eller slet områder for den valgte ejendom',
+  'Existing tasks keep their history': 'Eksisterende opgaver beholder deres historik',
+  'Manage areas': 'Administrer områder',
+  'No areas on this property yet': 'Der er endnu ingen områder på denne ejendom',
+  'One area name per line': 'Ét områdenavn pr. linje',
+  'Rename area': 'Omdøb område',
 };

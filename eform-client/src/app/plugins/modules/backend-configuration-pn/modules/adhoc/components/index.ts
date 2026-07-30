@@ -6,3 +6,5 @@ export * from './adhoc-delete-modal/adhoc-delete-modal.component';
 export * from './adhoc-copy-modal/adhoc-copy-modal.component';
 export * from './adhoc-complete-modal/adhoc-complete-modal.component';
 export * from './adhoc-history/adhoc-history.component';
+export * from './adhoc-area-create-modal/adhoc-area-create-modal.component';
+export * from './adhoc-area-admin-modal/adhoc-area-admin-modal.component';

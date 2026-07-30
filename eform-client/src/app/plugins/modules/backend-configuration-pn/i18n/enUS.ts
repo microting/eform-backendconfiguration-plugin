@@ -651,4 +651,16 @@ export const enUS= {
   completed: 'Completed',
   archived: 'Archived',
   commented: 'Commented',
+  // Adhoc dashboard (area management) - toolbar area create/admin.
+  Add: 'Add',
+  'Area name is empty or already exists': 'Area name is empty or already exists',
+  'Create areas': 'Create areas',
+  'Create one or more areas on the selected property (one name per line)': 'Create one or more areas on the selected property (one name per line)',
+  'Delete area': 'Delete area',
+  'Edit or delete areas for the selected property': 'Edit or delete areas for the selected property',
+  'Existing tasks keep their history': 'Existing tasks keep their history',
+  'Manage areas': 'Manage areas',
+  'No areas on this property yet': 'No areas on this property yet',
+  'One area name per line': 'One area name per line',
+  'Rename area': 'Rename area',
 };

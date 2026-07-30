@@ -1,12 +1,15 @@
 import {Component, ElementRef, HostListener, OnChanges, OnDestroy, OnInit, Input, SimpleChanges} from '@angular/core';
 import {FormControl} from '@angular/forms';
 import {TranslateService} from '@ngx-translate/core';
+import {MatDialog} from '@angular/material/dialog';
 import {Subscription, debounceTime, distinctUntilChanged} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocAreaModel, AdhocTagModel} from '../../../../models';
 import {AdhocFiltrationModel} from '../../../../state';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
+import {AdhocAreaCreateModalComponent} from '../adhoc-area-create-modal/adhoc-area-create-modal.component';
+import {AdhocAreaAdminModalComponent} from '../adhoc-area-admin-modal/adhoc-area-admin-modal.component';
 
 interface AdhocStatusOption {
   value: AdhocFiltrationModel['status'];
@@ -69,6 +72,7 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
     private adhocService: BackendConfigurationPnAdhocService,
     private translate: TranslateService,
     private elementRef: ElementRef,
+    private dialog: MatDialog,
   ) {
   }
 
@@ -132,6 +136,46 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
 
   onAreaChange(areaId: number | null): void {
     this.adhocStateService.updateFilters({areaId});
+  }
+
+  openAreaCreateModal(): void {
+    const propertyId = this.currentFilters.propertyId;
+    if (propertyId == null) {
+      return;
+    }
+    this.dialog
+      .open(AdhocAreaCreateModalComponent, {
+        minWidth: 400,
+        data: {propertyId, propertyName: this.propertyName(propertyId)},
+      })
+      .afterClosed()
+      .subscribe((changed) => {
+        if (changed) {
+          this.loadAreas(propertyId);
+        }
+      });
+  }
+
+  openAreaAdminModal(): void {
+    const propertyId = this.currentFilters.propertyId;
+    if (propertyId == null) {
+      return;
+    }
+    this.dialog
+      .open(AdhocAreaAdminModalComponent, {
+        minWidth: 440,
+        data: {propertyId, propertyName: this.propertyName(propertyId)},
+      })
+      .afterClosed()
+      .subscribe((changed) => {
+        if (changed) {
+          this.loadAreas(propertyId);
+        }
+      });
+  }
+
+  private propertyName(propertyId: number): string {
+    return this.adhocStateService.properties.find((p) => p.id === propertyId)?.name ?? '';
   }
 
   onStatusChange(status: AdhocFiltrationModel['status']): void {

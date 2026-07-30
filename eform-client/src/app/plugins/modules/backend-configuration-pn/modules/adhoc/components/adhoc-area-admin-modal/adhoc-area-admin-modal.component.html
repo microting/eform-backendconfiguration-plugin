@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>{{ 'Manage areas' | translate }}</h2>
+<mat-dialog-content>
+  <p>{{ 'Property' | translate }}: <strong>{{ data.propertyName }}</strong></p>
+
+  <ng-container *ngIf="confirmDeleteArea === null; else deleteConfirm">
+    <p *ngIf="areas.length === 0">{{ 'No areas on this property yet' | translate }}</p>
+    <p class="error" *ngIf="errorKey">{{ errorKey | translate }}</p>
+    <div class="area-row" *ngFor="let area of areas">
+      <ng-container *ngIf="editingId !== area.id; else renameRow">
+        <span class="area-name">{{ area.name }}</span>
+        <button mat-icon-button [attr.id]="'adhocAreaRenameBtn-' + area.id"
+                [matTooltip]="'Rename area' | translate" (click)="startRename(area)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button [attr.id]="'adhocAreaDeleteBtn-' + area.id"
+                [matTooltip]="'Delete area' | translate" (click)="askDelete(area)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </ng-container>
+      <ng-template #renameRow>
+        <mat-form-field class="rename-field">
+          <input matInput [attr.id]="'adhocAreaRenameInput-' + area.id" [(ngModel)]="editName">
+        </mat-form-field>
+        <button mat-icon-button [attr.id]="'adhocAreaRenameSaveBtn-' + area.id"
+                [disabled]="busy" (click)="saveRename(area)">
+          <mat-icon>check</mat-icon>
+        </button>
+      </ng-template>
+    </div>
+  </ng-container>
+
+  <ng-template #deleteConfirm>
+    <p>{{ 'Delete area' | translate }}: <strong>{{ confirmDeleteArea!.name }}</strong>?</p>
+    <p>{{ 'Existing tasks keep their history' | translate }}</p>
+  </ng-template>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <ng-container *ngIf="confirmDeleteArea === null; else deleteActions">
+    <button mat-button id="adhocAreaAdminCloseBtn" (click)="close()">{{ 'Close' | translate }}</button>
+  </ng-container>
+  <ng-template #deleteActions>
+    <button mat-button id="adhocAreaDeleteCancelBtn" (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
+    <button mat-raised-button color="warn" id="adhocAreaDeleteConfirmBtn" [disabled]="busy" (click)="confirmDelete()">
+      {{ 'Delete' | translate }}
+    </button>
+  </ng-template>
+</mat-dialog-actions>
