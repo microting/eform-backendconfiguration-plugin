@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {Observable, of} from 'rxjs';
-import {map, tap} from 'rxjs/operators';
+import {map, switchMap, tap} from 'rxjs/operators';
 import {updateTableSort} from 'src/app/common/helpers';
 import {CommonPaginationState, OperationDataResult, PaginationModel} from 'src/app/common/models';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
@@ -132,6 +132,42 @@ export class AdhocStateService {
       return [];
     }
     return this.workersByProperty.get(propertyId) ?? [];
+  }
+
+  // -----------------------------------------------------------------
+  // Area mutations (area-management spec 2026-07-30). Each one ACTIVELY
+  // refreshes the property's cache entry: adhoc-filters and the task
+  // drawer hold one-shot-subscribed copies, so invalidate-only would
+  // leave stale dropdowns (spec, Angular design).
+  // -----------------------------------------------------------------
+
+  createAreas(propertyId: number, names: string[]): Observable<AdhocAreaModel[]> {
+    return this.service.createAreas(propertyId, names).pipe(
+      map((res) => (res && res.success && res.model) || []),
+      tap((areas) => this.areasByProperty.set(propertyId, areas))
+    );
+  }
+
+  renameArea(propertyId: number, areaId: number, name: string): Observable<boolean> {
+    return this.service.renameArea(areaId, name).pipe(
+      map((res) => !!(res && res.success)),
+      switchMap((success) => this.refreshAreas(propertyId).pipe(map(() => success)))
+    );
+  }
+
+  deleteArea(propertyId: number, areaId: number): Observable<boolean> {
+    return this.service.deleteArea(areaId).pipe(
+      map((res) => !!(res && res.success)),
+      switchMap((success) => this.refreshAreas(propertyId).pipe(map(() => success)))
+    );
+  }
+
+  /** Unconditional re-fetch that overwrites the cache entry (unlike `getAreasForProperty`, which returns the cache when present). */
+  private refreshAreas(propertyId: number): Observable<AdhocAreaModel[]> {
+    return this.service.getAreas(propertyId).pipe(
+      map((res) => (res && res.success && res.model) || []),
+      tap((areas) => this.areasByProperty.set(propertyId, areas))
+    );
   }
 
   // -----------------------------------------------------------------

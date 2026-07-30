@@ -44,6 +44,9 @@ describe('AdhocStateService', () => {
       'getTags',
       'getAreas',
       'getWorkers',
+      'createAreas',
+      'renameArea',
+      'deleteArea',
     ]);
     service = buildService();
   });
@@ -185,6 +188,73 @@ describe('AdhocStateService', () => {
       expect(service.properties).toEqual([]);
       expect(service.tags).toEqual([]);
       expect(service.getCachedAreas(1)).toEqual([]);
+    });
+  });
+
+  describe('area mutations (active cache refresh)', () => {
+    it('createAreas overwrites the cache from the create response (not merely invalidating it)', () => {
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}]}));
+      service.getAreasForProperty(1).subscribe();
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald 1'}]);
+
+      adhocServiceSpy.createAreas.and.returnValue(
+        of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}, {id: 11, propertyId: 1, name: 'Stald 2'}]})
+      );
+      service.createAreas(1, ['Stald 2']).subscribe();
+
+      expect(adhocServiceSpy.createAreas).toHaveBeenCalledWith(1, ['Stald 2']);
+      expect(service.getCachedAreas(1)).toEqual([
+        {id: 10, propertyId: 1, name: 'Stald 1'},
+        {id: 11, propertyId: 1, name: 'Stald 2'},
+      ]);
+    });
+
+    it('renameArea re-fetches via getAreas and overwrites the cache with the fresh list (active refresh, not invalidate-only)', () => {
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}]}));
+      service.getAreasForProperty(1).subscribe();
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald 1'}]);
+
+      adhocServiceSpy.renameArea.and.returnValue(of({success: true, model: {id: 10, propertyId: 1, name: 'Stald renamed'}}));
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald renamed'}]}));
+
+      let result: boolean | undefined;
+      service.renameArea(1, 10, 'Stald renamed').subscribe((success) => (result = success));
+
+      expect(adhocServiceSpy.renameArea).toHaveBeenCalledWith(10, 'Stald renamed');
+      // Cache is not merely cleared - it is repopulated with the re-fetched entities.
+      expect(adhocServiceSpy.getAreas).toHaveBeenCalledWith(1);
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald renamed'}]);
+      expect(result).toBeTrue();
+    });
+
+    it('deleteArea re-fetches via getAreas and overwrites the cache with the fresh list (active refresh, not invalidate-only)', () => {
+      adhocServiceSpy.getAreas.and.returnValue(
+        of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}, {id: 11, propertyId: 1, name: 'Stald 2'}]})
+      );
+      service.getAreasForProperty(1).subscribe();
+      expect(service.getCachedAreas(1).length).toBe(2);
+
+      adhocServiceSpy.deleteArea.and.returnValue(of({success: true}));
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 11, propertyId: 1, name: 'Stald 2'}]}));
+
+      let result: boolean | undefined;
+      service.deleteArea(1, 10).subscribe((success) => (result = success));
+
+      expect(adhocServiceSpy.deleteArea).toHaveBeenCalledWith(10);
+      expect(adhocServiceSpy.getAreas).toHaveBeenCalledWith(1);
+      expect(service.getCachedAreas(1)).toEqual([{id: 11, propertyId: 1, name: 'Stald 2'}]);
+      expect(result).toBeTrue();
+    });
+
+    it('renameArea propagates failure while still refreshing the cache', () => {
+      adhocServiceSpy.renameArea.and.returnValue(of({success: false}));
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}]}));
+
+      let result: boolean | undefined;
+      service.renameArea(1, 10, 'x').subscribe((success) => (result = success));
+
+      expect(result).toBeFalse();
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald 1'}]);
     });
   });
 });
