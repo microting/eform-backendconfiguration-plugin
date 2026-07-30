@@ -742,7 +742,7 @@ public class BackendConfigurationAdhocService(
     {
         var trimmedName = RequireNonEmptyAreaName(name);
         var area = await LoadAreaOrThrowAsync(areaId);
-        await RequirePropertyAccessAsync(workerId, area.PropertyId, isAdmin);
+        await RequirePropertyAccessForAreaOrThrowNotFoundAsync(workerId, area, isAdmin);
 
         var duplicate = await dbContext.AdhocAreas
             .AnyAsync(a => a.Id != areaId
@@ -764,7 +764,7 @@ public class BackendConfigurationAdhocService(
     public async Task DeleteArea(int workerId, int areaId, bool isAdmin = false)
     {
         var area = await LoadAreaOrThrowAsync(areaId);
-        await RequirePropertyAccessAsync(workerId, area.PropertyId, isAdmin);
+        await RequirePropertyAccessForAreaOrThrowNotFoundAsync(workerId, area, isAdmin);
 
         // Soft-delete only (spec decision 2): tasks keep their AreaId so
         // history is preserved; ListAreas already filters != Removed, so
@@ -783,6 +783,28 @@ public class BackendConfigurationAdhocService(
         {
             throw new AdhocTaskUnauthorizedException(
                 $"Worker {workerId} has no access to property {propertyId}.");
+        }
+    }
+
+    /// <summary>
+    /// Enumeration hardening for the id-only area mutations (RenameArea/
+    /// DeleteArea): a caller who fails the property-access check for an area
+    /// they already loaded must see the same "not found" error as a caller
+    /// who named a nonexistent area id - otherwise AdhocTaskUnauthorizedException
+    /// vs AdhocAreaNotFoundException lets an attacker distinguish "exists but
+    /// denied" from "doesn't exist" and enumerate area ids across properties.
+    /// CreateAreas is unaffected - the caller already names the propertyId
+    /// explicitly, so there is nothing to enumerate.
+    /// </summary>
+    private async Task RequirePropertyAccessForAreaOrThrowNotFoundAsync(int workerId, AdhocArea area, bool isAdmin)
+    {
+        try
+        {
+            await RequirePropertyAccessAsync(workerId, area.PropertyId, isAdmin);
+        }
+        catch (AdhocTaskUnauthorizedException)
+        {
+            throw new AdhocAreaNotFoundException(area.Id);
         }
     }
 

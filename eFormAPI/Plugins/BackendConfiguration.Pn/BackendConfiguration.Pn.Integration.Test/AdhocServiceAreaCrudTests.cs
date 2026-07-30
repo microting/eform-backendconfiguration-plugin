@@ -313,12 +313,44 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         await area.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
+        // CreateAreas already names the propertyId explicitly - nothing to
+        // enumerate - so it keeps the plain unauthorized signal.
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
             await sut.CreateAreas(0, property.Id, ["Stald"]));
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+
+        // RenameArea/DeleteArea are id-only mutations: enumeration hardening
+        // means access denial on a real-but-inaccessible area id surfaces as
+        // "not found", same as a genuinely unknown id (see
+        // AreaMutations_DeniedAccessAndMissingArea_AreIndistinguishable).
+        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.RenameArea(0, area.Id, "Stald"));
-        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+        Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
             await sut.DeleteArea(0, area.Id));
+    }
+
+    [Test]
+    public async Task AreaMutations_DeniedAccessAndMissingArea_AreIndistinguishable()
+    {
+        var property = await CreatePropertyAsync();
+        var area = new AdhocArea { PropertyId = property.Id, Name = "Lade" };
+        await area.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        // Worker 0 has no access to `property`. Enumeration-hardening intent:
+        // a real area id it may not touch and a wholly nonexistent id must
+        // throw the exact same exception type, so the response can't be used
+        // to tell "exists but denied" apart from "doesn't exist".
+        var deniedRename = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+            await sut.RenameArea(0, area.Id, "Stald"));
+        var missingRename = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+            await sut.RenameArea(0, 999999, "Stald"));
+        Assert.That(deniedRename!.GetType(), Is.EqualTo(missingRename!.GetType()));
+
+        var deniedDelete = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+            await sut.DeleteArea(0, area.Id));
+        var missingDelete = Assert.ThrowsAsync<AdhocAreaNotFoundException>(async () =>
+            await sut.DeleteArea(0, 999999));
+        Assert.That(deniedDelete!.GetType(), Is.EqualTo(missingDelete!.GetType()));
     }
 
     [Test]
