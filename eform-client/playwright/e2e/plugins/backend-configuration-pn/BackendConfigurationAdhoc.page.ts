@@ -149,6 +149,45 @@ export class BackendConfigurationAdhocPage {
     await selectValueInNgSelector(this.page, '#toolbar-omraade', areaName);
   }
 
+  async openAreaCreateModal(): Promise<void> {
+    await this.page.locator('#adhocToolbarAreaCreateBtn').click();
+    await this.page.locator('#adhocAreaCreateTextarea').waitFor({state: 'visible'});
+  }
+
+  async createAreas(names: string[]): Promise<void> {
+    await this.openAreaCreateModal();
+    await this.page.locator('#adhocAreaCreateTextarea').fill(names.join('\n'));
+    await this.page.locator('#adhocAreaCreateSaveBtn').click();
+    await this.page.locator('#adhocAreaCreateTextarea').waitFor({state: 'hidden'});
+  }
+
+  async openAreaAdminModal(): Promise<void> {
+    await this.page.locator('#adhocToolbarAreaManageBtn').click();
+    await this.page.locator('#adhocAreaAdminCloseBtn').waitFor({state: 'visible'});
+  }
+
+  async renameAreaInAdminModal(areaId: number, newName: string): Promise<void> {
+    await this.page.locator(`#adhocAreaRenameBtn-${areaId}`).click();
+    await this.page.locator(`#adhocAreaRenameInput-${areaId}`).fill(newName);
+    await this.page.locator(`#adhocAreaRenameSaveBtn-${areaId}`).click();
+  }
+
+  async deleteAreaInAdminModal(areaId: number): Promise<void> {
+    await this.page.locator(`#adhocAreaDeleteBtn-${areaId}`).click();
+    await this.page.locator('#adhocAreaDeleteConfirmBtn').click();
+  }
+
+  async closeAreaAdminModal(): Promise<void> {
+    await this.page.locator('#adhocAreaAdminCloseBtn').click();
+  }
+
+  /** Resolves the numeric area id from the admin modal row showing `areaName`. */
+  async areaIdInAdminModal(areaName: string): Promise<number> {
+    const row = this.page.locator('.area-row', {hasText: areaName});
+    const btnId = await row.locator('button[id^="adhocAreaRenameBtn-"]').getAttribute('id');
+    return Number(btnId!.replace('adhocAreaRenameBtn-', ''));
+  }
+
   /** `labelSubstring` matches the visible "<Label> (<count>)" option text - e.g. "Løste". */
   async selectStatusFilter(labelSubstring: string): Promise<void> {
     await selectValueInNgSelector(this.page, '#task-status-filter', labelSubstring);
