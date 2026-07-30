@@ -659,6 +659,8 @@ export const enUS= {
   'Delete area': 'Delete area',
   'Edit or delete areas for the selected property': 'Edit or delete areas for the selected property',
   'Existing tasks keep their history': 'Existing tasks keep their history',
+  'Failed to create areas': 'Failed to create areas',
+  'Failed to delete area': 'Failed to delete area',
   'Manage areas': 'Manage areas',
   'No areas on this property yet': 'No areas on this property yet',
   'One area name per line': 'One area name per line',

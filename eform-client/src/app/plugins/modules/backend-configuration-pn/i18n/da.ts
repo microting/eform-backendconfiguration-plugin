@@ -642,6 +642,8 @@ export const da = {
   'Delete area': 'Slet område',
   'Edit or delete areas for the selected property': 'Rediger eller slet områder for den valgte ejendom',
   'Existing tasks keep their history': 'Eksisterende opgaver beholder deres historik',
+  'Failed to create areas': 'Kunne ikke oprette områder',
+  'Failed to delete area': 'Kunne ikke slette området',
   'Manage areas': 'Administrer områder',
   'No areas on this property yet': 'Der er endnu ingen områder på denne ejendom',
   'One area name per line': 'Ét områdenavn pr. linje',
