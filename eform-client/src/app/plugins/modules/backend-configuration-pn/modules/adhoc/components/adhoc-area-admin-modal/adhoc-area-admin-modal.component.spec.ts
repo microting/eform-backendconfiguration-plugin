@@ -87,6 +87,16 @@ describe('AdhocAreaAdminModalComponent', () => {
     expect(component.changed).toBe(true);
   });
 
+  it('confirmDelete surfaces an error key and leaves the confirm step open on failure', () => {
+    adhocStateServiceSpy.deleteArea.and.returnValue(of(false));
+    component.confirmDeleteArea = areas[0];
+    component.confirmDelete();
+    expect(component.errorKey).toBe('Failed to delete area');
+    expect(component.confirmDeleteArea).toEqual(areas[0]);
+    expect(component.changed).toBe(false);
+    expect(component.busy).toBe(false);
+  });
+
   it('confirmDelete does nothing without a pending confirm target', () => {
     component.confirmDeleteArea = null;
     component.confirmDelete();

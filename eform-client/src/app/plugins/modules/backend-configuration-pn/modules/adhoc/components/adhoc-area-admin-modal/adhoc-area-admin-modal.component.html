@@ -32,6 +32,7 @@
   <ng-template #deleteConfirm>
     <p>{{ 'Delete area' | translate }}: <strong>{{ confirmDeleteArea!.name }}</strong>?</p>
     <p>{{ 'Existing tasks keep their history' | translate }}</p>
+    <p class="error" *ngIf="errorKey">{{ errorKey | translate }}</p>
   </ng-template>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

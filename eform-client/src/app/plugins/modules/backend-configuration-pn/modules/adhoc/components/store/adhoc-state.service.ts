@@ -141,10 +141,21 @@ export class AdhocStateService {
   // leave stale dropdowns (spec, Angular design).
   // -----------------------------------------------------------------
 
+  /**
+   * Only overwrites the cache when the create actually succeeded - unlike
+   * `refreshAreas`, this maps a raw create response, so a `success: false`
+   * reply must not poison the cache with `[]` (mirrors renameArea/deleteArea,
+   * which never write a failure result into the cache either).
+   */
   createAreas(propertyId: number, names: string[]): Observable<AdhocAreaModel[]> {
     return this.service.createAreas(propertyId, names).pipe(
-      map((res) => (res && res.success && res.model) || []),
-      tap((areas) => this.areasByProperty.set(propertyId, areas))
+      map((res) => (res && res.success && res.model) || null),
+      tap((areas) => {
+        if (areas) {
+          this.areasByProperty.set(propertyId, areas);
+        }
+      }),
+      map((areas) => areas || [])
     );
   }
 

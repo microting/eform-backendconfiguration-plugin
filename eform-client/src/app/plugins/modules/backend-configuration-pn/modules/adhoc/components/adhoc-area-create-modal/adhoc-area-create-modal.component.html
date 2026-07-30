@@ -2,6 +2,7 @@
 <mat-dialog-content>
   <p>{{ 'Property' | translate }}: <strong>{{ data.propertyName }}</strong></p>
   <p class="hint">{{ 'One area name per line' | translate }}</p>
+  <p class="error" *ngIf="errorKey">{{ errorKey | translate }}</p>
   <mat-form-field class="full-width">
     <mat-label>{{ 'Areas' | translate }}</mat-label>
     <textarea matInput rows="6" id="adhocAreaCreateTextarea" [(ngModel)]="namesText"></textarea>

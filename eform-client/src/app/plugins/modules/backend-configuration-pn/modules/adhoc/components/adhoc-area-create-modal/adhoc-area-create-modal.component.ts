@@ -13,7 +13,9 @@ export interface AdhocAreaCreateModalData {
  * "Opret områder" batch modal (mockup #omraade-batch-modal): textarea, one
  * name per line, scoped to the currently selected property. Client trims
  * and drops empties; the server case-insensitively dedupes (silent skip,
- * idempotent). Closes with `true` when areas were submitted.
+ * idempotent). Closes with `true` only once the create actually succeeded -
+ * a failed create (mirrors the admin modal's rename/delete error handling)
+ * surfaces `errorKey` and keeps the modal open instead.
  */
 @AutoUnsubscribe()
 @Component({
@@ -25,6 +27,7 @@ export interface AdhocAreaCreateModalData {
 export class AdhocAreaCreateModalComponent implements OnDestroy {
   namesText = '';
   saving = false;
+  errorKey: string | null = null;
   createSub$: Subscription;
 
   constructor(
@@ -54,11 +57,22 @@ export class AdhocAreaCreateModalComponent implements OnDestroy {
       return;
     }
     this.saving = true;
+    this.errorKey = null;
     this.createSub$ = this.adhocStateService
       .createAreas(this.data.propertyId, names)
       .subscribe({
-        next: () => this.dialogRef.close(true),
-        error: () => (this.saving = false),
+        next: (areas) => {
+          this.saving = false;
+          if (areas && areas.length > 0) {
+            this.dialogRef.close(true);
+          } else {
+            this.errorKey = 'Failed to create areas';
+          }
+        },
+        error: () => {
+          this.saving = false;
+          this.errorKey = 'Failed to create areas';
+        },
       });
   }
 }

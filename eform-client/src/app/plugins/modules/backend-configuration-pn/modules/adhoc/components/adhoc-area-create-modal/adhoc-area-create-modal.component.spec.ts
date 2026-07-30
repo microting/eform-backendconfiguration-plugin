@@ -38,11 +38,21 @@ describe('AdhocAreaCreateModalComponent', () => {
     expect(component.saving).toBe(true);
   });
 
-  it('save() resets saving on error and does not close', () => {
+  it('save() resets saving on error, surfaces an errorKey, and does not close', () => {
     adhocStateServiceSpy.createAreas.and.returnValue(throwError(() => new Error('fail')));
     component.namesText = 'Stald 1';
     component.save();
     expect(component.saving).toBe(false);
+    expect(component.errorKey).toBe('Failed to create areas');
+    expect(dialogRefSpy.close).not.toHaveBeenCalled();
+  });
+
+  it('save() surfaces an errorKey and keeps the modal open when the create reports failure (empty result)', () => {
+    adhocStateServiceSpy.createAreas.and.returnValue(of([]));
+    component.namesText = 'Stald 1';
+    component.save();
+    expect(component.saving).toBe(false);
+    expect(component.errorKey).toBe('Failed to create areas');
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });
 

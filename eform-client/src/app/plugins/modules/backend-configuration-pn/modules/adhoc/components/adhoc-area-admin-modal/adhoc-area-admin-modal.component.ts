@@ -86,10 +86,12 @@ export class AdhocAreaAdminModalComponent implements OnInit, OnDestroy {
 
   askDelete(area: AdhocAreaModel): void {
     this.confirmDeleteArea = area;
+    this.errorKey = null;
   }
 
   cancelDelete(): void {
     this.confirmDeleteArea = null;
+    this.errorKey = null;
   }
 
   confirmDelete(): void {
@@ -102,10 +104,13 @@ export class AdhocAreaAdminModalComponent implements OnInit, OnDestroy {
       .deleteArea(this.data.propertyId, area.id)
       .subscribe((success) => {
         this.busy = false;
-        this.confirmDeleteArea = null;
         if (success) {
           this.changed = true;
+          this.errorKey = null;
+          this.confirmDeleteArea = null;
           this.areas = this.adhocStateService.getCachedAreas(this.data.propertyId);
+        } else {
+          this.errorKey = 'Failed to delete area';
         }
       });
   }

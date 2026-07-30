@@ -48,15 +48,15 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
     // Before property selection, area buttons should be disabled
     const createBtn = adhocPage.page.locator('#adhocToolbarAreaCreateBtn');
     const manageBtn = adhocPage.page.locator('#adhocToolbarAreaManageBtn');
-    await expect(createBtn).toHaveAttribute('disabled', '');
-    await expect(manageBtn).toHaveAttribute('disabled', '');
+    await expect(createBtn).toBeDisabled();
+    await expect(manageBtn).toBeDisabled();
 
     // Select the property in the filter
     await adhocPage.selectPropertyFilter(property.name);
 
     // After property selection, both buttons should be enabled
-    await expect(createBtn).not.toHaveAttribute('disabled', '');
-    await expect(manageBtn).not.toHaveAttribute('disabled', '');
+    await expect(createBtn).toBeEnabled();
+    await expect(manageBtn).toBeEnabled();
   });
 
   test('create two areas and verify in filter and drawer', async ({ page }) => {

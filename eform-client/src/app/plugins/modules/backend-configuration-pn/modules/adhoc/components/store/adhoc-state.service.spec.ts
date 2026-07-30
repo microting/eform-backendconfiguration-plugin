@@ -209,6 +209,19 @@ describe('AdhocStateService', () => {
       ]);
     });
 
+    it('createAreas leaves the cache untouched (does not poison it with []) when the create reports failure', () => {
+      adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}]}));
+      service.getAreasForProperty(1).subscribe();
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald 1'}]);
+
+      adhocServiceSpy.createAreas.and.returnValue(of({success: false, model: null}));
+      let emitted: any;
+      service.createAreas(1, ['Stald 2']).subscribe((areas) => (emitted = areas));
+
+      expect(emitted).toEqual([]);
+      expect(service.getCachedAreas(1)).toEqual([{id: 10, propertyId: 1, name: 'Stald 1'}]);
+    });
+
     it('renameArea re-fetches via getAreas and overwrites the cache with the fresh list (active refresh, not invalidate-only)', () => {
       adhocServiceSpy.getAreas.and.returnValue(of({success: true, model: [{id: 10, propertyId: 1, name: 'Stald 1'}]}));
       service.getAreasForProperty(1).subscribe();

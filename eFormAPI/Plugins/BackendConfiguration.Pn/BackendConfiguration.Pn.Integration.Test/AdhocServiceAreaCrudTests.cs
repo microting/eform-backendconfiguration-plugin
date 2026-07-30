@@ -253,6 +253,18 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         var reloaded = await BackendConfigurationPnDbContext!.AdhocAreas.SingleAsync(a => a.Id == area.Id);
         Assert.That(reloaded.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(await sut.ListAreas(1, property.Id), Is.Empty);
+
+        // Soft delete must leave a version-history trail (same idiom as
+        // Microting.EformBackendConfigurationBase.Tests/AdhocAreaUTest.cs's
+        // AdhocArea_Delete_DoesDelete): a Created row from the initial
+        // Create() plus a Removed row from the Delete() above.
+        var versions = await BackendConfigurationPnDbContext.AdhocAreaVersions
+            .Where(v => v.AdhocAreaId == area.Id)
+            .OrderBy(v => v.Version)
+            .ToListAsync();
+        Assert.That(versions, Has.Count.EqualTo(2));
+        Assert.That(versions[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(versions[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
     }
 
     [Test]
