@@ -2,6 +2,8 @@ import {Component, ElementRef, HostListener, OnChanges, OnDestroy, OnInit, Input
 import {FormControl} from '@angular/forms';
 import {TranslateService} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, debounceTime, distinctUntilChanged} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {AdhocAreaModel, AdhocTagModel} from '../../../../models';
@@ -73,6 +75,7 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
     private translate: TranslateService,
     private elementRef: ElementRef,
     private dialog: MatDialog,
+    private overlay: Overlay,
   ) {
   }
 
@@ -145,8 +148,8 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.dialog
       .open(AdhocAreaCreateModalComponent, {
+        ...dialogConfigHelper(this.overlay, {propertyId, propertyName: this.propertyName(propertyId)}),
         minWidth: 400,
-        data: {propertyId, propertyName: this.propertyName(propertyId)},
       })
       .afterClosed()
       .subscribe((changed) => {
@@ -163,8 +166,8 @@ export class AdhocFiltersComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.dialog
       .open(AdhocAreaAdminModalComponent, {
+        ...dialogConfigHelper(this.overlay, {propertyId, propertyName: this.propertyName(propertyId)}),
         minWidth: 440,
-        data: {propertyId, propertyName: this.propertyName(propertyId)},
       })
       .afterClosed()
       .subscribe((changed) => {

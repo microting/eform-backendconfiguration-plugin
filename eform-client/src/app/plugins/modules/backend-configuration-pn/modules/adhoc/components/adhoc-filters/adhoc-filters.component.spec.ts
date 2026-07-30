@@ -13,6 +13,7 @@ describe('AdhocFiltersComponent', () => {
   let translateSpy: any;
   let elementRefSpy: any;
   let dialogSpy: any;
+  let overlaySpy: any;
 
   beforeEach(() => {
     adhocStateServiceSpy = {
@@ -35,8 +36,9 @@ describe('AdhocFiltersComponent', () => {
     translateSpy = {instant: (key: string) => key};
     elementRefSpy = {nativeElement: {contains: () => true}};
     dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
+    overlaySpy = {};
 
-    component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy);
+    component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy, overlaySpy);
   });
 
   describe('statusOptions', () => {
