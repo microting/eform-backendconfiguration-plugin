@@ -145,10 +145,11 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
 
     // Verify the filter's real option list (ng-select's `ng-dropdown-panel`
     // > `.ng-option`, scraped by areaFilterOptions()) has the renamed area
-    // and no longer the old name.
-    const filterOptions = await adhocPage.areaFilterOptions();
-    expect(filterOptions).toContain(newName);
-    expect(filterOptions).not.toContain(areaNames[1]);
+    // and no longer the old name. The reload after the modal closes is
+    // async (afterClosed -> loadAreas -> HTTP -> cache -> component), so
+    // poll rather than scrape once.
+    await expect.poll(() => adhocPage.areaFilterOptions(), { timeout: 30_000 }).toContain(newName);
+    await expect.poll(() => adhocPage.areaFilterOptions(), { timeout: 30_000 }).not.toContain(areaNames[1]);
   });
 
   test('delete area and verify gone from filter', async ({ page }) => {
@@ -175,9 +176,10 @@ test.describe.serial('Adhoc area management — create, filter, rename, delete',
     await adhocPage.closeAreaAdminModal();
 
     // Verify the deleted name is gone from the filter's real option list
-    // while the other areas (Lade) remain.
-    const filterOptions = await adhocPage.areaFilterOptions();
-    expect(filterOptions).not.toContain(newName);
-    expect(filterOptions).toContain(areaNames[0]);
+    // while the other areas (Lade) remain. The reload after the modal
+    // closes is async (afterClosed -> loadAreas -> HTTP -> cache ->
+    // component), so poll rather than scrape once.
+    await expect.poll(() => adhocPage.areaFilterOptions(), { timeout: 30_000 }).not.toContain(newName);
+    await expect.poll(() => adhocPage.areaFilterOptions(), { timeout: 30_000 }).toContain(areaNames[0]);
   });
 });
