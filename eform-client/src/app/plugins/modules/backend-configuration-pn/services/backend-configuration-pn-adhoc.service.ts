@@ -3,7 +3,9 @@ import {Observable} from 'rxjs';
 import {OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
+  AdhocAreaCreateModel,
   AdhocAreaModel,
+  AdhocAreaRenameModel,
   AdhocCommentCreateModel,
   AdhocCopyTaskModel,
   AdhocHistoryFiltersModel,
@@ -113,6 +115,20 @@ export class BackendConfigurationPnAdhocService {
 
   getAreas(propertyId: number): Observable<OperationDataResult<AdhocAreaModel[]>> {
     return this.apiBaseService.get(BackendConfigurationPnAdhocMethods.Areas, {propertyId});
+  }
+
+  createAreas(propertyId: number, names: string[]): Observable<OperationDataResult<AdhocAreaModel[]>> {
+    const body: AdhocAreaCreateModel = {propertyId, names};
+    return this.apiBaseService.post(BackendConfigurationPnAdhocMethods.Areas, body);
+  }
+
+  renameArea(id: number, name: string): Observable<OperationDataResult<AdhocAreaModel>> {
+    const body: AdhocAreaRenameModel = {name};
+    return this.apiBaseService.put(`${BackendConfigurationPnAdhocMethods.Areas}/${id}`, body);
+  }
+
+  deleteArea(id: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(`${BackendConfigurationPnAdhocMethods.Areas}/${id}`);
   }
 
   getWorkers(propertyId: number): Observable<OperationDataResult<AdhocWorkerModel[]>> {

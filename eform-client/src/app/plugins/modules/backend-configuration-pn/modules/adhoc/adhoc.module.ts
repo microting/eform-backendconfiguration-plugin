@@ -19,6 +19,8 @@ import {MatChip} from '@angular/material/chips';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {AdhocRouting} from './adhoc.routing';
 import {
+  AdhocAreaAdminModalComponent,
+  AdhocAreaCreateModalComponent,
   AdhocCompleteModalComponent,
   AdhocContainerComponent,
   AdhocCopyModalComponent,
@@ -44,6 +46,8 @@ import {
     AdhocCopyModalComponent,
     AdhocCompleteModalComponent,
     AdhocHistoryComponent,
+    AdhocAreaCreateModalComponent,
+    AdhocAreaAdminModalComponent,
   ],
   imports: [
     CommonModule,

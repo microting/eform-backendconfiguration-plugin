@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>{{ 'Create areas' | translate }}</h2>
+<mat-dialog-content>
+  <p>{{ 'Property' | translate }}: <strong>{{ data.propertyName }}</strong></p>
+  <p class="hint">{{ 'One area name per line' | translate }}</p>
+  <p class="error" *ngIf="errorKey">{{ errorKey | translate }}</p>
+  <mat-form-field class="full-width">
+    <mat-label>{{ 'Areas' | translate }}</mat-label>
+    <textarea matInput rows="6" id="adhocAreaCreateTextarea" [(ngModel)]="namesText"></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button id="adhocAreaCreateCancelBtn" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button mat-raised-button color="primary" id="adhocAreaCreateSaveBtn"
+          [disabled]="parsedNames.length === 0 || saving" (click)="save()">
+    {{ 'Add' | translate }}
+  </button>
+</mat-dialog-actions>

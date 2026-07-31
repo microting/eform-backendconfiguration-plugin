@@ -163,6 +163,36 @@ describe('BackendConfigurationPnAdhocService', () => {
     });
   });
 
+  describe('createAreas', () => {
+    it('POSTs {propertyId, names} to the areas route', () => {
+      service.createAreas(3, ['Stald 1', 'Stald 2']).subscribe();
+
+      expect(apiBaseServiceSpy.post).toHaveBeenCalledWith(
+        BackendConfigurationPnAdhocMethods.Areas,
+        {propertyId: 3, names: ['Stald 1', 'Stald 2']}
+      );
+    });
+  });
+
+  describe('renameArea', () => {
+    it('PUTs {name} to areas/{id}', () => {
+      service.renameArea(10, 'Renamed stald').subscribe();
+
+      expect(apiBaseServiceSpy.put).toHaveBeenCalledWith(
+        `${BackendConfigurationPnAdhocMethods.Areas}/10`,
+        {name: 'Renamed stald'}
+      );
+    });
+  });
+
+  describe('deleteArea', () => {
+    it('DELETEs areas/{id}', () => {
+      service.deleteArea(10).subscribe();
+
+      expect(apiBaseServiceSpy.delete).toHaveBeenCalledWith(`${BackendConfigurationPnAdhocMethods.Areas}/10`);
+    });
+  });
+
   describe('getWorkers', () => {
     it('GETs the workers route with propertyId as a query param', () => {
       service.getWorkers(3).subscribe();

@@ -129,13 +129,44 @@ public interface IBackendConfigurationAdhocService
     Task<List<AdhocPropertyModel>> ListProperties(int workerId, bool isAdmin = false);
 
     /// <summary>
-    /// Areas belonging to <paramref name="propertyId"/>. Areas are
-    /// admin-managed - there is no <c>CreateArea</c> here, mobile only lists.
+    /// Areas belonging to <paramref name="propertyId"/>. Mobile only lists;
+    /// dashboard mutations live in <c>CreateAreas</c>/<c>RenameArea</c>/<c>DeleteArea</c>
+    /// below (area-management spec 2026-07-30).
     /// Throws <see cref="AdhocTaskUnauthorizedException"/> if the caller has
     /// no access to <paramref name="propertyId"/> and <paramref name="isAdmin"/>
     /// is false.
     /// </summary>
     Task<List<AdhocAreaModel>> ListAreas(int workerId, int propertyId, bool isAdmin = false);
+
+    /// <summary>
+    /// Batch-creates areas on <paramref name="propertyId"/>: trims each
+    /// name, drops empties, and silently skips case-insensitive duplicates
+    /// (both within the batch and against the property's active areas), so
+    /// re-submitting a list is idempotent. Returns the refreshed active
+    /// list. Access mirrors <see cref="ListAreas"/>
+    /// (<c>RequirePropertyAccessAsync</c>): admins pass; non-admins need a
+    /// <c>PropertyWorker</c> row. Throws <see cref="ArgumentException"/> for
+    /// an unknown property.
+    /// </summary>
+    Task<List<AdhocAreaModel>> CreateAreas(int workerId, int propertyId, List<string> names, bool isAdmin = false);
+
+    /// <summary>
+    /// Renames an active area. Trims; throws <see cref="ArgumentException"/>
+    /// on empty or case-insensitively duplicate names (within the area's
+    /// property), <see cref="AdhocAreaNotFoundException"/> for unknown or
+    /// removed ids. Access mirrors <see cref="ListAreas"/> on the area's
+    /// property.
+    /// </summary>
+    Task<AdhocAreaModel> RenameArea(int workerId, int areaId, string name, bool isAdmin = false);
+
+    /// <summary>
+    /// Soft-deletes an area (<c>WorkflowState = Removed</c>). Referencing
+    /// tasks keep their <c>AreaId</c> - history is preserved (spec decision
+    /// 2). Throws <see cref="AdhocAreaNotFoundException"/> for unknown or
+    /// already-removed ids. Access mirrors <see cref="ListAreas"/> on the
+    /// area's property.
+    /// </summary>
+    Task DeleteArea(int workerId, int areaId, bool isAdmin = false);
 
     /// <summary>
     /// Workers with access to <paramref name="propertyId"/> (via

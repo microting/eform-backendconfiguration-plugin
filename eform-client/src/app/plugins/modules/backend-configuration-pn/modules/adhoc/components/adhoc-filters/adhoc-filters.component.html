@@ -69,18 +69,32 @@
     ></mtx-select>
   </mat-form-field>
 
-  <mat-form-field>
-    <mat-label>{{ 'Area' | translate }}</mat-label>
-    <mtx-select
-      [items]="areas"
-      bindLabel="name"
-      bindValue="id"
-      id="toolbar-omraade"
-      [disabled]="currentFilters.propertyId == null"
-      [ngModel]="currentFilters.areaId"
-      (ngModelChange)="onAreaChange($event)"
-    ></mtx-select>
-  </mat-form-field>
+  <div class="area-filter-group">
+    <mat-form-field>
+      <mat-label>{{ 'Area' | translate }}</mat-label>
+      <mtx-select
+        [items]="areas"
+        bindLabel="name"
+        bindValue="id"
+        id="toolbar-omraade"
+        [disabled]="currentFilters.propertyId == null"
+        [ngModel]="currentFilters.areaId"
+        (ngModelChange)="onAreaChange($event)"
+      ></mtx-select>
+    </mat-form-field>
+    <button mat-icon-button id="adhocToolbarAreaCreateBtn"
+            [disabled]="currentFilters.propertyId == null"
+            [matTooltip]="'Create one or more areas on the selected property (one name per line)' | translate"
+            (click)="openAreaCreateModal()">
+      <mat-icon>add</mat-icon>
+    </button>
+    <button mat-icon-button id="adhocToolbarAreaManageBtn"
+            [disabled]="currentFilters.propertyId == null"
+            [matTooltip]="'Edit or delete areas for the selected property' | translate"
+            (click)="openAreaAdminModal()">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </div>
 
   <mat-form-field>
     <mat-label>{{ 'Status' | translate }}</mat-label>
