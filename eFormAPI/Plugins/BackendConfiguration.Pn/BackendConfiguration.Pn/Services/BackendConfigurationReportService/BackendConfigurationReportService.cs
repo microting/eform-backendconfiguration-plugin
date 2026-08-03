@@ -610,6 +610,9 @@ public class BackendConfigurationReportService(
             };
             var localeString = await userService.GetCurrentUserLocale();
             var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
+            // "site has no active worker" is a per-site condition, but we resolve the worker per
+            // planning case - warn once per site instead of once per case.
+            var sitesWarnedAboutMissingWorker = new HashSet<int>();
 
             var groupedPlanningCases = planningCasesQuery
                 .ToList()
@@ -785,13 +788,35 @@ public class BackendConfigurationReportService(
 
                         var dbCase =
                             await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
-                        var workerId = sdkDbContext.SiteWorkers.First(x => x.SiteId == dbCase.SiteId).WorkerId;
-                        var worker = await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.Id == workerId);
 
                         if (dbCase == null)
                         {
                             logger.LogError($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
                             continue;
+                        }
+
+                        var siteWorker = dbCase.SiteId == null
+                            ? null
+                            : await sdkDbContext.SiteWorkers
+                                .Where(x => x.SiteId == dbCase.SiteId
+                                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .OrderBy(x => x.Id)
+                                .FirstOrDefaultAsync();
+
+                        if (siteWorker == null && dbCase.SiteId != null
+                                               && sitesWarnedAboutMissingWorker.Add(dbCase.SiteId.Value))
+                        {
+                            logger.LogWarning($"No active worker assigned to site {dbCase.SiteId.Value}");
+                        }
+
+                        var worker = siteWorker == null
+                            ? null
+                            : await sdkDbContext.Workers.FirstOrDefaultAsync(x => x.Id == siteWorker.WorkerId);
+
+                        if (siteWorker != null && worker == null)
+                        {
+                            logger.LogWarning(
+                                $"Could not find worker with id {siteWorker.WorkerId} for case {dbCase.Id}");
                         }
 
                         if (planningNameTranslation != null)
@@ -810,7 +835,7 @@ public class BackendConfigurationReportService(
                                 ItemName = planningNameTranslation.Name,
                                 ItemDescription = planningCase.Planning.Description,
                                 PropertyName = propertyName,
-                                EmployeeNo = worker.EmployeeNo
+                                EmployeeNo = worker?.EmployeeNo ?? ""
                             };
 
 
