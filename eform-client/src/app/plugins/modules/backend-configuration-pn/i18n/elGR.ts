@@ -327,6 +327,8 @@ export const elGR = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Οι προγραμματισμένες ώρες εργασίας μπορούν να εγκριθούν με ένα μόνο κλικ. Δεν είναι δυνατή η επεξεργασία των προγραμματισμένων ωρών εργασίας.',
   'Allow entry of forgotten days': 'Επιτρέψτε την εισαγωγή ξεχασμένων ημερών',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Ο εργαζόμενος μπορεί να καταχωρίσει αναδρομικά τις ώρες εργασίας που ξέχασε να καταχωρίσει.',
+  'Shifts across midnight': 'Βάρδιες που περνούν τα μεσάνυχτα',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Η βάρδια κλείνει αυτόματα στις 00:00 και συνεχίζεται ως νέα καταχώριση την επόμενη ημέρα (π.χ. ημέρα 1: 22:00–00:00, ημέρα 2: 00:00–06:00). Η εφαρμογή το χειρίζεται αυτόματα.',
   'May the employee edit past registrations?': 'Μπορεί ο εργαζόμενος να επεξεργαστεί προηγούμενες εγγραφές;',
   'No editing allowed': 'Δεν επιτρέπεται η επεξεργασία',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Μόλις αποθηκευτεί μια εγγραφή, ο εργαζόμενος δεν μπορεί πλέον να την αλλάξει. Τα σφάλματα πρέπει να διορθώνονται από έναν διευθυντή.',

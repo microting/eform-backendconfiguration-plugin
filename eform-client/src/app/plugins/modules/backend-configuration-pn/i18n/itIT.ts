@@ -314,6 +314,8 @@ export const itIT = {
   'Manual entry': 'Inserimento manuale',
   'Start/Stop buttons record work and breaks automatically as the day progresses.': 'I pulsanti Avvia/Arresta registrano automaticamente il lavoro e le pause durante la giornata.',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Il dipendente può registrare retroattivamente le ore di lavoro che si era dimenticato di timbrare in entrata o in uscita.',
+  'Shifts across midnight': 'Turni a cavallo della mezzanotte',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Il turno viene chiuso automaticamente alle 00:00 e continua come nuova registrazione il giorno successivo (ad es. giorno 1: 22:00–00:00, giorno 2: 00:00–06:00). L&#39;app gestisce tutto questo automaticamente.',
   'May the employee edit past registrations?': 'Il dipendente può modificare le registrazioni precedenti?',
   'No editing allowed': 'Modifica vietata',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Una volta salvata la registrazione, il dipendente non può più modificarla. Gli errori devono essere corretti da un responsabile.',

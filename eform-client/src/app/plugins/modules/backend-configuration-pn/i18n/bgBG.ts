@@ -327,6 +327,8 @@ export const bgBG = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Планираните работни часове могат да бъдат одобрени с едно щракване. Планираните работни часове не могат да бъдат редактирани.',
   'Allow entry of forgotten days': 'Позволете въвеждане на забравени дни',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Служителят може да регистрира със задна дата работните часове, за които е забравил да се яви/напусне.',
+  'Shifts across midnight': 'Смени през полунощ',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Смяната се затваря автоматично в 00:00 и продължава като нова регистрация на следващия ден (напр. ден 1: 22:00–00:00, ден 2: 00:00–06:00). Приложението обработва това автоматично.',
   'May the employee edit past registrations?': 'Може ли служителят да редактира минали регистрации?',
   'No editing allowed': 'Редактирането не е разрешено',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'След като регистрацията бъде запазена, служителят вече не може да я променя. Грешките трябва да бъдат коригирани от мениджър.',

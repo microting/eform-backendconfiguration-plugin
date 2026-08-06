@@ -327,6 +327,8 @@ export const huHU = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'A beütemezett munkaórák egyetlen kattintással jóváhagyhatók. A beütemezett munkaórák nem szerkeszthetők.',
   'Allow entry of forgotten days': 'Elfeledett napok bevitelének engedélyezése',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'A munkavállaló visszamenőlegesen regisztrálhatja azokat a munkaórákat, amelyeket elfelejtett be- és kijelentkezni.',
+  'Shifts across midnight': 'Éjfélen átnyúló műszakok',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'A műszak automatikusan lezárul 00:00-kor, és új regisztrációként folytatódik a következő napon (pl. 1. nap: 22:00–00:00, 2. nap: 00:00–06:00). Az alkalmazás ezt automatikusan kezeli.',
   'May the employee edit past registrations?': 'Módosíthatja-e a munkavállaló a korábbi regisztrációit?',
   'No editing allowed': 'Szerkesztés nem engedélyezett',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'A regisztráció mentése után az alkalmazott már nem módosíthatja azt. A hibákat a vezetőnek kell kijavítania.',

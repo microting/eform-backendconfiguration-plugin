@@ -239,6 +239,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       allowEditOfRegistrations: false,
       usePunchClock: false,
       usePunchClockWithAllowRegisteringInHistory: false,
+      overMidnight: false,
       allowAcceptOfPlannedHours: false,
       daysBackInTimeAllowedEditingEnabled: false,
       daysBackInTimeAllowedEditing: 2,
@@ -289,6 +290,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
               allowEditOfRegistrations: this.selectedAssignedSite.allowEditOfRegistrations || false,
               usePunchClock: this.selectedAssignedSite.usePunchClock || false,
               usePunchClockWithAllowRegisteringInHistory: this.selectedAssignedSite.usePunchClockWithAllowRegisteringInHistory || false,
+              overMidnight: this.selectedAssignedSite.overMidnight || false,
               allowAcceptOfPlannedHours: this.selectedAssignedSite.allowAcceptOfPlannedHours || false,
               daysBackInTimeAllowedEditingEnabled: this.selectedAssignedSite.daysBackInTimeAllowedEditingEnabled || false,
               daysBackInTimeAllowedEditing: this.selectedAssignedSite.daysBackInTimeAllowedEditing || 2,
@@ -821,6 +823,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     // The "allow entry of forgotten days" sub-option only makes sense under punch clock
     if (!punch) {
       patch.usePunchClockWithAllowRegisteringInHistory = false;
+      patch.overMidnight = false;
     }
     this.form.patchValue(patch, { emitEvent: opts.emitEvent !== false });
   }

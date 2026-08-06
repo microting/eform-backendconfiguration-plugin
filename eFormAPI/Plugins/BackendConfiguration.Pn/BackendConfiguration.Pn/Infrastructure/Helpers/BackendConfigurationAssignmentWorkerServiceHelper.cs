@@ -803,6 +803,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                     assignments.First().AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false;
                                     assignments.First().UsePunchClock = deviceUserModel.UsePunchClock ?? false;
                                     assignments.First().UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false;
+                                    assignments.First().OverMidnight = deviceUserModel.OverMidnight ?? false;
                                     assignments.First().AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false;
                                     assignments.First().DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false;
                                     assignments.First().DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2;
@@ -855,6 +856,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                         AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false,
                                         UsePunchClock = deviceUserModel.UsePunchClock ?? false,
                                         UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false,
+                                        OverMidnight = deviceUserModel.OverMidnight ?? false,
                                         AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false,
                                         DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false,
                                         DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2,
@@ -1151,6 +1153,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             AllowEditOfRegistrations = deviceUserModel.AllowEditOfRegistrations ?? false,
                             UsePunchClock = deviceUserModel.UsePunchClock ?? false,
                             UsePunchClockWithAllowRegisteringInHistory = deviceUserModel.UsePunchClockWithAllowRegisteringInHistory ?? false,
+                            OverMidnight = deviceUserModel.OverMidnight ?? false,
                             AllowAcceptOfPlannedHours = deviceUserModel.AllowAcceptOfPlannedHours ?? false,
                             DaysBackInTimeAllowedEditingEnabled = deviceUserModel.DaysBackInTimeAllowedEditingEnabled ?? false,
                             DaysBackInTimeAllowedEditing = deviceUserModel.DaysBackInTimeAllowedEditing ?? 2,

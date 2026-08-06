@@ -327,6 +327,8 @@ export const isIS = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Hægt er að samþykkja áætlaða vinnutíma með einum smelli. Ekki er hægt að breyta áætluðum vinnutíma.',
   'Allow entry of forgotten days': 'Leyfa innslátt gleymdra daga',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Starfsmaðurinn getur skráð vinnutíma sem hann gleymdi að stimpla sig inn/út fyrir afturvirkt.',
+  'Shifts across midnight': 'Vaktir yfir miðnætti',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Vaktinni er sjálfkrafa lokað kl. 00:00 og heldur áfram sem ný skráning næsta dag (t.d. dagur 1: 22:00–00:00, dagur 2: 00:00–06:00). Appið sér um þetta sjálfkrafa.',
   'May the employee edit past registrations?': 'Má starfsmaður breyta fyrri skráningum?',
   'No editing allowed': 'Engin ritstjórn leyfð',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Þegar skráning hefur verið vistuð getur starfsmaður ekki lengur breytt henni. Villur verða að vera leiðréttar af stjórnanda.',

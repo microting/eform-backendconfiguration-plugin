@@ -323,6 +323,8 @@ export const ukUA = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Запланований робочий час можна затвердити одним клацанням миші. Запланований робочий час не можна редагувати.',
   'Allow entry of forgotten days': 'Дозволити введення забутих днів',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Працівник може заднім числом зареєструвати робочі години, в які він забув прийти/вийти.',
+  'Shifts across midnight': 'Зміни через північ',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Зміна автоматично закривається о 00:00 і продовжується як нова реєстрація наступного дня (напр. день 1: 22:00–00:00, день 2: 00:00–06:00). Застосунок обробляє це автоматично.',
   'May the employee edit past registrations?': 'Чи може працівник редагувати попередні реєстрації?',
   'No editing allowed': 'Редагування заборонено',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Після збереження реєстрації працівник більше не може її змінити. Помилки має виправити керівник.',

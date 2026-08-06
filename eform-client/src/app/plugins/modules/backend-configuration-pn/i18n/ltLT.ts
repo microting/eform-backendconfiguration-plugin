@@ -327,6 +327,8 @@ export const ltLT = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Suplanuotas darbo valandas galima patvirtinti vienu spustelėjimu. Suplanuotų darbo valandų redaguoti negalima.',
   'Allow entry of forgotten days': 'Leisti įrašyti pamirštas dienas',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Darbuotojas gali atgaline data užregistruoti darbo valandas, kurias pamiršo užregistruoti.',
+  'Shifts across midnight': 'Pamainos per vidurnaktį',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Pamaina automatiškai uždaroma 00:00 val. ir tęsiama kaip nauja registracija kitą dieną (pvz., 1 diena: 22:00–00:00, 2 diena: 00:00–06:00). Programėlė tai tvarko automatiškai.',
   'May the employee edit past registrations?': 'Ar darbuotojas gali redaguoti ankstesnes registracijas?',
   'No editing allowed': 'Redaguoti draudžiama',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Įrašius registraciją, darbuotojas jos nebegali keisti. Klaidas turi ištaisyti vadovas.',

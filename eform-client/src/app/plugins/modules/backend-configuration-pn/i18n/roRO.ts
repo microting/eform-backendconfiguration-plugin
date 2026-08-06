@@ -327,6 +327,8 @@ export const roRO = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Orele de lucru programate pot fi aprobate cu un singur clic. Orele de lucru programate nu pot fi editate.',
   'Allow entry of forgotten days': 'Permiteți introducerea zilelor uitate',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Angajatul poate înregistra retroactiv orele de lucru pentru care a uitat să le înregistreze.',
+  'Shifts across midnight': 'Ture care trec de miezul nopții',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Tura se închide automat la 00:00 și continuă ca o nouă înregistrare în ziua următoare (de ex. ziua 1: 22:00–00:00, ziua 2: 00:00–06:00). Aplicația gestionează acest lucru automat.',
   'May the employee edit past registrations?': 'Poate angajatul să modifice înregistrările anterioare?',
   'No editing allowed': 'Nu este permisă editarea',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Odată ce o înregistrare este salvată, angajatul nu o mai poate modifica. Erorile trebuie corectate de către un manager.',

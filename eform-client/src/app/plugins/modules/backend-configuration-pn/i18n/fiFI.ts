@@ -327,6 +327,8 @@ export const fiFI = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Suunnitellut työajat voidaan hyväksyä yhdellä napsautuksella. Suunniteltuja työaikoja ei voi muokata.',
   'Allow entry of forgotten days': 'Salli unohdettujen päivien syöttö',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Työntekijä voi jälkikäteen rekisteröidä työtunnit, jotka hän on unohtanut tehdä sisään-/uloskirjautumisen yhteydessä.',
+  'Shifts across midnight': 'Keskiyön yli ulottuvat vuorot',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Vuoro suljetaan automaattisesti klo 00:00 ja se jatkuu uutena kirjauksena seuraavana päivänä (esim. päivä 1: 22:00–00:00, päivä 2: 00:00–06:00). Sovellus hoitaa tämän automaattisesti.',
   'May the employee edit past registrations?': 'Voiko työntekijä muokata aiempia ilmoittautumisiaan?',
   'No editing allowed': 'Muokkaus kielletty',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Kun rekisteröinti on tallennettu, työntekijä ei voi enää muuttaa sitä. Esimiehen on korjattava virheet.',

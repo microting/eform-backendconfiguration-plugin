@@ -327,6 +327,8 @@ export const lvLV = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Plānotās darba stundas var apstiprināt ar vienu klikšķi. Plānotās darba stundas nevar rediģēt.',
   'Allow entry of forgotten days': 'Atļaut aizmirsto dienu ievadīšanu',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Darbinieks var retrospektīvi reģistrēt darba stundas, kuras viņš ir aizmirsis reģistrēt.',
+  'Shifts across midnight': 'Maiņas pāri pusnaktij',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Maiņa tiek automātiski slēgta plkst. 00:00 un turpinās kā jauna reģistrācija nākamajā dienā (piem., 1. diena: 22:00–00:00, 2. diena: 00:00–06:00). Lietotne to apstrādā automātiski.',
   'May the employee edit past registrations?': 'Vai darbinieks drīkst rediģēt iepriekšējās reģistrācijas?',
   'No editing allowed': 'Rediģēšana nav atļauta',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Kad reģistrācija ir saglabāta, darbinieks to vairs nevar mainīt. Kļūdas ir jālabo vadītājam.',
