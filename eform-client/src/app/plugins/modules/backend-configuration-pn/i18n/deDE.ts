@@ -388,6 +388,8 @@ export const deDE = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Geplante Arbeitszeiten können mit einem Klick genehmigt werden. Geplante Arbeitszeiten können nicht bearbeitet werden.',
   'Allow entry of forgotten days': 'Erlauben Sie die Eingabe vergessener Tage',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Der Mitarbeiter kann Arbeitsstunden, die er beim Ein- und Ausstempeln vergessen hat, nachträglich erfassen.',
+  'Shifts across midnight': 'Schichten über Mitternacht',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Die Schicht wird um 00:00 Uhr automatisch geschlossen und am nächsten Tag als neue Registrierung fortgesetzt (z. B. Tag 1: 22:00–00:00, Tag 2: 00:00–06:00). Die App übernimmt dies automatisch.',
   'May the employee edit past registrations?': 'Darf der Mitarbeiter frühere Registrierungen bearbeiten?',
   'No editing allowed': 'Keine Bearbeitung erlaubt',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Sobald eine Registrierung gespeichert ist, kann der Mitarbeiter sie nicht mehr ändern. Fehler müssen von einem Vorgesetzten korrigiert werden.',

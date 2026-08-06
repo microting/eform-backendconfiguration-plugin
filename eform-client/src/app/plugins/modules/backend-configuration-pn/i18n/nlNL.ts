@@ -326,6 +326,8 @@ export const nlNL = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Geplande werkuren kunnen met één klik worden goedgekeurd. Geplande werkuren kunnen niet worden gewijzigd.',
   'Allow entry of forgotten days': 'Sta invoer van vergeten dagen toe.',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'De werknemer kan de gewerkte uren die hij of zij vergeten is in/uit te klokken, alsnog registreren.',
+  'Shifts across midnight': 'Diensten over middernacht',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'De dienst wordt automatisch afgesloten om 00:00 uur en gaat de volgende dag verder als een nieuwe registratie (bijv. dag 1: 22:00–00:00, dag 2: 00:00–06:00). De app regelt dit automatisch.',
   'May the employee edit past registrations?': 'Mag de medewerker eerdere registraties wijzigen?',
   'No editing allowed': 'Bewerken is niet toegestaan.',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Zodra een registratie is opgeslagen, kan de medewerker deze niet meer wijzigen. Fouten moeten door een manager worden gecorrigeerd.',

@@ -327,6 +327,8 @@ export const esES = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Las horas de trabajo programadas se pueden aprobar con un solo clic. Las horas de trabajo programadas no se pueden editar.',
   'Allow entry of forgotten days': 'Permitir la entrada de días olvidados',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'El empleado puede registrar retroactivamente las horas de trabajo que olvidó fichar al entrar o al salir.',
+  'Shifts across midnight': 'Turnos que cruzan la medianoche',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'El turno se cierra automáticamente a las 00:00 y continúa como un nuevo registro al día siguiente (p. ej., día 1: 22:00–00:00, día 2: 00:00–06:00). La aplicación lo gestiona automáticamente.',
   'May the employee edit past registrations?': '¿Puede el empleado editar registros anteriores?',
   'No editing allowed': 'No se permite la edición.',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Una vez guardado un registro, el empleado ya no puede modificarlo. Los errores deben ser corregidos por un supervisor.',

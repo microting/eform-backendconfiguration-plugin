@@ -327,6 +327,8 @@ export const etET = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Planeeritud tööaega saab kinnitada ühe klõpsuga. Planeeritud tööaega ei saa muuta.',
   'Allow entry of forgotten days': 'Unustatud päevade sisestamise lubamine',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Töötaja saab tagasiulatuvalt registreerida töötunde, mille registreerimine ununeb.',
+  'Shifts across midnight': 'Vahetused üle kesköö',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Vahetus suletakse automaatselt kell 00:00 ja jätkub uue registreeringuna järgmisel päeval (nt päev 1: 22:00–00:00, päev 2: 00:00–06:00). Rakendus haldab seda automaatselt.',
   'May the employee edit past registrations?': 'Kas töötaja saab varasemaid registreeringuid muuta?',
   'No editing allowed': 'Redigeerimine pole lubatud',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Kui registreering on salvestatud, ei saa töötaja seda enam muuta. Vead peab parandama juht.',

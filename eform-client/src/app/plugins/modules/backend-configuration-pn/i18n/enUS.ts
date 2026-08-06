@@ -353,6 +353,8 @@ export const enUS= {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.',
   'Allow entry of forgotten days': 'Allow entry of forgotten days',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'The employee can retroactively register work hours they forgot to clock in/out on.',
+  'Shifts across midnight': 'Shifts across midnight',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.',
   'May the employee edit past registrations?': 'May the employee edit past registrations?',
   'No editing allowed': 'No editing allowed',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.',

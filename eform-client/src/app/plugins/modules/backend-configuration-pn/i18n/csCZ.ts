@@ -327,6 +327,8 @@ export const csCZ = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Naplánovanou pracovní dobu lze schválit jediným kliknutím. Naplánovanou pracovní dobu nelze upravovat.',
   'Allow entry of forgotten days': 'Povolit zadávání zapomenutých dnů',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Zaměstnanec si může zpětně zaregistrovat pracovní dobu, na kterou se zapomněl přihlásit/odhlásit.',
+  'Shifts across midnight': 'Směny přes půlnoc',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Směna se automaticky uzavře v 00:00 a pokračuje jako nová registrace následující den (např. den 1: 22:00–00:00, den 2: 00:00–06:00). Aplikace to řeší automaticky.',
   'May the employee edit past registrations?': 'Může zaměstnanec upravovat minulé registrace?',
   'No editing allowed': 'Úpravy nejsou povoleny',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Jakmile je registrace uložena, zaměstnanec ji již nemůže změnit. Chyby musí opravit manažer.',

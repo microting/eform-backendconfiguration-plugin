@@ -327,6 +327,8 @@ export const slSL = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Načrtovane delovne ure je mogoče odobriti z enim samim klikom. Načrtovanih delovnih ur ni mogoče urejati.',
   'Allow entry of forgotten days': 'Dovoli vnos pozabljenih dni',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Zaposleni lahko retroaktivno prijavi delovne ure, ki jih je pozabil prijaviti/odjaviti.',
+  'Shifts across midnight': 'Izmene čez polnoč',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Izmena se samodejno zapre ob 00:00 in se nadaljuje kot nova registracija naslednji dan (npr. dan 1: 22:00–00:00, dan 2: 00:00–06:00). Aplikacija to obravnava samodejno.',
   'May the employee edit past registrations?': 'Ali lahko zaposleni ureja pretekle registracije?',
   'No editing allowed': 'Urejanje ni dovoljeno',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Ko je registracija shranjena, je zaposleni ne more več spreminjati. Napake mora popraviti vodja.',

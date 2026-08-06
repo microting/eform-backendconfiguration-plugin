@@ -333,6 +333,8 @@ export const da = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Planlagte arbejdstider kan godkendes med et enkelt klik. Planlagte arbejdstider kan ikke redigeres.',
   'Allow entry of forgotten days': 'Tillad indtastning af glemte dage',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Medarbejderen kan med tilbagevirkende kraft registrere arbejdstimer, de har glemt at stemple ind/ud på.',
+  'Shifts across midnight': 'Vagter over midnat',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Vagten lukkes automatisk kl. 00:00 og fortsætter som en ny registrering næste dag (fx dag 1: 22:00–00:00, dag 2: 00:00–06:00). Appen håndterer dette automatisk.',
   'May the employee edit past registrations?': 'Må medarbejderen redigere tidligere registreringer?',
   'No editing allowed': 'Ingen redigering tilladt',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Når en registrering er gemt, kan medarbejderen ikke længere ændre den. Fejl skal rettes af en leder.',

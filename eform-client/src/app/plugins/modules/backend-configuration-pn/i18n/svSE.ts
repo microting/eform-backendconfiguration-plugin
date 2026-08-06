@@ -329,6 +329,8 @@ export const svSE = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Schemalagda arbetstider kan godkännas med ett enda klick. Schemalagda arbetstider kan inte redigeras.',
   'Allow entry of forgotten days': 'Tillåt inmatning av glömda dagar',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Medarbetaren kan retroaktivt registrera arbetstimmar som de glömt att stämpla in/ut på.',
+  'Shifts across midnight': 'Skift över midnatt',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Skiftet stängs automatiskt kl. 00:00 och fortsätter som en ny registrering nästa dag (t.ex. dag 1: 22:00–00:00, dag 2: 00:00–06:00). Appen hanterar detta automatiskt.',
   'May the employee edit past registrations?': 'Får den anställde redigera tidigare registreringar?',
   'No editing allowed': 'Ingen redigering tillåten',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'När en registrering har sparats kan medarbetaren inte längre ändra den. Fel måste korrigeras av en chef.',

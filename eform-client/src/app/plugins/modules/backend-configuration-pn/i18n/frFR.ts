@@ -423,6 +423,8 @@ export const frFR = {
   'Allow receipt for standard time on mobile': 'Autoriser la réception pour l&#39;heure standard sur mobile',
   'Allow entry of forgotten days': 'Autoriser l&#39;entrée des jours oubliés',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'L&#39;employé peut enregistrer rétroactivement les heures de travail qu&#39;il a oublié de pointer à l&#39;arrivée ou au départ.',
+  'Shifts across midnight': 'Postes à cheval sur minuit',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Le poste est automatiquement clôturé à 00:00 et continue comme un nouvel enregistrement le jour suivant (par ex. jour 1 : 22:00–00:00, jour 2 : 00:00–06:00). L&#39;application gère cela automatiquement.',
   'May the employee edit past registrations?': 'L&#39;employé peut-il modifier les inscriptions précédentes ?',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Une fois l&#39;inscription enregistrée, l&#39;employé ne peut plus la modifier. Les erreurs doivent être corrigées par un responsable.',
   'Yes, until the last payroll run': 'Oui, jusqu&#39;au dernier traitement de la paie',

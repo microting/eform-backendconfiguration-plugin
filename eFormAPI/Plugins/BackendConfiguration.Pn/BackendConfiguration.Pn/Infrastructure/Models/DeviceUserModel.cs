@@ -125,6 +125,7 @@ public class DeviceUserModel
     public bool? AllowEditOfRegistrations { get; set; }
     public bool? UsePunchClock { get; set; }
     public bool? UsePunchClockWithAllowRegisteringInHistory { get; set; }
+    public bool? OverMidnight { get; set; }
     public bool? AllowAcceptOfPlannedHours { get; set; }
     public bool? DaysBackInTimeAllowedEditingEnabled { get; set; }
     public int? DaysBackInTimeAllowedEditing { get; set; }

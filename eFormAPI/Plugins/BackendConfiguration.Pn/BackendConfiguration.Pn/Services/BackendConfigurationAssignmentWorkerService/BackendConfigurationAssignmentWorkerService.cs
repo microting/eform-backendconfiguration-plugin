@@ -484,6 +484,7 @@ public class BackendConfigurationAssignmentWorkerService(
                     deviceUserModel.AllowEditOfRegistrations = assignedSite.AllowEditOfRegistrations;
                     deviceUserModel.UsePunchClock = assignedSite.UsePunchClock;
                     deviceUserModel.UsePunchClockWithAllowRegisteringInHistory = assignedSite.UsePunchClockWithAllowRegisteringInHistory;
+                    deviceUserModel.OverMidnight = assignedSite.OverMidnight;
                     deviceUserModel.AllowAcceptOfPlannedHours = assignedSite.AllowAcceptOfPlannedHours;
                     deviceUserModel.DaysBackInTimeAllowedEditingEnabled = assignedSite.DaysBackInTimeAllowedEditingEnabled;
                     deviceUserModel.DaysBackInTimeAllowedEditing = assignedSite.DaysBackInTimeAllowedEditing;

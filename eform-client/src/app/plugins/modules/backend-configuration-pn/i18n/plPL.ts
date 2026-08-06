@@ -327,6 +327,8 @@ export const plPL = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'Zaplanowane godziny pracy można zatwierdzić jednym kliknięciem. Zaplanowanych godzin pracy nie można edytować.',
   'Allow entry of forgotten days': 'Zezwól na wprowadzanie zapomnianych dni',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'Pracownik może wstecznie rejestrować godziny pracy, których rozpoczęcia i zakończenia zapomniał zarejestrować.',
+  'Shifts across midnight': 'Zmiany przechodzące przez północ',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'Zmiana jest automatycznie zamykana o 00:00 i kontynuowana jako nowa rejestracja następnego dnia (np. dzień 1: 22:00–00:00, dzień 2: 00:00–06:00). Aplikacja obsługuje to automatycznie.',
   'May the employee edit past registrations?': 'Czy pracownik może edytować wcześniejsze rejestracje?',
   'No editing allowed': 'Edycja niedozwolona',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Po zapisaniu rejestracji pracownik nie może jej już zmienić. Błędy musi poprawić kierownik.',

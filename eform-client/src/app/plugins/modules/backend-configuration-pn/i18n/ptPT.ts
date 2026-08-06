@@ -327,6 +327,8 @@ export const ptPT = {
   'Scheduled working hours can be approved with a single click. Scheduled working hours cannot be edited.': 'O horário de trabalho agendado pode ser aprovado com um único clique. O horário de trabalho agendado não pode ser editado.',
   'Allow entry of forgotten days': 'Permitir a entrada de dias esquecidos',
   'The employee can retroactively register work hours they forgot to clock in/out on.': 'O funcionário pode registrar retroativamente as horas de trabalho que esqueceu de registrar a entrada/saída.',
+  'Shifts across midnight': 'Turnos que atravessam a meia-noite',
+  'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.': 'O turno é encerrado automaticamente às 00:00 e continua como um novo registo no dia seguinte (por ex. dia 1: 22:00–00:00, dia 2: 00:00–06:00). A aplicação trata disto automaticamente.',
   'May the employee edit past registrations?': 'O funcionário pode editar cadastros anteriores?',
   'No editing allowed': 'Não é permitida a edição.',
   'Once a registration is saved, the employee can no longer change it. Errors must be corrected by a manager.': 'Uma vez salvo o cadastro, o funcionário não poderá mais alterá-lo. Erros devem ser corrigidos por um gerente.',

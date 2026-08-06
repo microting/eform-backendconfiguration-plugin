@@ -538,6 +538,172 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         Assert.That(propertyWorkers.Count, Is.EqualTo(0));
     }
 
+    // Should test the CreateDeviceUser method with TimeRegistrationEnabled and OverMidnight set,
+    // verifying the flag passes through onto the created AssignedSite
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_TimeRegistrationEnabled_OverMidnight_ReturnsSuccess()
+    {
+        // Arrange
+        var core = await GetCore();
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            OverMidnight = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!,
+        userService,
+        userManager);
+
+        // Assert
+        var sites = await MicrotingDbContext!.Sites.ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(sites.Count, Is.EqualTo(3));
+
+        // Assert timeregistrationSiteAssignments
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+
+        // Newly-created AssignedSite must pass through OverMidnight from the DeviceUserModel
+        Assert.That(timeregistrationSiteAssignments[30].OverMidnight, Is.True);
+    }
+
+    // Should test the UpdateDeviceUser method with OverMidnight: the create-from-update path must
+    // pass the flag onto the new AssignedSite, a later update without the flag must clear it
+    [Test]
+    public async Task
+        BackendConfigurationAssignmentWorkerServiceHelper_UpdateDeviceUser_OverMidnight_PersistsAndClears()
+    {
+        // Arrange
+        var core = await GetCore();
+        var logger = Substitute.For<ILogger>();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = true,
+            LanguagesIds = [1],
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        // Act
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var userManager = IdentityTestUtils.CreateRealUserManager(BaseDbContext!);
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext!, BaseDbContext!,
+        userService,
+        userManager);
+
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        // First update: enable time registration with OverMidnight set — the
+        // create-from-update path must carry the flag onto the new AssignedSite.
+        var newDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            OverMidnight = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
+            1,
+            userService,
+            userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert first update
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].SiteId, Is.EqualTo(sites[2].MicrotingUid));
+        Assert.That(timeregistrationSiteAssignments[30].OverMidnight, Is.True);
+
+        // Second update: OverMidnight not set on the model — the existing
+        // AssignedSite update path must clear it (null coalesces to false).
+        var clearDeviceUserModel = new DeviceUserModel
+        {
+            SiteMicrotingUid = (int)currentSite.MicrotingUid!,
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = true,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            WorkerEmail = $"{Guid.NewGuid()}@test.com"
+        };
+
+        var clearResult = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(clearDeviceUserModel,
+            core,
+            1,
+            userService,
+            userManager,
+            BackendConfigurationPnDbContext!,
+            TimePlanningPnDbContext!, BaseDbContext!, logger, ItemsPlanningPnDbContext!);
+
+        // Assert second update
+        timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+
+        Assert.That(clearResult, Is.Not.Null);
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(31));
+        Assert.That(timeregistrationSiteAssignments[30].OverMidnight, Is.False);
+        // The sibling punch-clock flag must be unaffected by the OverMidnight writes
+        Assert.That(timeregistrationSiteAssignments[30].UsePunchClockWithAllowRegisteringInHistory, Is.False);
+    }
+
     // Should test the Create method and return success
     [Test]
     public async Task BackendConfigurationAssignmentWorkerServiceHelper_Create_ReturnsSuccess()

@@ -350,6 +350,18 @@
                       </div>
                     </mat-checkbox>
                   </div>
+
+                  <!-- Sub-option under punch clock -->
+                  <div class="sub-option" *ngIf="form.value.usePunchClock">
+                    <mat-checkbox class="p-1"
+                                  id="overMidnight"
+                                  formControlName="overMidnight">
+                      <div>
+                        <div>{{ 'Shifts across midnight' | translate }}</div>
+                        <small class="checkbox-description">{{ 'The shift is automatically closed at 00:00 and continues as a new registration on the next day (e.g. day 1: 22:00–00:00, day 2: 00:00–06:00). The app handles this automatically.' | translate }}</small>
+                      </div>
+                    </mat-checkbox>
+                  </div>
                 </div>
 
                 <!-- Axis 2: Editing policy (not applicable under "accept planned hours" mode) -->
