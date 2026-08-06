@@ -39,8 +39,20 @@ const workerFullName = `${worker.name} ${worker.surname}`;
 
 async function openEditModal(page: Page): Promise<void> {
   const row = page.locator('.mat-mdc-row').filter({ hasText: workerFullName }).first();
-  await row.locator('#actionMenu').click();
-  await page.locator('[id^=editDeviceUserBtn]').click();
+  const editBtn = page.locator('[id^=editDeviceUserBtn]');
+  // A table refresh can re-render the row and close a just-opened action
+  // menu, so retry the menu open until the edit item is actually visible.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await row.locator('#actionMenu').click();
+    try {
+      await editBtn.waitFor({ state: 'visible', timeout: 5000 });
+      break;
+    } catch {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(1000);
+    }
+  }
+  await editBtn.click();
   await expect(page.locator('form[data-form-ready]')).toHaveAttribute(
     'data-form-ready',
     'true',
@@ -111,6 +123,11 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
         r.url().includes('/api/time-planning-pn/settings/assigned-site') &&
         r.request().method() === 'PUT'
     );
+    const indexPromise = page.waitForResponse(
+      r =>
+        r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
+        r.request().method() === 'POST'
+    );
     await page.locator('#saveEditBtn').click();
     const updateDeviceUserResponse = await updateDeviceUserPromise;
     const assignedSiteResponse = await assignedSitePromise;
@@ -120,7 +137,11 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
     expect(updateBody.overMidnight).toBe(true);
     const putBody = JSON.parse(assignedSiteResponse.request().postData() || '{}');
     expect(putBody.overMidnight).toBe(true);
+    // Wait for the post-save table refresh to finish before touching the row
+    // again — reopening the menu mid-refresh detaches it.
+    await indexPromise;
     await workersPage.newDeviceUserBtn().waitFor({ state: 'visible' });
+    await page.waitForTimeout(1000);
 
     // Round-trip: reopen and the value must have come back from the DB.
     await openEditModal(page);
