@@ -257,9 +257,9 @@
               <div class="d-flex flex-column" id="timeRegistrationColumn">
 
                 <!-- ========= Payroll rules ========= -->
-                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0 && (selectAuthIsAdmin$ | async)">{{ 'Payroll rules' | translate }}</h3>
+                <h3 class="section-header" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0">{{ 'Payroll rules' | translate }}</h3>
 
-                <div class="d-flex flex-row align-items-center pay-rule-set-row" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0 && (selectAuthIsAdmin$ | async)">
+                <div class="d-flex flex-row align-items-center pay-rule-set-row" *ngIf="!selectedDeviceUser.resigned && availablePayRuleSets.length > 0">
                   <mat-form-field class="p-1 flex-grow-1">
                     <mat-label>{{ 'Pay Rule Set' | translate }}</mat-label>
                     <mtx-select

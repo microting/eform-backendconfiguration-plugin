@@ -10,11 +10,17 @@ import { generateRandmString } from '../../../helper-functions';
 // device-users/tags permissions could create/edit workers and manage tags on
 // /plugins/backend-configuration-pn/property-workers. The pay-rule-set
 // selector feature (3903669b) added an unconditional
-// GET api/time-planning-pn/pay-rule-sets ([Authorize(Roles = Admin)]) in the
-// create/edit modal's ngOnInit; for non-admins that 403s and the global
-// HttpErrorInterceptor escalates it (refresh token -> retry -> still 403)
-// into a forced logout. The fix gates the fetch behind selectAuthIsAdmin$,
-// matching the template's existing admin-only payroll-rules block.
+// GET api/time-planning-pn/pay-rule-sets in the create/edit modal's ngOnInit,
+// but the endpoint was [Authorize(Roles = Admin)]; for non-admins that 403s and
+// the global HttpErrorInterceptor escalates it (refresh token -> retry -> still
+// 403) into a forced logout.
+//
+// The fix opened up the READ side instead of gating the call: listing and
+// reading pay rule sets is now allowed for any authenticated user, so a
+// non-admin can actually select a pay rule set for a worker. Creating, editing
+// and deleting pay rule sets stays admin-only. This spec therefore guards that
+// the modal's fetch runs for BOTH roles and that the endpoint answers 200 for a
+// non-admin instead of the 403 that used to end the session.
 
 const BASE_URL = 'http://localhost:4200';
 const USER_PASSWORD = 'Secret_password_2026!';
@@ -189,8 +195,9 @@ test.describe.serial('Property-workers as non-admin (backend + timeregistration)
     });
 
     // Positive direction: for an ADMIN the create-worker modal must still
-    // fetch the pay rule sets (the fix gates the call on isAdmin — this
-    // guards against over-gating).
+    // fetch the pay rule sets. The fix opened the read endpoint up rather than
+    // gating the call, so the fetch has to keep firing for every role — this
+    // guards against "fixing" it by suppressing the request instead.
     const adminPayRuleSetRequests: string[] = [];
     page.on('request', (req) => {
       if (req.url().includes(PAY_RULE_SETS_URL)) {
@@ -210,7 +217,8 @@ test.describe.serial('Property-workers as non-admin (backend + timeregistration)
     test.setTimeout(300000);
     expect(userEmail).not.toBe('');
 
-    // Track any (forbidden-for-this-user) pay-rule-sets requests.
+    // Track the modal's pay-rule-sets requests — this user is a non-admin, and
+    // the endpoint is expected to answer them (200), not 403.
     const payRuleSetRequests: string[] = [];
     page.on('request', (req) => {
       if (req.url().includes(PAY_RULE_SETS_URL)) {
@@ -253,7 +261,37 @@ test.describe.serial('Property-workers as non-admin (backend + timeregistration)
     expect(page.url()).not.toContain('/auth');
     expect(page.url()).toContain('/plugins/backend-configuration-pn/property-workers');
     await expect(page.locator('mat-dialog-container')).toBeVisible();
-    // And the admin-only endpoint was never called for this non-admin.
-    expect(payRuleSetRequests).toEqual([]);
+
+    // The fetch now DOES happen for a non-admin: listing pay rule sets is no
+    // longer [Authorize(Roles = Admin)], so a non-admin can pick one for a
+    // worker. The point of this spec is that it returns 200 instead of the 403
+    // that used to be escalated into a logout — hence the assertions above.
+    expect(payRuleSetRequests.length).toBeGreaterThan(0);
+  });
+
+  test('the pay-rule-sets list returns 200 for a non-admin (no longer admin-only)', async ({ page }) => {
+    test.setTimeout(300000);
+    expect(userEmail).not.toBe('');
+
+    // Straight at the API: this endpoint used to be [Authorize(Roles = Admin)]
+    // and answered 403 for this exact group, which the HttpErrorInterceptor
+    // turned into a forced logout. Asserting the status directly is what pins
+    // the authorization change; the UI consequence is covered by the test
+    // above (the modal fetches it and the user stays logged in).
+    const token = await loginViaApi(page, userEmail, USER_PASSWORD);
+    expect(token).not.toBe('');
+    const res = await page.request.get(
+      `${BASE_URL}/api/time-planning-pn/pay-rule-sets?offset=0&pageSize=1000`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    expect(res.status()).toBe(200);
+    expect((await res.json())?.success).toBe(true);
+
+    // Authoring pay rule sets stays admin-only for the same user.
+    const createRes = await page.request.post(`${BASE_URL}/api/time-planning-pn/pay-rule-sets`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      data: { name: `nonadmin-should-not-create-${rand}`, payDayRules: [], payDayTypeRules: [] },
+    });
+    expect(createRes.status()).toBe(403);
   });
 });
