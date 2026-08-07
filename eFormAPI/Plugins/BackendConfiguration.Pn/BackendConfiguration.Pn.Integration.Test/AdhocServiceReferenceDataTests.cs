@@ -301,6 +301,53 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     }
 
     [Test]
+    public async Task ListTags_IsAdmin_ReturnsEveryWorkersPersonalTags()
+    {
+        // Regression for microting/flutter-adhoc#43: a tag created on mobile
+        // (gRPC CreateTag, always OwnerWorkerId = the caller's real SDK site
+        // id) must be visible to a dashboard admin's Etiketter list, which
+        // queries through the synthetic DashboardWorkerId (0) - a worker id
+        // no mobile-created tag is ever owned by.
+        var globalTag = new AdhocTag { Name = "global" };
+        await globalTag.Create(BackendConfigurationPnDbContext!);
+        var mobileTagWorkerOne = new AdhocTag { Name = "mobile-one", OwnerWorkerId = 1 };
+        await mobileTagWorkerOne.Create(BackendConfigurationPnDbContext!);
+        var mobileTagWorkerTwo = new AdhocTag { Name = "mobile-two", OwnerWorkerId = 2 };
+        await mobileTagWorkerTwo.Create(BackendConfigurationPnDbContext!);
+
+        var sut = CreateSut();
+
+        // DashboardWorkerId (0), mirroring AdhocController.ListTags.
+        var result = await sut.ListTags(0, isAdmin: true);
+
+        Assert.That(
+            result.Select(t => t.Id),
+            Is.EquivalentTo(new[] { globalTag.Id, mobileTagWorkerOne.Id, mobileTagWorkerTwo.Id }));
+        Assert.That(result.Single(t => t.Id == globalTag.Id).IsUserTag, Is.False);
+        Assert.That(result.Single(t => t.Id == mobileTagWorkerOne.Id).IsUserTag, Is.True);
+        Assert.That(result.Single(t => t.Id == mobileTagWorkerTwo.Id).IsUserTag, Is.True);
+    }
+
+    [Test]
+    public async Task ListTags_NonAdmin_DashboardWorkerId_OnlySeesGlobalTags()
+    {
+        // Documents the chosen policy: non-admin dashboard callers keep the
+        // pre-fix "global tags only" view. DashboardWorkerId (0) owns
+        // nothing, so this is unchanged behavior, not a new restriction.
+        var globalTag = new AdhocTag { Name = "global" };
+        await globalTag.Create(BackendConfigurationPnDbContext!);
+        var mobileTag = new AdhocTag { Name = "mobile-one", OwnerWorkerId = 1 };
+        await mobileTag.Create(BackendConfigurationPnDbContext!);
+
+        var sut = CreateSut();
+
+        var result = await sut.ListTags(0);
+
+        Assert.That(result.Select(t => t.Id), Is.EquivalentTo(new[] { globalTag.Id }));
+        Assert.That(result.Select(t => t.Id), Does.Not.Contain(mobileTag.Id));
+    }
+
+    [Test]
     public async Task CreateTag_AlwaysCreatesUserTag_OwnedByCaller()
     {
         var sut = CreateSut();

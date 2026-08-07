@@ -653,11 +653,17 @@ public class BackendConfigurationAdhocService(
             .ToList();
     }
 
-    public async Task<List<AdhocTagModel>> ListTags(int workerId)
+    public async Task<List<AdhocTagModel>> ListTags(int workerId, bool isAdmin = false)
     {
-        return await dbContext.AdhocTags
-            .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed
-                        && (t.OwnerWorkerId == null || t.OwnerWorkerId == workerId))
+        var query = dbContext.AdhocTags
+            .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (!isAdmin)
+        {
+            query = query.Where(t => t.OwnerWorkerId == null || t.OwnerWorkerId == workerId);
+        }
+
+        return await query
             .OrderBy(t => t.Name)
             .Select(t => new AdhocTagModel { Id = t.Id, Name = t.Name, IsUserTag = t.OwnerWorkerId != null })
             .ToListAsync();

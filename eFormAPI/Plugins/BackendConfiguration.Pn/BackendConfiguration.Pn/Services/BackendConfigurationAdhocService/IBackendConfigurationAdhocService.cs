@@ -179,9 +179,13 @@ public interface IBackendConfigurationAdhocService
 
     /// <summary>
     /// Global tags (<c>OwnerWorkerId == null</c>) plus <paramref name="workerId"/>'s
-    /// own personal tags.
+    /// own personal tags. When <paramref name="isAdmin"/> is true the owner
+    /// filter is skipped entirely - the dashboard admin sees every
+    /// non-removed tag customer-wide, including every worker's personal
+    /// tags (mobile-created tags included), so they show up in the web
+    /// Etiketter list rather than being silently hidden.
     /// </summary>
-    Task<List<AdhocTagModel>> ListTags(int workerId);
+    Task<List<AdhocTagModel>> ListTags(int workerId, bool isAdmin = false);
 
     /// <summary>
     /// Creates a personal tag owned by <paramref name="workerId"/>, unless
