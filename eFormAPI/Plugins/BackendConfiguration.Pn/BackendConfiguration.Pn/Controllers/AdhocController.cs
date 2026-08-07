@@ -256,8 +256,13 @@ public class AdhocController : Controller
     [Route("tags")]
     public async Task<OperationDataResult<List<AdhocTagModel>>> ListTags()
     {
+        // Admins see every non-removed tag customer-wide (global + every
+        // worker's personal tags, including mobile-created ones) so they
+        // show up in the web Etiketter list; non-admins keep the
+        // global-only view the synthetic DashboardWorkerId already implied
+        // (worker 0 owns nothing).
         return await ExecuteAsync(
-            () => _adhocService.ListTags(DashboardWorkerId),
+            () => _adhocService.ListTags(DashboardWorkerId, IsAdmin),
             "ErrorWhileGettingAdhocTags");
     }
 
