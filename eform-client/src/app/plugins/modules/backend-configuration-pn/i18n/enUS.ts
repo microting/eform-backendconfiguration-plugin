@@ -620,7 +620,6 @@ export const enUS= {
   'Task can be seen and completed by': 'Task can be seen and completed by',
   'Assigned only': 'Assigned only',
   Everyone: 'Everyone',
-  'Selected tags': 'Selected tags',
   'Execute no later than and first display': 'Execute no later than and first display',
   'Last 30 days': 'Last 30 days',
   'Last 60 days': 'Last 60 days',

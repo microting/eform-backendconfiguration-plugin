@@ -126,6 +126,15 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
     return (this.task?.photos ?? []).filter((p) => !this.removedPhotoIds.has(p.id));
   }
 
+  /**
+   * #1086: the tags row (heading + chips + picker) renders only when there is
+   * something to show or edit - always in create/edit mode (the picker must
+   * stay reachable), but in view mode only when the task actually has tags.
+   */
+  get showTagsSection(): boolean {
+    return this.tagIds.length > 0 || !this.readonly;
+  }
+
   /** "Udfør opgave" (M5/F8) is offered from view/edit mode on any open (not completed, not archived) task. */
   get canComplete(): boolean {
     return !this.isCreate && !!this.task && !this.task.completed && !this.task.archived;
