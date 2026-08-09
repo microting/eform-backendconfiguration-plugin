@@ -161,7 +161,7 @@
         <div class="gcal-row">
           <mat-icon class="gcal-icon gcal-icon--top">people</mat-icon>
           <div class="gcal-row-content">
-            <div class="adhoc-drawer__section-title">{{ 'Assigned to' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Task assigned to' | translate }}</div>
             <div class="btn-group d-flex gap-8" role="group">
               <button
                 type="button"
@@ -181,14 +181,17 @@
               </button>
             </div>
 
-            <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0">
+            <!-- #1088: person chips + checkbox list stay visible/selectable
+                 regardless of executionRule - persons and "Everyone" coexist
+                 (mobile parity). -->
+            <div class="d-flex flex-wrap gap-4">
               <mat-chip
                 *ngFor="let workerId of assignedWorkerIds"
                 [removable]="!readonly"
                 (removed)="onToggleWorker(workerId)"
               >{{ workerName(workerId) }}</mat-chip>
             </div>
-            <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0 && !readonly">
+            <div class="d-flex flex-wrap gap-4" *ngIf="!readonly">
               <mat-checkbox
                 *ngFor="let worker of workers"
                 [checked]="isWorkerAssigned(worker.workerId)"

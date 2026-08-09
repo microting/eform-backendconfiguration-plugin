@@ -255,6 +255,7 @@ export const esES = {
   'Edit tag': 'Editar etiqueta',
   'Delete tag': 'Eliminar etiqueta',
   'Assigned to': 'Asignado a',
+  'Task assigned to': 'Asignado a',
   'Edit task': 'Editar tarea',
   Every: 'Cada',
   'Copy task': 'Copiar tarea',

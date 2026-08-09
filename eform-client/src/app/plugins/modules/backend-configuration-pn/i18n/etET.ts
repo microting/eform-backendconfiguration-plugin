@@ -255,6 +255,7 @@ export const etET = {
   'Edit tag': 'Muuda silti',
   'Delete tag': 'Kustuta silt',
   'Assigned to': 'Määratud',
+  'Task assigned to': 'Määratud',
   'Edit task': 'Redigeeri ülesannet',
   Every: 'Iga',
   'Copy task': 'Kopeeri ülesanne',

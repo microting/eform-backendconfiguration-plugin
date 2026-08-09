@@ -251,6 +251,7 @@ export const itIT = {
   'Edit tag': 'Modifica etichetta',
   'Delete tag': 'Elimina etichetta',
   'Assigned to': 'Assegnato a',
+  'Task assigned to': 'Assegnato a',
   'Edit task': 'Modifica attività',
   Every: 'Ogni',
   'Copy task': 'Copia attività',

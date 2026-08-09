@@ -255,6 +255,7 @@ export const bgBG = {
   'Edit tag': 'Редактиране на етикет',
   'Delete tag': 'Изтриване на етикет',
   'Assigned to': 'Възложено на',
+  'Task assigned to': 'Възложено на',
   'Edit task': 'Редактиране на задача',
   Every: 'Всеки',
   'Copy task': 'Копиране на задача',

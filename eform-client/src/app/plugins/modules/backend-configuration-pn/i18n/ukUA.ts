@@ -252,6 +252,7 @@ export const ukUA = {
   'Edit tag': 'Редагувати тег',
   'Delete tag': 'Видалити тег',
   'Assigned to': 'Присвоєно',
+  'Task assigned to': 'Присвоєно',
   'Edit task': 'Редагувати завдання',
   Every: 'кожен',
   'Copy task': 'Копіювати завдання',

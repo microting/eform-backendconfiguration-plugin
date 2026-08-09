@@ -137,11 +137,32 @@ describe('AdhocTaskDrawerComponent', () => {
       expect(component.tagIds).toEqual([1000]);
     });
 
-    it('onExecutionRuleChange(1) clears assignedWorkerIds', () => {
+    // #1088: executionRule and assignedWorkerIds are independent fields -
+    // toggling "Everyone"/"Assigned only" must never mutate the assignees,
+    // otherwise a single toggle click during an edit session silently
+    // deletes named assignees server-side on save.
+    it('onExecutionRuleChange(1) ("Everyone") preserves a non-empty assignedWorkerIds', () => {
       expect(component.assignedWorkerIds).toEqual([100]);
       component.onExecutionRuleChange(1);
       expect(component.executionRule).toBe(1);
-      expect(component.assignedWorkerIds).toEqual([]);
+      expect(component.assignedWorkerIds).toEqual([100]);
+    });
+
+    it('onExecutionRuleChange back to 0 ("Assigned only") also preserves assignedWorkerIds', () => {
+      component.onExecutionRuleChange(1);
+      component.onExecutionRuleChange(0);
+      expect(component.executionRule).toBe(0);
+      expect(component.assignedWorkerIds).toEqual([100]);
+    });
+
+    it('onSave after toggling to "Everyone" sends executionRule 1 AND the original assignedWorkerIds', () => {
+      adhocServiceSpy.updateTask.and.returnValue(of({success: true}));
+      component.onExecutionRuleChange(1);
+      component.onSave();
+
+      const sentModel = adhocServiceSpy.updateTask.calls.mostRecent().args[1];
+      expect(sentModel.executionRule).toBe(1);
+      expect(sentModel.assignedWorkerIds).toEqual([100]);
     });
 
     it('removeExistingPhoto excludes the photo from visiblePhotos and the saved photoIds', () => {

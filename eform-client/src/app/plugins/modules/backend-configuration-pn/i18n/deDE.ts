@@ -116,6 +116,7 @@ export const deDE = {
   'View areas': 'Bereiche anzeigen',
   Task: 'Aufgabe',
   'Assigned to': 'Zugewiesen an',
+  'Task assigned to': 'Zugewiesen an',
   'View compliance': 'Überwachung anzeigen',
   'View compliance 30 days': 'Überwachung anzeigen 30 Tage',
   'Compliance 30 days': 'Überwachung 30 Tage',

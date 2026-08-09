@@ -255,6 +255,7 @@ export const ltLT = {
   'Edit tag': 'Redaguoti žymą',
   'Delete tag': 'Ištrinti žymą',
   'Assigned to': 'Priskirtas',
+  'Task assigned to': 'Priskirtas',
   'Edit task': 'Redaguoti užduotį',
   Every: 'kas',
   'Copy task': 'Kopijuoti užduotį',

@@ -255,6 +255,7 @@ export const lvLV = {
   'Edit tag': 'Rediģēt tagu',
   'Delete tag': 'Dzēst tagu',
   'Assigned to': 'Piešķirts',
+  'Task assigned to': 'Piešķirts',
   'Edit task': 'Rediģēt uzdevumu',
   Every: 'Katrs',
   'Copy task': 'Kopēt uzdevumu',

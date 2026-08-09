@@ -255,6 +255,7 @@ export const fiFI = {
   'Edit tag': 'Muokkaa tunnistetta',
   'Delete tag': 'Poista tunniste',
   'Assigned to': 'Määritetty',
+  'Task assigned to': 'Määritetty',
   'Edit task': 'Muokkaa tehtävää',
   Every: 'Joka',
   'Copy task': 'Kopioi tehtävä',

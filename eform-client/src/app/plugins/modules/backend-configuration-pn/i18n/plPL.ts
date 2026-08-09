@@ -255,6 +255,7 @@ export const plPL = {
   'Edit tag': 'Edytuj tag',
   'Delete tag': 'Usuń tag',
   'Assigned to': 'Przypisane do',
+  'Task assigned to': 'Przypisane do',
   'Edit task': 'Edytuj zadanie',
   Every: 'Każdy',
   'Copy task': 'Skopiuj zadanie',
