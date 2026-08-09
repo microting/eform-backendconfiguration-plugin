@@ -11,7 +11,7 @@
 
   <div class="adhoc-drawer__intro d-flex align-items-center justify-content-between" *ngIf="!isCreate">
     <div>
-      <span>{{ workerName(task?.createdByWorkerId) }}</span>
+      <span>{{ 'Created by' | translate }}: {{ workerName(task?.createdByWorkerId) }}</span>
       ·
       <span>{{ propertyName(task?.propertyId) }}</span>
       ·
