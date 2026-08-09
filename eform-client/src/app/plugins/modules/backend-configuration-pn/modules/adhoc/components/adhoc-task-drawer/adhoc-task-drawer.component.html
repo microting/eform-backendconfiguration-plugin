@@ -121,7 +121,7 @@
         <div class="gcal-row">
           <mat-icon class="gcal-icon gcal-icon--top">image</mat-icon>
           <div class="gcal-row-content adhoc-drawer__photos" id="ny-sektion-komm-billeder">
-            <div class="adhoc-drawer__section-title">{{ 'Content' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Pictures' | translate }}</div>
             <div class="d-flex flex-wrap gap-8">
               <div class="photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
                 <img [src]="photoUrl(photo) | authImage | async" alt="">
