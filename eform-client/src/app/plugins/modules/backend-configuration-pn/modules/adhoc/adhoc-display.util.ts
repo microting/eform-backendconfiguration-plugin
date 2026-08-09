@@ -67,17 +67,18 @@ export function resolveTagNames(
 }
 
 export interface AssignedToDisplay {
-  /** true when the task's `executionRule` is "everyone" (mockup: ALLE pill; no concrete assignees to resolve). */
+  /** true when the task's `executionRule` is "everyone" (mockup: ALLE pill; may coexist with named assignees). */
   everyone: boolean;
   names: string[];
 }
 
 /**
  * Mirrors the mockup's `renderTildeltCell`/mobile's assignment display:
- * `executionRule` 1 ("everyone") means the task has no concrete assignees
- * and renders as a single "Alle"/"Everyone" pill; 0 ("assignedOnly") means
- * one pill per assigned worker's resolved name. NO teams (deviation from
- * the mockup/mobile, which also has a team concept - out of scope per the
+ * `executionRule` (1 = "everyone") and `assignedWorkerIds` are independent
+ * (issue #1085) - a task can carry named assignees AND "everyone", so the
+ * resolved names always render one pill each, plus an "Alle"/"Everyone"
+ * pill when `executionRule` is 1. NO teams (deviation from the
+ * mockup/mobile, which also has a team concept - out of scope per the
  * M5 plan).
  */
 export function assignedToDisplay(
@@ -85,10 +86,10 @@ export function assignedToDisplay(
   assignedWorkerIds: number[] | null | undefined,
   workers: AdhocWorkerModel[]
 ): AssignedToDisplay {
-  if (executionRule === 1) {
-    return {everyone: true, names: []};
-  }
-  return {everyone: false, names: resolveWorkerNames(workers, assignedWorkerIds)};
+  return {
+    everyone: executionRule === 1,
+    names: resolveWorkerNames(workers, assignedWorkerIds),
+  };
 }
 
 export type DeadlineBand = 'none' | 'overdue' | 'today' | 'soon' | 'far';
