@@ -603,7 +603,6 @@ export const da = {
   'Task can be seen and completed by': 'Opgave kan ses og udføres af',
   'Assigned only': 'Kun tildelte',
   Everyone: 'Alle',
-  'Selected tags': 'Valgte tags',
   'Execute no later than and first display': 'Udfør senest og visning første gang',
   'Last 30 days': 'Sidste 30 dage',
   'Last 60 days': 'Sidste 60 dage',

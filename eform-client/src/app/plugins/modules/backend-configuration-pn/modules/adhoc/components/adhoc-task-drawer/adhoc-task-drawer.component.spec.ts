@@ -104,6 +104,13 @@ describe('AdhocTaskDrawerComponent', () => {
       component.onSave();
       expect(adhocServiceSpy.createTask).not.toHaveBeenCalled();
     });
+
+    // #1086: the tag picker must stay available while creating, even though
+    // a fresh task has no tags yet.
+    it('showTagsSection is true in create mode despite tagIds being empty', () => {
+      expect(component.tagIds).toEqual([]);
+      expect(component.showTagsSection).toBeTrue();
+    });
   });
 
   describe('view mode', () => {
@@ -114,6 +121,18 @@ describe('AdhocTaskDrawerComponent', () => {
       expect(component.tagIds).toEqual([1000]);
       expect(component.assignedWorkerIds).toEqual([100]);
       expect(component.visiblePhotos).toEqual([{id: 5000, contentType: 'image/png'}]);
+    });
+
+    // #1086: the "Etiketter" heading and the (empty) chip container must not
+    // render at all when a read-only task has no tags - no heading, no grey box.
+    it('showTagsSection is false when the task has no tags', () => {
+      const component = buildComponent({mode: 'view', task: {...existingTask, tagIds: []}});
+      expect(component.showTagsSection).toBeFalse();
+    });
+
+    it('showTagsSection is true when the task has tags', () => {
+      const component = buildComponent({mode: 'view', task: existingTask});
+      expect(component.showTagsSection).toBeTrue();
     });
   });
 
@@ -135,6 +154,14 @@ describe('AdhocTaskDrawerComponent', () => {
       expect(component.tagIds).toEqual([]);
       component.onToggleTag(1000);
       expect(component.tagIds).toEqual([1000]);
+    });
+
+    // #1086: in edit mode the picker stays visible even after the last tag
+    // is removed, so the user can still add tags back.
+    it('showTagsSection stays true in edit mode after removing the last tag', () => {
+      component.onToggleTag(1000);
+      expect(component.tagIds).toEqual([]);
+      expect(component.showTagsSection).toBeTrue();
     });
 
     // #1088: executionRule and assignedWorkerIds are independent fields -

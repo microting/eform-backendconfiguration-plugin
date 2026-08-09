@@ -87,11 +87,13 @@
           </div>
         </div>
 
-        <!-- Tags row -->
-        <div class="gcal-row">
+        <!-- Tags row (#1086: hidden entirely for an untagged task in view
+             mode - no heading, no empty chip box; always shown when editable
+             so the picker stays reachable) -->
+        <div class="gcal-row" *ngIf="showTagsSection">
           <mat-icon class="gcal-icon gcal-icon--top">label</mat-icon>
           <div class="gcal-row-content adhoc-drawer__tags" id="ny-sektion-tags">
-            <div class="adhoc-drawer__section-title">{{ 'Selected tags' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Tags' | translate }}</div>
             <div class="d-flex flex-wrap gap-4" id="ny-tags-valgt-wrap">
               <mat-chip
                 *ngFor="let tagId of tagIds"
