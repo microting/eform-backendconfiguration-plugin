@@ -91,12 +91,10 @@
 </ng-template>
 
 <ng-template #assignedToTpl let-row>
-  <div class="cell-assigned d-flex flex-wrap gap-4">
-    <mat-chip class="assigned-chip--everyone" *ngIf="assignedToFor(row).everyone">{{ 'Everyone' | translate }}</mat-chip>
-    <ng-container *ngIf="!assignedToFor(row).everyone">
-      <mat-chip *ngFor="let name of assignedToFor(row).names">{{ name }}</mat-chip>
-      <span *ngIf="!assignedToFor(row).names.length">—</span>
-    </ng-container>
+  <div class="cell-assigned d-flex flex-wrap gap-4" *ngIf="assignedToFor(row) as assigned">
+    <mat-chip *ngFor="let name of assigned.names">{{ name }}</mat-chip>
+    <mat-chip class="assigned-chip--everyone" *ngIf="assigned.everyone">{{ 'Everyone' | translate }}</mat-chip>
+    <span *ngIf="!assigned.everyone && !assigned.names.length">—</span>
   </div>
 </ng-template>
 
