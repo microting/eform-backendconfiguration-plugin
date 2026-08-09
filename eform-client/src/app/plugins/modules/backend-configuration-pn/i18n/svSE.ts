@@ -255,6 +255,7 @@ export const svSE = {
   'Edit tag': 'Redigera tagg',
   'Delete tag': 'Ta bort tagg',
   'Assigned to': 'Tilldelats',
+  'Task assigned to': 'Tilldelats',
   'Edit task': 'Redigera uppgift',
   Every: 'Varje',
   'Copy task': 'Kopiera uppgift',

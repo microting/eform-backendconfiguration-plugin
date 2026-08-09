@@ -255,6 +255,7 @@ export const ptBR = {
   'Edit tag': 'Editar etiqueta',
   'Delete tag': 'Excluir etiqueta',
   'Assigned to': 'Atribuído a',
+  'Task assigned to': 'Atribuído a',
   'Edit task': 'Editar tarefa',
   Every: 'Todo',
   'Copy task': 'Copiar tarefa',

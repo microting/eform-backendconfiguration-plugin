@@ -255,6 +255,7 @@ export const roRO = {
   'Edit tag': 'Editați eticheta',
   'Delete tag': 'Ștergeți eticheta',
   'Assigned to': 'Atribuit',
+  'Task assigned to': 'Atribuit',
   'Edit task': 'Editați sarcina',
   Every: 'Fiecare',
   'Copy task': 'Sarcina de copiere',

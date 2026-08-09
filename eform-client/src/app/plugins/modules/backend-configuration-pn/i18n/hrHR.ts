@@ -255,6 +255,7 @@ export const hrHR = {
   'Edit tag': 'Uredi oznaku',
   'Delete tag': 'Izbriši oznaku',
   'Assigned to': 'Dodijeljena',
+  'Task assigned to': 'Dodijeljena',
   'Edit task': 'Uredi zadatak',
   Every: 'Svaki',
   'Copy task': 'Kopiraj zadatak',

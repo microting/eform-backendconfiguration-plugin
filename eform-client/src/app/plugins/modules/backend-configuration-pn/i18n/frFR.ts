@@ -252,6 +252,7 @@ export const frFR = {
   'Edit tag': 'Modifier la balise',
   'Delete tag': 'Supprimer la balise',
   'Assigned to': 'Assigné à',
+  'Task assigned to': 'Assigné à',
   'Edit task': 'Modifier la tâche',
   Every: 'Chaque',
   'Copy task': 'Tâche de copie',

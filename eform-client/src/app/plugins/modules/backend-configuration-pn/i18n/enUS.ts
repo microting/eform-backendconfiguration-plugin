@@ -278,6 +278,7 @@ export const enUS= {
   'Edit tag': 'Edit tag',
   'Delete tag': 'Delete tag',
   'Assigned to': 'Assigned to',
+  'Task assigned to': 'Assigned to',
   'Edit task': 'Edit task',
   'Every': 'Every',
   'Copy task': 'Copy task',

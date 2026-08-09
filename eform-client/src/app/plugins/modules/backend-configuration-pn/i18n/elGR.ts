@@ -255,6 +255,7 @@ export const elGR = {
   'Edit tag': 'Επεξεργασία ετικέτας',
   'Delete tag': 'Διαγραφή ετικέτας',
   'Assigned to': 'Ανατεθεί',
+  'Task assigned to': 'Ανατεθεί',
   'Edit task': 'Επεξεργασία εργασίας',
   Every: 'Κάθε',
   'Copy task': 'Αντιγραφή εργασίας',

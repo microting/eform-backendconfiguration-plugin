@@ -255,6 +255,7 @@ export const skSK = {
   'Edit tag': 'Upraviť značku',
   'Delete tag': 'Odstrániť značku',
   'Assigned to': 'Priradený',
+  'Task assigned to': 'Priradený',
   'Edit task': 'Upraviť úlohu',
   Every: 'Každý',
   'Copy task': 'Kopírovať úlohu',

@@ -255,6 +255,7 @@ export const nlNL = {
   'Edit tag': 'Bewerk label',
   'Delete tag': 'Label verwijderen',
   'Assigned to': 'Toegewezen aan',
+  'Task assigned to': 'Toegewezen aan',
   'Edit task': 'Taak bewerken',
   Every: 'Elk',
   'Copy task': 'Kopieer taak',

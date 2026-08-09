@@ -239,11 +239,12 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
       : [...this.assignedWorkerIds, workerId];
   }
 
+  // #1088: executionRule and assignedWorkerIds are independent fields (a
+  // task can be assigned to persons AND visible to everyone, mobile
+  // parity). Toggling the rule must never mutate the assignees - clearing
+  // them here would silently delete named assignees server-side on save.
   onExecutionRuleChange(rule: number): void {
     this.executionRule = rule;
-    if (rule === 1) {
-      this.assignedWorkerIds = [];
-    }
   }
 
   // -----------------------------------------------------------------

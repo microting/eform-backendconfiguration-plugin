@@ -255,6 +255,7 @@ export const noNO = {
   'Edit tag': 'Rediger tag',
   'Delete tag': 'Slett tag',
   'Assigned to': 'Tilordnet',
+  'Task assigned to': 'Tilordnet',
   'Edit task': 'Rediger oppgave',
   Every: 'Hver',
   'Copy task': 'Kopier oppgave',

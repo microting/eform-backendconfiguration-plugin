@@ -255,6 +255,7 @@ export const isIS = {
   'Edit tag': 'Breyta merki',
   'Delete tag': 'Eyða merki',
   'Assigned to': 'Úthlutað til',
+  'Task assigned to': 'Úthlutað til',
   'Edit task': 'Breyta verkefni',
   Every: 'Hvert',
   'Copy task': 'Afrita verkefni',

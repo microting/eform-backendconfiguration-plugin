@@ -260,6 +260,7 @@ export const da = {
   'Edit tag': 'Rediger tag',
   'Delete tag': 'Slet tag',
   'Assigned to': 'Tildelt',
+  'Task assigned to': 'Tildelt til',
   'Edit task': 'Rediger opgave',
   Every: 'Hver',
   'Copy task': 'Kopiér opgave',

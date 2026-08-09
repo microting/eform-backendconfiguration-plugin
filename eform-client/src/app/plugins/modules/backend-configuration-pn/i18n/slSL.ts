@@ -255,6 +255,7 @@ export const slSL = {
   'Edit tag': 'Uredi oznako',
   'Delete tag': 'Izbriši oznako',
   'Assigned to': 'Dodeljena',
+  'Task assigned to': 'Dodeljena',
   'Edit task': 'Uredi nalogo',
   Every: 'vsak',
   'Copy task': 'Kopiraj opravilo',

@@ -255,6 +255,7 @@ export const csCZ = {
   'Edit tag': 'Upravit značku',
   'Delete tag': 'Smazat značku',
   'Assigned to': 'Přiřazen',
+  'Task assigned to': 'Přiřazen',
   'Edit task': 'Upravit úkol',
   Every: 'Každý',
   'Copy task': 'Kopírovat úkol',

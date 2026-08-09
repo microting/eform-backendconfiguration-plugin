@@ -255,6 +255,7 @@ export const huHU = {
   'Edit tag': 'Címke szerkesztése',
   'Delete tag': 'Címke törlése',
   'Assigned to': 'Hozzárendelve',
+  'Task assigned to': 'Hozzárendelve',
   'Edit task': 'Feladat szerkesztése',
   Every: 'Minden',
   'Copy task': 'Feladat másolása',
