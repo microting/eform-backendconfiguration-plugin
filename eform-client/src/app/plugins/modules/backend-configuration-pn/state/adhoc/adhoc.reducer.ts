@@ -25,14 +25,19 @@ export interface AdhocFiltrationModel {
 }
 
 /**
- * Historik tab filter state (mockup period chips 30d/60d/90d/6m/12m/24m +
- * custom range). `tagIds` here is AND-only per the mockup's
- * «Tags i historik (OG)» - unlike `AdhocFiltrationModel.tagLogic`.
+ * Historik tab filter state (#1095 - mockup period chips 30/60/90 dage,
+ * 6/12 måneder, Egen periode; default '90'; no 24-month option). The
+ * resolved date range is DERIVED from the preset at fetch time, never
+ * stored - only the custom range's raw inputs persist (mirroring the
+ * mockup's `historyState`, with ngrx replacing its localStorage). `tagIds`
+ * here is AND-only per the mockup's «Tags i historik (OG)» - unlike
+ * `AdhocFiltrationModel.tagLogic`.
  */
 export interface AdhocHistoryFiltrationModel {
-  periodPreset: '30d' | '60d' | '90d' | '6m' | '12m' | '24m' | 'custom';
-  dateFrom: string | null;
-  dateTo: string | null;
+  periodPreset: '30' | '60' | '90' | '6m' | '12m' | 'custom';
+  /** ISO date, only meaningful when `periodPreset` === 'custom'. */
+  customFrom: string | null;
+  customTo: string | null;
   propertyId: number | null;
   areaId: number | null;
   tagIds: number[];
@@ -64,9 +69,9 @@ export const adhocInitialState: AdhocState = {
   },
   hiddenColumns: [],
   historyFilters: {
-    periodPreset: '30d',
-    dateFrom: null,
-    dateTo: null,
+    periodPreset: '90',
+    customFrom: null,
+    customTo: null,
     propertyId: null,
     areaId: null,
     tagIds: [],

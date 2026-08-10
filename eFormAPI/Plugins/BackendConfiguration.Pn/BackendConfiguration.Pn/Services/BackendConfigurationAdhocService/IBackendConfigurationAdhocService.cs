@@ -240,13 +240,15 @@ public interface IBackendConfigurationAdhocService
     Task<(Stream Content, string ContentType)> GetPhoto(int workerId, int photoId, bool isAdmin = false);
 
     /// <summary>
-    /// The Historik timeline (M5/P2) - see <see cref="AdhocTaskHistoryEventModel"/>
-    /// for the derivation approach and its accepted v1 limitations.
-    /// Property/area/tag(AND)/property-access filters are pushed into SQL
-    /// against the candidate task set (the dominant scale factor); the
-    /// per-task event explosion (created/assigned/completed/archived/
-    /// commented) and the date-range filter/sort/paging over the resulting
-    /// events happen in memory over that already-bounded candidate set.
+    /// The Historik table (#1095, mockup parity) - one
+    /// <see cref="AdhocTaskHistoryRowModel"/> per task currently Completed
+    /// ("Løst") or Archived, sorted by CompletedAt descending. Open tasks
+    /// never appear. Property/area/tag(AND)/property-access/status filters
+    /// are pushed into SQL against the candidate task set (the dominant
+    /// scale factor); the per-task row build and the date-truncated,
+    /// both-ends-inclusive CompletedAt range filter/sort/paging happen in
+    /// memory over that already-bounded candidate set. Assignment logs are
+    /// no longer read - assignment has no representation in Historik rows.
     /// </summary>
-    Task<Paged<AdhocTaskHistoryEventModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters);
+    Task<Paged<AdhocTaskHistoryRowModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters);
 }

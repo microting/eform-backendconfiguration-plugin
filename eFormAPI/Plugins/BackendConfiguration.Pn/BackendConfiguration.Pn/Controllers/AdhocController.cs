@@ -102,7 +102,7 @@ public class AdhocController : Controller
 
     [HttpPost]
     [Route("history/index")]
-    public async Task<OperationDataResult<Paged<AdhocTaskHistoryEventModel>>> HistoryIndex([FromBody] AdhocHistoryFiltersModel filters)
+    public async Task<OperationDataResult<Paged<AdhocTaskHistoryRowModel>>> HistoryIndex([FromBody] AdhocHistoryFiltersModel filters)
     {
         return await ExecuteAsync(
             () => _adhocService.ListHistory(DashboardWorkerId, IsAdmin, filters ?? new AdhocHistoryFiltersModel()),

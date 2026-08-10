@@ -93,9 +93,10 @@ test.describe.serial('Adhoc overblik — complete, archive, delete lifecycle', (
 
     await expect(adhocPage.historyRow(taskTitle)).toBeVisible({ timeout: 15000 });
     await adhocPage.archiveFromHistory(taskTitle);
-    // History re-fetches its own (unbucketed) event list after archiving —
-    // no assertion on the Historik row itself here, only on the Overblik
-    // "Arkiverede" status view below, which is this suite's actual contract.
+    // History re-fetches its task table after archiving (the row stays,
+    // now with an "Arkiveret" status chip) — no assertion on the Historik
+    // row itself here, only on the Overblik "Arkiverede" status view below,
+    // which is this suite's actual contract.
 
     await adhocPage.goToOverview();
     await adhocPage.selectStatusFilter('Arkiverede');

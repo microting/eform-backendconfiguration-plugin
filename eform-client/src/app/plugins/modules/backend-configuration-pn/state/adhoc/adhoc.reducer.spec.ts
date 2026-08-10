@@ -13,12 +13,15 @@ describe('adhocReducer', () => {
     expect(state).toEqual(adhocInitialState);
   });
 
-  it('initial state defaults to status "open", sort "CreatedAt" desc, no hidden columns, period "30d"', () => {
+  it('initial state defaults to status "open", sort "CreatedAt" desc, no hidden columns, period "90"', () => {
     expect(adhocInitialState.filters.status).toBe('open');
     expect(adhocInitialState.pagination.sort).toBe('CreatedAt');
     expect(adhocInitialState.pagination.isSortDsc).toBeTrue();
     expect(adhocInitialState.hiddenColumns).toEqual([]);
-    expect(adhocInitialState.historyFilters.periodPreset).toBe('30d');
+    // Mockup default chip: "90 dage" (#1095).
+    expect(adhocInitialState.historyFilters.periodPreset).toBe('90');
+    expect(adhocInitialState.historyFilters.customFrom).toBeNull();
+    expect(adhocInitialState.historyFilters.customTo).toBeNull();
   });
 
   describe('adhocUpdateFilters', () => {
@@ -109,15 +112,15 @@ describe('adhocReducer', () => {
       const payload: AdhocHistoryFiltrationModel = {
         ...adhocInitialState.historyFilters,
         periodPreset: 'custom',
-        dateFrom: '2026-01-01',
-        dateTo: '2026-06-30',
+        customFrom: '2026-01-01',
+        customTo: '2026-06-30',
       };
 
       const state = adhocReducer(adhocInitialState, adhocUpdateHistoryFilters(payload));
 
       expect(state.historyFilters.periodPreset).toBe('custom');
-      expect(state.historyFilters.dateFrom).toBe('2026-01-01');
-      expect(state.historyFilters.dateTo).toBe('2026-06-30');
+      expect(state.historyFilters.customFrom).toBe('2026-01-01');
+      expect(state.historyFilters.customTo).toBe('2026-06-30');
     });
 
     it('AND-only tagIds on history filters are stored independent of the table filters tagLogic', () => {
