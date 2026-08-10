@@ -2,12 +2,19 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
+import {TranslateService} from '@ngx-translate/core';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
-import {format, subDays, subMonths} from 'date-fns';
+import {format, parseISO, subDays, subMonths} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
-import {AdhocAreaModel, AdhocHistoryFiltersModel, AdhocTaskHistoryEventModel} from '../../../../models';
+import {
+  AdhocAreaModel,
+  AdhocHistoryFiltersModel,
+  AdhocTagModel,
+  AdhocTaskHistoryRowModel,
+  AdhocTaskStatusFilter,
+} from '../../../../models';
 import {AdhocHistoryFiltrationModel, adhocInitialState, adhocUpdateHistoryFilters, selectAdhocHistoryFilters} from '../../../../state';
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
@@ -15,37 +22,55 @@ import {AdhocTaskDrawerComponent} from '../adhoc-task-drawer/adhoc-task-drawer.c
 import {AdhocCopyModalComponent} from '../adhoc-copy-modal/adhoc-copy-modal.component';
 import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
 
-interface AdhocHistoryDayGroup {
-  dateKey: string;
-  events: AdhocTaskHistoryEventModel[];
-}
+/** Display union derived from the wire `AdhocTaskStatusFilter` - only these two occur in Historik. */
+export type AdhocTaskHistoryStatus = 'completed' | 'archived';
 
-const PERIOD_LABEL_KEYS: Record<AdhocHistoryFiltrationModel['periodPreset'], string> = {
-  '30d': 'Last 30 days',
-  '60d': 'Last 60 days',
-  '90d': 'Last 90 days',
-  '6m': 'Last 6 months',
-  '12m': 'Last 12 months',
-  '24m': 'Last 24 months',
+const STATUS_FROM_WIRE: Record<number, AdhocTaskHistoryStatus> = {
+  [AdhocTaskStatusFilter.Completed]: 'completed',
+  [AdhocTaskStatusFilter.Archived]: 'archived',
+};
+
+/** Mockup chip labels (#1095): "30 dage" … "12 måneder", "Egen periode" - no 24-month option. */
+const PERIOD_CHIP_LABEL_KEYS: Record<AdhocHistoryFiltrationModel['periodPreset'], string> = {
+  '30': '30 days',
+  '60': '60 days',
+  '90': '90 days',
+  // Distinct from the pre-existing '6 months'/'12 months' keys (da "6 mdr."
+  // - the calendar view's abbreviated labels); the mockup chips spell out
+  // "6 måneder"/"12 måneder".
+  '6m': '6 months period',
+  '12m': '12 months period',
   custom: 'Custom period',
 };
 
+const DISPLAY_DATE_FORMAT = 'dd.MM.yyyy';
+
+/** Slice-persisted custom-range format - date-only, like the mockup's native date inputs. */
+const ISO_DATE_FORMAT = 'yyyy-MM-dd';
+
 /**
- * "Historik" tab (M5/F8) - mockup `#history-view`: period chips (30d/60d/
- * 90d/6m/12m/24m + custom range) resolved client-side into
- * `AdhocHistoryFiltersModel.dateFrom/dateTo`, a collapsible filter-details
- * panel (property/area/tags - AND-only per `AdhocHistoryFiltrationModel`,
- * unlike the Overblik toolbar's toggleable AND/OR), and a timeline grouped
- * by day. `AdhocTaskHistoryEventModel` carries `taskTitle`/`propertyName`/
- * `areaName`/`actorName`/`tagNames` as plain strings already (unlike
- * `AdhocTaskModel`), so - unlike the table (F5) - no id->name resolution
- * is needed here.
+ * "Historik" tab (#1095, dashboard-mockup parity - mockup `#history-view`):
+ * a plain task TABLE (one row per Completed/"Løst" or Archived task, fixed
+ * CompletedAt-desc sort, no sortable headers, no column picker) replacing
+ * the old day-grouped per-event timeline. Around it: the collapsible
+ * "Periode og filter" group (period chips 30/60/90 dage + 6/12 måneder +
+ * Egen periode, Ejendom/Områder coupling, AND-only tag panel with search),
+ * an aria-live "Aktiv periode" line, the six-paragraph help panel, and the
+ * mockup pager (Forrige / Side X af Y · N hits / Næste; server paging with
+ * the default page size 25).
+ *
+ * Period math mirrors the mockup's `getHistoryDateRange`: `to` is always
+ * today; day presets count n calendar days inclusive of today; month
+ * presets shift the same day-of-month back, clamped to the target month's
+ * last day (`date-fns` `subMonths` clamps exactly like the mockup's
+ * `addCalendarMonthsIso`); a custom range defaults a missing side to the
+ * other and swaps when from > to. The resolved range is derived at fetch
+ * time - only the preset + raw custom inputs persist in the ngrx slice.
  *
  * Row click opens the drawer in `view` mode (fetching the full
- * `AdhocTaskModel` via `getTask`, since the event row itself doesn't carry
- * one). Row menu: Kopier (same copy modal as Overblik -> opens the copy in
- * `edit` mode), Arkiver (only when the event's task is completed and not
- * yet archived), Slet.
+ * `AdhocTaskModel` via `getTask`, since the row itself doesn't carry one).
+ * Row menu: Kopier (always), Arkiver (only while status is 'completed'),
+ * Slet.
  */
 @AutoUnsubscribe()
 @Component({
@@ -55,16 +80,17 @@ const PERIOD_LABEL_KEYS: Record<AdhocHistoryFiltrationModel['periodPreset'], str
   standalone: false,
 })
 export class AdhocHistoryComponent implements OnInit, OnDestroy {
-  periodPresets = Object.keys(PERIOD_LABEL_KEYS) as AdhocHistoryFiltrationModel['periodPreset'][];
+  periodPresets: AdhocHistoryFiltrationModel['periodPreset'][] =
+    Object.keys(PERIOD_CHIP_LABEL_KEYS) as AdhocHistoryFiltrationModel['periodPreset'][];
 
-  events: AdhocTaskHistoryEventModel[] = [];
+  rows: AdhocTaskHistoryRowModel[] = [];
   total = 0;
   pageIndex = 0;
   pageSize = 25;
   filterDetailsOpen = false;
+  helpPanelOpen = false;
+  tagSearchQuery = '';
   areas: AdhocAreaModel[] = [];
-  customFrom: Date | null = null;
-  customTo: Date | null = null;
 
   // Defaulted (not left undefined until the store subscription's first
   // emission) - unlike AdhocFiltersComponent (Overview), whose
@@ -95,6 +121,7 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
     public adhocStateService: AdhocStateService,
     private dialog: MatDialog,
     private overlay: Overlay,
+    private translate: TranslateService,
   ) {
   }
 
@@ -109,66 +136,110 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   }
 
-  // Memoized on the events array's identity: recomputing fresh group objects
-  // on every change-detection pass makes the template's *ngFor (identity-
-  // based diffing) tear down and recreate every row each pass - which
-  // destroys a row's [matMenuTriggerFor] anchor the moment its menu opens,
-  // so the Historik row menus could never stay open.
-  private groupsCache: {source: AdhocTaskHistoryEventModel[]; groups: AdhocHistoryDayGroup[]} | null = null;
+  // -----------------------------------------------------------------
+  // Period math (mockup getHistoryDateRange / addDaysIso / addCalendarMonthsIso)
+  // -----------------------------------------------------------------
 
-  get groupedEvents(): AdhocHistoryDayGroup[] {
-    if (!this.groupsCache || this.groupsCache.source !== this.events) {
-      this.groupsCache = {source: this.events, groups: this.buildGroups()};
-    }
-    return this.groupsCache.groups;
-  }
-
-  private buildGroups(): AdhocHistoryDayGroup[] {
-    const groups = new Map<string, AdhocTaskHistoryEventModel[]>();
-    for (const event of this.events) {
-      // occurredAt reaches the client as a Date, not a string: the host
-      // frontend's global DateInterceptor converts every ISO-datetime string
-      // in every response body (date.interceptor.ts). Calling a string
-      // method on it throws inside this getter, which aborts every change-
-      // detection pass and freezes the view on its last rendered state.
-      const occurred = event.occurredAt;
-      const key = occurred instanceof Date ? format(occurred, 'yyyy-MM-dd') : String(occurred || '').slice(0, 10);
-      const bucket = groups.get(key) ?? [];
-      bucket.push(event);
-      groups.set(key, bucket);
-    }
-    return Array.from(groups.entries()).map(([dateKey, dayEvents]) => ({dateKey, events: dayEvents}));
-  }
-
-  periodLabel(preset: AdhocHistoryFiltrationModel['periodPreset']): string {
-    return PERIOD_LABEL_KEYS[preset];
-  }
-
-  private resolveRange(): {dateFrom: string | null; dateTo: string | null} {
+  private resolveRange(): {from: Date; to: Date} {
     const preset = this.currentFilters.periodPreset;
+    const today = new Date();
     if (preset === 'custom') {
-      return {
-        dateFrom: this.customFrom ? format(this.customFrom, PARSING_DATE_FORMAT) : null,
-        dateTo: this.customTo ? format(this.customTo, PARSING_DATE_FORMAT) : null,
-      };
+      let from = this.currentFilters.customFrom ? parseISO(this.currentFilters.customFrom) : null;
+      let to = this.currentFilters.customTo ? parseISO(this.currentFilters.customTo) : null;
+      if (!from && !to) {
+        return {from: today, to: today};
+      }
+      from = from ?? to;
+      to = to ?? from;
+      if (from > to) {
+        const swapped = from;
+        from = to;
+        to = swapped;
+      }
+      return {from, to};
     }
-    const now = new Date();
-    const daysByPreset: {[key: string]: number} = {'30d': 30, '60d': 60, '90d': 90};
-    const monthsByPreset: {[key: string]: number} = {'6m': 6, '12m': 12, '24m': 24};
-    if (daysByPreset[preset]) {
-      return {dateFrom: format(subDays(now, daysByPreset[preset]), PARSING_DATE_FORMAT), dateTo: null};
+    if (preset === '6m' || preset === '12m') {
+      // subMonths clamps to the target month's last day when the anchor's
+      // day-of-month does not exist there (Mar 31 - 1m -> Feb 28/29) - the
+      // exact rule of the mockup's addCalendarMonthsIso.
+      return {from: subMonths(today, preset === '6m' ? 6 : 12), to: today};
     }
-    if (monthsByPreset[preset]) {
-      return {dateFrom: format(subMonths(now, monthsByPreset[preset]), PARSING_DATE_FORMAT), dateTo: null};
-    }
-    return {dateFrom: null, dateTo: null};
+    const days = preset === '30' ? 30 : preset === '60' ? 60 : 90;
+    // "n calendar days incl. today" - so back (n - 1) days.
+    return {from: subDays(today, days - 1), to: today};
   }
+
+  periodChipLabelKey(preset: AdhocHistoryFiltrationModel['periodPreset']): string {
+    return PERIOD_CHIP_LABEL_KEYS[preset];
+  }
+
+  /** "Aktiv periode: DD.MM.YYYY — DD.MM.YYYY (inkl. begge dage)." - the aria-live line. */
+  activePeriodSummaryLabel(): string {
+    const range = this.resolveRange();
+    const rangeText = this.translate.instant('{{from}} to {{to}} inclusive of both days', {
+      from: format(range.from, DISPLAY_DATE_FORMAT),
+      to: format(range.to, DISPLAY_DATE_FORMAT),
+    });
+    return `${this.translate.instant('Active period')}: ${rangeText}`;
+  }
+
+  /** Summary line A value: the chip label, or the resolved range for "Egen periode". */
+  filterSummaryLineA(): string {
+    if (this.currentFilters.periodPreset === 'custom') {
+      const range = this.resolveRange();
+      return `${format(range.from, DISPLAY_DATE_FORMAT)} — ${format(range.to, DISPLAY_DATE_FORMAT)}`;
+    }
+    return this.translate.instant(this.periodChipLabelKey(this.currentFilters.periodPreset));
+  }
+
+  /** Summary line B: "Ejendom: … · Områder: … · Tags i historik (OG): …". */
+  filterSummaryLineB(): string {
+    const propertyName = this.selectedPropertyName() ?? this.translate.instant('All properties');
+    const areaName = this.selectedAreaName() ?? this.translate.instant('All areas');
+    const tagNames = this.selectedTagNames();
+    const tagsText = tagNames.length ? tagNames.join(', ') : this.translate.instant('None selected');
+    return `${this.translate.instant('Property')}: ${propertyName}`
+      + ` · ${this.translate.instant('Areas')}: ${areaName}`
+      + ` · ${this.translate.instant('Tags in history (AND)')}: ${tagsText}`;
+  }
+
+  selectedPropertyName(): string | null {
+    const id = this.currentFilters.propertyId;
+    if (id == null) {
+      return null;
+    }
+    return this.adhocStateService.properties.find((p) => p.id === id)?.name ?? null;
+  }
+
+  selectedAreaName(): string | null {
+    const id = this.currentFilters.areaId;
+    if (id == null) {
+      return null;
+    }
+    return this.areas.find((a) => a.id === id)?.name ?? null;
+  }
+
+  /** Selected tag names, Danish-locale sorted (mockup historySelectedTagLabels). */
+  selectedTagNames(): string[] {
+    return this.adhocStateService.tags
+      .filter((tag) => this.currentFilters.tagIds.includes(tag.id))
+      .map((tag) => tag.name)
+      .sort((a, b) => a.localeCompare(b, 'da'));
+  }
+
+  todayFormatted(): string {
+    return format(new Date(), DISPLAY_DATE_FORMAT);
+  }
+
+  // -----------------------------------------------------------------
+  // Data fetch
+  // -----------------------------------------------------------------
 
   updateTable(): void {
     const range = this.resolveRange();
     const model: AdhocHistoryFiltersModel = {
-      dateFrom: range.dateFrom,
-      dateTo: range.dateTo,
+      dateFrom: format(range.from, PARSING_DATE_FORMAT),
+      dateTo: format(range.to, PARSING_DATE_FORMAT),
       propertyId: this.currentFilters.propertyId,
       areaId: this.currentFilters.areaId,
       tagIds: [...this.currentFilters.tagIds],
@@ -177,14 +248,21 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
     };
     this.getHistorySub$ = this.adhocService.getHistory(model).subscribe((res) => {
       if (res && res.success && res.model) {
-        this.events = res.model.entities;
+        this.rows = res.model.entities;
         this.total = res.model.total;
       }
     });
   }
 
+  /**
+   * Every filter mutation resets to page 0 (mockup: `historyState.page = 0`
+   * on every single filter mutator). The merged filters are also applied
+   * locally before dispatching so `updateTable` never races the store
+   * subscription's (synchronous, but unguaranteed) emission.
+   */
   private applyFilters(partial: Partial<AdhocHistoryFiltrationModel>): void {
-    this.store.dispatch(adhocUpdateHistoryFilters({...this.currentFilters, ...partial}));
+    this.currentFilters = {...this.currentFilters, ...partial};
+    this.store.dispatch(adhocUpdateHistoryFilters(this.currentFilters));
     this.pageIndex = 0;
     this.updateTable();
   }
@@ -193,19 +271,41 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
     this.applyFilters({periodPreset: preset});
   }
 
-  onCustomRangeChange(): void {
-    if (this.currentFilters.periodPreset === 'custom') {
-      this.updateTable();
-    }
+  get customFromDate(): Date | null {
+    return this.currentFilters.customFrom ? parseISO(this.currentFilters.customFrom) : null;
   }
 
+  get customToDate(): Date | null {
+    return this.currentFilters.customTo ? parseISO(this.currentFilters.customTo) : null;
+  }
+
+  /** Picking either custom date force-switches the active chip to "Egen periode" (mockup behavior). */
+  onCustomFromChange(date: Date | null): void {
+    this.applyFilters({periodPreset: 'custom', customFrom: date ? format(date, ISO_DATE_FORMAT) : null});
+  }
+
+  onCustomToChange(date: Date | null): void {
+    this.applyFilters({periodPreset: 'custom', customTo: date ? format(date, ISO_DATE_FORMAT) : null});
+  }
+
+  /**
+   * Mirrors the mockup's fillHistoryOmraadeSelect: switching to "Alle
+   * ejendomme" clears and disables Områder; switching to a concrete
+   * property keeps the previously-selected area when it is still valid for
+   * the new property, otherwise falls back to "Alle områder".
+   */
   onPropertyChange(propertyId: number | null): void {
-    this.applyFilters({propertyId, areaId: null});
-    if (propertyId != null) {
-      this.loadAreas(propertyId);
-    } else {
+    if (propertyId == null) {
       this.areas = [];
+      this.applyFilters({propertyId: null, areaId: null});
+      return;
     }
+    this.areasSub$ = this.adhocStateService.getAreasForProperty(propertyId).subscribe((areas) => {
+      this.areas = areas;
+      const previousAreaId = this.currentFilters.areaId;
+      const keptAreaId = previousAreaId != null && areas.some((a) => a.id === previousAreaId) ? previousAreaId : null;
+      this.applyFilters({propertyId, areaId: keptAreaId});
+    });
   }
 
   onAreaChange(areaId: number | null): void {
@@ -227,8 +327,87 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
     this.areasSub$ = this.adhocStateService.getAreasForProperty(propertyId).subscribe((areas) => (this.areas = areas));
   }
 
+  // -----------------------------------------------------------------
+  // Tag panel (search + selected pills)
+  // -----------------------------------------------------------------
+
+  /** Live case-insensitive substring filter (mockup #history-tags-search). */
+  filteredTags(): AdhocTagModel[] {
+    const query = this.tagSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return this.adhocStateService.tags;
+    }
+    return this.adhocStateService.tags.filter((tag) => tag.name.toLowerCase().includes(query));
+  }
+
+  selectedTags(): AdhocTagModel[] {
+    return this.adhocStateService.tags.filter((tag) => this.currentFilters.tagIds.includes(tag.id));
+  }
+
+  // -----------------------------------------------------------------
+  // Panel toggles
+  // -----------------------------------------------------------------
+
   toggleFilterDetails(): void {
     this.filterDetailsOpen = !this.filterDetailsOpen;
+  }
+
+  toggleHelpPanel(): void {
+    this.helpPanelOpen = !this.helpPanelOpen;
+  }
+
+  // -----------------------------------------------------------------
+  // Status chip derivation (pure, testable without TestBed)
+  // -----------------------------------------------------------------
+
+  statusOf(row: AdhocTaskHistoryRowModel): AdhocTaskHistoryStatus {
+    return STATUS_FROM_WIRE[row.status] ?? 'completed';
+  }
+
+  statusLabelKey(row: AdhocTaskHistoryRowModel): string {
+    // 'archived' is the existing event-type key (da "Arkiveret") reused as
+    // the chip label; "Løst" needs its own key ('Task resolved status')
+    // since the existing 'completed' key is da "Udført" (the column header).
+    return this.statusOf(row) === 'archived' ? 'archived' : 'Task resolved status';
+  }
+
+  statusChipClass(row: AdhocTaskHistoryRowModel): string {
+    return this.statusOf(row) === 'archived' ? 'status-chip status-chip--archived' : 'status-chip status-chip--completed';
+  }
+
+  canArchive(row: AdhocTaskHistoryRowModel): boolean {
+    return this.statusOf(row) === 'completed';
+  }
+
+  // -----------------------------------------------------------------
+  // Pager (mockup history-pager: Forrige / Side X af Y · N hits / Næste)
+  // -----------------------------------------------------------------
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.total / this.pageSize));
+  }
+
+  pagerInfoLabel(): string {
+    const pageText = this.translate.instant('Page {{page}} of {{pages}}', {
+      page: this.pageIndex + 1,
+      pages: this.totalPages,
+    });
+    const hitsText = this.translate.instant(this.total === 1 ? 'hit' : 'hits');
+    return `${pageText} · ${this.total} ${hitsText}`;
+  }
+
+  onPagerPrev(): void {
+    if (this.pageIndex > 0) {
+      this.pageIndex -= 1;
+      this.updateTable();
+    }
+  }
+
+  onPagerNext(): void {
+    if (this.pageIndex < this.totalPages - 1) {
+      this.pageIndex += 1;
+      this.updateTable();
+    }
   }
 
   private openDrawerFor(task: any, mode: 'view' | 'edit'): void {
@@ -248,17 +427,17 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
   // Row actions
   // -----------------------------------------------------------------
 
-  onRowClick(event: AdhocTaskHistoryEventModel): void {
-    this.getTaskSub$ = this.adhocService.getTask(event.taskId).subscribe((res) => {
+  onRowClick(row: AdhocTaskHistoryRowModel): void {
+    this.getTaskSub$ = this.adhocService.getTask(row.taskId).subscribe((res) => {
       if (res && res.success && res.model) {
         this.openDrawerFor(res.model, 'view');
       }
     });
   }
 
-  onCopy(event: AdhocTaskHistoryEventModel): void {
+  onCopy(row: AdhocTaskHistoryRowModel): void {
     this.copySub$ = this.dialog
-      .open(AdhocCopyModalComponent, dialogConfigHelper(this.overlay, {id: event.taskId, title: event.taskTitle}))
+      .open(AdhocCopyModalComponent, dialogConfigHelper(this.overlay, {id: row.taskId, title: row.taskTitle}))
       .afterClosed()
       .subscribe((result) => {
         if (result) {
@@ -267,9 +446,9 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
       });
   }
 
-  onDelete(event: AdhocTaskHistoryEventModel): void {
+  onDelete(row: AdhocTaskHistoryRowModel): void {
     this.deleteSub$ = this.dialog
-      .open(AdhocDeleteModalComponent, dialogConfigHelper(this.overlay, {id: event.taskId, title: event.taskTitle}))
+      .open(AdhocDeleteModalComponent, dialogConfigHelper(this.overlay, {id: row.taskId, title: row.taskTitle}))
       .afterClosed()
       .subscribe((result) => {
         if (result) {
@@ -278,8 +457,8 @@ export class AdhocHistoryComponent implements OnInit, OnDestroy {
       });
   }
 
-  onArchive(event: AdhocTaskHistoryEventModel): void {
-    this.archiveSub$ = this.adhocService.archiveTask(event.taskId).subscribe((res) => {
+  onArchive(row: AdhocTaskHistoryRowModel): void {
+    this.archiveSub$ = this.adhocService.archiveTask(row.taskId).subscribe((res) => {
       if (res && res.success) {
         this.updateTable();
       }

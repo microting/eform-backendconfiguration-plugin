@@ -998,20 +998,28 @@ public class BackendConfigurationAdhocService(
         };
     }
 
-    // --- History timeline (M5/P2) ---
+    // --- History table (#1095, mockup parity) ---
 
-    public async Task<Paged<AdhocTaskHistoryEventModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters)
+    public async Task<Paged<AdhocTaskHistoryRowModel>> ListHistory(int workerId, bool isAdmin, AdhocHistoryFiltersModel filters)
     {
         filters ??= new AdhocHistoryFiltersModel();
 
-        // Property/area/tag(AND)/access filters pushed into SQL against the
-        // candidate task set - the dominant scale factor for a customer's
-        // total adhoc-task volume. The per-task event explosion and the
-        // date-range filter/sort/paging over the resulting events happen in
-        // memory over that already-bounded candidate set (see the interface
-        // doc comment).
+        // Property/area/tag(AND)/access/status filters pushed into SQL
+        // against the candidate task set - the dominant scale factor for a
+        // customer's total adhoc-task volume. The per-task row build and the
+        // date-range filter/sort/paging happen in memory over that
+        // already-bounded candidate set (see the interface doc comment).
         var candidateQuery = dbContext.AdhocTasks
             .Where(t => t.WorkflowState != Constants.WorkflowStates.Removed);
+
+        // Historik shows only resolved ("Løst") or archived tasks, one row
+        // per task, keyed on the completion date. The invariant today is
+        // Archived ⇒ Completed ⇒ CompletedAt set (Archive never touches
+        // Completed/CompletedAt; Reopen clears both together) - the guard is
+        // written defensively so a row that somehow breaks it (e.g.
+        // Archived=true with a null CompletedAt) silently stays out of
+        // Historik instead of crashing on CompletedAt!.Value below.
+        candidateQuery = candidateQuery.Where(t => (t.Completed || t.Archived) && t.CompletedAt.HasValue);
 
         if (!isAdmin)
         {
@@ -1047,14 +1055,10 @@ public class BackendConfigurationAdhocService(
         var candidates = await candidateQuery.ToListAsync();
         if (candidates.Count == 0)
         {
-            return new Paged<AdhocTaskHistoryEventModel> { Total = 0, Entities = [] };
+            return new Paged<AdhocTaskHistoryRowModel> { Total = 0, Entities = [] };
         }
 
         var taskIds = candidates.Select(t => t.Id).ToList();
-
-        var assignmentLogs = await dbContext.AdhocTaskAssignmentLogs
-            .Where(l => taskIds.Contains(l.AdhocTaskId) && l.WorkflowState != Constants.WorkflowStates.Removed)
-            .ToListAsync();
 
         var comments = await dbContext.AdhocTaskComments
             .Where(c => taskIds.Contains(c.AdhocTaskId) && c.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1085,21 +1089,15 @@ public class BackendConfigurationAdhocService(
             ? new Dictionary<int, string>()
             : await dbContext.AdhocAreas.Where(a => areaIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Name);
 
-        // Actor/comment-author display names, resolved from the SDK Site
-        // table in one batch - same pattern as ListWorkers.
+        // Performer/comment-author display names, resolved from the SDK
+        // Site table in one batch - same pattern as ListWorkers.
         var actorWorkerIds = new HashSet<int>();
         foreach (var task in candidates)
         {
-            actorWorkerIds.Add(task.CreatedByWorkerId);
             if (task.CompletedByWorkerId.HasValue)
             {
                 actorWorkerIds.Add(task.CompletedByWorkerId.Value);
             }
-        }
-
-        foreach (var log in assignmentLogs)
-        {
-            actorWorkerIds.Add(log.ChangedByWorkerId);
         }
 
         foreach (var comment in comments)
@@ -1115,82 +1113,54 @@ public class BackendConfigurationAdhocService(
 
         string ActorName(int id) => displayNamesById.GetValueOrDefault(id, "");
 
-        var events = new List<AdhocTaskHistoryEventModel>();
+        var rows = new List<AdhocTaskHistoryRowModel>();
 
         foreach (var task in candidates)
         {
             var taskComments = commentsByTask.GetValueOrDefault(task.Id, []);
             var lastComment = taskComments.Count > 0 ? taskComments[^1] : null;
-            var tagNames = tagNamesByTask.GetValueOrDefault(task.Id, []);
-            var propertyName = propertyNamesById.GetValueOrDefault(task.PropertyId, "");
-            var areaName = task.AreaId.HasValue ? areaNamesById.GetValueOrDefault(task.AreaId.Value) : null;
 
-            AdhocTaskHistoryEventModel NewEvent(string eventType, DateTime occurredAt, string actorName, string? detail) => new()
+            rows.Add(new AdhocTaskHistoryRowModel
             {
                 TaskId = task.Id,
                 TaskTitle = task.Title,
-                EventType = eventType,
-                OccurredAt = occurredAt,
-                ActorName = actorName,
-                Detail = detail,
-                PropertyName = propertyName,
-                AreaName = areaName,
-                TagNames = tagNames,
+                // Always the completion ("Løst") date - never ArchivedAt.
+                CompletedAt = task.CompletedAt!.Value,
+                CompletedByName = task.CompletedByWorkerId.HasValue ? ActorName(task.CompletedByWorkerId.Value) : "",
+                Status = task.Archived ? AdhocTaskStatusFilter.Archived : AdhocTaskStatusFilter.Completed,
+                PropertyName = propertyNamesById.GetValueOrDefault(task.PropertyId, ""),
+                AreaName = task.AreaId.HasValue ? areaNamesById.GetValueOrDefault(task.AreaId.Value) : null,
+                TagNames = tagNamesByTask.GetValueOrDefault(task.Id, []),
                 LastCommentText = lastComment?.Text,
                 LastCommentAuthor = lastComment != null ? ActorName(lastComment.AuthorWorkerId) : null,
                 LastCommentAt = lastComment?.CreatedAt,
-                Completed = task.Completed,
-                Archived = task.Archived,
-            };
-
-            events.Add(NewEvent("created", task.CreatedAt, ActorName(task.CreatedByWorkerId), null));
-
-            foreach (var log in assignmentLogs.Where(l => l.AdhocTaskId == task.Id))
-            {
-                events.Add(NewEvent("assigned", log.CreatedAt, ActorName(log.ChangedByWorkerId), null));
-            }
-
-            // "reopened" is not derivable from scalar state alone (Reopen
-            // clears CompletedAt/ArchivedAt) and is intentionally not emitted
-            // here - see the interface/model doc comments for why this is an
-            // accepted v1 limitation, not an oversight.
-            if (task.Completed && task.CompletedAt.HasValue)
-            {
-                var completedByName = task.CompletedByWorkerId.HasValue ? ActorName(task.CompletedByWorkerId.Value) : "";
-                events.Add(NewEvent("completed", task.CompletedAt.Value, completedByName, null));
-            }
-
-            if (task.Archived && task.ArchivedAt.HasValue)
-            {
-                // Archive is creator-only (RequireCreator) - the archiver is
-                // always the creator, there is no separate ArchivedByWorkerId.
-                events.Add(NewEvent("archived", task.ArchivedAt.Value, ActorName(task.CreatedByWorkerId), null));
-            }
-
-            foreach (var comment in taskComments)
-            {
-                events.Add(NewEvent("commented", comment.CreatedAt, ActorName(comment.AuthorWorkerId), comment.Text));
-            }
+            });
         }
 
-        IEnumerable<AdhocTaskHistoryEventModel> filtered = events;
+        // Date-truncated comparison on both bounds - the mockup's period is
+        // "inkl. begge dage" (whole calendar days, inclusive of both ends),
+        // so a task completed at 14:37 on the DateTo day must still match a
+        // midnight-stamped DateTo. Kept in memory (not pushed to SQL) to
+        // avoid an EF `.Date`-on-nullable-column translation risk; the
+        // candidate set is already SQL-bounded by status/property/area/tags.
+        IEnumerable<AdhocTaskHistoryRowModel> filtered = rows;
         if (filters.DateFrom.HasValue)
         {
-            filtered = filtered.Where(e => e.OccurredAt >= filters.DateFrom.Value);
+            filtered = filtered.Where(r => r.CompletedAt.Date >= filters.DateFrom.Value.Date);
         }
 
         if (filters.DateTo.HasValue)
         {
-            filtered = filtered.Where(e => e.OccurredAt <= filters.DateTo.Value);
+            filtered = filtered.Where(r => r.CompletedAt.Date <= filters.DateTo.Value.Date);
         }
 
-        var sorted = filtered.OrderByDescending(e => e.OccurredAt).ToList();
+        var sorted = filtered.OrderByDescending(r => r.CompletedAt).ToList();
 
         var pageNumber = filters.PageNumber < 1 ? 1 : filters.PageNumber;
         var pageSize = ClampPageSize(filters.PageSize);
         var page = sorted.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
-        return new Paged<AdhocTaskHistoryEventModel> { Total = sorted.Count, Entities = page };
+        return new Paged<AdhocTaskHistoryRowModel> { Total = sorted.Count, Entities = page };
     }
 
     /// <summary>

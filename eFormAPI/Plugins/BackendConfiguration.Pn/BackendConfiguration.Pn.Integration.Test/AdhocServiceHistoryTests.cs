@@ -38,14 +38,15 @@ using NSubstitute;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// Drives <see cref="BackendConfigurationAdhocService.ListHistory"/> (M5/P2).
-/// See <see cref="AdhocTaskHistoryEventModel"/>'s doc comment for the
-/// derivation approach (scalar timestamps + assignment log + comments, NOT
-/// version-table diffing) and its accepted v1 limitations (no standalone
-/// "reopened" event). Worker display-name resolution needs a real SDK Core
-/// (same as <c>ListWorkers</c>/<c>AdhocServiceReferenceDataTests</c>), so
-/// every test wires <see cref="TestBaseSetup.GetCore"/> through the
-/// substituted <see cref="IEFormCoreService"/>.
+/// Drives <see cref="BackendConfigurationAdhocService.ListHistory"/> (#1095,
+/// mockup parity): one <see cref="AdhocTaskHistoryRowModel"/> per task
+/// currently Completed ("Løst") or Archived - open tasks never appear -
+/// keyed and sorted on the completion date (never the archive date), with a
+/// date-truncated, both-ends-inclusive CompletedAt range filter. Worker
+/// display-name resolution needs a real SDK Core (same as
+/// <c>ListWorkers</c>/<c>AdhocServiceReferenceDataTests</c>), so every test
+/// wires <see cref="TestBaseSetup.GetCore"/> through the substituted
+/// <see cref="IEFormCoreService"/>.
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
@@ -144,84 +145,102 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         };
     }
 
-    private async Task SetTaskCreatedAtAsync(int taskId, DateTime createdAt)
+    private async Task SetTaskCompletedAtAsync(int taskId, DateTime completedAt)
     {
         // Direct row edit (bypassing PnBase.Update/versioning) - the only way
-        // to exercise ListHistory's date-range filter deterministically,
-        // since PnBase.Create always stamps CreatedAt = DateTime.UtcNow.
+        // to exercise ListHistory's CompletedAt-keyed date-range filter and
+        // sort deterministically, since SetCompleted always stamps
+        // CompletedAt = DateTime.UtcNow.
         var raw = await BackendConfigurationPnDbContext!.AdhocTasks.FirstAsync(t => t.Id == taskId);
-        raw.CreatedAt = createdAt;
+        raw.CompletedAt = completedAt;
         await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 
     [Test]
-    public async Task ListHistory_IsAdmin_EmitsCreatedEvent_ForEveryTask()
+    public async Task ListHistory_ExcludesOpenTasks()
+    {
+        var property = await CreatePropertyAsync();
+        var core = await GetCore();
+        var sut = CreateSut(core);
+
+        // Created but never completed - the core #1095 regression guard:
+        // open tasks (whose created/assigned/commented events used to leak
+        // into the old per-event Historik) never appear at all.
+        await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
+
+        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
+
+        Assert.That(result.Entities, Is.Empty);
+        Assert.That(result.Total, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task ListHistory_CompletedTask_YieldsOneRowWithCompletedStatus()
     {
         var property = await CreatePropertyAsync("Main Street 1");
         var core = await GetCore();
         var sut = CreateSut(core);
-
         var task = await sut.CreateTask(1, MakeCreateModel(property.Id, title: "Fix the roof"), isAdmin: true);
 
-        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
-
-        var created = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "created");
-        Assert.That(created.TaskTitle, Is.EqualTo("Fix the roof"));
-        Assert.That(created.PropertyName, Is.EqualTo("Main Street 1"));
-        Assert.That(result.Total, Is.EqualTo(result.Entities.Count));
-    }
-
-    [Test]
-    public async Task ListHistory_EmitsCompletedEvent_WhenTaskCompleted()
-    {
-        var property = await CreatePropertyAsync();
-        var core = await GetCore();
-        var sut = CreateSut(core);
-        var task = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
-
         await sut.SetCompleted(1, task.Id, true, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        var completedEvent = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "completed");
-        Assert.That(completedEvent.Completed, Is.True);
-        Assert.That(completedEvent.Archived, Is.False);
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.TaskTitle, Is.EqualTo("Fix the roof"));
+        Assert.That(row.PropertyName, Is.EqualTo("Main Street 1"));
+        Assert.That(row.Status, Is.EqualTo(AdhocTaskStatusFilter.Completed));
+        Assert.That(row.CompletedAt, Is.Not.EqualTo(default(DateTime)));
+        Assert.That(result.Total, Is.EqualTo(1));
     }
 
     [Test]
-    public async Task ListHistory_EmitsArchivedEvent_WhenTaskArchived()
+    public async Task ListHistory_ArchivedTask_YieldsOneRowWithArchivedStatus()
     {
         var property = await CreatePropertyAsync();
         var core = await GetCore();
         var sut = CreateSut(core);
         var task = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
         await sut.SetCompleted(1, task.Id, true, isAdmin: true);
+        var completedAtStamp = (await BackendConfigurationPnDbContext!.AdhocTasks
+            .FirstAsync(t => t.Id == task.Id)).CompletedAt!.Value;
         await sut.Archive(1, task.Id, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        Assert.That(result.Entities.Any(e => e.TaskId == task.Id && e.EventType == "completed"), Is.True);
-        var archivedEvent = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "archived");
-        Assert.That(archivedEvent.Archived, Is.True);
+        // Exactly ONE row per task - archiving must not add a second row.
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.Status, Is.EqualTo(AdhocTaskStatusFilter.Archived));
+        // "Udført" stays the completion date - never the archive date.
+        Assert.That(row.CompletedAt, Is.EqualTo(completedAtStamp));
+        Assert.That(result.Total, Is.EqualTo(1));
     }
 
     [Test]
-    public async Task ListHistory_EmitsAssignedEvent_WhenTaskCreatedWithAssignments()
+    public async Task ListHistory_ArchivedTask_KeepsCompletedAtAsCompletionDate_NotArchiveDate()
     {
         var property = await CreatePropertyAsync();
-        await GrantPropertyAccessAsync(property.Id, 7);
         var core = await GetCore();
         var sut = CreateSut(core);
-
-        var task = await sut.CreateTask(1, MakeCreateModel(property.Id, assignedWorkerIds: [7]), isAdmin: true);
+        var task = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
+        await sut.SetCompleted(1, task.Id, true, isAdmin: true);
+        // Completion at T1, archive at T2 (now) with T2 > T1 - the row must
+        // surface T1.
+        var completionDate = new DateTime(2026, 3, 10, 11, 30, 0, DateTimeKind.Utc);
+        await SetTaskCompletedAtAsync(task.Id, completionDate);
+        await sut.Archive(1, task.Id, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        Assert.That(result.Entities.Any(e => e.TaskId == task.Id && e.EventType == "assigned"), Is.True);
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.CompletedAt, Is.EqualTo(completionDate));
+        var archivedAt = (await BackendConfigurationPnDbContext!.AdhocTasks
+            .FirstAsync(t => t.Id == task.Id)).ArchivedAt!.Value;
+        Assert.That(row.CompletedAt, Is.Not.EqualTo(archivedAt));
     }
 
     [Test]
-    public async Task ListHistory_EmitsCommentedEvent_PerComment_AndSurfacesLastComment()
+    public async Task ListHistory_SurfacesLastComment_OnTheSingleRow()
     {
         var property = await CreatePropertyAsync();
         var core = await GetCore();
@@ -231,13 +250,17 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         await sut.AddComment(1, task.Id, "first", isAdmin: true);
         await sut.AddComment(1, task.Id, "second", isAdmin: true);
 
+        // Not yet completed -> commented tasks yield NO Historik rows.
+        var beforeCompletion = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
+        Assert.That(beforeCompletion.Entities, Is.Empty);
+
+        await sut.SetCompleted(1, task.Id, true, isAdmin: true);
+
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        var commentEvents = result.Entities.Where(e => e.TaskId == task.Id && e.EventType == "commented").ToList();
-        Assert.That(commentEvents, Has.Count.EqualTo(2));
-
-        var createdEvent = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "created");
-        Assert.That(createdEvent.LastCommentText, Is.EqualTo("second"));
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.LastCommentText, Is.EqualTo("second"));
+        Assert.That(row.LastCommentAt, Is.Not.Null);
     }
 
     [Test]
@@ -248,15 +271,16 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         var sut = CreateSut(core);
         var tag = await sut.CreateTag(1, "urgent");
         var task = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tag.Id]), isAdmin: true);
+        await sut.SetCompleted(1, task.Id, true, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        var createdEvent = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "created");
-        Assert.That(createdEvent.TagNames, Is.EquivalentTo(new[] { "urgent" }));
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.TagNames, Is.EquivalentTo(new[] { "urgent" }));
     }
 
     [Test]
-    public async Task ListHistory_ResolvesActorNames_FromSdkSites()
+    public async Task ListHistory_ResolvesCompletedByName_FromSdkSites()
     {
         var property = await CreatePropertyAsync();
         var core = await GetCore();
@@ -274,22 +298,45 @@ public class AdhocServiceHistoryTests : TestBaseSetup
 
         var sut = CreateSut(core);
         var task = await sut.CreateTask(site.Id, MakeCreateModel(property.Id));
+        await sut.SetCompleted(0, task.Id, true, isAdmin: true, completedByWorkerId: site.Id);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        var createdEvent = result.Entities.Single(e => e.TaskId == task.Id && e.EventType == "created");
-        Assert.That(createdEvent.ActorName, Is.EqualTo("Jane Doe"));
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.CompletedByName, Is.EqualTo("Jane Doe"));
     }
 
     [Test]
-    public async Task ListHistory_DateRangeFilter_ExcludesEventsOutsideRange()
+    public async Task ListHistory_CompletedByName_IsEmptyString_WhenCompletedByWorkerIdIsNull()
+    {
+        var property = await CreatePropertyAsync();
+        var core = await GetCore();
+        var sut = CreateSut(core);
+        var task = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
+
+        // Dashboard-style completion (synthetic workerId 0, no performer
+        // selected) stamps a NULL CompletedByWorkerId - the row must carry
+        // an empty string (the client renders its own "—" fallback), not
+        // null and not a thrown lookup.
+        await sut.SetCompleted(0, task.Id, true, isAdmin: true);
+
+        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
+
+        var row = result.Entities.Single(r => r.TaskId == task.Id);
+        Assert.That(row.CompletedByName, Is.EqualTo(""));
+    }
+
+    [Test]
+    public async Task ListHistory_DateRangeFilter_ExcludesRowsOutsideRange()
     {
         var property = await CreatePropertyAsync();
         var core = await GetCore();
         var sut = CreateSut(core);
         var oldTask = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
         var recentTask = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
-        await SetTaskCreatedAtAsync(oldTask.Id, DateTime.UtcNow.AddDays(-90));
+        await sut.SetCompleted(1, oldTask.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, recentTask.Id, true, isAdmin: true);
+        await SetTaskCompletedAtAsync(oldTask.Id, DateTime.UtcNow.AddDays(-90));
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel
         {
@@ -297,8 +344,39 @@ public class AdhocServiceHistoryTests : TestBaseSetup
             DateTo = DateTime.UtcNow.AddDays(1),
         });
 
-        Assert.That(result.Entities.Any(e => e.TaskId == recentTask.Id), Is.True);
-        Assert.That(result.Entities.Any(e => e.TaskId == oldTask.Id), Is.False);
+        Assert.That(result.Entities.Any(r => r.TaskId == recentTask.Id), Is.True);
+        Assert.That(result.Entities.Any(r => r.TaskId == oldTask.Id), Is.False);
+    }
+
+    [Test]
+    public async Task ListHistory_CompletedAtRangeFilter_IsInclusiveOfBothBoundaryDates()
+    {
+        var property = await CreatePropertyAsync();
+        var core = await GetCore();
+        var sut = CreateSut(core);
+        var onFromDay = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
+        var onToDay = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
+        await sut.SetCompleted(1, onFromDay.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, onToDay.Id, true, isAdmin: true);
+
+        var dateFrom = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
+        var dateTo = new DateTime(2026, 4, 30, 0, 0, 0, DateTimeKind.Utc);
+        // Late on the DateFrom day and early on the DateTo day - the raw
+        // (untruncated) comparison the old code used would wrongly drop the
+        // DateTo-day task (00:01 > midnight DateTo). "inkl. begge dage"
+        // requires whole-day inclusion at both ends.
+        await SetTaskCompletedAtAsync(onFromDay.Id, dateFrom.AddHours(23).AddMinutes(59));
+        await SetTaskCompletedAtAsync(onToDay.Id, dateTo.AddMinutes(1));
+
+        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel
+        {
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+        });
+
+        Assert.That(result.Entities.Any(r => r.TaskId == onFromDay.Id), Is.True);
+        Assert.That(result.Entities.Any(r => r.TaskId == onToDay.Id), Is.True);
+        Assert.That(result.Total, Is.EqualTo(2));
     }
 
     [Test]
@@ -309,11 +387,13 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         var core = await GetCore();
         var sut = CreateSut(core);
         var taskA = await sut.CreateTask(1, MakeCreateModel(propertyA.Id), isAdmin: true);
-        await sut.CreateTask(1, MakeCreateModel(propertyB.Id), isAdmin: true);
+        var taskB = await sut.CreateTask(1, MakeCreateModel(propertyB.Id), isAdmin: true);
+        await sut.SetCompleted(1, taskA.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, taskB.Id, true, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel { PropertyId = propertyA.Id });
 
-        Assert.That(result.Entities.All(e => e.TaskId == taskA.Id), Is.True);
+        Assert.That(result.Entities.All(r => r.TaskId == taskA.Id), Is.True);
         Assert.That(result.Entities, Is.Not.Empty);
     }
 
@@ -327,14 +407,43 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         var tagB = await sut.CreateTag(1, "b");
         var hasBoth = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tagA.Id, tagB.Id]), isAdmin: true);
         var hasOnlyA = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tagA.Id]), isAdmin: true);
+        await sut.SetCompleted(1, hasBoth.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, hasOnlyA.Id, true, isAdmin: true);
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel
         {
             TagIds = [tagA.Id, tagB.Id],
         });
 
-        Assert.That(result.Entities.Any(e => e.TaskId == hasBoth.Id), Is.True);
-        Assert.That(result.Entities.Any(e => e.TaskId == hasOnlyA.Id), Is.False);
+        Assert.That(result.Entities.Any(r => r.TaskId == hasBoth.Id), Is.True);
+        Assert.That(result.Entities.Any(r => r.TaskId == hasOnlyA.Id), Is.False);
+    }
+
+    [Test]
+    public async Task ListHistory_TagFilter_And_RequiresAllTags_AcrossThreeTags()
+    {
+        var property = await CreatePropertyAsync();
+        var core = await GetCore();
+        var sut = CreateSut(core);
+        var tagA = await sut.CreateTag(1, "a");
+        var tagB = await sut.CreateTag(1, "b");
+        var tagC = await sut.CreateTag(1, "c");
+        var hasAll = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tagA.Id, tagB.Id, tagC.Id]), isAdmin: true);
+        var hasTwo = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tagA.Id, tagB.Id]), isAdmin: true);
+        var hasOne = await sut.CreateTask(1, MakeCreateModel(property.Id, tagIds: [tagC.Id]), isAdmin: true);
+        await sut.SetCompleted(1, hasAll.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, hasTwo.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, hasOne.Id, true, isAdmin: true);
+
+        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel
+        {
+            TagIds = [tagA.Id, tagB.Id, tagC.Id],
+        });
+
+        Assert.That(result.Entities.Any(r => r.TaskId == hasAll.Id), Is.True);
+        Assert.That(result.Entities.Any(r => r.TaskId == hasTwo.Id), Is.False);
+        Assert.That(result.Entities.Any(r => r.TaskId == hasOne.Id), Is.False);
+        Assert.That(result.Total, Is.EqualTo(1));
     }
 
     [Test]
@@ -347,29 +456,33 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         var sut = CreateSut(core);
         var mine = await sut.CreateTask(1, MakeCreateModel(property.Id));
         var notMine = await sut.CreateTask(7, MakeCreateModel(property.Id));
+        await sut.SetCompleted(1, mine.Id, true);
+        await sut.SetCompleted(7, notMine.Id, true);
 
         var result = await sut.ListHistory(1, isAdmin: false, new AdhocHistoryFiltersModel());
 
-        Assert.That(result.Entities.Any(e => e.TaskId == mine.Id), Is.True);
-        Assert.That(result.Entities.Any(e => e.TaskId == notMine.Id), Is.False);
+        Assert.That(result.Entities.Any(r => r.TaskId == mine.Id), Is.True);
+        Assert.That(result.Entities.Any(r => r.TaskId == notMine.Id), Is.False);
     }
 
     [Test]
-    public async Task ListHistory_SortsEventsDescendingByOccurredAt()
+    public async Task ListHistory_SortsRowsDescendingByCompletedAt()
     {
         var property = await CreatePropertyAsync();
         var core = await GetCore();
         var sut = CreateSut(core);
         var older = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
         var newer = await sut.CreateTask(1, MakeCreateModel(property.Id), isAdmin: true);
-        await SetTaskCreatedAtAsync(older.Id, DateTime.UtcNow.AddDays(-3));
-        await SetTaskCreatedAtAsync(newer.Id, DateTime.UtcNow.AddDays(-1));
+        await sut.SetCompleted(1, older.Id, true, isAdmin: true);
+        await sut.SetCompleted(1, newer.Id, true, isAdmin: true);
+        await SetTaskCompletedAtAsync(older.Id, DateTime.UtcNow.AddDays(-3));
+        await SetTaskCompletedAtAsync(newer.Id, DateTime.UtcNow.AddDays(-1));
 
         var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
 
-        var occurredAtInOrder = result.Entities.Select(e => e.OccurredAt).ToList();
-        var expectedOrder = occurredAtInOrder.OrderByDescending(d => d).ToList();
-        Assert.That(occurredAtInOrder, Is.EqualTo(expectedOrder));
+        Assert.That(result.Entities.Select(r => r.TaskId), Is.EqualTo(new[] { newer.Id, older.Id }));
+        var completedAtInOrder = result.Entities.Select(r => r.CompletedAt).ToList();
+        Assert.That(completedAtInOrder, Is.EqualTo(completedAtInOrder.OrderByDescending(d => d).ToList()));
     }
 
     [Test]
@@ -380,14 +493,38 @@ public class AdhocServiceHistoryTests : TestBaseSetup
         var sut = CreateSut(core);
         for (var i = 0; i < 5; i++)
         {
-            await sut.CreateTask(1, MakeCreateModel(property.Id, title: $"Task {i}"), isAdmin: true);
+            var task = await sut.CreateTask(1, MakeCreateModel(property.Id, title: $"Task {i}"), isAdmin: true);
+            await sut.SetCompleted(1, task.Id, true, isAdmin: true);
+            // Distinct completion dates so the CompletedAt-desc ordering (and
+            // therefore the page split) is deterministic.
+            await SetTaskCompletedAtAsync(task.Id, DateTime.UtcNow.AddDays(-i));
         }
 
         var page1 = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel { PageNumber = 1, PageSize = 2 });
         var page2 = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel { PageNumber = 2, PageSize = 2 });
 
-        Assert.That(page1.Total, Is.EqualTo(5)); // one "created" event per task, none completed/archived/commented/assigned
+        Assert.That(page1.Total, Is.EqualTo(5)); // one row per completed task
         Assert.That(page1.Entities, Has.Count.EqualTo(2));
         Assert.That(page2.Entities, Has.Count.EqualTo(2));
+        Assert.That(page1.Entities.Select(r => r.TaskId), Is.Not.EquivalentTo(page2.Entities.Select(r => r.TaskId)));
+    }
+
+    [Test]
+    public async Task ListHistory_Paging_PageSizeDefaultsTo25_WhenUnspecified()
+    {
+        var property = await CreatePropertyAsync();
+        var core = await GetCore();
+        var sut = CreateSut(core);
+        for (var i = 0; i < 26; i++)
+        {
+            var task = await sut.CreateTask(1, MakeCreateModel(property.Id, title: $"Task {i}"), isAdmin: true);
+            await sut.SetCompleted(1, task.Id, true, isAdmin: true);
+        }
+
+        // No PageSize set - ClampPageSize's default (25) caps the page.
+        var result = await sut.ListHistory(0, isAdmin: true, new AdhocHistoryFiltersModel());
+
+        Assert.That(result.Total, Is.EqualTo(26));
+        Assert.That(result.Entities, Has.Count.EqualTo(25));
     }
 }

@@ -13,8 +13,8 @@ export interface AdhocDeleteModalData {
  * Delete confirmation (M5/F8) - pattern:
  * `task-management-delete-modal.component.ts`. Only needs the task's id +
  * title (not the full `AdhocTaskModel`) so both the table (which has the
- * full model) and the Historik timeline (which only has
- * `AdhocTaskHistoryEventModel.taskId`/`taskTitle`) can open this the same
+ * full model) and the Historik table (which only has
+ * `AdhocTaskHistoryRowModel.taskId`/`taskTitle`) can open this the same
  * way.
  */
 @AutoUnsubscribe()

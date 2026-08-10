@@ -30,39 +30,32 @@ using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// One row of the Historik timeline (M5/P2), returned by
+/// One row of the Historik table (mockup parity, #1095) - one row per task
+/// currently Completed or Archived, sorted by <see cref="CompletedAt"/>
+/// descending. Replaces the old per-event <c>AdhocTaskHistoryEventModel</c>
+/// (created/assigned/completed/archived/commented event explosion) - see
 /// <see cref="Services.BackendConfigurationAdhocService.IBackendConfigurationAdhocService.ListHistory"/>.
-///
-/// Derivation (VERIFY-AT-EXECUTION resolved against the mockup's
-/// <c>renderHistoryTable</c>/<c>getHistoryFilteredSorted</c> - which turned
-/// out to filter to tasks currently <c>resolved</c>/<c>archived</c> only,
-/// sorted by completion date): events are derived from
-/// <see cref="Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AdhocTaskEntity"/>'s
-/// own scalar timestamps (<c>CreatedAt</c>/<c>CompletedAt</c>/<c>ArchivedAt</c>)
-/// plus <c>AdhocTaskAssignmentLog</c> and <c>AdhocTaskComment</c> rows - NOT
-/// by diffing <c>AdhocTaskEntityVersion</c> snapshots. This means a task that
-/// was completed and later reopened will not surface a standalone
-/// "completed" event once reopened (its <c>CompletedAt</c> is cleared by
-/// <c>Reopen</c>) and "reopened" itself is not one of the event types this
-/// model emits - both are accepted v1 limitations per the plan's own default
-/// ("the plan defaults to scalar-timestamps + assignment-log + comments"),
-/// and match the mockup's own behavior: a reopened task goes back to the
-/// "open" bucket and simply disappears from Historik entirely, so no row is
-/// lost from the UI's perspective.
 /// </summary>
-public class AdhocTaskHistoryEventModel
+public class AdhocTaskHistoryRowModel
 {
     public int TaskId { get; set; }
     public string TaskTitle { get; set; } = "";
 
-    /// <summary>One of: created, assigned, completed, archived, commented.</summary>
-    public string EventType { get; set; } = "";
+    /// <summary>
+    /// The "Løst" date - always populated (a row is Completed by invariant:
+    /// Archived ⇒ Completed ⇒ CompletedAt set). Never the archive date.
+    /// </summary>
+    public DateTime CompletedAt { get; set; }
 
-    public DateTime OccurredAt { get; set; }
+    /// <summary>
+    /// Display name of the recorded performer; empty string when the task
+    /// was completed with no recorded performer (a dashboard admin
+    /// completing without selecting one stamps a null CompletedByWorkerId).
+    /// </summary>
+    public string CompletedByName { get; set; } = "";
 
-    public string ActorName { get; set; } = "";
-
-    public string? Detail { get; set; }
+    /// <summary>Only Completed or Archived occur in Historik - Open never does.</summary>
+    public AdhocTaskStatusFilter Status { get; set; }
 
     public string PropertyName { get; set; } = "";
     public string? AreaName { get; set; }
@@ -72,7 +65,4 @@ public class AdhocTaskHistoryEventModel
     public string? LastCommentText { get; set; }
     public string? LastCommentAuthor { get; set; }
     public DateTime? LastCommentAt { get; set; }
-
-    public bool Completed { get; set; }
-    public bool Archived { get; set; }
 }

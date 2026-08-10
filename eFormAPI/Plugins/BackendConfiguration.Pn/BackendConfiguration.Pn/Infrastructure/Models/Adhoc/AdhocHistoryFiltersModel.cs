@@ -30,9 +30,10 @@ using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// Filters for <c>POST history/index</c> (M5/P2) - period chips
-/// (30d/60d/90d/6m/12m/24m + custom range, resolved client-side to
-/// <see cref="DateFrom"/>/<see cref="DateTo"/>), property/area, and tags
+/// Filters for <c>POST history/index</c> (#1095) - the period chips are
+/// resolved client-side to <see cref="DateFrom"/>/<see cref="DateTo"/>
+/// (date-only values, compared date-truncated and inclusive of both ends
+/// against each row's CompletedAt), plus property/area and tags
 /// (<see cref="TagIds"/> is AND-only per the mockup's «Tags i historik (OG)»
 /// - unlike <see cref="AdhocTaskFiltersModel"/>'s toggleable AND/OR).
 /// </summary>
@@ -44,7 +45,7 @@ public class AdhocHistoryFiltersModel
     public int? PropertyId { get; set; }
     public int? AreaId { get; set; }
 
-    /// <summary>AND-only: a matching event's task must have ALL of these tags.</summary>
+    /// <summary>AND-only: a matching row's task must have ALL of these tags.</summary>
     public List<int> TagIds { get; set; } = [];
 
     public int PageNumber { get; set; } = 1;

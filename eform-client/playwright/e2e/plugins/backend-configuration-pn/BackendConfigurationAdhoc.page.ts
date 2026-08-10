@@ -51,14 +51,15 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *     (`#adhocCopyWithCommentsBtn`/`-WithoutCommentsBtn`/`-CancelBtn`),
  *     complete (`#adhocCompletePerformerSelect` - optional, no PIN field per
  *     F8's documented deviation - `#adhocCompleteConfirmBtn`/`-CancelBtn`).
- *   - Historik (`adhoc-history.component.html`): `#history-view`,
- *     `#history-data-table` (`.history-row` per event, grouped by day). Row
- *     menu button ids start with the task id and end in per-event
- *     discriminators (`adhocHistoryActionMenu-{taskId}-{eventType}-{gi}-{ei}`,
- *     same shape for `adhocHistoryArchiveBtn-`/`-CopyBtn-`/`-DeleteBtn-`) so
- *     a multi-event task never repeats a DOM id - this page object only ever
- *     matches the stable prefixes via `id^=`. Archive is only offered when
- *     the task is completed and not yet archived. This is the ONLY place
+ *   - Historik (`adhoc-history.component.html`, #1095 mockup parity):
+ *     `#history-view`, `#history-data-table` - a plain 9-column task table,
+ *     one `tr.history-row` per Completed/Archived task (the old per-event
+ *     day-grouped timeline is gone). Row menu button ids are plain
+ *     `adhocHistoryActionMenu-{taskId}` (same shape for
+ *     `adhocHistoryArchiveBtn-`/`-CopyBtn-`/`-DeleteBtn-`) - one row per
+ *     task means no per-event discriminators anymore; this page object only
+ *     ever matches the stable prefixes via `id^=`. Archive is only offered
+ *     while the row's status is "Løst" (completed). This is the ONLY place
  *     Archive lives (the table's row menu never offers it).
  */
 export class BackendConfigurationAdhocPage {
@@ -107,7 +108,7 @@ export class BackendConfigurationAdhocPage {
 
   async goToHistory(): Promise<void> {
     // Await the `history/index` round-trip the tab fires on navigation
-    // (AdhocHistoryComponent.ngOnInit) so callers see a populated timeline,
+    // (AdhocHistoryComponent.ngOnInit) so callers see a populated table,
     // not a still-loading one - returning on #history-view visibility alone
     // would let a subsequent row lookup race the data fetch.
     const historyResponsePromise = this.page.waitForResponse(
@@ -540,14 +541,13 @@ export class BackendConfigurationAdhocPage {
   }
 
   /**
-   * A task can have several Historik event rows (created/completed/archived
-   * each emit their own row - `adhoc-history.component.ts`'s
-   * `AdhocTaskHistoryEventModel` is per-EVENT, not per-task), all sharing
-   * the same task title. `.first()` keeps this Playwright-strict-mode-safe
-   * regardless of how many event rows currently exist for the task.
+   * One `tr.history-row` per task (#1095 - `AdhocTaskHistoryRowModel` is
+   * per-task, so a title matches at most one row per page). `.first()` is
+   * kept purely as strict-mode belt-and-braces against titles that are
+   * substrings of one another.
    */
   historyRow(taskTitle: string): Locator {
-    return this.page.locator('#history-data-table .history-row').filter({ hasText: taskTitle }).first();
+    return this.page.locator('#history-data-table tr.history-row').filter({ hasText: taskTitle }).first();
   }
 
   async openHistoryRowMenu(taskTitle: string): Promise<void> {

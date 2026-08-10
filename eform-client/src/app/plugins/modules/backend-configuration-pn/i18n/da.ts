@@ -610,7 +610,9 @@ export const da = {
   'Last 6 months': 'Sidste 6 måneder',
   'Last 12 months': 'Sidste 12 måneder',
   'Last 24 months': 'Sidste 24 måneder',
-  'Custom period': 'Brugerdefineret periode',
+  // Repointed for #1095 - the Historik chip label is "Egen periode" (the
+  // key was previously unused outside the retired PERIOD_LABEL_KEYS map).
+  'Custom period': 'Egen periode',
   // Adhoc dashboard (M5/F5) - table view + column picker.
   Columns: 'Kolonner',
   Created: 'Oprettet',
@@ -636,6 +638,61 @@ export const da = {
   completed: 'Udført',
   archived: 'Arkiveret',
   commented: 'Kommenteret',
+  // Adhoc Historik redesign (#1095) - mockup-parity period chips, filter
+  // group ("Periode og filter"), tag panel, task table, pager and the
+  // six-paragraph help panel (each paragraph decomposed into label/prose
+  // fragments - no HTML in translation values).
+  '30 days': '30 dage',
+  '60 days': '60 dage',
+  '90 days': '90 dage',
+  '6 months period': '6 måneder',
+  '12 months period': '12 måneder',
+  'Period and filter': 'Periode og filter',
+  'All areas': 'Alle områder',
+  'Select a property to filter by area': 'Vælg ejendom for at filtrere på område',
+  'Tags in history (AND)': 'Tags i historik (OG)',
+  'Search tags': 'Søg tags …',
+  'No tags match the search': 'Ingen tags matcher søgningen.',
+  'No tags yet - create them under Overview': 'Ingen tags — opret under Overblik.',
+  'Remove tag {{name}}': 'Fjern «{{name}}»',
+  'None selected': 'Ingen valgt',
+  'Active period': 'Aktiv periode',
+  '{{from}} to {{to}} inclusive of both days': '{{from}} — {{to}} (inkl. begge dage).',
+  'History completed tasks': 'Historik — udførte opgaver',
+  'Completed date': 'Udført',
+  'Task resolved status': 'Løst',
+  'No tasks match the selected period, property, area and tags': 'Ingen opgaver matcher valg af periode, ejendom, område og tags.',
+  'Previous page': 'Forrige',
+  'Next page': 'Næste',
+  'Page {{page}} of {{pages}}': 'Side {{page}} af {{pages}}',
+  hit: 'hit',
+  hits: 'hits',
+  'Show help text': 'Vis hjælpetekst',
+  'Hide help text': 'Skjul hjælpetekst',
+  'Completion date term': 'Udførelsesdato',
+  'is the date of': 'er datoen for',
+  'when the task was completed': '(når opgaven blev udført).',
+  is: 'er',
+  'inclusive of both ends': 'inkl. begge ender',
+  'whole days by calendar date': '(hele dage efter kalenderdato).',
+  'Fixed periods are counted backwards from': 'Faste perioder regnes baglæns fra',
+  'Day presets term': '30 / 60 / 90 dage',
+  'equal the stated number of calendar days including today': '= det angivne antal kalenderdage inkl. i dag.',
+  and: 'og',
+  'equal the same calendar day shifted back':
+    '= samme kalenderdag flyttet det antal måneder tilbage (justeres hvis dagen ikke findes i måneden).',
+  'below the active period line narrow the list to':
+    'under «Aktiv periode:» afgrænser listen til den valgte ejendom og — når en ejendom er valgt — til ét bestemt område eller til',
+  'all areas term': 'alle områder',
+  'on that property': 'på den ejendom.',
+  'The area dropdown is only active once a specific property is selected':
+    'Område-dropdown er først aktiv, når du har valgt en konkret ejendom (ikke «Alle ejendomme»).',
+  'Tags AND term': 'Tags (OG)',
+  'when one or more tags are selected only tasks that have': ': når ét eller flere tags er valgt, vises kun opgaver der har',
+  'all term': 'alle',
+  'selected tags are shown without selected tags every completed task in the period is included':
+    'valgte tags. Uden valgte tags medtages alle udførte opgaver i perioden.',
+  'can be hidden or shown with the header line': 'kan skjules eller vises med overskriftslinjen (standard: lukket). Gruppen samler',
   // Adhoc dashboard (area management) - toolbar area create/admin.
   Add: 'Tilføj',
   'Area name is empty or already exists': 'Områdenavnet er tomt eller findes allerede',
