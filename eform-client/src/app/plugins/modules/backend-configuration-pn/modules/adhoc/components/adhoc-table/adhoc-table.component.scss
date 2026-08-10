@@ -6,7 +6,9 @@
   position: absolute;
   right: 0;
   top: 100%;
-  z-index: 10;
+  // Must clear the mtx-grid's sticky header row (Material sticky cells sit
+  // at z-index 100) so the picker paints above the table it overlaps.
+  z-index: 110;
   min-width: 220px;
   background: var(--mdc-theme-surface, #fff);
   border: 1px solid rgba(0, 0, 0, 0.12);
