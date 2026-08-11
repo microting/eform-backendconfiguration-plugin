@@ -3,15 +3,17 @@ import { CalendarUiEnhancementsPage } from '../calendar-ui-enhancements.page';
 import { generateRandmString } from '../../../helper-functions';
 
 /**
- * Calendar MONTH VIEW admin-gating suite (calendar month-view feature).
+ * Calendar view-mode dropdown — "Måned"/Month and "Compliance" are available
+ * to every user (regression guard).
  *
- * The view-mode dropdown's two admin-only options ("Måned"/Month and
- * "Compliance") are built conditionally on `isAdmin` in
- * calendar-header.component.ts's `buildViewModeOptions()` — the same flag
- * that already gated "Compliance" pre-month-view (see
- * `q/calendar-month-view.spec.ts`, MV1, for the ADMIN dropdown order:
- * Dag, Uge, Måned, Tidsplan, Compliance). A NON-ADMIN user must see exactly
- * ['Dag', 'Uge', 'Tidsplan'] — never 'Måned' or 'Compliance'.
+ * These two options used to be built conditionally on `isAdmin` in
+ * calendar-header.component.ts's `buildViewModeOptions()`. That gating was
+ * removed: all five options are now unconditional, so a NON-ADMIN user must
+ * see the full list ['Dag', 'Uge', 'Måned', 'Tidsplan', 'Compliance'] — the
+ * same order the ADMIN suite asserts (see `q/calendar-month-view.spec.ts`,
+ * MV1). The endpoints these views call (calendar/tasks/week,
+ * calendar/compliance-report) are `[Authorize]`-only, so non-admins are
+ * served.
  *
  * `loginViaApi`/`loginAs`/`setupNonAdminUser` are copied VERBATIM from
  * `r/property-workers-nonadmin-no-logout.spec.ts` (lines 23-166) — the same
@@ -171,7 +173,7 @@ async function setupNonAdminUser(page: Page, rand: string): Promise<string> {
   return userEmail;
 }
 
-test.describe.serial('Calendar month view — non-admin dropdown gating', () => {
+test.describe.serial('Calendar view-mode dropdown — non-admin sees all options', () => {
   const rand = generateRandmString(8).toLowerCase();
   let userEmail = '';
 
@@ -190,9 +192,10 @@ test.describe.serial('Calendar month view — non-admin dropdown gating', () => 
   });
 
   // =======================================================================
-  // Non-admin dropdown gating — neither Måned nor Compliance is present.
+  // Non-admin dropdown — all five options are present, including Måned and
+  // Compliance (same list and order the admin suite asserts).
   // =======================================================================
-  test('non-admin sees neither Måned nor Compliance', async ({ page }) => {
+  test('non-admin sees all five options including Måned and Compliance', async ({ page }) => {
     test.setTimeout(300000);
     expect(userEmail).not.toBe('');
 
@@ -205,6 +208,6 @@ test.describe.serial('Calendar month view — non-admin dropdown gating', () => 
     await page.waitForTimeout(2000);
     await page.locator('#calendarViewModeSelect').click();
     const options = page.locator('.ng-dropdown-panel .ng-option');
-    await expect(options).toHaveText(['Dag', 'Uge', 'Tidsplan']);
+    await expect(options).toHaveText(['Dag', 'Uge', 'Måned', 'Tidsplan', 'Compliance']);
   });
 });
