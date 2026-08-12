@@ -225,3 +225,47 @@ jobs:
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
     - name: Integration Tests
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Integration.Test/BackendConfiguration.Pn.Integration.Test.csproj
+  test-angular-client:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: eform-backendconfiguration-plugin
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-frontend
+        ref: stable
+        path: eform-angular-frontend
+    - name: 'Preparing items planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-items-planning-plugin
+        ref: stable
+        path: eform-angular-items-planning-plugin
+    - name: 'Preparing time planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-timeplanning-plugin
+        ref: stable
+        path: eform-angular-timeplanning-plugin
+    - name: Copy dependencies
+      run: |
+        cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
+        cp -av eform-angular-timeplanning-plugin/eform-client/src/app/plugins/modules/time-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/time-planning-pn
+        rm -rf eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
+        ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
+        ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: yarn install
+      run: cd eform-angular-frontend/eform-client && yarn install
+    - name: Run backend-configuration-pn unit tests
+      run: cd eform-angular-frontend/eform-client && npx jest --ci --maxWorkers=2 "src/app/plugins/modules/backend-configuration-pn/"

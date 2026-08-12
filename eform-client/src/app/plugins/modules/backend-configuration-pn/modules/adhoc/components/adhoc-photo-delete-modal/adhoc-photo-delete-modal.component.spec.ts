@@ -10,7 +10,7 @@ describe('AdhocPhotoDeleteModalComponent', () => {
   let component: AdhocPhotoDeleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    dialogRefSpy = {close: jest.fn()};
     component = new AdhocPhotoDeleteModalComponent(dialogRefSpy);
   });
 

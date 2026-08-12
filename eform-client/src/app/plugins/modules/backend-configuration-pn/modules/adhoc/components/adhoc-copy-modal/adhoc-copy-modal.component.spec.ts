@@ -7,8 +7,8 @@ describe('AdhocCopyModalComponent', () => {
   let component: AdhocCopyModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    adhocServiceSpy = jasmine.createSpyObj('BackendConfigurationPnAdhocService', ['copyTask']);
+    dialogRefSpy = {close: jest.fn()};
+    adhocServiceSpy = {copyTask: jest.fn()};
     component = new AdhocCopyModalComponent(dialogRefSpy, {id: 7, title: 'Fix roof'}, adhocServiceSpy);
   });
 
@@ -19,20 +19,20 @@ describe('AdhocCopyModalComponent', () => {
 
   it('copy(false) calls copyTask(id, false) and closes with the returned copy', () => {
     const copiedTask: any = {id: 99, title: 'Fix roof (copy)'};
-    adhocServiceSpy.copyTask.and.returnValue(of({success: true, model: copiedTask}));
+    adhocServiceSpy.copyTask.mockReturnValue(of({success: true, model: copiedTask}));
     component.copy(false);
     expect(adhocServiceSpy.copyTask).toHaveBeenCalledWith(7, false);
     expect(dialogRefSpy.close).toHaveBeenCalledWith(copiedTask);
   });
 
   it('copy(true) calls copyTask(id, true)', () => {
-    adhocServiceSpy.copyTask.and.returnValue(of({success: true, model: {id: 100}}));
+    adhocServiceSpy.copyTask.mockReturnValue(of({success: true, model: {id: 100}}));
     component.copy(true);
     expect(adhocServiceSpy.copyTask).toHaveBeenCalledWith(7, true);
   });
 
   it('does not close on failure', () => {
-    adhocServiceSpy.copyTask.and.returnValue(of({success: false}));
+    adhocServiceSpy.copyTask.mockReturnValue(of({success: false}));
     component.copy(false);
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });

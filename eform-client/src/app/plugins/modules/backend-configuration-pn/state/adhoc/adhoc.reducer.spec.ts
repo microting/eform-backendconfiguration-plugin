@@ -16,7 +16,7 @@ describe('adhocReducer', () => {
   it('initial state defaults to status "open", sort "CreatedAt" desc, no hidden columns, period "90"', () => {
     expect(adhocInitialState.filters.status).toBe('open');
     expect(adhocInitialState.pagination.sort).toBe('CreatedAt');
-    expect(adhocInitialState.pagination.isSortDsc).toBeTrue();
+    expect(adhocInitialState.pagination.isSortDsc).toBe(true);
     expect(adhocInitialState.hiddenColumns).toEqual([]);
     // Mockup default chip: "90 dage" (#1095).
     expect(adhocInitialState.historyFilters.periodPreset).toBe('90');

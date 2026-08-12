@@ -10,7 +10,7 @@ import {adhocInitialState} from '../../../../state';
  * host frontend only (repo convention).
  *
  * Date-math cases use either relative invariants (day-difference between
- * the sent bounds) or a jasmine mock clock - never fixed "today" calendar
+ * the sent bounds) or a jest mock clock - never fixed "today" calendar
  * dates, which would flake around midnight/month boundaries in CI.
  */
 describe('AdhocHistoryComponent', () => {
@@ -41,24 +41,24 @@ describe('AdhocHistoryComponent', () => {
 
   function buildComponent(): AdhocHistoryComponent {
     storeSpy = {
-      select: jasmine.createSpy('select').and.returnValue(of({...adhocInitialState.historyFilters})),
-      dispatch: jasmine.createSpy('dispatch'),
+      select: jest.fn().mockReturnValue(of({...adhocInitialState.historyFilters})),
+      dispatch: jest.fn(),
     };
-    adhocServiceSpy = jasmine.createSpyObj('BackendConfigurationPnAdhocService', [
-      'getHistory', 'getTask', 'archiveTask',
-    ]);
-    adhocServiceSpy.getHistory.and.returnValue(of({success: true, model: {total: 0, entities: []}}));
+    adhocServiceSpy = {getHistory: jest.fn(), getTask: jest.fn(), archiveTask: jest.fn()};
+    adhocServiceSpy.getHistory.mockReturnValue(of({success: true, model: {total: 0, entities: []}}));
     adhocStateServiceSpy = {
       properties: [],
       tags: [],
-      getAreasForProperty: jasmine.createSpy('getAreasForProperty').and.returnValue(of([])),
+      getAreasForProperty: jest.fn().mockReturnValue(of([])),
     };
-    dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
-    overlaySpy = {};
+    dialogSpy = {open: jest.fn()};
+    // dialogConfigHelper reads overlay.scrollStrategies.reposition() — a bare
+    // {} makes every dialog-opening action throw before dialog.open is hit.
+    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
     // Key-passthrough with naive {{param}} interpolation - keeps summary/
     // pager label assertions readable without a real TranslateService.
     translateSpy = {
-      instant: jasmine.createSpy('instant').and.callFake((key: string, params?: Record<string, unknown>) => {
+      instant: jest.fn().mockImplementation((key: string, params?: Record<string, unknown>) => {
         if (!params) {
           return key;
         }
@@ -78,7 +78,7 @@ describe('AdhocHistoryComponent', () => {
   });
 
   function lastSentModel(): any {
-    return adhocServiceSpy.getHistory.calls.mostRecent().args[0];
+    return adhocServiceSpy.getHistory.mock.lastCall[0];
   }
 
   describe('updateTable / period resolution', () => {
@@ -117,35 +117,35 @@ describe('AdhocHistoryComponent', () => {
     });
 
     it('the "6m" preset clamps to the shorter month when the anchor day does not exist in the target month', () => {
-      jasmine.clock().install();
+      jest.useFakeTimers();
       try {
         // Mar 31 - 6 months back lands in Sep (30 days) -> clamp to Sep 30,
         // not roll over into Oct (mockup addCalendarMonthsIso behavior).
-        jasmine.clock().mockDate(new Date(2026, 2, 31));
+        jest.setSystemTime(new Date(2026, 2, 31));
         component.currentFilters = {...component.currentFilters, periodPreset: '6m'};
         component.updateTable();
         const sentModel = lastSentModel();
         expect(sentModel.dateFrom.slice(0, 10)).toBe('2025-09-30');
         expect(sentModel.dateTo.slice(0, 10)).toBe('2026-03-31');
       } finally {
-        jasmine.clock().uninstall();
+        jest.useRealTimers();
       }
     });
 
     it('the "12m" preset resolves the same day-of-month 12 months back (clamping identically to 6m)', () => {
-      jasmine.clock().install();
+      jest.useFakeTimers();
       try {
-        jasmine.clock().mockDate(new Date(2026, 5, 15));
+        jest.setSystemTime(new Date(2026, 5, 15));
         component.currentFilters = {...component.currentFilters, periodPreset: '12m'};
         component.updateTable();
         expect(lastSentModel().dateFrom.slice(0, 10)).toBe('2025-06-15');
 
         // Leap-day anchor: Feb 29 2028 - 12 months -> Feb 28 2027 (clamped).
-        jasmine.clock().mockDate(new Date(2028, 1, 29));
+        jest.setSystemTime(new Date(2028, 1, 29));
         component.updateTable();
         expect(lastSentModel().dateFrom.slice(0, 10)).toBe('2027-02-28');
       } finally {
-        jasmine.clock().uninstall();
+        jest.useRealTimers();
       }
     });
 
@@ -194,7 +194,8 @@ describe('AdhocHistoryComponent', () => {
     it('picking a custom "from" date force-switches the preset to custom and persists an ISO date', () => {
       component.currentFilters = {...component.currentFilters, periodPreset: '90'};
       component.onCustomFromChange(new Date(2026, 0, 15));
-      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      // adhocUpdateHistoryFilters wraps the filters as {type, payload}.
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.periodPreset).toBe('custom');
       expect(dispatched.customFrom).toBe('2026-01-15');
     });
@@ -202,7 +203,7 @@ describe('AdhocHistoryComponent', () => {
     it('picking a custom "to" date force-switches the preset to custom', () => {
       component.currentFilters = {...component.currentFilters, periodPreset: '30'};
       component.onCustomToChange(new Date(2026, 5, 30));
-      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.periodPreset).toBe('custom');
       expect(dispatched.customTo).toBe('2026-06-30');
     });
@@ -251,7 +252,7 @@ describe('AdhocHistoryComponent', () => {
       component.currentFilters = {...component.currentFilters, propertyId: 1, areaId: 10};
       component.areas = [{id: 10, propertyId: 1, name: 'Laden'}];
       component.onPropertyChange(null);
-      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBeNull();
       expect(dispatched.areaId).toBeNull();
       expect(component.areas).toEqual([]);
@@ -261,21 +262,21 @@ describe('AdhocHistoryComponent', () => {
       // Behavior change vs the old component (which unconditionally nulled
       // areaId) - mirrors the mockup's fillHistoryOmraadeSelect keep-valid rule.
       component.currentFilters = {...component.currentFilters, propertyId: 1, areaId: 10};
-      adhocStateServiceSpy.getAreasForProperty.and.returnValue(of([
+      adhocStateServiceSpy.getAreasForProperty.mockReturnValue(of([
         {id: 10, propertyId: 2, name: 'Laden'},
         {id: 11, propertyId: 2, name: 'Stalden'},
       ]));
       component.onPropertyChange(2);
-      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBe(2);
       expect(dispatched.areaId).toBe(10);
     });
 
     it('selecting a concrete property drops an areaId that is not valid for it', () => {
       component.currentFilters = {...component.currentFilters, propertyId: 1, areaId: 10};
-      adhocStateServiceSpy.getAreasForProperty.and.returnValue(of([{id: 20, propertyId: 2, name: 'Marken'}]));
+      adhocStateServiceSpy.getAreasForProperty.mockReturnValue(of([{id: 20, propertyId: 2, name: 'Marken'}]));
       component.onPropertyChange(2);
-      const dispatched = storeSpy.dispatch.calls.mostRecent().args[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBe(2);
       expect(dispatched.areaId).toBeNull();
     });
@@ -336,14 +337,14 @@ describe('AdhocHistoryComponent', () => {
       component.total = 5;
       component.pageSize = 2;
       component.pageIndex = 0;
-      const callsBefore = adhocServiceSpy.getHistory.calls.count();
+      const callsBefore = adhocServiceSpy.getHistory.mock.calls.length;
       component.onPagerNext();
       expect(component.pageIndex).toBe(1);
       expect(lastSentModel().pageNumber).toBe(2);
       component.pageIndex = 0;
       component.onPagerPrev();
       expect(component.pageIndex).toBe(0);
-      expect(adhocServiceSpy.getHistory.calls.count()).toBe(callsBefore + 1);
+      expect(adhocServiceSpy.getHistory.mock.calls.length).toBe(callsBefore + 1);
     });
 
     it('page resets to 0 on any filter change (period, property, area, tag, custom date)', () => {
@@ -371,11 +372,11 @@ describe('AdhocHistoryComponent', () => {
 
   describe('help panel toggle', () => {
     it('toggleHelpPanel flips helpPanelOpen (button label is template-driven off this flag)', () => {
-      expect(component.helpPanelOpen).toBeFalse();
+      expect(component.helpPanelOpen).toBe(false);
       component.toggleHelpPanel();
-      expect(component.helpPanelOpen).toBeTrue();
+      expect(component.helpPanelOpen).toBe(true);
       component.toggleHelpPanel();
-      expect(component.helpPanelOpen).toBeFalse();
+      expect(component.helpPanelOpen).toBe(false);
     });
   });
 
@@ -385,7 +386,7 @@ describe('AdhocHistoryComponent', () => {
       expect(component.statusOf(row)).toBe('completed');
       expect(component.statusLabelKey(row)).toBe('Task resolved status');
       expect(component.statusChipClass(row)).toContain('status-chip--completed');
-      expect(component.canArchive(row)).toBeTrue();
+      expect(component.canArchive(row)).toBe(true);
     });
 
     it('a wire status of Archived (2) derives the archived/grey chip and hides Arkiver', () => {
@@ -393,39 +394,38 @@ describe('AdhocHistoryComponent', () => {
       expect(component.statusOf(row)).toBe('archived');
       expect(component.statusLabelKey(row)).toBe('archived');
       expect(component.statusChipClass(row)).toContain('status-chip--archived');
-      expect(component.canArchive(row)).toBeFalse();
+      expect(component.canArchive(row)).toBe(false);
     });
   });
 
   describe('row actions', () => {
     it('onArchive calls archiveTask(taskId) and reloads on success', () => {
-      adhocServiceSpy.archiveTask.and.returnValue(of({success: true}));
-      const callsBefore = adhocServiceSpy.getHistory.calls.count();
+      adhocServiceSpy.archiveTask.mockReturnValue(of({success: true}));
+      const callsBefore = adhocServiceSpy.getHistory.mock.calls.length;
       component.onArchive(makeRow({taskId: 42}));
       expect(adhocServiceSpy.archiveTask).toHaveBeenCalledWith(42);
-      expect(adhocServiceSpy.getHistory.calls.count()).toBeGreaterThan(callsBefore);
+      expect(adhocServiceSpy.getHistory.mock.calls.length).toBeGreaterThan(callsBefore);
     });
 
     it('onRowClick fetches the full task and opens the drawer in view mode', () => {
       const task = {id: 42, title: 'Fix roof'};
-      adhocServiceSpy.getTask.and.returnValue(of({success: true, model: task}));
-      dialogSpy.open.and.returnValue({afterClosed: () => of(false)});
+      adhocServiceSpy.getTask.mockReturnValue(of({success: true, model: task}));
+      dialogSpy.open.mockReturnValue({afterClosed: () => of(false)});
       component.onRowClick(makeRow({taskId: 42}));
       expect(adhocServiceSpy.getTask).toHaveBeenCalledWith(42);
-      const openArgs = dialogSpy.open.calls.mostRecent().args;
+      const openArgs = dialogSpy.open.mock.lastCall;
       expect(openArgs[1].data.mode).toBe('view');
       expect(openArgs[1].data.task).toBe(task);
     });
 
     it('onCopy opens the copy modal and, on a returned copy, opens the drawer in edit mode', () => {
       const copiedTask = {id: 99, title: 'Fix roof (copy)'};
-      dialogSpy.open.and.returnValues(
-        {afterClosed: () => of(copiedTask)},
-        {afterClosed: () => of(true)},
-      );
+      dialogSpy.open
+        .mockReturnValueOnce({afterClosed: () => of(copiedTask)})
+        .mockReturnValueOnce({afterClosed: () => of(true)});
       component.onCopy(makeRow({taskId: 42, taskTitle: 'Fix roof'}));
       expect(dialogSpy.open).toHaveBeenCalledTimes(2);
-      const drawerArgs = dialogSpy.open.calls.argsFor(1);
+      const drawerArgs = dialogSpy.open.mock.calls[1];
       expect(drawerArgs[1].data.mode).toBe('edit');
       expect(drawerArgs[1].data.task).toBe(copiedTask);
     });

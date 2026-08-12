@@ -166,11 +166,16 @@ describe('CalendarRepeatService', () => {
       expect(weeklyOpt!.meta!.weekday).toBe(1); // Monday = 1
     });
 
-    it('monthlyDom option carries the correct day-of-month', () => {
+    it('monthly option is monthlyByDay carrying the ordinal week and weekday of the date', () => {
+      // The dropdown's monthly built-in is "Monthly on the Nth <weekday>"
+      // (kind 'monthlyByDay'), not a day-of-month rule — monthlyDom only
+      // exists via the Custom… modal. For Monday 2026-03-16 the 16th is the
+      // 3rd Monday: ordinalWeek = ceil(16 / 7) = 3, weekday = 1.
       const opts = service.buildRepeatSelectOptions(monday);
-      const monthlyOpt = opts.find(o => o.meta?.kind === 'monthlyDom');
+      const monthlyOpt = opts.find(o => o.meta?.kind === 'monthlyByDay');
       expect(monthlyOpt).toBeDefined();
-      expect(monthlyOpt!.meta!.dom).toBe(16);
+      expect(monthlyOpt!.meta!.ordinalWeek).toBe(3);
+      expect(monthlyOpt!.meta!.weekday).toBe(1);
     });
 
     it('yearlyOne option carries the correct month and dom', () => {
@@ -605,9 +610,18 @@ describe('CalendarRepeatService', () => {
       expect(r?.weekday).toBe(3);
     });
 
-    it('built-in: repeatRule="weeklyAll" reconstructs as weeklyAll', () => {
-      const r = service.reconstructMetaFromTask(builtInTask({repeatRule: 'weeklyAll'}));
-      expect(r?.kind).toBe('weeklyAll');
+    it('built-in: repeatRule="weeklyAll" without CSV displays as daily at n=1, everyNWeekAll at n>1', () => {
+      // Legacy weeklyAll (every week, all 7 days) is functionally identical
+      // to daily, so reconstruction deliberately collapses it to 'daily'.
+      // At step > 1 the rule is NOT equivalent to every-N-days and keeps
+      // the everyNWeekAll kind.
+      const r1 = service.reconstructMetaFromTask(builtInTask({repeatRule: 'weeklyAll'}));
+      expect(r1?.kind).toBe('daily');
+      expect(r1?.n).toBe(1);
+
+      const r3 = service.reconstructMetaFromTask(builtInTask({repeatRule: 'weeklyAll', repeatEvery: 3}));
+      expect(r3?.kind).toBe('everyNWeekAll');
+      expect(r3?.n).toBe(3);
     });
 
     it('built-in: repeatRule="monthlyDom" with dayOfMonth=15 reconstructs as monthlyDom', () => {
@@ -696,7 +710,7 @@ describe('CalendarRepeatService', () => {
       expect(r?.weekdays).toEqual([1, 2, 3, 4, 5]);
     });
 
-    it('formatCustomRepeatLabel renders explicit Mon-Fri list, not "all days"', () => {
+    it('formatCustomRepeatLabel renders the Mon-Fri shorthand for [1..5] and explicit lists otherwise, never "all days"', () => {
       // Use a local TranslateService stub that performs basic {{key}}
       // interpolation so we can read meaningful text out of the formatter.
       // The base translateStub returns keys verbatim, which is fine for
@@ -717,16 +731,21 @@ describe('CalendarRepeatService', () => {
       }))!;
       // en-US locale; Intl.ListFormat handles weekday-name pluralisation.
       const label = localService.formatCustomRepeatLabel(r, 'en-US');
-      // Intl.ListFormat ('en-US', conjunction, long) yields "Monday, Tuesday,
-      // Wednesday, Thursday, and Friday" — assert each day is present so
-      // serial-comma differences across runtimes don't break the test.
-      expect(label).toContain('Monday');
-      expect(label).toContain('Tuesday');
-      expect(label).toContain('Wednesday');
-      expect(label).toContain('Thursday');
-      expect(label).toContain('Friday');
-      // Must NOT collapse to the all-days summary.
+      // The formatter recognises the weekly Mon-Fri set and renders the same
+      // shorthand label as the dropdown option the user picked, instead of
+      // expanding to the five-day list — and it must NOT collapse to the
+      // all-days summary either.
+      expect(label).toBe('All weekdays (Monday to Friday)');
       expect(label).not.toContain('Weekly on all days');
+
+      // A weekly set that is NOT the Mon-Fri shorthand renders the explicit
+      // localised weekday list.
+      const label135 = localService.formatCustomRepeatLabel(
+        {kind: 'weeklyMulti', weekdays: [1, 3, 5], endMode: 'never'}, 'en-US');
+      expect(label135).toContain('Monday');
+      expect(label135).toContain('Wednesday');
+      expect(label135).toContain('Friday');
+      expect(label135).not.toContain('Weekly on all days');
     });
 
     // ----- weeklyOne / weeklyAll promote to multi-day when CSV present -------
