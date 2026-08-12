@@ -722,4 +722,9 @@ export const enUS= {
   'No areas on this property yet': 'No areas on this property yet',
   'One area name per line': 'One area name per line',
   'Rename area': 'Rename area',
+  // Adhoc drawer photo-delete UX (#1099 aria-label, #1100 confirm modal).
+  'Delete photo': 'Delete photo',
+  'Delete photo?': 'Delete photo?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'The photo will be removed from the task. This action cannot be undone.',
 };

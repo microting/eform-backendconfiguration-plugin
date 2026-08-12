@@ -583,4 +583,8 @@ export const hrHR = {
   Tasks: 'Zadaci',
   'Batch action': 'Skupna radnja',
   'Select batch action': 'Odaberite skupnu radnju',
+  'Delete photo': 'Izbriši fotografiju',
+  'Delete photo?': 'Izbrisati fotografiju?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotografija će biti uklonjena iz zadatka. Radnja se ne može poništiti.',
 };

@@ -631,4 +631,8 @@ export const deDE = {
   Tasks: 'Aufgaben',
   'Batch action': 'Stapelverarbeitung',
   'Select batch action': 'Stapelaktion auswählen',
+  'Delete photo': 'Foto löschen',
+  'Delete photo?': 'Foto löschen?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Das Foto wird aus der Aufgabe entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
 };

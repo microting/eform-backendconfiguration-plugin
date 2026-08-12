@@ -583,4 +583,8 @@ export const skSK = {
   Tasks: 'Úlohy',
   'Batch action': 'Dávková akcia',
   'Select batch action': 'Vybrať dávkovú akciu',
+  'Delete photo': 'Vymazať fotografiu',
+  'Delete photo?': 'Vymazať fotografiu?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotografia bude z úlohy odstránená. Túto akciu nie je možné vrátiť späť.',
 };

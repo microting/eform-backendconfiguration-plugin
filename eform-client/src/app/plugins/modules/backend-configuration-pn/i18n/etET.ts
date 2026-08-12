@@ -583,4 +583,8 @@ export const etET = {
   Tasks: 'Ülesanded',
   'Batch action': 'Paketttoiming',
   'Select batch action': 'Valige partiitoiming',
+  'Delete photo': 'Kustuta foto',
+  'Delete photo?': 'Kas kustutada foto?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Foto eemaldatakse ülesandest. Toimingut ei saa tagasi võtta.',
 };

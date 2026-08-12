@@ -27,6 +27,7 @@ import {
   AdhocDeleteModalComponent,
   AdhocFiltersComponent,
   AdhocHistoryComponent,
+  AdhocPhotoDeleteModalComponent,
   AdhocTableComponent,
   AdhocTaskDrawerComponent,
 } from './components';
@@ -43,6 +44,7 @@ import {
     AdhocFiltersComponent,
     AdhocTaskDrawerComponent,
     AdhocDeleteModalComponent,
+    AdhocPhotoDeleteModalComponent,
     AdhocCopyModalComponent,
     AdhocCompleteModalComponent,
     AdhocHistoryComponent,

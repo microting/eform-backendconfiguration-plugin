@@ -583,4 +583,8 @@ export const huHU = {
   Tasks: 'Feladatok',
   'Batch action': 'Kötegelt művelet',
   'Select batch action': 'Kötegelt művelet kiválasztása',
+  'Delete photo': 'Fénykép törlése',
+  'Delete photo?': 'Törli a fényképet?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'A fénykép eltávolításra kerül a feladatból. A művelet nem vonható vissza.',
 };

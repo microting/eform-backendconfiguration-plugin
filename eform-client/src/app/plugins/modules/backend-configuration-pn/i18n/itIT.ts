@@ -583,4 +583,8 @@ export const itIT = {
   Tasks: 'Compiti',
   'Batch action': 'Azione batch',
   'Select batch action': 'Seleziona l\'azione batch',
+  'Delete photo': 'Elimina foto',
+  'Delete photo?': 'Eliminare la foto?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'La foto verrà rimossa dall\'attività. Questa azione non può essere annullata.',
 };

@@ -1,0 +1,32 @@
+// "Slet billede?" confirm (#1100) - design-spec Surface 2 values: light
+// dismissive text button vs filled brand-red destructive button (white on
+// #961B1E ~= 8.5:1), double-ring focus indicator that survives any backdrop.
+.photo-delete-modal-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #49454f;
+}
+
+// Id selectors out-rank the MDC theme's class-based button colors, so no
+// !important is needed.
+#adhocPhotoDeleteCancelBtn {
+  color: #961b1e;
+
+  &:hover {
+    background: rgba(150, 27, 30, 0.08);
+  }
+}
+
+#adhocPhotoDeleteConfirmBtn {
+  background-color: #961b1e;
+  color: #fff;
+}
+
+#adhocPhotoDeleteCancelBtn,
+#adhocPhotoDeleteConfirmBtn {
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #961b1e;
+  }
+}

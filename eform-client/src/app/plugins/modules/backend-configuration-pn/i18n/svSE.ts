@@ -583,4 +583,8 @@ export const svSE = {
   Tasks: 'Uppgifter',
   'Batch action': 'Batchåtgärd',
   'Select batch action': 'Välj batchåtgärd',
+  'Delete photo': 'Radera foto',
+  'Delete photo?': 'Radera foto?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotot tas bort från uppgiften. Åtgärden kan inte ångras.',
 };

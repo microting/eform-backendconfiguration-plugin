@@ -47,6 +47,13 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *     (deadline/reminders). `expandSection()` is retained as a no-op-safe
  *     helper (it only clicks when a `mat-expansion-panel-header` actually
  *     exists) so specs keep passing against either markup.
+ *   - Drawer photos (#1099/#1100): thumbnails carry
+ *     `data-e2e="adhoc-photo-thumb"` (existing/server-side) /
+ *     `"adhoc-photo-thumb-queued"` (create-mode previews), each with a
+ *     `data-e2e="adhoc-photo-delete-btn"` delete-X (design-spec thumbnail
+ *     Variant C). Clicking the X opens the "Slet billede?" confirm modal
+ *     (`#adhocPhotoDeleteConfirmBtn`/`-CancelBtn`) - NOTHING is removed
+ *     until confirm; cancel/ESC/scrim-click keeps the photo.
  *   - Modals: delete (`#adhocDeleteConfirmBtn`/`-CancelBtn`), copy
  *     (`#adhocCopyWithCommentsBtn`/`-WithoutCommentsBtn`/`-CancelBtn`),
  *     complete (`#adhocCompletePerformerSelect` - optional, no PIN field per
@@ -463,6 +470,61 @@ export class BackendConfigurationAdhocPage {
       .click();
     await this.page.locator('.mat-datepicker-content').waitFor({ state: 'visible', timeout: 5000 });
     await selectDateOnNewDatePicker(this.page, year, month, day);
+  }
+
+  // ----- Drawer photos (#1099/#1100) -----------------------------------------
+
+  /** Existing (server-side) photo thumbnails in the open drawer. */
+  photoThumbs(): Locator {
+    return this.page.locator('.adhoc-drawer [data-e2e="adhoc-photo-thumb"]');
+  }
+
+  /** Queued (create-mode, not yet uploaded) photo preview thumbnails. */
+  queuedPhotoThumbs(): Locator {
+    return this.page.locator('.adhoc-drawer [data-e2e="adhoc-photo-thumb-queued"]');
+  }
+
+  /** The always-visible delete-X on the `index`-th existing photo thumbnail. */
+  photoDeleteBtn(index = 0): Locator {
+    return this.photoThumbs().nth(index).locator('[data-e2e="adhoc-photo-delete-btn"]');
+  }
+
+  /** The delete-X on the `index`-th queued (create-mode) preview thumbnail. */
+  queuedPhotoDeleteBtn(index = 0): Locator {
+    return this.queuedPhotoThumbs().nth(index).locator('[data-e2e="adhoc-photo-delete-btn"]');
+  }
+
+  /** "Slet" in the "Slet billede?" confirm modal. */
+  photoDeleteConfirmBtn(): Locator {
+    return this.page.locator('#adhocPhotoDeleteConfirmBtn');
+  }
+
+  /** "Annuller" in the "Slet billede?" confirm modal. */
+  photoDeleteCancelBtn(): Locator {
+    return this.page.locator('#adhocPhotoDeleteCancelBtn');
+  }
+
+  /**
+   * Clicks the delete-X on a photo thumbnail and confirms the "Slet
+   * billede?" modal. Existing-photo removal is only STAGED here - it is
+   * applied server-side when the drawer is saved (`saveDrawer()`); queued
+   * previews disappear immediately.
+   */
+  async deletePhoto(index = 0, kind: 'existing' | 'queued' = 'existing'): Promise<void> {
+    const deleteBtn = kind === 'queued' ? this.queuedPhotoDeleteBtn(index) : this.photoDeleteBtn(index);
+    await deleteBtn.click();
+    await this.photoDeleteConfirmBtn().waitFor({ state: 'visible', timeout: 5000 });
+    await this.photoDeleteConfirmBtn().click();
+    await this.photoDeleteConfirmBtn().waitFor({ state: 'detached', timeout: 5000 });
+  }
+
+  /** Clicks the delete-X but cancels the confirm modal - the photo must survive. */
+  async cancelPhotoDelete(index = 0, kind: 'existing' | 'queued' = 'existing'): Promise<void> {
+    const deleteBtn = kind === 'queued' ? this.queuedPhotoDeleteBtn(index) : this.photoDeleteBtn(index);
+    await deleteBtn.click();
+    await this.photoDeleteCancelBtn().waitFor({ state: 'visible', timeout: 5000 });
+    await this.photoDeleteCancelBtn().click();
+    await this.photoDeleteCancelBtn().waitFor({ state: 'detached', timeout: 5000 });
   }
 
   drawerSaveBtn(): Locator {

@@ -583,4 +583,8 @@ export const ptBR = {
   Tasks: 'Tarefas',
   'Batch action': 'Ação em lote',
   'Select batch action': 'Selecione a ação em lote',
+  'Delete photo': 'Excluir foto',
+  'Delete photo?': 'Excluir foto?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'A foto será removida da tarefa. Esta ação não pode ser desfeita.',
 };

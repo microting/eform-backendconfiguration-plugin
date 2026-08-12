@@ -583,4 +583,8 @@ export const ltLT = {
   Tasks: 'Užduotys',
   'Batch action': 'Paketinis veiksmas',
   'Select batch action': 'Pasirinkite paketinį veiksmą',
+  'Delete photo': 'Ištrinti nuotrauką',
+  'Delete photo?': 'Ištrinti nuotrauką?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Nuotrauka bus pašalinta iš užduoties. Šio veiksmo negalima atšaukti.',
 };
