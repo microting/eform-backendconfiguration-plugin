@@ -33,6 +33,7 @@
       [viewMode]="viewMode"
       [sidebarOpen]="sidebarOpen"
       [propertyName]="selectedPropertyName"
+      [isAdmin]="isAdmin"
       [scheduleScope]="scheduleScope"
       (navigate)="onNavigate($event)"
       (goToToday)="onGoToToday()"
@@ -100,6 +101,7 @@
 
       <ng-container *ngSwitchCase="'compliance'">
         <app-calendar-compliance-view
+          *ngIf="isAdmin"
           #complianceView
           [properties]="properties"
           [boards]="boards"
