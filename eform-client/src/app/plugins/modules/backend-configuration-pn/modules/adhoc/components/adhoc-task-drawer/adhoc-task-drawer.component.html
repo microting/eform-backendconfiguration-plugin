@@ -9,15 +9,20 @@
     </button>
   </div>
 
-  <div class="adhoc-drawer__intro d-flex align-items-center justify-content-between" *ngIf="!isCreate">
-    <div>
-      <span>{{ 'Created by' | translate }}: {{ workerName(task?.createdByWorkerId) }}</span>
-      ·
-      <span>{{ propertyName(task?.propertyId) }}</span>
-      ·
-      <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
-    </div>
-    <button type="button" mat-stroked-button id="adhoc-drawer-complete" *ngIf="canComplete" (click)="onCompleteTask()">
+  <!--
+    Intro text is indented to the content column (icon gutter of the gcal
+    rows below), and the complete button sits on its own row, right-aligned
+    to the content gutter the fields end at (#1101 / #1102).
+  -->
+  <div class="adhoc-drawer__intro" *ngIf="!isCreate">
+    <span>{{ 'Created by' | translate }}: {{ workerName(task?.createdByWorkerId) }}</span>
+    ·
+    <span>{{ propertyName(task?.propertyId) }}</span>
+    ·
+    <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
+  </div>
+  <div class="adhoc-drawer__complete-row" *ngIf="!isCreate && canComplete">
+    <button type="button" mat-stroked-button id="adhoc-drawer-complete" (click)="onCompleteTask()">
       <mat-icon fontSet="material-symbols-outlined">task_alt</mat-icon>
       {{ 'Complete task' | translate }}
     </button>
