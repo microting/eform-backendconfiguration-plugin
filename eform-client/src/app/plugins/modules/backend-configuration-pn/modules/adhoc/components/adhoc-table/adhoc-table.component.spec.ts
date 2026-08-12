@@ -131,10 +131,13 @@ describe('adhoc-display.util', () => {
       expect(v.pct).toBeGreaterThanOrEqual(12);
     });
 
-    it('far in the future clamps pct to the 12 floor', () => {
+    it('far in the future clamps pct to the 22 floor (the day-cap kicks in before the 12 floor)', () => {
+      // pct = max(12, 58 - min(d - 6, 24) * 1.5): the min(…, 24) day-cap
+      // bottoms the formula out at 58 - 36 = 22, so 22 is the effective
+      // floor for any far-future deadline (the 12 floor is unreachable).
       const v = deadlineVisual('2027-04-25', today);
       expect(v.band).toBe('far');
-      expect(v.pct).toBe(12);
+      expect(v.pct).toBe(22);
     });
   });
 });

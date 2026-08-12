@@ -1,7 +1,12 @@
 import {of} from 'rxjs';
 import {AdhocStateService} from './adhoc-state.service';
 import {AdhocTaskStatusFilter} from '../../../../models';
-import {adhocInitialState} from '../../../../state';
+import {
+  adhocInitialState,
+  selectAdhocFilters,
+  selectAdhocHiddenColumns,
+  selectAdhocPagination,
+} from '../../../../state';
 
 /**
  * Spy-store + spy-service unit test for `AdhocStateService` (M5/F5).
@@ -24,14 +29,18 @@ describe('AdhocStateService', () => {
 
   beforeEach(() => {
     storeSpy = {
+      // Match selectors by identity — the memoized functions createSelector
+      // returns do not stringify to anything containing the selector name,
+      // so toString()-based matching silently returns undefined for all
+      // three slices.
       select: jest.fn().mockImplementation((selector: any) => {
-        if (selector.toString().includes('Filters')) {
+        if (selector === selectAdhocFilters) {
           return of(adhocInitialState.filters);
         }
-        if (selector.toString().includes('Pagination')) {
+        if (selector === selectAdhocPagination) {
           return of(adhocInitialState.pagination);
         }
-        if (selector.toString().includes('HiddenColumns')) {
+        if (selector === selectAdhocHiddenColumns) {
           return of(adhocInitialState.hiddenColumns);
         }
         return of(undefined);

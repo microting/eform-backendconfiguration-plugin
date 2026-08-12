@@ -36,7 +36,9 @@ describe('AdhocFiltersComponent', () => {
     translateSpy = {instant: (key: string) => key};
     elementRefSpy = {nativeElement: {contains: () => true}};
     dialogSpy = {open: jest.fn()};
-    overlaySpy = {};
+    // dialogConfigHelper reads overlay.scrollStrategies.reposition() — a bare
+    // {} makes every dialog-opening action throw before dialog.open is hit.
+    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
 
     component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy, overlaySpy);
   });

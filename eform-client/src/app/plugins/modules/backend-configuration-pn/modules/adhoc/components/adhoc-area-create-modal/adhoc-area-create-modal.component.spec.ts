@@ -35,7 +35,10 @@ describe('AdhocAreaCreateModalComponent', () => {
     component.save();
     expect(adhocStateServiceSpy.createAreas).toHaveBeenCalledWith(1, ['Stald 1']);
     expect(dialogRefSpy.close).toHaveBeenCalledWith(true);
-    expect(component.saving).toBe(true);
+    // The component resets `saving` in `next` BEFORE closing, so after the
+    // synchronous of(...) emission the flag is back to false — it must not
+    // stay latched (a stuck-true flag would permanently disable save()).
+    expect(component.saving).toBe(false);
   });
 
   it('save() resets saving on error, surfaces an errorKey, and does not close', () => {

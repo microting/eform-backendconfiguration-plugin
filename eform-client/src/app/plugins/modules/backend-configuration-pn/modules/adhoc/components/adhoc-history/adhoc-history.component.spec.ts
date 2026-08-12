@@ -52,7 +52,9 @@ describe('AdhocHistoryComponent', () => {
       getAreasForProperty: jest.fn().mockReturnValue(of([])),
     };
     dialogSpy = {open: jest.fn()};
-    overlaySpy = {};
+    // dialogConfigHelper reads overlay.scrollStrategies.reposition() — a bare
+    // {} makes every dialog-opening action throw before dialog.open is hit.
+    overlaySpy = {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}};
     // Key-passthrough with naive {{param}} interpolation - keeps summary/
     // pager label assertions readable without a real TranslateService.
     translateSpy = {
@@ -192,7 +194,8 @@ describe('AdhocHistoryComponent', () => {
     it('picking a custom "from" date force-switches the preset to custom and persists an ISO date', () => {
       component.currentFilters = {...component.currentFilters, periodPreset: '90'};
       component.onCustomFromChange(new Date(2026, 0, 15));
-      const dispatched = storeSpy.dispatch.mock.lastCall[0];
+      // adhocUpdateHistoryFilters wraps the filters as {type, payload}.
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.periodPreset).toBe('custom');
       expect(dispatched.customFrom).toBe('2026-01-15');
     });
@@ -200,7 +203,7 @@ describe('AdhocHistoryComponent', () => {
     it('picking a custom "to" date force-switches the preset to custom', () => {
       component.currentFilters = {...component.currentFilters, periodPreset: '30'};
       component.onCustomToChange(new Date(2026, 5, 30));
-      const dispatched = storeSpy.dispatch.mock.lastCall[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.periodPreset).toBe('custom');
       expect(dispatched.customTo).toBe('2026-06-30');
     });
@@ -249,7 +252,7 @@ describe('AdhocHistoryComponent', () => {
       component.currentFilters = {...component.currentFilters, propertyId: 1, areaId: 10};
       component.areas = [{id: 10, propertyId: 1, name: 'Laden'}];
       component.onPropertyChange(null);
-      const dispatched = storeSpy.dispatch.mock.lastCall[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBeNull();
       expect(dispatched.areaId).toBeNull();
       expect(component.areas).toEqual([]);
@@ -264,7 +267,7 @@ describe('AdhocHistoryComponent', () => {
         {id: 11, propertyId: 2, name: 'Stalden'},
       ]));
       component.onPropertyChange(2);
-      const dispatched = storeSpy.dispatch.mock.lastCall[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBe(2);
       expect(dispatched.areaId).toBe(10);
     });
@@ -273,7 +276,7 @@ describe('AdhocHistoryComponent', () => {
       component.currentFilters = {...component.currentFilters, propertyId: 1, areaId: 10};
       adhocStateServiceSpy.getAreasForProperty.mockReturnValue(of([{id: 20, propertyId: 2, name: 'Marken'}]));
       component.onPropertyChange(2);
-      const dispatched = storeSpy.dispatch.mock.lastCall[0];
+      const dispatched = storeSpy.dispatch.mock.lastCall[0].payload;
       expect(dispatched.propertyId).toBe(2);
       expect(dispatched.areaId).toBeNull();
     });
