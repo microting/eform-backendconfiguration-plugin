@@ -583,4 +583,8 @@ export const noNO = {
   Tasks: 'Oppgaver',
   'Batch action': 'Gruppehandling',
   'Select batch action': 'Velg batchhandling',
+  'Delete photo': 'Slett bilde',
+  'Delete photo?': 'Slett bilde?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Bildet fjernes fra oppgaven. Handlingen kan ikke angres.',
 };

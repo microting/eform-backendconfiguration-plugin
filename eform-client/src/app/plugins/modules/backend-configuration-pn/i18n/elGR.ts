@@ -583,4 +583,8 @@ export const elGR = {
   Tasks: 'Εργασίες',
   'Batch action': 'Μαζική ενέργεια',
   'Select batch action': 'Επιλογή μαζικής ενέργειας',
+  'Delete photo': 'Διαγραφή φωτογραφίας',
+  'Delete photo?': 'Διαγραφή φωτογραφίας;',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Η φωτογραφία θα αφαιρεθεί από την εργασία. Η ενέργεια δεν μπορεί να αναιρεθεί.',
 };

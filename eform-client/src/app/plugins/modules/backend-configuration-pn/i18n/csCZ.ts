@@ -583,4 +583,8 @@ export const csCZ = {
   Tasks: 'Úkoly',
   'Batch action': 'Dávková akce',
   'Select batch action': 'Vyberte dávkovou akci',
+  'Delete photo': 'Smazat fotografii',
+  'Delete photo?': 'Smazat fotografii?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotografie bude z úkolu odstraněna. Tuto akci nelze vrátit zpět.',
 };

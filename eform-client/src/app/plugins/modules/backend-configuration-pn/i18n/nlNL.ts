@@ -583,4 +583,8 @@ export const nlNL = {
   Tasks: 'Taken',
   'Batch action': 'Batchactie',
   'Select batch action': 'Selecteer batchactie',
+  'Delete photo': 'Foto verwijderen',
+  'Delete photo?': 'Foto verwijderen?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'De foto wordt uit de taak verwijderd. Deze actie kan niet ongedaan worden gemaakt.',
 };

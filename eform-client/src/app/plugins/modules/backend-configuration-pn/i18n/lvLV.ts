@@ -583,4 +583,8 @@ export const lvLV = {
   Tasks: 'Uzdevumi',
   'Batch action': 'Partijas darbība',
   'Select batch action': 'Atlasīt partijas darbību',
+  'Delete photo': 'Dzēst fotoattēlu',
+  'Delete photo?': 'Vai dzēst fotoattēlu?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotoattēls tiks noņemts no uzdevuma. Šo darbību nevar atsaukt.',
 };

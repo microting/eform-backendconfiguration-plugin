@@ -582,4 +582,8 @@ export const frFR = {
   Tasks: 'Tâches',
   'Batch action': 'Action par lots',
   'Select batch action': 'Sélectionner l\'action par lots',
+  'Delete photo': 'Supprimer la photo',
+  'Delete photo?': 'Supprimer la photo ?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'La photo sera retirée de la tâche. Cette action est irréversible.',
 };

@@ -583,4 +583,8 @@ export const fiFI = {
   Tasks: 'Tehtävät',
   'Batch action': 'Erätoiminto',
   'Select batch action': 'Valitse erätoiminto',
+  'Delete photo': 'Poista kuva',
+  'Delete photo?': 'Poistetaanko kuva?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Kuva poistetaan tehtävästä. Toimintoa ei voi kumota.',
 };

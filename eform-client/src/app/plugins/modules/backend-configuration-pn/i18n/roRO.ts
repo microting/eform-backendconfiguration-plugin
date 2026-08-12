@@ -583,4 +583,8 @@ export const roRO = {
   Tasks: 'Sarcini',
   'Batch action': 'Acțiune în lot',
   'Select batch action': 'Selectați acțiunea în lot',
+  'Delete photo': 'Ștergeți fotografia',
+  'Delete photo?': 'Ștergeți fotografia?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotografia va fi eliminată din sarcină. Această acțiune nu poate fi anulată.',
 };

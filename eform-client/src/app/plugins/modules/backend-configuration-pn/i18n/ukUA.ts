@@ -583,4 +583,8 @@ export const ukUA = {
   Tasks: 'Завдання',
   'Batch action': 'Пакетна дія',
   'Select batch action': 'Виберіть пакетну дію',
+  'Delete photo': 'Видалити фото',
+  'Delete photo?': 'Видалити фото?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Фото буде видалено із завдання. Цю дію неможливо скасувати.',
 };

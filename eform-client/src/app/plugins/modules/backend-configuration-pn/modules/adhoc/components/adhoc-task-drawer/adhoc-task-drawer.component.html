@@ -128,16 +128,38 @@
           <div class="gcal-row-content adhoc-drawer__photos" id="ny-sektion-komm-billeder">
             <div class="adhoc-drawer__section-title">{{ 'Pictures' | translate }}</div>
             <div class="d-flex flex-wrap gap-8">
-              <div class="photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
+              <!-- #1099 delete-X: design-spec thumbnail Variant C (28px dark
+                   scrim circle, always visible, 44x44 effective target - see
+                   the .photo-delete-btn rules). The X is an inline SVG, not a
+                   font glyph, per the spec. #1100: clicks route through the
+                   "Slet billede?" confirm modal instead of deleting directly. -->
+              <div class="photo-thumb" data-e2e="adhoc-photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
                 <img [src]="photoUrl(photo) | authImage | async" alt="">
-                <button type="button" mat-icon-button *ngIf="!readonly" (click)="removeExistingPhoto(photo); $event.stopPropagation()">
-                  <mat-icon>close</mat-icon>
+                <button
+                  type="button"
+                  class="photo-delete-btn"
+                  data-e2e="adhoc-photo-delete-btn"
+                  *ngIf="!readonly"
+                  [attr.aria-label]="'Delete photo' | translate"
+                  (click)="onDeleteExistingPhoto(photo); $event.stopPropagation()"
+                >
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
                 </button>
               </div>
-              <div class="photo-thumb photo-thumb--queued" *ngFor="let preview of queuedPhotoPreviews; let i = index">
+              <div class="photo-thumb photo-thumb--queued" data-e2e="adhoc-photo-thumb-queued" *ngFor="let preview of queuedPhotoPreviews; let i = index">
                 <img [src]="preview" alt="">
-                <button type="button" mat-icon-button (click)="removeQueuedPhoto(i)">
-                  <mat-icon>close</mat-icon>
+                <button
+                  type="button"
+                  class="photo-delete-btn"
+                  data-e2e="adhoc-photo-delete-btn"
+                  [attr.aria-label]="'Delete photo' | translate"
+                  (click)="onDeleteQueuedPhoto(i)"
+                >
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
                 </button>
               </div>
               <label class="photo-upload-btn" *ngIf="!readonly">

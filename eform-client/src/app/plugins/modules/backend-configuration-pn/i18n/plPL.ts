@@ -583,4 +583,8 @@ export const plPL = {
   Tasks: 'Zadania',
   'Batch action': 'Akcja wsadowa',
   'Select batch action': 'Wybierz akcję wsadową',
+  'Delete photo': 'Usuń zdjęcie',
+  'Delete photo?': 'Usunąć zdjęcie?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Zdjęcie zostanie usunięte z zadania. Tej operacji nie można cofnąć.',
 };

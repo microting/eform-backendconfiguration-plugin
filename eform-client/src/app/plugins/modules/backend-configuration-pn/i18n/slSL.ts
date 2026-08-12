@@ -583,4 +583,8 @@ export const slSL = {
   Tasks: 'Naloge',
   'Batch action': 'Paketno dejanje',
   'Select batch action': 'Izberite paketno dejanje',
+  'Delete photo': 'Izbriši fotografijo',
+  'Delete photo?': 'Izbrisati fotografijo?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Fotografija bo odstranjena iz naloge. Dejanja ni mogoče razveljaviti.',
 };

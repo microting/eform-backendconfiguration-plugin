@@ -149,13 +149,60 @@
     border-radius: 4px;
   }
 
-  button {
+  // #1099 delete-X, design-spec thumbnail Variant C: 28px near-opaque dark
+  // scrim circle, always visible on all devices (no hover-reveal - that was
+  // the discoverability complaint), hairline border for edge definition on
+  // dark photos, white 16px SVG glyph.
+  .photo-delete-btn {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
+    top: 4px;
+    right: 4px;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 50%;
+    background: rgba(32, 33, 36, 0.8);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    cursor: pointer;
+
+    svg {
+      display: block;
+    }
+
+    // 44x44px effective touch target - the pseudo-element extends the
+    // clickable area while the visible circle/glyph stay 28/16px.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+    }
+
+    &:hover {
+      background: rgba(32, 33, 36, 0.95);
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    // Double ring survives any photo behind it (white inner, brand-red outer).
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #961b1e;
+    }
+  }
+}
+
+// No-blur fallback: raise the scrim alpha so contrast holds without the blur.
+@supports not (backdrop-filter: blur(4px)) {
+  .photo-thumb .photo-delete-btn {
+    background: rgba(32, 33, 36, 0.88);
   }
 }
 

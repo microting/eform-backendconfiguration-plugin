@@ -583,4 +583,8 @@ export const isIS = {
   Tasks: 'Verkefni',
   'Batch action': 'Hópaaðgerð',
   'Select batch action': 'Veldu hópaðgerð',
+  'Delete photo': 'Eyða mynd',
+  'Delete photo?': 'Eyða mynd?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Myndin verður fjarlægð úr verkefninu. Ekki er hægt að afturkalla þessa aðgerð.',
 };

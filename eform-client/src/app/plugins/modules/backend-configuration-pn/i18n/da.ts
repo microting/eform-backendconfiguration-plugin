@@ -707,4 +707,9 @@ export const da = {
   'No areas on this property yet': 'Der er endnu ingen områder på denne ejendom',
   'One area name per line': 'Ét områdenavn pr. linje',
   'Rename area': 'Omdøb område',
+  // Adhoc drawer photo-delete UX (#1099 aria-label, #1100 confirm modal).
+  'Delete photo': 'Slet billede',
+  'Delete photo?': 'Slet billede?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Billedet fjernes fra opgaven. Handlingen kan ikke fortrydes.',
 };

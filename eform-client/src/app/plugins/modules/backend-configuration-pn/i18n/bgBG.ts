@@ -583,4 +583,8 @@ export const bgBG = {
   Tasks: 'Задачи',
   'Batch action': 'Групово действие',
   'Select batch action': 'Изберете действие за пакет',
+  'Delete photo': 'Изтриване на снимката',
+  'Delete photo?': 'Да се изтрие ли снимката?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'Снимката ще бъде премахната от задачата. Действието не може да бъде отменено.',
 };

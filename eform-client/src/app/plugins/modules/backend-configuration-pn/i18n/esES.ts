@@ -583,4 +583,8 @@ export const esES = {
   Tasks: 'Tareas',
   'Batch action': 'Acción por lotes',
   'Select batch action': 'Seleccione la acción por lotes',
+  'Delete photo': 'Eliminar foto',
+  'Delete photo?': '¿Eliminar foto?',
+  'The photo will be removed from the task. This action cannot be undone.':
+    'La foto se eliminará de la tarea. Esta acción no se puede deshacer.',
 };

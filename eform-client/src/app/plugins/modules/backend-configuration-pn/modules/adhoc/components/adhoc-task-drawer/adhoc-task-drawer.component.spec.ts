@@ -13,6 +13,8 @@ describe('AdhocTaskDrawerComponent', () => {
   let adhocServiceSpy: any;
   let gallerySpy: any;
   let lightboxSpy: any;
+  let matDialogSpy: any;
+  let overlaySpy: any;
 
   const existingTask: AdhocTaskModel = {
     id: 42,
@@ -57,6 +59,9 @@ describe('AdhocTaskDrawerComponent', () => {
     ]);
     gallerySpy = {ref: jasmine.createSpy('ref').and.returnValue({load: jasmine.createSpy('load')})};
     lightboxSpy = {open: jasmine.createSpy('open')};
+    matDialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
+    // dialogConfigHelper(overlay) only touches scrollStrategies.reposition().
+    overlaySpy = {scrollStrategies: {reposition: jasmine.createSpy('reposition').and.returnValue({})}};
 
     const component = new AdhocTaskDrawerComponent(
       dialogRefSpy,
@@ -66,6 +71,8 @@ describe('AdhocTaskDrawerComponent', () => {
       adhocServiceSpy,
       gallerySpy,
       lightboxSpy,
+      matDialogSpy,
+      overlaySpy,
     );
     component.ngOnInit();
     return component;
@@ -110,6 +117,30 @@ describe('AdhocTaskDrawerComponent', () => {
     it('showTagsSection is true in create mode despite tagIds being empty', () => {
       expect(component.tagIds).toEqual([]);
       expect(component.showTagsSection).toBeTrue();
+    });
+
+    // #1100: queued (create-mode) previews get the same confirm gate as
+    // existing photos.
+    it('onDeleteQueuedPhoto removes the queued file only after the modal confirms', () => {
+      spyOn(URL, 'revokeObjectURL');
+      component.queuedPhotoFiles = [new File([''], 'a.png', {type: 'image/png'})];
+      component.queuedPhotoPreviews = ['blob:a'];
+      matDialogSpy.open.and.returnValue({afterClosed: () => of(true)});
+      component.onDeleteQueuedPhoto(0);
+      expect(component.queuedPhotoFiles).toEqual([]);
+      expect(component.queuedPhotoPreviews).toEqual([]);
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:a');
+    });
+
+    it('onDeleteQueuedPhoto keeps the queued file when the modal is cancelled', () => {
+      spyOn(URL, 'revokeObjectURL');
+      component.queuedPhotoFiles = [new File([''], 'a.png', {type: 'image/png'})];
+      component.queuedPhotoPreviews = ['blob:a'];
+      matDialogSpy.open.and.returnValue({afterClosed: () => of(false)});
+      component.onDeleteQueuedPhoto(0);
+      expect(component.queuedPhotoFiles.length).toBe(1);
+      expect(component.queuedPhotoPreviews).toEqual(['blob:a']);
+      expect(URL.revokeObjectURL).not.toHaveBeenCalled();
     });
   });
 
@@ -190,6 +221,34 @@ describe('AdhocTaskDrawerComponent', () => {
       const sentModel = adhocServiceSpy.updateTask.calls.mostRecent().args[1];
       expect(sentModel.executionRule).toBe(1);
       expect(sentModel.assignedWorkerIds).toEqual([100]);
+    });
+
+    // #1100: the delete-X never removes a photo directly - the "Slet
+    // billede?" confirm modal gates both the existing- and queued-photo
+    // flavours, and only a confirmed close performs the removal.
+    it('onDeleteExistingPhoto removes the photo only after the modal confirms', () => {
+      matDialogSpy.open.and.returnValue({afterClosed: () => of(true)});
+      component.onDeleteExistingPhoto({id: 5000, contentType: 'image/png'});
+      expect(matDialogSpy.open).toHaveBeenCalled();
+      expect(component.visiblePhotos).toEqual([]);
+    });
+
+    it('onDeleteExistingPhoto keeps the photo when the modal is cancelled', () => {
+      matDialogSpy.open.and.returnValue({afterClosed: () => of(false)});
+      component.onDeleteExistingPhoto({id: 5000, contentType: 'image/png'});
+      expect(matDialogSpy.open).toHaveBeenCalled();
+      expect(component.visiblePhotos).toEqual([{id: 5000, contentType: 'image/png'}]);
+    });
+
+    // Design-spec Surface 2: ESC/scrim-click must cancel (the module-default
+    // dialogConfigHelper sets disableClose: true, which this flow overrides)
+    // and the dialog is announced as an alertdialog.
+    it('opens the photo-delete confirm as a cancellable alertdialog', () => {
+      matDialogSpy.open.and.returnValue({afterClosed: () => of(false)});
+      component.onDeleteExistingPhoto({id: 5000, contentType: 'image/png'});
+      const config = matDialogSpy.open.calls.mostRecent().args[1];
+      expect(config.disableClose).toBeFalse();
+      expect(config.role).toBe('alertdialog');
     });
 
     it('removeExistingPhoto excludes the photo from visiblePhotos and the saved photoIds', () => {
