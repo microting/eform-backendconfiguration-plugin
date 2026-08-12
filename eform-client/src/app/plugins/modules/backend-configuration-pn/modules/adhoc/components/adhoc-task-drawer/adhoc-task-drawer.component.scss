@@ -32,10 +32,22 @@
   padding: 8px 8px 0 16px;
 }
 
+// Left padding = the content column's left edge: 16px `.gcal-modal`
+// padding + 20px `.gcal-icon` + 16px icon margin, so the intro text lines
+// up with the task text / form fields below (#1101).
 .adhoc-drawer__intro {
-  padding: 0 16px 8px;
+  padding: 0 16px 8px 52px;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.6);
+}
+
+// Complete-task button on its own row, right-aligned to the content
+// gutter (`.gcal-modal` padding-right: 24px) so it shares the Property
+// dropdown's right edge (#1102).
+.adhoc-drawer__complete-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 24px 8px 52px;
 }
 
 .adhoc-drawer__content {
