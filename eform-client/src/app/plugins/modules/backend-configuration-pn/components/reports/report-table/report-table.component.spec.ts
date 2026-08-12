@@ -5,6 +5,21 @@ import {Overlay} from '@angular/cdk/overlay';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 
+// The plugin components barrel ('../../../components', imported by
+// report-table.component.ts for CaseDeleteComponent) re-exports
+// BackendConfigurationCaseModule, which transitively imports the host's
+// entire src/app/modules barrel — that chain reaches
+// admin-settings.component.ts and its ESM-only `uuid` dependency, which the
+// host jest transform does not process (transformIgnorePatterns only lets
+// *.mjs and an allowlist through). The component references
+// CaseDeleteComponent purely at runtime (dialog.open in
+// onShowDeletePlanningCaseModal), so mock the barrel to keep this suite's
+// module graph scoped to ReportTableComponent. jest.mock is hoisted above
+// the imports, so the real barrel is never loaded.
+jest.mock('../../../components', () => ({
+  CaseDeleteComponent: class MockCaseDeleteComponent {},
+}));
+
 import {ReportTableComponent} from './report-table.component';
 
 /**
