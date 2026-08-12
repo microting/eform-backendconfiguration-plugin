@@ -125,12 +125,17 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     private store: Store,
     private router: Router,
   ) {
-    // isAdmin still gates the admin-only controls in the week/day grid
-    // (see the [isAdmin] bindings in the template); the month and compliance
-    // views are available to every user, so no view-mode guard is applied.
     this.store.select(selectCurrentUserIsAdmin).pipe(takeUntil(this.destroy$))
       .subscribe(isAdmin => {
         this.isAdmin = isAdmin;
+        // isAdmin resolves async from the store after init — if it turns out
+        // the user is not an admin while compliance view is still active
+        // (e.g. deep link, or a stale admin session), force back to week
+        // view so a non-admin can never remain in the admin-only mode.
+        if (!isAdmin && this.viewMode === 'compliance') {
+          this.stateService.updateViewMode('week');
+          this.loadTasks();
+        }
       });
   }
 
@@ -144,6 +149,19 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeTeamIds = filters.activeTeamIds;
       this.activeTagNames = filters.activeTagNames;
       this.sidebarOpen = filters.sidebarOpen;
+
+      // Defense in depth (mirrors the constructor's isAdmin-subscription
+      // guard): NgRx calendar state persists across in-app navigations, so
+      // a non-admin can land on this component with a stale 'compliance'
+      // viewMode inherited from a previous admin session, with no admin
+      // check ever having run. Force back to week — the updateViewMode
+      // dispatch re-emits filters$ with 'week', which this same
+      // subscription then processes normally, so no extra loadTasks() call
+      // is needed here.
+      if (this.viewMode === 'compliance' && !this.isAdmin) {
+        this.stateService.updateViewMode('week');
+        return;
+      }
     });
 
     this.loadProperties();
