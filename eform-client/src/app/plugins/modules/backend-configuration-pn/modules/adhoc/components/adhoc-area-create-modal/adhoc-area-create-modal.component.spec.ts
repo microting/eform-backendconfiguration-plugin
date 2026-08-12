@@ -7,8 +7,8 @@ describe('AdhocAreaCreateModalComponent', () => {
   let component: AdhocAreaCreateModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    adhocStateServiceSpy = jasmine.createSpyObj('AdhocStateService', ['createAreas']);
+    dialogRefSpy = {close: jest.fn()};
+    adhocStateServiceSpy = {createAreas: jest.fn()};
     component = new AdhocAreaCreateModalComponent(dialogRefSpy, {propertyId: 1, propertyName: 'Gård Nord'}, adhocStateServiceSpy);
   });
 
@@ -30,7 +30,7 @@ describe('AdhocAreaCreateModalComponent', () => {
   });
 
   it('save() calls createAreas(propertyId, names) and closes with true on success', () => {
-    adhocStateServiceSpy.createAreas.and.returnValue(of([{id: 10, propertyId: 1, name: 'Stald 1'}]));
+    adhocStateServiceSpy.createAreas.mockReturnValue(of([{id: 10, propertyId: 1, name: 'Stald 1'}]));
     component.namesText = 'Stald 1';
     component.save();
     expect(adhocStateServiceSpy.createAreas).toHaveBeenCalledWith(1, ['Stald 1']);
@@ -39,7 +39,7 @@ describe('AdhocAreaCreateModalComponent', () => {
   });
 
   it('save() resets saving on error, surfaces an errorKey, and does not close', () => {
-    adhocStateServiceSpy.createAreas.and.returnValue(throwError(() => new Error('fail')));
+    adhocStateServiceSpy.createAreas.mockReturnValue(throwError(() => new Error('fail')));
     component.namesText = 'Stald 1';
     component.save();
     expect(component.saving).toBe(false);
@@ -48,7 +48,7 @@ describe('AdhocAreaCreateModalComponent', () => {
   });
 
   it('save() surfaces an errorKey and keeps the modal open when the create reports failure (empty result)', () => {
-    adhocStateServiceSpy.createAreas.and.returnValue(of([]));
+    adhocStateServiceSpy.createAreas.mockReturnValue(of([]));
     component.namesText = 'Stald 1';
     component.save();
     expect(component.saving).toBe(false);

@@ -23,19 +23,19 @@ describe('AdhocFiltersComponent', () => {
         {id: 10, name: 'Vedligehold', isUserTag: false},
         {id: 11, name: 'Sikkerhed', isUserTag: false},
       ],
-      updateFilters: jasmine.createSpy('updateFilters').and.callFake((partial: any) => {
+      updateFilters: jest.fn().mockImplementation((partial: any) => {
         adhocStateServiceSpy.currentFilters = {...adhocStateServiceSpy.currentFilters, ...partial};
       }),
-      getAreasForProperty: jasmine.createSpy('getAreasForProperty').and.returnValue(of([{id: 100, propertyId: 1, name: 'Stald 1'}])),
-      loadTags: jasmine.createSpy('loadTags').and.returnValue(of([])),
+      getAreasForProperty: jest.fn().mockReturnValue(of([{id: 100, propertyId: 1, name: 'Stald 1'}])),
+      loadTags: jest.fn().mockReturnValue(of([])),
     };
     adhocServiceSpy = {
-      createTag: jasmine.createSpy('createTag').and.returnValue(of({success: true, model: {id: 12, name: 'Ny', isUserTag: false}})),
-      deleteTag: jasmine.createSpy('deleteTag').and.returnValue(of({success: true})),
+      createTag: jest.fn().mockReturnValue(of({success: true, model: {id: 12, name: 'Ny', isUserTag: false}})),
+      deleteTag: jest.fn().mockReturnValue(of({success: true})),
     };
     translateSpy = {instant: (key: string) => key};
     elementRefSpy = {nativeElement: {contains: () => true}};
-    dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
+    dialogSpy = {open: jest.fn()};
     overlaySpy = {};
 
     component = new AdhocFiltersComponent(adhocStateServiceSpy, adhocServiceSpy, translateSpy, elementRefSpy, dialogSpy, overlaySpy);
@@ -61,21 +61,21 @@ describe('AdhocFiltersComponent', () => {
   describe('tag selection', () => {
     it('isTagSelected reflects currentFilters.tagIds', () => {
       adhocStateServiceSpy.currentFilters.tagIds = [10];
-      expect(component.isTagSelected(10)).toBeTrue();
-      expect(component.isTagSelected(11)).toBeFalse();
+      expect(component.isTagSelected(10)).toBe(true);
+      expect(component.isTagSelected(11)).toBe(false);
     });
 
     it('onToggleTag adds an unselected tag and removes a selected one', () => {
       component.onToggleTag(10);
-      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(jasmine.objectContaining({tagIds: [10]}));
+      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(expect.objectContaining({tagIds: [10]}));
 
       component.onToggleTag(10);
-      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(jasmine.objectContaining({tagIds: []}));
+      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(expect.objectContaining({tagIds: []}));
     });
 
     it('onTagLogicChange dispatches the new logic', () => {
       component.onTagLogicChange('and');
-      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(jasmine.objectContaining({tagLogic: 'and'}));
+      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(expect.objectContaining({tagLogic: 'and'}));
     });
 
     it('onCreateTag ignores blank input and does not call the service', () => {
@@ -104,7 +104,7 @@ describe('AdhocFiltersComponent', () => {
   describe('property/area cascade', () => {
     it('onPropertyChange clears areaId and loads the new property\'s areas', () => {
       component.onPropertyChange(1);
-      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(jasmine.objectContaining({propertyId: 1, areaId: null}));
+      expect(adhocStateServiceSpy.updateFilters).toHaveBeenCalledWith(expect.objectContaining({propertyId: 1, areaId: null}));
       expect(adhocStateServiceSpy.getAreasForProperty).toHaveBeenCalledWith(1);
       expect(component.areas).toEqual([{id: 100, propertyId: 1, name: 'Stald 1'}]);
     });
@@ -125,15 +125,15 @@ describe('AdhocFiltersComponent', () => {
 
     it('openAreaCreateModal opens with the selected property and reloads areas when changed', () => {
       adhocStateServiceSpy.currentFilters.propertyId = 1;
-      const afterClosedSpy = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
-      afterClosedSpy.afterClosed.and.returnValue(of(true));
-      dialogSpy.open.and.returnValue(afterClosedSpy);
+      const afterClosedSpy = {afterClosed: jest.fn()};
+      afterClosedSpy.afterClosed.mockReturnValue(of(true));
+      dialogSpy.open.mockReturnValue(afterClosedSpy);
 
       component.openAreaCreateModal();
 
       expect(dialogSpy.open).toHaveBeenCalledWith(
-        jasmine.any(Function),
-        jasmine.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
+        expect.any(Function),
+        expect.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
       );
       expect(adhocStateServiceSpy.getAreasForProperty).toHaveBeenCalledWith(1);
     });
@@ -146,15 +146,15 @@ describe('AdhocFiltersComponent', () => {
 
     it('openAreaAdminModal opens with the selected property and only reloads areas when something changed', () => {
       adhocStateServiceSpy.currentFilters.propertyId = 1;
-      const afterClosedSpy = jasmine.createSpyObj('MatDialogRef', ['afterClosed']);
-      afterClosedSpy.afterClosed.and.returnValue(of(false));
-      dialogSpy.open.and.returnValue(afterClosedSpy);
+      const afterClosedSpy = {afterClosed: jest.fn()};
+      afterClosedSpy.afterClosed.mockReturnValue(of(false));
+      dialogSpy.open.mockReturnValue(afterClosedSpy);
 
       component.openAreaAdminModal();
 
       expect(dialogSpy.open).toHaveBeenCalledWith(
-        jasmine.any(Function),
-        jasmine.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
+        expect.any(Function),
+        expect.objectContaining({data: {propertyId: 1, propertyName: 'Gård Nord'}}),
       );
       expect(adhocStateServiceSpy.getAreasForProperty).not.toHaveBeenCalled();
     });

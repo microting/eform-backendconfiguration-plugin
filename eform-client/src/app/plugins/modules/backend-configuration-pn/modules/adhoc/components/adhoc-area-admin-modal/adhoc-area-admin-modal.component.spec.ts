@@ -12,14 +12,14 @@ describe('AdhocAreaAdminModalComponent', () => {
   ];
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    adhocStateServiceSpy = jasmine.createSpyObj('AdhocStateService', [
-      'getAreasForProperty',
-      'getCachedAreas',
-      'renameArea',
-      'deleteArea',
-    ]);
-    adhocStateServiceSpy.getAreasForProperty.and.returnValue(of(areas));
+    dialogRefSpy = {close: jest.fn()};
+    adhocStateServiceSpy = {
+      getAreasForProperty: jest.fn(),
+      getCachedAreas: jest.fn(),
+      renameArea: jest.fn(),
+      deleteArea: jest.fn(),
+    };
+    adhocStateServiceSpy.getAreasForProperty.mockReturnValue(of(areas));
     component = new AdhocAreaAdminModalComponent(dialogRefSpy, {propertyId: 1, propertyName: 'Gård Nord'}, adhocStateServiceSpy);
   });
 
@@ -39,8 +39,8 @@ describe('AdhocAreaAdminModalComponent', () => {
 
   it('saveRename calls renameArea and refreshes areas from the cache on success', () => {
     const refreshed = [{id: 10, propertyId: 1, name: 'Stald renamed'}, areas[1]];
-    adhocStateServiceSpy.renameArea.and.returnValue(of(true));
-    adhocStateServiceSpy.getCachedAreas.and.returnValue(refreshed);
+    adhocStateServiceSpy.renameArea.mockReturnValue(of(true));
+    adhocStateServiceSpy.getCachedAreas.mockReturnValue(refreshed);
     component.editingId = 10;
     component.editName = 'Stald renamed';
     component.saveRename(areas[0]);
@@ -53,7 +53,7 @@ describe('AdhocAreaAdminModalComponent', () => {
   });
 
   it('saveRename surfaces an error key and leaves editingId set on failure', () => {
-    adhocStateServiceSpy.renameArea.and.returnValue(of(false));
+    adhocStateServiceSpy.renameArea.mockReturnValue(of(false));
     component.editingId = 10;
     component.editName = 'Stald 2';
     component.saveRename(areas[0]);
@@ -77,8 +77,8 @@ describe('AdhocAreaAdminModalComponent', () => {
 
   it('confirmDelete calls deleteArea, refreshes from cache, and closes the confirm step on success', () => {
     const refreshed = [areas[1]];
-    adhocStateServiceSpy.deleteArea.and.returnValue(of(true));
-    adhocStateServiceSpy.getCachedAreas.and.returnValue(refreshed);
+    adhocStateServiceSpy.deleteArea.mockReturnValue(of(true));
+    adhocStateServiceSpy.getCachedAreas.mockReturnValue(refreshed);
     component.confirmDeleteArea = areas[0];
     component.confirmDelete();
     expect(adhocStateServiceSpy.deleteArea).toHaveBeenCalledWith(1, 10);
@@ -88,7 +88,7 @@ describe('AdhocAreaAdminModalComponent', () => {
   });
 
   it('confirmDelete surfaces an error key and leaves the confirm step open on failure', () => {
-    adhocStateServiceSpy.deleteArea.and.returnValue(of(false));
+    adhocStateServiceSpy.deleteArea.mockReturnValue(of(false));
     component.confirmDeleteArea = areas[0];
     component.confirmDelete();
     expect(component.errorKey).toBe('Failed to delete area');

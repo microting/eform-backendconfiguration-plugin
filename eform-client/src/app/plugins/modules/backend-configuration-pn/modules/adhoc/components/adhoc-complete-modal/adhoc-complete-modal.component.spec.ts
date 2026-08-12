@@ -10,14 +10,14 @@ describe('AdhocCompleteModalComponent', () => {
   let component: AdhocCompleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    adhocServiceSpy = jasmine.createSpyObj('BackendConfigurationPnAdhocService', ['setCompleted']);
+    dialogRefSpy = {close: jest.fn()};
+    adhocServiceSpy = {setCompleted: jest.fn()};
     adhocStateServiceSpy = {
-      getWorkersForProperty: jasmine.createSpy('getWorkersForProperty').and.returnValue(
+      getWorkersForProperty: jest.fn().mockReturnValue(
         of([{workerId: 100, displayName: 'Mette Hansen', propertyIds: [1]}])
       ),
     };
-    toastrSpy = jasmine.createSpyObj('ToastrService', ['success']);
+    toastrSpy = {success: jest.fn()};
     translateSpy = {instant: (key: string) => key};
 
     component = new AdhocCompleteModalComponent(
@@ -42,7 +42,7 @@ describe('AdhocCompleteModalComponent', () => {
   });
 
   it('complete() calls setCompleted(id, true, completedByWorkerId), toasts, and closes with true', () => {
-    adhocServiceSpy.setCompleted.and.returnValue(of({success: true}));
+    adhocServiceSpy.setCompleted.mockReturnValue(of({success: true}));
     component.completedByWorkerId = 100;
     component.complete();
     expect(adhocServiceSpy.setCompleted).toHaveBeenCalledWith(7, true, 100);
@@ -51,7 +51,7 @@ describe('AdhocCompleteModalComponent', () => {
   });
 
   it('does not close on failure', () => {
-    adhocServiceSpy.setCompleted.and.returnValue(of({success: false}));
+    adhocServiceSpy.setCompleted.mockReturnValue(of({success: false}));
     component.complete();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });

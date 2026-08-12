@@ -60,29 +60,29 @@ describe('adhoc-display.util', () => {
     // both the name chips and the "Alle" chip must render.
     it('executionRule 1 (everyone) with assignedWorkerIds returns everyone:true AND the resolved names', () => {
       const result = assignedToDisplay(1, [100, 101], workers);
-      expect(result.everyone).toBeTrue();
+      expect(result.everyone).toBe(true);
       expect(result.names).toEqual(['Mette Hansen', 'Erik Eriksen']);
     });
 
     it('executionRule 1 (everyone) with no assignees returns everyone:true with no names', () => {
       const result = assignedToDisplay(1, [], workers);
-      expect(result.everyone).toBeTrue();
+      expect(result.everyone).toBe(true);
       expect(result.names).toEqual([]);
 
       const nullResult = assignedToDisplay(1, null, workers);
-      expect(nullResult.everyone).toBeTrue();
+      expect(nullResult.everyone).toBe(true);
       expect(nullResult.names).toEqual([]);
     });
 
     it('executionRule 0 (assignedOnly) resolves the assigned worker names', () => {
       const result = assignedToDisplay(0, [100], workers);
-      expect(result.everyone).toBeFalse();
+      expect(result.everyone).toBe(false);
       expect(result.names).toEqual(['Mette Hansen']);
     });
 
     it('executionRule 0 with no assignees returns an empty names list', () => {
       const result = assignedToDisplay(0, [], workers);
-      expect(result.everyone).toBeFalse();
+      expect(result.everyone).toBe(false);
       expect(result.names).toEqual([]);
     });
   });
