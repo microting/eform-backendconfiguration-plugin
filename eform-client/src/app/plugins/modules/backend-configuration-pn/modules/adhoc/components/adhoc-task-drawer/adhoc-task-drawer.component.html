@@ -10,9 +10,10 @@
   </div>
 
   <!--
-    Intro text is indented to the content column (icon gutter of the gcal
-    rows below), and the complete button sits on its own row, right-aligned
-    to the content gutter the fields end at (#1101 / #1102).
+    Intro text is flush with the title above (both at the drawer's 16px
+    left edge - the title is the task text, #1107), and the complete button
+    sits on its own row, right-aligned to the content gutter the fields
+    end at (#1101 / #1102).
   -->
   <div class="adhoc-drawer__intro" *ngIf="!isCreate">
     <span>{{ 'Created by' | translate }}: {{ workerName(task?.createdByWorkerId) }}</span>

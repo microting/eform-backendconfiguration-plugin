@@ -28,26 +28,41 @@
   width: min(560px, 100vw);
 }
 
+// 4px bottom padding keeps a small title→intro gap now that the title's
+// own theme bottom padding is zeroed (see the h3 rule below).
 .adhoc-drawer__header {
-  padding: 8px 8px 0 16px;
+  padding: 8px 8px 4px 16px;
 }
 
-// Left padding = the content column's left edge: 16px `.gcal-modal`
-// padding + 20px `.gcal-icon` + 16px icon margin, so the intro text lines
-// up with the task text / form fields below (#1101).
+// The themes give `mat-dialog-title` differing side padding (Material 20
+// default `6px 24px 13px`; theme-workspace `16px 16px 0`), pushing the
+// title off the drawer's 16px base edge - and each theme differently.
+// Zero it so the title sits flush at the header's 16px left padding,
+// where the intro below must align (#1107). ViewEncapsulation.None;
+// `!important` follows this file's theme-fight precedent (mtx-select
+// max-width lift below).
+.adhoc-drawer__header h3.mat-mdc-dialog-title {
+  padding: 0 !important;
+}
+
+// Left padding 16px = the header's left padding, so the "Created by"
+// intro's first glyph is flush with the title's first glyph - the title
+// IS the task text the stakeholder asked to align with (#1107, replacing
+// the #1101/#1103 form-field-column reading).
 .adhoc-drawer__intro {
-  padding: 0 16px 8px 52px;
+  padding: 0 16px 8px 16px;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.6);
 }
 
 // Complete-task button on its own row, right-aligned to the content
 // gutter (`.gcal-modal` padding-right: 24px) so it shares the Property
-// dropdown's right edge (#1102).
+// dropdown's right edge (#1102). Left padding matches the drawer's 16px
+// base edge (inert while the button is right-aligned).
 .adhoc-drawer__complete-row {
   display: flex;
   justify-content: flex-end;
-  padding: 0 24px 8px 52px;
+  padding: 0 24px 8px 16px;
 }
 
 .adhoc-drawer__content {
