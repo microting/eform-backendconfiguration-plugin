@@ -1,4 +1,5 @@
 import {CalendarRepeatService} from './calendar-repeat.service';
+import {mapResponseToCalendarTask} from './calendar-task.mapper';
 import {CalendarRepeatMeta, CalendarTaskModel} from '../../../models/calendar';
 import {TranslateService} from '@ngx-translate/core';
 
@@ -1339,5 +1340,110 @@ describe('CalendarRepeatService — monthly kinds', () => {
     );
     expect(meta.kind).toBe('monthlyFirstWeekday');
     expect(meta.weekday).toBe(0);
+  });
+});
+
+// ── Conversion wire encodings → reconstructMetaFromTask ──────────────────────
+//
+// The backend conversion writes raw repeat integers/CSV onto calendar tasks;
+// these tests feed exactly those wire shapes through the REAL load path —
+// mapResponseToCalendarTask (which derives repeatRule via mapRepeatType) and
+// then reconstructMetaFromTask — instead of hand-picking a repeatRule. This
+// pins the previously untested raw-task branches: the repeatOrdinalWeek
+// monthly-ordinal paths (both the 'monthlyDom' built-in branch at n=1 and the
+// 'custom'/repeatType=3 branch at n>1) and everyNWeekOne via a single-day CSV.
+
+describe('CalendarRepeatService — conversion wire encodings (reconstructMetaFromTask)', () => {
+  let service: CalendarRepeatService;
+
+  beforeEach(() => {
+    service = new CalendarRepeatService(translateStub);
+  });
+
+  // Builds the task exactly as the calendar load path does: a raw DTO with
+  // the persisted repeat columns, run through mapResponseToCalendarTask so
+  // repeatRule is derived by the real mapRepeatType — not hand-assigned.
+  function taskFromWire(wire: Partial<CalendarTaskModel>): CalendarTaskModel {
+    return mapResponseToCalendarTask({
+      id: 1, title: 't', startHour: 9, duration: 1, startText: '09:00',
+      endText: '10:00', tags: [], assigneeIds: [], boardId: 1, color: '',
+      descriptionHtml: '', taskDate: '2026-03-16', completed: false,
+      propertyId: 1, repeatEndMode: 0,
+      ...wire,
+    });
+  }
+
+  // ----- Monthly ordinal (repeatOrdinalWeek=1) from raw task ---------------
+
+  it('repeatType=3, repeatEvery=1, repeatOrdinalWeek=1, dayOfWeek=2, dayOfMonth=0 → monthlyFirstWeekday', () => {
+    const task = taskFromWire({
+      repeatType: 3, repeatEvery: 1, repeatOrdinalWeek: 1,
+      dayOfWeek: 2, dayOfMonth: 0,
+    });
+    // mapRepeatType(3, 1) routes through the 'monthlyDom' built-in branch.
+    expect(task.repeatRule).toBe('monthlyDom');
+    const r = service.reconstructMetaFromTask(task);
+    expect(r?.kind).toBe('monthlyFirstWeekday');
+    expect(r?.ordinalWeek).toBe(1);
+    // Weekday must come from dayOfWeek, not from any DOM field.
+    expect(r?.weekday).toBe(2);
+    expect(r?.n).toBe(1);
+  });
+
+  it('repeatType=3, repeatEvery=3, repeatOrdinalWeek=1, dayOfWeek=5, dayOfMonth=0 → everyNMonthFirstWeekday', () => {
+    const task = taskFromWire({
+      repeatType: 3, repeatEvery: 3, repeatOrdinalWeek: 1,
+      dayOfWeek: 5, dayOfMonth: 0,
+    });
+    // mapRepeatType(3, 3) routes through the 'custom' branch → repeatType=3.
+    expect(task.repeatRule).toBe('custom');
+    const r = service.reconstructMetaFromTask(task);
+    expect(r?.kind).toBe('everyNMonthFirstWeekday');
+    expect(r?.n).toBe(3);
+    expect(r?.ordinalWeek).toBe(1);
+    expect(r?.weekday).toBe(5);
+  });
+
+  // ----- Conversion-shape guard --------------------------------------------
+
+  it('dayOfMonth=0 with repeatOrdinalWeek=1 does NOT classify as monthlyDom (ordinal wins over the DOM sentinel)', () => {
+    // The conversion writes dayOfMonth=0 as the "no DOM" sentinel alongside
+    // repeatOrdinalWeek=1. If the ordinal branch regressed, dayOfMonth=0 is
+    // non-null and would fall through to a bogus monthlyDom with dom=0.
+    const task = taskFromWire({
+      repeatType: 3, repeatEvery: 1, repeatOrdinalWeek: 1,
+      dayOfWeek: 1, dayOfMonth: 0,
+    });
+    const r = service.reconstructMetaFromTask(task);
+    expect(r?.kind).not.toBe('monthlyDom');
+    expect(r?.kind).toBe('monthlyFirstWeekday');
+    expect(r?.dom).toBeUndefined();
+  });
+
+  // ----- everyNWeekOne from raw task (repeatType=2, N>1, single-day CSV) ---
+
+  it('repeatType=2, repeatEvery=2, repeatWeekdaysCsv="0" → everyNWeekOne on Sunday (weekday from CSV)', () => {
+    const task = taskFromWire({
+      repeatType: 2, repeatEvery: 2, repeatWeekdaysCsv: '0',
+      dayOfWeek: 4,  // intentionally different — the CSV must win
+    });
+    // mapRepeatType(2, 2) routes through the 'custom' branch → repeatType=2.
+    expect(task.repeatRule).toBe('custom');
+    const r = service.reconstructMetaFromTask(task);
+    expect(r?.kind).toBe('everyNWeekOne');
+    expect(r?.n).toBe(2);
+    expect(r?.weekday).toBe(0);
+  });
+
+  it('repeatType=2, repeatEvery=2, repeatWeekdaysCsv="3" → everyNWeekOne on Wednesday (weekday from CSV)', () => {
+    const task = taskFromWire({
+      repeatType: 2, repeatEvery: 2, repeatWeekdaysCsv: '3',
+      dayOfWeek: null,
+    });
+    expect(task.repeatRule).toBe('custom');
+    const r = service.reconstructMetaFromTask(task);
+    expect(r?.kind).toBe('everyNWeekOne');
+    expect(r?.n).toBe(2);
+    expect(r?.weekday).toBe(3);
   });
 });
