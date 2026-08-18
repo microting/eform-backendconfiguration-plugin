@@ -317,6 +317,86 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
     }
 
     [Test]
+    public async Task RunIfNeededAsync_MonthlyWithStaleMarkerButUnnormalizedArp_NormalizesInPlaceWithoutDuplicatingMarker()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var board = new CalendarBoard { Name = "Board A", Color = "#111111", PropertyId = property.Id };
+        await board.Create(BackendConfigurationPnDbContext!);
+
+        // 2026-01-31 is a Saturday (DayOfWeek 6).
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Month, repeatEvery: 1,
+            startDate: new DateTime(2026, 1, 31));
+
+        // Reproduce the old, since-replaced backfill's output: a live marker exists
+        // but the ARP recurrence detail columns were never populated
+        // (RepeatOrdinalWeek still null), so the task keeps rendering "på dag 0".
+        var staleMarker = new CalendarConfiguration
+        {
+            AreaRulePlanningId = arp.Id,
+            StartHour = 9.0,
+            Duration = 1.0,
+            BoardId = board.Id
+        };
+        await staleMarker.Create(BackendConfigurationPnDbContext!);
+
+        await _sut.RunIfNeededAsync();
+
+        // The stale marker must NOT gate normalization: the ordinal-weekday encoding
+        // has to be derived exactly as the no-prior-marker Month test asserts.
+        var updatedArp = BackendConfigurationPnDbContext!.AreaRulePlannings.Single(x => x.Id == arp.Id);
+        Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
+        Assert.That(updatedArp.RepeatEvery, Is.EqualTo(1));
+        Assert.That(updatedArp.DayOfWeek, Is.EqualTo(6));
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.EqualTo(1));
+        Assert.That(updatedArp.DayOfMonth, Is.EqualTo(0));
+
+        var updatedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
+        Assert.That(updatedPlanning.RepeatOrdinalWeek, Is.EqualTo(1));
+
+        // The existing marker is reused, not duplicated.
+        Assert.That(BackendConfigurationPnDbContext.CalendarConfigurations
+            .Count(c => c.AreaRulePlanningId == arp.Id), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task RunIfNeededAsync_WeeklyWithStaleMarkerButUnnormalizedArp_NormalizesInPlaceWithoutDuplicatingMarker()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var board = new CalendarBoard { Name = "Board A", Color = "#111111", PropertyId = property.Id };
+        await board.Create(BackendConfigurationPnDbContext!);
+
+        // 2026-01-07 is a Wednesday (DayOfWeek 3).
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Week, repeatEvery: 1,
+            startDate: new DateTime(2026, 1, 7));
+
+        // Old backfill's output: marker exists, RepeatWeekdaysCsv never written.
+        var staleMarker = new CalendarConfiguration
+        {
+            AreaRulePlanningId = arp.Id,
+            StartHour = 9.0,
+            Duration = 1.0,
+            BoardId = board.Id
+        };
+        await staleMarker.Create(BackendConfigurationPnDbContext!);
+
+        await _sut.RunIfNeededAsync();
+
+        var updatedArp = BackendConfigurationPnDbContext!.AreaRulePlannings.Single(x => x.Id == arp.Id);
+        Assert.That(updatedArp.RepeatType, Is.EqualTo(2));
+        Assert.That(updatedArp.RepeatEvery, Is.EqualTo(1));
+        Assert.That(updatedArp.DayOfWeek, Is.EqualTo(3));
+        Assert.That(updatedArp.RepeatWeekdaysCsv, Is.EqualTo("3"));
+
+        // The existing marker is reused, not duplicated.
+        Assert.That(BackendConfigurationPnDbContext.CalendarConfigurations
+            .Count(c => c.AreaRulePlanningId == arp.Id), Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task RunIfNeededAsync_PlanningWhoseAreaRuleWasNotCreatedInGuide_GetsNoConfiguration()
     {
         var property = await SeedProperty();
