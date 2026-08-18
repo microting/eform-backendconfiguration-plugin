@@ -28,11 +28,24 @@ public class CalendarConfigurationBackfillService(
         // Mirrors BackendConfigurationCalendarService.CreateTask's ARP-to-AreaRule
         // correlation: navigate via the AreaRule FK/nav property and filter on
         // CreatedInGuide (task-wizard-created rules only).
+        //
+        // Selection is by correctness, not marker existence alone: an older,
+        // since-replaced version of this service created the CalendarConfiguration
+        // marker WITHOUT ever populating the ARP recurrence detail columns, so those
+        // rows (and any reintroduced via a restore of old production data) still
+        // render as "dag 0" and need normalizing even though a marker exists. A row
+        // qualifies when it has no live marker OR it is a still-un-normalized
+        // Week/Month wizard row — Week detected via an empty RepeatWeekdaysCsv and
+        // Month via a null RepeatOrdinalWeek, both columns NormalizeRecurrence always
+        // sets and the old buggy service never touched (RepeatOrdinalWeek is nullable
+        // so its absence is unambiguous, unlike DayOfMonth which defaults to 0).
         var missing = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Include(x => x.AreaRule)
             .Where(x => x.AreaRule.CreatedInGuide)
-            .Where(x => !configuredArpIds.Contains(x.Id))
+            .Where(x => !configuredArpIds.Contains(x.Id)
+                        || (x.RepeatType == 2 && string.IsNullOrEmpty(x.RepeatWeekdaysCsv))
+                        || (x.RepeatType == 3 && x.RepeatOrdinalWeek == null))
             .ToListAsync();
 
         if (missing.Count == 0)
@@ -90,15 +103,22 @@ public class CalendarConfigurationBackfillService(
                     // startup backfill (WorkorderCaseGroupIdBackfillService) relies on.
                     // Created last: its existence is the idempotency marker for the
                     // whole conversion of this ARP, so a crash mid-run resumes here.
-                    var configuration = new CalendarConfiguration
+                    //
+                    // A stale-marker row (re-selected for normalization above) already
+                    // has a live marker; re-inserting would duplicate it, so only
+                    // create when none exists and leave the existing one untouched.
+                    if (!configuredArpIds.Contains(arp.Id))
                     {
-                        AreaRulePlanningId = arp.Id,
-                        StartHour = 9.0,
-                        Duration = 1.0,
-                        BoardId = board.Id,
-                        Color = null
-                    };
-                    await configuration.Create(dbContext);
+                        var configuration = new CalendarConfiguration
+                        {
+                            AreaRulePlanningId = arp.Id,
+                            StartHour = 9.0,
+                            Duration = 1.0,
+                            BoardId = board.Id,
+                            Color = null
+                        };
+                        await configuration.Create(dbContext);
+                    }
                 }
                 catch (Exception e)
                 {
