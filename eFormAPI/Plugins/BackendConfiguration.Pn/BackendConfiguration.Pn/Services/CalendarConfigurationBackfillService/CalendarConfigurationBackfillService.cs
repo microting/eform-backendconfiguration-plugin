@@ -36,16 +36,19 @@ public class CalendarConfigurationBackfillService(
         // render as "dag 0" and need normalizing even though a marker exists. A row
         // qualifies when it has no live marker OR it is a still-un-normalized
         // Week/Month wizard row — Week detected via an empty RepeatWeekdaysCsv and
-        // Month via a null RepeatOrdinalWeek, both columns NormalizeRecurrence always
-        // sets and the old buggy service never touched (RepeatOrdinalWeek is nullable
-        // so its absence is unambiguous, unlike DayOfMonth which defaults to 0).
+        // Month via a null RepeatOrdinalWeek AND a zero DayOfMonth — a legitimate
+        // "day N of month" row (edited via UpdateTask) has RepeatOrdinalWeek null but
+        // DayOfMonth >= 1, so requiring DayOfMonth == 0 avoids re-normalizing and
+        // corrupting it; only truly-stale rows leave both at their defaults.
         var arpsToNormalize = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Include(x => x.AreaRule)
             .Where(x => x.AreaRule.CreatedInGuide)
             .Where(x => !configuredArpIds.Contains(x.Id)
                         || (x.RepeatType == 2 && string.IsNullOrEmpty(x.RepeatWeekdaysCsv))
-                        || (x.RepeatType == 3 && x.RepeatOrdinalWeek == null))
+                        // DayOfMonth == 0 required: a legit "day N of month" row has
+                        // RepeatOrdinalWeek null but DayOfMonth >= 1; don't re-normalize it.
+                        || (x.RepeatType == 3 && x.RepeatOrdinalWeek == null && x.DayOfMonth == 0))
             .ToListAsync();
 
         if (arpsToNormalize.Count == 0)

@@ -361,6 +361,52 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
     }
 
     [Test]
+    public async Task RunIfNeededAsync_MonthlyDayOfMonthWithLiveMarker_IsLeftUntouched()
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var board = new CalendarBoard { Name = "Board A", Color = "#111111", PropertyId = property.Id };
+        await board.Create(BackendConfigurationPnDbContext!);
+
+        // A legitimately-configured "day 15 of month" wizard task: converted, then
+        // edited via UpdateTask to monthly-on-day-15. RepeatOrdinalWeek stays null
+        // (that's the "Nth weekday" encoding, not used here) but DayOfMonth is a real
+        // value >= 1 — the marker of a live, correctly-normalized recurrence. The
+        // Month sentinel must NOT re-select this row (it would overwrite DayOfMonth
+        // back to 0), which it only avoids because it also requires DayOfMonth == 0.
+        var (arp, planning) = await SeedWizardTask(
+            property.Id, area.Id, repeatType: (int)RepeatType.Month, repeatEvery: 1,
+            startDate: new DateTime(2026, 1, 15));
+        arp.DayOfMonth = 15;
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
+
+        var liveMarker = new CalendarConfiguration
+        {
+            AreaRulePlanningId = arp.Id,
+            StartHour = 9.0,
+            Duration = 1.0,
+            BoardId = board.Id
+        };
+        await liveMarker.Create(BackendConfigurationPnDbContext!);
+
+        await _sut.RunIfNeededAsync();
+
+        // Completely untouched: DayOfMonth still 15, no ordinal-weekday re-derivation.
+        var updatedArp = BackendConfigurationPnDbContext.AreaRulePlannings.Single(x => x.Id == arp.Id);
+        Assert.That(updatedArp.RepeatType, Is.EqualTo(3));
+        Assert.That(updatedArp.DayOfMonth, Is.EqualTo(15));
+        Assert.That(updatedArp.RepeatOrdinalWeek, Is.Null);
+
+        // No re-normalization of the linked Planning either.
+        var untouchedPlanning = ItemsPlanningPnDbContext!.Plannings.Single(x => x.Id == planning.Id);
+        Assert.That(untouchedPlanning.RepeatType, Is.EqualTo(RepeatType.Month));
+
+        // The live marker is left alone, not duplicated.
+        Assert.That(BackendConfigurationPnDbContext.CalendarConfigurations
+            .Count(c => c.AreaRulePlanningId == arp.Id), Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task RunIfNeededAsync_WeeklyWithStaleMarkerButUnnormalizedArp_NormalizesInPlaceWithoutDuplicatingMarker()
     {
         var property = await SeedProperty();
