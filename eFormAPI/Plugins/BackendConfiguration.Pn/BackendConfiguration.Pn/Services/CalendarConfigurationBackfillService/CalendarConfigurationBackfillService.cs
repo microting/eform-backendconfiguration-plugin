@@ -39,7 +39,7 @@ public class CalendarConfigurationBackfillService(
         // Month via a null RepeatOrdinalWeek, both columns NormalizeRecurrence always
         // sets and the old buggy service never touched (RepeatOrdinalWeek is nullable
         // so its absence is unambiguous, unlike DayOfMonth which defaults to 0).
-        var missing = await dbContext.AreaRulePlannings
+        var arpsToNormalize = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Include(x => x.AreaRule)
             .Where(x => x.AreaRule.CreatedInGuide)
@@ -48,19 +48,19 @@ public class CalendarConfigurationBackfillService(
                         || (x.RepeatType == 3 && x.RepeatOrdinalWeek == null))
             .ToListAsync();
 
-        if (missing.Count == 0)
+        if (arpsToNormalize.Count == 0)
         {
             return;
         }
 
         logger.LogInformation(
             "CalendarConfigurationBackfill: converting {Count} plannings to calendar tasks",
-            missing.Count);
+            arpsToNormalize.Count);
 
         // Old-frequency source of truth is the linked items-planning Planning row.
         // No WorkflowState filter on purpose: soft-deleted Plannings (inactive
         // tasks) render dimmed in the calendar and need normalization too.
-        var planningIds = missing.Select(x => x.ItemPlanningId).Distinct().ToList();
+        var planningIds = arpsToNormalize.Select(x => x.ItemPlanningId).Distinct().ToList();
         var plannings = await itemsPlanningPnDbContext.Plannings
             .Where(x => planningIds.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id);
@@ -68,7 +68,7 @@ public class CalendarConfigurationBackfillService(
         // Default board per property = lowest-Id non-removed board; create if none.
         // "Default"/"#c30000" mirrors BackendConfigurationCalendarService.GetBoards'
         // auto-create-default-board values verbatim.
-        foreach (var propertyId in missing.Select(x => x.PropertyId).Distinct())
+        foreach (var propertyId in arpsToNormalize.Select(x => x.PropertyId).Distinct())
         {
             var board = await dbContext.CalendarBoards
                 .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
@@ -87,7 +87,7 @@ public class CalendarConfigurationBackfillService(
                 await board.Create(dbContext);
             }
 
-            foreach (var arp in missing.Where(x => x.PropertyId == propertyId))
+            foreach (var arp in arpsToNormalize.Where(x => x.PropertyId == propertyId))
             {
                 try
                 {
