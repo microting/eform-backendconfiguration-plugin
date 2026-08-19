@@ -54,18 +54,14 @@ export class CalendarLayoutService {
       // alone determines the column's availability.
       const columns: CalendarTaskLayoutModel[][] = [];
       ordered.forEach(ev => {
-        const evStart = ev.startHour;
-        let placed = false;
-        for (const col of columns) {
+        const openColumn = columns.find(col => {
           const last = col[col.length - 1];
           const lastEnd = last.startHour + (last.duration || 1);
-          if (lastEnd <= evStart) {
-            col.push(ev);
-            placed = true;
-            break;
-          }
-        }
-        if (!placed) {
+          return lastEnd <= ev.startHour;
+        });
+        if (openColumn) {
+          openColumn.push(ev);
+        } else {
           columns.push([ev]);
         }
       });
