@@ -91,6 +91,10 @@ jobs:
       run: |
         cd eform-angular-frontend/eform-client
         VER=$(awk -F'"' '/^"@playwright\/test@/{b=1} b&&/^  version/{print $2; exit}' yarn.lock)
+        if [ -z "$VER" ]; then
+          echo "::error::Could not resolve @playwright/test version from yarn.lock"
+          exit 1
+        fi
         echo "version=$VER" >> "$GITHUB_OUTPUT"
     - name: Cache Playwright browsers
       id: pwcache
@@ -100,7 +104,9 @@ jobs:
         key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
     - name: Download browsers (cache miss only)
       if: steps.pwcache.outputs.cache-hit != 'true'
-      run: npx playwright@${{ steps.pw.outputs.version }} install chromium
+      env:
+        PW_VERSION: ${{ steps.pw.outputs.version }}
+      run: npx playwright@"$PW_VERSION" install chromium
   pn-playwright-test:
     needs: [backend-pn-build, prewarm-playwright]
     runs-on: ubuntu-latest
@@ -183,15 +189,12 @@ jobs:
       with:
         path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ needs.prewarm-playwright.outputs.version }}
-    # Cache miss: install browser binaries + system apt deps.
-    # Cache hit: browsers were restored from the cache above, but system apt
-    # deps live outside ~/.cache/ms-playwright and must be installed each run.
-    - name: Install Playwright (+browsers) — cache miss
-      if: steps.pwcache.outputs.cache-hit != 'true'
+    # The restored browser cache makes `install` a no-op download on a hit while
+    # still (re)installing apt system-deps; running it unconditionally keeps the
+    # shard self-healing if the cache is ever incomplete or the resolved version
+    # differs from prewarm's.
+    - name: Install Playwright browsers + system deps
       run: cd eform-angular-frontend/eform-client && npx playwright install --with-deps chromium
-    - name: Install Playwright system deps only — cache hit
-      if: steps.pwcache.outputs.cache-hit == 'true'
-      run: cd eform-angular-frontend/eform-client && npx playwright install-deps chromium
     - name: Create errorShots directory
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
