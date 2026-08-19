@@ -56,6 +56,11 @@ jobs:
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar
+  # Warms the shared ~/.cache/ms-playwright browser cache once, before the
+  # pn-playwright-test matrix fans out, so each shard restores the browsers
+  # instead of re-downloading them. Installs browser binaries only (no
+  # --with-deps): system apt deps live outside the cache and are (re)installed
+  # per shard in pn-playwright-test below.
   prewarm-playwright:
     runs-on: ubuntu-latest
     outputs:
@@ -182,6 +187,9 @@ jobs:
       with:
         path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ needs.prewarm-playwright.outputs.version }}
+    # Cache miss: install browser binaries + system apt deps.
+    # Cache hit: browsers were restored from the cache above, but system apt
+    # deps live outside ~/.cache/ms-playwright and must be installed each run.
     - name: Install Playwright (+browsers) — cache miss
       if: steps.pwcache.outputs.cache-hit != 'true'
       run: cd eform-angular-frontend/eform-client && npx playwright install --with-deps chromium
