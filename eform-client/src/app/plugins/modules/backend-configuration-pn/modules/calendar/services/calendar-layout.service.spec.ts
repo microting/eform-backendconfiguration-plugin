@@ -234,6 +234,42 @@ describe('CalendarLayoutService', () => {
     expect(c._width).toBe(50);
   });
 
+  it('3-column partial cluster reuses a freed column', () => {
+    // One connected cluster whose true max concurrency is 3, not 4:
+    //   L 09:00–13:00 (long base), A 09:30–10:30, B 09:45–10:45, C 11:00–12:00.
+    // First-fit packing: L→col0, A→col1, B→col2 (col0 & col1 both busy at 09:45),
+    // C→col1 reused (A freed its column at 10:30 ≤ C start 11:00). numCols = 3, so
+    // C lands in col1 — NOT a 4th column that would crush every card into slivers.
+    const result = service.computeLayout([
+      makeTask(1, 9, 4),     // L 09:00–13:00
+      makeTask(2, 9.5, 1),   // A 09:30–10:30
+      makeTask(3, 9.75, 1),  // B 09:45–10:45
+      makeTask(4, 11, 1),    // C 11:00–12:00
+    ]);
+    const l = result.find(t => t.id === 1)!;
+    const a = result.find(t => t.id === 2)!;
+    const b = result.find(t => t.id === 3)!;
+    const c = result.find(t => t.id === 4)!;
+    // L in col0: full width, left 0.
+    expect(l._left).toBeCloseTo(0, 10);
+    expect(l._width).toBeCloseTo(100, 10);
+    expect(l._zIndex).toBe(10);
+    // A in col1 of 3: left 100/3, extends to the right edge → width 200/3.
+    expect(a._left).toBeCloseTo(100 / 3, 10);
+    expect(a._width).toBeCloseTo(100 - 100 / 3, 10); // 200/3 ≈ 66.667
+    expect(a._zIndex).toBe(11);
+    // C reuses A's freed col1 → same geometry as A, NOT a narrower 4th column.
+    expect(c._left).toBeCloseTo(100 / 3, 10);
+    expect(c._width).toBeCloseTo(100 - 100 / 3, 10);
+    expect(c._zIndex).toBe(11);
+    // B in col2 of 3: left 200/3, width 100/3.
+    expect(b._left).toBeCloseTo(200 / 3, 10);
+    expect(b._width).toBeCloseTo(100 - 200 / 3, 10); // 100/3 ≈ 33.333
+    expect(b._zIndex).toBe(12);
+    // All four share one cluster → all flagged in-group for click-to-raise.
+    expect(result.every(t => t._inGroup === true)).toBe(true);
+  });
+
   it('tie-break: when two tasks share a start, the longer one takes the earlier column', () => {
     // Same start 09:00, durations 2h and 1h. They mutually overlap → 2 columns.
     // Tie-break "longer duration first" is deterministic regardless of input
