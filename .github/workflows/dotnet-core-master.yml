@@ -97,7 +97,7 @@ jobs:
       if: steps.pwcache.outputs.cache-hit != 'true'
       run: npx playwright@${{ steps.pw.outputs.version }} install chromium
   pn-playwright-test:
-    needs: backend-pn-build
+    needs: [backend-pn-build, prewarm-playwright]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -164,10 +164,26 @@ jobs:
         cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
         ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
         ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+    - name: Cache yarn
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('eform-angular-frontend/eform-client/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
-    - name: Install Playwright browsers
+    - name: Cache Playwright browsers
+      id: pwcache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ needs.prewarm-playwright.outputs.version }}
+    - name: Install Playwright (+browsers) — cache miss
+      if: steps.pwcache.outputs.cache-hit != 'true'
       run: cd eform-angular-frontend/eform-client && npx playwright install --with-deps chromium
+    - name: Install Playwright system deps only — cache hit
+      if: steps.pwcache.outputs.cache-hit == 'true'
+      run: cd eform-angular-frontend/eform-client && npx playwright install-deps chromium
     - name: Create errorShots directory
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
