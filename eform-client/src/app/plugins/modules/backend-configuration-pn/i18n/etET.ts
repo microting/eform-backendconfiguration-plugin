@@ -587,4 +587,6 @@ export const etET = {
   'Delete photo?': 'Kas kustutada foto?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Foto eemaldatakse ülesandest. Toimingut ei saa tagasi võtta.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-vorm kehtib kogu seeria kohta. Selle muutmine uuendab kõiki veel lõpetamata sündmusi, sealhulgas varasemaid sündmusi. Lõpetatud sündmustel säilib e-vorm, millega need täideti.',
+  'Select a calendar': 'Valige kalender',
 };

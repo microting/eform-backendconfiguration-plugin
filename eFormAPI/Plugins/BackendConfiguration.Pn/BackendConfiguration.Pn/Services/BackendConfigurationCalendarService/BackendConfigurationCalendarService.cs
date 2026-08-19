@@ -1765,6 +1765,46 @@ public class BackendConfigurationCalendarService(
             await exceptionSite.Create(backendConfigurationPnDbContext);
         }
 
+        // The eForm is a SERIES-level property — there is no per-occurrence
+        // column for it, and the completion path resolves the eForm from the
+        // occurrence's own SDK case. A scope="this" edit that changes it would
+        // otherwise be silently discarded (the exception row above carries no
+        // eForm), so apply the change to the whole series — AreaRule + Planning
+        // + the repair pass over every deployed, not-yet-completed occurrence.
+        // The frontend confirms this widening with the user before saving.
+        // Reuses the wizard so both scopes write the same rows the same way.
+        //
+        // Projected into an anonymous type, NOT straight onto the nullable
+        // `EformId` column: a `FirstOrDefaultAsync` over `int?` returns null
+        // both when the series row is GONE and when it merely carries no eForm,
+        // and "gone" then satisfied `currentEformId != updateModel.EformId`.
+        // ApplyEformChangeToSeries would answer TaskNotFound / Success:false —
+        // AFTER the CalendarOccurrenceException and its ExceptionSites were
+        // already written — so the user saw a hard error for a save that had
+        // partly landed. A missing series has no series-level eForm to change:
+        // log it and let the per-occurrence write above stand.
+        var series = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.Id == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => new { CurrentEformId = x.AreaRule.EformId })
+            .FirstOrDefaultAsync();
+
+        if (series == null)
+        {
+            logger.LogWarning(
+                "UpdateTaskThisOccurrence: no live AreaRulePlanning {AreaRulePlanningId} (or its AreaRule) — the occurrence exception was written, but the eForm change cannot be applied at series level",
+                updateModel.Id);
+        }
+        else if (updateModel.EformId > 0 && series.CurrentEformId != updateModel.EformId)
+        {
+            var eformResult = await taskWizardService
+                .ApplyEformChangeToSeries(updateModel.Id, updateModel.EformId);
+            if (eformResult is { Success: false })
+            {
+                return eformResult;
+            }
+        }
+
         return new OperationResult(true,
             localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
     }

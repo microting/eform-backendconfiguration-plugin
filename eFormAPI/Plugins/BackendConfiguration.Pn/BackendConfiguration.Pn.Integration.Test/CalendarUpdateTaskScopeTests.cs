@@ -80,6 +80,10 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         // scope=all / thisAndFollowing delegate field updates to the wizard.
         _taskWizardService.UpdateTask(Arg.Any<TaskWizardCreateModel>())
             .Returns(Task.FromResult(new OperationResult(true)));
+        // scope=this widens an eForm change to the whole series through this
+        // call (the eForm has no per-occurrence column).
+        _taskWizardService.ApplyEformChangeToSeries(Arg.Any<int>(), Arg.Any<int>())
+            .Returns(Task.FromResult(new OperationResult(true)));
 
         _calendarService = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
@@ -107,7 +111,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
     /// CalendarConfiguration for a weekly series. Returns the ARP Id.
     /// </summary>
     private async Task<int> SeedWeeklyTask(DateTime startDate, string title = "Original Title",
-        int arpRepeatType = 2)
+        int arpRepeatType = 2, int eformId = 0)
     {
         var area = new Area
         {
@@ -127,7 +131,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
 
         var areaRule = new AreaRule
         {
-            AreaId = area.Id, PropertyId = property.Id, EformId = 0,
+            AreaId = area.Id, PropertyId = property.Id, EformId = eformId,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
@@ -144,7 +148,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         var planning = new Planning
         {
             Enabled = true, RepeatEvery = 1, RepeatType = RepeatType.Week, StartDate = startDate,
-            RelatedEFormId = 0, Description = "Original description",
+            RelatedEFormId = eformId, Description = "Original description",
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
@@ -173,7 +177,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
 
     private static CalendarTaskUpdateRequestModel BuildEdit(int arpId, DateTime startDate, string scope,
         DateTime originalDate, string title = "Edited Title", double startHour = 11.0, double duration = 2.0,
-        int propertyId = 0)
+        int propertyId = 0, int eformId = 0)
     {
         return new CalendarTaskUpdateRequestModel
         {
@@ -188,7 +192,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
             RepeatEvery = 1,
             ComplianceEnabled = false,
             PropertyId = propertyId,
-            EformId = 0,
+            EformId = eformId,
             Sites = [101],
             TagIds = [],
             BoardId = 42,
@@ -433,5 +437,79 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         // ORIGINAL start date (not the edited occurrence's date) — the #885 fix.
         await _taskWizardService.Received().UpdateTask(
             Arg.Is<TaskWizardCreateModel>(m => m.StartDate == arp.StartDate));
+    }
+
+    // ------------------------------------------------------------------
+    // eForm propagation (spec 2026-08-19-calendar-eform-change-propagation).
+    // The eForm is a SERIES-level property — there is no per-occurrence column
+    // for it and the completion path resolves the eForm from the occurrence's
+    // own SDK case, so a scope="this" edit that changes it must be widened to
+    // the whole series instead of being silently discarded.
+    // ------------------------------------------------------------------
+
+    [Test]
+    public async Task UpdateTask_ScopeThis_WithEformChange_AppliesEformToSeries_AndStillWritesTheException()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        const int originalEformId = 4711;
+        const int newEformId = 4712;
+        var arpId = await SeedWeeklyTask(startDate, eformId: originalEformId);
+
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday,
+            startHour: 11.0, duration: 2.0, eformId: newEformId);
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        // 1. The eForm change is applied at SERIES level...
+        await _taskWizardService.Received(1).ApplyEformChangeToSeries(arpId, newEformId);
+
+        // 2. ...and the per-occurrence exception is STILL written, so the
+        //    occurrence's own field overrides are not lost to the widening.
+        var exception = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Include(x => x.ExceptionSites)
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .SingleAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(exception.OriginalDate.Date, Is.EqualTo(baseMonday.Date));
+            Assert.That(exception.Title, Is.EqualTo("Edited Title"));
+            Assert.That(exception.StartHour, Is.EqualTo(11.0));
+            Assert.That(exception.Duration, Is.EqualTo(2.0));
+            Assert.That(exception.IsDeleted, Is.False);
+        });
+
+        // 3. Widening the eForm must not turn a "this" edit into a series
+        //    field update — the wizard's full UpdateTask stays untouched.
+        await _taskWizardService.DidNotReceive().UpdateTask(Arg.Any<TaskWizardCreateModel>());
+        var arp = await BackendConfigurationPnDbContext.AreaRulePlannings.FirstAsync(x => x.Id == arpId);
+        Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(baseMonday.Date));
+    }
+
+    [Test]
+    public async Task UpdateTask_ScopeThis_WithoutEformChange_DoesNotTouchTheSeriesEform()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        const int eformId = 4711;
+        var arpId = await SeedWeeklyTask(startDate, eformId: eformId);
+
+        // Same eForm as the series already carries — the edit only moves the
+        // start hour. Zero retract, zero redeploy: the widening path (and with
+        // it EventDeployService.RepairEformForOpenOccurrencesAsync) must not
+        // run at all.
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday, startHour: 13.0, eformId: eformId);
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        await _taskWizardService.DidNotReceive().ApplyEformChangeToSeries(Arg.Any<int>(), Arg.Any<int>());
+
+        var exception = await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions
+            .Where(x => x.AreaRulePlanningId == arpId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .SingleAsync();
+        Assert.That(exception.StartHour, Is.EqualTo(13.0));
     }
 }

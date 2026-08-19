@@ -587,4 +587,6 @@ export const roRO = {
   'Delete photo?': 'Ștergeți fotografia?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Fotografia va fi eliminată din sarcină. Această acțiune nu poate fi anulată.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Formularul electronic se aplică întregii serii. Modificarea acestuia actualizează fiecare apariție care nu a fost încă finalizată, inclusiv aparițiile din trecut. Aparițiile finalizate păstrează formularul electronic cu care au fost completate.',
+  'Select a calendar': 'Selectați un calendar',
 };

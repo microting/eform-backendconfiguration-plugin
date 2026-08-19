@@ -14,6 +14,11 @@ export interface CalendarTaskCreateModel {
   taskDate: string;
   driveLink?: string;
   propertyId: number;
+  // Selected eForm (SDK CheckList id), null when the event has no eForm.
+  // Declared explicitly so the field is compiler-checked: it used to reach the
+  // backend only because the modal typed its payload `any`, which made a
+  // rename/typo silently drop the eForm from the request.
+  eformId: number | null;
   // CSV of JS getDay() weekday indices ("1,3,5") — only populated for
   // multi-day weekly custom rules. Cleared (sent as null) for any non-custom
   // rule so the backend column is wiped on rule change.

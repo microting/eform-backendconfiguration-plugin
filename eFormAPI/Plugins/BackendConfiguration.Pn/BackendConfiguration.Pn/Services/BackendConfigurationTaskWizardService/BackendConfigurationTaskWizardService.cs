@@ -3,6 +3,7 @@ using Sentry;
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 using BackendConfigurationLocalizationService;
+using EventDeployService;
 using Infrastructure;
 using Infrastructure.Enums;
 using Infrastructure.Helpers;
@@ -30,6 +31,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly IEFormCoreService _coreHelper;
     private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+    private readonly IEventDeployService _eventDeployService;
     private readonly ILogger<BackendConfigurationTaskWizardService> _logger;
 
     public BackendConfigurationTaskWizardService(
@@ -38,6 +40,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         IEFormCoreService coreHelper,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        IEventDeployService eventDeployService,
         ILogger<BackendConfigurationTaskWizardService> logger)
     {
         _localizationService = localizationService;
@@ -45,6 +48,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         _coreHelper = coreHelper;
         _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+        _eventDeployService = eventDeployService;
         _logger = logger;
     }
 
@@ -757,6 +761,43 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             var areaId = await GetLogBooksAreaId();
 
+            // The eForm currently deployed for this event, captured BEFORE the
+            // AreaRule overwrite below. When it differs from the incoming one,
+            // every already-deployed but not-yet-completed occurrence still
+            // carries the OLD eForm in its SDK case, so it must be repaired
+            // after the AreaRule/Planning writes are saved (see the end of this
+            // method). Both surfaces (calendar + task wizard) write these rows,
+            // so detecting here covers both.
+            var oldEformId = areaRulePlanning.AreaRule.EformId;
+
+            // An EformId of 0 on the wire means "no eForm supplied", NOT "clear
+            // the eForm on this task". The calendar edit modal's eForm control is
+            // `number | null` and a cleared select serialises to 0, and the
+            // scope="this" path already defines 0 that way
+            // (BackendConfigurationCalendarService.UpdateTaskThisOccurrence:
+            // `if (updateModel.EformId > 0 && currentEformId != updateModel.EformId)`).
+            // Writing the 0 through — which is what the unconditional AreaRule
+            // assignment below used to do — produced a task the calendar renders
+            // with NO eForm while every already-deployed occurrence still
+            // completes with the old one, because nothing retracts those cases.
+            // Keeping the current eForm is the only non-destructive resolution
+            // that leaves display and completion agreeing; deliberately clearing
+            // an eForm is not a supported edit (an EformId-less task can never
+            // deploy — every deploy path refuses eformId <= 0).
+            if (updateModel.EformId <= 0 && oldEformId is > 0)
+            {
+                _logger.LogWarning(
+                    "BackendConfigurationTaskWizardService.UpdateTask: task {AreaRulePlanningId} was saved with EformId {IncomingEformId}; keeping the current eForm {CurrentEformId} instead of clearing it.",
+                    areaRulePlanning.Id, updateModel.EformId, oldEformId.Value);
+                updateModel.EformId = oldEformId.Value;
+                // eformName was resolved from the incoming (0) id above.
+                eformName = sdkDbContext.CheckListTranslations
+                    .Where(x => x.CheckListId == updateModel.EformId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.Text)
+                    .FirstOrDefault();
+            }
+
             // update area rule plannings and area rule with translations
             var oldStatus = areaRulePlanning.Status;
             areaRulePlanning.FolderId = (int)updateModel.FolderId;
@@ -882,6 +923,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
                     planning.ShowExpireDate = true;
+                    // The eForm must be written in EVERY branch, not just the
+                    // "still active" one: PairItemWithSiteHelper.Pair below
+                    // deploys from updateModel.EformId, so a Planning left on
+                    // the old RelatedEFormId would disagree with both the
+                    // AreaRule and the freshly deployed cases.
+                    planning.RelatedEFormId = updateModel.EformId;
+                    planning.RelatedEFormName = eformName;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
 
@@ -960,6 +1008,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId)
                         .ConfigureAwait(false);
                     planning.Enabled = false;
+                    // Keep the eForm in sync even while deactivating, so a later
+                    // reactivation starts from the edited eForm rather than the
+                    // stale one.
+                    planning.RelatedEFormId = updateModel.EformId;
+                    planning.RelatedEFormName = eformName;
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                     var complianceList = await _backendConfigurationPnDbContext.Compliances
@@ -1169,11 +1222,139 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 {
                     await UpdateTags(areaRulePlanning.ItemPlanningId, updateModel, areaRulePlanning.Id,
                         oldItemPlanningTagId, true);
+                    // Inactive task: no deploy happens, but the Planning's eForm
+                    // must still follow the AreaRule so activating it later
+                    // deploys the edited eForm.
+                    //
+                    // COUPLING: this Update also flushes the
+                    // "WorkflowState == Removed -> Created" revive performed
+                    // above (it is the only SaveChanges this branch makes on the
+                    // items-planning context). That is safe ONLY because every
+                    // path that removes a Planning also leaves Enabled == false
+                    // (DeleteTask -> planning.Delete after planning.Enabled =
+                    // false at :634-635, and the deactivation branch above), so
+                    // the revived row stays invisible to the scheduler. If a
+                    // future path ever removes a Planning with Enabled == true,
+                    // this line would silently resurrect it — guard the revive
+                    // then, not this Update.
+                    planning.RelatedEFormId = updateModel.EformId;
+                    planning.RelatedEFormName = eformName;
+                    await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
                     break;
             }
 
+            // Propagate the eForm change to every already-deployed occurrence
+            // that has not been completed yet. Runs AFTER the switch so the
+            // AreaRule + Planning writes above are persisted first, and after
+            // any (re)deploy the branches perform — a case just created with the
+            // new eForm is skipped by the repair pass's idempotence check.
+            //
+            // NEVER for a task that is inactive after this save. The
+            // deactivation branch (`case true when !areaRulePlanning.Status`)
+            // CaseDeletes the cloud cases and retracts the PlanningCases, but
+            // leaves every PlanningCaseSite non-removed — and for calendar-created
+            // cases the CaseDelete is a verified no-op (CaseCreateLocalOnly
+            // assigns a synthetic MicrotingUid the cloud has never seen), so the
+            // SDK Case rows stay live too. The repair pass's sweep would happily
+            // pick those up and create a BRAND-NEW live case, on the new eForm,
+            // for a task the user just DEACTIVATED. The same holds for the
+            // "still inactive" branch: an inactive task has nothing deployed
+            // that should be kept alive.
+            if (oldEformId != updateModel.EformId && areaRulePlanning.Status)
+            {
+                await _eventDeployService.RepairEformForOpenOccurrencesAsync(
+                        areaRulePlanning,
+                        oldEformId ?? 0,
+                        updateModel.EformId)
+                    .ConfigureAwait(false);
+            }
+
             return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            _logger.LogError(e.Message);
+            _logger.LogTrace(e.StackTrace);
+            return new OperationResult(false,
+                _localizationService.GetString("ErrorWhileUpdatingTask"));
+        }
+    }
+
+
+    /// <inheritdoc />
+    public async Task<OperationResult> ApplyEformChangeToSeries(int areaRulePlanningId, int eformId)
+    {
+        try
+        {
+            if (eformId <= 0)
+            {
+                return new OperationResult(false,
+                    _localizationService.GetString("TaskNotFound"));
+            }
+
+            var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                .Include(x => x.AreaRule)
+                .FirstOrDefaultAsync(x => x.Id == areaRulePlanningId
+                                          && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (areaRulePlanning?.AreaRule == null)
+            {
+                return new OperationResult(false,
+                    _localizationService.GetString("TaskNotFound"));
+            }
+
+            var oldEformId = areaRulePlanning.AreaRule.EformId;
+            if (oldEformId == eformId)
+            {
+                // Nothing to do — keeps the caller free to invoke this
+                // unconditionally.
+                return new OperationResult(true);
+            }
+
+            var core = await _coreHelper.GetCore();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var eformName = sdkDbContext.CheckListTranslations
+                .Where(x => x.CheckListId == eformId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.Text)
+                .FirstOrDefault();
+
+            areaRulePlanning.AreaRule.EformId = eformId;
+            areaRulePlanning.AreaRule.EformName = eformName;
+            areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            await areaRulePlanning.AreaRule.Update(_backendConfigurationPnDbContext);
+
+            if (areaRulePlanning.ItemPlanningId != 0)
+            {
+                var planning = await _itemsPlanningPnDbContext.Plannings
+                    .FirstOrDefaultAsync(x => x.Id == areaRulePlanning.ItemPlanningId
+                                              && x.WorkflowState != Constants.WorkflowStates.Removed);
+                if (planning != null)
+                {
+                    planning.RelatedEFormId = eformId;
+                    planning.RelatedEFormName = eformName;
+                    planning.UpdatedByUserId = _userService.UserId;
+                    await planning.Update(_itemsPlanningPnDbContext);
+                }
+            }
+
+            // Same rule as UpdateTask: an inactive task must never have cases
+            // (re)created for it. Its PlanningCaseSites are left non-removed by
+            // the deactivation branch, so the repair sweep would otherwise
+            // revive them.
+            if (areaRulePlanning.Status)
+            {
+                await _eventDeployService.RepairEformForOpenOccurrencesAsync(
+                        areaRulePlanning,
+                        oldEformId ?? 0,
+                        eformId)
+                    .ConfigureAwait(false);
+            }
+
+            return new OperationResult(true,
+                _localizationService.GetString("TaskUpdatedSuccessful"));
         }
         catch (Exception e)
         {

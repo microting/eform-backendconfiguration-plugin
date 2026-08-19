@@ -587,4 +587,6 @@ export const fiFI = {
   'Delete photo?': 'Poistetaanko kuva?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Kuva poistetaan tehtävästä. Toimintoa ei voi kumota.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Sähköinen lomake koskee koko sarjaa. Sen muuttaminen päivittää kaikki vielä keskeneräiset tapahtumat, mukaan lukien menneet tapahtumat. Valmiit tapahtumat säilyttävät sähköisen lomakkeen, jolla ne täytettiin.',
+  'Select a calendar': 'Valitse kalenteri',
 };
