@@ -56,6 +56,45 @@ jobs:
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar
+  prewarm-playwright:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pw.outputs.version }}
+    steps:
+    - name: Extract branch name
+      id: extract_branch
+      run: |
+        BRANCH=$(echo ${GITHUB_REF#refs/heads/})
+        if [[ "$BRANCH" != "stable" && "$BRANCH" != "master" && "$BRANCH" != "angular19" ]]; then
+          BRANCH="stable"
+        fi
+        echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        repository: microting/eform-angular-frontend
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
+        path: eform-angular-frontend
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: Resolve Playwright version
+      id: pw
+      run: |
+        cd eform-angular-frontend/eform-client
+        VER=$(awk -F'"' '/^"@playwright\/test@/{b=1} b&&/^  version/{print $2; exit}' yarn.lock)
+        echo "version=$VER" >> "$GITHUB_OUTPUT"
+    - name: Cache Playwright browsers
+      id: pwcache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
+    - name: Download browsers (cache miss only)
+      if: steps.pwcache.outputs.cache-hit != 'true'
+      run: npx playwright@${{ steps.pw.outputs.version }} install chromium
   pn-playwright-test:
     needs: backend-pn-build
     runs-on: ubuntu-latest
