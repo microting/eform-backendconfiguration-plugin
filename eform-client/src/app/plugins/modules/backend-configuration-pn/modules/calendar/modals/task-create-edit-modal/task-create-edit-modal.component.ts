@@ -6,7 +6,6 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {EformVisualEditorModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor.model';
 import {EformVisualEditorFieldModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-field.model';
-import {EformVisualEditorTranslationWithDefaultValue} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-translation-with-default-value';
 import {EformVisualEditorService} from 'src/app/common/services';
 import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
@@ -720,6 +719,17 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     });
   }
 
+  /**
+   * Display name of the loaded eForm for the preview header.
+   *
+   * The visual-editor endpoint returns the checklist's per-language
+   * `translations` — it has NO `label` field — so the name has to be resolved
+   * for the current user language exactly like the field labels below.
+   */
+  get selectedTemplateLabel(): string {
+    return this.selectedTemplate ? this.translatedName(this.selectedTemplate.translations) : '';
+  }
+
   getTemplateFields(): { type: string; label: string; mandatory: boolean }[] {
     const out: { type: string; label: string; mandatory: boolean }[] = [];
     if (!this.selectedTemplate) return out;
@@ -762,7 +772,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     return this.translate.instant(name);
   }
 
-  private translatedName(translations: EformVisualEditorTranslationWithDefaultValue[]): string {
+  private translatedName(translations: { languageId: number; name: string }[] | null | undefined): string {
     if (!translations || translations.length === 0) return '';
     const match = translations.find(tr => tr.languageId === this.currentLanguageId && !!tr.name);
     if (match) return match.name;
