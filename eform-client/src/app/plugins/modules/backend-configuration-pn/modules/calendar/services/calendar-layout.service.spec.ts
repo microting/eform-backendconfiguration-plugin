@@ -194,4 +194,59 @@ describe('CalendarLayoutService', () => {
     expect(result.map(t => t._left)).toEqual([0, 25, 50, 75]);
     expect(result.map(t => t._width)).toEqual([100, 75, 50, 25]);
   });
+
+  it('no-regression invariant: identical timeslots produce the old cascade for N=2,3,4', () => {
+    // For N mutually-overlapping identical tasks, first-fit assigns
+    // columnIndex === list index and numCols === N → byte-identical to the
+    // pre-packing output. Assert the exact geometry for N = 2, 3, 4.
+    for (const n of [2, 3, 4]) {
+      const tasks = Array.from({length: n}, (_, i) => makeTask(i + 1, 9, 2));
+      const result = service.computeLayout(tasks);
+      expect(result).toHaveLength(n);
+      result.forEach((t, i) => {
+        expect(t._left).toBeCloseTo((i / n) * 100, 10);
+        expect(t._width).toBeCloseTo(100 - (i / n) * 100, 10);
+        expect(t._zIndex).toBe(10 + i);
+        expect(t._inGroup).toBe(true);
+      });
+    }
+  });
+
+  it('touching tasks in one cluster reuse the same column', () => {
+    // A 09:00–10:00 and B 10:00–11:00 touch (A.end === B.start → not overlap),
+    // but C 09:30–10:30 bridges them into a single cluster. First-fit: A→col0,
+    // C→col1 (overlaps A), B reuses col0 (A ended 10:00 ≤ B start 10:00, touching).
+    const result = service.computeLayout([
+      makeTask(1, 9, 1),    // A 09:00–10:00
+      makeTask(2, 9.5, 1),  // C 09:30–10:30 (bridge)
+      makeTask(3, 10, 1),   // B 10:00–11:00
+    ]);
+    const a = result.find(t => t.id === 1)!;
+    const c = result.find(t => t.id === 2)!;
+    const b = result.find(t => t.id === 3)!;
+    // A and B share col0 (touching reuse) → same left/width.
+    expect(a._left).toBe(0);
+    expect(a._width).toBe(100);
+    expect(b._left).toBe(0);
+    expect(b._width).toBe(100);
+    // C is the concurrent one in col1 of 2.
+    expect(c._left).toBe(50);
+    expect(c._width).toBe(50);
+  });
+
+  it('tie-break: when two tasks share a start, the longer one takes the earlier column', () => {
+    // Same start 09:00, durations 2h and 1h. They mutually overlap → 2 columns.
+    // Tie-break "longer duration first" is deterministic regardless of input
+    // order: the 2h task lands in col0 (left 0), the 1h task in col1 (left 50).
+    const longerFirst = service.computeLayout([makeTask(1, 9, 2), makeTask(2, 9, 1)]);
+    const shorterFirst = service.computeLayout([makeTask(1, 9, 1), makeTask(2, 9, 2)]);
+    for (const result of [longerFirst, shorterFirst]) {
+      const longer = result.find(t => t.duration === 2)!;
+      const shorter = result.find(t => t.duration === 1)!;
+      expect(longer._left).toBe(0);
+      expect(longer._width).toBe(100);
+      expect(shorter._left).toBe(50);
+      expect(shorter._width).toBe(50);
+    }
+  });
 });
