@@ -99,6 +99,60 @@ describe('CalendarLayoutService', () => {
     expect(overlapping.map(t => t._width)).toEqual([100, 50]);
   });
 
+  it('partial chain A/B/C: freed column is reused (2 columns, not 3)', () => {
+    // A 09:00–10:00, B 09:30–11:00, C 10:30–11:30.
+    // A and C do NOT overlap each other; both overlap B → true concurrency is 2.
+    // First-fit packs: A→col0, B→col1, C reuses col0 (A ended 10:00 ≤ C start 10:30).
+    // numCols = 2 → _left = columnIndex/2*100, _width = 100 - _left.
+    const result = service.computeLayout([
+      makeTask(1, 9, 1),     // A 09:00–10:00
+      makeTask(2, 9.5, 1.5), // B 09:30–11:00
+      makeTask(3, 10.5, 1),  // C 10:30–11:30
+    ]);
+    const a = result.find(t => t.id === 1)!;
+    const b = result.find(t => t.id === 2)!;
+    const c = result.find(t => t.id === 3)!;
+    // A in col0: full width, left 0.
+    expect(a._left).toBe(0);
+    expect(a._width).toBe(100);
+    // B in col1 of 2: left 50, extends to the right edge → width 50.
+    expect(b._left).toBe(50);
+    expect(b._width).toBe(50);
+    // C reuses col0 (A's freed column): left 0, full width — NOT a 33% sliver.
+    expect(c._left).toBe(0);
+    expect(c._width).toBe(100);
+    // z-index tracks columnIndex: col0 → 10, col1 → 11.
+    expect(a._zIndex).toBe(10);
+    expect(c._zIndex).toBe(10);
+    expect(b._zIndex).toBe(11);
+    // All three share a cluster → all flagged in-group for click-to-raise.
+    expect(result.every(t => t._inGroup === true)).toBe(true);
+  });
+
+  it('Google-reference cluster: one long base + short non-mutually-overlapping tasks → 2 columns', () => {
+    // Tjekke grise 09:00–14:00 (base) plus four short tasks that each overlap the
+    // base but not one another. First-fit: base→col0, every short task packs into
+    // col1 (each starts at/after the previous short task ends). numCols = 2.
+    const result = service.computeLayout([
+      makeTask(1, 9, 5),      // base            09:00–14:00
+      makeTask(2, 9.5, 0.5),  // Overbrusning    09:30–10:00
+      makeTask(3, 11.5, 0.5), // Faringsrunde    11:30–12:00
+      makeTask(4, 13, 0.5),   // Faring og split 13:00–13:30
+      makeTask(5, 13.5, 1),   // Div. registr.   13:30–14:30
+    ]);
+    const base = result.find(t => t.id === 1)!;
+    // Base sits full-width underneath in col0.
+    expect(base._left).toBe(0);
+    expect(base._width).toBe(100);
+    expect(base._zIndex).toBe(10);
+    // Every short task packs into col1 → left 50, width 50, z 11.
+    const shorts = result.filter(t => t.id !== 1);
+    expect(shorts).toHaveLength(4);
+    expect(shorts.every(t => t._left === 50)).toBe(true);
+    expect(shorts.every(t => t._width === 50)).toBe(true);
+    expect(shorts.every(t => t._zIndex === 11)).toBe(true);
+  });
+
   it('output is sorted by startHour ascending', () => {
     const input = [makeTask(1, 11, 1), makeTask(2, 9, 1), makeTask(3, 8, 1)];
     const result = service.computeLayout(input);
