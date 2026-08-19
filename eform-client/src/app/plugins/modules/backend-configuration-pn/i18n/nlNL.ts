@@ -587,4 +587,6 @@ export const nlNL = {
   'Delete photo?': 'Foto verwijderen?',
   'The photo will be removed from the task. This action cannot be undone.':
     'De foto wordt uit de taak verwijderd. Deze actie kan niet ongedaan worden gemaakt.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Het eFormulier is van toepassing op de hele reeks. Door het te wijzigen worden alle nog niet voltooide gebeurtenissen bijgewerkt, inclusief gebeurtenissen uit het verleden. Voltooide gebeurtenissen behouden het eFormulier waarmee ze zijn voltooid.',
+  'Select a calendar': 'Selecteer een agenda',
 };

@@ -587,4 +587,6 @@ export const huHU = {
   'Delete photo?': 'Törli a fényképet?',
   'The photo will be removed from the task. This action cannot be undone.':
     'A fénykép eltávolításra kerül a feladatból. A művelet nem vonható vissza.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Az eŰrlap a teljes sorozatra vonatkozik. Módosítása minden még be nem fejezett eseményt frissít, beleértve a múltbeli eseményeket is. A befejezett események megtartják azt az eŰrlapot, amellyel kitöltötték őket.',
+  'Select a calendar': 'Válasszon naptárat',
 };

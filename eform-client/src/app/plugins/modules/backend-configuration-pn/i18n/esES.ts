@@ -587,4 +587,6 @@ export const esES = {
   'Delete photo?': '¿Eliminar foto?',
   'The photo will be removed from the task. This action cannot be undone.':
     'La foto se eliminará de la tarea. Esta acción no se puede deshacer.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'El formulario electrónico se aplica a toda la serie. Al modificarlo, se actualizan todas las instancias que aún no se han completado, incluidas las anteriores. Las instancias completadas conservan el formulario electrónico con el que se completaron.',
+  'Select a calendar': 'Seleccione un calendario',
 };

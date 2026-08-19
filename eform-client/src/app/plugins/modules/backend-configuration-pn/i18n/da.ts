@@ -712,4 +712,6 @@ export const da = {
   'Delete photo?': 'Slet billede?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Billedet fjernes fra opgaven. Handlingen kan ikke fortrydes.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'eFormen gælder for hele serien. Ændrer du den, opdateres alle forekomster, der endnu ikke er færdiggjort, også forekomster i fortiden. Færdiggjorte forekomster beholder den eForm, de blev færdiggjort med.',
+  'Select a calendar': 'Vælg en kalender',
 };

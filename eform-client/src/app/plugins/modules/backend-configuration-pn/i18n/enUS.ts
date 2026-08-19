@@ -727,4 +727,9 @@ export const enUS= {
   'Delete photo?': 'Delete photo?',
   'The photo will be removed from the task. This action cannot be undone.':
     'The photo will be removed from the task. This action cannot be undone.',
+  // Calendar: eForm change applies to the whole series (spec
+  // 2026-08-19-calendar-eform-change-propagation-design.md).
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.',
+  // Calendar: Save with no calendar selected must not be a silent no-op.
+  'Select a calendar': 'Select a calendar',
 };

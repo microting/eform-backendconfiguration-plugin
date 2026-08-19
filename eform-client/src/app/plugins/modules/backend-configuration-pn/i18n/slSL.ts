@@ -587,4 +587,6 @@ export const slSL = {
   'Delete photo?': 'Izbrisati fotografijo?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Fotografija bo odstranjena iz naloge. Dejanja ni mogoče razveljaviti.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-obrazec velja za celotno serijo. Z njegovo spremembo se posodobijo vsi dogodki, ki še niso bili izpolnjeni, vključno z dogodki v preteklosti. Zaključeni dogodki ohranijo e-obrazec, s katerim so bili izpolnjeni.',
+  'Select a calendar': 'Izberite koledar',
 };

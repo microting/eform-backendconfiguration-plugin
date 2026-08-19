@@ -587,4 +587,6 @@ export const bgBG = {
   'Delete photo?': 'Да се изтрие ли снимката?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Снимката ще бъде премахната от задачата. Действието не може да бъде отменено.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Електронният формуляр се прилага за цялата серия. Промяната му актуализира всяко незавършено събитие, включително събития в миналото. Завършените събития запазват електронния формуляр, с който са били попълнени.',
+  'Select a calendar': 'Изберете календар',
 };

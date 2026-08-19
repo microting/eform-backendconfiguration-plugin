@@ -587,4 +587,6 @@ export const itIT = {
   'Delete photo?': 'Eliminare la foto?',
   'The photo will be removed from the task. This action cannot be undone.':
     'La foto verrà rimossa dall\'attività. Questa azione non può essere annullata.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Il modulo elettronico si applica all\'intera serie. La sua modifica aggiorna automaticamente tutte le occorrenze non ancora completate, incluse quelle passate. Le occorrenze completate mantengono il modulo elettronico con cui sono state completate.',
+  'Select a calendar': 'Seleziona un calendario',
 };

@@ -1,0 +1,10 @@
+<h3 mat-dialog-title>{{ 'Change eForm' | translate }}</h3>
+
+<div mat-dialog-content>
+  <p id="eformChangeScopeMessage">{{ 'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.' | translate }}</p>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="eformChangeScopeCancelBtn" class="btn-cancel" (click)="onCancel()">{{ 'Cancel' | translate }}</button>
+  <button id="eformChangeScopeConfirmBtn" class="btn-primary btn-primary--icon-left" (click)="onConfirm()">{{ 'Confirm' | translate }}</button>
+</div>

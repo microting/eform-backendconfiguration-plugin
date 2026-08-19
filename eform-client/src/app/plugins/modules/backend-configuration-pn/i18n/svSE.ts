@@ -587,4 +587,6 @@ export const svSE = {
   'Delete photo?': 'Radera foto?',
   'The photo will be removed from the task. This action cannot be undone.':
     'Fotot tas bort från uppgiften. Åtgärden kan inte ångras.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-formuläret gäller för hela serien. Om du ändrar det uppdateras alla förekomster som ännu inte har slutförts, inklusive förekomster som gjorts tidigare. Slutförda förekomster behåller det e-formulär de fylldes i med.',
+  'Select a calendar': 'Välj en kalender',
 };

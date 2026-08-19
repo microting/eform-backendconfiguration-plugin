@@ -587,4 +587,6 @@ export const ptPT = {
   'Delete photo?': 'Eliminar foto?',
   'The photo will be removed from the task. This action cannot be undone.':
     'A foto será removida da tarefa. Esta ação não pode ser anulada.',
+  'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'O formulário eletrônico se aplica a toda a série. Alterá-lo atualiza todas as ocorrências que ainda não foram concluídas, incluindo as ocorrências passadas. As ocorrências concluídas mantêm o formulário eletrônico com o qual foram concluídas.',
+  'Select a calendar': 'Selecione um calendário',
 };
