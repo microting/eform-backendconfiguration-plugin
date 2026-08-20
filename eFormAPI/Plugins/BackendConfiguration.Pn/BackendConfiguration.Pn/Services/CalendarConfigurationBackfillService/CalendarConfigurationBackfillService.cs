@@ -17,8 +17,33 @@ public class CalendarConfigurationBackfillService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     ILogger<CalendarConfigurationBackfillService> logger)
 {
+    // Hours-since-midnight the conversion assigns to a wizard planning, which
+    // carries no time of day of its own. Kept in sync with the `?? 9.0` read
+    // fallbacks in BackendConfigurationCalendarService.
+    private const double DefaultStartHour = 9.0;
+    private const double DefaultDuration = 1.0;
+
+    // The 00:00-01:00 shape the superseded backfill wrote, matched verbatim by the
+    // repair below. Named separately from the defaults above: these describe the rows
+    // being corrected, not the value being applied.
+    private const double LegacyStartHour = 0.0;
+    private const double LegacyDuration = 1.0;
+
+    // Set once the legacy-midnight repair below has run, so it never runs twice.
+    // Public so the integration fixture can clear it between tests.
+    //
+    // The prefix is the settings CLASS name, not the bound configuration section
+    // ("BackendConfigurationSettings"), so this key lands in a section nothing reads
+    // -- deliberate, and not a typo to correct: renaming it into the live section on
+    // an already-repaired database would leave the old marker unread and re-run the
+    // repair, overriding timeslots users had since chosen.
+    public const string LegacyStartHourRepairMarkerName =
+        "BackendConfigurationBaseSettings:LegacyCalendarStartHourRepaired";
+
     public async Task RunIfNeededAsync()
     {
+        await RepairLegacyMidnightConfigurationsAsync();
+
         // Wizard/calendar plannings lacking a board link (CalendarConfiguration row)
         var configuredArpIds = await dbContext.CalendarConfigurations
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -115,8 +140,8 @@ public class CalendarConfigurationBackfillService(
                         var configuration = new CalendarConfiguration
                         {
                             AreaRulePlanningId = arp.Id,
-                            StartHour = 9.0,
-                            Duration = 1.0,
+                            StartHour = DefaultStartHour,
+                            Duration = DefaultDuration,
                             BoardId = board.Id,
                             Color = null
                         };
@@ -130,6 +155,80 @@ public class CalendarConfigurationBackfillService(
                         arp.Id);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// One-time correction of the 00:00-01:00 markers written by the first version
+    /// of this service, which seeded StartHour = 0 before the 09:00-10:00 change.
+    /// That change shipped without a data repair and the conversion below only ever
+    /// inserts, never updates, so those rows would render at midnight forever.
+    ///
+    /// Scoped by CreatedByUserId == 0: this pass runs at startup with no user
+    /// context, whereas CreateTask and UpdateTask both stamp a real user id, so a
+    /// zero identifies a row this service created rather than a time a person chose.
+    ///
+    /// Further narrowed to CreatedInGuide rules: only wizard-created tasks were ever
+    /// touched by the original backfill, so nothing else can carry a legacy marker.
+    ///
+    /// Gated on a persisted marker rather than on the data shape, because 09:00 and
+    /// 00:00 are equally legitimate values -- there is nothing in a repaired row to
+    /// distinguish it from one a user has since moved back to midnight. Without the
+    /// marker the gate above would re-fire on exactly that row at the next restart.
+    /// </summary>
+    private async Task RepairLegacyMidnightConfigurationsAsync()
+    {
+        var alreadyRepaired = await dbContext.PluginConfigurationValues
+            .AnyAsync(x => x.Name == LegacyStartHourRepairMarkerName);
+
+        if (alreadyRepaired)
+        {
+            return;
+        }
+
+        var legacyConfigurations = await dbContext.CalendarConfigurations
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.CreatedByUserId == 0)
+            .Where(x => x.StartHour == LegacyStartHour && x.Duration == LegacyDuration)
+            .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
+            .ToListAsync();
+
+        foreach (var configuration in legacyConfigurations)
+        {
+            // Only the time is corrected; board and colour stay as they are.
+            configuration.StartHour = DefaultStartHour;
+            await configuration.Update(dbContext);
+        }
+
+        // Written even when nothing matched, so the scan is skipped from now on.
+        //
+        // Inserted as a single conditional statement rather than Add + SaveChanges:
+        // PluginConfigurationValues.Name is an unindexed longtext with no unique
+        // constraint, so two instances starting together would both see no marker and
+        // both insert one. BasePn's PluginConfigurationProvider.Load builds its
+        // settings dictionary with ToDictionary(c => c.Name, ...), which throws on a
+        // duplicate key -- a second row would make the plugin fail to load on every
+        // subsequent start, and nothing inside the plugin could then repair it.
+        // Letting the database evaluate NOT EXISTS and the insert atomically removes
+        // that race without needing a unique index (MySQL cannot index longtext
+        // without a prefix length).
+        await dbContext.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO `PluginConfigurationValues`
+                  (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
+                   `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
+              SELECT {0}, 'true', {1}, {1}, 1, {2}, 1, 0 FROM DUAL
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM `PluginConfigurationValues` `existing`
+                  WHERE `existing`.`Name` = {0})",
+            LegacyStartHourRepairMarkerName,
+            DateTime.UtcNow,
+            Constants.WorkflowStates.Created);
+
+        if (legacyConfigurations.Count > 0)
+        {
+            logger.LogInformation(
+                "CalendarConfigurationBackfill: repaired {Count} legacy midnight calendar configurations to {StartHour}:00",
+                legacyConfigurations.Count, DefaultStartHour);
         }
     }
 
