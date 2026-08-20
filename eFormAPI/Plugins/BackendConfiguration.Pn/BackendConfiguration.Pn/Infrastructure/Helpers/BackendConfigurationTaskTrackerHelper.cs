@@ -135,8 +135,6 @@ public static class BackendConfigurationTaskTrackerHelper
 				var planning = await itemsPlanningPnDbContext.Plannings
 					.Where(x => x.Id == compliance.PlanningId)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Include(x => x.PlanningsTags)
-					.ThenInclude(x => x.PlanningTag)
 					.FirstOrDefaultAsync();
 
 				if (planning == null)
@@ -146,7 +144,6 @@ public static class BackendConfigurationTaskTrackerHelper
 				var deadlineDate = compliance.Deadline.AddDays(-1);
 
 				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
-					.Include(x => x.AreaRulePlanningTags)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.Where(x => x.ItemPlanningId == compliance.PlanningId);
 
@@ -183,12 +180,25 @@ public static class BackendConfigurationTaskTrackerHelper
 					}
 				}
 
-				if (filtersModel.TagIds.Any()) // filtration by planning(?) tags
+				// The tag ids the Tags column renders for this task.
+				var itemPlanningTagIds = (await areaRulePlanningQuery
+					.SelectMany(x => x.AreaRulePlanningTags
+						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(y => (int?)y.ItemPlanningTagId))
+					.Union(areaRulePlanningQuery
+						.Where(x => x.ItemPlanningTagId.HasValue)
+						.Select(x => x.ItemPlanningTagId))
+					.ToListAsync())
+					.Select(x => x!.Value)
+					.ToList();
+
+				// Filter on that same set. Filtering on Planning.PlanningsTags instead - a different
+				// table, and one that also carries soft-deleted rows - returns tasks that never show
+				// the selected tag.
+				if (filtersModel.TagIds.Any()
+				    && !itemPlanningTagIds.Any(filtersModel.TagIds.Contains))
 				{
-					if (!planning.PlanningsTags.Any(x => filtersModel.TagIds.Contains(x.PlanningTagId)))
-					{
-						continue;
-					}
+					continue;
 				}
 
 				var taskName = await itemsPlanningPnDbContext.PlanningNameTranslation
@@ -234,18 +244,6 @@ public static class BackendConfigurationTaskTrackerHelper
 				// 					.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
 				// 			}).ToList()
 				// 	}).ToList();
-
-				var itemPlanningTagIds = await areaRulePlanningQuery
-					.SelectMany(x => x.AreaRulePlanningTags
-						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-						.Select(y => y.ItemPlanningTagId))
-					.Distinct()
-					.ToListAsync();
-				itemPlanningTagIds.AddRange(await areaRulePlanningQuery
-					.Where(x => x.ItemPlanningTagId.HasValue)
-					.Select(x => x.ItemPlanningTagId.Value)
-					.Distinct()
-					.ToListAsync());
 
 				var itemPlanningTags = await itemsPlanningPnDbContext.PlanningTags
 					.Where(x => itemPlanningTagIds.Contains(x.Id))

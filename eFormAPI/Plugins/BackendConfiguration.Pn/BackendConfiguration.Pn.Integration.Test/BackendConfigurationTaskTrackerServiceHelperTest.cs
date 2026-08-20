@@ -613,4 +613,155 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].TaskName, Is.Null);
 		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
 	}
+
+	[Test]
+	public async Task BackendConfigurationTaskTrackerServiceHelper_IndexTasks_WithTagInFilters_MatchesDisplayedTagsOnly()
+	{
+		var core = await GetCore();
+		// Arrange
+		// Create property
+		var propertyCreateModel = new PropertyCreateModel
+		{
+			Address = Guid.NewGuid().ToString(),
+			Chr = Guid.NewGuid().ToString(),
+			IndustryCode = Guid.NewGuid().ToString(),
+			Cvr = Guid.NewGuid().ToString(),
+			IsFarm = true,
+			LanguagesIds = [1],
+			MainMailAddress = Guid.NewGuid().ToString(),
+			Name = Guid.NewGuid().ToString(),
+			WorkorderEnable = true
+		};
+		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+		var property =
+			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
+
+		var sites = await MicrotingDbContext!.Sites.AsNoTracking().OrderBy(x => x.Name).ToListAsync();
+
+		// create planning
+		var timeNow = DateTime.Now;
+		var planning = new Planning
+		{
+			WorkflowState = Constants.WorkflowStates.Created,
+			StartDate = timeNow,
+			Enabled = true,
+			RepeatEvery = 1,
+			RepeatType = RepeatType.Month,
+			PlanningSites = sites.Select(x => new PlanningSite { SiteId = x.Id, WorkflowState = Constants.WorkflowStates.Created }).ToList(),
+			NextExecutionTime = timeNow.AddMonths(1),
+			DayOfMonth = timeNow.Day,
+			RepeatUntil = timeNow.AddMonths(6),
+		};
+
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		// liveTag is assigned on both sides. staleTag was unassigned (soft-deleted) on the
+		// items-planning side. sourceMismatchTag is live on the items-planning side but was never
+		// mirrored onto the area rule planning - the case that a WorkflowState guard alone misses.
+		var liveTag = new PlanningTag { Name = Guid.NewGuid().ToString(), WorkflowState = Constants.WorkflowStates.Created };
+		var staleTag = new PlanningTag { Name = Guid.NewGuid().ToString(), WorkflowState = Constants.WorkflowStates.Created };
+		var sourceMismatchTag = new PlanningTag { Name = Guid.NewGuid().ToString(), WorkflowState = Constants.WorkflowStates.Created };
+		await ItemsPlanningPnDbContext.PlanningTags.AddRangeAsync(liveTag, staleTag, sourceMismatchTag);
+		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		await ItemsPlanningPnDbContext.PlanningsTags.AddRangeAsync(
+			new PlanningsTags
+			{
+				PlanningId = planning.Id, PlanningTagId = liveTag.Id,
+				WorkflowState = Constants.WorkflowStates.Created
+			},
+			new PlanningsTags
+			{
+				PlanningId = planning.Id, PlanningTagId = staleTag.Id,
+				WorkflowState = Constants.WorkflowStates.Removed
+			},
+			new PlanningsTags
+			{
+				PlanningId = planning.Id, PlanningTagId = sourceMismatchTag.Id,
+				WorkflowState = Constants.WorkflowStates.Created
+			});
+		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		//create area
+		var area = new Area
+		{
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearule
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			WorkflowState = Constants.WorkflowStates.Created,
+			PropertyId = property.Id
+		};
+
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearuleplanning
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			ItemPlanningId = planning.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		// only the live tag is on the area rule planning - this is what the Tags column renders
+		await BackendConfigurationPnDbContext.AreaRulePlanningTags.AddAsync(new AreaRulePlanningTag
+		{
+			AreaRulePlanningId = areaRulePlanning.Id,
+			ItemPlanningTagId = liveTag.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		});
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create compliance
+		var compliance = new Compliance
+		{
+			Deadline = (DateTime)planning.RepeatUntil,
+			PlanningId = planning.Id,
+			PropertyId = property.Id,
+			StartDate = planning.StartDate,
+			WorkflowState = Constants.WorkflowStates.Created,
+		};
+
+		await BackendConfigurationPnDbContext.Compliances.AddAsync(compliance);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		// Act + Assert - filtering on the live tag returns the task, and it renders that tag
+		var liveTagResult = await BackendConfigurationTaskTrackerHelper.Index(
+			new TaskTrackerFiltrationModel { PropertyIds = [], TagIds = [liveTag.Id], WorkerIds = [] },
+			BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+
+		Assert.That(liveTagResult, Is.Not.Null);
+		Assert.That(liveTagResult.Success, Is.EqualTo(true));
+		Assert.That(liveTagResult.Model.Count, Is.EqualTo(1));
+		Assert.That(liveTagResult.Model[0].Tags.Select(x => x.Id), Does.Contain(liveTag.Id));
+		Assert.That(liveTagResult.Model[0].Tags.Select(x => x.Id), Does.Not.Contain(staleTag.Id));
+		Assert.That(liveTagResult.Model[0].Tags.Select(x => x.Id), Does.Not.Contain(sourceMismatchTag.Id));
+
+		// Act + Assert - neither of the tags the Tags column does not render may match. Before the
+		// fix the filter read Planning.PlanningsTags, a different table than the column, and one
+		// that is not guarded against soft-deleted rows, so both of these returned this task.
+		foreach (var unmatchableTagId in new[] { staleTag.Id, sourceMismatchTag.Id })
+		{
+			var unmatchedResult = await BackendConfigurationTaskTrackerHelper.Index(
+				new TaskTrackerFiltrationModel { PropertyIds = [], TagIds = [unmatchableTagId], WorkerIds = [] },
+				BackendConfigurationPnDbContext!, core, 1, ItemsPlanningPnDbContext!);
+
+			Assert.That(unmatchedResult, Is.Not.Null);
+			Assert.That(unmatchedResult.Success, Is.EqualTo(true));
+			Assert.That(unmatchedResult.Model, Is.Empty, $"tag {unmatchableTagId} is not rendered in the Tags column, so it must not match");
+		}
+	}
 }
