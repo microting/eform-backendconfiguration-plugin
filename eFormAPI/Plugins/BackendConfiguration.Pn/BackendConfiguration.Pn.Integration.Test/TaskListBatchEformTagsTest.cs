@@ -141,7 +141,8 @@ public class TaskListBatchEformTagsTest : TestBaseSetup
     /// Returns the ARP Id.
     /// </summary>
     private async Task<int> SeedTask(IEnumerable<int> siteIds, IEnumerable<int> tagIds = null,
-        bool status = true, int repeatType = 2, int eformId = 7)
+        bool status = true, int repeatType = 2, int eformId = 7,
+        bool withCalendarConfiguration = true)
     {
         var area = new Area
         {
@@ -208,12 +209,18 @@ public class TaskListBatchEformTagsTest : TestBaseSetup
             await planningTag.Create(BackendConfigurationPnDbContext!);
         }
 
-        var calConfig = new CalendarConfiguration
+        // A task-wizard task has no CalendarConfiguration until CreateTask or the
+        // startup backfill makes one, so the un-configured shape is reachable in
+        // production and BuildUpdateModel has to fall back for it.
+        if (withCalendarConfiguration)
         {
-            AreaRulePlanningId = arp.Id, StartHour = 9.0, Duration = 1.0,
-            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
-        };
-        await calConfig.Create(BackendConfigurationPnDbContext!);
+            var calConfig = new CalendarConfiguration
+            {
+                AreaRulePlanningId = arp.Id, StartHour = 9.0, Duration = 1.0,
+                WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+            };
+            await calConfig.Create(BackendConfigurationPnDbContext!);
+        }
 
         return arp.Id;
     }
@@ -422,5 +429,29 @@ public class TaskListBatchEformTagsTest : TestBaseSetup
         Assert.That(result.Message, Does.Contain("Task not found"));
         Assert.That(_updateCalls, Has.Count.EqualTo(1));
         Assert.That(_updateCalls[0].Id, Is.EqualTo(validArpId));
+    }
+
+    /// <summary>
+    /// BuildUpdateModel feeds every batch operation into CalendarService.UpdateTask,
+    /// which writes StartHour unconditionally. For a wizard task that has no
+    /// CalendarConfiguration yet, falling back to 0 made any batch action silently
+    /// create one at midnight -- moving an event the grid was rendering at 09:00, and
+    /// stamping it with a real CreatedByUserId so the legacy-midnight repair can
+    /// never reclaim it. The fallback must match the read default.
+    /// </summary>
+    [Test]
+    public async Task AddTags_TaskWithoutConfiguration_RoundTripsNineToTenNotMidnight()
+    {
+        var arpId = await SeedTask([100], withCalendarConfiguration: false);
+
+        var result = await _taskListService.AddTags(new TaskListBatchTagsModel
+        {
+            TaskIds = [arpId], TagIds = [7]
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_updateCalls, Has.Count.EqualTo(1));
+        Assert.That(_updateCalls[0].StartHour, Is.EqualTo(9.0));
+        Assert.That(_updateCalls[0].Duration, Is.EqualTo(1.0));
     }
 }

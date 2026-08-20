@@ -423,8 +423,13 @@ public class BackendConfigurationTaskListService(
                 .ToList(),
             WorkerTagIds = workerTagIds,
             ComplianceEnabled = arp.ComplianceEnabled,
-            StartHour = configuration?.StartHour ?? 0,
-            Duration = configuration?.Duration ?? 1,
+            // Must match the read fallback in BackendConfigurationCalendarService:
+            // UpdateTask writes StartHour unconditionally, so a 0 here would move an
+            // un-configured task the grid renders at 09:00 down to midnight -- and
+            // stamp the new row with a real CreatedByUserId, putting it permanently
+            // beyond the legacy-midnight repair in CalendarConfigurationBackfillService.
+            StartHour = configuration?.StartHour ?? 9.0,
+            Duration = configuration?.Duration ?? 1.0,
             BoardId = configuration?.BoardId,
             Color = configuration?.Color,
             RepeatEndMode = arp.RepeatEndMode,

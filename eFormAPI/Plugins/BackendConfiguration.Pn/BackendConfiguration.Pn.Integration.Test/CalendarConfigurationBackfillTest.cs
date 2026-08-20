@@ -83,6 +83,13 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
             ItemsPlanningPnDbContext.Plannings);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+        // The one-time StartHour repair records a marker here; drop it so each test
+        // starts from an unrepaired database.
+        BackendConfigurationPnDbContext.PluginConfigurationValues.RemoveRange(
+            BackendConfigurationPnDbContext.PluginConfigurationValues
+                .Where(x => x.Name == CalendarConfigurationBackfillService.LegacyStartHourRepairMarkerName));
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         _sut = new CalendarConfigurationBackfillService(
             BackendConfigurationPnDbContext!,
             ItemsPlanningPnDbContext!,
@@ -221,6 +228,41 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         };
         await arp.Create(BackendConfigurationPnDbContext!);
         return (arp, planning);
+    }
+
+    /// <summary>
+    /// Seeds the exact shape the one-time repair targets: a wizard task whose
+    /// recurrence is ALREADY normalized (so the conversion pass skips it, proving the
+    /// repair runs independently) plus a 00:00-01:00 CalendarConfiguration on its own
+    /// board. <paramref name="createdByUserId"/> is the whole gate: 0 means the row
+    /// was written by the superseded backfill and is repairable, non-zero means a
+    /// person chose midnight and it must be left alone.
+    /// </summary>
+    private async Task<(AreaRulePlanning Arp, CalendarBoard Board)> SeedTaskWithMidnightConfiguration(
+        int createdByUserId)
+    {
+        var property = await SeedProperty();
+        var area = await SeedArea();
+        var board = new CalendarBoard { Name = "Board A", Color = "#111111", PropertyId = property.Id };
+        await board.Create(BackendConfigurationPnDbContext!);
+
+        var (arp, _) = await SeedWizardTask(property.Id, area.Id, repeatType: 2, repeatEvery: 4,
+            startDate: new DateTime(2025, 11, 4, 0, 0, 0, DateTimeKind.Utc));
+        arp.RepeatWeekdaysCsv = "2";
+        await arp.Update(BackendConfigurationPnDbContext!);
+
+        var configuration = new CalendarConfiguration
+        {
+            AreaRulePlanningId = arp.Id,
+            StartHour = 0,
+            Duration = 1,
+            BoardId = board.Id,
+            CreatedByUserId = createdByUserId,
+            UpdatedByUserId = createdByUserId
+        };
+        await configuration.Create(BackendConfigurationPnDbContext!);
+
+        return (arp, board);
     }
 
     private CalendarConfiguration GetSingleConfiguration(int arpId)
@@ -850,5 +892,72 @@ public class CalendarConfigurationBackfillTest : TestBaseSetup
         Assert.That(updatedPlanning.RepeatEvery, Is.EqualTo(1));
 
         AssertNineToTenOnDefaultBoard(GetSingleConfiguration(arp.Id), property.Id);
+    }
+
+    /// <summary>
+    /// Repairs the legacy 00:00-01:00 markers written by the first version of this
+    /// service (commit fac1e0aa, 2026-07-19), which seeded StartHour = 0 before
+    /// fa8740bf changed the literal to 9.0. That change shipped without a data
+    /// repair, and the create below is gated on marker absence, so those rows would
+    /// otherwise render at midnight forever. Backfill origin is identified by
+    /// CreatedByUserId == 0 (the startup pass has no user context, while both
+    /// CreateTask and UpdateTask stamp a real user id).
+    /// </summary>
+    [Test]
+    public async Task RunIfNeededAsync_LegacyMidnightMarkerFromOldBackfill_IsRepairedToNine()
+    {
+        var (arp, board) = await SeedTaskWithMidnightConfiguration(createdByUserId: 0);
+
+        await _sut.RunIfNeededAsync();
+
+        var configuration = GetSingleConfiguration(arp.Id);
+        Assert.That(configuration.StartHour, Is.EqualTo(9.0));
+        Assert.That(configuration.Duration, Is.EqualTo(1.0));
+        Assert.That(configuration.BoardId, Is.EqualTo(board.Id),
+            "Repair must correct only the time, never the user's board choice.");
+    }
+
+    /// <summary>
+    /// A midnight configuration carrying a real CreatedByUserId came from
+    /// CreateTask/UpdateTask, i.e. a person chose 00:00-01:00. Never overwrite it.
+    /// </summary>
+    [Test]
+    public async Task RunIfNeededAsync_UserCreatedMidnightConfiguration_IsNotRepaired()
+    {
+        var (arp, _) = await SeedTaskWithMidnightConfiguration(createdByUserId: 4);
+
+        await _sut.RunIfNeededAsync();
+
+        Assert.That(GetSingleConfiguration(arp.Id).StartHour, Is.EqualTo(0.0));
+    }
+
+    /// <summary>
+    /// The repair is one-time, gated on a persisted marker. Once it has run, a user
+    /// is free to move an event to any timeslot -- midnight included -- and every
+    /// later restart must leave that choice alone. Without the marker, the
+    /// CreatedByUserId == 0 gate would re-fire on a backfill-created row the user
+    /// had deliberately moved back to 00:00.
+    /// </summary>
+    [Test]
+    public async Task RunIfNeededAsync_AfterRepairRan_UserMoveToMidnightSurvivesRestart()
+    {
+        var (arp, _) = await SeedTaskWithMidnightConfiguration(createdByUserId: 0);
+
+        // First restart: the one-time repair corrects the legacy marker.
+        await _sut.RunIfNeededAsync();
+        Assert.That(GetSingleConfiguration(arp.Id).StartHour, Is.EqualTo(9.0));
+
+        // The user then moves the event back to 00:00-01:00 via UpdateTask, which
+        // writes StartHour but leaves CreatedByUserId at its backfill value of 0.
+        var moved = GetSingleConfiguration(arp.Id);
+        moved.StartHour = 0;
+        moved.UpdatedByUserId = 4;
+        await moved.Update(BackendConfigurationPnDbContext!);
+
+        // Second restart: must not resurrect 09:00.
+        await _sut.RunIfNeededAsync();
+
+        Assert.That(GetSingleConfiguration(arp.Id).StartHour, Is.EqualTo(0.0),
+            "A one-time repair must never re-fire and override the user's own timeslot.");
     }
 }
