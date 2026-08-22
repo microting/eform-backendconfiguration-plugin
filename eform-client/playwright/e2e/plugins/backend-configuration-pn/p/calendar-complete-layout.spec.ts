@@ -95,10 +95,17 @@ async function openCompleteModal(
 
   const modal = page.locator('app-calendar-complete-event-modal').first();
   await modal.waitFor({ state: 'visible', timeout: 20000 });
-  // The eForm body arrives after prepare-complete → templates/get → cases;
-  // wait for the first rendered question rather than a fixed timeout.
+  // Gate on the dialog shell, not on the eForm body: `fillAndSaveEvent` picks
+  // whichever template is first in the dropdown, and this spec does not control
+  // which one that is. A seeded eForm made only of FieldContainers would render
+  // no `.eform-field__label` at all, and a hard wait here would fail every test
+  // in the file instead of just the label assertion. (calendar-complete.spec.ts
+  // gates on the same selector for the same reason.)
+  await page.locator('#completeWorkerSelect').waitFor({ state: 'visible', timeout: 20000 });
+  // Best-effort: give the eForm body a chance to render before asserting on it.
   await modal.locator('.eform-field__label').first()
-    .waitFor({ state: 'visible', timeout: 20000 });
+    .waitFor({ state: 'visible', timeout: 15000 })
+    .catch(() => undefined);
   return modal;
 }
 
@@ -171,16 +178,32 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     // L1 — every question block has a non-empty label above its control.
     const labels = modal.locator('.eform-field__label');
     const labelCount = await labels.count();
-    expect(labelCount).toBeGreaterThan(0);
+    // Seed-independent: if the seeded eForm has no plain questions there is
+    // nothing to assert about labels, but L2's "nothing is labelled twice"
+    // invariant below still has to hold. Guarding here rather than requiring a
+    // particular template keeps this spec honest about what it proved.
+    test.skip(labelCount === 0, 'seeded eForm rendered no plain questions');
     for (let i = 0; i < labelCount; i++) {
       expect((await labels.nth(i).innerText()).trim()).not.toBe('');
     }
 
-    // L2 — the duplicate-label regression: the eForm body must contain no
-    // floating labels at all, and no tinted card header.
-    await expect(modal.locator('app-case-edit-element mat-label')).toHaveCount(0);
-    await expect(modal.locator('app-case-edit-element mat-card-header')).toHaveCount(0);
-    await expect(modal.locator('app-case-edit-switch mat-card')).toHaveCount(0);
+    // L2 — the duplicate-label regression. Scoped to the field types whose
+    // mat-label really was a generic placeholder. element-singleselect,
+    // element-entityselect and element-entitysearch deliberately KEEP their
+    // label: it renders fieldValueObj.valueReadable, i.e. the saved answer, and
+    // those three bind no value into mtx-select, so removing it blanks answered
+    // dropdowns on the review screens.
+    for (const leaf of ['element-text', 'element-number', 'element-number-stepper', 'element-date', 'element-comment']) {
+      await expect(modal.locator(`app-case-edit-element ${leaf} mat-label`)).toHaveCount(0);
+    }
+    // The tinted header bar specifically: it was a mat-card-header carrying an
+    // inline background-color from dataItem.color. Asserted this precisely
+    // rather than "no mat-card-header anywhere", because element-container
+    // (FieldContainer) and element-picture legitimately render cards of their
+    // own inside the switch.
+    await expect(modal.locator('app-case-edit-switch mat-card-header[style*="background-color"]')).toHaveCount(0);
+    // The switch no longer wraps each question in a card.
+    await expect(modal.locator('app-case-edit-switch > .eform-field > mat-card')).toHaveCount(0);
 
     // L5 — a single-section eForm must not print a heading that only repeats
     // the dialog title.

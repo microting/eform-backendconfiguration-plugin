@@ -78,11 +78,8 @@ describe('CalendarCompleteEventModalComponent', () => {
     await setup({assigneeIds: [3]});
 
     const groups = component.groupedSites.map(s => s.group);
-    expect(groups).toEqual([
-      'Assigned workers',
-      'Other workers',
-      'Other workers',
-    ]);
+    // Stable keys, translated in the template — see buildGroupedSites.
+    expect(groups).toEqual(['assigned', 'other', 'other']);
     expect(component.groupedSites[0].name).toBe('René Schultz Madsen');
   });
 

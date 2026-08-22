@@ -20,7 +20,9 @@
             id="completeWorkerSelect"
           >
             <ng-template ng-optgroup-tmp let-item="item">
-              <span class="calendar-complete-event-modal__worker-group">{{ item.group }}</span>
+              <span class="calendar-complete-event-modal__worker-group">
+                {{ (item.group === 'assigned' ? 'Assigned workers' : 'Other workers') | translate }}
+              </span>
             </ng-template>
           </mtx-select>
         </mat-form-field>

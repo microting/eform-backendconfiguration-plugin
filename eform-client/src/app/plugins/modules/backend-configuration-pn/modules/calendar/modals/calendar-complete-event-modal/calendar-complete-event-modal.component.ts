@@ -2,7 +2,6 @@ import {
   Component, Inject, OnInit, QueryList, ViewChildren, inject,
 } from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TranslateService} from '@ngx-translate/core';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto, CaseEditRequest, ReplyElementDto, ReplyRequest,
@@ -38,7 +37,6 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   private calendarService = inject(BackendConfigurationPnCalendarService);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private eFormService = inject(EFormService);
-  private translateService = inject(TranslateService);
 
   @ViewChildren(CaseEditElementComponent)
   editElements: QueryList<CaseEditElementComponent>;
@@ -116,9 +114,12 @@ export class CalendarCompleteEventModalComponent implements OnInit {
       return;
     }
 
+    // Stable keys, not translated strings: `instant()` here would freeze the
+    // headers at worker-load time and render raw keys forever if the locale
+    // bundle had not resolved yet. The template translates them at render time.
     this.groupedSites = [
-      ...inGroup.map(s => ({...s, group: this.translateService.instant('Assigned workers')})),
-      ...rest.map(s => ({...s, group: this.translateService.instant('Other workers')})),
+      ...inGroup.map(s => ({...s, group: 'assigned'})),
+      ...rest.map(s => ({...s, group: 'other'})),
     ];
   }
 
