@@ -589,4 +589,7 @@ export const isIS = {
     'Myndin verður fjarlægð úr verkefninu. Ekki er hægt að afturkalla þessa aðgerð.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Rafræna eyðublaðið gildir fyrir alla seríuna. Breyting á því uppfærir öll tilvik sem ekki hafa verið kláruð ennþá, þar á meðal tilvik í fortíðinni. Lokin tilvik halda rafræna eyðublaðinu sem þau voru kláruð með.',
   'Select a calendar': 'Veldu dagatal',
+  'Assigned workers': 'Úthlutaðir starfsmenn',
+  'Other workers': 'Aðrir starfsmenn',
+  Sections: 'Kaflar',
 };

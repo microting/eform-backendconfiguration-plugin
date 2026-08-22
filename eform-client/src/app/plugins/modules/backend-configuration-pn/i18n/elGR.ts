@@ -589,4 +589,7 @@ export const elGR = {
     'Η φωτογραφία θα αφαιρεθεί από την εργασία. Η ενέργεια δεν μπορεί να αναιρεθεί.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Η ηλεκτρονική φόρμα ισχύει για ολόκληρη τη σειρά. Η αλλαγή της ενημερώνει κάθε εμφάνιση που δεν έχει ολοκληρωθεί ακόμη, συμπεριλαμβανομένων των εμφανίσεων του παρελθόντος. Οι ολοκληρωμένες εμφανίσεις διατηρούν την ηλεκτρονική φόρμα με την οποία συμπληρώθηκαν.',
   'Select a calendar': 'Επιλέξτε ημερολόγιο',
+  'Assigned workers': 'Ανατεθειμένοι εργαζόμενοι',
+  'Other workers': 'Άλλοι εργαζόμενοι',
+  Sections: 'Ενότητες',
 };

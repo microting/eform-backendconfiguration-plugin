@@ -589,4 +589,7 @@ export const skSK = {
     'Fotografia bude z úlohy odstránená. Túto akciu nie je možné vrátiť späť.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Elektronický formulár sa vzťahuje na celú sériu. Jeho zmenou sa aktualizujú všetky výskyty, ktoré ešte neboli dokončené, vrátane výskytov v minulosti. Dokončené výskyty si zachovajú elektronický formulár, s ktorým boli vyplnené.',
   'Select a calendar': 'Vyberte kalendár',
+  'Assigned workers': 'Priradení pracovníci',
+  'Other workers': 'Ostatní pracovníci',
+  Sections: 'Sekcie',
 };

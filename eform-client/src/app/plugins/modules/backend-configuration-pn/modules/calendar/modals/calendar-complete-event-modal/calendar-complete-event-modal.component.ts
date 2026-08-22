@@ -2,6 +2,7 @@ import {
   Component, Inject, OnInit, QueryList, ViewChildren, inject,
 } from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {TranslateService} from '@ngx-translate/core';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto, CaseEditRequest, ReplyElementDto, ReplyRequest,
@@ -37,11 +38,19 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   private calendarService = inject(BackendConfigurationPnCalendarService);
   private propertiesService = inject(BackendConfigurationPnPropertiesService);
   private eFormService = inject(EFormService);
+  private translateService = inject(TranslateService);
 
   @ViewChildren(CaseEditElementComponent)
   editElements: QueryList<CaseEditElementComponent>;
 
   sites: CommonDictionaryModel[] = [];
+  /**
+   * `sites` with a `group` discriminator so mtx-select can render the workers
+   * assigned to this event above everyone else. Rebuilt whenever `sites` is set
+   * rather than computed in a getter, because a getter would hand ng-select a
+   * new array identity on every change-detection pass and livelock the panel.
+   */
+  groupedSites: Array<CommonDictionaryModel & {group?: string}> = [];
   selectedWorkerId: number | null = null;
 
   prepared: CalendarPrepareCompleteResult | null = null;
@@ -58,6 +67,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     this.propertiesService.getLinkedSites(this.data.propertyId, false).subscribe(res => {
       if (!res?.success || !res.model) { return; }
       this.sites = [...res.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+      this.buildGroupedSites();
       this.applyPreselect();
     });
     this.calendarService
@@ -88,6 +98,40 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     if (assigned != null && this.sites.some(s => s.id === assigned)) {
       this.selectedWorkerId = assigned;
     }
+  }
+
+  /**
+   * Split the worker list into "assigned to this event" and everyone else.
+   * When the split would leave a group empty — no assignees, or every worker
+   * assigned — the list stays ungrouped rather than showing a header with
+   * nothing under it.
+   */
+  private buildGroupedSites() {
+    const assigned = new Set(this.data.assigneeIds ?? []);
+    const inGroup = this.sites.filter(s => assigned.has(s.id));
+    const rest = this.sites.filter(s => !assigned.has(s.id));
+
+    if (inGroup.length === 0 || rest.length === 0) {
+      this.groupedSites = [...this.sites];
+      return;
+    }
+
+    this.groupedSites = [
+      ...inGroup.map(s => ({...s, group: this.translateService.instant('Assigned workers')})),
+      ...rest.map(s => ({...s, group: this.translateService.instant('Other workers')})),
+    ];
+  }
+
+  get hasMultipleSections(): boolean {
+    return (this.replyElement?.elementList?.length ?? 0) > 1;
+  }
+
+  /**
+   * A single-section eForm names its one section the same thing the dialog is
+   * already titled, so printing both repeats the name two rows apart.
+   */
+  get showSectionTitles(): boolean {
+    return this.hasMultipleSections;
   }
 
   get canSave(): boolean {

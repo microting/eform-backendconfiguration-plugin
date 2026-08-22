@@ -589,4 +589,7 @@ export const noNO = {
     'Bildet fjernes fra oppgaven. Handlingen kan ikke angres.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-skjemaet gjelder for hele serien. Hvis du endrer det, oppdateres alle forekomster som ikke er fullført ennå, inkludert forekomster i fortiden. Fullførte forekomster beholder e-skjemaet de ble fullført med.',
   'Select a calendar': 'Velg en kalender',
+  'Assigned workers': 'Tildelte medarbeidere',
+  'Other workers': 'Øvrige medarbeidere',
+  Sections: 'Seksjoner',
 };
