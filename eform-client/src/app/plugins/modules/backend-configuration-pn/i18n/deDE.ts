@@ -637,4 +637,7 @@ export const deDE = {
     'Das Foto wird aus der Aufgabe entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Das eForm gilt für die gesamte Serie. Änderungen daran aktualisieren alle noch nicht abgeschlossenen Vorgänge, einschließlich vergangener Vorgänge. Abgeschlossene Vorgänge behalten das verwendete eForm.',
   'Select a calendar': 'Kalender auswählen',
+  'Assigned workers': 'Zugewiesene Mitarbeiter',
+  'Other workers': 'Weitere Mitarbeiter',
+  Sections: 'Abschnitte',
 };

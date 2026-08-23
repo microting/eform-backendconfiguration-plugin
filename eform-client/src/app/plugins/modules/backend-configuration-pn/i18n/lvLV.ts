@@ -589,4 +589,7 @@ export const lvLV = {
     'Fotoattēls tiks noņemts no uzdevuma. Šo darbību nevar atsaukt.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-veidlapa attiecas uz visu sēriju. Tās izmaiņas atjaunina katru vēl nepabeigto gadījumu, tostarp gadījumus pagātnē. Pabeigtie gadījumi saglabā e-veidlapu, ar kuru tie tika aizpildīti.',
   'Select a calendar': 'Izvēlieties kalendāru',
+  'Assigned workers': 'Piešķirtie darbinieki',
+  'Other workers': 'Citi darbinieki',
+  Sections: 'Sadaļas',
 };

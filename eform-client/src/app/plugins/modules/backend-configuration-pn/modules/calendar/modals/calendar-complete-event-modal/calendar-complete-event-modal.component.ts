@@ -42,6 +42,13 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   editElements: QueryList<CaseEditElementComponent>;
 
   sites: CommonDictionaryModel[] = [];
+  /**
+   * `sites` with a `group` discriminator so mtx-select can render the workers
+   * assigned to this event above everyone else. Rebuilt whenever `sites` is set
+   * rather than computed in a getter, because a getter would hand ng-select a
+   * new array identity on every change-detection pass and livelock the panel.
+   */
+  groupedSites: Array<CommonDictionaryModel & {group?: string}> = [];
   selectedWorkerId: number | null = null;
 
   prepared: CalendarPrepareCompleteResult | null = null;
@@ -58,6 +65,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     this.propertiesService.getLinkedSites(this.data.propertyId, false).subscribe(res => {
       if (!res?.success || !res.model) { return; }
       this.sites = [...res.model].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+      this.buildGroupedSites();
       this.applyPreselect();
     });
     this.calendarService
@@ -90,6 +98,55 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     }
   }
 
+  /**
+   * Split the worker list into "assigned to this event" and everyone else.
+   * When the split would leave a group empty — no assignees, or every worker
+   * assigned — the list stays ungrouped rather than showing a header with
+   * nothing under it.
+   */
+  private buildGroupedSites() {
+    const assigned = new Set(this.data.assigneeIds ?? []);
+    const inGroup = this.sites.filter(s => assigned.has(s.id));
+    const rest = this.sites.filter(s => !assigned.has(s.id));
+
+    if (inGroup.length === 0 || rest.length === 0) {
+      this.groupedSites = [...this.sites];
+      return;
+    }
+
+    // Stable keys, not translated strings: `instant()` here would freeze the
+    // headers at worker-load time and render raw keys forever if the locale
+    // bundle had not resolved yet. The template translates them at render time.
+    this.groupedSites = [
+      ...inGroup.map(s => ({...s, group: 'assigned'})),
+      ...rest.map(s => ({...s, group: 'other'})),
+    ];
+  }
+
+  /**
+   * The dialog opens at the single-section width because the section count is
+   * not known until the case has loaded. A multi-section eForm also renders a
+   * nav column, so it needs the extra room — widen once, after load, rather
+   * than opening wide and centring a narrow column inside it (which left the
+   * title flush at 16px while the fields sat at 96px).
+   */
+  private widenForSections() {
+    if (!this.hasMultipleSections) { return; }
+    this.dialogRef.updateSize('min(90vw, 1080px)');
+  }
+
+  get hasMultipleSections(): boolean {
+    return (this.replyElement?.elementList?.length ?? 0) > 1;
+  }
+
+  /**
+   * A single-section eForm names its one section the same thing the dialog is
+   * already titled, so printing both repeats the name two rows apart.
+   */
+  get showSectionTitles(): boolean {
+    return this.hasMultipleSections;
+  }
+
   get canSave(): boolean {
     return !this.isSaving && !this.loading
       && this.selectedWorkerId != null && !!this.replyElement.doneAt;
@@ -120,6 +177,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
         // datepicker's allowed range (max = today) so the pre-filled value is valid.
         this.replyElement.doneAt = defaultDoneAt > this.maxDate ? new Date() : defaultDoneAt;
         this.loading = false;
+        this.widenForSections();
       } else {
         this.dialogRef.close({saved: false});
       }

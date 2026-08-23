@@ -589,4 +589,7 @@ export const fiFI = {
     'Kuva poistetaan tehtävästä. Toimintoa ei voi kumota.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Sähköinen lomake koskee koko sarjaa. Sen muuttaminen päivittää kaikki vielä keskeneräiset tapahtumat, mukaan lukien menneet tapahtumat. Valmiit tapahtumat säilyttävät sähköisen lomakkeen, jolla ne täytettiin.',
   'Select a calendar': 'Valitse kalenteri',
+  'Assigned workers': 'Määrätyt työntekijät',
+  'Other workers': 'Muut työntekijät',
+  Sections: 'Osiot',
 };

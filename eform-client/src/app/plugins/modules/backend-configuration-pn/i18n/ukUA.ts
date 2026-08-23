@@ -589,4 +589,7 @@ export const ukUA = {
     'Фото буде видалено із завдання. Цю дію неможливо скасувати.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Електронна форма застосовується до всієї серії. Її зміна оновлює всі екземпляри, які ще не були завершені, включаючи екземпляри в минулому. Завершені екземпляри зберігають електронну форму, за допомогою якої вони були заповнені.',
   'Select a calendar': 'Виберіть календар',
+  'Assigned workers': 'Призначені працівники',
+  'Other workers': 'Інші працівники',
+  Sections: 'Розділи',
 };

@@ -1,77 +1,103 @@
 <h2 mat-dialog-title>{{ replyElement?.label || ('Complete task' | translate) }}</h2>
 
 <mat-dialog-content class="calendar-complete-event-modal__content">
-  <div class="d-flex flex-row justify-content-between">
-    <div class="flex-grow-1 mr-4 d-flex flex-column">
-      <mat-card class="mb-4">
-        <mat-card-title>{{ 'Select worker' | translate }}</mat-card-title>
-        <mat-card-content>
-          <div class="text-field--rounded">
-            <mat-form-field>
-              <mtx-select
-                [items]="sites"
-                bindValue="id"
-                bindLabel="name"
-                [(ngModel)]="selectedWorkerId"
-                [clearable]="false"
-                [placeholder]="'Select worker' | translate"
-                id="completeWorkerSelect"
-              ></mtx-select>
-            </mat-form-field>
-          </div>
-        </mat-card-content>
-      </mat-card>
+  <div class="calendar-complete-event-modal__layout">
+    <div class="calendar-complete-event-modal__main">
+      <div class="eform-field">
+        <h3 class="eform-field__label">{{ 'Select worker' | translate }}</h3>
+        <mat-form-field class="calendar-complete-event-modal__worker">
+          <mtx-select
+            [items]="groupedSites"
+            bindValue="id"
+            bindLabel="name"
+            groupBy="group"
+            [(ngModel)]="selectedWorkerId"
+            [clearable]="false"
+            [placeholder]="'Select worker' | translate"
+            id="completeWorkerSelect"
+          >
+            <!--
+              Group header bold and flush, options indented beneath it — the
+              rendering a native <select> with <optgroup> gives for free, which
+              is what the design reference uses. The dropdown panel is appended
+              to <body>, so these classes are styled globally in
+              scss/components/_material-dropdown.scss (a component stylesheet
+              cannot reach the panel), following the tl-batch-action-* pattern.
+            -->
+            <ng-template ng-optgroup-tmp let-item="item">
+              <span class="eform-worker-group-label">
+                {{ (item.group === 'assigned' ? 'Assigned workers' : 'Other workers') | translate }}
+              </span>
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item" let-item$="item$">
+              <span class="eform-worker-option-label">
+                {{ item$.label }}
+              </span>
+            </ng-template>
+          </mtx-select>
+        </mat-form-field>
+      </div>
 
-      <mat-card class="mb-4">
-        <mat-card-title>{{ 'Done date' | translate }}</mat-card-title>
-        <mat-card-content>
-          <mat-form-field>
-            <mat-label>{{ 'Select date' | translate }}</mat-label>
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <input
-              required
-              matInput
-              [matDatepicker]="picker"
-              [max]="maxDate"
-              [value]="replyElement.doneAt"
-              (dateChange)="replyElement.doneAt = $event.value"
-              (click)="picker.open()"
-              id="completeDoneAt"
-            >
-            <mat-datepicker #picker></mat-datepicker>
-            <mat-error class="text-warn" *ngIf="!replyElement.doneAt">
-              {{ 'Date is required' | translate }}*
-            </mat-error>
-          </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+      <div class="eform-field">
+        <h3 class="eform-field__label">{{ 'Done date' | translate }}</h3>
+        <mat-form-field>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <input
+            required
+            matInput
+            [matDatepicker]="picker"
+            [max]="maxDate"
+            [value]="replyElement.doneAt"
+            (dateChange)="replyElement.doneAt = $event.value"
+            (click)="picker.open()"
+            id="completeDoneAt"
+          >
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        <p class="eform-field__error" *ngIf="!replyElement.doneAt">
+          {{ 'Date is required' | translate }}*
+        </p>
+      </div>
 
       <app-case-edit-element
         [element]="elem"
+        [showSectionTitle]="showSectionTitles"
         *ngFor="let elem of replyElement.elementList"
         (needUpdate)="partialLoadCase()"
       ></app-case-edit-element>
     </div>
 
-    <div class="calendar-complete-event-modal__nav" *ngIf="replyElement?.elementList?.length">
-      <mat-card>
-        <mat-card-content style="max-height: 50vh; overflow: auto;">
-          <div *ngFor="let element of replyElement.elementList" style="cursor: pointer">
-            <a mat-button (click)="goToSection('#section' + element.id)" class="d-flex w-100">
-              {{ element.label }}
-            </a>
-            <ng-container *ngIf="element.elementList">
-              <app-case-edit-nav [element]="element"></app-case-edit-nav>
-            </ng-container>
-          </div>
-        </mat-card-content>
-      </mat-card>
+    <div class="calendar-complete-event-modal__nav" *ngIf="hasMultipleSections">
+      <p class="calendar-complete-event-modal__nav-legend">{{ 'Sections' | translate }}</p>
+      <div *ngFor="let element of replyElement.elementList">
+        <a class="eform-nav__link" (click)="goToSection('#section' + element.id)">
+          {{ element.label }}
+        </a>
+        <ng-container *ngIf="element.elementList">
+          <app-case-edit-nav [element]="element"></app-case-edit-nav>
+        </ng-container>
+      </div>
     </div>
   </div>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()" [disabled]="isSaving" id="completeCancelBtn">
+<!--
+  Footer shape copied verbatim from the house convention (see
+  property-worker-create-edit-modal): a div[mat-dialog-actions] with the flex
+  utilities, .btn-cancel, and .btn-primary whose label is wrapped in a <span>.
+  The span is load-bearing — `.btn-primary--icon-left span { font-size: 14px }`
+  is what sizes the label, so without it Save renders at 13.33px next to a 14px
+  Cancel.
+-->
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <!--
+    .btn-cancel, not mat-button: under theme-workspace the Material text button
+    still renders the old pill (border-radius 9999px) at 12.25px in the eForm
+    theme's teal, while its Save sibling is a 4px 14px blue .btn-primary.
+    .btn-cancel is the documented counterpart — same 40px height, same 4px
+    radius, same type — see the button block in _workspace-mat-overrides.scss.
+  -->
+  <button class="btn-cancel" (click)="cancel()" [disabled]="isSaving" id="completeCancelBtn">
     {{ 'Cancel' | translate }}
   </button>
   <button
@@ -80,6 +106,6 @@
     [disabled]="!canSave"
     id="completeSaveBtn"
   >
-    {{ 'Save' | translate }}
+    <span>{{ 'Save' | translate }}</span>
   </button>
-</mat-dialog-actions>
+</div>

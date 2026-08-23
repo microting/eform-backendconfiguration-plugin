@@ -589,4 +589,7 @@ export const ltLT = {
     'Nuotrauka bus pašalinta iš užduoties. Šio veiksmo negalima atšaukti.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Elektroninė forma taikoma visai serijai. Ją pakeitus atnaujinami visi dar neužbaigti įvykiai, įskaitant praeities įvykius. Užbaigti įvykiai išlaiko elektroninę formą, su kuria jie buvo užpildyti.',
   'Select a calendar': 'Pasirinkite kalendorių',
+  'Assigned workers': 'Priskirti darbuotojai',
+  'Other workers': 'Kiti darbuotojai',
+  Sections: 'Skyriai',
 };

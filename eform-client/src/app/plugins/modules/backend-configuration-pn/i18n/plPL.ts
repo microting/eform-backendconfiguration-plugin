@@ -589,4 +589,7 @@ export const plPL = {
     'Zdjęcie zostanie usunięte z zadania. Tej operacji nie można cofnąć.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Formularz elektroniczny dotyczy całej serii. Zmiana go aktualizuje każde wystąpienie, które nie zostało jeszcze ukończone, w tym wystąpienia z przeszłości. Ukończone wystąpienia zachowują formularz elektroniczny, za pomocą którego zostały ukończone.',
   'Select a calendar': 'Wybierz kalendarz',
+  'Assigned workers': 'Przypisani pracownicy',
+  'Other workers': 'Pozostali pracownicy',
+  Sections: 'Sekcje',
 };

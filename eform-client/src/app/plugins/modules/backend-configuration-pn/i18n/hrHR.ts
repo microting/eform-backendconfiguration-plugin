@@ -589,4 +589,7 @@ export const hrHR = {
     'Fotografija će biti uklonjena iz zadatka. Radnja se ne može poništiti.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'E-obrazac se primjenjuje na cijelu seriju. Njegovom promjenom ažurira se svako pojavljivanje koje još nije dovršeno, uključujući i pojavljivanje u prošlosti. Dovršena pojavljivanja zadržavaju e-obrazac s kojim su dovršena.',
   'Select a calendar': 'Odaberite kalendar',
+  'Assigned workers': 'Dodijeljeni radnici',
+  'Other workers': 'Ostali radnici',
+  Sections: 'Odjeljci',
 };

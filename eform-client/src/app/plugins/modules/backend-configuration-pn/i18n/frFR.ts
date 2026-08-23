@@ -588,4 +588,7 @@ export const frFR = {
     'La photo sera retirée de la tâche. Cette action est irréversible.',
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'Le formulaire électronique s\'applique à l\'ensemble de la série. Toute modification le met à jour pour chaque occurrence non encore complétée, y compris les occurrences passées. Les occurrences complétées conservent le formulaire électronique utilisé lors de leur remplissage.',
   'Select a calendar': 'Sélectionnez un calendrier',
+  'Assigned workers': 'Employés assignés',
+  'Other workers': 'Autres employés',
+  Sections: 'Sections',
 };
