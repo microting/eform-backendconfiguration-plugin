@@ -50,6 +50,20 @@ const worker: PropertyWorker = {
   workerEmail: generateRandmString(5) + '@test.com',
 };
 
+// A SECOND worker is required, not incidental. The modal deliberately renders
+// an ungrouped list when either group would be empty, so with a single worker
+// — who is also the event's assignee — `buildGroupedSites()` produces no
+// groups at all and every grouped assertion in L6 silently skips. Two workers
+// give one assignee ("Tildelte medarbejdere") and one remainder ("Øvrige
+// medarbejdere"), which is the case worth testing.
+const otherWorker: PropertyWorker = {
+  name: generateRandmString(5),
+  surname: generateRandmString(5),
+  language: 'Dansk',
+  properties: [property.name],
+  workerEmail: generateRandmString(5) + '@test.com',
+};
+
 let seeded = false;
 
 function isPrepareComplete(r: import('@playwright/test').Response): boolean {
@@ -164,6 +178,7 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     await propertiesPage.createProperty(property);
     await workersPage.goToPropertyWorkers();
     await workersPage.create(worker);
+    await workersPage.create(otherWorker);
 
     seeded = true;
   });
@@ -254,12 +269,11 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     await expect(page.locator('#completeWorkerSelect')).toBeVisible();
 
     // L6 — open the dropdown (mtx-select appends its panel to body) and check
-    // the grouping. This seed has a single property worker who is also the
-    // event's assignee, so the "empty group" guard applies and the list is
-    // deliberately NOT grouped — assert that rather than a header that should
-    // not be there. Group headers, when present, are .ng-optgroup and are
-    // never .ng-option, which is why the sibling suite's `.ng-option` picking
-    // keeps working.
+    // the grouping. The seed creates two workers so exactly one is the event's
+    // assignee, which is what makes the list actually group; with one worker
+    // the "empty group" guard fires and none of this would be exercised.
+    // Group headers are .ng-optgroup and never .ng-option, which is why the
+    // sibling suite's `.ng-option` picking keeps working.
     await page.locator('#completeWorkerSelect').click();
     const panel = page.locator('.ng-dropdown-panel');
     await panel.waitFor({ state: 'visible', timeout: 10000 });

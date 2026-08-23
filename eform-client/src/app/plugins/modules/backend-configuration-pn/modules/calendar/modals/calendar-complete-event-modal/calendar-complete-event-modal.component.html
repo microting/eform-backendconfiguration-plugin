@@ -30,7 +30,7 @@
               </span>
             </ng-template>
             <ng-template ng-option-tmp let-item="item" let-item$="item$">
-              <span class="eform-worker-option-label" [class.eform-worker-option-label--grouped]="!!item.group">
+              <span class="eform-worker-option-label">
                 {{ item$.label }}
               </span>
             </ng-template>
@@ -82,7 +82,14 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()" [disabled]="isSaving" id="completeCancelBtn">
+  <!--
+    .btn-cancel, not mat-button: under theme-workspace the Material text button
+    still renders the old pill (border-radius 9999px) at 12.25px in the eForm
+    theme's teal, while its Save sibling is a 4px 14px blue .btn-primary.
+    .btn-cancel is the documented counterpart — same 40px height, same 4px
+    radius, same type — see the button block in _workspace-mat-overrides.scss.
+  -->
+  <button class="btn-cancel" (click)="cancel()" [disabled]="isSaving" id="completeCancelBtn">
     {{ 'Cancel' | translate }}
   </button>
   <button

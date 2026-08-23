@@ -55,7 +55,9 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()" [disabled]="isSaving">
+  <!-- Same pill/teal leftover as the calendar complete modal; .btn-cancel is
+       the documented counterpart to the .btn-primary beside it. -->
+  <button class="btn-cancel" (click)="cancel()" [disabled]="isSaving">
     {{ 'Cancel' | translate }}
   </button>
   <button
