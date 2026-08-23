@@ -301,7 +301,11 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
       // indented past it.
       const weights = await panel.evaluate(el => {
         const header = el.querySelector('.eform-worker-group-label');
-        const option = el.querySelector('.eform-worker-option-label--grouped');
+        // The indent lives on the row (.ng-option-child), which ng-select stamps
+        // on every grouped option — not on a modifier class of our own. Styling
+        // the row is what makes the indent identical under both themes; mtx-select
+        // already pads .ng-option-child, and only theme-workspace cancels it.
+        const option = el.querySelector('.ng-option-child .eform-worker-option-label');
         if (!header || !option) return null;
         const textLeft = (n: Element) => {
           const r = document.createRange();
@@ -318,8 +322,8 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
       expect(weights!.header).toBeGreaterThan(weights!.option);
       expect(weights!.indent).toBeGreaterThan(0);
     } else {
-      // Ungrouped list: options stay flush, no phantom indent.
-      await expect(panel.locator('.eform-worker-option-label--grouped')).toHaveCount(0);
+      // Ungrouped list: ng-select stamps no .ng-option-child, so nothing indents.
+      await expect(panel.locator('.ng-option-child')).toHaveCount(0);
     }
 
     await page.keyboard.press('Escape');
