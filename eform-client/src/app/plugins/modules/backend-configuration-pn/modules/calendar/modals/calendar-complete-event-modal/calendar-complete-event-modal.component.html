@@ -81,7 +81,15 @@
   </div>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<!--
+  Footer shape copied verbatim from the house convention (see
+  property-worker-create-edit-modal): a div[mat-dialog-actions] with the flex
+  utilities, .btn-cancel, and .btn-primary whose label is wrapped in a <span>.
+  The span is load-bearing — `.btn-primary--icon-left span { font-size: 14px }`
+  is what sizes the label, so without it Save renders at 13.33px next to a 14px
+  Cancel.
+-->
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <!--
     .btn-cancel, not mat-button: under theme-workspace the Material text button
     still renders the old pill (border-radius 9999px) at 12.25px in the eForm
@@ -98,6 +106,6 @@
     [disabled]="!canSave"
     id="completeSaveBtn"
   >
-    {{ 'Save' | translate }}
+    <span>{{ 'Save' | translate }}</span>
   </button>
-</mat-dialog-actions>
+</div>

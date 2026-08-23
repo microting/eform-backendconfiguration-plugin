@@ -54,7 +54,7 @@
   </div>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <!-- Same pill/teal leftover as the calendar complete modal; .btn-cancel is
        the documented counterpart to the .btn-primary beside it. -->
   <button class="btn-cancel" (click)="cancel()" [disabled]="isSaving">
@@ -66,6 +66,6 @@
     [disabled]="isSaving || !replyElement.doneAt"
     id="submit_form"
   >
-    {{ 'Save' | translate }}
+    <span>{{ 'Save' | translate }}</span>
   </button>
-</mat-dialog-actions>
+</div>
