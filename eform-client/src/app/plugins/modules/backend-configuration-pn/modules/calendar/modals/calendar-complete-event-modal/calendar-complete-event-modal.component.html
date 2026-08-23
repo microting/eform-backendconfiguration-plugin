@@ -1,10 +1,7 @@
 <h2 mat-dialog-title>{{ replyElement?.label || ('Complete task' | translate) }}</h2>
 
 <mat-dialog-content class="calendar-complete-event-modal__content">
-  <div
-    class="calendar-complete-event-modal__layout"
-    [class.calendar-complete-event-modal__layout--single]="!hasMultipleSections"
-  >
+  <div class="calendar-complete-event-modal__layout">
     <div class="calendar-complete-event-modal__main">
       <div class="eform-field">
         <h3 class="eform-field__label">{{ 'Select worker' | translate }}</h3>
@@ -19,9 +16,22 @@
             [placeholder]="'Select worker' | translate"
             id="completeWorkerSelect"
           >
+            <!--
+              Group header bold and flush, options indented beneath it — the
+              rendering a native <select> with <optgroup> gives for free, which
+              is what the design reference uses. The dropdown panel is appended
+              to <body>, so these classes are styled globally in
+              scss/components/_material-dropdown.scss (a component stylesheet
+              cannot reach the panel), following the tl-batch-action-* pattern.
+            -->
             <ng-template ng-optgroup-tmp let-item="item">
-              <span class="calendar-complete-event-modal__worker-group">
+              <span class="eform-worker-group-label">
                 {{ (item.group === 'assigned' ? 'Assigned workers' : 'Other workers') | translate }}
+              </span>
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item" let-item$="item$">
+              <span class="eform-worker-option-label" [class.eform-worker-option-label--grouped]="!!item.group">
+                {{ item$.label }}
               </span>
             </ng-template>
           </mtx-select>

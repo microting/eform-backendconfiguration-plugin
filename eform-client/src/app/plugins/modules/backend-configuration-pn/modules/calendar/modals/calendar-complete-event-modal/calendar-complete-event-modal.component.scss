@@ -16,15 +16,11 @@
     min-width: 0;
   }
 
-  // The dialog is opened at a fixed `min(90vw, 1080px)` by the caller, before
-  // the eForm has loaded and the section count is known — so the single-section
-  // case cannot be narrowed by resizing the dialog. Cap and centre the form
-  // column instead: a single column of 40px fields stretched to 1080px reads
-  // badly, and 880px matches the reference.
-  &__layout--single &__main {
-    max-width: 880px;
-    margin: 0 auto;
-  }
+  // No max-width/centring here. Centring a narrow column inside a wide dialog
+  // left the title flush at the dialog gutter while the fields sat ~76px
+  // further in — the two read as different layouts. The dialog itself is sized
+  // for the content instead (900px single-section, widened to 1080px when a
+  // nav column appears), so one gutter governs everything.
 
   &__nav {
     flex-shrink: 0;
@@ -44,9 +40,6 @@
     color: var(--md-on-surface-variant);
   }
 
-  &__worker-group {
-    font-weight: 700;
-  }
 }
 
 // The global theme caps every mtx-select form field at 320px; the worker picker

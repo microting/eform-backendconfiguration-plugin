@@ -804,7 +804,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         propertyId: task.propertyId,
         assigneeIds: task.assigneeIds ?? [],
       } as CalendarCompleteEventModalData,
-      width: 'min(90vw, 1080px)',
+      // Sized for a single-section eForm, which is the common case: one column
+      // of fields with a uniform gutter, matching the design reference. The
+      // modal widens itself to make room for the nav column when the eForm
+      // turns out to have more than one section (see widenForSections()).
+      width: 'min(90vw, 900px)',
       maxWidth: '95vw',
       autoFocus: false,
       restoreFocus: false,

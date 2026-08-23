@@ -123,6 +123,18 @@ export class CalendarCompleteEventModalComponent implements OnInit {
     ];
   }
 
+  /**
+   * The dialog opens at the single-section width because the section count is
+   * not known until the case has loaded. A multi-section eForm also renders a
+   * nav column, so it needs the extra room — widen once, after load, rather
+   * than opening wide and centring a narrow column inside it (which left the
+   * title flush at 16px while the fields sat at 96px).
+   */
+  private widenForSections() {
+    if (!this.hasMultipleSections) { return; }
+    this.dialogRef.updateSize('min(90vw, 1080px)');
+  }
+
   get hasMultipleSections(): boolean {
     return (this.replyElement?.elementList?.length ?? 0) > 1;
   }
@@ -165,6 +177,7 @@ export class CalendarCompleteEventModalComponent implements OnInit {
         // datepicker's allowed range (max = today) so the pre-filled value is valid.
         this.replyElement.doneAt = defaultDoneAt > this.maxDate ? new Date() : defaultDoneAt;
         this.loading = false;
+        this.widenForSections();
       } else {
         this.dialogRef.close({saved: false});
       }

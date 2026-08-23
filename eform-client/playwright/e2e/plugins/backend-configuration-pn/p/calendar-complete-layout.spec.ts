@@ -267,12 +267,45 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     const optionCount = await panel.locator('.ng-option').count();
     const groupCount = await panel.locator('.ng-optgroup').count();
     expect(optionCount).toBeGreaterThan(0);
+
+    // Options must render through the custom template, not ng-select's default
+    // .ng-option-label. That is not cosmetic: a global rule sets
+    // .ng-option-label { font-weight: 600 !important }, which made options
+    // BOLDER than their own group headers — the inverse of the design.
+    await expect(panel.locator('.ng-option-label')).toHaveCount(0);
+    await expect(panel.locator('.eform-worker-option-label').first()).toBeVisible();
+
     if (groupCount > 0) {
       // Grouped: headers must be real text, and must not double as options.
       for (let i = 0; i < groupCount; i++) {
         expect((await panel.locator('.ng-optgroup').nth(i).innerText()).trim()).not.toBe('');
       }
       await expect(panel.locator('.ng-optgroup.ng-option')).toHaveCount(0);
+
+      // Native <select> convention, which the design reference relies on:
+      // the group header is bolder than its options, and the options are
+      // indented past it.
+      const weights = await panel.evaluate(el => {
+        const header = el.querySelector('.eform-worker-group-label');
+        const option = el.querySelector('.eform-worker-option-label--grouped');
+        if (!header || !option) return null;
+        const textLeft = (n: Element) => {
+          const r = document.createRange();
+          r.selectNodeContents(n);
+          return r.getBoundingClientRect().left;
+        };
+        return {
+          header: parseInt(getComputedStyle(header).fontWeight, 10),
+          option: parseInt(getComputedStyle(option).fontWeight, 10),
+          indent: textLeft(option) - textLeft(header),
+        };
+      });
+      expect(weights).not.toBeNull();
+      expect(weights!.header).toBeGreaterThan(weights!.option);
+      expect(weights!.indent).toBeGreaterThan(0);
+    } else {
+      // Ungrouped list: options stay flush, no phantom indent.
+      await expect(panel.locator('.eform-worker-option-label--grouped')).toHaveCount(0);
     }
 
     await page.keyboard.press('Escape');
