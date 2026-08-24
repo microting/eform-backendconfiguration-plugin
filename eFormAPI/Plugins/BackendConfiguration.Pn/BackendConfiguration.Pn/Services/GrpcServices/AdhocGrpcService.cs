@@ -21,9 +21,12 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 /// when the resolver returns 0) and forwards to
 /// <see cref="IBackendConfigurationAdhocService"/> — the shared task CRUD +
 /// visibility service also consumed by <c>AdhocController</c> (B6, dashboard
-/// REST). Mobile callers always pass <c>isAdmin=false</c> (the service's
-/// default) — visibility here is entirely governed by that service's
-/// TaskVisibility-mirroring predicates.
+/// REST). Mobile callers always pass <c>isAdmin: false</c>, written out at
+/// every call site rather than left to the interface default (2026-08-24), so
+/// that the mobile scoping guarantee does not hinge on a default argument —
+/// <c>AdhocController</c> now passes <c>true</c> unconditionally, and this is
+/// the line that keeps that decision on the web side. Visibility here is
+/// entirely governed by that service's TaskVisibility-mirroring predicates.
 ///
 /// Typed service exceptions map to RPC status codes:
 /// <see cref="AdhocTaskNotFoundException"/>/<see cref="AdhocTagNotFoundException"/>/
@@ -61,7 +64,7 @@ public class AdhocGrpcService(
         // worker identity), so resolve it via the site resolver, mirroring
         // BackendConfigurationAdhocService.ListWorkers' own Site.Name lookup.
         var displayName = await siteResolver.GetDisplayNameAsync(workerId).ConfigureAwait(false);
-        var properties = await adhocService.ListProperties(workerId).ConfigureAwait(false);
+        var properties = await adhocService.ListProperties(workerId, isAdmin: false).ConfigureAwait(false);
 
         var response = new CurrentWorker
         {
@@ -78,7 +81,7 @@ public class AdhocGrpcService(
         var scope = MapScope(request.Scope);
         var propertyId = ParseOptionalId(request.PropertyId);
 
-        var tasks = await adhocService.ListTasks(workerId, scope, propertyId).ConfigureAwait(false);
+        var tasks = await adhocService.ListTasks(workerId, scope, propertyId, isAdmin: false).ConfigureAwait(false);
 
         var response = new ListTasksResponse();
         response.Tasks.AddRange(tasks.Select(MapTask));
@@ -90,7 +93,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        var task = await RunAsync(() => adhocService.GetTask(workerId, taskId)).ConfigureAwait(false);
+        var task = await RunAsync(() => adhocService.GetTask(workerId, taskId, isAdmin: false)).ConfigureAwait(false);
         return new GetTaskResponse { Task = MapTask(task) };
     }
 
@@ -99,7 +102,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var model = MapCreateModel(request);
 
-        var task = await RunAsync(() => adhocService.CreateTask(workerId, model)).ConfigureAwait(false);
+        var task = await RunAsync(() => adhocService.CreateTask(workerId, model, isAdmin: false)).ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
 
@@ -109,7 +112,7 @@ public class AdhocGrpcService(
         var taskId = ParseRequiredId(request.Id, "id");
         var model = MapCreateModel(request);
 
-        var task = await RunAsync(() => adhocService.UpdateTask(workerId, taskId, model)).ConfigureAwait(false);
+        var task = await RunAsync(() => adhocService.UpdateTask(workerId, taskId, model, isAdmin: false)).ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
 
@@ -118,7 +121,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        var task = await RunAsync(() => adhocService.SetCompleted(workerId, taskId, request.Completed))
+        var task = await RunAsync(() => adhocService.SetCompleted(workerId, taskId, request.Completed, isAdmin: false))
             .ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
@@ -128,7 +131,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        var task = await RunAsync(() => adhocService.Archive(workerId, taskId)).ConfigureAwait(false);
+        var task = await RunAsync(() => adhocService.Archive(workerId, taskId, isAdmin: false)).ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
 
@@ -137,7 +140,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        var task = await RunAsync(() => adhocService.Reopen(workerId, taskId)).ConfigureAwait(false);
+        var task = await RunAsync(() => adhocService.Reopen(workerId, taskId, isAdmin: false)).ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
 
@@ -146,7 +149,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        await RunVoidAsync(() => adhocService.Delete(workerId, taskId)).ConfigureAwait(false);
+        await RunVoidAsync(() => adhocService.Delete(workerId, taskId, isAdmin: false)).ConfigureAwait(false);
         return new DeleteResponse();
     }
 
@@ -155,7 +158,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var taskId = ParseRequiredId(request.TaskId, "task_id");
 
-        var task = await RunAsync(() => adhocService.AddComment(workerId, taskId, request.Text ?? string.Empty))
+        var task = await RunAsync(() => adhocService.AddComment(workerId, taskId, request.Text ?? string.Empty, isAdmin: false))
             .ConfigureAwait(false);
         return new TaskResponse { Task = MapTask(task) };
     }
@@ -165,7 +168,7 @@ public class AdhocGrpcService(
         ServerCallContext context)
     {
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
-        var properties = await adhocService.ListProperties(workerId).ConfigureAwait(false);
+        var properties = await adhocService.ListProperties(workerId, isAdmin: false).ConfigureAwait(false);
 
         var response = new ListAdhocPropertiesResponse();
         response.Properties.AddRange(properties.Select(p => new PropertyRef
@@ -181,7 +184,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var propertyId = ParseRequiredId(request.PropertyId, "property_id");
 
-        var areas = await RunAsync(() => adhocService.ListAreas(workerId, propertyId)).ConfigureAwait(false);
+        var areas = await RunAsync(() => adhocService.ListAreas(workerId, propertyId, isAdmin: false)).ConfigureAwait(false);
 
         var response = new ListAreasResponse();
         response.Areas.AddRange(areas.Select(a => new AreaRef
@@ -198,7 +201,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var propertyId = ParseRequiredId(request.PropertyId, "property_id");
 
-        var workers = await RunAsync(() => adhocService.ListWorkers(workerId, propertyId)).ConfigureAwait(false);
+        var workers = await RunAsync(() => adhocService.ListWorkers(workerId, propertyId, isAdmin: false)).ConfigureAwait(false);
 
         var response = new ListWorkersResponse();
         response.Workers.AddRange(workers.Select(w => new WorkerRef
@@ -212,7 +215,7 @@ public class AdhocGrpcService(
     public override async Task<ListTagsResponse> ListTags(ListTagsRequest request, ServerCallContext context)
     {
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
-        var tags = await adhocService.ListTags(workerId).ConfigureAwait(false);
+        var tags = await adhocService.ListTags(workerId, isAdmin: false).ConfigureAwait(false);
 
         var response = new ListTagsResponse();
         response.Tags.AddRange(tags.Select(MapTag));
@@ -222,7 +225,7 @@ public class AdhocGrpcService(
     public override async Task<TagResponse> CreateTag(CreateTagRequest request, ServerCallContext context)
     {
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
-        var tag = await RunAsync(() => adhocService.CreateTag(workerId, request.Name ?? string.Empty))
+        var tag = await RunAsync(() => adhocService.CreateTag(workerId, request.Name ?? string.Empty, isAdmin: false))
             .ConfigureAwait(false);
         return new TagResponse { Tag = MapTag(tag) };
     }
@@ -232,7 +235,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var tagId = ParseRequiredId(request.Id, "id");
 
-        var tag = await RunAsync(() => adhocService.RenameTag(workerId, tagId, request.Name ?? string.Empty))
+        var tag = await RunAsync(() => adhocService.RenameTag(workerId, tagId, request.Name ?? string.Empty, isAdmin: false))
             .ConfigureAwait(false);
         return new TagResponse { Tag = MapTag(tag) };
     }
@@ -242,7 +245,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var tagId = ParseRequiredId(request.Id, "id");
 
-        await RunVoidAsync(() => adhocService.DeleteTag(workerId, tagId)).ConfigureAwait(false);
+        await RunVoidAsync(() => adhocService.DeleteTag(workerId, tagId, isAdmin: false)).ConfigureAwait(false);
         return new DeleteTagResponse();
     }
 
@@ -307,7 +310,7 @@ public class AdhocGrpcService(
                 "UploadPhoto stream contained no image bytes."));
         }
 
-        var photoId = await RunAsync(() => adhocService.SavePhoto(workerId, taskId, ms.ToArray(), contentType))
+        var photoId = await RunAsync(() => adhocService.SavePhoto(workerId, taskId, ms.ToArray(), contentType, isAdmin: false))
             .ConfigureAwait(false);
 
         return new UploadPhotoResponse { PhotoId = photoId.ToString(CultureInfo.InvariantCulture) };
@@ -327,7 +330,7 @@ public class AdhocGrpcService(
         var workerId = await ResolveWorkerIdAsync().ConfigureAwait(false);
         var photoId = ParseRequiredId(request.PhotoId, "photo_id");
 
-        var (content, contentType) = await RunAsync(() => adhocService.GetPhoto(workerId, photoId))
+        var (content, contentType) = await RunAsync(() => adhocService.GetPhoto(workerId, photoId, isAdmin: false))
             .ConfigureAwait(false);
 
         await using (content.ConfigureAwait(false))

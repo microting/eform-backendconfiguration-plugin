@@ -66,11 +66,18 @@ export const routes: Routes = [
           ),
       },
       {
+        // Intentionally open to every user of this plugin (spec
+        // 2026-08-24-adhoc-tasks-unrestricted-access-design). The
+        // adhoc_enable claim was never granted to non-admin roles and is
+        // enforced nowhere server-side, so the guard only ever cancelled
+        // navigation for the users who were supposed to use the page.
+        // The parent route still requires backend_configuration_plugin_access.
+        // AuthGuard is deliberate — it is the explicit "open to any logged-in
+        // user" pattern also used by calendar, compliances and
+        // property-workers. Do not re-add PermissionGuard or a
+        // requiredPermission here.
         path: 'adhoc-tasks',
-        canActivate: [PermissionGuard],
-        data: {
-          requiredPermission: BackendConfigurationPnClaims.enableAdhoc,
-        },
+        canActivate: [AuthGuard],
         loadChildren: () =>
           import('./modules/adhoc/adhoc.module').then(
             (m) => m.AdhocModule

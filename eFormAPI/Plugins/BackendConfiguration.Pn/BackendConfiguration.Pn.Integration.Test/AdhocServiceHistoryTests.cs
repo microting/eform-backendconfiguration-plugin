@@ -449,6 +449,14 @@ public class AdhocServiceHistoryTests : TestBaseSetup
     [Test]
     public async Task ListHistory_NonAdmin_OnlyReturnsCallersVisibleTasks()
     {
+        // Same standing as IndexTasks_NonAdmin_OnlyReturnsCallersVisibleTasks:
+        // ListHistory has NO gRPC call site - AdhocGrpcService never calls it -
+        // so the web (Historik) is its only caller and it always passes
+        // isAdmin: true since 2026-08-24. This therefore exercises a parameter
+        // combination no current caller produces, and is NOT what keeps the
+        // mobile path scoped. It is kept as the contract for the
+        // non-full-access branch of the visibility predicate, should a caller
+        // ever pass false again.
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
         await GrantPropertyAccessAsync(property.Id, 7);

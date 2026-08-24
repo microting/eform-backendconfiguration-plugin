@@ -190,6 +190,20 @@ public class AdhocServiceIndexTests : TestBaseSetup
     [Test]
     public async Task IndexTasks_NonAdmin_OnlyReturnsCallersVisibleTasks()
     {
+        // Exercises a parameter combination no current caller produces.
+        // IndexTasks has NO gRPC call site at all - AdhocGrpcService never
+        // calls it (its 19 call sites cover only ListProperties (twice),
+        // ListTasks, GetTask, CreateTask, UpdateTask, SetCompleted, Archive,
+        // Reopen, Delete, AddComment, ListAreas, ListWorkers, ListTags,
+        // CreateTag, RenameTag, DeleteTag, SavePhoto and GetPhoto) - so the
+        // web is its only caller, and since
+        // 2026-08-24 the web always passes isAdmin: true. Unlike the
+        // RequireCreator/tag-guard tests elsewhere, this does NOT keep the
+        // gRPC path narrow; there is no gRPC path here to keep narrow.
+        // It is kept because it pins the non-full-access branch of the
+        // shared visibility predicate as a contract: if a caller ever passes
+        // false again (a mobile index, a scoped report), this is what says
+        // what that must mean. Deleting it would leave the branch untested.
         var property = await CreatePropertyAsync();
         await GrantPropertyAccessAsync(property.Id, 1);
         await GrantPropertyAccessAsync(property.Id, 7);

@@ -474,6 +474,20 @@ export class BackendConfigurationAdhocPage {
 
   // ----- Drawer photos (#1099/#1100) -----------------------------------------
 
+  /**
+   * The drawer's hidden photo picker - the `<input type="file">` inside
+   * `label.photo-upload-btn` (`adhoc-task-drawer.component.html`).
+   * `setInputFiles` works on a hidden input; same idiom as
+   * `w/calendar-attachments.spec.ts` with `#calendarEventAttachInput`.
+   * In EDIT mode the selection uploads immediately
+   * (`onFilesSelected` -> `POST .../adhoc/{id}/photos`), so the round-trip
+   * can be awaited; in CREATE mode it only queues a preview
+   * (`queuedPhotoThumbs()`).
+   */
+  photoUploadInput(): Locator {
+    return this.page.locator('.adhoc-drawer .photo-upload-btn input[type="file"]');
+  }
+
   /** Existing (server-side) photo thumbnails in the open drawer. */
   photoThumbs(): Locator {
     return this.page.locator('.adhoc-drawer [data-e2e="adhoc-photo-thumb"]');
