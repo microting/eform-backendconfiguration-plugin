@@ -14,10 +14,10 @@
   </mat-form-field>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end gap-8">
-  <button mat-raised-button id="adhocCompleteCancelBtn" (click)="cancel()">
+  <button class="btn-cancel" id="adhocCompleteCancelBtn" (click)="cancel()">
     {{ 'Cancel' | translate }}
   </button>
-  <button mat-raised-button color="primary" id="adhocCompleteConfirmBtn" (click)="complete()">
+  <button class="btn-primary" id="adhocCompleteConfirmBtn" (click)="complete()">
     {{ 'Complete task' | translate }}
   </button>
 </div>

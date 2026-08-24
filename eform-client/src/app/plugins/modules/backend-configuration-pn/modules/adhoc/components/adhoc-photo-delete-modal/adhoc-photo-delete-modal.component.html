@@ -5,10 +5,10 @@
 <div mat-dialog-actions class="d-flex flex-row justify-content-end gap-8">
   <!-- Initial focus lands on the dismissive action, never on the
        destructive one (design-spec Surface 2). -->
-  <button mat-button id="adhocPhotoDeleteCancelBtn" data-e2e="adhoc-photo-delete-cancel" cdkFocusInitial (click)="hide()">
+  <button class="btn-cancel" id="adhocPhotoDeleteCancelBtn" data-e2e="adhoc-photo-delete-cancel" cdkFocusInitial (click)="hide()">
     {{ 'Cancel' | translate }}
   </button>
-  <button mat-flat-button id="adhocPhotoDeleteConfirmBtn" data-e2e="adhoc-photo-delete-confirm" (click)="confirm()">
+  <button class="btn-delete" id="adhocPhotoDeleteConfirmBtn" data-e2e="adhoc-photo-delete-confirm" (click)="confirm()">
     {{ 'Delete' | translate }}
   </button>
 </div>

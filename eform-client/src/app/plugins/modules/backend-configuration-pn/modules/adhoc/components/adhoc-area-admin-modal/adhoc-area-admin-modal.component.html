@@ -40,11 +40,11 @@
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <ng-container *ngIf="confirmDeleteArea === null; else deleteActions">
-    <button mat-button id="adhocAreaAdminCloseBtn" (click)="close()">{{ 'Close' | translate }}</button>
+    <button class="btn-cancel" id="adhocAreaAdminCloseBtn" (click)="close()">{{ 'Close' | translate }}</button>
   </ng-container>
   <ng-template #deleteActions>
-    <button mat-button id="adhocAreaDeleteCancelBtn" (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
-    <button mat-raised-button color="warn" id="adhocAreaDeleteConfirmBtn" [disabled]="busy" (click)="confirmDelete()">
+    <button class="btn-cancel" id="adhocAreaDeleteCancelBtn" (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
+    <button class="btn-delete" id="adhocAreaDeleteConfirmBtn" [disabled]="busy" (click)="confirmDelete()">
       {{ 'Delete' | translate }}
     </button>
   </ng-template>

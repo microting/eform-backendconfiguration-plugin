@@ -332,5 +332,11 @@ jobs:
         node-version: 22
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
+    - name: Button conventions
+      # The gate lives in the frontend repo (checked out above) but the plugin
+      # templates are ours, and a frontend CI run cannot see them —
+      # src/app/plugins/ is gitignored there. So each plugin repo has to run it
+      # over its own module, or nothing checks these buttons at all.
+      run: cd eform-angular-frontend/eform-client && node scripts/check-button-conventions.js src/app/plugins/modules/backend-configuration-pn
     - name: Run backend-configuration-pn unit tests
       run: cd eform-angular-frontend/eform-client && npx jest --ci --maxWorkers=2 "src/app/plugins/modules/backend-configuration-pn/"

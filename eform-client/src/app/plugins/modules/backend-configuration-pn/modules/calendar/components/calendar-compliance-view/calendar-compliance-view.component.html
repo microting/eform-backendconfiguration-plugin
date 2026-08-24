@@ -183,7 +183,7 @@
   <h3 mat-dialog-title>{{ 'Delete log' | translate }}</h3>
   <mat-dialog-content>{{ 'This action cannot be undone' | translate }}</mat-dialog-content>
   <mat-dialog-actions align="end">
-    <button mat-button (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
-    <button mat-flat-button color="warn" (click)="confirmDelete()">{{ 'Delete' | translate }}</button>
+    <button class="btn-cancel" (click)="cancelDelete()">{{ 'Cancel' | translate }}</button>
+    <button class="btn-delete" (click)="confirmDelete()">{{ 'Delete' | translate }}</button>
   </mat-dialog-actions>
 </ng-template>
