@@ -153,7 +153,7 @@ describe('Area rules type 1', () => {
     //cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row > .mat-column-name');
     let row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
-    cy.get('#changeAssignmentsCancel > .mdc-button__label').click();
+    cy.get('#changeAssignmentsCancel').click();
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.intercept('POST', '**/api/templates/index').as('getTemplates');
@@ -217,7 +217,7 @@ describe('Area rules type 1', () => {
     row().find('mat-checkbox').should('not.have.class', 'mat-mdc-checkbox-checked');
     row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(workerForCreate2.name).parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').should('have.class', 'mat-mdc-checkbox-checked');
-    cy.get('#changeAssignmentsCancel > .mdc-button__label').click();
+    cy.get('#changeAssignmentsCancel').click();
     /* ==== End Cypress Studio ==== */
   });
   after(() => {
