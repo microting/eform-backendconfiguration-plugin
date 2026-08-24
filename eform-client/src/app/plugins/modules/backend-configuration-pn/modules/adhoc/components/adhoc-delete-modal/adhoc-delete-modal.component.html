@@ -10,10 +10,10 @@
   </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
-  <button mat-raised-button id="adhocDeleteCancelBtn" (click)="hide()">
+  <button class="btn-cancel" id="adhocDeleteCancelBtn" (click)="hide()">
     {{ 'Cancel' | translate }}
   </button>
-  <button mat-raised-button color="warn" id="adhocDeleteConfirmBtn" (click)="delete()">
+  <button class="btn-delete" id="adhocDeleteConfirmBtn" (click)="delete()">
     {{ 'Delete' | translate }}
   </button>
 </div>

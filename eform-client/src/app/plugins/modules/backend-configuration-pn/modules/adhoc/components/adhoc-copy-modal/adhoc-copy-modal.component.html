@@ -4,13 +4,13 @@
   <p>{{ 'With comments' | translate }} / {{ 'Without comments' | translate }}?</p>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end gap-8">
-  <button mat-raised-button id="adhocCopyCancelBtn" (click)="cancel()">
+  <button class="btn-cancel" id="adhocCopyCancelBtn" (click)="cancel()">
     {{ 'Cancel' | translate }}
   </button>
-  <button mat-raised-button id="adhocCopyWithoutCommentsBtn" (click)="copy(false)">
+  <button class="btn-quiet" id="adhocCopyWithoutCommentsBtn" (click)="copy(false)">
     {{ 'Without comments' | translate }}
   </button>
-  <button mat-raised-button color="primary" id="adhocCopyWithCommentsBtn" (click)="copy(true)">
+  <button class="btn-primary" id="adhocCopyWithCommentsBtn" (click)="copy(true)">
     {{ 'With comments' | translate }}
   </button>
 </div>

@@ -9,8 +9,8 @@
   </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button id="adhocAreaCreateCancelBtn" (click)="hide()">{{ 'Cancel' | translate }}</button>
-  <button mat-raised-button color="primary" id="adhocAreaCreateSaveBtn"
+  <button class="btn-cancel" id="adhocAreaCreateCancelBtn" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button class="btn-primary" id="adhocAreaCreateSaveBtn"
           [disabled]="parsedNames.length === 0 || saving" (click)="save()">
     {{ 'Add' | translate }}
   </button>
