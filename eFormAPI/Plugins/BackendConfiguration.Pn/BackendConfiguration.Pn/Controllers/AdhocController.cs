@@ -33,6 +33,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Services.BackendConfigurationAdhocService;
 using Services.BackendConfigurationLocalizationService;
 
@@ -56,19 +57,35 @@ using Services.BackendConfigurationLocalizationService;
 /// passes the constant <see cref="DashboardHasFullAccess"/> at every call
 /// site instead of a role check, so the shared service's property-access /
 /// creator / assigned / everyone predicates are bypassed for web calls.
-/// Reach is still bounded by the plugin-wide
-/// <c>backend_configuration_plugin_access</c> route gate; the
-/// <c>adhoc_enable</c> claim is retained but enforced nowhere.
+///
+/// Reach is bounded HERE, server-side: the class-level
+/// <c>[Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]</c>
+/// requires the <c>backend_configuration_plugin_access</c> claim on every
+/// route. That policy is registered by the host from the plugin's own
+/// <c>PluginPermissions</c> rows (one policy per claim name, see
+/// <c>AuthServiceCollectionExtensions.AddEFormAuth</c>), which is the same
+/// mechanism <c>TimePlanningSettingsController</c> and
+/// <c>InnerResourcesController</c> use. Do NOT rely on the Angular route
+/// guard for this: it only hides the page, it does not stop a direct REST
+/// call. "Unrestricted" means unrestricted for users OF THIS PLUGIN — a user
+/// with no backend-configuration access is still refused. The standard
+/// <c>user</c> role is granted "Access BackendConfiguration Plugin" at seed
+/// time (<c>EformBackendConfigurationPlugin.SeedDatabase</c>), so a normal
+/// plugin user passes. The <c>adhoc_enable</c> claim is retained but enforced
+/// nowhere.
 ///
 /// This is deliberately wider than "sees more tasks", and was confirmed as
 /// such: <c>isAdmin</c> is not a pure read filter. Web-created tags are
 /// written global (<c>OwnerWorkerId = null</c>) and any user may rename or
 /// delete another worker's phone-created tag; <c>ListTags</c> surfaces every
 /// worker's personal tags; <c>properties</c>/<c>workers</c> return every
-/// property and every worker name for the customer; and <c>DELETE</c> hard-
-/// deletes a task a worker created on their phone. Those effects land in data
-/// the mobile clients read — what stays scoped is the mobile *caller*, not
-/// the data.
+/// property and every worker name for the customer; and <c>DELETE</c> removes
+/// a task a worker created on their phone. That delete is the Microting soft
+/// delete (<c>WorkflowState = Removed</c>, cascading the same way onto the
+/// task's assignments, logs, comments and photos): the rows survive and are
+/// recoverable in the database, but the task disappears from the mobile
+/// client and from every list. Those effects land in data the mobile clients
+/// read — what stays scoped is the mobile *caller*, not the data.
 ///
 /// <see cref="DashboardWorkerId"/> (0) survives as a synthetic identity, not
 /// as a grant: it is what web-written rows are stamped with
@@ -85,7 +102,7 @@ using Services.BackendConfigurationLocalizationService;
 /// of the web policy; moving it into <c>BackendConfigurationAdhocService</c>
 /// (e.g. by widening <c>CanSee</c>) would extend it to every phone.
 /// </summary>
-[Authorize]
+[Authorize(Policy = BackendConfigurationClaims.AccessBackendConfigurationPlugin)]
 [Route("api/backend-configuration-pn/adhoc")]
 public class AdhocController : Controller
 {
@@ -99,8 +116,11 @@ public class AdhocController : Controller
     // This constant is the whole of that policy. The mobile gRPC path is NOT
     // affected: AdhocGrpcService resolves a real worker via GrpcSiteResolver and
     // passes isAdmin: false. Widening the service's CanSee predicate instead of
-    // this flag WOULD leak every customer's tasks to every phone — do not move
-    // this decision into the service.
+    // this flag WOULD hand every phone in the customer every task in that
+    // customer's database — the platform is database-per-customer, so the
+    // blast radius stops at the customer boundary, but inside it it is total:
+    // every property, every worker's tasks, on every phone. Do not move this
+    // decision into the service.
     private const bool DashboardHasFullAccess = true;
 
     private readonly IBackendConfigurationAdhocService _adhocService;

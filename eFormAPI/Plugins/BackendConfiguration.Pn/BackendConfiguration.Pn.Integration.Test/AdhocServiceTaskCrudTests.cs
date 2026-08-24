@@ -603,6 +603,62 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
     }
 
     [Test]
+    public async Task Delete_FullAccess_SoftDeletesTaskCreatedByAnotherWorker_CascadingToAllChildren()
+    {
+        // Accepted consequence of the "web is unrestricted" decision
+        // (2026-08-24): the web passes (workerId 0, full access) on DELETE, so
+        // RequireCreator is bypassed and a task a worker created on their
+        // PHONE can be removed from the dashboard - together with their
+        // assignments, assignment log, comments and photos. It is the Microting
+        // soft delete (WorkflowState = Removed): the rows survive and stay
+        // recoverable in the database, but the task is gone from every list and
+        // from the mobile client. This pins that DECISION, not the wiring.
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var tag = new AdhocTag { Name = "phone-task-tag" };
+        await tag.Create(BackendConfigurationPnDbContext!);
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(7, MakeCreateModel(property.Id, assignedWorkerIds: [9], tagIds: [tag.Id]));
+        Assert.That(created.CreatedByWorkerId, Is.EqualTo(7));
+        await sut.AddComment(7, created.Id, "from the phone");
+        var photo = new AdhocTaskPhoto { AdhocTaskId = created.Id, UploadedDataId = 1, ContentType = "image/jpeg" };
+        await photo.Create(BackendConfigurationPnDbContext!);
+
+        await sut.Delete(0, created.Id, isAdmin: true);
+
+        var taskRow = await BackendConfigurationPnDbContext!.AdhocTasks
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == created.Id);
+        Assert.That(taskRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var assignmentRow = await BackendConfigurationPnDbContext.AdhocTaskAssignments
+            .IgnoreQueryFilters()
+            .FirstAsync(a => a.AdhocTaskId == created.Id);
+        Assert.That(assignmentRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var assignmentLogRow = await BackendConfigurationPnDbContext.AdhocTaskAssignmentLogs
+            .IgnoreQueryFilters()
+            .FirstAsync(l => l.AdhocTaskId == created.Id);
+        Assert.That(assignmentLogRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var commentRow = await BackendConfigurationPnDbContext.AdhocTaskComments
+            .IgnoreQueryFilters()
+            .FirstAsync(c => c.AdhocTaskId == created.Id);
+        Assert.That(commentRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var photoRow = await BackendConfigurationPnDbContext.AdhocTaskPhotos
+            .IgnoreQueryFilters()
+            .FirstAsync(p => p.AdhocTaskId == created.Id);
+        Assert.That(photoRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        var tagJoinRow = await BackendConfigurationPnDbContext.AdhocTaskTags
+            .IgnoreQueryFilters()
+            .FirstAsync(tt => tt.AdhocTaskId == created.Id);
+        Assert.That(tagJoinRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    [Test]
     public async Task AddComment_AllowedForAssignedWorker_AddsCommentRow()
     {
         var property = await CreatePropertyAsync();

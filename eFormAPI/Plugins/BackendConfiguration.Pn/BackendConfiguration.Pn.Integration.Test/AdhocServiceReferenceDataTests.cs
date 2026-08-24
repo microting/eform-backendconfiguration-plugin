@@ -539,6 +539,68 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
             await sut.RenameTag(0, zeroOwnedTag.Id, "renamed"));
     }
 
+    // --- Accepted consequence of the "web is unrestricted" decision
+    // (2026-08-24): a full-access caller does not only manage the global tags
+    // nobody owns (above) - it reaches into another worker's personal,
+    // phone-created tag, renaming it and deleting it off other people's
+    // tasks. These pin that DECISION, not the wiring: if it is ever judged
+    // wrong it has to be changed here deliberately rather than drifting. ---
+
+    [Test]
+    public async Task RenameTag_FullAccess_RenamesAnotherWorkersPersonalTag()
+    {
+        var sut = CreateSut();
+        // Worker 7's own tag, created exactly as the phone creates one
+        // (isAdmin false => OwnerWorkerId = 7).
+        var phoneTag = await sut.CreateTag(7, "phone-tag");
+
+        var renamed = await sut.RenameTag(0, phoneTag.Id, "web-renamed", isAdmin: true);
+
+        Assert.That(renamed.Name, Is.EqualTo("web-renamed"));
+        // Still worker 7's personal tag - the rename does not re-own it.
+        Assert.That(renamed.IsUserTag, Is.True);
+
+        var tagRow = await BackendConfigurationPnDbContext!.AdhocTags
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == phoneTag.Id);
+        Assert.That(tagRow.Name, Is.EqualTo("web-renamed"));
+        Assert.That(tagRow.OwnerWorkerId, Is.EqualTo(7));
+    }
+
+    [Test]
+    public async Task DeleteTag_FullAccess_DeletesAnotherWorkersPersonalTag_AndCascadesOffTheirTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+        var phoneTag = await sut.CreateTag(7, "phone-tag");
+
+        // Worker 7's own task, carrying worker 7's own tag.
+        var task = new AdhocTaskEntity
+        {
+            Title = "t",
+            Description = "d",
+            PropertyId = property.Id,
+            CreatedByWorkerId = 7,
+        };
+        await task.Create(BackendConfigurationPnDbContext!);
+        var join = new AdhocTaskTag { AdhocTaskId = task.Id, AdhocTagId = phoneTag.Id };
+        await join.Create(BackendConfigurationPnDbContext!);
+
+        await sut.DeleteTag(0, phoneTag.Id, isAdmin: true);
+
+        var tagRow = await BackendConfigurationPnDbContext!.AdhocTags
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == phoneTag.Id);
+        Assert.That(tagRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        // ...and the tag disappears from worker 7's task, not just from the
+        // web caller's own view.
+        var joinRow = await BackendConfigurationPnDbContext.AdhocTaskTags
+            .IgnoreQueryFilters()
+            .FirstAsync(tt => tt.Id == join.Id);
+        Assert.That(joinRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
     [Test]
     public async Task DeleteTag_Throws_ForNonAdminWorkerZero_EvenOnAWorkerZeroOwnedTag()
     {

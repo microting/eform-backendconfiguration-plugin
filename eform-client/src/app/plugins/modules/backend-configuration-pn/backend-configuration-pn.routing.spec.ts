@@ -38,8 +38,11 @@ function findRoute(routeList: Route[], path: string): Route | undefined {
 
 describe('BackendConfigurationPnRouting', () => {
   it('exposes the plugin routes with a single root route', () => {
+    const rootRoute = findRoute(routes, '');
+
     expect(routes.length).toBe(1);
-    expect(routes[0].children?.length).toBeGreaterThan(0);
+    expect(rootRoute).toBeDefined();
+    expect(rootRoute.children?.length).toBeGreaterThan(0);
   });
 
   describe('adhoc-tasks route', () => {
@@ -49,8 +52,10 @@ describe('BackendConfigurationPnRouting', () => {
     // nowhere server-side, so PermissionGuard silently cancelled navigation
     // for exactly the users the page is for. AuthGuard is the deliberate
     // "open to any logged-in user" marker shared with calendar, compliances
-    // and property-workers. Nothing else would notice PermissionGuard being
-    // reinstated — this spec is that guard.
+    // and property-workers. This spec is the fast guard against
+    // PermissionGuard being reinstated; the e2e suite added with the same
+    // change (playwright .../z/adhoc-nonadmin-access.spec.ts) would fail
+    // too, but only in CI and only end-to-end.
     it('is registered as a child of the plugin root route', () => {
       const route = findRoute(routes, 'adhoc-tasks');
 
@@ -61,7 +66,12 @@ describe('BackendConfigurationPnRouting', () => {
     it('is guarded by AuthGuard only — open to any logged-in plugin user', () => {
       const route = findRoute(routes, 'adhoc-tasks');
 
-      expect(route.canActivate).toContain(AuthGuard);
+      // Exact array, not `toContain`: `[AuthGuard, IsAdminGuard]` contains
+      // AuthGuard too, and IsAdminGuard would re-close the page to exactly
+      // the users it was opened for — and it is already imported by this
+      // routing table and used by other plugin routes, so it is one word
+      // away.
+      expect(route.canActivate).toEqual([AuthGuard]);
     });
 
     it('does not use PermissionGuard', () => {
@@ -80,8 +90,11 @@ describe('BackendConfigurationPnRouting', () => {
   it('keeps the plugin-wide access gate on the root route', () => {
     // Out of scope for 2026-08-24: opening the parent would change access to
     // every page in the plugin, not just ad-hoc tasks.
-    expect(routes[0].canActivate?.length).toBe(1);
-    expect(routes[0].data?.['requiredPermission']).toBe(
+    const rootRoute = findRoute(routes, '');
+
+    expect(rootRoute).toBeDefined();
+    expect(rootRoute.canActivate?.length).toBe(1);
+    expect(rootRoute.data?.['requiredPermission']).toBe(
       'backend_configuration_plugin_access'
     );
   });

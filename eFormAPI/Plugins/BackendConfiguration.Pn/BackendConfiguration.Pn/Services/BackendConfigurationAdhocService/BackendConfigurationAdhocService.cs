@@ -362,11 +362,12 @@ public class BackendConfigurationAdhocService(
             }
 
             task.Completed = true;
-            // A dashboard admin (synthetic workerId 0) completing without
-            // selecting a performer stamps NULL, not 0 - worker id 0 is not
-            // a real SDK site, and history/name resolution treats a null
-            // CompletedByWorkerId as "no recorded performer". gRPC callers
-            // always have a real, positive site id here.
+            // A web caller (the synthetic workerId 0 the dashboard always
+            // passes) completing without selecting a performer stamps NULL,
+            // not 0 - worker id 0 is not a real SDK site, and history/name
+            // resolution treats a null CompletedByWorkerId as "no recorded
+            // performer". gRPC callers always have a real, positive site id
+            // here.
             task.CompletedByWorkerId = stampedWorkerId == 0 ? null : stampedWorkerId;
             task.CompletedAt = DateTime.UtcNow;
         }
@@ -885,9 +886,14 @@ public class BackendConfigurationAdhocService(
             throw new AdhocTagNotFoundException(tagId);
         }
 
-        // Admins manage every tag — in particular the global ones
-        // (OwnerWorkerId == null), which no worker owns and which were
-        // otherwise unmanageable by anyone. Non-admins only their own.
+        // A full-access caller manages every tag — the global ones
+        // (OwnerWorkerId == null), which no worker owns and which would
+        // otherwise be unmanageable by anyone, and equally another worker's
+        // personal, phone-created tag. Since 2026-08-24 that is every web
+        // caller, not just admins: an accepted consequence of the "web is
+        // unrestricted" decision. Without the flag a caller manages only
+        // tags they own themselves — which is what holds the gRPC path
+        // narrow.
         if (!isAdmin && tag.OwnerWorkerId != workerId)
         {
             throw new AdhocTaskUnauthorizedException(
@@ -1278,10 +1284,14 @@ public class BackendConfigurationAdhocService(
         // The web path deliberately bypasses this since 2026-08-24:
         // AdhocController passes DashboardHasFullAccess = true, so the isAdmin
         // early-return above fires for every authenticated web user and they
-        // may archive/reopen/delete/update any task - including hard-deleting
-        // one a worker created on their phone. Accepted consequence of the
-        // "web is unrestricted" decision, not a controller bug. Keep the
-        // guard: it is what still holds the gRPC path narrow.
+        // may archive/reopen/delete/update any task - including deleting one a
+        // worker created on their phone. That delete is the Microting soft
+        // delete (Delete sets WorkflowState = Removed on the task and cascades
+        // the same onto its assignments, logs, comments and photos), so the
+        // task vanishes from mobile and from every list but the rows remain
+        // recoverable in the database. Accepted consequence of the "web is
+        // unrestricted" decision, not a controller bug. Keep the guard: it is
+        // what still holds the gRPC path narrow.
         if (workerId == 0 || task.CreatedByWorkerId != workerId)
         {
             throw new AdhocTaskUnauthorizedException(

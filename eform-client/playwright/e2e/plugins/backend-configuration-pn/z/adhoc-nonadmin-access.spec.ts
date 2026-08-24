@@ -48,12 +48,13 @@ import { BackendConfigurationAdhocPage } from '../BackendConfigurationAdhoc.page
  * Structural notes:
  *   - The copied helper sets the group's `redirectLink` to
  *     `/plugins/backend-configuration-pn/property-workers`, so the
- *     non-admin session lands THERE first; `goToAdhoc()` navigates via the
- *     SIDEBAR (`#backend-configuration-pn` → `#backend-configuration-pn-adhoc`),
- *     and that sidebar click is what carries the session to ad-hoc. The
- *     menu item is declared with `Permissions = []`
- *     (`EformBackendConfigurationPlugin.cs` `GetNavigationMenu`), so it is
- *     visible to every user regardless of claims.
+ *     non-admin session lands THERE first and `goToAdhocAsNonAdmin()`
+ *     carries it to ad-hoc — preferring the SIDEBAR
+ *     (`#backend-configuration-pn` → `#backend-configuration-pn-adhoc`,
+ *     declared with `Permissions = []`), but BOUNDED, with a direct-URL
+ *     fallback, because the sidebar's presence for this claims set is a
+ *     server-side/DB question this spec cannot control. See that helper's
+ *     doc comment.
  *   - Every positive "the app works" assertion is taken BEFORE any guarded
  *     `page.goto`: after a guard-cancelled INITIAL navigation no route
  *     activates at all, so even the claim-independent footer
@@ -66,6 +67,10 @@ import { BackendConfigurationAdhocPage } from '../BackendConfigurationAdhoc.page
  */
 const BASE_URL = 'http://localhost:4200';
 const USER_PASSWORD = 'Secret_password_2026!';
+// Every sidebar wait/click in `goToAdhocAsNonAdmin` is bounded by this.
+// `playwright.config.ts` declares no `actionTimeout`, so an unbounded click
+// would inherit `test.setTimeout(300000)` and hang the shard for 15 minutes.
+const SIDEBAR_TIMEOUT = 30000;
 const rand = generateRandmString(8).toLowerCase();
 
 // Re-uses the existing image fixture (the drawer's file input is
@@ -224,16 +229,59 @@ async function setupNonAdminUser(page: Page, rand: string): Promise<string> {
 }
 
 /**
- * The drawer's photo picker. `BackendConfigurationAdhocPage` exposes the
- * resulting thumbnails (`photoThumbs()`/`queuedPhotoThumbs()`) and the
- * delete flow, but has NO helper for ADDING a photo, so the hidden
- * `<input type="file">` inside `label.photo-upload-btn`
- * (`adhoc-task-drawer.component.html`) is addressed here. `setInputFiles`
- * on a `hidden` file input is the same idiom `w/calendar-attachments.spec.ts`
- * uses for `#calendarEventAttachInput`.
+ * Navigates an ALREADY-LOGGED-IN non-admin session to "Adhoc overblik".
+ *
+ * Preferred path is the SIDEBAR (spec 4.2): an in-app navigation, so the SPA
+ * never re-bootstraps with the ad-hoc URL as its INITIAL navigation. But
+ * whether the plugin sidebar renders for THIS claims set is not settled:
+ * every backend-configuration menu item is seeded with `Permissions = []`
+ * (`EformBackendConfigurationPlugin.cs` `GetNavigationMenu`) and the
+ * front-end only hides a leaf whose guard list is non-empty
+ * (`navigation.component.html` `checkGuards`), yet `MenuService`
+ * `GetCurrentUserMenu` ALSO filters server-side for non-admins
+ * (`FilterMenuForUser`), where a plugin item survives only when it has no
+ * `MenuItemSecurityGroups` rows or one of them is this user's group - a DB
+ * state this spec does not control. `r/property-workers-nonadmin-no-logout.
+ * spec.ts:233-235` records the sidebar as ABSENT for exactly this fixture.
+ *
+ * `playwright.config.ts` sets no `actionTimeout`, so an unbounded `.click()`
+ * on an entry that never appears would burn the whole
+ * `test.setTimeout(300000)` - 15 minutes of shard-`z` hang per test. Hence:
+ * bounded waits, then a direct `page.goto` fallback. The fallback is safe
+ * because `adhoc-tasks` is `canActivate: [AuthGuard]` now - the same reason
+ * `q/calendar-admin-gating.spec.ts` navigates its non-admin to `/calendar`
+ * with a plain `page.goto`.
+ *
+ * Either way the load-bearing proof is unchanged: the ROUTE must ACTIVATE.
+ * If `PermissionGuard` + `adhoc_enable` came back, the cancelled navigation
+ * would leave a blank shell and the `#main-list-view` wait below would fail.
+ *
+ * CALLERS MUST have taken their positive app-shell assertion
+ * (`#sign-out-dropdown`) BEFORE calling this - see the suite header.
  */
-function drawerPhotoInput(page: Page) {
-  return page.locator('.adhoc-drawer .photo-upload-btn input[type="file"]');
+async function goToAdhocAsNonAdmin(
+  page: Page,
+  adhocPage: BackendConfigurationAdhocPage,
+): Promise<void> {
+  const pluginEntry = adhocPage.backendConfigurationPnButton();
+  const adhocEntry = adhocPage.backendConfigurationPnAdhocButton();
+  try {
+    if (!(await adhocEntry.isVisible())) {
+      await pluginEntry.waitFor({ state: 'visible', timeout: SIDEBAR_TIMEOUT });
+      await pluginEntry.click({ timeout: SIDEBAR_TIMEOUT });
+    }
+    await adhocEntry.waitFor({ state: 'visible', timeout: SIDEBAR_TIMEOUT });
+    await adhocEntry.click({ timeout: SIDEBAR_TIMEOUT });
+  } catch (error) {
+    // Sidebar unusable for this claims set - say so loudly, then take the
+    // URL. This must NOT swallow a guard regression: the wait below is what
+    // proves the route opened.
+    console.log(
+      `sidebar ad-hoc entry not usable for this non-admin (${(error as Error).message.split('\n')[0]}) - falling back to direct URL`,
+    );
+    await page.goto(`${BASE_URL}/plugins/backend-configuration-pn/adhoc-tasks`);
+  }
+  await adhocPage.mainListView().waitFor({ state: 'visible', timeout: 30000 });
 }
 
 test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
@@ -275,7 +323,7 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
         && r.request().method() === 'POST',
       { timeout: 60000 },
     );
-    await drawerPhotoInput(page).setInputFiles(PHOTO_FIXTURE);
+    await adhocPage.photoUploadInput().setInputFiles(PHOTO_FIXTURE);
     const uploadResponse = await uploadResponsePromise;
     expect(uploadResponse.status()).toBe(200);
 
@@ -314,10 +362,10 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
     // layout is mounted, so the claim-independent footer must exist.
     await expect(page.locator('#sign-out-dropdown')).toBeVisible();
 
-    // Sidebar navigation — NOT a `page.goto`, so the SPA never re-bootstraps
-    // with the ad-hoc URL as its initial navigation.
+    // Sidebar-first navigation with a bounded fallback — see
+    // `goToAdhocAsNonAdmin`. Never an unbounded click.
     const adhocPage = new BackendConfigurationAdhocPage(page);
-    await adhocPage.goToAdhoc();
+    await goToAdhocAsNonAdmin(page, adhocPage);
 
     expect(page.url()).toContain('/plugins/backend-configuration-pn/adhoc-tasks');
     await expect(adhocPage.mainListView()).toBeVisible();
@@ -340,7 +388,7 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
     await expect(page.locator('#sign-out-dropdown')).toBeVisible();
 
     const adhocPage = new BackendConfigurationAdhocPage(page);
-    await adhocPage.goToAdhoc();
+    await goToAdhocAsNonAdmin(page, adhocPage);
 
     await adhocPage.search(taskTitle);
     await expect(adhocPage.row(taskTitle)).toBeVisible({ timeout: 20000 });
@@ -379,7 +427,7 @@ test.describe.serial('Adhoc overblik — non-admin unrestricted access', () => {
     await expect(page.locator('#sign-out-dropdown')).toBeVisible();
 
     const adhocPage = new BackendConfigurationAdhocPage(page);
-    await adhocPage.goToAdhoc();
+    await goToAdhocAsNonAdmin(page, adhocPage);
     await adhocPage.search(taskTitle);
     await expect(adhocPage.row(taskTitle)).toBeVisible({ timeout: 20000 });
 

@@ -39,11 +39,21 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 /// explicitly rather than resolving it internally, so both façades - and
 /// tests - drive authorization identically.
 ///
-/// <paramref name="isAdmin"/> (default false everywhere) is the dashboard's
-/// bypass: an admin caller (REST, per B6's "workerId = 0 + isAdmin" caller
-/// identity) skips the property-access/creator/assigned/everyone visibility
-/// predicate entirely and sees/mutates every task for the customer. Mobile
-/// callers (gRPC) always pass false.
+/// <paramref name="isAdmin"/> (default false everywhere) is the full-access
+/// bypass: a caller passing true skips the property-access/creator/assigned/
+/// everyone visibility predicate entirely and sees/mutates every task for the
+/// customer. The name is historical - read it as "has full access", not "is
+/// an administrator": since 2026-08-24 <c>AdhocController</c> passes the
+/// constant <c>DashboardHasFullAccess = true</c> at EVERY call site (paired
+/// with the synthetic <c>workerId = 0</c>) rather than consulting a role
+/// service, so every authenticated web caller takes the true branch, not just
+/// admins. Web reach is bounded instead by the controller's class-level
+/// <c>AccessBackendConfigurationPlugin</c> policy.
+///
+/// Mobile is deliberately unaffected: <c>AdhocGrpcService</c> resolves a real
+/// worker and passes <c>isAdmin: false</c> explicitly at all 19 of its call
+/// sites, so the false branch - and every predicate below that keys off it -
+/// is what keeps the mobile path scoped to the caller's own site.
 /// </summary>
 public interface IBackendConfigurationAdhocService
 {
@@ -72,8 +82,8 @@ public interface IBackendConfigurationAdhocService
     /// as <c>CreatedByWorkerId</c>. <paramref name="isAdmin"/> (B6 dashboard
     /// bypass, default false) skips the "caller must have property access to
     /// <c>model.PropertyId</c>" gate — the dashboard has no real SDK worker
-    /// identity to check access for, so an admin caller creates tasks on the
-    /// customer's behalf directly.
+    /// identity to check access for, so a web caller creates tasks on the
+    /// customer's behalf directly, on any property.
     /// </summary>
     Task<AdhocTaskModel> CreateTask(int workerId, AdhocTaskCreateModel model, bool isAdmin = false);
 
@@ -144,9 +154,9 @@ public interface IBackendConfigurationAdhocService
     /// (both within the batch and against the property's active areas), so
     /// re-submitting a list is idempotent. Returns the refreshed active
     /// list. Access mirrors <see cref="ListAreas"/>
-    /// (<c>RequirePropertyAccessAsync</c>): admins pass; non-admins need a
-    /// <c>PropertyWorker</c> row. Throws <see cref="ArgumentException"/> for
-    /// an unknown property.
+    /// (<c>RequirePropertyAccessAsync</c>): full-access callers pass;
+    /// everyone else needs a <c>PropertyWorker</c> row. Throws
+    /// <see cref="ArgumentException"/> for an unknown property.
     /// </summary>
     Task<List<AdhocAreaModel>> CreateAreas(int workerId, int propertyId, List<string> names, bool isAdmin = false);
 
@@ -180,42 +190,55 @@ public interface IBackendConfigurationAdhocService
     /// <summary>
     /// Global tags (<c>OwnerWorkerId == null</c>) plus <paramref name="workerId"/>'s
     /// own personal tags. When <paramref name="isAdmin"/> is true the owner
-    /// filter is skipped entirely - the dashboard admin sees every
-    /// non-removed tag customer-wide, including every worker's personal
-    /// tags (mobile-created tags included), so they show up in the web
-    /// Etiketter list rather than being silently hidden.
+    /// filter is skipped entirely - the caller sees every non-removed tag
+    /// customer-wide, including every worker's personal tags (mobile-created
+    /// tags included), so they show up in the web Etiketter list rather than
+    /// being silently hidden. Every web caller passes true since 2026-08-24,
+    /// so that customer-wide view is what the dashboard always shows.
     /// </summary>
     Task<List<AdhocTagModel>> ListTags(int workerId, bool isAdmin = false);
 
     /// <summary>
     /// Creates a personal tag owned by <paramref name="workerId"/>, unless
-    /// <paramref name="isAdmin"/> is true (M5/P3 dashboard-only), in which
-    /// case it creates a global tag (<c>OwnerWorkerId = null</c>) - an admin
-    /// curating shared tags for the customer. Mobile <c>CreateTag</c>
-    /// semantics (owner = caller) are unchanged; mobile never passes
-    /// <paramref name="isAdmin"/>. Throws
-    /// <see cref="AdhocTaskUnauthorizedException"/> for the non-admin REST
-    /// pseudo-identity (workerId 0, isAdmin false) - identity 0 owns nothing.
+    /// <paramref name="isAdmin"/> is true, in which case it creates a global
+    /// tag (<c>OwnerWorkerId = null</c>) owned by nobody and visible to
+    /// everyone. Since 2026-08-24 every web caller takes that branch, so all
+    /// tags created from the dashboard are shared, customer-wide tags. Mobile
+    /// <c>CreateTag</c> semantics (owner = caller) are unchanged - mobile
+    /// passes <c>isAdmin: false</c> explicitly
+    /// (<c>AdhocGrpcService.CreateTag</c>), as it does at every call site.
+    /// Throws <see cref="AdhocTaskUnauthorizedException"/> for the
+    /// combination (workerId 0, isAdmin false) - identity 0 owns nothing. No
+    /// current caller produces that combination; the guard is what stops the
+    /// gRPC path from ever writing an unowned tag.
     /// </summary>
     Task<AdhocTagModel> CreateTag(int workerId, string name, bool isAdmin = false);
 
     /// <summary>
     /// Renames a tag <paramref name="workerId"/> owns, or - when
-    /// <paramref name="isAdmin"/> is true - any tag, notably the global ones
-    /// (<c>OwnerWorkerId == null</c>) that no worker owns. Throws
-    /// <see cref="AdhocTaskUnauthorizedException"/> for non-admins on global
-    /// tags or tags owned by another worker, and for the non-admin REST
-    /// pseudo-identity (workerId 0, isAdmin false).
+    /// <paramref name="isAdmin"/> is true - any tag at all: the global ones
+    /// (<c>OwnerWorkerId == null</c>) that no worker owns, and equally
+    /// another worker's personal, phone-created tag. Since 2026-08-24 every
+    /// web caller has that reach; it is an accepted consequence of the "web
+    /// is unrestricted" decision, not an oversight. Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> when
+    /// <paramref name="isAdmin"/> is false and the tag is global or owned by
+    /// another worker, and for the combination (workerId 0, isAdmin false),
+    /// which no current caller produces.
     /// </summary>
     Task<AdhocTagModel> RenameTag(int workerId, int tagId, string name, bool isAdmin = false);
 
     /// <summary>
-    /// Soft-deletes a tag <paramref name="workerId"/> owns (any tag when
-    /// <paramref name="isAdmin"/> is true, notably global ones), plus every
-    /// <c>AdhocTaskTag</c> join referencing it. Throws
-    /// <see cref="AdhocTaskUnauthorizedException"/> for non-admins on global
-    /// tags or tags owned by another worker, and for the non-admin REST
-    /// pseudo-identity (workerId 0, isAdmin false).
+    /// Soft-deletes a tag <paramref name="workerId"/> owns - any tag when
+    /// <paramref name="isAdmin"/> is true, global ones and another worker's
+    /// personal tag alike - plus every <c>AdhocTaskTag</c> join referencing
+    /// it, so the tag also disappears from other people's tasks. Since
+    /// 2026-08-24 every web caller has that reach (accepted consequence of
+    /// the "web is unrestricted" decision). Throws
+    /// <see cref="AdhocTaskUnauthorizedException"/> when
+    /// <paramref name="isAdmin"/> is false and the tag is global or owned by
+    /// another worker, and for the combination (workerId 0, isAdmin false),
+    /// which no current caller produces.
     /// </summary>
     Task DeleteTag(int workerId, int tagId, bool isAdmin = false);
 
