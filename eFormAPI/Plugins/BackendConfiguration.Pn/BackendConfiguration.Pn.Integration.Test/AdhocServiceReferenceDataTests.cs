@@ -331,9 +331,12 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     [Test]
     public async Task ListTags_NonAdmin_DashboardWorkerId_OnlySeesGlobalTags()
     {
-        // Documents the chosen policy: non-admin dashboard callers keep the
-        // pre-fix "global tags only" view. DashboardWorkerId (0) owns
-        // nothing, so this is unchanged behavior, not a new restriction.
+        // Pins ListTags' owner predicate, not a caller: an identity without
+        // the admin flag sees global tags plus its own, and worker 0 owns
+        // nothing. Since 2026-08-24 the web passes full access here (and so
+        // does see every worker's personal tags), and gRPC rejects an
+        // unresolvable identity - but this predicate is what keeps a real
+        // mobile worker's tag list to global + own.
         var globalTag = new AdhocTag { Name = "global" };
         await globalTag.Create(BackendConfigurationPnDbContext!);
         var mobileTag = new AdhocTag { Name = "mobile-one", OwnerWorkerId = 1 };
@@ -507,6 +510,9 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     [Test]
     public void CreateTag_Throws_ForNonAdminWorkerZero()
     {
+        // Pins RequireRealIdentityOrAdmin, not a caller: tag mutations demand a
+        // real identity, and worker 0 is not one. No production caller passes
+        // (0, false) since 2026-08-24 - see the note on RenameTag below.
         var sut = CreateSut();
 
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
@@ -518,7 +524,13 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     {
         // A tag stamped OwnerWorkerId = 0 (e.g. created before the C1/I1
         // guards existed) must still not be manageable through the shared
-        // pseudo-identity without the admin flag.
+        // pseudo-identity without the full-access flag.
+        //
+        // Pins the predicate, not a caller: since 2026-08-24 nothing in
+        // production passes (0, false) - AdhocController passes full access and
+        // AdhocGrpcService rejects an unresolvable identity with Unauthenticated
+        // before the service is reached. The guard is kept, and asserted, so a
+        // later edit cannot widen the gRPC path unnoticed.
         var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
@@ -530,6 +542,8 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     [Test]
     public async Task DeleteTag_Throws_ForNonAdminWorkerZero_EvenOnAWorkerZeroOwnedTag()
     {
+        // Same predicate as RenameTag above: worker 0 without the full-access
+        // flag owns nothing. Kept for the same reason - see the note there.
         var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();

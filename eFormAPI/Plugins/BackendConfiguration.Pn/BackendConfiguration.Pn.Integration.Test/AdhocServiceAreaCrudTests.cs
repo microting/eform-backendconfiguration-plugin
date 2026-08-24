@@ -325,6 +325,11 @@ public class AdhocServiceAreaCrudTests : TestBaseSetup
         await area.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
 
+        // Pins RequirePropertyAccessAsync, not a caller: no production caller
+        // passes (0, false) since 2026-08-24 (the web passes full access; gRPC
+        // rejects an unresolvable identity). The predicate is what keeps the
+        // gRPC path property-scoped, so it is asserted directly.
+
         // CreateAreas already names the propertyId explicitly - nothing to
         // enumerate - so it keeps the plain unauthorized signal.
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>

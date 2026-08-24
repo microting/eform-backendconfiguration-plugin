@@ -851,10 +851,21 @@ public class BackendConfigurationAdhocService(
     /// <summary>
     /// Tag mutations require a real identity: worker id 0 is the REST
     /// dashboard's synthetic caller (AdhocController.DashboardWorkerId) and
-    /// owns nothing — a non-admin web user must never create/rename/delete
-    /// tags through the shared pseudo-identity. Admins pass (they curate the
-    /// customer's global tags); gRPC callers always have real, positive SDK
-    /// site ids and never hit this guard.
+    /// owns nothing, so it may not create/rename/delete tags on its own.
+    ///
+    /// What this guarantees is about gRPC: a mobile caller always resolves to
+    /// a real, positive SDK site id (AdhocGrpcService rejects an unresolvable
+    /// one with Unauthenticated) and passes isAdmin: false, so it never
+    /// reaches this throw and never gains the admin tag semantics below.
+    ///
+    /// The web path deliberately bypasses this since 2026-08-24:
+    /// AdhocController passes DashboardHasFullAccess = true at every call
+    /// site, so every authenticated web user takes the isAdmin branch — web
+    /// CreateTag writes global tags (OwnerWorkerId = null) and web
+    /// rename/delete may act on another worker's phone-created tag. That is
+    /// the accepted consequence of the "web is unrestricted" decision, not a
+    /// bug in the controller. Keep the guard: it is what still holds the gRPC
+    /// path narrow.
     /// </summary>
     private static void RequireRealIdentityOrAdmin(int workerId, bool isAdmin, string action)
     {
@@ -1254,13 +1265,23 @@ public class BackendConfigurationAdhocService(
         }
 
         // Worker id 0 is the REST dashboard's synthetic caller identity
-        // (AdhocController.DashboardWorkerId), and dashboard-created tasks
-        // are themselves stamped CreatedByWorkerId = 0 - so a plain equality
-        // check would let EVERY authenticated non-admin web user pass the
-        // creator gate on every dashboard-created task. Pseudo-identity 0
-        // owns nothing: only an admin (already returned above) may act on
-        // worker-0-created tasks. gRPC callers always resolve to real,
-        // positive SDK site ids and are unaffected by this guard.
+        // (AdhocController.DashboardWorkerId), and web-created tasks are
+        // themselves stamped CreatedByWorkerId = 0 - so a plain equality check
+        // would let any (0, isAdmin false) caller pass the creator gate on
+        // every web-created task. Pseudo-identity 0 owns nothing.
+        //
+        // What this guarantees is about gRPC: a mobile caller always resolves
+        // to a real, positive SDK site id (AdhocGrpcService rejects an
+        // unresolvable one with Unauthenticated) and passes isAdmin: false, so
+        // it may only act on tasks it actually created.
+        //
+        // The web path deliberately bypasses this since 2026-08-24:
+        // AdhocController passes DashboardHasFullAccess = true, so the isAdmin
+        // early-return above fires for every authenticated web user and they
+        // may archive/reopen/delete/update any task - including hard-deleting
+        // one a worker created on their phone. Accepted consequence of the
+        // "web is unrestricted" decision, not a controller bug. Keep the
+        // guard: it is what still holds the gRPC path narrow.
         if (workerId == 0 || task.CreatedByWorkerId != workerId)
         {
             throw new AdhocTaskUnauthorizedException(

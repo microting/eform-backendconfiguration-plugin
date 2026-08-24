@@ -476,11 +476,18 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
             await sut.Delete(2, created.Id));
     }
 
-    // --- C1: pseudo-identity 0 (REST dashboard caller) never satisfies the
-    // creator gate. Dashboard-created tasks are stamped CreatedByWorkerId = 0,
-    // so without the workerId == 0 guard in RequireCreator ANY authenticated
-    // non-admin web user (workerId 0, isAdmin false) would pass the creator
-    // check on every dashboard-created task. ---
+    // --- C1: pseudo-identity 0 never satisfies the creator gate. Web-created
+    // tasks are stamped CreatedByWorkerId = 0, so without the workerId == 0
+    // guard in RequireCreator a (0, false) caller would pass the creator check
+    // on every web-created task.
+    //
+    // These pin RequireCreator's predicate, not a caller. Since 2026-08-24 no
+    // production caller produces (0, false): AdhocController passes full access
+    // on every route, and AdhocGrpcService rejects an unresolvable identity
+    // with Unauthenticated before the service is reached. Keep them anyway -
+    // the predicate is what keeps the gRPC path narrow, and it is exactly the
+    // kind of code a later "simplification" would widen without any other test
+    // noticing. Do not delete them as unreachable. ---
 
     [Test]
     public async Task Archive_Throws_ForNonAdminWorkerZero_OnWorkerZeroCreatedTask()

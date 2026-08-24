@@ -1,5 +1,10 @@
 export const BackendConfigurationPnClaims = {
   accessBackendConfigurationPlugin: 'backend_configuration_plugin_access',
+  // Retained but unenforced (2026-08-24): the adhoc-tasks route no longer
+  // guards on this claim and no backend attribute references the policy. The
+  // permission is still seeded, so the admin-settings toggle exists but has no
+  // effect. Kept so the seeded row stays legible; proper removal needs a
+  // base-repo migration (see spec 2026-08-24-adhoc-tasks-unrestricted-access).
   enableAdhoc: 'adhoc_enable',
   createProperties: 'properties_create',
   getProperties: 'properties_get',
