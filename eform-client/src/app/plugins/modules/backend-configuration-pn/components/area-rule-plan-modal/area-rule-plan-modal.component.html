@@ -313,18 +313,18 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
+    class="btn-cancel"
+    (click)="hide()"
+    id="updateAreaRulePlanningSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+  <button
     class="btn-primary"
     (click)="onUpdateAreaRulePlan()"
     id="updateAreaRulePlanningSaveBtn"
     [disabled]="isDisabledSaveBtn()"
   >
     {{'Save' | translate}}
-  </button>
-  <button
-    class="btn-cancel"
-    (click)="hide()"
-    id="updateAreaRulePlanningSaveCancelBtn"
-  >
-    {{'Cancel' | translate}}
   </button>
 </div>

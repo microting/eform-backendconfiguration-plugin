@@ -47,17 +47,17 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end gap-24">
   <button
-    class="btn-primary btn-primary--icon-left"
-    id="folderSaveBtn"
-    (click)="createFolder()"
-  >
-    {{ 'Create' | translate }}
-  </button>
-  <button
     class="btn-cancel"
     id="cancelCreateBtn"
     (click)="hide()"
   >
     {{ 'Cancel' | translate }}
+  </button>
+  <button
+    class="btn-primary btn-primary--icon-left"
+    id="folderSaveBtn"
+    (click)="createFolder()"
+  >
+    {{ 'Create' | translate }}
   </button>
 </div>

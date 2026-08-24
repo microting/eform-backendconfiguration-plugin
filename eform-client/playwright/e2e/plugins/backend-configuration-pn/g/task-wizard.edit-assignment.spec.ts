@@ -170,7 +170,7 @@ test.describe('Area rules type 1', () => {
       .filter({ hasText: workerForCreate.name });
     await worker1Row.scrollIntoViewIfNeeded();
     await expect(worker1Row.locator('mat-checkbox')).toHaveClass(/mat-mdc-checkbox-checked/);
-    await page.locator('#changeAssignmentsCancel > .mdc-button__label').click();
+    await page.locator('#changeAssignmentsCancel').click();
 
     await page.locator('#backend-configuration-pn-task-wizard').click();
     await expect(page.locator('.cdk-row')).toHaveCount(1, { timeout: 30000 });
@@ -240,7 +240,7 @@ test.describe('Area rules type 1', () => {
       .filter({ hasText: workerForCreate2.name });
     await worker2Row2.scrollIntoViewIfNeeded();
     await expect(worker2Row2.locator('mat-checkbox')).toHaveClass(/mat-mdc-checkbox-checked/);
-    await page.locator('#changeAssignmentsCancel > .mdc-button__label').click();
+    await page.locator('#changeAssignmentsCancel').click();
     /* ==== End Cypress Studio ==== */
   });
 
