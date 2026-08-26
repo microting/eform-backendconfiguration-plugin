@@ -1288,8 +1288,27 @@ public class EventsGrpcService(
 
         if (compliance == null)
         {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                $"Event {eventId} has no pending compliance — there is no SDK case to complete."));
+            // First completer wins. A Compliance row is shared by every assigned
+            // worker, so "no live row" usually means somebody already completed
+            // this occurrence rather than that anything is wrong. Losing that race
+            // is a normal outcome, not a failure: discard this caller's payload and
+            // tell them who finished it and when.
+            //
+            // Look for the soft-deleted row by the same key, WITHOUT the
+            // WorkflowState filter. It still points at the winner's SDK case, which
+            // is where the identity lives - Compliance itself has no completed-by or
+            // completed-at column.
+            var settled = await dbContext.Compliances
+                .Where(x => x.Id == (int)request.ComplianceId)
+                .Where(x => x.PlanningId == arp.ItemPlanningId)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            // Arrived late: the winner had already committed before this
+            // caller's lookup even ran.
+            return await AlreadyCompletedOrThrowAsync(
+                    settled, eventId, sdkDbContextForCompliance)
+                .ConfigureAwait(false);
         }
 
         // DoneAt and DoneAtUserModifiable both track the same target value:
@@ -1386,7 +1405,18 @@ public class EventsGrpcService(
         var core = coreForCompliance;
         var sdkDbContext = sdkDbContextForCompliance;
 
-        await compliance.Delete(dbContext).ConfigureAwait(false);
+        // Claim the shared occurrence before anything downstream is touched.
+        var wonTheRace = await TryClaimOccurrenceAsync(compliance.Id).ConfigureAwait(false);
+
+        if (!wonTheRace)
+        {
+            // Lost a genuinely concurrent race. Same outcome as arriving late:
+            // `compliance` is the shared row, so it still points at the winner's
+            // SDK case even though this caller is the one holding it.
+            return await AlreadyCompletedOrThrowAsync(
+                    compliance, eventId, sdkDbContext)
+                .ConfigureAwait(false);
+        }
 
         var foundCase = await sdkDbContext.Cases
             .FirstOrDefaultAsync(x => x.Id == caseId)
@@ -1889,6 +1919,162 @@ public class EventsGrpcService(
 
             await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
+        }
+
+        return new CompleteEventResponse { Event = evt };
+    }
+
+    /// <summary>
+    /// Takes the "first completer wins" claim on the shared occurrence. Returns
+    /// true only for the caller that actually flipped the row.
+    /// </summary>
+    /// <remarks>
+    /// Two workers can both clear the compliance lookup before either has
+    /// deleted, so the ROW - not the lookup - decides the winner. Lock it with
+    /// <c>SELECT ... FOR UPDATE</c>, re-check under that lock, and soft-delete
+    /// through <c>PnBase.Delete</c> so <c>Version</c> and the
+    /// <c>ComplianceVersion</c> audit row are still written.
+    /// <para>
+    /// The transaction is deliberately scoped to the claim and nothing else. The
+    /// completion cascade that follows a won claim calls <c>core.CaseDelete</c>,
+    /// whose "Parsing in progress" retry loop (eform-sdk <c>Core.cs:1858</c>)
+    /// sleeps for up to roughly seven hours in total - that must never run while
+    /// a row lock is held.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> TryClaimOccurrenceAsync(int complianceId)
+    {
+        var claimStrategy = dbContext.Database.CreateExecutionStrategy();
+        return await claimStrategy.ExecuteAsync(async () =>
+        {
+            await using var claimTx = await dbContext.Database
+                .BeginTransactionAsync().ConfigureAwait(false);
+
+            // AsNoTracking is load-bearing, not a micro-optimisation. This row was
+            // already loaded (tracked) by the compliance lookup earlier in the
+            // request, and EF's identity resolution hands a TRACKED query the
+            // cached instance instead of the freshly read values - including for
+            // raw SQL. Without this the re-check below would read our own stale
+            // pre-lock copy, always conclude we won, and let both racers run the
+            // full cascade: the lock would block correctly and protect nothing.
+            var lockedState = await dbContext.Compliances
+                .FromSqlInterpolated(
+                    $"SELECT * FROM `Compliances` WHERE `Id` = {complianceId} FOR UPDATE")
+                .AsNoTracking()
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            if (lockedState == null
+                || lockedState.WorkflowState == Constants.WorkflowStates.Removed)
+            {
+                await claimTx.CommitAsync().ConfigureAwait(false);
+                return false;
+            }
+
+            // Mutate through the tracked instance so PnBase writes Version and the
+            // ComplianceVersion audit row; lockedState exists only to read state.
+            var claimed = await dbContext.Compliances
+                .FirstAsync(x => x.Id == complianceId)
+                .ConfigureAwait(false);
+            await claimed.Delete(dbContext).ConfigureAwait(false);
+            await claimTx.CommitAsync().ConfigureAwait(false);
+            return true;
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The single answer for every caller that did not win the occurrence:
+    /// the benign "already completed by X on day Y" response when the winner can
+    /// be identified, and the original anonymous <c>FailedPrecondition</c> when
+    /// it cannot.
+    /// </summary>
+    /// <param name="settled">
+    /// The shared <c>Compliance</c> row, or null when no row could be resolved at
+    /// all - the latter can only end in the throw.
+    /// </param>
+    private static async Task<CompleteEventResponse> AlreadyCompletedOrThrowAsync(
+        Compliance? settled,
+        int eventId,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext)
+    {
+        var alreadyCompleted = settled == null
+            ? null
+            : await BuildAlreadyCompletedResponseAsync(settled, eventId, sdkDbContext)
+                .ConfigureAwait(false);
+
+        return alreadyCompleted ?? throw new RpcException(new Status(
+            StatusCode.FailedPrecondition,
+            $"Event {eventId} has no pending compliance — there is no SDK case to complete."));
+    }
+
+    /// <summary>
+    /// Builds the response for a caller who lost the completion race.
+    /// </summary>
+    /// <remarks>
+    /// The occurrence is shared, so the loser is not in an error state - somebody
+    /// simply got there first. Their payload is discarded and they are told who
+    /// completed it and when, carried on two Event fields that are otherwise
+    /// unused on every read path: <c>completed_by</c> (9) and <c>updated_at</c>
+    /// (11). Using them avoids a proto change, so no client release is needed -
+    /// older builds just ignore what they do not render.
+    ///
+    /// Returns null when the winner cannot be identified, so the caller can fall
+    /// back to the original FailedPrecondition rather than invent an answer.
+    /// </remarks>
+    private static async Task<CompleteEventResponse?> BuildAlreadyCompletedResponseAsync(
+        Compliance settled,
+        int eventId,
+        Microting.eForm.Infrastructure.MicrotingDbContext sdkDbContext)
+    {
+        if (settled.MicrotingSdkCaseId <= 0)
+        {
+            return null;
+        }
+
+        var winningCase = await sdkDbContext.Cases
+            .Where(x => x.Id == settled.MicrotingSdkCaseId)
+            .Select(x => new { x.SiteId, x.DoneAt, x.Status })
+            .FirstOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        if (winningCase == null)
+        {
+            return null;
+        }
+
+        // A soft-deleted Compliance row does NOT imply somebody completed the
+        // occurrence. The same Delete() runs when an admin unassigns the last
+        // worker (CalendarAssignmentReconciliationService) or deletes the task
+        // (BackendConfigurationTaskWizardService), and in those paths the backing
+        // case was never completed. Reporting "already completed by X" there
+        // would invent a person and a moment that never existed - worse than the
+        // anonymous error it replaces. Only speak when the case really is done.
+        if (winningCase.Status != 100 || winningCase.DoneAt == null)
+        {
+            return null;
+        }
+
+        var completedBy = string.Empty;
+        if (winningCase.SiteId is { } winningSiteId)
+        {
+            completedBy = await sdkDbContext.Sites
+                .Where(x => x.Id == winningSiteId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false) ?? string.Empty;
+        }
+
+        var evt = new Event
+        {
+            Id = eventId.ToString(CultureInfo.InvariantCulture),
+            Completed = true,
+            CompletedBy = completedBy
+        };
+
+        if (winningCase.DoneAt is { } doneAt)
+        {
+            evt.UpdatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(
+                DateTime.SpecifyKind(doneAt, DateTimeKind.Utc));
         }
 
         return new CompleteEventResponse { Event = evt };

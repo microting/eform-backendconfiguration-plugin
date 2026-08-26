@@ -617,36 +617,34 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
     }
 
     /// <summary>
-    /// Pins TODAY's answer to "someone already completed this occurrence".
-    /// The PK lookup at EventsGrpcService.cs:~1250-1257 filters
-    /// <c>WorkflowState != Removed</c>, so once the first completer's
-    /// <c>compliance.Delete()</c> has landed, the second worker's request
-    /// resolves no compliance and gets a bare
-    /// <c>FailedPrecondition: "Event {id} has no pending compliance — there is
-    /// no SDK case to complete."</c>
-    /// <para>
-    /// THIS IS THE TEST THAT WILL CHANGE WHEN THE "first completer wins" GATE
-    /// LANDS. The planned behaviour is an informative "already completed by X
-    /// on Y" response (or a distinct status code carrying the completer's
-    /// identity + timestamp) instead of this anonymous FailedPrecondition. When
-    /// that ships, update this test to the new contract — do not delete it; the
-    /// point is that the transition is visible.
-    /// </para>
-    /// <para>
-    /// Note the message today leaks nothing about WHO completed it, which is
-    /// exactly why the mobile client can only show a generic conflict modal.
-    /// </para>
-    /// <para>
-    /// Fails when: the shared-row gate replaces the FailedPrecondition throw,
-    /// or when the PK lookup stops filtering out removed compliances.
-    /// </para>
+    /// A soft-deleted Compliance row whose case was NEVER completed must not be
+    /// reported as "already completed by X".
     /// </summary>
+    /// <remarks>
+    /// <c>compliance.Delete()</c> is not exclusive to completion. The same call
+    /// runs when CalendarAssignmentReconciliationService unassigns the last
+    /// worker from an occurrence, and when BackendConfigurationTaskWizardService
+    /// deletes or deactivates a task - in both, the backing case was never
+    /// completed and its site is whoever happened to hold it last.
+    /// <para>
+    /// Naming that site as the completer would invent a person and a moment that
+    /// never existed. A worker told "already completed by a colleague" for work
+    /// that was actually cancelled is worse off than one who saw the anonymous
+    /// error, because the false answer is credible. So the service falls back to
+    /// FailedPrecondition rather than guessing.
+    /// </para>
+    /// <para>
+    /// Fails when: the completion check on the winning case is dropped and any
+    /// soft-deleted row starts yielding an "already completed" answer.
+    /// </para>
+    /// </remarks>
     [Test]
-    public async Task CompleteEvent_RemovedCompliance_ThrowsFailedPrecondition()
+    public async Task CompleteEvent_ComplianceRemovedWithoutCompletion_DoesNotInventACompleter()
     {
-        var s = await SeedScenarioAsync("already-done");
+        var s = await SeedScenarioAsync("cancelled-not-completed");
 
-        // Simulate "the first worker already completed it".
+        // The occurrence goes away WITHOUT anyone completing it - the case keeps
+        // its seeded Status 66 and null DoneAt.
         var compliance = await BackendConfigurationPnDbContext!.Compliances
             .FirstAsync(x => x.Id == s.ComplianceId);
         await compliance.Delete(BackendConfigurationPnDbContext);
@@ -654,26 +652,97 @@ public class EventsGrpcCompleteEventTests : TestBaseSetup
         var ex = Assert.ThrowsAsync<GrpcCore.RpcException>(async () =>
             await s.Service.CompleteEvent(MakeRequest(s), new TestServerCallContext()));
 
+        var uninvolvedSiteName = await MicrotingDbContext!.Sites
+            .AsNoTracking().Where(x => x.Id == s.OtherSiteId)
+            .Select(x => x.Name).FirstAsync();
+
         Assert.Multiple(() =>
         {
-            Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.FailedPrecondition));
-            Assert.That(ex.Status.Detail, Does.Contain("no pending compliance"));
-            Assert.That(ex.Status.Detail, Does.Not.Contain(s.CompletingSiteName),
-                "today's message carries no identity of the first completer");
+            Assert.That(ex!.StatusCode, Is.EqualTo(GrpcCore.StatusCode.FailedPrecondition),
+                "a cancelled occurrence is not a completed one");
+            Assert.That(ex.Status.Detail, Does.Not.Contain(uninvolvedSiteName),
+                "must not name a completer for work nobody completed");
+        });
+    }
+
+    /// <summary>
+    /// Pins the answer to "someone already completed this occurrence".
+    /// The PK lookup at EventsGrpcService.cs:~1250-1257 filters
+    /// <c>WorkflowState != Removed</c>, so once the first completer's
+    /// <c>compliance.Delete()</c> has landed, the second worker's request
+    /// resolves no compliance and falls into the already-completed branch.
+    /// <para>
+    /// UPDATED for the "first completer wins" gate. This test previously
+    /// asserted a bare <c>FailedPrecondition: "Event {id} has no pending
+    /// compliance — there is no SDK case to complete."</c>, and its remarks said
+    /// to rewrite it rather than delete it when the gate landed - so the
+    /// transition stays visible in history. The occurrence is shared, so losing
+    /// the race is a normal outcome: the caller now gets a successful response
+    /// naming the winner, and their own payload is discarded.
+    /// </para>
+    /// <para>
+    /// Fails when: the gate is removed and the anonymous FailedPrecondition
+    /// comes back, when the winner's identity stops being carried on
+    /// <c>completed_by</c>, or when a losing caller starts mutating the winner's
+    /// case. (The companion <c>EventsGrpcCompleteEventRaceTests</c> is what pins
+    /// <c>updated_at</c>; this fixture only seeds a soft-deleted row, so there is
+    /// no winning tap time to compare against here.)
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_RemovedCompliance_ReportsAlreadyCompletedByWinner()
+    {
+        var s = await SeedScenarioAsync("already-done");
+
+        // Simulate "the first worker already completed it" properly: the winner's
+        // case must actually BE complete. Soft-deleting the Compliance row alone
+        // is not a completion - the same Delete() happens when an admin unassigns
+        // the last worker or deletes the task, and the service must not claim a
+        // completer in those cases (see the sibling test below).
+        var winningCase = await MicrotingDbContext!.Cases
+            .FirstAsync(x => x.Id == s.SdkCaseId);
+        winningCase.Status = 100;
+        winningCase.DoneAt = new DateTime(2026, 5, 4, 8, 30, 0, DateTimeKind.Utc);
+        await winningCase.Update(MicrotingDbContext);
+
+        var compliance = await BackendConfigurationPnDbContext!.Compliances
+            .FirstAsync(x => x.Id == s.ComplianceId);
+        await compliance.Delete(BackendConfigurationPnDbContext);
+
+        var winnerName = await MicrotingDbContext!.Sites
+            .AsNoTracking().Where(x => x.Id == s.OtherSiteId)
+            .Select(x => x.Name).FirstAsync();
+
+        var response = await s.Service.CompleteEvent(
+            MakeRequest(s), new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Event, Is.Not.Null, "losing the race is not an error");
+            Assert.That(response.Event.Completed, Is.True,
+                "the occurrence IS complete - somebody else finished it");
+            Assert.That(response.Event.CompletedBy, Is.EqualTo(winnerName),
+                "the caller must be told WHO completed it");
         });
 
-        // And nothing downstream was touched — the throw happens before the
-        // case / planning cascade.
-        var sdkCase = await MicrotingDbContext!.Cases
+        // The loser's payload is discarded rather than applied: the winner's case
+        // still carries exactly what the arrange set, and the loser's cascade
+        // (which would promote PlanningCase to 100) never ran.
+        var sdkCase = await MicrotingDbContext.Cases
             .AsNoTracking().FirstAsync(x => x.Id == s.SdkCaseId);
         var planningCase = await ItemsPlanningPnDbContext!.PlanningCases
             .AsNoTracking().FirstAsync(x => x.Id == s.PlanningCaseId);
 
         Assert.Multiple(() =>
         {
-            Assert.That(sdkCase.Status, Is.EqualTo(66));
-            Assert.That(sdkCase.SiteId, Is.EqualTo(s.OtherSiteId));
-            Assert.That(planningCase.Status, Is.EqualTo(66));
+            Assert.That(sdkCase.Status, Is.EqualTo(100),
+                "the winner's completion stands");
+            Assert.That(sdkCase.DoneAt, Is.EqualTo(new DateTime(2026, 5, 4, 8, 30, 0)),
+                "the loser must not overwrite the winner's completion time");
+            Assert.That(sdkCase.SiteId, Is.EqualTo(s.OtherSiteId),
+                "the case is not re-homed to the losing caller");
+            Assert.That(planningCase.Status, Is.EqualTo(66),
+                "the losing caller's completion cascade never ran");
         });
     }
 
