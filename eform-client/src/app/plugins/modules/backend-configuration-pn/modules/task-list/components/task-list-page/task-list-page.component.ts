@@ -379,7 +379,9 @@ export class TaskListPageComponent implements OnInit {
       this.formatStartDate(t.taskDate),
       this.repeatTextForCsv(t),
       this.translate.instant(t.status ? 'Yes' : 'No'),
-      this.translate.instant(t.complianceEnabled ? 'Yes' : 'No'),
+      // Compliance is N/A for an inactive task; keep the export in step with the
+      // grid cell, which renders `--` rather than a Ja/Nej badge in that case.
+      t.status ? this.translate.instant(t.complianceEnabled ? 'Yes' : 'No') : '--',
     ]);
     const esc = (v: unknown) => {
       const s = String(v ?? '');

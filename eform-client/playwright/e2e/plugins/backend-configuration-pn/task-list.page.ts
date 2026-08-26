@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { readFileSync } from 'fs';
 
 /**
  * Page object for the admin-only Task list page
@@ -398,7 +399,57 @@ export class TaskListPage {
     await this.page.waitForTimeout(300);
   }
 
+  // ----- Task edit modal (shared with the calendar) ---------------------------------
+
+  /**
+   * Opens the per-task edit modal by clicking the grid row's title link
+   * (`titleTpl` renders `a.ctl-link`, wired to `onEditTask`). The task list
+   * reuses the calendar's `TaskCreateEditModalComponent`, so all
+   * `#calendarEvent*` ids from `calendar-ui-enhancements.page.ts` apply here
+   * too.
+   */
+  async openEditModal(taskName: string): Promise<void> {
+    await this.row(taskName).locator('a.ctl-link').click();
+    await this.page.locator('mat-dialog-container').waitFor({ state: 'visible', timeout: 20000 });
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Saves the task edit modal and waits for the grid to be repopulated.
+   * `onEditTask`'s `afterClosed()` subscriber calls `loadTasks()` when the
+   * modal closes with a result, so the tasks/index round-trip — not the
+   * dialog detaching — is what makes the new values visible in the grid.
+   */
+  async saveEditModal(): Promise<void> {
+    const reload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 30000 },
+    ).catch(() => null);
+    await this.page.locator('#calendarEventSaveBtn').click();
+    await this.page.locator('mat-dialog-container').waitFor({ state: 'hidden', timeout: 30000 });
+    await reload;
+    await this.page.waitForTimeout(800);
+  }
+
   // ----- CSV export -----------------------------------------------------------------
+
+  /**
+   * Triggers the CSV export and returns the downloaded file's lines with the
+   * UTF-8 BOM stripped. The export is `;`-separated with RFC-4180-style
+   * quoting; callers that only need the trailing Active/Compliance columns
+   * can safely `split(';').slice(-2)` because those two are always plain
+   * `Ja`/`Nej`/`--` tokens and nothing follows them on the line.
+   */
+  async exportCsvAndReadLines(): Promise<string[]> {
+    const downloadPromise = this.page.waitForEvent('download');
+    await this.page.locator('#taskListCsvExportBtn').click();
+    const download = await downloadPromise;
+    const filePath = await download.path();
+    if (!filePath) {
+      throw new Error('CSV export produced no downloadable file');
+    }
+    return readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '').split('\n');
+  }
 
   async exportCsvAndGetFilename(): Promise<string> {
     const downloadPromise = this.page.waitForEvent('download');

@@ -33,8 +33,17 @@
   </span>
 </ng-template>
 
+<!-- Overdue visibility is N/A while a task is inactive: deactivation soft-deletes
+     every Compliance row for the planning, and the nightly overdue-move job walks
+     Compliance rows only, so the stored ComplianceEnabled flag has no runtime
+     effect. Gating on row.status mirrors the calendar edit modal, where both
+     compliance toggles fall to off when Status is inactive
+     (calendar/modals/task-create-edit-modal/task-create-edit-modal.component.html).
+     `--` is mtx-grid's empty-value placeholder, used by the untemplated columns. -->
 <ng-template #complianceTpl let-row>
-  <span class="badge" [ngClass]="row.complianceEnabled ? 'ja' : 'nej'">
+  <span *ngIf="row.status; else complianceNotApplicableTpl" class="badge"
+        [ngClass]="row.complianceEnabled ? 'ja' : 'nej'">
     {{ (row.complianceEnabled ? 'Yes' : 'No') | translate }}
   </span>
+  <ng-template #complianceNotApplicableTpl>--</ng-template>
 </ng-template>
