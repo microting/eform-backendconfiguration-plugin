@@ -19,6 +19,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSetup
 {
+    // Opted out of the fixture-scoped schema replay:
+    // ~90 whole-table counts and positional indexes (sites[2], properties[0], entityItems[7]).
+    protected override bool ResetDatabasePerTest => true;
+
     // Should test the CreateDeviceUser method and return success
     [Test]
     public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_ReturnsSuccess()

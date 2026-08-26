@@ -20,6 +20,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : TestBaseSetup
 {
+    // Opted out of the fixture-scoped schema replay:
+    // whole-table counts + folderTranslations[] positional asserts; 2 tests mutate other tests' rows via unfiltered First().
+    protected override bool ResetDatabasePerTest => true;
+
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "days" and repeat every "2"
     [Test]
     public async Task UpdatePlanning_AreaRuleDays2_ReturnsSuccess()

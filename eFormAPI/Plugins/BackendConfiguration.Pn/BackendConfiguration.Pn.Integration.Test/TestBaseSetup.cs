@@ -30,7 +30,7 @@ public abstract class TestBaseSetup
     protected BaseDbContext BaseDbContext;
     protected IBus? Bus;
 
-    private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
+    private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr, bool bootstrapSchema)
     {
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
@@ -48,19 +48,19 @@ public abstract class TestBaseSetup
 
         try
         {
-            backendConfigurationPnDbContext.Database.EnsureCreated();
+            if (bootstrapSchema) backendConfigurationPnDbContext.Database.EnsureCreated();
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
 
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        if (bootstrapSchema) backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return backendConfigurationPnDbContext;
     }
 
-    private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
+    private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr, bool bootstrapSchema)
     {
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
@@ -76,13 +76,13 @@ public abstract class TestBaseSetup
         var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        itemsPlanningPnDbContext.Database.EnsureCreated();
-        itemsPlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        if (bootstrapSchema) itemsPlanningPnDbContext.Database.EnsureCreated();
+        if (bootstrapSchema) itemsPlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return itemsPlanningPnDbContext;
     }
 
-    private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
+    private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr, bool bootstrapSchema)
     {
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
@@ -98,13 +98,13 @@ public abstract class TestBaseSetup
         var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        timePlanningPnDbContext.Database.EnsureCreated();
-        timePlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
+        if (bootstrapSchema) timePlanningPnDbContext.Database.EnsureCreated();
+        if (bootstrapSchema) timePlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return timePlanningPnDbContext;
     }
 
-    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
+    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr, bool bootstrapSchema)
     {
         var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
 
@@ -120,13 +120,13 @@ public abstract class TestBaseSetup
         var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
         var rawSql = File.ReadAllText(file);
 
-        caseTemplatePnDbContext.Database.EnsureCreated();
-        caseTemplatePnDbContext.Database.ExecuteSqlRaw(rawSql);
+        if (bootstrapSchema) caseTemplatePnDbContext.Database.EnsureCreated();
+        if (bootstrapSchema) caseTemplatePnDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return caseTemplatePnDbContext;
     }
 
-    private MicrotingDbContext GetContext(string connectionStr)
+    private MicrotingDbContext GetContext(string connectionStr, bool bootstrapSchema)
     {
         var dbContextOptionsBuilder = new DbContextOptionsBuilder();
 
@@ -140,13 +140,13 @@ public abstract class TestBaseSetup
         var file = Path.Combine("SQL", "420_SDK.sql");
         var rawSql = File.ReadAllText(file);
 
-        microtingDbContext.Database.EnsureCreated();
-        microtingDbContext.Database.ExecuteSqlRaw(rawSql);
+        if (bootstrapSchema) microtingDbContext.Database.EnsureCreated();
+        if (bootstrapSchema) microtingDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return microtingDbContext;
     }
 
-    private BaseDbContext GetBaseDbContext(string connectionStr)
+    private BaseDbContext GetBaseDbContext(string connectionStr, bool bootstrapSchema)
     {
         var optionsBuilder = new DbContextOptionsBuilder<BaseDbContext>();
 
@@ -158,7 +158,7 @@ public abstract class TestBaseSetup
             });
         var baseDbContext = new BaseDbContext(optionsBuilder.Options);
 
-        baseDbContext.Database.EnsureCreated();
+        if (bootstrapSchema) baseDbContext.Database.EnsureCreated();
 
         return baseDbContext;
     }
@@ -168,8 +168,36 @@ public abstract class TestBaseSetup
         var core = new Core();
         await core.StartSqlOnly(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
             .Replace("bla", "root"));
+
+        // Tests have no Microting cloud credentials, so Core.SendXml would block
+        // on a doomed PostXml for every cloud CaseCreate (the PairItemWithSiteHelper
+        // and TaskManagementHelper paths). skipCloudDeploy makes SendXml hand back a
+        // synthetic MicrotingUid instead - see eform-sdk Core.cs:5489-5496.
+        // CaseCreateLocalOnly never reached the cloud, so those paths are unaffected.
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.skipCloudDeploy, "true");
+
         return core;
     }
+
+    private bool _schemaBootstrapped;
+
+    /// <summary>
+    /// Replay the six SQL dumps before EVERY test instead of once per fixture.
+    /// <para>
+    /// The replay is ~586 DROP/CREATE TABLE statements costing ~34 seconds per
+    /// test - the dominant cost of the whole integration suite. Replaying once
+    /// per fixture means tests share accumulated rows and identity counters no
+    /// longer restart at 1. Most fixtures already tolerate that: the Calendar*
+    /// and Adhoc* tables were never in the dumps and have therefore always
+    /// accumulated, which is why ~32 fixtures already carry FK-ordered cleanup.
+    /// </para>
+    /// <para>
+    /// Override to <c>true</c> only where assertions are absolute whole-table
+    /// counts or positional indexes into unfiltered lists - there, scoping every
+    /// assertion is a rewrite rather than an edit.
+    /// </para>
+    /// </summary>
+    protected virtual bool ResetDatabasePerTest => false;
 
     [SetUp]
     public async Task Setup()
@@ -178,27 +206,32 @@ public abstract class TestBaseSetup
         await _mariadbTestcontainer.StartAsync();
         Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
 
-        BackendConfigurationPnDbContext = GetBackendDbContext(_mariadbTestcontainer.GetConnectionString());
+        // DbContexts stay per-test, so [TearDown] and change-tracker semantics
+        // are unchanged; only the expensive schema replay is skipped.
+        var bootstrapSchema = !_schemaBootstrapped || ResetDatabasePerTest;
+        _schemaBootstrapped = true;
+
+        BackendConfigurationPnDbContext = GetBackendDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
 
         BackendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
 
-        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mariadbTestcontainer.GetConnectionString());
+        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
 
         ItemsPlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mariadbTestcontainer.GetConnectionString());
+        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
 
         TimePlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        MicrotingDbContext = GetContext(_mariadbTestcontainer.GetConnectionString());
+        MicrotingDbContext = GetContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
 
         MicrotingDbContext.Database.SetCommandTimeout(300);
 
-        CaseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mariadbTestcontainer.GetConnectionString());
+        CaseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
 
         CaseTemplatePnDbContext.Database.SetCommandTimeout(300);
 
-        BaseDbContext = GetBaseDbContext(_mariadbTestcontainer.GetConnectionString());
+        BaseDbContext = GetBaseDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
         BaseDbContext.Database.SetCommandTimeout(300);
 
         // var rebusService =
