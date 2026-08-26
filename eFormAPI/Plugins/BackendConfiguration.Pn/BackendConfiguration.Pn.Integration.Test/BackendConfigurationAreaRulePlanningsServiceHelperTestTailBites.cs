@@ -19,6 +19,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : TestBaseSetup
 {
+    // Opted out of the fixture-scoped schema replay:
+    // asserts cumulative counts (plannings==2) that only separate signal from noise on a pristine DB.
+    protected override bool ResetDatabasePerTest => true;
+
     // Should test the UpdatePlanning method for area rule "05. Stalde: Halebid og klargøring" for areaRule: 0 with repeat type "days" adn repeat every "2"
     [Test]
     public async Task UpdatePlanning_AreaRule0Days2_ReturnsSuccess()

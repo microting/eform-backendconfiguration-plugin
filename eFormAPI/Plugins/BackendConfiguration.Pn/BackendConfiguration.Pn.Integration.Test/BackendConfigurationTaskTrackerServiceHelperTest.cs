@@ -66,7 +66,12 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
+			// Property creation caps on a GLOBAL non-removed Property count
+			// (BackendConfigurationPropertiesServiceHelper.cs:31-47). With the schema
+			// replayed once per fixture, a (1,1) cap makes every arrange after the
+			// first silently no-op and the follow-up FirstAsync throw.
+			int.MaxValue, int.MaxValue);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -189,18 +194,22 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		// Assert result
 		Assert.That(result, Is.Not.Null);
 		Assert.That(result.Success, Is.EqualTo(true));
-		Assert.That(result.Model.Count, Is.EqualTo(1));
-		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
+		// The filters are deliberately empty, so Index() returns every property's
+		// tasks. With the schema replayed once per fixture, sibling tests' rows are
+		// present too - scope the assertions to this test's property.
+		var mine = result.Model.Where(x => x.Property == property.Name).ToList();
+		Assert.That(mine, Has.Count.EqualTo(1));
+		Assert.That(mine[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
-			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
+			mine[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
 			));
-		Assert.That(result.Model[0].Property, Is.EqualTo(property.Name));
-		Assert.That(result.Model[0].RepeatEvery, Is.EqualTo(planning.RepeatEvery));
-		Assert.That(result.Model[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
-		Assert.That(result.Model[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel(){Name = x.Name, Id = x.Id}).ToList()));
-		Assert.That(result.Model[0].TaskName, Is.Null);
-		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Select(x => x.Name).ToList()));
+		Assert.That(mine[0].Property, Is.EqualTo(property.Name));
+		Assert.That(mine[0].RepeatEvery, Is.EqualTo(planning.RepeatEvery));
+		Assert.That(mine[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
+		Assert.That(mine[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel(){Name = x.Name, Id = x.Id}).ToList()));
+		Assert.That(mine[0].TaskName, Is.Null);
+		Assert.That(mine[0].WorkerNames, Is.EqualTo(sites.Select(x => x.Name).ToList()));
 	}
 
 	[Test]
@@ -222,7 +231,12 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
+			// Property creation caps on a GLOBAL non-removed Property count
+			// (BackendConfigurationPropertiesServiceHelper.cs:31-47). With the schema
+			// replayed once per fixture, a (1,1) cap makes every arrange after the
+			// first silently no-op and the follow-up FirstAsync throw.
+			int.MaxValue, int.MaxValue);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -359,7 +373,12 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
+			// Property creation caps on a GLOBAL non-removed Property count
+			// (BackendConfigurationPropertiesServiceHelper.cs:31-47). With the schema
+			// replayed once per fixture, a (1,1) cap makes every arrange after the
+			// first silently no-op and the follow-up FirstAsync throw.
+			int.MaxValue, int.MaxValue);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -496,7 +515,12 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
+			// Property creation caps on a GLOBAL non-removed Property count
+			// (BackendConfigurationPropertiesServiceHelper.cs:31-47). With the schema
+			// replayed once per fixture, a (1,1) cap makes every arrange after the
+			// first silently no-op and the follow-up FirstAsync throw.
+			int.MaxValue, int.MaxValue);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 
@@ -633,7 +657,12 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			WorkorderEnable = true
 		};
 		await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, 1, 1);
+			BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!,
+			// Property creation caps on a GLOBAL non-removed Property count
+			// (BackendConfigurationPropertiesServiceHelper.cs:31-47). With the schema
+			// replayed once per fixture, a (1,1) cap makes every arrange after the
+			// first silently no-op and the follow-up FirstAsync throw.
+			int.MaxValue, int.MaxValue);
 		var property =
 			await BackendConfigurationPnDbContext!.Properties.FirstAsync(x => x.Name == propertyCreateModel.Name);
 

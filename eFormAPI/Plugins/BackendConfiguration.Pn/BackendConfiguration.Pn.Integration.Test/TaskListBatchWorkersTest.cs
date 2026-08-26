@@ -88,6 +88,10 @@ public class TaskListBatchWorkersTest : TestBaseSetup
             BackendConfigurationPnDbContext.PlanningSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        BackendConfigurationPnDbContext.AreaRulePlanningWorkerTags.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRulePlanningWorkerTags);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
             BackendConfigurationPnDbContext.CalendarConfigurations);
         await BackendConfigurationPnDbContext.SaveChangesAsync();

@@ -10,6 +10,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 {
+    // Opted out of the fixture-scoped schema replay:
+    // ordinal FolderTranslations[4..55]/EntityGroups[] blocks; SUT caps on a global Property count.
+    protected override bool ResetDatabasePerTest => true;
+
     // Should test the Create method with correct information
     [Test]
     public async Task BackendConfigurationPropertiesServiceHelper_Create_DoesCreate()

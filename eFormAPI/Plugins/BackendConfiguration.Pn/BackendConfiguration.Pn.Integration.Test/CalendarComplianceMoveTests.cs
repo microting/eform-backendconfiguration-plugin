@@ -102,6 +102,14 @@ public class CalendarComplianceMoveTests : TestBaseSetup
             BackendConfigurationPnDbContext.AreaRulePlannings);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // AreaRuleTranslation -> AreaRule is DeleteBehavior.Restrict, so the
+        // children must go first. The SQL dump used to truncate this table
+        // before every test; it now replays once per fixture, so leftover
+        // translations would block the delete below with MySQL 1451.
+        BackendConfigurationPnDbContext.AreaRuleTranslations.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRuleTranslations);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.AreaRules.RemoveRange(
             BackendConfigurationPnDbContext.AreaRules);
         await BackendConfigurationPnDbContext.SaveChangesAsync();

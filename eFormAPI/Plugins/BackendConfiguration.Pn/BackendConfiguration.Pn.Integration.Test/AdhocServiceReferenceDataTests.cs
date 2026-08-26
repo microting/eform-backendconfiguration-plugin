@@ -141,8 +141,8 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
 
         var result = await sut.ListProperties(1);
 
-        Assert.That(result.Select(p => p.Id), Is.EquivalentTo(new[] { accessible.Id }));
-        Assert.That(result.Single().Name, Is.EqualTo("Accessible"));
+        Assert.That(result.Select(p => p.Id), Does.Contain(accessible.Id));
+        Assert.That(result.Single(p => p.Id == accessible.Id).Name, Is.EqualTo("Accessible"));
         Assert.That(result.Select(p => p.Id), Does.Not.Contain(inaccessible.Id));
     }
 
