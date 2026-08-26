@@ -151,11 +151,16 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
     await expect(taskListPage.columnCell(task, 'status').locator('.badge.ja')).toHaveCount(1);
     await expect(taskListPage.columnCell(task, 'compliance').locator('.badge.ja')).toHaveCount(1);
 
-    const onScreen = (await taskListPage.columnCell(task, 'compliance').innerText()).trim();
+    // Compare each CSV column against ITS OWN cell — not both against the
+    // compliance cell, which would pass by coincidence for a freshly created
+    // task (Aktiv and Compliance are both "Ja") and would hide a real
+    // divergence between the two columns.
+    const statusOnScreen = (await taskListPage.columnCell(task, 'status').innerText()).trim();
+    const complianceOnScreen = (await taskListPage.columnCell(task, 'compliance').innerText()).trim();
     const [csvActive, csvCompliance] = csvActiveAndCompliance(
       await taskListPage.exportCsvAndReadLines(), task);
-    expect(csvActive).toBe(onScreen);
-    expect(csvCompliance).toBe(onScreen);
+    expect(csvActive).toBe(statusOnScreen);
+    expect(csvCompliance).toBe(complianceOnScreen);
   });
 
   // =======================================================================
@@ -171,18 +176,24 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
     await taskListPage.selectProperty(property.name);
     await taskListPage.openEditModal(task);
 
+    // Angular Material 20 renders mat-slide-toggle as
+    // `<button class="mdc-switch" role="switch" aria-checked>` — there is NO
+    // `<input>` inside it, so `toBeChecked()` on `#id input` would resolve to
+    // zero elements and time out. Assert `aria-checked` on the switch button.
+    const toggle = (id: string) => page.locator(`#${id} button[role="switch"]`);
+
     // Stored state as created: active, compliance enabled.
-    await expect(page.locator('#calendarEventStatusActive input')).toBeChecked();
-    await expect(page.locator('#calendarEventComplianceOn input')).toBeChecked();
+    await expect(toggle('calendarEventStatusActive')).toHaveAttribute('aria-checked', 'true');
+    await expect(toggle('calendarEventComplianceOn')).toHaveAttribute('aria-checked', 'true');
 
     await page.locator('#calendarEventStatusInactive').click();
     await page.waitForTimeout(300);
 
     // The flag is untouched by this click (`onPickStatusInactive` only sets
     // `statusControl`), yet both toggles now read off — overdue is N/A.
-    await expect(page.locator('#calendarEventStatusInactive input')).toBeChecked();
-    await expect(page.locator('#calendarEventComplianceOn input')).not.toBeChecked();
-    await expect(page.locator('#calendarEventComplianceOff input')).not.toBeChecked();
+    await expect(toggle('calendarEventStatusInactive')).toHaveAttribute('aria-checked', 'true');
+    await expect(toggle('calendarEventComplianceOn')).toHaveAttribute('aria-checked', 'false');
+    await expect(toggle('calendarEventComplianceOff')).toHaveAttribute('aria-checked', 'false');
 
     await taskListPage.saveEditModal();
   });
