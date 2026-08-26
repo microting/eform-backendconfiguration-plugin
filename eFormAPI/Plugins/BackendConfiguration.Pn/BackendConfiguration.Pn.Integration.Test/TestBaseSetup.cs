@@ -169,6 +169,13 @@ public abstract class TestBaseSetup
         await core.StartSqlOnly(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
             .Replace("bla", "root"));
 
+        // Tests have no Microting cloud credentials, so Core.SendXml would block
+        // on a doomed PostXml for every cloud CaseCreate (the PairItemWithSiteHelper
+        // and TaskManagementHelper paths). skipCloudDeploy makes SendXml hand back a
+        // synthetic MicrotingUid instead - see eform-sdk Core.cs:5489-5496.
+        // CaseCreateLocalOnly never reached the cloud, so those paths are unaffected.
+        await core.SetSdkSetting(Microting.eForm.Dto.Settings.skipCloudDeploy, "true");
+
         return core;
     }
 
