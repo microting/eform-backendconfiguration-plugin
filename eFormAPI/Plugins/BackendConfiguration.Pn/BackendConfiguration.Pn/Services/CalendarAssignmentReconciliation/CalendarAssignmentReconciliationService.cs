@@ -134,14 +134,27 @@ public class CalendarAssignmentReconciliationService(
             // d. Plan add/remove.
             var plan = AssignmentReconciliationPlanner.Plan(desired, actualNonCompleted, completed);
 
-            // e. Deploy missing sites.
+            // e. Deploy missing sites. Keep the SDK case id each deploy produced:
+            //    step (g) needs a case that belongs to THIS occurrence, and the
+            //    schema cannot give it one - nothing on PlanningCase or
+            //    PlanningCaseSite records a rotation, so a query by PlanningId
+            //    would happily return another week's case (see
+            //    EventDeployService.cs:1409-1419). These ids are same-occurrence
+            //    by construction.
+            var deployedThisPass = new Dictionary<int, int>();
+
             foreach (var siteId in plan.ToAdd)
             {
                 try
                 {
-                    await eventDeployService
+                    var ensured = await eventDeployService
                         .EnsureComplianceForOccurrenceAsync(arp, occurrenceDate, siteId, ct)
                         .ConfigureAwait(false);
+
+                    if (ensured is { SdkCaseId: > 0 })
+                    {
+                        deployedThisPass[siteId] = ensured.SdkCaseId;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -178,6 +191,53 @@ public class CalendarAssignmentReconciliationService(
                     logger.LogError(e,
                         "Failed to retract occurrence for AreaRulePlanning {ArpId}, planning {PlanningId}, date {Date}, site {SiteId}",
                         areaRulePlanningId, planningId, occurrenceDate, siteId);
+                }
+            }
+
+            // g. Decide the shared Compliance row's fate, once, after every
+            //    removal for this occurrence has been applied.
+            if (complianceRowsForDate is { Count: > 0 })
+            {
+                foreach (var compliance in complianceRowsForDate)
+                {
+                    var backing = await sdkDbContext.Cases
+                        .Where(x => x.Id == compliance.MicrotingSdkCaseId)
+                        .Select(x => new { x.SiteId, x.Status })
+                        .FirstOrDefaultAsync(ct)
+                        .ConfigureAwait(false);
+
+                    // A completed case is immutable - never retract, repoint or
+                    // delete the row that records it.
+                    if (backing is { Status: CompletedStatus })
+                    {
+                        continue;
+                    }
+
+                    // The row is fine while it names a worker who is still assigned.
+                    if (backing?.SiteId != null && desired.Contains(backing.SiteId.Value))
+                    {
+                        continue;
+                    }
+
+                    if (desired.Count == 0)
+                    {
+                        // Nobody is left to execute the event. An event with no
+                        // assigned worker is inactive, so the occurrence's row goes.
+                        await compliance.Delete(backendConfigurationPnDbContext)
+                            .ConfigureAwait(false);
+                        continue;
+                    }
+
+                    // The row named a worker we just retracted, but others remain.
+                    var survivor = deployedThisPass
+                        .FirstOrDefault(kv => desired.Contains(kv.Key) && !plan.ToRemove.Contains(kv.Key));
+
+                    // No same-occurrence case to hand it to? Release it for redeploy
+                    // rather than deleting - the calendar UI holds complianceId and
+                    // the stuck-row branch keys on SdkCaseId == 0
+                    // (EventDeployService.cs:1341-1345).
+                    compliance.MicrotingSdkCaseId = survivor.Value > 0 ? survivor.Value : 0;
+                    await compliance.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
         }
@@ -273,7 +333,12 @@ public class CalendarAssignmentReconciliationService(
                 }
             }
 
-            await compliance.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+            // The shared Compliance row's fate is NOT decided here. It belongs to
+            // the occurrence, not to this worker, and this method runs once per
+            // removed site over a cached, tracked row - mutating it mid-loop made
+            // the next iteration's `sdkCase.SiteId != siteId` guard compare the
+            // wrong site and silently skip that worker's retraction. Resolved once
+            // in ReconcileEventAsync step (g) instead.
         }
     }
 
