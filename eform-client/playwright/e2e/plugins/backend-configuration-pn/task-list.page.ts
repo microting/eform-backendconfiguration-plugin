@@ -67,26 +67,54 @@ export class TaskListPage {
 
   // ----- Filters ---------------------------------------------------------------
 
+  /**
+   * Selects ONE property in `#taskListPropertyFilter` and waits for BOTH of
+   * the independent async loads the change kicks off.
+   *
+   * 1. `calendar/tasks/index` — toggling a property option (ON or OFF) fires
+   *    onFiltersChanged -> loadTasks(), an async tasks/index round-trip.
+   *    Until the response lands, the PREVIOUS grid render (and any row
+   *    selection) stays visible; on arrival mtx-grid rebinds [data] and
+   *    loadTasks rebuilds `selection` EMPTY. A caller that clicks a row
+   *    checkbox right after this method could otherwise race that rebind —
+   *    the click lands on the stale render and the selection is wiped moments
+   *    later, leaving the batch dropdown disabled (observed in CI as shard-y
+   *    DG2's 120s timeout).
+   *
+   * 2. `calendar/boards/{propertyId}` — a SEPARATE, un-awaited subscription
+   *    fired from `onPropertyChanged` (task-list-page.component.ts, which
+   *    first resets `boards = []`, then calls `loadBoards`). This one is
+   *    load-bearing for the EDIT MODAL, not for the grid: the page passes its
+   *    `boards` array into MAT_DIALOG_DATA **at open time**, the modal's board
+   *    row is `*ngIf="filteredBoards.length > 0"`, and
+   *    `TaskCreateEditModalComponent.onSave()` returns early — toasting
+   *    "Select a calendar" but NOT closing the dialog — when `boardControl`
+   *    is null. So a spec that opens the edit modal before the boards
+   *    response lands gets a modal with no `#calendarEventBoard` row whose
+   *    Save button is a silent no-op, surfacing only as an opaque 30s
+   *    "waiting for mat-dialog-container to be hidden" timeout inside
+   *    `saveEditModal()` (CI shard-h CI2 on PR #1132 — and because that suite
+   *    is `describe.serial`, CI3/CI4 never ran). Awaiting the boards response
+   *    here closes the race for every current AND future caller.
+   *
+   * Both waits are individually `.catch(() => null)`-guarded so a missing or
+   * duplicated call can never hang the helper for longer than its own
+   * timeout.
+   */
   async selectProperty(name: string): Promise<void> {
-    // Toggling a property option (ON or OFF) fires onFiltersChanged ->
-    // loadTasks(), an async tasks/index round-trip. Until the response
-    // lands, the PREVIOUS grid render (and any row selection) stays
-    // visible; on arrival mtx-grid rebinds [data] and loadTasks rebuilds
-    // `selection` EMPTY. A caller that clicks a row checkbox right after
-    // this method could otherwise race that rebind — the click lands on the
-    // stale render and the selection is wiped moments later, leaving the
-    // batch dropdown disabled (observed in CI as shard-y DG2's 120s
-    // timeout). Await the reload response before returning so the grid the
-    // caller sees is the fresh one.
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 15000 },
+    ).catch(() => null);
+    const boardsLoaded = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/boards/'),
       { timeout: 15000 },
     ).catch(() => null);
     await this.page.locator('#taskListPropertyFilter').click();
     await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: name }).first().click();
     // Multi-select stays open after picking an option — close it explicitly.
     await this.page.keyboard.press('Escape');
-    await reload;
+    await Promise.all([reload, boardsLoaded]);
     await this.page.waitForTimeout(800);
   }
 
@@ -99,7 +127,12 @@ export class TaskListPage {
    * worlds (filter kept, selection wiped).
    */
   async clearPropertyFilter(): Promise<void> {
-    // Same reload-await rationale as selectProperty above.
+    // Same reload-await rationale as selectProperty above. NOTE: deliberately
+    // NO boards wait here — clearing takes `filters.propertyIds.length` away
+    // from exactly 1, so TaskListFiltersComponent emits `propertyChanged(null)`
+    // and `onPropertyChanged` merely empties `boards` WITHOUT issuing a
+    // `calendar/boards/{id}` request. Waiting for one would just burn the full
+    // timeout on every call.
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
       { timeout: 15000 },
@@ -407,6 +440,14 @@ export class TaskListPage {
    * reuses the calendar's `TaskCreateEditModalComponent`, so all
    * `#calendarEvent*` ids from `calendar-ui-enhancements.page.ts` apply here
    * too.
+   *
+   * Deliberately does NOT assert the board row (`#calendarEventBoard`) is
+   * present: opening is also legitimate for read-only/cancel flows, and a
+   * property that genuinely owns no calendars renders no board row at all —
+   * an assertion here would encode "every open must be saveable", which is
+   * not intrinsic to opening. The board dependency is enforced where it
+   * actually bites, in `saveEditModal()` below, and pre-empted upstream by
+   * `selectProperty()`'s boards wait.
    */
   async openEditModal(taskName: string): Promise<void> {
     await this.row(taskName).locator('a.ctl-link').click();
@@ -419,14 +460,46 @@ export class TaskListPage {
    * `onEditTask`'s `afterClosed()` subscriber calls `loadTasks()` when the
    * modal closes with a result, so the tasks/index round-trip — not the
    * dialog detaching — is what makes the new values visible in the grid.
+   *
+   * The dialog closes only inside `doSave()`'s success handler (after the
+   * update round-trip), so a slow save legitimately keeps it open for a
+   * while — hence the full 30s budget is preserved for that case. But there
+   * is one failure mode that is INSTANT and permanent: with no
+   * `#calendarEventBoard` row the modal's `boardControl` is null,
+   * `onSave()` toasts "Select a calendar" and returns WITHOUT closing, so no
+   * amount of waiting helps. Detect exactly that (short grace, then probe for
+   * the board row) and fail immediately with the cause spelled out, instead
+   * of burning 30s on an opaque "waiting for mat-dialog-container to be
+   * hidden" TimeoutError like CI shard-h CI2 did on PR #1132. The happy path
+   * is untouched: the first `waitFor` resolves the moment the dialog detaches.
    */
   async saveEditModal(): Promise<void> {
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
       { timeout: 30000 },
     ).catch(() => null);
+    const dialog = this.page.locator('mat-dialog-container');
     await this.page.locator('#calendarEventSaveBtn').click();
-    await this.page.locator('mat-dialog-container').waitFor({ state: 'hidden', timeout: 30000 });
+    const closedFast = await dialog.waitFor({ state: 'hidden', timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!closedFast) {
+      if ((await this.page.locator('#calendarEventBoard').count()) === 0) {
+        throw new Error(
+          'Save did not close the task edit modal and the modal has no '
+          + '#calendarEventBoard row: TaskCreateEditModalComponent.onSave() hit its '
+          + '`boardId == null` guard, toasted "Select a calendar" and returned without '
+          + 'closing the dialog. The board row is `*ngIf="filteredBoards.length > 0"` and '
+          + '`boards` is handed to MAT_DIALOG_DATA at open time, so the modal was almost '
+          + 'certainly opened before GET /api/backend-configuration-pn/calendar/boards/'
+          + '{propertyId} landed — select the property via TaskListPage.selectProperty(), '
+          + 'which awaits that response, and never open the edit modal with the property '
+          + 'filter empty (no filter => no boards => unsaveable modal).');
+      }
+      // Board row present: an ordinary slow/failed save. Keep the original
+      // budget so the caller still gets the familiar hidden-state timeout.
+      await dialog.waitFor({ state: 'hidden', timeout: 30000 });
+    }
     await reload;
     await this.page.waitForTimeout(800);
   }
