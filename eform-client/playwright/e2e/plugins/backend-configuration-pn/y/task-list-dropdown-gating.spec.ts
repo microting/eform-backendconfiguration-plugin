@@ -15,7 +15,7 @@ import {
 /**
  * Task list BATCH-DROPDOWN GATING suite (backend-configuration-task-list-page
  * feature, shard y). Complements `x/task-list-page.spec.ts` PP9 (which
- * proves the 8-option/3-group shape, the 4-disabled/0-disabled counts, and
+ * proves the 9-option/3-group shape, the 4-disabled/0-disabled counts, and
  * that clicking a disabled option is a no-op) with three angles PP9 does
  * NOT cover, all read directly off `task-list-page.component.ts`/`.html`
  * while writing this suite:

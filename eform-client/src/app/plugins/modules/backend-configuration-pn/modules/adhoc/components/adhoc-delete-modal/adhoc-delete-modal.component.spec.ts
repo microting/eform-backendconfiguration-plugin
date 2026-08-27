@@ -7,8 +7,8 @@ describe('AdhocDeleteModalComponent', () => {
   let component: AdhocDeleteModalComponent;
 
   beforeEach(() => {
-    dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
-    adhocServiceSpy = jasmine.createSpyObj('BackendConfigurationPnAdhocService', ['deleteTask']);
+    dialogRefSpy = {close: jest.fn()};
+    adhocServiceSpy = {deleteTask: jest.fn()};
     component = new AdhocDeleteModalComponent(dialogRefSpy, {id: 7, title: 'Fix roof'}, adhocServiceSpy);
   });
 
@@ -18,14 +18,14 @@ describe('AdhocDeleteModalComponent', () => {
   });
 
   it('delete() calls deleteTask(id) and closes with true on success', () => {
-    adhocServiceSpy.deleteTask.and.returnValue(of({success: true}));
+    adhocServiceSpy.deleteTask.mockReturnValue(of({success: true}));
     component.delete();
     expect(adhocServiceSpy.deleteTask).toHaveBeenCalledWith(7);
     expect(dialogRefSpy.close).toHaveBeenCalledWith(true);
   });
 
   it('delete() does not close on failure', () => {
-    adhocServiceSpy.deleteTask.and.returnValue(of({success: false}));
+    adhocServiceSpy.deleteTask.mockReturnValue(of({success: false}));
     component.delete();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });

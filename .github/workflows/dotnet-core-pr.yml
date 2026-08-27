@@ -56,8 +56,58 @@ jobs:
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar
+  # Warms the shared ~/.cache/ms-playwright browser cache once, before the
+  # pn-playwright-test matrix fans out, so each shard restores the browsers
+  # instead of re-downloading them. Installs browser binaries only (no
+  # --with-deps): system apt deps live outside the cache and are (re)installed
+  # per shard in pn-playwright-test below.
+  prewarm-playwright:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pw.outputs.version }}
+    steps:
+    - name: Extract branch name
+      id: extract_branch
+      run: |
+        BRANCH=$(echo ${GITHUB_REF#refs/heads/})
+        if [[ "$BRANCH" != "stable" && "$BRANCH" != "master" && "$BRANCH" != "angular19" ]]; then
+          BRANCH="stable"
+        fi
+        echo "BRANCH=$BRANCH" >> $GITHUB_OUTPUT
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        repository: microting/eform-angular-frontend
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
+        path: eform-angular-frontend
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: Resolve Playwright version
+      id: pw
+      run: |
+        cd eform-angular-frontend/eform-client
+        VER=$(awk -F'"' '/^"@playwright\/test@/{b=1} b&&/^  version/{print $2; exit}' yarn.lock)
+        if [ -z "$VER" ]; then
+          echo "::error::Could not resolve @playwright/test version from yarn.lock"
+          exit 1
+        fi
+        echo "version=$VER" >> "$GITHUB_OUTPUT"
+    - name: Cache Playwright browsers
+      id: pwcache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
+    - name: Download browsers (cache miss only)
+      if: steps.pwcache.outputs.cache-hit != 'true'
+      env:
+        PW_VERSION: ${{ steps.pw.outputs.version }}
+      run: npx playwright@"$PW_VERSION" install chromium
   pn-playwright-test:
-    needs: backend-pn-build
+    needs: [backend-pn-build, prewarm-playwright]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -129,9 +179,25 @@ jobs:
         cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
         ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
         ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+    - name: Cache yarn
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-yarn-${{ hashFiles('eform-angular-frontend/eform-client/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
-    - name: Install Playwright browsers
+    - name: Cache Playwright browsers
+      id: pwcache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ needs.prewarm-playwright.outputs.version }}
+    # The restored browser cache makes `install` a no-op download on a hit while
+    # still (re)installing apt system-deps; running it unconditionally keeps the
+    # shard self-healing if the cache is ever incomplete or the resolved version
+    # differs from prewarm's.
+    - name: Install Playwright browsers + system deps
       run: cd eform-angular-frontend/eform-client && npx playwright install --with-deps chromium
     - name: Create errorShots directory
       run: mkdir eform-angular-frontend/eform-client/errorShots
@@ -225,3 +291,53 @@ jobs:
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
     - name: Integration Tests
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Integration.Test/BackendConfiguration.Pn.Integration.Test.csproj
+  test-angular-client:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: eform-backendconfiguration-plugin
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-frontend
+        ref: stable
+        path: eform-angular-frontend
+    - name: 'Preparing items planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-items-planning-plugin
+        ref: stable
+        path: eform-angular-items-planning-plugin
+    - name: 'Preparing time planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-timeplanning-plugin
+        ref: stable
+        path: eform-angular-timeplanning-plugin
+    - name: Copy dependencies
+      run: |
+        cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
+        cp -av eform-angular-timeplanning-plugin/eform-client/src/app/plugins/modules/time-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/time-planning-pn
+        rm -rf eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
+        ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
+        ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: yarn install
+      run: cd eform-angular-frontend/eform-client && yarn install
+    - name: Button conventions
+      # The gate lives in the frontend repo (checked out above) but the plugin
+      # templates are ours, and a frontend CI run cannot see them —
+      # src/app/plugins/ is gitignored there. So each plugin repo has to run it
+      # over its own module, or nothing checks these buttons at all.
+      run: cd eform-angular-frontend/eform-client && node scripts/check-button-conventions.js src/app/plugins/modules/backend-configuration-pn
+    - name: Run backend-configuration-pn unit tests
+      run: cd eform-angular-frontend/eform-client && npx jest --ci --maxWorkers=2 "src/app/plugins/modules/backend-configuration-pn/"

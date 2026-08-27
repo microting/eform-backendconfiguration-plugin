@@ -14,11 +14,11 @@ import {
 /**
  * Calendar MONTH VIEW suite (calendar month-view feature).
  *
- * The view-mode dropdown (`#calendarViewModeSelect`) gains a third,
- * admin-only option — "Måned" — between "Uge" and "Tidsplan". For an ADMIN
- * the full order is: Dag, Uge, Måned, Tidsplan, Compliance (see
- * `q/calendar-admin-gating.spec.ts` for the non-admin variant, which lacks
- * both Måned and Compliance).
+ * The view-mode dropdown (`#calendarViewModeSelect`) gains a third
+ * option — "Måned" — between "Uge" and "Tidsplan", available to every user.
+ * For an ADMIN the full order is: Dag, Uge, Måned, Tidsplan, Compliance
+ * (see `q/calendar-admin-gating.spec.ts` for the non-admin variant, which
+ * keeps Måned but lacks the admin-only Compliance).
  *
  * Month view renders 6 `.month-week-row` rows, 6 `.wk-cell` week-number
  * buttons, and `.month-day-cell` cells (each carrying a `.day-number`

@@ -132,7 +132,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         // the user is not an admin while compliance view is still active
         // (e.g. deep link, or a stale admin session), force back to week
         // view so a non-admin can never remain in the admin-only mode.
-        if (!isAdmin && (this.viewMode === 'compliance' || this.viewMode === 'month')) {
+        if (!isAdmin && this.viewMode === 'compliance') {
           this.stateService.updateViewMode('week');
           this.loadTasks();
         }
@@ -158,7 +158,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // dispatch re-emits filters$ with 'week', which this same
       // subscription then processes normally, so no extra loadTasks() call
       // is needed here.
-      if ((this.viewMode === 'compliance' || this.viewMode === 'month') && !this.isAdmin) {
+      if (this.viewMode === 'compliance' && !this.isAdmin) {
         this.stateService.updateViewMode('week');
         return;
       }
@@ -804,7 +804,11 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         propertyId: task.propertyId,
         assigneeIds: task.assigneeIds ?? [],
       } as CalendarCompleteEventModalData,
-      width: 'min(90vw, 1080px)',
+      // Sized for a single-section eForm, which is the common case: one column
+      // of fields with a uniform gutter, matching the design reference. The
+      // modal widens itself to make room for the nav column when the eForm
+      // turns out to have more than one section (see widenForSections()).
+      width: 'min(90vw, 900px)',
       maxWidth: '95vw',
       autoFocus: false,
       restoreFocus: false,

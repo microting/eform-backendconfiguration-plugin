@@ -4,7 +4,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateModule} from '@ngx-translate/core';
 import {of} from 'rxjs';
-import {EFormService} from 'src/app/common/services';
+import {EFormService, EformTagService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {
   BackendConfigurationPnCalendarService,
@@ -22,6 +22,7 @@ describe('CalendarTaskListPageComponent', () => {
   let propertiesServiceStub: any;
   let tagsServiceStub: any;
   let eformServiceStub: any;
+  let eformTagServiceStub: any;
   let dialogStub: any;
   let afterClosed$: any;
 
@@ -40,6 +41,9 @@ describe('CalendarTaskListPageComponent', () => {
     eformServiceStub = {
       getAll: jest.fn().mockReturnValue(of({success: true, model: {templates: []}})),
     };
+    eformTagServiceStub = {
+      getAvailableTags: jest.fn().mockReturnValue(of({success: true, model: []})),
+    };
     afterClosed$ = of(false);
     dialogStub = {
       open: jest.fn().mockReturnValue({afterClosed: () => afterClosed$}),
@@ -53,12 +57,13 @@ describe('CalendarTaskListPageComponent', () => {
         {
           provide: Overlay,
           // dialogConfigHelper reads overlay.scrollStrategies.reposition().
-          useValue: {scrollStrategies: {reposition: () => ({})}},
+          useValue: {scrollStrategies: {reposition: jest.fn().mockReturnValue({})}},
         },
         {provide: BackendConfigurationPnCalendarService, useValue: calendarServiceStub},
         {provide: BackendConfigurationPnPropertiesService, useValue: propertiesServiceStub},
         {provide: ItemsPlanningPnTagsService, useValue: tagsServiceStub},
         {provide: EFormService, useValue: eformServiceStub},
+        {provide: EformTagService, useValue: eformTagServiceStub},
         {provide: CalendarRepeatService, useValue: {}},
       ],
       schemas: [NO_ERRORS_SCHEMA],
@@ -75,6 +80,7 @@ describe('CalendarTaskListPageComponent', () => {
     expect(component).toBeTruthy();
     expect(propertiesServiceStub.getAllPropertiesDictionary).toHaveBeenCalled();
     expect(tagsServiceStub.getPlanningsTags).toHaveBeenCalled();
+    expect(eformTagServiceStub.getAvailableTags).toHaveBeenCalled();
     expect(eformServiceStub.getAll).toHaveBeenCalled();
     expect(calendarServiceStub.getTasksIndex).toHaveBeenCalled();
   });

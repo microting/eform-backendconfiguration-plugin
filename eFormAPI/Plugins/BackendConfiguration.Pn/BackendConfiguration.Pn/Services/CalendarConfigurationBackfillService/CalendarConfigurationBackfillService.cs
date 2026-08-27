@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -5,15 +6,44 @@ using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
 namespace BackendConfiguration.Pn.Services.CalendarConfigurationBackfillService;
 
 public class CalendarConfigurationBackfillService(
     BackendConfigurationPnDbContext dbContext,
+    ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     ILogger<CalendarConfigurationBackfillService> logger)
 {
+    // Hours-since-midnight the conversion assigns to a wizard planning, which
+    // carries no time of day of its own. Kept in sync with the `?? 9.0` read
+    // fallbacks in BackendConfigurationCalendarService.
+    private const double DefaultStartHour = 9.0;
+    private const double DefaultDuration = 1.0;
+
+    // The 00:00-01:00 shape the superseded backfill wrote, matched verbatim by the
+    // repair below. Named separately from the defaults above: these describe the rows
+    // being corrected, not the value being applied.
+    private const double LegacyStartHour = 0.0;
+    private const double LegacyDuration = 1.0;
+
+    // Set once the legacy-midnight repair below has run, so it never runs twice.
+    // Public so the integration fixture can clear it between tests.
+    //
+    // The prefix is the settings CLASS name, not the bound configuration section
+    // ("BackendConfigurationSettings"), so this key lands in a section nothing reads
+    // -- deliberate, and not a typo to correct: renaming it into the live section on
+    // an already-repaired database would leave the old marker unread and re-run the
+    // repair, overriding timeslots users had since chosen.
+    public const string LegacyStartHourRepairMarkerName =
+        "BackendConfigurationBaseSettings:LegacyCalendarStartHourRepaired";
+
     public async Task RunIfNeededAsync()
     {
+        await RepairLegacyMidnightConfigurationsAsync();
+
         // Wizard/calendar plannings lacking a board link (CalendarConfiguration row)
         var configuredArpIds = await dbContext.CalendarConfigurations
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -23,27 +53,50 @@ public class CalendarConfigurationBackfillService(
         // Mirrors BackendConfigurationCalendarService.CreateTask's ARP-to-AreaRule
         // correlation: navigate via the AreaRule FK/nav property and filter on
         // CreatedInGuide (task-wizard-created rules only).
-        var missing = await dbContext.AreaRulePlannings
+        //
+        // Selection is by correctness, not marker existence alone: an older,
+        // since-replaced version of this service created the CalendarConfiguration
+        // marker WITHOUT ever populating the ARP recurrence detail columns, so those
+        // rows (and any reintroduced via a restore of old production data) still
+        // render as "dag 0" and need normalizing even though a marker exists. A row
+        // qualifies when it has no live marker OR it is a still-un-normalized
+        // Week/Month wizard row — Week detected via an empty RepeatWeekdaysCsv and
+        // Month via a null RepeatOrdinalWeek AND a zero DayOfMonth — a legitimate
+        // "day N of month" row (edited via UpdateTask) has RepeatOrdinalWeek null but
+        // DayOfMonth >= 1, so requiring DayOfMonth == 0 avoids re-normalizing and
+        // corrupting it; only truly-stale rows leave both at their defaults.
+        var arpsToNormalize = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .Include(x => x.AreaRule)
             .Where(x => x.AreaRule.CreatedInGuide)
-            .Where(x => !configuredArpIds.Contains(x.Id))
-            .Select(x => new { x.Id, x.PropertyId })
+            .Where(x => !configuredArpIds.Contains(x.Id)
+                        || (x.RepeatType == 2 && string.IsNullOrEmpty(x.RepeatWeekdaysCsv))
+                        // DayOfMonth == 0 required: a legit "day N of month" row has
+                        // RepeatOrdinalWeek null but DayOfMonth >= 1; don't re-normalize it.
+                        || (x.RepeatType == 3 && x.RepeatOrdinalWeek == null && x.DayOfMonth == 0))
             .ToListAsync();
 
-        if (missing.Count == 0)
+        if (arpsToNormalize.Count == 0)
         {
             return;
         }
 
         logger.LogInformation(
-            "CalendarConfigurationBackfill: attaching {Count} plannings to default boards",
-            missing.Count);
+            "CalendarConfigurationBackfill: converting {Count} plannings to calendar tasks",
+            arpsToNormalize.Count);
+
+        // Old-frequency source of truth is the linked items-planning Planning row.
+        // No WorkflowState filter on purpose: soft-deleted Plannings (inactive
+        // tasks) render dimmed in the calendar and need normalization too.
+        var planningIds = arpsToNormalize.Select(x => x.ItemPlanningId).Distinct().ToList();
+        var plannings = await itemsPlanningPnDbContext.Plannings
+            .Where(x => planningIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
 
         // Default board per property = lowest-Id non-removed board; create if none.
         // "Default"/"#c30000" mirrors BackendConfigurationCalendarService.GetBoards'
         // auto-create-default-board values verbatim.
-        foreach (var propertyId in missing.Select(x => x.PropertyId).Distinct())
+        foreach (var propertyId in arpsToNormalize.Select(x => x.PropertyId).Distinct())
         {
             var board = await dbContext.CalendarBoards
                 .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
@@ -62,21 +115,169 @@ public class CalendarConfigurationBackfillService(
                 await board.Create(dbContext);
             }
 
-            foreach (var arp in missing.Where(x => x.PropertyId == propertyId))
+            foreach (var arp in arpsToNormalize.Where(x => x.PropertyId == propertyId))
             {
-                // No user context at startup — CreatedByUserId/UpdatedByUserId are
-                // left at their int default (0), same fallback the plugin's other
-                // startup backfill (WorkorderCaseGroupIdBackfillService) relies on.
-                var configuration = new CalendarConfiguration
+                try
                 {
-                    AreaRulePlanningId = arp.Id,
-                    StartHour = 0,
-                    Duration = 1,
-                    BoardId = board.Id,
-                    Color = null
-                };
-                await configuration.Create(dbContext);
+                    // ARP with a missing Planning row: skip normalization but still
+                    // create the config row so the ARP is never re-scanned.
+                    if (plannings.TryGetValue(arp.ItemPlanningId, out var planning))
+                    {
+                        await NormalizeRecurrence(arp, planning);
+                    }
+
+                    // No user context at startup — CreatedByUserId/UpdatedByUserId are
+                    // left at their int default (0), same fallback the plugin's other
+                    // startup backfill (WorkorderCaseGroupIdBackfillService) relies on.
+                    // Created last: its existence is the idempotency marker for the
+                    // whole conversion of this ARP, so a crash mid-run resumes here.
+                    //
+                    // A stale-marker row (re-selected for normalization above) already
+                    // has a live marker; re-inserting would duplicate it, so only
+                    // create when none exists and leave the existing one untouched.
+                    if (!configuredArpIds.Contains(arp.Id))
+                    {
+                        var configuration = new CalendarConfiguration
+                        {
+                            AreaRulePlanningId = arp.Id,
+                            StartHour = DefaultStartHour,
+                            Duration = DefaultDuration,
+                            BoardId = board.Id,
+                            Color = null
+                        };
+                        await configuration.Create(dbContext);
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e,
+                        "CalendarConfigurationBackfill: conversion failed for AreaRulePlanning {AreaRulePlanningId}",
+                        arp.Id);
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// One-time correction of the 00:00-01:00 markers written by the first version
+    /// of this service, which seeded StartHour = 0 before the 09:00-10:00 change.
+    /// That change shipped without a data repair and the conversion below only ever
+    /// inserts, never updates, so those rows would render at midnight forever.
+    ///
+    /// Scoped by CreatedByUserId == 0: this pass runs at startup with no user
+    /// context, whereas CreateTask and UpdateTask both stamp a real user id, so a
+    /// zero identifies a row this service created rather than a time a person chose.
+    ///
+    /// Further narrowed to CreatedInGuide rules: only wizard-created tasks were ever
+    /// touched by the original backfill, so nothing else can carry a legacy marker.
+    ///
+    /// Gated on a persisted marker rather than on the data shape, because 09:00 and
+    /// 00:00 are equally legitimate values -- there is nothing in a repaired row to
+    /// distinguish it from one a user has since moved back to midnight. Without the
+    /// marker the gate above would re-fire on exactly that row at the next restart.
+    /// </summary>
+    private async Task RepairLegacyMidnightConfigurationsAsync()
+    {
+        var alreadyRepaired = await dbContext.PluginConfigurationValues
+            .AnyAsync(x => x.Name == LegacyStartHourRepairMarkerName);
+
+        if (alreadyRepaired)
+        {
+            return;
+        }
+
+        var legacyConfigurations = await dbContext.CalendarConfigurations
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.CreatedByUserId == 0)
+            .Where(x => x.StartHour == LegacyStartHour && x.Duration == LegacyDuration)
+            .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
+            .ToListAsync();
+
+        foreach (var configuration in legacyConfigurations)
+        {
+            // Only the time is corrected; board and colour stay as they are.
+            configuration.StartHour = DefaultStartHour;
+            await configuration.Update(dbContext);
+        }
+
+        // Written even when nothing matched, so the scan is skipped from now on.
+        //
+        // Inserted as a single conditional statement rather than Add + SaveChanges:
+        // PluginConfigurationValues.Name is an unindexed longtext with no unique
+        // constraint, so two instances starting together would both see no marker and
+        // both insert one. BasePn's PluginConfigurationProvider.Load builds its
+        // settings dictionary with ToDictionary(c => c.Name, ...), which throws on a
+        // duplicate key -- a second row would make the plugin fail to load on every
+        // subsequent start, and nothing inside the plugin could then repair it.
+        // Letting the database evaluate NOT EXISTS and the insert atomically removes
+        // that race without needing a unique index (MySQL cannot index longtext
+        // without a prefix length).
+        await dbContext.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO `PluginConfigurationValues`
+                  (`Name`, `Value`, `CreatedAt`, `UpdatedAt`, `Version`,
+                   `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`)
+              SELECT {0}, 'true', {1}, {1}, 1, {2}, 1, 0 FROM DUAL
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM `PluginConfigurationValues` `existing`
+                  WHERE `existing`.`Name` = {0})",
+            LegacyStartHourRepairMarkerName,
+            DateTime.UtcNow,
+            Constants.WorkflowStates.Created);
+
+        if (legacyConfigurations.Count > 0)
+        {
+            logger.LogInformation(
+                "CalendarConfigurationBackfill: repaired {Count} legacy midnight calendar configurations to {StartHour}:00",
+                legacyConfigurations.Count, DefaultStartHour);
+        }
+    }
+
+    // Normalizes recurrence to the calendar encoding. All ARP writes are
+    // unconditional re-derivations from Planning.StartDate/RepeatType/RepeatEvery,
+    // so any interrupted pass converges to the same final state on the next run.
+    private async Task NormalizeRecurrence(AreaRulePlanning arp, Planning planning)
+    {
+        // "Altid" (RepeatType 0) and legacy (Day, 0) both become daily.
+        if (planning.RepeatType == 0 || planning.RepeatEvery == 0)
+        {
+            arp.RepeatType = 1;
+            arp.RepeatEvery = 1;
+            await arp.Update(dbContext);
+
+            planning.RepeatType = RepeatType.Day;
+            planning.RepeatEvery = 1;
+            await planning.Update(itemsPlanningPnDbContext);
+            return;
+        }
+
+        var dow = (int)planning.StartDate.DayOfWeek;
+
+        switch (planning.RepeatType)
+        {
+            case RepeatType.Day:
+                arp.RepeatType = 1;
+                arp.RepeatEvery = planning.RepeatEvery;
+                await arp.Update(dbContext);
+                break;
+            case RepeatType.Week:
+                arp.RepeatType = 2;
+                arp.RepeatEvery = planning.RepeatEvery;
+                arp.DayOfWeek = dow;
+                arp.RepeatWeekdaysCsv = dow.ToString();
+                await arp.Update(dbContext);
+                break;
+            case RepeatType.Month:
+                arp.RepeatType = 3;
+                arp.RepeatEvery = planning.RepeatEvery;
+                arp.DayOfWeek = dow;
+                arp.RepeatOrdinalWeek = 1;
+                arp.DayOfMonth = 0;
+                await arp.Update(dbContext);
+
+                planning.RepeatOrdinalWeek = 1;
+                await planning.Update(itemsPlanningPnDbContext);
+                break;
+            // Year/unknown: not wizard-producible — pass through untouched.
         }
     }
 }

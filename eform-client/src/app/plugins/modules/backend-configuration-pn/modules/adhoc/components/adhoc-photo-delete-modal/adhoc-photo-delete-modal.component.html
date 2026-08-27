@@ -1,0 +1,14 @@
+<h3 mat-dialog-title>{{ 'Delete photo?' | translate }}</h3>
+<div mat-dialog-content>
+  <p class="photo-delete-modal-body">{{ 'The photo will be removed from the task. This action cannot be undone.' | translate }}</p>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end gap-8">
+  <!-- Initial focus lands on the dismissive action, never on the
+       destructive one (design-spec Surface 2). -->
+  <button class="btn-cancel" id="adhocPhotoDeleteCancelBtn" data-e2e="adhoc-photo-delete-cancel" cdkFocusInitial (click)="hide()">
+    {{ 'Cancel' | translate }}
+  </button>
+  <button class="btn-delete" id="adhocPhotoDeleteConfirmBtn" data-e2e="adhoc-photo-delete-confirm" (click)="confirm()">
+    {{ 'Delete' | translate }}
+  </button>
+</div>

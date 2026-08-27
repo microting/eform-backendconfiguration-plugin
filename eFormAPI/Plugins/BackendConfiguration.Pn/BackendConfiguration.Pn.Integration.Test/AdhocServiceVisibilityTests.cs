@@ -269,6 +269,12 @@ public class AdhocServiceVisibilityTests : TestBaseSetup
     [Test]
     public async Task ListTasks_NotAdmin_WithNoPropertyAccess_ReturnsEmpty()
     {
+        // Pins ListTasks' visibility predicate, not a caller: without the
+        // admin flag, an identity with no PropertyWorker row sees nothing.
+        // No production caller passes (0, false) since 2026-08-24 - the web
+        // passes full access and gRPC rejects an unresolvable identity - but
+        // this predicate is what keeps the gRPC path scoped, so it is asserted
+        // directly rather than left to be inferred.
         var property = await CreatePropertyAsync();
         var sut = CreateSut();
 

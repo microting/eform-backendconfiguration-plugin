@@ -20,18 +20,17 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="accent"
-    (click)="onUpdateEntityList()"
-    id="entityListSaveBtn"
-  >
-    {{ 'Save' | translate }}
-  </button>
-  <button
-    mat-raised-button
+    class="btn-cancel"
     (click)="hide()"
     id="entityListSaveCancelBtn"
   >
     {{'Cancel' | translate}}
+  </button>
+  <button
+    class="btn-primary"
+    (click)="onUpdateEntityList()"
+    id="entityListSaveBtn"
+  >
+    {{ 'Save' | translate }}
   </button>
 </div>

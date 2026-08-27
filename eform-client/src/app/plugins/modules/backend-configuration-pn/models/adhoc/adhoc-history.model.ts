@@ -1,30 +1,34 @@
 import {AdhocHistoryFiltrationModel} from 'src/app/plugins/modules/backend-configuration-pn/state';
+import {AdhocTaskStatusFilter} from './adhoc-task-filters.model';
 
 /**
- * One row of the Historik timeline - mirrors C#
- * `AdhocTaskHistoryEventModel` (M5/P2). `eventType` is one of: created,
- * assigned, completed, archived, commented. There is intentionally no
- * "reopened" event type - a reopened task simply returns to the open
- * bucket and disappears from Historik entirely (see the C# model's own doc
- * comment / m5-p1-p3-report.md for the full rationale).
+ * One row of the Historik table (#1095, mockup parity) - mirrors C#
+ * `AdhocTaskHistoryRowModel`: one row per task currently Completed ("Løst")
+ * or Archived, sorted by `completedAt` descending. Open tasks never appear.
+ * Replaces the old per-event `AdhocTaskHistoryEventModel` (created/assigned/
+ * completed/archived/commented timeline).
  */
-export interface AdhocTaskHistoryEventModel {
+export interface AdhocTaskHistoryRowModel {
   taskId: number;
   taskTitle: string;
 
-  eventType: 'created' | 'assigned' | 'completed' | 'archived' | 'commented';
+  /**
+   * The "Løst" date - never the archive date. ISO string on the wire, but a
+   * `Date` by the time it reaches components: the host frontend's global
+   * DateInterceptor converts every ISO-datetime string in every response
+   * body (same reality as e.g. `DocumentModel.endDate`).
+   */
+  completedAt: string | Date;
+
+  /** Empty string when the task was completed with no recorded performer. */
+  completedByName: string;
 
   /**
-   * ISO string on the wire, but a `Date` by the time it reaches components:
-   * the host frontend's global DateInterceptor converts every ISO-datetime
-   * string in every response body (same reality as e.g.
-   * `DocumentModel.endDate`).
+   * Wire value of C# `AdhocTaskStatusFilter` - only `Completed` (1) or
+   * `Archived` (2) ever occur in Historik. The component maps it to its
+   * 'completed' | 'archived' display union.
    */
-  occurredAt: string | Date;
-
-  actorName: string;
-
-  detail: string | null;
+  status: AdhocTaskStatusFilter;
 
   propertyName: string;
   areaName: string | null;
@@ -34,14 +38,13 @@ export interface AdhocTaskHistoryEventModel {
   lastCommentText: string | null;
   lastCommentAuthor: string | null;
   lastCommentAt: string | Date | null;
-
-  completed: boolean;
-  archived: boolean;
 }
 
 /**
  * Wire-level filters for `POST adhoc/history/index`, mirroring C#
- * `AdhocHistoryFiltersModel` (M5/P2). `tagIds` is AND-only, unlike
+ * `AdhocHistoryFiltersModel` (#1095). `dateFrom`/`dateTo` are date-only
+ * values compared date-truncated and inclusive of both ends against each
+ * row's `completedAt`. `tagIds` is AND-only, unlike
  * `AdhocTaskFiltersModel.tagsMatchAll`'s toggle.
  */
 export interface AdhocHistoryFiltersModel {
@@ -51,7 +54,7 @@ export interface AdhocHistoryFiltersModel {
   propertyId: number | null;
   areaId: number | null;
 
-  /** AND-only: a matching event's task must have ALL of these tags. */
+  /** AND-only: a matching row's task must have ALL of these tags. */
   tagIds: number[];
 
   pageNumber: number;
@@ -60,9 +63,9 @@ export interface AdhocHistoryFiltersModel {
 
 /**
  * Shape parity with `AdhocTaskRequestModel` - the UI-facing (ngrx) history
- * filters the state facade (F5/F8) maps to the wire-level
- * `AdhocHistoryFiltersModel` (date-from/to resolved from the period preset,
- * paging added).
+ * filters (period preset + custom range + property/area/tags) the component
+ * maps to the wire-level `AdhocHistoryFiltersModel` (date-from/to resolved
+ * from the period preset, paging added).
  */
 export interface AdhocHistoryRequestModel {
   filters: AdhocHistoryFiltrationModel;

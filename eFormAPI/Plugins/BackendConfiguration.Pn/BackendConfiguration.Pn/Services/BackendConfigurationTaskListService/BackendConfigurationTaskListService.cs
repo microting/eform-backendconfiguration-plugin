@@ -129,6 +129,35 @@ public class BackendConfigurationTaskListService(
             return (result.Success, result.Message);
         }, "Tasks updated");
 
+    // Sets AreaRulePlanning.ComplianceEnabled (and, downstream, the
+    // template-level AreaRule.ComplianceEnabled — the wizard writes both,
+    // BackendConfigurationTaskWizardService.UpdateTask:812,865) on every
+    // selected task. Same RunPerTask/BuildUpdateModel shape as ChangeEform.
+    //
+    // Deliberately does NOT touch Status, unlike the single-task calendar
+    // modal, whose onPickOverdueShown/onPickOverdueHidden handlers both force
+    // statusControl to true. An admin flipping compliance on 40 rows does not
+    // intend to silently reactivate dormant tasks and redeploy their cases;
+    // batch activation is its own action. BuildUpdateModel round-trips the
+    // planning's current Status, so an inactive task stays inactive.
+    //
+    // Deliberately does NOT eagerly clean up already-overdue Compliance rows
+    // either: the calendar path this page follows persists the flag and
+    // nothing else, and the effect appears on the next scheduled pass. (The
+    // older Property-Areas edit path in
+    // BackendConfigurationAreaRulePlanningsServiceHelper additionally deletes
+    // all Compliance rows inline and recomputes Property.ComplianceStatus —
+    // that is not the path this page uses.)
+    public async Task<OperationResult> SetCompliance(TaskListBatchComplianceModel model) =>
+        await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.ComplianceEnabled = model.ComplianceEnabled;
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+
     // Copy creates a brand-new AreaRulePlanning on the target property/board
     // via calendarService.CreateTask, seeded from the source task's full
     // current state (BuildUpdateModel). Two fields are deliberately NOT a
@@ -423,8 +452,13 @@ public class BackendConfigurationTaskListService(
                 .ToList(),
             WorkerTagIds = workerTagIds,
             ComplianceEnabled = arp.ComplianceEnabled,
-            StartHour = configuration?.StartHour ?? 0,
-            Duration = configuration?.Duration ?? 1,
+            // Must match the read fallback in BackendConfigurationCalendarService:
+            // UpdateTask writes StartHour unconditionally, so a 0 here would move an
+            // un-configured task the grid renders at 09:00 down to midnight -- and
+            // stamp the new row with a real CreatedByUserId, putting it permanently
+            // beyond the legacy-midnight repair in CalendarConfigurationBackfillService.
+            StartHour = configuration?.StartHour ?? 9.0,
+            Duration = configuration?.Duration ?? 1.0,
             BoardId = configuration?.BoardId,
             Color = configuration?.Color,
             RepeatEndMode = arp.RepeatEndMode,

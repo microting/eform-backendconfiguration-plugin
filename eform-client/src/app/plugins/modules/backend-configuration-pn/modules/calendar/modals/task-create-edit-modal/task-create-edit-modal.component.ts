@@ -6,7 +6,6 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {EformVisualEditorModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor.model';
 import {EformVisualEditorFieldModel} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-field.model';
-import {EformVisualEditorTranslationWithDefaultValue} from 'src/app/common/models/eforms/visual-editor/eform-visual-editor-translation-with-default-value';
 import {EformVisualEditorService} from 'src/app/common/services';
 import {EformFieldTypesEnum} from 'src/app/common/const/eform-field-types';
 import {Store} from '@ngrx/store';
@@ -25,8 +24,11 @@ import {
   CALENDAR_COLORS,
   CalendarBoardModel,
   CalendarRepeatMeta,
+  CalendarRepeatRule,
   CalendarTaskAttachment,
+  CalendarTaskCreateModel,
   CalendarTaskModel,
+  CalendarTaskUpdateModel,
   RepeatEditScope,
 } from '../../../../models/calendar';
 import {CalendarRepeatService, RepeatSelectOption} from '../../services/calendar-repeat.service';
@@ -34,6 +36,7 @@ import {computeCopyDate} from '../../services/calendar-copy-date.helper';
 import {getCurrentLocale} from '../../services/calendar-locale.helper';
 import {CustomRepeatModalComponent} from '../custom-repeat-modal/custom-repeat-modal.component';
 import {RepeatScopeModalComponent} from '../repeat-scope-modal/repeat-scope-modal.component';
+import {EformChangeScopeModalComponent} from '../eform-change-scope-modal/eform-change-scope-modal.component';
 import {TranslateService} from '@ngx-translate/core';
 import {ToastrService} from 'ngx-toastr';
 import {firstValueFrom, Observable, of} from 'rxjs';
@@ -56,6 +59,21 @@ export interface TaskCreateEditModalData {
   planningTags: {id: number; name: string}[];
   sourceTask?: CalendarTaskModel | null;  // present in copy mode
 }
+
+/**
+ * Wire shape of the create/update body built by `onSave`.
+ *
+ * The named members are the compiler-checked contract: everything on
+ * `CalendarTaskCreateModel` (incl. `eformId`) plus the update-only ids, which
+ * are optional here because the same object is posted in create mode. The
+ * index signature covers the additional backend-only fields the two endpoints
+ * accept (`translates`, `startDate`, `sites`, the `repeat*` scalars, …) that
+ * have never been modelled on the frontend — keeping those from turning the
+ * whole payload back into `any`.
+ */
+type CalendarTaskSavePayload = CalendarTaskCreateModel &
+  Partial<Omit<CalendarTaskUpdateModel, keyof CalendarTaskCreateModel>> &
+  Record<string, any>;
 
 // PR-4 ships without @types/gapi-picker — declare the two globals the
 // dynamically-loaded https://apis.google.com/js/api.js script attaches to
@@ -106,6 +124,12 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   /** Cached result of TranslationService.translationPossible() (Google config). */
   private translationConfigured = false;
 
+  // eForm id that was loaded into the dialog in edit mode. Compared against the
+  // current eformControl value on save: the eForm is a series-level property,
+  // so switching it under a narrower scope than "all" still re-points every
+  // uncompleted occurrence and needs an explicit confirmation first.
+  private loadedEformId: number | null = null;
+
   private customRepeatMeta: CalendarRepeatMeta | null = null;
   // Last concrete repeat selection before 'custom' was picked, so cancelling
   // the Tilpasset… dialog can restore the prior preset instead of 'none' (#922).
@@ -145,7 +169,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   descriptionControl = new FormControl('');
   driveLinkControl = new FormControl('');
   propertyControl = new FormControl<number | null>(null);
-  boardControl = new FormControl<number | null>(null);
+  // Validators.required (rather than a bare setErrors in onSave) so the
+  // "pick a calendar" error CLEARS itself as soon as the user picks one.
+  // Nothing binds the Save button's [disabled] to this control, so the
+  // validator only drives the field's own error state.
+  boardControl = new FormControl<number | null>(null, Validators.required);
   eformControl = new FormControl<number | null>(null);
   planningTagControl = new FormControl<number | null>(null);
   reportHeadlineEnabledControl = new FormControl<boolean>(true, {nonNullable: true});
@@ -330,7 +358,8 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       this.showDriveInput = !!task.driveLink;
       this.boardControl.setValue(task.boardId ?? null);
       this.propertyControl.setValue(task.propertyId ?? this.data.propertyId);
-      this.eformControl.setValue(task['eformId'] ?? null);
+      this.eformControl.setValue(task.eformId ?? null);
+      this.loadedEformId = task.eformId ?? null;
       this.planningTagControl.setValue(task['itemPlanningTagId'] ?? null);
       this.reportHeadlineEnabledControl.setValue(!!task['itemPlanningTagId']);
       if (!task['itemPlanningTagId']) {
@@ -690,6 +719,17 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     });
   }
 
+  /**
+   * Display name of the loaded eForm for the preview header.
+   *
+   * The visual-editor endpoint returns the checklist's per-language
+   * `translations` — it has NO `label` field — so the name has to be resolved
+   * for the current user language exactly like the field labels below.
+   */
+  get selectedTemplateLabel(): string {
+    return this.selectedTemplate ? this.translatedName(this.selectedTemplate.translations) : '';
+  }
+
   getTemplateFields(): { type: string; label: string; mandatory: boolean }[] {
     const out: { type: string; label: string; mandatory: boolean }[] = [];
     if (!this.selectedTemplate) return out;
@@ -732,7 +772,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     return this.translate.instant(name);
   }
 
-  private translatedName(translations: EformVisualEditorTranslationWithDefaultValue[]): string {
+  private translatedName(translations: { languageId: number; name: string }[] | null | undefined): string {
     if (!translations || translations.length === 0) return '';
     const match = translations.find(tr => tr.languageId === this.currentLanguageId && !!tr.name);
     if (match) return match.name;
@@ -893,6 +933,24 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
 
   onSave() {
     if (this.titleControl.invalid) return;
+    // boardControl is `number | null` and the Save button's [disabled] binding
+    // doesn't cover the board select — so guard here rather than asserting the
+    // value away with `!` in the payload below.
+    const boardId = this.boardControl.value;
+    if (boardId == null) {
+      // Never return silently: boardControl is null in edit mode whenever the
+      // task carries no boardId (e.g. a task-wizard-created event that has no
+      // CalendarConfiguration) and in create mode when the property has no
+      // calendars at all. Without feedback Save just does nothing and the user
+      // has no idea why. Posting the null instead is not an option — the guard
+      // exists so the payload stays type-correct.
+      this.boardControl.markAsTouched();
+      this.boardControl.updateValueAndValidity();
+      this.toastr.error(
+        this.translate.instant('Select a calendar'),
+        this.translate.instant('Error'));
+      return;
+    }
     // Only block past-date save in edit mode. Copy mode may open with a past
     // date seeded from the source event; the user is expected to pick a new
     // date before saving, and we surface that via the standard datepicker
@@ -923,7 +981,10 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       'custom': 6,
       'customCurrent': 6,
     };
-    const repeatRuleValue = this.repeatControl.value ?? 'none';
+    // Widened with 'customCurrent' — the synthesized "current custom rule"
+    // option isn't a persisted CalendarRepeatRule; it collapses to 'custom'
+    // when the payload is built below.
+    const repeatRuleValue = (this.repeatControl.value ?? 'none') as CalendarRepeatRule | 'customCurrent';
 
     // For custom repeat, map the meta's kind back to a standard repeatType
     // and use the meta's step as repeatEvery
@@ -972,7 +1033,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       }
     }
 
-    const payload: any = {
+    const payload: CalendarTaskSavePayload = {
       // Backend CalendarTaskCreateRequestModel fields
       translates,
       // Send the date-only string (local Y-M-D), NOT the raw Date — a raw Date
@@ -990,7 +1051,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         const match = this.data.planningTags.find(pt => pt.name === t);
         return match?.id ?? 0;
       }).filter((id: number) => id > 0),
-      boardId: this.boardControl.value,
+      boardId,
       color: this.filteredBoards.find(b => b.id === this.boardControl.value)?.color ?? CALENDAR_COLORS[0],
       descriptionHtml: this.descriptionControl.value ?? '',
       repeatType: resolvedRepeatType,
@@ -1048,7 +1109,7 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       itemPlanningTagId: this.reportHeadlineEnabledControl.value ? this.planningTagControl.value : null,
 
       // Keep these for local/UI use and backward compat
-      title: this.titleControl.value,
+      title: this.titleControl.value ?? '',
       taskDate: dateStr,
       startText: this.startTimeControl.value,
       endText: this.endTimeControl.value,
@@ -1064,8 +1125,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     };
 
     const doSave = (scope?: string) => {
+      // `id` is optional on the payload because create mode posts the same
+      // object without one; in edit mode `data.task.id` is always present, so
+      // the cast is the only thing the update signature needs.
       const obs = this.isEditMode
-        ? this.calendarService.updateTask(payload, (scope ?? 'this') as RepeatEditScope)
+        ? this.calendarService.updateTask(payload as CalendarTaskUpdateModel, (scope ?? 'this') as RepeatEditScope)
         : this.calendarService.createTask(payload);
 
       obs.subscribe({
@@ -1091,6 +1155,31 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
       });
     };
 
+    // The eForm is a series-level property: the backend re-points every
+    // uncompleted occurrence at the new eForm no matter which scope was picked
+    // (see 2026-08-19-calendar-eform-change-propagation-design.md §3). So when
+    // the user swapped the eForm and then chose a narrower scope than "all",
+    // confirm the wider blast radius before sending the save. Cancelling
+    // aborts the save and leaves this dialog open so the eForm can be reset.
+    const saveWithScope = (scope?: string) => {
+      // Also require a non-null eForm: the backend's UpdateTaskThisOccurrence
+      // only re-points the series when EformId > 0, so a cleared select would
+      // have the user confirm a change the backend then silently discards.
+      const eformChanged =
+        (this.eformControl.value ?? null) !== this.loadedEformId && this.eformControl.value != null;
+      if (!eformChanged || scope === 'all') {
+        doSave(scope);
+        return;
+      }
+      const confirmRef = this.dialog.open(
+        EformChangeScopeModalComponent,
+        dialogConfigHelper(this.overlay)
+      );
+      confirmRef.afterClosed().subscribe(confirmed => {
+        if (confirmed) doSave(scope);
+      });
+    };
+
     // Show the scope picker for a recurring series — keyed on repeatRule
     // (the same signal move/resize use), NOT repeatSeriesId which is never
     // populated on calendar tasks. Without this the picker never opened and
@@ -1102,9 +1191,11 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
         dialogConfigHelper(this.overlay, {mode: 'edit'})
       );
       ref.afterClosed().subscribe(scope => {
-        if (scope) doSave(scope);
+        if (scope) saveWithScope(scope);
       });
     } else {
+      // Create mode and one-off events: no series exists, so there is nothing
+      // to warn about — a one-off edit only ever touches its own occurrence.
       doSave();
     }
   }

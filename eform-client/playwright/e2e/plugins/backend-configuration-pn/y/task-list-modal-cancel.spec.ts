@@ -16,7 +16,7 @@ import {
  * Task list BATCH MODAL CANCEL suite (backend-configuration-task-list-page
  * feature, shard y): one representative action per of the FIVE modal
  * COMPONENTS (`batch-worker-modal`, `batch-eform-modal`, `batch-tags-modal`,
- * `batch-copy-modal`, `batch-delete-modal` — not per the 8 batch actions),
+ * `batch-copy-modal`, `batch-delete-modal` — not per the 9 batch actions),
  * proving `#batchModalCancel` (added to all five templates specifically for
  * this suite — see the sibling template edits — they previously only had an
  * unidentified `.btn-cancel`) leaves everything exactly as it was:

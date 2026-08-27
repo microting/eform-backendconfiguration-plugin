@@ -103,6 +103,10 @@ public class TaskListBatchCopyDeleteTest : TestBaseSetup
             BackendConfigurationPnDbContext.PlanningSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        BackendConfigurationPnDbContext.AreaRulePlanningTags.RemoveRange(
+            BackendConfigurationPnDbContext.AreaRulePlanningTags);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
         BackendConfigurationPnDbContext.AreaRulePlanningWorkerTags.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlanningWorkerTags);
         await BackendConfigurationPnDbContext.SaveChangesAsync();

@@ -1,11 +1,49 @@
 .calendar-complete-event-modal {
   &__content {
-    min-width: min(90vw, 960px);
     max-height: 75vh;
   }
 
+  &__layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  &__main {
+    flex: 1 1 auto;
+    // Without this a long eForm field can push the flex item past the dialog.
+    min-width: 0;
+  }
+
+  // No max-width/centring here. Centring a narrow column inside a wide dialog
+  // left the title flush at the dialog gutter while the fields sat ~76px
+  // further in — the two read as different layouts. The dialog itself is sized
+  // for the content instead (900px single-section, widened to 1080px when a
+  // nav column appears), so one gutter governs everything.
+
   &__nav {
     flex-shrink: 0;
-    width: 240px;
+    width: 232px;
+    position: sticky;
+    top: 0;
+    max-height: 60vh;
+    overflow: auto;
   }
+
+  &__nav-legend {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--md-on-surface-variant);
+  }
+
+}
+
+// The global theme caps every mtx-select form field at 320px; the worker picker
+// is a full-width field in this dialog.
+:host ::ng-deep .calendar-complete-event-modal__worker.mat-mdc-form-field.mat-mdc-form-field-type-mtx-select {
+  max-width: none;
 }

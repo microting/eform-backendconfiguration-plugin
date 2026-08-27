@@ -91,7 +91,6 @@
 
       <ng-container *ngSwitchCase="'month'">
         <app-calendar-month-view
-          *ngIf="isAdmin"
           [monthDate]="currentDate"
           [tasksByDate]="monthTasksByDate"
           (weekClicked)="onMonthWeekClicked($event)"

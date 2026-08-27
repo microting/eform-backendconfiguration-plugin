@@ -14,16 +14,19 @@ import { BackendConfigurationAdhocPage } from '../BackendConfigurationAdhoc.page
  * the "Ny opgave" drawer), then filter/search/column-picker assertions
  * against that seeded pair.
  *
- * Runs as `admin@admin.com` throughout (`LoginPage.login()` default). The
- * dashboard's `adhoc-tasks` route is `PermissionGuard`-gated on
- * `adhoc_enable` (`backend-configuration-pn.routing.ts`); this suite relies
- * on the same convention every other `PermissionGuard`-gated route in this
- * plugin already relies on across the existing shard suite (`properties`,
- * `task-management`, etc. - none of which grant per-group permissions for
- * the admin user before navigating) - admin sessions carry every known
- * claim as `'True'` without a separate grant step. If that assumption ever
- * changes, this suite's very first navigation (`goToAdhoc()`) is the single
- * point of failure, not any individual assertion below.
+ * Runs as `admin@admin.com` throughout (`LoginPage.login()` default), but
+ * NOT because the route requires it: since spec
+ * `2026-08-24-adhoc-tasks-unrestricted-access-design.md` the dashboard's
+ * `adhoc-tasks` route is plain `canActivate: [AuthGuard]`
+ * (`backend-configuration-pn.routing.ts`) - the old `PermissionGuard` +
+ * `data.requiredPermission: 'adhoc_enable'` gate is gone, and
+ * `AdhocController` grants every web caller full access, so any user of
+ * this plugin reaches the page and sees every task customer-wide. The only
+ * requirement left is the parent route's
+ * `backend_configuration_plugin_access`, which the admin session carries.
+ * The non-admin half of that behaviour is covered by
+ * `z/adhoc-nonadmin-access.spec.ts`; this suite stays admin-only simply
+ * because it seeds its own data.
  */
 const BASE_URL = 'http://localhost:4200';
 const rand = generateRandmString(8).toLowerCase();

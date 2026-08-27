@@ -40,6 +40,13 @@ using eFormCore;
 [TestFixture]
 public class BackendConfigurationCompliancesServiceStatsTest : TestBaseSetup
 {
+    // Opted out of the fixture-scoped schema replay: assertions are global
+    // aggregates. Also every test seeds its own "Miljøtilsyn" PlanningTag, and
+    // Stats() picks one via .Where(x => x.Name == "Miljøtilsyn").FirstAsync()
+    // (BackendConfigurationCompliancesService.cs:615) - filtered by name but not
+    // scoped per test, so accumulated tags would make later tests read the first.
+    protected override bool ResetDatabasePerTest => true;
+
     [Test]
     public async Task Stats_WithNoData_ReturnsZeroValues()
     {

@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { readFileSync } from 'fs';
 
 /**
  * Page object for the admin-only Task list page
@@ -18,16 +19,20 @@ import { Page, Locator } from '@playwright/test';
  *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
  *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
  *     own paginator — always use `#taskListShowAllToggle` by id, never text.
- *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 8
+ *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 9
  *     options across 3 optgroups (`.ng-optgroup`), matching the mockup
  *     (opgaveliste.html #opgavelisteFilterHandling): "Medarbejdere"/Employees
  *     (assign/reassign/addWorker), "Opgaver"/Tasks (changeEform/addTags/
- *     removeTags/copy), "Slet"/Delete (delete). assign/reassign/addWorker/copy
+ *     removeTags/setCompliance/copy), "Slet"/Delete (delete).
+ *     assign/reassign/addWorker/copy
  *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
  *     they are never removed from the list, only grayed out.
+ *   - `#taskListManageTagsBtn` — opens the SHARED tag-management dialogs
+ *     (create / rename / delete / bulk-create). See the "Tag management"
+ *     helper block below for the full id map and the two-reload contract.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
- *     (primary action), `#batchModalCancel` (all five modals — closes with no
+ *     (primary action), `#batchModalCancel` (all six modals — closes with no
  *     result, so selection/grid stay untouched) and — only the two-phase
  *     eForm-change modal — `#batchModalConfirm` (second step, after
  *     `#batchModalSubmit` flips the modal into a confirmation state).
@@ -66,26 +71,59 @@ export class TaskListPage {
 
   // ----- Filters ---------------------------------------------------------------
 
+  /**
+   * Selects ONE property in `#taskListPropertyFilter` and waits for BOTH of
+   * the independent async loads the change kicks off.
+   *
+   * 1. `calendar/tasks/index` — toggling a property option (ON or OFF) fires
+   *    onFiltersChanged -> loadTasks(), an async tasks/index round-trip.
+   *    Until the response lands, the PREVIOUS grid render (and any row
+   *    selection) stays visible; on arrival mtx-grid rebinds [data] and
+   *    loadTasks rebuilds `selection` EMPTY. A caller that clicks a row
+   *    checkbox right after this method could otherwise race that rebind —
+   *    the click lands on the stale render and the selection is wiped moments
+   *    later, leaving the batch dropdown disabled (observed in CI as shard-y
+   *    DG2's 120s timeout).
+   *
+   * 2. `calendar/boards/{propertyId}` — a SEPARATE, un-awaited subscription
+   *    fired from `onPropertyChanged` (task-list-page.component.ts, which
+   *    first resets `boards = []`, then calls `loadBoards`). This one is
+   *    load-bearing for the EDIT MODAL, not for the grid: the page passes its
+   *    `boards` array into MAT_DIALOG_DATA **at open time**, the modal's board
+   *    row is `*ngIf="filteredBoards.length > 0"`, and
+   *    `TaskCreateEditModalComponent.onSave()` returns early — toasting
+   *    "Select a calendar" but NOT closing the dialog — when `boardControl`
+   *    is null. So a spec that opens the edit modal before the boards
+   *    response lands gets a modal with no `#calendarEventBoard` row whose
+   *    Save button is a silent no-op, surfacing only as an opaque 30s
+   *    "waiting for mat-dialog-container to be hidden" timeout inside
+   *    `saveEditModal()`. Awaiting the boards response here closes the race
+   *    for every current AND future caller.
+   *
+   *    NB: this race was NOT what failed CI shard-h CI2 on PR #1132, despite
+   *    presenting with the same symptom. That was the `folderId: null`
+   *    product defect documented on `saveEditModal()` below — the board row
+   *    was present and correctly populated in the failure snapshot. The wait
+   *    is kept because the race above is real, just latent.
+   *
+   * Both waits are individually `.catch(() => null)`-guarded so a missing or
+   * duplicated call can never hang the helper for longer than its own
+   * timeout.
+   */
   async selectProperty(name: string): Promise<void> {
-    // Toggling a property option (ON or OFF) fires onFiltersChanged ->
-    // loadTasks(), an async tasks/index round-trip. Until the response
-    // lands, the PREVIOUS grid render (and any row selection) stays
-    // visible; on arrival mtx-grid rebinds [data] and loadTasks rebuilds
-    // `selection` EMPTY. A caller that clicks a row checkbox right after
-    // this method could otherwise race that rebind — the click lands on the
-    // stale render and the selection is wiped moments later, leaving the
-    // batch dropdown disabled (observed in CI as shard-y DG2's 120s
-    // timeout). Await the reload response before returning so the grid the
-    // caller sees is the fresh one.
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 15000 },
+    ).catch(() => null);
+    const boardsLoaded = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/boards/'),
       { timeout: 15000 },
     ).catch(() => null);
     await this.page.locator('#taskListPropertyFilter').click();
     await this.page.locator('.ng-dropdown-panel .ng-option', { hasText: name }).first().click();
     // Multi-select stays open after picking an option — close it explicitly.
     await this.page.keyboard.press('Escape');
-    await reload;
+    await Promise.all([reload, boardsLoaded]);
     await this.page.waitForTimeout(800);
   }
 
@@ -98,7 +136,12 @@ export class TaskListPage {
    * worlds (filter kept, selection wiped).
    */
   async clearPropertyFilter(): Promise<void> {
-    // Same reload-await rationale as selectProperty above.
+    // Same reload-await rationale as selectProperty above. NOTE: deliberately
+    // NO boards wait here — clearing takes `filters.propertyIds.length` away
+    // from exactly 1, so TaskListFiltersComponent emits `propertyChanged(null)`
+    // and `onPropertyChanged` merely empties `boards` WITHOUT issuing a
+    // `calendar/boards/{id}` request. Waiting for one would just burn the full
+    // timeout on every call.
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
       { timeout: 15000 },
@@ -204,6 +247,16 @@ export class TaskListPage {
     return this.page.locator('#batchModalTaskList');
   }
 
+  /**
+   * The shared `#batchModalSubmit` primary button, for enabled/disabled
+   * assertions. Five of the six batch modals gate it behind their own
+   * `[disabled]="!valid"`, so specs need to read its state and not only click
+   * it.
+   */
+  batchModalSubmitButton(): Locator {
+    return this.page.locator('#batchModalSubmit');
+  }
+
   async submitModal(): Promise<void> {
     await this.page.locator('#batchModalSubmit').click();
     await this.page.waitForTimeout(500);
@@ -215,7 +268,7 @@ export class TaskListPage {
   }
 
   /**
-   * Clicks the shared `#batchModalCancel` button present on all five batch
+   * Clicks the shared `#batchModalCancel` button present on all six batch
    * modals (`btn-cancel` in every modal template; the id was added
    * specifically so cancel-flow specs don't have to fall back to a
    * class/text selector). Calls `hide()` -> `dialogRef.close()` with no
@@ -247,6 +300,89 @@ export class TaskListPage {
       }
     }
     return disabled;
+  }
+
+  /**
+   * Labels of the batch-action options belonging to the optgroup whose header
+   * matches `groupLabel`, in DOM order.
+   *
+   * ng-select renders group headers and options as FLAT SIBLINGS inside the
+   * panel — one `<div>` per item, declared with a static `class="ng-option"`
+   * plus `[class.ng-optgroup]="item.children"` and
+   * `[class.ng-option]="!item.children"` (verified in
+   * `node_modules/@ng-select/ng-select` 20.7.0). The two rendered classes are
+   * mutually exclusive because Angular's class BINDING takes precedence over
+   * the static attribute, so on a group header `[class.ng-option]="false"`
+   * strips the statically declared `ng-option` again. There is
+   * no DOM nesting to scope by, so group membership can only be read as
+   * "options following this header, up to the next header" — which is what
+   * this does. Needed because a spec that only asserts an option EXISTS can't
+   * tell whether it landed in the intended optgroup.
+   */
+  async batchActionLabelsInGroup(groupLabel: string | RegExp): Promise<string[]> {
+    const entries = this.page.locator('.ng-dropdown-panel .ng-optgroup, .ng-dropdown-panel .ng-option');
+    const total = await entries.count();
+    const labels: string[] = [];
+    let inGroup = false;
+    for (let i = 0; i < total; i++) {
+      const entry = entries.nth(i);
+      const cls = (await entry.getAttribute('class')) ?? '';
+      const text = ((await entry.innerText()) ?? '').trim();
+      if (cls.includes('ng-optgroup')) {
+        inGroup = typeof groupLabel === 'string' ? text === groupLabel : groupLabel.test(text);
+        continue;
+      }
+      if (inGroup) {
+        labels.push(text);
+      }
+    }
+    return labels;
+  }
+
+  /**
+   * Native `<input type="radio">` behind one of the batch-compliance modal's
+   * two `mat-radio-button`s, for `toBeChecked()` assertions.
+   *
+   * Unlike `mat-slide-toggle` — which in Angular Material 20 is a bare
+   * `<button role="switch" aria-checked>` with NO input (see
+   * `h/task-list-compliance-inactive.spec.ts` CI2) — `mat-radio-button` DOES
+   * still render one: `radio.mjs`'s template has
+   * `<input #input class="mdc-radio__native-control" type="radio" ...>`, and
+   * the id we set lands on the HOST (`'[attr.id]': 'id'`) while the input gets
+   * `id + '-input'`. So the input is addressable as a descendant of `#id`.
+   */
+  complianceRadioInput(complianceEnabled: boolean): Locator {
+    const id = complianceEnabled ? 'batchComplianceOn' : 'batchComplianceOff';
+    return this.page.locator(`#${id} input[type="radio"]`);
+  }
+
+  /**
+   * Picks one of the batch-compliance modal's radio options and verifies it
+   * took.
+   *
+   * The click targets the option's `<label class="mdc-label">`, NOT the
+   * `mat-radio-button` host and not the native input. Material's radio
+   * template (`radio.mjs`) is
+   * `<div mat-internal-form-field><div class="mdc-radio">…<input
+   * class="mdc-radio__native-control" [id]="inputId">…</div><label
+   * class="mdc-label" [for]="inputId"><ng-content></ng-content></label></div>`
+   * — exactly one label per button, carrying the visible text and wired to the
+   * input by `for`, so clicking it toggles the radio the same way a real user
+   * does. The input itself is unclickable (`opacity: 0`, covered by the
+   * circle), and the HOST is the wrong target here: inside the modal's
+   * `.d-flex.flex-column` group the host is blockified to the full dialog
+   * width while the label only spans its own text, so Playwright's
+   * centre-of-element click can land in empty space to the right of the text
+   * as soon as a translation is short or the task-summary list makes the
+   * dialog wide.
+   */
+  async pickComplianceOption(complianceEnabled: boolean): Promise<void> {
+    const id = complianceEnabled ? 'batchComplianceOn' : 'batchComplianceOff';
+    await this.page.locator(`#${id} label.mdc-label`).click();
+    await this.page.waitForTimeout(300);
+    if (!(await this.complianceRadioInput(complianceEnabled).isChecked().catch(() => false))) {
+      throw new Error(`#${id} did not become checked after clicking it`);
+    }
   }
 
   /**
@@ -398,7 +534,281 @@ export class TaskListPage {
     await this.page.waitForTimeout(300);
   }
 
+  // ----- Task edit modal (shared with the calendar) ---------------------------------
+
+  /**
+   * Opens the per-task edit modal by clicking the grid row's title link
+   * (`titleTpl` renders `a.ctl-link`, wired to `onEditTask`). The task list
+   * reuses the calendar's `TaskCreateEditModalComponent`, so all
+   * `#calendarEvent*` ids from `calendar-ui-enhancements.page.ts` apply here
+   * too.
+   *
+   * Deliberately does NOT assert the board row (`#calendarEventBoard`) is
+   * present: opening is also legitimate for read-only/cancel flows, and a
+   * property that genuinely owns no calendars renders no board row at all —
+   * an assertion here would encode "every open must be saveable", which is
+   * not intrinsic to opening. The board dependency is enforced where it
+   * actually bites, in `saveEditModal()` below, and pre-empted upstream by
+   * `selectProperty()`'s boards wait.
+   */
+  async openEditModal(taskName: string): Promise<void> {
+    await this.row(taskName).locator('a.ctl-link').click();
+    await this.page.locator('mat-dialog-container').waitFor({ state: 'visible', timeout: 20000 });
+    await this.page.waitForTimeout(800);
+  }
+
+  /**
+   * Saves the task edit modal and waits for the grid to be repopulated.
+   * `onEditTask`'s `afterClosed()` subscriber calls `loadTasks()` when the
+   * modal closes with a result, so the tasks/index round-trip — not the
+   * dialog detaching — is what makes the new values visible in the grid.
+   *
+   * The dialog closes only inside `doSave()`'s success handler (after the
+   * update round-trip), so a slow save legitimately keeps it open for a
+   * while — hence the full 30s budget is preserved for that case. But there
+   * is one failure mode that is INSTANT and permanent: with no
+   * `#calendarEventBoard` row the modal's `boardControl` is null,
+   * `onSave()` toasts "Select a calendar" and returns WITHOUT closing, so no
+   * amount of waiting helps. Detect exactly that (short grace, then probe for
+   * the board row) and fail immediately with the cause spelled out, instead
+   * of burning 30s on an opaque "waiting for mat-dialog-container to be
+   * hidden" TimeoutError like CI shard-h CI2 did on PR #1132. The happy path
+   * is untouched: the first `waitFor` resolves the moment the dialog detaches.
+   *
+   * CURRENTLY UNUSABLE — and it is the product, not this helper. Every save of
+   * the edit modal *as opened from the task list* fails server-side:
+   * `TaskListPageComponent.onEditTask` passes `folderId: null`
+   * (`onEditTask` in task-list-page.component.ts), the modal forwards it verbatim
+   * (`onSave` in task-create-edit-modal.component.ts) and
+   * `BackendConfigurationTaskWizardService.UpdateTask` does
+   * `areaRulePlanning.FolderId = (int)updateModel.FolderId` (:803), throwing
+   * "Nullable object must have a value". The PUT answers 200 with
+   * `{success:false, message:"ErrorWhileUpdatingCalendarTask"}` and `doSave()`
+   * only closes on success. The PUT probe below turns that into an immediate,
+   * quotable error instead of a 30s opaque hidden-state timeout (which is
+   * exactly how it presented on CI shard h, PR #1132). Until the product bug
+   * is fixed, persist edits through the calendar page's copy of the modal,
+   * which is handed a real folder id.
+   */
+  async saveEditModal(): Promise<void> {
+    const reload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 30000 },
+    ).catch(() => null);
+    // Captured up front so the listener cannot miss a fast round-trip. Read
+    // only on the not-closed branch, and `.catch`-guarded so a save that never
+    // issues a PUT (the board guard below) can't hang the helper.
+    const updatePut = this.page.waitForResponse(
+      (r) => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 },
+    ).catch(() => null);
+    const dialog = this.page.locator('mat-dialog-container');
+    await this.page.locator('#calendarEventSaveBtn').click();
+    const closedFast = await dialog.waitFor({ state: 'hidden', timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!closedFast) {
+      const failed = await Promise.race([
+        updatePut.then(async (r) => {
+          if (!r) return null;
+          const body = await r.json().catch(() => null);
+          return body && body.success === false ? body : null;
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+      ]);
+      if (failed) {
+        throw new Error(
+          'Save did not close the task edit modal because PUT '
+          + '/api/backend-configuration-pn/calendar/tasks answered '
+          + `success=false: "${failed.message}". TaskCreateEditModalComponent`
+          + ".doSave() only calls close() on success, so the dialog stays open "
+          + 'forever. Check the eFormAPI log for the underlying exception — a '
+          + '`folderId: null` payload (which the task list always sends) throws '
+          + '"Nullable object must have a value" in '
+          + 'BackendConfigurationTaskWizardService.UpdateTask:803.');
+      }
+      if ((await this.page.locator('#calendarEventBoard').count()) === 0) {
+        throw new Error(
+          'Save did not close the task edit modal and the modal has no '
+          + '#calendarEventBoard row: TaskCreateEditModalComponent.onSave() hit its '
+          + '`boardId == null` guard, toasted "Select a calendar" and returned without '
+          + 'closing the dialog. The board row is `*ngIf="filteredBoards.length > 0"` and '
+          + '`boards` is handed to MAT_DIALOG_DATA at open time, so the modal was almost '
+          + 'certainly opened before GET /api/backend-configuration-pn/calendar/boards/'
+          + '{propertyId} landed — select the property via TaskListPage.selectProperty(), '
+          + 'which awaits that response, and never open the edit modal with the property '
+          + 'filter empty (no filter => no boards => unsaveable modal).');
+      }
+      // Board row present: an ordinary slow/failed save. Keep the original
+      // budget so the caller still gets the familiar hidden-state timeout.
+      await dialog.waitFor({ state: 'hidden', timeout: 30000 });
+    }
+    await reload;
+    await this.page.waitForTimeout(800);
+  }
+
+  // ----- Tag management (#taskListManageTagsBtn) -------------------------------------
+
+  /**
+   * The tag-management dialogs are the SHARED ones from
+   * `common/modules/eform-shared-tags` (the same ones the task wizard and the
+   * items-planning plannings page open), so their ids are fixed and global:
+   *   - list:        `#newTagBtn` (single create), `#newTagsBtn` (bulk create),
+   *                  `#tagsModalCloseBtn`, one `#tagName` + `#editTagBtn` +
+   *                  `#deleteTagBtn` per row (ids REPEAT per row — always
+   *                  address them through `tagRow()`, never on their own).
+   *   - create:      `#newTagName`, `#newTagSaveBtn`, `#newTagSaveCancelBtn`
+   *   - bulk create: `#newTagsName` (textarea, ONE NAME PER LINE),
+   *                  `#newTagsSaveBtn`, `#newTagsSaveCancelBtn`
+   *   - rename:      `#tagNameEdit`, `#tagEditSaveBtn`, `#tagEditSaveCancelBtn`
+   *   - delete:      `#tagDeleteSaveBtn`, `#tagDeleteSaveCancelBtn`
+   *
+   * Locked tags (`isLocked`) render NEITHER `#editTagBtn` nor `#deleteTagBtn`,
+   * so only ever rename/delete a tag the spec created itself.
+   */
+
+  /**
+   * Every successful tag mutation runs BOTH `loadTags()` (GET
+   * `items-planning-pn/tags` — refills the list dialog, the filter bar and the
+   * client-side "Report headline" column) and `loadTasks()` (POST
+   * `calendar/tasks/index` — the ONLY thing that refreshes the grid's **Tags**
+   * column, whose values are tag NAMES resolved server-side).
+   * `TaskListPageComponent.onUpdateTags()` fires them in that order; wait for
+   * both or a rename/delete assertion against the grid races the reload.
+   *
+   * Both waits are `.catch(() => null)`-guarded, in the same spirit as
+   * `selectProperty()`, so a mutation that legitimately issues only one of
+   * them can never hang a caller for longer than its own timeout.
+   */
+  private tagMutationReloads(): Promise<unknown> {
+    const tagsReload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/items-planning-pn/tags') && r.request().method() === 'GET',
+      { timeout: 20000 },
+    ).catch(() => null);
+    const tasksReload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 20000 },
+    ).catch(() => null);
+    return Promise.all([tagsReload, tasksReload]);
+  }
+
+  manageTagsButton(): Locator {
+    return this.page.locator('#taskListManageTagsBtn');
+  }
+
+  async openManageTagsDialog(): Promise<void> {
+    await this.manageTagsButton().click();
+    await this.page.locator('#tagsModalCloseBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  async closeManageTagsDialog(): Promise<void> {
+    await this.page.locator('#tagsModalCloseBtn').click();
+    await this.page.locator('mat-dialog-container').waitFor({ state: 'hidden', timeout: 10000 });
+  }
+
+  /**
+   * One row of the tag LIST dialog, matched on its exact `#tagName` text.
+   * Scoped to `mat-dialog-container` so it can never collide with the task
+   * grid's own `.mat-mdc-row`s underneath the overlay.
+   */
+  tagRow(name: string): Locator {
+    return this.page.locator(`mat-dialog-container .mat-mdc-row:has(#tagName:text-is("${name}"))`);
+  }
+
+  async tagNames(): Promise<string[]> {
+    return (await this.page.locator('mat-dialog-container #tagName').allInnerTexts())
+      .map((t) => t.trim());
+  }
+
+  /** Creates ONE tag through `#newTagBtn`; the list dialog stays open. */
+  async createTag(name: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.page.locator('#newTagBtn').click();
+    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagName').fill(name);
+    await this.page.locator('#newTagSaveBtn').click();
+    await this.page.locator('#newTagName').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  bulkCreateSubmitButton(): Locator {
+    return this.page.locator('#newTagsSaveBtn');
+  }
+
+  /** Opens the bulk-create dialog and types `rawText` verbatim into its textarea. */
+  async openBulkCreateTags(rawText: string): Promise<void> {
+    await this.page.locator('#newTagsBtn').click();
+    await this.page.locator('#newTagsName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagsName').fill(rawText);
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Submits the bulk-create dialog. Deliberately separate from
+   * `openBulkCreateTags` so a spec can assert the Save button's disabled state
+   * for a blank/whitespace-only textarea in between — the guard that keeps a
+   * trailing newline from posting a `""` name (`PlanningTag.Name` is
+   * `[Required]`, and the bulk endpoint wraps its whole create loop in ONE
+   * try/catch, so a late invalid name commits the earlier ones and still
+   * answers `success = false`).
+   */
+  async submitBulkCreateTags(): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.bulkCreateSubmitButton().click();
+    await this.page.locator('#newTagsName').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  /** Convenience: open + submit in one go (one name per line). */
+  async bulkCreateTags(rawText: string): Promise<void> {
+    await this.openBulkCreateTags(rawText);
+    await this.submitBulkCreateTags();
+  }
+
+  async renameTag(from: string, to: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.tagRow(from).locator('#editTagBtn').click();
+    await this.page.locator('#tagNameEdit').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagNameEdit').fill(to);
+    await this.page.locator('#tagEditSaveBtn').click();
+    await this.page.locator('#tagNameEdit').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  async deleteTag(name: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.tagRow(name).locator('#deleteTagBtn').click();
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagDeleteSaveBtn').click();
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
   // ----- CSV export -----------------------------------------------------------------
+
+  /**
+   * Triggers the CSV export and returns the downloaded file's lines with the
+   * UTF-8 BOM stripped. The export is `;`-separated with RFC-4180-style
+   * quoting; callers that only need the trailing Active/Compliance columns
+   * can safely `split(';').slice(-2)` because those two are always plain
+   * `Ja`/`Nej`/`--` tokens and nothing follows them on the line.
+   */
+  async exportCsvAndReadLines(): Promise<string[]> {
+    const downloadPromise = this.page.waitForEvent('download');
+    await this.page.locator('#taskListCsvExportBtn').click();
+    const download = await downloadPromise;
+    const filePath = await download.path();
+    if (!filePath) {
+      throw new Error('CSV export produced no downloadable file');
+    }
+    return readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '').split('\n');
+  }
 
   async exportCsvAndGetFilename(): Promise<string> {
     const downloadPromise = this.page.waitForEvent('download');

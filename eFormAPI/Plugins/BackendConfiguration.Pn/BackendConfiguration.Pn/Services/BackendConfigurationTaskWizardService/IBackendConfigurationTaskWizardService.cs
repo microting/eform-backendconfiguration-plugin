@@ -14,6 +14,23 @@ public interface IBackendConfigurationTaskWizardService
     Task<OperationResult> CreateTask(TaskWizardCreateModel createModel);
     Task<OperationResult> DeactivateList(List<int> ids);
     Task<OperationResult> UpdateTask(TaskWizardCreateModel updateModel);
+
+    /// <summary>
+    /// Applies ONLY an eForm change to a whole task/event series: rewrites
+    /// <c>AreaRule.EformId</c>/<c>EformName</c> and
+    /// <c>Planning.RelatedEFormId</c>/<c>RelatedEFormName</c>, then repairs
+    /// every deployed-but-not-completed occurrence through
+    /// <c>IEventDeployService.RepairEformForOpenOccurrencesAsync</c>.
+    ///
+    /// Used by the calendar's scope="this" edit, which otherwise writes only a
+    /// per-occurrence <c>CalendarOccurrenceException</c>: the eForm is a
+    /// series-level property, so a "this occurrence" edit that changes it must
+    /// still apply the change to the series (the frontend confirms this with
+    /// the user first). No-op when the series already uses
+    /// <paramref name="eformId"/>.
+    /// </summary>
+    Task<OperationResult> ApplyEformChangeToSeries(int areaRulePlanningId, int eformId);
+
     Task<OperationResult> DeleteTask(int id);
 
     /// <summary>

@@ -74,6 +74,25 @@ public static class BackendConfigurationPermissionsSeedData
         },
         new PluginPermission
         {
+            // RETAINED BUT UNENFORCED (2026-08-24): ad-hoc is open to every
+            // authenticated user of the plugin, so nothing reads this claim any
+            // more - the route guard was dropped and no [Authorize] policy or
+            // controller references it. The entry stays because removing it
+            // properly means deleting the PluginPermissions /
+            // PluginGroupPermissions rows through a base-repo migration, which
+            // is a separate change. Until then the admin-settings toggle for it
+            // has no effect.
+            //
+            // Verified 2026-08-24: only four claims in this plugin are actually
+            // enforced anywhere. backend_configuration_plugin_access (parent
+            // route PermissionGuard, plus AdhocController's [Authorize] policy),
+            // properties_get, task_management_enable (route PermissionGuard and
+            // a checkClaim in property-worker-create-edit-modal) and
+            // document_management_enable. properties_create, property_edit,
+            // chemical_management_enable and time_registration_enable are seeded
+            // here but read by nothing, and the `files` route's PermissionGuard
+            // is commented out. So adhoc_enable is NOT the only unenforced claim
+            // - but that is drift to clean up, not a licence to add more.
             PermissionName = "Enable adhoc",
             // TODO upstream to Microting.EformBackendConfigurationBase.Infrastructure.Const.
             // BackendConfigurationClaims.EnableAdhoc once a base-repo release train is open.

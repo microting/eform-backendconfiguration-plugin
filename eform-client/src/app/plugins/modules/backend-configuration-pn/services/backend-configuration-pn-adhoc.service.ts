@@ -15,7 +15,7 @@ import {
   AdhocTagModel,
   AdhocTaskCreateModel,
   AdhocTaskFiltersModel,
-  AdhocTaskHistoryEventModel,
+  AdhocTaskHistoryRowModel,
   AdhocTaskIndexResultModel,
   AdhocTaskModel,
   AdhocTaskPhotoModel,
@@ -101,7 +101,7 @@ export class BackendConfigurationPnAdhocService {
   // History
   // -----------------------------------------------------------------
 
-  getHistory(model: AdhocHistoryFiltersModel): Observable<OperationDataResult<Paged<AdhocTaskHistoryEventModel>>> {
+  getHistory(model: AdhocHistoryFiltersModel): Observable<OperationDataResult<Paged<AdhocTaskHistoryRowModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnAdhocMethods.HistoryIndex, model);
   }
 

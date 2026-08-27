@@ -9,15 +9,21 @@
     </button>
   </div>
 
-  <div class="adhoc-drawer__intro d-flex align-items-center justify-content-between" *ngIf="!isCreate">
-    <div>
-      <span>{{ workerName(task?.createdByWorkerId) }}</span>
-      ·
-      <span>{{ propertyName(task?.propertyId) }}</span>
-      ·
-      <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
-    </div>
-    <button type="button" mat-stroked-button id="adhoc-drawer-complete" *ngIf="canComplete" (click)="onCompleteTask()">
+  <!--
+    Intro text is flush with the title above (both at the drawer's 16px
+    left edge - the title is the task text, #1107), and the complete button
+    sits on its own row, right-aligned to the content gutter the fields
+    end at (#1101 / #1102).
+  -->
+  <div class="adhoc-drawer__intro" *ngIf="!isCreate">
+    <span>{{ 'Created by' | translate }}: {{ workerName(task?.createdByWorkerId) }}</span>
+    ·
+    <span>{{ propertyName(task?.propertyId) }}</span>
+    ·
+    <span>{{ task?.createdAt | date: 'dd.MM.yyyy' }}</span>
+  </div>
+  <div class="adhoc-drawer__complete-row" *ngIf="!isCreate && canComplete">
+    <button type="button" mat-stroked-button id="adhoc-drawer-complete" (click)="onCompleteTask()">
       <mat-icon fontSet="material-symbols-outlined">task_alt</mat-icon>
       {{ 'Complete task' | translate }}
     </button>
@@ -87,11 +93,13 @@
           </div>
         </div>
 
-        <!-- Tags row -->
-        <div class="gcal-row">
+        <!-- Tags row (#1086: hidden entirely for an untagged task in view
+             mode - no heading, no empty chip box; always shown when editable
+             so the picker stays reachable) -->
+        <div class="gcal-row" *ngIf="showTagsSection">
           <mat-icon class="gcal-icon gcal-icon--top">label</mat-icon>
           <div class="gcal-row-content adhoc-drawer__tags" id="ny-sektion-tags">
-            <div class="adhoc-drawer__section-title">{{ 'Selected tags' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Tags' | translate }}</div>
             <div class="d-flex flex-wrap gap-4" id="ny-tags-valgt-wrap">
               <mat-chip
                 *ngFor="let tagId of tagIds"
@@ -119,18 +127,40 @@
         <div class="gcal-row">
           <mat-icon class="gcal-icon gcal-icon--top">image</mat-icon>
           <div class="gcal-row-content adhoc-drawer__photos" id="ny-sektion-komm-billeder">
-            <div class="adhoc-drawer__section-title">{{ 'Content' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Pictures' | translate }}</div>
             <div class="d-flex flex-wrap gap-8">
-              <div class="photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
+              <!-- #1099 delete-X: design-spec thumbnail Variant C (28px dark
+                   scrim circle, always visible, 44x44 effective target - see
+                   the .photo-delete-btn rules). The X is an inline SVG, not a
+                   font glyph, per the spec. #1100: clicks route through the
+                   "Slet billede?" confirm modal instead of deleting directly. -->
+              <div class="photo-thumb" data-e2e="adhoc-photo-thumb" *ngFor="let photo of visiblePhotos" (click)="onViewPhotos(photo)">
                 <img [src]="photoUrl(photo) | authImage | async" alt="">
-                <button type="button" mat-icon-button *ngIf="!readonly" (click)="removeExistingPhoto(photo); $event.stopPropagation()">
-                  <mat-icon>close</mat-icon>
+                <button
+                  type="button"
+                  class="photo-delete-btn"
+                  data-e2e="adhoc-photo-delete-btn"
+                  *ngIf="!readonly"
+                  [attr.aria-label]="'Delete photo' | translate"
+                  (click)="onDeleteExistingPhoto(photo); $event.stopPropagation()"
+                >
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
                 </button>
               </div>
-              <div class="photo-thumb photo-thumb--queued" *ngFor="let preview of queuedPhotoPreviews; let i = index">
+              <div class="photo-thumb photo-thumb--queued" data-e2e="adhoc-photo-thumb-queued" *ngFor="let preview of queuedPhotoPreviews; let i = index">
                 <img [src]="preview" alt="">
-                <button type="button" mat-icon-button (click)="removeQueuedPhoto(i)">
-                  <mat-icon>close</mat-icon>
+                <button
+                  type="button"
+                  class="photo-delete-btn"
+                  data-e2e="adhoc-photo-delete-btn"
+                  [attr.aria-label]="'Delete photo' | translate"
+                  (click)="onDeleteQueuedPhoto(i)"
+                >
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
                 </button>
               </div>
               <label class="photo-upload-btn" *ngIf="!readonly">
@@ -161,7 +191,7 @@
         <div class="gcal-row">
           <mat-icon class="gcal-icon gcal-icon--top">people</mat-icon>
           <div class="gcal-row-content">
-            <div class="adhoc-drawer__section-title">{{ 'Assigned to' | translate }}</div>
+            <div class="adhoc-drawer__section-title">{{ 'Task assigned to' | translate }}</div>
             <div class="btn-group d-flex gap-8" role="group">
               <button
                 type="button"
@@ -181,14 +211,17 @@
               </button>
             </div>
 
-            <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0">
+            <!-- #1088: person chips + checkbox list stay visible/selectable
+                 regardless of executionRule - persons and "Everyone" coexist
+                 (mobile parity). -->
+            <div class="d-flex flex-wrap gap-4">
               <mat-chip
                 *ngFor="let workerId of assignedWorkerIds"
                 [removable]="!readonly"
                 (removed)="onToggleWorker(workerId)"
               >{{ workerName(workerId) }}</mat-chip>
             </div>
-            <div class="d-flex flex-wrap gap-4" *ngIf="executionRule === 0 && !readonly">
+            <div class="d-flex flex-wrap gap-4" *ngIf="!readonly">
               <mat-checkbox
                 *ngFor="let worker of workers"
                 [checked]="isWorkerAssigned(worker.workerId)"

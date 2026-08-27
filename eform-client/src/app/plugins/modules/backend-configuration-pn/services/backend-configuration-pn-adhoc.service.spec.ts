@@ -10,15 +10,20 @@ describe('BackendConfigurationPnAdhocService', () => {
   let apiBaseServiceSpy: any;
 
   beforeEach(() => {
-    apiBaseServiceSpy = jasmine.createSpyObj('ApiBaseService', [
-      'get', 'post', 'put', 'delete', 'postFormData', 'getBlobData',
-    ]);
-    apiBaseServiceSpy.get.and.returnValue(of({success: true, model: []}));
-    apiBaseServiceSpy.post.and.returnValue(of({success: true, model: {}}));
-    apiBaseServiceSpy.put.and.returnValue(of({success: true, model: {}}));
-    apiBaseServiceSpy.delete.and.returnValue(of({success: true}));
-    apiBaseServiceSpy.postFormData.and.returnValue(of({success: true, model: {}}));
-    apiBaseServiceSpy.getBlobData.and.returnValue(of(new Blob([])));
+    apiBaseServiceSpy = {
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      postFormData: jest.fn(),
+      getBlobData: jest.fn(),
+    };
+    apiBaseServiceSpy.get.mockReturnValue(of({success: true, model: []}));
+    apiBaseServiceSpy.post.mockReturnValue(of({success: true, model: {}}));
+    apiBaseServiceSpy.put.mockReturnValue(of({success: true, model: {}}));
+    apiBaseServiceSpy.delete.mockReturnValue(of({success: true}));
+    apiBaseServiceSpy.postFormData.mockReturnValue(of({success: true, model: {}}));
+    apiBaseServiceSpy.getBlobData.mockReturnValue(of(new Blob([])));
     service = new BackendConfigurationPnAdhocService(apiBaseServiceSpy);
   });
 
@@ -243,7 +248,7 @@ describe('BackendConfigurationPnAdhocService', () => {
       service.uploadPhoto(9, file).subscribe();
 
       expect(apiBaseServiceSpy.postFormData).toHaveBeenCalledTimes(1);
-      const [url, body] = apiBaseServiceSpy.postFormData.calls.mostRecent().args;
+      const [url, body] = apiBaseServiceSpy.postFormData.mock.lastCall;
       expect(url).toBe(`${BackendConfigurationPnAdhocMethods.Tasks}9/photos`);
       expect(body).toEqual({file});
     });

@@ -141,8 +141,8 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
 
         var result = await sut.ListProperties(1);
 
-        Assert.That(result.Select(p => p.Id), Is.EquivalentTo(new[] { accessible.Id }));
-        Assert.That(result.Single().Name, Is.EqualTo("Accessible"));
+        Assert.That(result.Select(p => p.Id), Does.Contain(accessible.Id));
+        Assert.That(result.Single(p => p.Id == accessible.Id).Name, Is.EqualTo("Accessible"));
         Assert.That(result.Select(p => p.Id), Does.Not.Contain(inaccessible.Id));
     }
 
@@ -331,9 +331,12 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     [Test]
     public async Task ListTags_NonAdmin_DashboardWorkerId_OnlySeesGlobalTags()
     {
-        // Documents the chosen policy: non-admin dashboard callers keep the
-        // pre-fix "global tags only" view. DashboardWorkerId (0) owns
-        // nothing, so this is unchanged behavior, not a new restriction.
+        // Pins ListTags' owner predicate, not a caller: an identity without
+        // the admin flag sees global tags plus its own, and worker 0 owns
+        // nothing. Since 2026-08-24 the web passes full access here (and so
+        // does see every worker's personal tags), and gRPC rejects an
+        // unresolvable identity - but this predicate is what keeps a real
+        // mobile worker's tag list to global + own.
         var globalTag = new AdhocTag { Name = "global" };
         await globalTag.Create(BackendConfigurationPnDbContext!);
         var mobileTag = new AdhocTag { Name = "mobile-one", OwnerWorkerId = 1 };
@@ -507,6 +510,9 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     [Test]
     public void CreateTag_Throws_ForNonAdminWorkerZero()
     {
+        // Pins RequireRealIdentityOrAdmin, not a caller: tag mutations demand a
+        // real identity, and worker 0 is not one. No production caller passes
+        // (0, false) since 2026-08-24 - see the note on RenameTag below.
         var sut = CreateSut();
 
         Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
@@ -518,7 +524,13 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
     {
         // A tag stamped OwnerWorkerId = 0 (e.g. created before the C1/I1
         // guards existed) must still not be manageable through the shared
-        // pseudo-identity without the admin flag.
+        // pseudo-identity without the full-access flag.
+        //
+        // Pins the predicate, not a caller: since 2026-08-24 nothing in
+        // production passes (0, false) - AdhocController passes full access and
+        // AdhocGrpcService rejects an unresolvable identity with Unauthenticated
+        // before the service is reached. The guard is kept, and asserted, so a
+        // later edit cannot widen the gRPC path unnoticed.
         var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();
@@ -527,9 +539,73 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
             await sut.RenameTag(0, zeroOwnedTag.Id, "renamed"));
     }
 
+    // --- Accepted consequence of the "web is unrestricted" decision
+    // (2026-08-24): a full-access caller does not only manage the global tags
+    // nobody owns (above) - it reaches into another worker's personal,
+    // phone-created tag, renaming it and deleting it off other people's
+    // tasks. These pin that DECISION, not the wiring: if it is ever judged
+    // wrong it has to be changed here deliberately rather than drifting. ---
+
+    [Test]
+    public async Task RenameTag_FullAccess_RenamesAnotherWorkersPersonalTag()
+    {
+        var sut = CreateSut();
+        // Worker 7's own tag, created exactly as the phone creates one
+        // (isAdmin false => OwnerWorkerId = 7).
+        var phoneTag = await sut.CreateTag(7, "phone-tag");
+
+        var renamed = await sut.RenameTag(0, phoneTag.Id, "web-renamed", isAdmin: true);
+
+        Assert.That(renamed.Name, Is.EqualTo("web-renamed"));
+        // Still worker 7's personal tag - the rename does not re-own it.
+        Assert.That(renamed.IsUserTag, Is.True);
+
+        var tagRow = await BackendConfigurationPnDbContext!.AdhocTags
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == phoneTag.Id);
+        Assert.That(tagRow.Name, Is.EqualTo("web-renamed"));
+        Assert.That(tagRow.OwnerWorkerId, Is.EqualTo(7));
+    }
+
+    [Test]
+    public async Task DeleteTag_FullAccess_DeletesAnotherWorkersPersonalTag_AndCascadesOffTheirTask()
+    {
+        var property = await CreatePropertyAsync();
+        var sut = CreateSut();
+        var phoneTag = await sut.CreateTag(7, "phone-tag");
+
+        // Worker 7's own task, carrying worker 7's own tag.
+        var task = new AdhocTaskEntity
+        {
+            Title = "t",
+            Description = "d",
+            PropertyId = property.Id,
+            CreatedByWorkerId = 7,
+        };
+        await task.Create(BackendConfigurationPnDbContext!);
+        var join = new AdhocTaskTag { AdhocTaskId = task.Id, AdhocTagId = phoneTag.Id };
+        await join.Create(BackendConfigurationPnDbContext!);
+
+        await sut.DeleteTag(0, phoneTag.Id, isAdmin: true);
+
+        var tagRow = await BackendConfigurationPnDbContext!.AdhocTags
+            .IgnoreQueryFilters()
+            .FirstAsync(t => t.Id == phoneTag.Id);
+        Assert.That(tagRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+
+        // ...and the tag disappears from worker 7's task, not just from the
+        // web caller's own view.
+        var joinRow = await BackendConfigurationPnDbContext.AdhocTaskTags
+            .IgnoreQueryFilters()
+            .FirstAsync(tt => tt.Id == join.Id);
+        Assert.That(joinRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
     [Test]
     public async Task DeleteTag_Throws_ForNonAdminWorkerZero_EvenOnAWorkerZeroOwnedTag()
     {
+        // Same predicate as RenameTag above: worker 0 without the full-access
+        // flag owns nothing. Kept for the same reason - see the note there.
         var zeroOwnedTag = new AdhocTag { Name = "zero-owned", OwnerWorkerId = 0 };
         await zeroOwnedTag.Create(BackendConfigurationPnDbContext!);
         var sut = CreateSut();

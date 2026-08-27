@@ -255,7 +255,7 @@
       <div class="gcal-row-content">
         <div class="eform-preview-header">
           <span class="eform-preview-label" *ngIf="isLoadingTemplate">{{ 'Loading' | translate }}…</span>
-          <span class="eform-preview-label" *ngIf="!isLoadingTemplate && selectedTemplate">{{ selectedTemplate.label }}</span>
+          <span class="eform-preview-label" *ngIf="!isLoadingTemplate && selectedTemplate">{{ selectedTemplateLabel }}</span>
           <button
             id="calendarEformPreviewToggle"
             class="eform-preview-toggle"

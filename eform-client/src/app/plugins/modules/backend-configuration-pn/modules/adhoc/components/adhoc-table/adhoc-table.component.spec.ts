@@ -55,21 +55,34 @@ describe('adhoc-display.util', () => {
   });
 
   describe('assignedToDisplay', () => {
-    it('executionRule 1 (everyone) returns everyone:true with no names, regardless of assignedWorkerIds', () => {
+    // Issue #1085: executionRule and assignedWorkerIds are independent, so a
+    // task can be assigned to named workers AND "everyone" at the same time -
+    // both the name chips and the "Alle" chip must render.
+    it('executionRule 1 (everyone) with assignedWorkerIds returns everyone:true AND the resolved names', () => {
       const result = assignedToDisplay(1, [100, 101], workers);
-      expect(result.everyone).toBeTrue();
+      expect(result.everyone).toBe(true);
+      expect(result.names).toEqual(['Mette Hansen', 'Erik Eriksen']);
+    });
+
+    it('executionRule 1 (everyone) with no assignees returns everyone:true with no names', () => {
+      const result = assignedToDisplay(1, [], workers);
+      expect(result.everyone).toBe(true);
       expect(result.names).toEqual([]);
+
+      const nullResult = assignedToDisplay(1, null, workers);
+      expect(nullResult.everyone).toBe(true);
+      expect(nullResult.names).toEqual([]);
     });
 
     it('executionRule 0 (assignedOnly) resolves the assigned worker names', () => {
       const result = assignedToDisplay(0, [100], workers);
-      expect(result.everyone).toBeFalse();
+      expect(result.everyone).toBe(false);
       expect(result.names).toEqual(['Mette Hansen']);
     });
 
     it('executionRule 0 with no assignees returns an empty names list', () => {
       const result = assignedToDisplay(0, [], workers);
-      expect(result.everyone).toBeFalse();
+      expect(result.everyone).toBe(false);
       expect(result.names).toEqual([]);
     });
   });
@@ -118,10 +131,13 @@ describe('adhoc-display.util', () => {
       expect(v.pct).toBeGreaterThanOrEqual(12);
     });
 
-    it('far in the future clamps pct to the 12 floor', () => {
+    it('far in the future clamps pct to the 22 floor (the day-cap kicks in before the 12 floor)', () => {
+      // pct = max(12, 58 - min(d - 6, 24) * 1.5): the min(…, 24) day-cap
+      // bottoms the formula out at 58 - 36 = 22, so 22 is the effective
+      // floor for any far-future deadline (the 12 floor is unreachable).
       const v = deadlineVisual('2027-04-25', today);
       expect(v.band).toBe('far');
-      expect(v.pct).toBe(12);
+      expect(v.pct).toBe(22);
     });
   });
 });

@@ -43,8 +43,7 @@ export class CalendarHeaderComponent implements OnInit, OnChanges {
     this.viewModeOptions = [
       {value: 'day', label: this.translate.instant('Day')},
       {value: 'week', label: this.translate.instant('Week')},
-      // Month is admin-only, mirroring the Compliance gating below.
-      ...(this.isAdmin ? [{value: 'month', label: this.translate.instant('Month')}] : []),
+      {value: 'month', label: this.translate.instant('Month')},
       {value: 'schedule', label: this.translate.instant('List')},
       ...(this.isAdmin ? [{value: 'compliance', label: this.translate.instant('Compliance')}] : []),
     ];

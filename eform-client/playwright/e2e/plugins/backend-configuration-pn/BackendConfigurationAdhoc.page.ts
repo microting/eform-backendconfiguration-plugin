@@ -47,18 +47,26 @@ import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper
  *     (deadline/reminders). `expandSection()` is retained as a no-op-safe
  *     helper (it only clicks when a `mat-expansion-panel-header` actually
  *     exists) so specs keep passing against either markup.
+ *   - Drawer photos (#1099/#1100): thumbnails carry
+ *     `data-e2e="adhoc-photo-thumb"` (existing/server-side) /
+ *     `"adhoc-photo-thumb-queued"` (create-mode previews), each with a
+ *     `data-e2e="adhoc-photo-delete-btn"` delete-X (design-spec thumbnail
+ *     Variant C). Clicking the X opens the "Slet billede?" confirm modal
+ *     (`#adhocPhotoDeleteConfirmBtn`/`-CancelBtn`) - NOTHING is removed
+ *     until confirm; cancel/ESC/scrim-click keeps the photo.
  *   - Modals: delete (`#adhocDeleteConfirmBtn`/`-CancelBtn`), copy
  *     (`#adhocCopyWithCommentsBtn`/`-WithoutCommentsBtn`/`-CancelBtn`),
  *     complete (`#adhocCompletePerformerSelect` - optional, no PIN field per
  *     F8's documented deviation - `#adhocCompleteConfirmBtn`/`-CancelBtn`).
- *   - Historik (`adhoc-history.component.html`): `#history-view`,
- *     `#history-data-table` (`.history-row` per event, grouped by day). Row
- *     menu button ids start with the task id and end in per-event
- *     discriminators (`adhocHistoryActionMenu-{taskId}-{eventType}-{gi}-{ei}`,
- *     same shape for `adhocHistoryArchiveBtn-`/`-CopyBtn-`/`-DeleteBtn-`) so
- *     a multi-event task never repeats a DOM id - this page object only ever
- *     matches the stable prefixes via `id^=`. Archive is only offered when
- *     the task is completed and not yet archived. This is the ONLY place
+ *   - Historik (`adhoc-history.component.html`, #1095 mockup parity):
+ *     `#history-view`, `#history-data-table` - a plain 9-column task table,
+ *     one `tr.history-row` per Completed/Archived task (the old per-event
+ *     day-grouped timeline is gone). Row menu button ids are plain
+ *     `adhocHistoryActionMenu-{taskId}` (same shape for
+ *     `adhocHistoryArchiveBtn-`/`-CopyBtn-`/`-DeleteBtn-`) - one row per
+ *     task means no per-event discriminators anymore; this page object only
+ *     ever matches the stable prefixes via `id^=`. Archive is only offered
+ *     while the row's status is "Løst" (completed). This is the ONLY place
  *     Archive lives (the table's row menu never offers it).
  */
 export class BackendConfigurationAdhocPage {
@@ -107,7 +115,7 @@ export class BackendConfigurationAdhocPage {
 
   async goToHistory(): Promise<void> {
     // Await the `history/index` round-trip the tab fires on navigation
-    // (AdhocHistoryComponent.ngOnInit) so callers see a populated timeline,
+    // (AdhocHistoryComponent.ngOnInit) so callers see a populated table,
     // not a still-loading one - returning on #history-view visibility alone
     // would let a subsequent row lookup race the data fetch.
     const historyResponsePromise = this.page.waitForResponse(
@@ -464,6 +472,75 @@ export class BackendConfigurationAdhocPage {
     await selectDateOnNewDatePicker(this.page, year, month, day);
   }
 
+  // ----- Drawer photos (#1099/#1100) -----------------------------------------
+
+  /**
+   * The drawer's hidden photo picker - the `<input type="file">` inside
+   * `label.photo-upload-btn` (`adhoc-task-drawer.component.html`).
+   * `setInputFiles` works on a hidden input; same idiom as
+   * `w/calendar-attachments.spec.ts` with `#calendarEventAttachInput`.
+   * In EDIT mode the selection uploads immediately
+   * (`onFilesSelected` -> `POST .../adhoc/{id}/photos`), so the round-trip
+   * can be awaited; in CREATE mode it only queues a preview
+   * (`queuedPhotoThumbs()`).
+   */
+  photoUploadInput(): Locator {
+    return this.page.locator('.adhoc-drawer .photo-upload-btn input[type="file"]');
+  }
+
+  /** Existing (server-side) photo thumbnails in the open drawer. */
+  photoThumbs(): Locator {
+    return this.page.locator('.adhoc-drawer [data-e2e="adhoc-photo-thumb"]');
+  }
+
+  /** Queued (create-mode, not yet uploaded) photo preview thumbnails. */
+  queuedPhotoThumbs(): Locator {
+    return this.page.locator('.adhoc-drawer [data-e2e="adhoc-photo-thumb-queued"]');
+  }
+
+  /** The always-visible delete-X on the `index`-th existing photo thumbnail. */
+  photoDeleteBtn(index = 0): Locator {
+    return this.photoThumbs().nth(index).locator('[data-e2e="adhoc-photo-delete-btn"]');
+  }
+
+  /** The delete-X on the `index`-th queued (create-mode) preview thumbnail. */
+  queuedPhotoDeleteBtn(index = 0): Locator {
+    return this.queuedPhotoThumbs().nth(index).locator('[data-e2e="adhoc-photo-delete-btn"]');
+  }
+
+  /** "Slet" in the "Slet billede?" confirm modal. */
+  photoDeleteConfirmBtn(): Locator {
+    return this.page.locator('#adhocPhotoDeleteConfirmBtn');
+  }
+
+  /** "Annuller" in the "Slet billede?" confirm modal. */
+  photoDeleteCancelBtn(): Locator {
+    return this.page.locator('#adhocPhotoDeleteCancelBtn');
+  }
+
+  /**
+   * Clicks the delete-X on a photo thumbnail and confirms the "Slet
+   * billede?" modal. Existing-photo removal is only STAGED here - it is
+   * applied server-side when the drawer is saved (`saveDrawer()`); queued
+   * previews disappear immediately.
+   */
+  async deletePhoto(index = 0, kind: 'existing' | 'queued' = 'existing'): Promise<void> {
+    const deleteBtn = kind === 'queued' ? this.queuedPhotoDeleteBtn(index) : this.photoDeleteBtn(index);
+    await deleteBtn.click();
+    await this.photoDeleteConfirmBtn().waitFor({ state: 'visible', timeout: 5000 });
+    await this.photoDeleteConfirmBtn().click();
+    await this.photoDeleteConfirmBtn().waitFor({ state: 'detached', timeout: 5000 });
+  }
+
+  /** Clicks the delete-X but cancels the confirm modal - the photo must survive. */
+  async cancelPhotoDelete(index = 0, kind: 'existing' | 'queued' = 'existing'): Promise<void> {
+    const deleteBtn = kind === 'queued' ? this.queuedPhotoDeleteBtn(index) : this.photoDeleteBtn(index);
+    await deleteBtn.click();
+    await this.photoDeleteCancelBtn().waitFor({ state: 'visible', timeout: 5000 });
+    await this.photoDeleteCancelBtn().click();
+    await this.photoDeleteCancelBtn().waitFor({ state: 'detached', timeout: 5000 });
+  }
+
   drawerSaveBtn(): Locator {
     return this.page.locator('#adhocDrawerSaveBtn');
   }
@@ -540,14 +617,13 @@ export class BackendConfigurationAdhocPage {
   }
 
   /**
-   * A task can have several Historik event rows (created/completed/archived
-   * each emit their own row - `adhoc-history.component.ts`'s
-   * `AdhocTaskHistoryEventModel` is per-EVENT, not per-task), all sharing
-   * the same task title. `.first()` keeps this Playwright-strict-mode-safe
-   * regardless of how many event rows currently exist for the task.
+   * One `tr.history-row` per task (#1095 - `AdhocTaskHistoryRowModel` is
+   * per-task, so a title matches at most one row per page). `.first()` is
+   * kept purely as strict-mode belt-and-braces against titles that are
+   * substrings of one another.
    */
   historyRow(taskTitle: string): Locator {
-    return this.page.locator('#history-data-table .history-row').filter({ hasText: taskTitle }).first();
+    return this.page.locator('#history-data-table tr.history-row').filter({ hasText: taskTitle }).first();
   }
 
   async openHistoryRowMenu(taskTitle: string): Promise<void> {

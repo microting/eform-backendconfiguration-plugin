@@ -1,37 +1,261 @@
-.history-day-group__date {
+.history-card__title {
+  font-size: 18px;
   font-weight: 600;
-  margin: 12px 0 4px;
+  margin: 0;
 }
 
-.history-row {
-  padding: 8px 4px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+.history-card__def {
+  margin: 8px 0 12px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 13px;
+
+  p {
+    margin: 0 0 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }
 
-.history-row__main {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+// Collapsible "Periode og filter" group - a <div> + boolean class instead of
+// native <details> so the chevron rotation is driven off [class.open].
+.history-filter-details {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  margin-bottom: 12px;
+
+  &.open .history-filter-details__chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.history-filter-details__summary {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
   cursor: pointer;
-  flex: 1 1 auto;
+  font: inherit;
 }
 
-.history-row__title {
+.history-filter-details__summary-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.history-filter-details__title {
   font-weight: 600;
 }
 
-.history-row__meta {
+.history-filter-details__chevron {
+  transition: transform 0.15s ease;
+}
+
+.history-filter-details__parts {
+  display: block;
+  margin-top: 4px;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.6);
 }
 
-.history-row__comment {
+.history-filter-details__parts-line {
+  display: block;
+}
+
+.history-filter-details__parts-period-lbl {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.history-filter-details__body {
+  padding: 0 12px 12px;
+}
+
+.history-period__lbl {
+  display: block;
+  font-weight: 600;
   font-size: 12px;
-  font-style: italic;
-  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 4px;
+}
+
+.history-period-chips {
+  margin-bottom: 8px;
+}
+
+.history-period-summary {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 4px 0 8px;
+}
+
+.history-tags-block {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.history-tags-block__title {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.history-tags-selected {
+  margin-bottom: 8px;
+}
+
+// Scrollable checkbox list with a sticky search field (mockup
+// .tag-list-scroll, max-height ~220px).
+.tag-list-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tag-list-search-wrap {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--mdc-theme-surface, #fff);
+  padding: 4px 0;
+  z-index: 1;
+
+  mat-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    color: rgba(0, 0, 0, 0.4);
+  }
+}
+
+.tag-list-filter-input {
+  flex: 1 1 auto;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+}
+
+.tag-list-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-list-filter-empty {
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+}
+
+.tag-pill--selected {
+  border: none;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.16);
+  font: inherit;
+  font-size: 12px;
+}
+
+// Results table - horizontal scroll wrapper, mockup min-width ~1020px.
+.history-table-wrap {
+  overflow-x: auto;
+}
+
+.history-data-table {
+  width: 100%;
+  min-width: 1020px;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 8px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+    font-size: 13px;
+  }
+
+  .history-row {
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+  }
+}
+
+.cell-comment__meta {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.cell-comment__text {
+  white-space: pre-wrap;
+}
+
+// Status chips - custom classes (same approach as .haster-pill in
+// adhoc-table.component.scss) rather than fighting mat-chip theming:
+// "Løst" green, "Arkiveret" grey per the mockup.
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-chip--completed {
+  background: #d9efd9;
+  color: #1e5e20;
+}
+
+.status-chip--archived {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.history-empty {
+  color: rgba(0, 0, 0, 0.4);
+  padding: 12px 0;
+}
+
+.history-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.history-pager__info {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .cell-muted {
   color: rgba(0, 0, 0, 0.4);
-  padding: 8px 0;
 }

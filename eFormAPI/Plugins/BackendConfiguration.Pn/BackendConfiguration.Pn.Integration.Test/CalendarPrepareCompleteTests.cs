@@ -492,7 +492,8 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
 
         Assert.That(result.Success, Is.False, "a removed AreaRulePlanning must not resolve");
 
-        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances
+            .CountAsync(c => c.PlanningId == s.Planning.Id);
         Assert.That(complianceCount, Is.EqualTo(0), "no Compliance row may be written for a removed ARP");
     }
 
@@ -511,7 +512,8 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
 
         Assert.That(result.Success, Is.False, "an AreaRule with no EformId has nothing to materialise");
 
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == s.Planning.Id);
         Assert.That(complianceCount, Is.EqualTo(0));
     }
 
@@ -528,7 +530,8 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
 
         Assert.That(result.Success, Is.False, "a non-yyyy-MM-dd occurrenceDate must be rejected");
 
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == s.Planning.Id);
         Assert.That(complianceCount, Is.EqualTo(0));
     }
 

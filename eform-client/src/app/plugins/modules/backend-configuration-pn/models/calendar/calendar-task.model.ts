@@ -147,12 +147,16 @@ export interface CalendarRepeatMeta {
 }
 
 export interface CalendarTaskLayoutModel extends CalendarTaskModel {
-  // Google-Calendar-style equal-divide-with-overlap layout.
-  // For N tasks in a conflict group:
-  //   _width  = 100 * 1.8 / N  (overlap factor 1.8; cards overlap their neighbours)
-  //   _left   = i * (100 - _width) / (N - 1)
-  //   _zIndex = 10 + i  (later cards layer on top)
-  // For N == 1, _left=0, _width=100, _zIndex=10.
+  // Google-Calendar-style packed-column cascade layout, computed by
+  // CalendarLayoutService.computeLayout. Tasks in a time-overlap cluster are
+  // packed into columns via first-fit (a task reuses the first column whose last
+  // task ends at or before it starts; otherwise a new column opens). With
+  // `numCols` columns and a task in `columnIndex`:
+  //   _left   = columnIndex / numCols * 100
+  //   _width  = 100 - _left   (each card extends to the right edge, so cards
+  //                            behind run underneath the ones in front)
+  //   _zIndex = 10 + columnIndex   (later columns layer on top)
+  // For a solo task (numCols === 1): _left = 0, _width = 100, _zIndex = 10.
   _left: number;    // left edge in % of day-column usable width
   _width: number;   // width in % of day-column usable width
   _zIndex: number;  // default stacking order within the conflict group

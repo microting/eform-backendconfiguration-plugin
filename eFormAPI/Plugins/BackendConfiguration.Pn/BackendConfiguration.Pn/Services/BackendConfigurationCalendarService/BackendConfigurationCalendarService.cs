@@ -514,9 +514,7 @@ public class BackendConfigurationCalendarService(
                     continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var calConfig);
-                var isRepeatAlways = arp.RepeatType.HasValue && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
-                var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
-                var isAllDay = calConfig == null && !hasNonAlwaysRepeat;
+                var isAllDay = ComputeIsAllDay(arp, calConfig);
 
                 var title = ResolveTaskTitle(arp.AreaRule?.AreaRuleTranslations, userLanguageId, null);
 
@@ -751,9 +749,7 @@ public class BackendConfigurationCalendarService(
                 if (!planningsDict.TryGetValue(arp.ItemPlanningId, out var movedPlanning)) continue;
 
                 calConfigsDict.TryGetValue(arp.Id, out var movedCalConfig);
-                var isRepeatAlways = arp.RepeatType.HasValue && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
-                var hasNonAlwaysRepeat = arp.RepeatType.HasValue && arp.RepeatType.Value > 0 && !isRepeatAlways;
-                var isAllDay = movedCalConfig == null && !hasNonAlwaysRepeat;
+                var isAllDay = ComputeIsAllDay(arp, movedCalConfig);
 
                 var title = ResolveTaskTitle(arp.AreaRule?.AreaRuleTranslations, userLanguageId, null);
 
@@ -951,9 +947,7 @@ public class BackendConfigurationCalendarService(
                         .ToList()
                     : [];
 
-                var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
-                var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
-                var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+                var compIsAllDay = ComputeIsAllDay(arp, calConfig);
 
                 var complianceCompleted = compliance.MicrotingSdkCaseId > 0
                     && weekComplianceCasesById.TryGetValue(compliance.MicrotingSdkCaseId, out var weekSdkCase)
@@ -1183,12 +1177,18 @@ public class BackendConfigurationCalendarService(
                     .Select(t => planningTagNames.TryGetValue(t.ItemPlanningTagId, out var n) ? n : null)
                     .Where(n => n != null).ToList();
 
+                // Same derivation GetTasksForWeek uses, so the list and the grid
+                // agree: an unconfigured series is all-day only when it has no
+                // real recurrence; otherwise it defaults to 09:00-10:00.
+                var indexIsAllDay = ComputeIsAllDay(arp, calConfig);
+
                 return new CalendarTaskResponseModel
                 {
                     Id = arp.Id,
                     Title = title,
-                    StartHour = calConfig?.StartHour ?? 0,
-                    Duration = calConfig?.Duration ?? 1,
+                    IsAllDay = indexIsAllDay,
+                    StartHour = indexIsAllDay ? 0 : calConfig?.StartHour ?? 9.0,
+                    Duration = indexIsAllDay ? 0 : calConfig?.Duration ?? 1.0,
                     TaskDate = arp.StartDate?.ToString("yyyy-MM-dd") ?? "",
                     Tags = tags,
                     AssigneeIds = assigneeIds,
@@ -1763,6 +1763,46 @@ public class BackendConfigurationCalendarService(
                 UpdatedByUserId = userService.UserId
             };
             await exceptionSite.Create(backendConfigurationPnDbContext);
+        }
+
+        // The eForm is a SERIES-level property — there is no per-occurrence
+        // column for it, and the completion path resolves the eForm from the
+        // occurrence's own SDK case. A scope="this" edit that changes it would
+        // otherwise be silently discarded (the exception row above carries no
+        // eForm), so apply the change to the whole series — AreaRule + Planning
+        // + the repair pass over every deployed, not-yet-completed occurrence.
+        // The frontend confirms this widening with the user before saving.
+        // Reuses the wizard so both scopes write the same rows the same way.
+        //
+        // Projected into an anonymous type, NOT straight onto the nullable
+        // `EformId` column: a `FirstOrDefaultAsync` over `int?` returns null
+        // both when the series row is GONE and when it merely carries no eForm,
+        // and "gone" then satisfied `currentEformId != updateModel.EformId`.
+        // ApplyEformChangeToSeries would answer TaskNotFound / Success:false —
+        // AFTER the CalendarOccurrenceException and its ExceptionSites were
+        // already written — so the user saw a hard error for a save that had
+        // partly landed. A missing series has no series-level eForm to change:
+        // log it and let the per-occurrence write above stand.
+        var series = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => x.Id == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => new { CurrentEformId = x.AreaRule.EformId })
+            .FirstOrDefaultAsync();
+
+        if (series == null)
+        {
+            logger.LogWarning(
+                "UpdateTaskThisOccurrence: no live AreaRulePlanning {AreaRulePlanningId} (or its AreaRule) — the occurrence exception was written, but the eForm change cannot be applied at series level",
+                updateModel.Id);
+        }
+        else if (updateModel.EformId > 0 && series.CurrentEformId != updateModel.EformId)
+        {
+            var eformResult = await taskWizardService
+                .ApplyEformChangeToSeries(updateModel.Id, updateModel.EformId);
+            if (eformResult is { Success: false })
+            {
+                return eformResult;
+            }
         }
 
         return new OperationResult(true,
@@ -4190,6 +4230,26 @@ public class BackendConfigurationCalendarService(
     // when its SDK case is retracted (WorkflowState=Removed AND Status=77) OR it
     // is past due (effectiveDate < now) and not completed (Status != 100). Rows
     // with no live SDK case fall back to the deadline-only check.
+    // Shared all-day predicate for every calendar/task-list projection: a series is
+    // all-day only when it has no CalendarConfiguration AND no real recurrence.
+    // "Always" (RepeatType 1 with RepeatEvery 0) is not a real recurrence, so it
+    // stays all-day; anything else falls back to the 09:00-10:00 read default.
+    // Kept in one place deliberately -- this expression was previously copied at
+    // six sites, and the copy in Index drifted to a midnight default, which put
+    // un-configured series in the 00:00 row and let the edit modal persist that
+    // back through UpdateTask.
+    private static bool ComputeIsAllDay(AreaRulePlanning? arp, CalendarConfiguration? calConfig)
+    {
+        if (calConfig != null)
+        {
+            return false;
+        }
+
+        var isRepeatAlways = arp is { RepeatType: 1 } && (arp.RepeatEvery ?? 0) == 0;
+        var hasNonAlwaysRepeat = arp is { RepeatType: > 0 } && !isRepeatAlways;
+        return !hasNonAlwaysRepeat;
+    }
+
     private static bool ComputeTaskIsExpired(
         Microting.eForm.Infrastructure.Data.Entities.Case? sdkCase,
         DateTime effectiveDate,
@@ -4931,9 +4991,7 @@ public class BackendConfigurationCalendarService(
                         .ToList()
                     : [];
 
-                var compIsRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1 && (arp.RepeatEvery ?? 0) == 0;
-                var compHasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0 && !compIsRepeatAlways;
-                var compIsAllDay = calConfig == null && !compHasNonAlwaysRepeat;
+                var compIsAllDay = ComputeIsAllDay(arp, calConfig);
 
                 // Per-row Completed + TaskIsExpired derivation. Predicate
                 // matches the spec: completed = Case.Status==100;
@@ -5197,11 +5255,7 @@ public class BackendConfigurationCalendarService(
                     continue;
                 }
 
-                var isRepeatAlways = arp?.RepeatType.HasValue == true && arp.RepeatType.Value == 1
-                                     && (arp.RepeatEvery ?? 0) == 0;
-                var hasNonAlwaysRepeat = arp?.RepeatType.HasValue == true && arp.RepeatType.Value > 0
-                                         && !isRepeatAlways;
-                var isAllDay = calConfig == null && !hasNonAlwaysRepeat;
+                var isAllDay = ComputeIsAllDay(arp, calConfig);
 
                 var done = IsDone(compliance);
                 var sdkCase = compliance.MicrotingSdkCaseId > 0

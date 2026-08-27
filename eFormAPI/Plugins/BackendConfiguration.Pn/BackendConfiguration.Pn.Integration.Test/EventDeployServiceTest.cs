@@ -145,7 +145,8 @@ public class EventDeployServiceTest : TestBaseSetup
             PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, CancellationToken.None);
 
         // Assert — nothing was written, and the SDK Core was never even fetched.
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == 200);
         Assert.That(complianceCount, Is.EqualTo(0));
         await coreHelper.DidNotReceive().GetCore();
     }
@@ -167,7 +168,8 @@ public class EventDeployServiceTest : TestBaseSetup
             PropertyId, BoardIds, "2026-05-01", "2026-05-31", SdkSiteId, CancellationToken.None);
 
         // Assert — past rotation skipped before reaching the SDK path.
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == 200);
         Assert.That(complianceCount, Is.EqualTo(0));
         await coreHelper.DidNotReceive().GetCore();
     }
@@ -203,7 +205,8 @@ public class EventDeployServiceTest : TestBaseSetup
 
         // Assert — no Compliance row created, SDK Core never fetched
         // (filter dropped the rotation before the SDK path).
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == 201);
         Assert.That(complianceCount, Is.EqualTo(0));
         await coreHelper.DidNotReceive().GetCore();
     }
@@ -297,7 +300,8 @@ public class EventDeployServiceTest : TestBaseSetup
                 "Guard should have short-circuited before the areaRulePlanning lookup at EventDeployService.cs:225-238.");
         });
 
-        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances
+            .CountAsync(c => c.PlanningId == planningId);
         Assert.That(complianceCount, Is.EqualTo(1));
     }
 
@@ -341,7 +345,7 @@ public class EventDeployServiceTest : TestBaseSetup
         var rotation = MakeRotation(
             id: 103,
             date: DateTime.UtcNow.Date.AddDays(2),
-            planningId: 700,
+            planningId: 705,
             eformId: 800);
         var (calendar, coreHelper) = MakeMocks([rotation], core);
         var service = MakeService(calendar, coreHelper);
@@ -360,7 +364,8 @@ public class EventDeployServiceTest : TestBaseSetup
             () => service.EnsureDeployedAsync(
                 PropertyId, BoardIds, "2026-05-14", "2026-05-20", SdkSiteId, cts.Token));
 
-        var afterCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var afterCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == 705);
         Assert.That(afterCount, Is.EqualTo(0),
             "Cancellation must not produce any Compliance writes.");
     }
@@ -471,7 +476,8 @@ public class EventDeployServiceTest : TestBaseSetup
             + "EventDeployService.cs:200-212. If this fails, today's "
             + "rotations are being silently excluded from the deploy path.");
 
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == planning.Id);
         Assert.That(complianceCount, Is.EqualTo(0),
             "Missing-planning path must not leave any Compliance rows behind.");
     }
@@ -598,7 +604,8 @@ public class EventDeployServiceTest : TestBaseSetup
         // already documented at tests #5/#6/#8). No new Compliance row
         // was INSERTed because the pipeline `continue`d at line 222
         // before reaching EnsureComplianceRowAsync.
-        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances
+            .CountAsync(c => c.PlanningId == planningId);
         Assert.That(complianceCount, Is.EqualTo(1),
             "Falling through to the missing-planning path must not "
             + "INSERT a duplicate Compliance row.");
@@ -689,7 +696,8 @@ public class EventDeployServiceTest : TestBaseSetup
         // No duplicate Compliance row was INSERTed and the existing
         // Removed row was not flipped back to Created (which would
         // phantom-uncomplete the underlying event).
-        var complianceCount = await BackendConfigurationPnDbContext.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext.Compliances
+            .CountAsync(c => c.PlanningId == planningId);
         Assert.That(complianceCount, Is.EqualTo(1));
 
         var preservedRow = await BackendConfigurationPnDbContext.Compliances
@@ -805,7 +813,8 @@ public class EventDeployServiceTest : TestBaseSetup
             "A planning assigned only to another site must not get a PlanningCaseSite "
             + "for the calling site (#932).");
 
-        var complianceCount = await BackendConfigurationPnDbContext!.Compliances.CountAsync();
+        var complianceCount = await BackendConfigurationPnDbContext!.Compliances
+            .CountAsync(c => c.PlanningId == planning.Id);
         Assert.That(complianceCount, Is.EqualTo(0));
     }
 

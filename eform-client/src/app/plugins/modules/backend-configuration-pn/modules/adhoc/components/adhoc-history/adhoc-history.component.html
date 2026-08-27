@@ -1,138 +1,277 @@
 <div id="history-view" class="history-view">
-  <div class="history-period-chips d-flex flex-wrap gap-8 mb-2" id="history-period-chips">
+  <div class="history-card__header d-flex align-items-center justify-content-between">
+    <h2 class="history-card__title">{{ 'History completed tasks' | translate }}</h2>
     <button
       type="button"
-      *ngFor="let preset of periodPresets"
-      [ngClass]="currentFilters?.periodPreset === preset ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
-      (click)="onPeriodChange(preset)"
+      mat-button
+      id="history-def-toggle"
+      [attr.aria-expanded]="helpPanelOpen"
+      aria-controls="history-card-def"
+      (click)="toggleHelpPanel()"
     >
-      <span>{{ periodLabel(preset) | translate }}</span>
+      {{ (helpPanelOpen ? 'Hide help text' : 'Show help text') | translate }}
     </button>
   </div>
 
-  <div class="history-custom-range d-flex gap-8 mb-2" id="history-custom-range" *ngIf="currentFilters?.periodPreset === 'custom'">
-    <mat-form-field>
-      <mat-label>{{ 'From' | translate }}</mat-label>
-      <input matInput [matDatepicker]="fromPicker" [(ngModel)]="customFrom" (dateChange)="onCustomRangeChange()">
-      <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
-      <mat-datepicker #fromPicker></mat-datepicker>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ 'To' | translate }}</mat-label>
-      <input matInput [matDatepicker]="toPicker" [(ngModel)]="customTo" (dateChange)="onCustomRangeChange()">
-      <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
-      <mat-datepicker #toPicker></mat-datepicker>
-    </mat-form-field>
+  <!-- The six mockup help paragraphs, decomposed into label/prose i18n keys
+       (no [innerHTML] - bold terms are their own translated <strong> spans). -->
+  <div class="history-card__def" id="history-card-def" *ngIf="helpPanelOpen">
+    <p>
+      <strong>{{ 'Completion date term' | translate }}</strong>
+      {{ 'is the date of' | translate }}
+      <strong>&laquo;{{ 'Task resolved status' | translate }}&raquo;</strong>
+      {{ 'when the task was completed' | translate }}
+    </p>
+    <p>
+      <strong>{{ 'Period' | translate }}</strong>
+      {{ 'is' | translate }}
+      <strong>{{ 'inclusive of both ends' | translate }}</strong>
+      {{ 'whole days by calendar date' | translate }}
+      {{ 'Fixed periods are counted backwards from' | translate }}
+      <strong id="history-today-anchor">{{ todayFormatted() }}</strong>.
+    </p>
+    <p>
+      <strong>{{ 'Day presets term' | translate }}</strong>
+      {{ 'equal the stated number of calendar days including today' | translate }}
+      <strong>{{ '6 months period' | translate }}</strong>
+      {{ 'and' | translate }}
+      <strong>{{ '12 months period' | translate }}</strong>
+      {{ 'equal the same calendar day shifted back' | translate }}
+    </p>
+    <p>
+      <strong>{{ 'Property' | translate }}</strong>
+      {{ 'and' | translate }}
+      <strong>{{ 'Areas' | translate }}</strong>
+      {{ 'below the active period line narrow the list to' | translate }}
+      <strong>{{ 'all areas term' | translate }}</strong>
+      {{ 'on that property' | translate }}
+      {{ 'The area dropdown is only active once a specific property is selected' | translate }}
+    </p>
+    <p>
+      <strong>{{ 'Tags AND term' | translate }}</strong>{{ 'when one or more tags are selected only tasks that have' | translate }}
+      <em>{{ 'all term' | translate }}</em>
+      {{ 'selected tags are shown without selected tags every completed task in the period is included' | translate }}
+    </p>
+    <p>
+      <strong>{{ 'Period and filter' | translate }}</strong>
+      {{ 'can be hidden or shown with the header line' | translate }}
+      <strong>{{ 'Period' | translate }}</strong>,
+      <strong>{{ 'Property' | translate }}</strong>,
+      <strong>{{ 'Areas' | translate }}</strong>
+      {{ 'and' | translate }}
+      <strong>{{ 'Tags in history (AND)' | translate }}</strong>.
+    </p>
   </div>
 
-  <div class="history-filter-details mb-3" id="history-filter-details">
-    <button type="button" mat-button (click)="toggleFilterDetails()">
-      <mat-icon>{{ filterDetailsOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
-      {{ 'Filters' | translate }}
+  <div class="history-filter-details" id="history-filter-details" [class.open]="filterDetailsOpen">
+    <button
+      type="button"
+      class="history-filter-details__summary"
+      id="history-filter-details-summary"
+      [attr.aria-expanded]="filterDetailsOpen"
+      (click)="toggleFilterDetails()"
+    >
+      <span class="history-filter-details__summary-inner">
+        <span class="history-filter-details__title">{{ 'Period and filter' | translate }}</span>
+        <mat-icon class="history-filter-details__chevron" aria-hidden="true">expand_more</mat-icon>
+      </span>
+      <span class="history-filter-details__parts">
+        <span class="history-filter-details__parts-line history-filter-details__parts-line--period">
+          <span class="history-filter-details__parts-period-lbl">{{ 'Period' | translate }}</span>
+          <span id="history-filter-details-periode-val">{{ filterSummaryLineA() }}</span>
+        </span>
+        <span class="history-filter-details__parts-line" id="history-filter-details-parts-rest">{{ filterSummaryLineB() }}</span>
+      </span>
     </button>
-    <div class="d-flex flex-wrap gap-12" *ngIf="filterDetailsOpen">
-      <mat-form-field>
-        <mat-label>{{ 'Property' | translate }}</mat-label>
-        <mtx-select
-          [items]="adhocStateService.properties"
-          bindLabel="name"
-          bindValue="id"
-          id="history-ejendom"
-          [ngModel]="currentFilters?.propertyId"
-          (ngModelChange)="onPropertyChange($event)"
-        ></mtx-select>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ 'Area' | translate }}</mat-label>
-        <mtx-select
-          [items]="areas"
-          bindLabel="name"
-          bindValue="id"
-          id="history-omraade"
-          [disabled]="currentFilters?.propertyId == null"
-          [ngModel]="currentFilters?.areaId"
-          (ngModelChange)="onAreaChange($event)"
-        ></mtx-select>
-      </mat-form-field>
-      <div class="history-tags-fieldset" id="history-tags-fieldset">
-        <div class="adhoc-drawer__section-title">{{ 'Tags' | translate }} ({{ 'And' | translate }})</div>
-        <div class="d-flex flex-wrap gap-4" id="history-tag-filter-rows">
-          <mat-checkbox
-            *ngFor="let tag of adhocStateService.tags"
-            [checked]="isTagSelected(tag.id)"
-            (change)="onToggleTag(tag.id)"
-          >{{ tag.name }}</mat-checkbox>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="history-timeline" id="history-data-table">
-    <div class="history-day-group" *ngFor="let group of groupedEvents; index as gi">
-      <div class="history-day-group__date">{{ group.dateKey | date: 'dd.MM.yyyy' }}</div>
-      <div
-        class="history-row d-flex align-items-center justify-content-between"
-        *ngFor="let event of group.events; index as ei"
-      >
-        <div class="history-row__main" (click)="onRowClick(event)">
-          <mat-icon fontSet="material-symbols-outlined" class="history-row__icon">
-            <ng-container [ngSwitch]="event.eventType">
-              <ng-container *ngSwitchCase="'created'">add_task</ng-container>
-              <ng-container *ngSwitchCase="'assigned'">person_add</ng-container>
-              <ng-container *ngSwitchCase="'completed'">task_alt</ng-container>
-              <ng-container *ngSwitchCase="'archived'">archive</ng-container>
-              <ng-container *ngSwitchCase="'commented'">chat_bubble</ng-container>
-            </ng-container>
-          </mat-icon>
-          <div class="history-row__body">
-            <div class="history-row__title">{{ event.taskTitle }}</div>
-            <div class="history-row__meta">
-              {{ event.eventType | translate }} · {{ event.actorName }} · {{ event.propertyName }}
-              <span *ngIf="event.areaName">· {{ event.areaName }}</span>
-            </div>
-            <div class="history-row__comment" *ngIf="event.lastCommentText">
-              {{ event.lastCommentAuthor }}: {{ event.lastCommentText }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Ids stay prefixed adhocHistory*Btn-{taskId} (the e2e page object
-             locates them via `id^=` within a row), but the timeline renders
-             one row PER EVENT - a multi-event task would otherwise repeat
-             the same id. eventType + group/row indices make each id unique
-             (a task can emit several 'assigned' events, so eventType alone
-             is not a sufficient discriminator). -->
-        <div class="row-menu">
-          <button type="button" mat-icon-button id="adhocHistoryActionMenu-{{event.taskId}}-{{event.eventType}}-{{gi}}-{{ei}}" [matMenuTriggerFor]="menu">
-            <mat-icon>more_vert</mat-icon>
+    <div class="history-filter-details__body" *ngIf="filterDetailsOpen">
+      <div class="history-period" role="group" aria-labelledby="history-period-label">
+        <span id="history-period-label" class="history-period__lbl">{{ 'Period' | translate }}</span>
+        <div class="history-period-chips d-flex flex-wrap gap-8" id="history-period-chips">
+          <button
+            type="button"
+            *ngFor="let preset of periodPresets"
+            [attr.data-history-preset]="preset"
+            [ngClass]="currentFilters?.periodPreset === preset ? 'btn-primary btn-primary--icon-left active' : 'btn-secondary btn-secondary--icon-left'"
+            (click)="onPeriodChange(preset)"
+          >
+            <span>{{ periodChipLabelKey(preset) | translate }}</span>
           </button>
-          <mat-menu #menu="matMenu">
-            <button mat-menu-item id="adhocHistoryCopyBtn-{{event.taskId}}-{{event.eventType}}-{{gi}}-{{ei}}" (click)="onCopy(event)">
-              <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
-              <span>{{ 'Copy task' | translate }}</span>
-            </button>
-            <button
-              mat-menu-item
-              id="adhocHistoryArchiveBtn-{{event.taskId}}-{{event.eventType}}-{{gi}}-{{ei}}"
-              *ngIf="event.completed && !event.archived"
-              (click)="onArchive(event)"
-            >
-              <mat-icon fontSet="material-symbols-outlined">archive</mat-icon>
-              <span>{{ 'Archive task' | translate }}</span>
-            </button>
-            <button mat-menu-item id="adhocHistoryDeleteBtn-{{event.taskId}}-{{event.eventType}}-{{gi}}-{{ei}}" class="btn-delete-menu" (click)="onDelete(event)">
-              <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
-              <span>{{ 'Delete task' | translate }}</span>
-            </button>
-          </mat-menu>
         </div>
       </div>
+
+      <div class="history-custom-range d-flex gap-8" id="history-custom-range" *ngIf="currentFilters?.periodPreset === 'custom'">
+        <mat-form-field>
+          <mat-label>{{ 'From' | translate }}</mat-label>
+          <input matInput id="history-from" [matDatepicker]="fromPicker" [ngModel]="customFromDate" (dateChange)="onCustomFromChange($event.value)">
+          <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'To' | translate }}</mat-label>
+          <input matInput id="history-to" [matDatepicker]="toPicker" [ngModel]="customToDate" (dateChange)="onCustomToChange($event.value)">
+          <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <p class="history-period-summary" id="history-period-summary" aria-live="polite">{{ activePeriodSummaryLabel() }}</p>
+
+      <div class="history-ejendom-omraade-row d-flex flex-wrap gap-12" id="history-ejendom-omraade-row">
+        <mat-form-field>
+          <mat-label>{{ 'Property' | translate }}</mat-label>
+          <mtx-select
+            [items]="adhocStateService.properties"
+            bindLabel="name"
+            bindValue="id"
+            id="history-ejendom"
+            [placeholder]="'All properties' | translate"
+            [ngModel]="currentFilters?.propertyId"
+            (ngModelChange)="onPropertyChange($event)"
+          ></mtx-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'Areas' | translate }}</mat-label>
+          <mtx-select
+            [items]="areas"
+            bindLabel="name"
+            bindValue="id"
+            id="history-omraade"
+            [disabled]="currentFilters?.propertyId == null"
+            [placeholder]="(currentFilters?.propertyId == null ? 'Select a property to filter by area' : 'All areas') | translate"
+            [ngModel]="currentFilters?.areaId"
+            (ngModelChange)="onAreaChange($event)"
+          ></mtx-select>
+        </mat-form-field>
+      </div>
+
+      <fieldset class="history-tags-block" id="history-tags-fieldset">
+        <span class="history-tags-block__title" id="history-tags-label">{{ 'Tags in history (AND)' | translate }}</span>
+
+        <div class="history-tags-selected tag-pill-row d-flex flex-wrap gap-4" *ngIf="selectedTags().length" aria-live="polite">
+          <button
+            type="button"
+            class="tag-pill tag-pill--selected"
+            *ngFor="let tag of selectedTags()"
+            id="history-tag-pill-{{tag.id}}"
+            [title]="'Remove tag {{name}}' | translate: {name: tag.name}"
+            (click)="onToggleTag(tag.id)"
+          >{{ tag.name }}</button>
+        </div>
+
+        <div class="tag-list-scroll">
+          <div class="tag-list-search-wrap">
+            <mat-icon fontSet="material-symbols-outlined" class="tag-list-search-icon" aria-hidden="true">search</mat-icon>
+            <input
+              type="search"
+              id="history-tags-search"
+              class="tag-list-filter-input"
+              autocomplete="off"
+              [placeholder]="'Search tags' | translate"
+              [attr.aria-label]="'Search tags' | translate"
+              [(ngModel)]="tagSearchQuery"
+            />
+          </div>
+          <div class="tag-list-rows" id="history-tags-rows">
+            <mat-checkbox
+              *ngFor="let tag of filteredTags()"
+              [checked]="isTagSelected(tag.id)"
+              (change)="onToggleTag(tag.id)"
+            >{{ tag.name }}</mat-checkbox>
+          </div>
+          <p class="tag-list-filter-empty" *ngIf="!adhocStateService.tags.length">
+            {{ 'No tags yet - create them under Overview' | translate }}
+          </p>
+          <p class="tag-list-filter-empty" id="history-tags-no-match" *ngIf="adhocStateService.tags.length && !filteredTags().length">
+            {{ 'No tags match the search' | translate }}
+          </p>
+        </div>
+      </fieldset>
     </div>
-    <div class="cell-muted" *ngIf="!groupedEvents.length">{{ 'No tasks found' | translate }}</div>
   </div>
 
-  <eform-pagination
-    [pagination]="{total: total, pageSize: pageSize, offset: pageIndex * pageSize}"
-    (paginationChanged)="pageIndex = $event.offset / $event.pageSize; pageSize = $event.pageSize; updateTable()"
-  ></eform-pagination>
+  <div class="history-table-wrap">
+    <table class="data history-data-table" id="history-data-table" [attr.aria-label]="'History completed tasks' | translate">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Completed date' | translate }}</th>
+          <th scope="col">{{ 'Task' | translate }}</th>
+          <th scope="col">{{ 'Comments' | translate }}</th>
+          <th scope="col">{{ 'Property' | translate }}</th>
+          <th scope="col">{{ 'Area' | translate }}</th>
+          <th scope="col">{{ 'Tags' | translate }}</th>
+          <th scope="col">{{ 'Status' | translate }}</th>
+          <th scope="col">{{ 'Completed by' | translate }}</th>
+          <th scope="col">{{ 'Action' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="history-row" *ngFor="let row of rows" (click)="onRowClick(row)">
+          <td>{{ row.completedAt | date: 'dd.MM.yyyy' }}</td>
+          <td><strong>{{ row.taskTitle }}</strong></td>
+          <td class="cell-comment">
+            <ng-container *ngIf="row.lastCommentText; else noValue">
+              <div class="cell-comment__meta">{{ row.lastCommentAuthor }} · {{ row.lastCommentAt | date: 'dd.MM.yyyy' }}</div>
+              <div class="cell-comment__text">{{ row.lastCommentText }}</div>
+            </ng-container>
+          </td>
+          <td>{{ row.propertyName || '—' }}</td>
+          <td>{{ row.areaName || '—' }}</td>
+          <td class="cell-tags">
+            <div class="d-flex flex-wrap gap-4" *ngIf="row.tagNames.length; else noValue">
+              <span class="tag-pill" *ngFor="let name of row.tagNames">{{ name }}</span>
+            </div>
+          </td>
+          <td>
+            <span [ngClass]="statusChipClass(row)">{{ statusLabelKey(row) | translate }}</span>
+          </td>
+          <td>{{ row.completedByName || '—' }}</td>
+
+          <!-- One row per task now - ids collapse to a plain taskId suffix
+               (the e2e page object matches the stable prefixes via `id^=`).
+               stopPropagation keeps the kebab from also triggering the
+               row-click drawer. -->
+          <td class="cell-action" (click)="$event.stopPropagation()">
+            <button type="button" mat-icon-button id="adhocHistoryActionMenu-{{row.taskId}}" [matMenuTriggerFor]="menu">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              <button mat-menu-item id="adhocHistoryCopyBtn-{{row.taskId}}" (click)="onCopy(row)">
+                <mat-icon fontSet="material-symbols-outlined">content_copy</mat-icon>
+                <span>{{ 'Copy task' | translate }}</span>
+              </button>
+              <button
+                mat-menu-item
+                id="adhocHistoryArchiveBtn-{{row.taskId}}"
+                *ngIf="canArchive(row)"
+                (click)="onArchive(row)"
+              >
+                <mat-icon fontSet="material-symbols-outlined">archive</mat-icon>
+                <span>{{ 'Archive task' | translate }}</span>
+              </button>
+              <button mat-menu-item id="adhocHistoryDeleteBtn-{{row.taskId}}" class="btn-delete-menu" (click)="onDelete(row)">
+                <mat-icon color="warn" fontSet="material-symbols-outlined">delete</mat-icon>
+                <span>{{ 'Delete task' | translate }}</span>
+              </button>
+            </mat-menu>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="history-empty" id="history-empty" *ngIf="!rows.length">
+      {{ 'No tasks match the selected period, property, area and tags' | translate }}
+    </p>
+  </div>
+
+  <div class="history-pager" id="history-pager" *ngIf="totalPages > 1">
+    <button type="button" mat-stroked-button id="history-pager-prev" [disabled]="pageIndex <= 0" (click)="onPagerPrev()">
+      {{ 'Previous page' | translate }}
+    </button>
+    <span class="history-pager__info" id="history-pager-info">{{ pagerInfoLabel() }}</span>
+    <button type="button" mat-stroked-button id="history-pager-next" [disabled]="pageIndex >= totalPages - 1" (click)="onPagerNext()">
+      {{ 'Next page' | translate }}
+    </button>
+  </div>
 </div>
+
+<ng-template #noValue><span class="cell-muted">—</span></ng-template>

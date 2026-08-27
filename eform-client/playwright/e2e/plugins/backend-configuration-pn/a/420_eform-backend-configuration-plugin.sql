@@ -2482,3 +2482,54 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2023-09-22 17:07:29
+
+--
+-- E2E seed (appended for shard-a taskwizard-calendar-conversion.spec.ts):
+-- an old-style task-wizard AreaRule (CreatedInGuide=1) + AreaRulePlanning
+-- with NO CalendarConfiguration row. "Altid" wizard shape: RepeatType=0,
+-- RepeatEvery=0, ARP DayOfWeek/DayOfMonth left at 0 exactly as the wizard
+-- writes them. On the post-seed container restart the startup
+-- CalendarConfigurationBackfillService must convert it: rewrite ARP and the
+-- linked items-planning Planning (Id 9001) to daily (Day, RepeatEvery=1) and
+-- create a CalendarConfiguration (StartHour 9, Duration 1) on Property 1's
+-- ("Farm 1") default board. Unconverted, this row renders only in its
+-- StartDate week (2026-01-07) — so the spec's future-week assertions fail
+-- hard if the conversion ever stops running.
+-- Ids 9001 avoid collisions (AUTO_INCREMENT was 205/520/118 at dump time).
+-- Column lists deliberately match the 2023 dump schema only — migrations add
+-- RepeatWeekdaysCsv/RepeatOrdinalWeek/RepeatEndMode on restart, before the
+-- backfill runs. FK order: AreaRules before its translations and planning;
+-- AreaId 1 and PropertyId 1 exist in the seeded data above.
+--
+INSERT INTO `AreaRules`
+  (`Id`,`AreaId`,`PropertyId`,`EformId`,`EformName`,`FolderId`,`FolderName`,
+   `Alarm`,`Type`,`ChecklistStable`,`TailBite`,`DayOfWeek`,`GroupItemId`,`IsDefault`,
+   `RepeatEvery`,`CreatedAt`,`UpdatedAt`,`WorkflowState`,`CreatedByUserId`,`UpdatedByUserId`,
+   `Version`,`RepeatType`,`ComplianceEnabled`,`ComplianceModifiable`,`Notifications`,
+   `NotificationsModifiable`,`SecondaryeFormId`,`SecondaryeFormName`,`CreatedInGuide`)
+VALUES
+  (9001,1,1,77,'Mock eForm',11,'Torsdag',
+   0,0,0,0,0,0,0,
+   0,'2023-09-01 00:00:00.000000',NULL,'created',0,0,
+   1,0,0,0,0,
+   0,0,NULL,1);
+
+INSERT INTO `AreaRuleTranslations`
+  (`Id`,`Name`,`LanguageId`,`AreaRuleId`,`CreatedAt`,`UpdatedAt`,`WorkflowState`,
+   `CreatedByUserId`,`UpdatedByUserId`,`Version`)
+VALUES
+  (9001,'GamleOpgaveKonvertering',1,9001,'2023-09-01 00:00:00.000000',NULL,'created',0,0,1),
+  (9002,'GamleOpgaveKonvertering',2,9001,'2023-09-01 00:00:00.000000',NULL,'created',0,0,1);
+
+INSERT INTO `AreaRulePlannings`
+  (`Id`,`StartDate`,`EndDate`,`DayOfWeek`,`DayOfMonth`,`RepeatEvery`,`RepeatType`,
+   `Status`,`SendNotifications`,`Alarm`,`Type`,`AreaRuleId`,`ItemPlanningId`,`FolderId`,
+   `HoursAndEnergyEnabled`,`CreatedAt`,`UpdatedAt`,`WorkflowState`,`CreatedByUserId`,
+   `UpdatedByUserId`,`Version`,`PropertyId`,`AreaId`,`ComplianceEnabled`,
+   `UseStartDateAsStartOfPeriod`,`ItemPlanningTagId`)
+VALUES
+  (9001,'2026-01-07 00:00:00.000000',NULL,0,0,0,0,
+   1,0,0,0,9001,9001,11,
+   0,'2023-09-01 00:00:00.000000',NULL,'created',0,
+   0,1,1,1,0,
+   0,NULL);

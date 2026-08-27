@@ -19,18 +19,18 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end align-items-center gap-24">
   <button
+    class="btn-cancel"
+    id="cancelSaveFileTagsBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+  <button
     class="btn-primary btn-primary--icon-left"
     id="fileTagsSaveBtn"
     (click)="updateFile()"
     [disabled]="disabled"
   >
     {{ 'Update' | translate }}
-  </button>
-  <button
-    class="btn-cancel"
-    id="cancelSaveFileTagsBtn"
-    (click)="hide()"
-  >
-    {{ 'Cancel' | translate }}
   </button>
 </div>

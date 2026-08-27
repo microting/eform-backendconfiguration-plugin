@@ -36,19 +36,18 @@
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
-    mat-raised-button
-    color="accent"
+    class="btn-cancel"
+    (click)="hide()"
+    id="cancelDownloadReportBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+  <button
+    class="btn-primary"
     (click)="onDownloadReport()"
     id="DownloadReportBtn"
     [disabled]="isDisabledDownloadButton"
   >
     {{'Download' | translate}}
-  </button>
-  <button
-    mat-raised-button
-    (click)="hide()"
-    id="cancelDownloadReportBtn"
-  >
-    {{'Cancel' | translate}}
   </button>
 </div>

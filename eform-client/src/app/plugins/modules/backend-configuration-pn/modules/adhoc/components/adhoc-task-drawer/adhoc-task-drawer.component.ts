@@ -1,6 +1,8 @@
 import {Component, Inject, OnDestroy, OnInit, ViewEncapsulation} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
 import {Subscription, forkJoin, from} from 'rxjs';
@@ -18,6 +20,7 @@ import {
 import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {resolvePropertyName, resolveWorkerName} from '../../adhoc-display.util';
+import {AdhocPhotoDeleteModalComponent} from '../adhoc-photo-delete-modal/adhoc-photo-delete-modal.component';
 
 export type AdhocTaskDrawerMode = 'create' | 'view' | 'edit';
 
@@ -100,6 +103,7 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
   createTagSub$: Subscription;
   uploadPhotoSub$: Subscription;
   viewPhotosSub$: Subscription;
+  photoDeleteSub$: Subscription;
 
   constructor(
     public dialogRef: MatDialogRef<AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult>,
@@ -109,6 +113,8 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
     private adhocService: BackendConfigurationPnAdhocService,
     public gallery: Gallery,
     public lightbox: Lightbox,
+    private dialog: MatDialog,
+    private overlay: Overlay,
   ) {
     this.mode = data.mode;
     this.task = data.task ?? null;
@@ -124,6 +130,15 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
 
   get visiblePhotos(): AdhocTaskPhotoModel[] {
     return (this.task?.photos ?? []).filter((p) => !this.removedPhotoIds.has(p.id));
+  }
+
+  /**
+   * #1086: the tags row (heading + chips + picker) renders only when there is
+   * something to show or edit - always in create/edit mode (the picker must
+   * stay reachable), but in view mode only when the task actually has tags.
+   */
+  get showTagsSection(): boolean {
+    return this.tagIds.length > 0 || !this.readonly;
   }
 
   /** "Udfør opgave" (M5/F8) is offered from view/edit mode on any open (not completed, not archived) task. */
@@ -239,11 +254,12 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
       : [...this.assignedWorkerIds, workerId];
   }
 
+  // #1088: executionRule and assignedWorkerIds are independent fields (a
+  // task can be assigned to persons AND visible to everyone, mobile
+  // parity). Toggling the rule must never mutate the assignees - clearing
+  // them here would silently delete named assignees server-side on save.
   onExecutionRuleChange(rule: number): void {
     this.executionRule = rule;
-    if (rule === 1) {
-      this.assignedWorkerIds = [];
-    }
   }
 
   // -----------------------------------------------------------------
@@ -280,6 +296,36 @@ export class AdhocTaskDrawerComponent implements OnInit, OnDestroy {
 
   removeExistingPhoto(photo: AdhocTaskPhotoModel): void {
     this.removedPhotoIds.add(photo.id);
+  }
+
+  // #1100: both delete-X flavours (existing/server-side photo, queued
+  // create-mode preview) route through the "Slet billede?" confirmation
+  // modal - the removal itself only runs when the user confirms.
+
+  onDeleteExistingPhoto(photo: AdhocTaskPhotoModel): void {
+    this.confirmPhotoDelete(() => this.removeExistingPhoto(photo));
+  }
+
+  onDeleteQueuedPhoto(index: number): void {
+    this.confirmPhotoDelete(() => this.removeQueuedPhoto(index));
+  }
+
+  private confirmPhotoDelete(removePhoto: () => void): void {
+    this.photoDeleteSub$ = this.dialog
+      .open(AdhocPhotoDeleteModalComponent, {
+        ...dialogConfigHelper(this.overlay),
+        // Design-spec Surface 2 deviations from the module's default confirm
+        // config: ESC and scrim-click cancel (dialogConfigHelper sets
+        // disableClose: true), and the dialog is announced as an alertdialog.
+        disableClose: false,
+        role: 'alertdialog',
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          removePhoto();
+        }
+      });
   }
 
   photoUrl(photo: AdhocTaskPhotoModel): string {
