@@ -578,6 +578,7 @@ export const da = {
   'The eForm will be changed immediately for the selected tasks': 'eForm ændres med det samme for de valgte opgaver',
   'Add tags': 'Tilføj tags',
   'Remove tags': 'Fjern tags',
+  'Set compliance': 'Sæt compliance',
   'Copy to property': 'Kopiér til ejendom',
   'Delete selected': 'Slet valgte',
   'Collected data will not be deleted': 'Indsamlet data slettes ikke',

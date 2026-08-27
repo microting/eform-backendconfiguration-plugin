@@ -577,6 +577,7 @@ export const bgBG = {
   'The eForm will be changed immediately for the selected tasks': 'Електронният формуляр ще бъде променен незабавно за избраните задачи',
   'Add tags': 'Добавяне на етикети',
   'Remove tags': 'Премахване на етикети',
+  'Set compliance': 'Задаване на съответствие',
   'Copy to property': 'Копиране в имота',
   'Delete selected': 'Изтриване на избраното',
   'Collected data will not be deleted': 'Събраните данни няма да бъдат изтрити',

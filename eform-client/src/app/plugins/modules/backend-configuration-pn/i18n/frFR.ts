@@ -576,6 +576,7 @@ export const frFR = {
   'The eForm will be changed immediately for the selected tasks': 'Le formulaire électronique sera modifié immédiatement pour les tâches sélectionnées.',
   'Add tags': 'Ajouter des balises',
   'Remove tags': 'Supprimer les balises',
+  'Set compliance': 'Définir la conformité',
   'Copy to property': 'Copier à la propriété',
   'Delete selected': 'Supprimer la sélection',
   'Collected data will not be deleted': 'Les données collectées ne seront pas supprimées.',

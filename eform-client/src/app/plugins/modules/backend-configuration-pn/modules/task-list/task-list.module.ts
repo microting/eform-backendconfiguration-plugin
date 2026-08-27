@@ -9,6 +9,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatCardModule} from '@angular/material/card';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatRadioModule} from '@angular/material/radio';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
@@ -21,6 +22,7 @@ import {
   BatchWorkerModalComponent,
   BatchEformModalComponent,
   BatchTagsModalComponent,
+  BatchComplianceModalComponent,
   BatchCopyModalComponent,
   BatchDeleteModalComponent,
 } from './components';
@@ -40,6 +42,7 @@ import {
     MatCardModule,
     MatDialogModule,
     MatDatepickerModule,
+    MatRadioModule,
     MtxGridModule,
     MtxSelectModule,
     CalendarModule,
@@ -51,6 +54,7 @@ import {
     BatchWorkerModalComponent,
     BatchEformModalComponent,
     BatchTagsModalComponent,
+    BatchComplianceModalComponent,
     BatchCopyModalComponent,
     BatchDeleteModalComponent,
   ],

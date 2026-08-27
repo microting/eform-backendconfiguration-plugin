@@ -26,6 +26,7 @@ import {
 import {BatchWorkerModalComponent} from '../modals/batch-worker-modal/batch-worker-modal.component';
 import {BatchEformModalComponent} from '../modals/batch-eform-modal/batch-eform-modal.component';
 import {BatchTagsModalComponent} from '../modals/batch-tags-modal/batch-tags-modal.component';
+import {BatchComplianceModalComponent} from '../modals/batch-compliance-modal/batch-compliance-modal.component';
 import {BatchCopyModalComponent} from '../modals/batch-copy-modal/batch-copy-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
 
@@ -38,6 +39,7 @@ export type TaskListBatchAction =
   | 'changeEform'
   | 'addTags'
   | 'removeTags'
+  | 'setCompliance'
   | 'copy'
   | 'delete';
 
@@ -256,7 +258,7 @@ export class TaskListPageComponent implements OnInit {
     const employees = this.translate.instant('Employees');
     const tasksGroup = this.translate.instant('Tasks');
     const deleteGroup = this.translate.instant('Delete');
-    // Mockup rule: all 8 options are always shown, grouped exactly as the mockup's
+    // Mockup rule: all 9 options are always shown, grouped exactly as the mockup's
     // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
     // (assign/reassign/addWorker/copy) are disabled — not removed — when no single
     // property is filtered, since their option-lists (workers, target property) are
@@ -270,6 +272,9 @@ export class TaskListPageComponent implements OnInit {
       {id: 'changeEform', label: this.translate.instant('Change eForm'), group: tasksGroup, disabled: false},
       {id: 'addTags', label: this.translate.instant('Add tags'), group: tasksGroup, disabled: false},
       {id: 'removeTags', label: this.translate.instant('Remove tags'), group: tasksGroup, disabled: false},
+      // Not property-scoped — compliance is a per-planning flag, so it needs
+      // no single-property filter the way assign/reassign/addWorker/copy do.
+      {id: 'setCompliance', label: this.translate.instant('Set compliance'), group: tasksGroup, disabled: false},
       {id: 'copy', label: this.translate.instant('Copy to property'), group: tasksGroup, disabled: propertyScoped},
       {id: 'delete', label: this.translate.instant('Delete selected'), group: deleteGroup, disabled: false},
     ];
@@ -333,6 +338,9 @@ export class TaskListPageComponent implements OnInit {
         component = BatchTagsModalComponent;
         break;
       }
+      case 'setCompliance':
+        component = BatchComplianceModalComponent;
+        break;
       case 'copy':
         data = {...data, properties: this.properties};
         component = BatchCopyModalComponent;

@@ -577,6 +577,7 @@ export const isIS = {
   'The eForm will be changed immediately for the selected tasks': 'Rafræna eyðublaðið verður breytt samstundis fyrir valin verkefni',
   'Add tags': 'Bæta við merkjum',
   'Remove tags': 'Fjarlægja merki',
+  'Set compliance': 'Setja samræmi',
   'Copy to property': 'Afrita í eign',
   'Delete selected': 'Eyða völdum',
   'Collected data will not be deleted': 'Safnað gögn verða ekki eytt',

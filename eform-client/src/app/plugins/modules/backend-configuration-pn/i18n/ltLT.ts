@@ -577,6 +577,7 @@ export const ltLT = {
   'The eForm will be changed immediately for the selected tasks': 'Pasirinktų užduočių el. forma bus nedelsiant pakeista',
   'Add tags': 'Pridėti žymas',
   'Remove tags': 'Pašalinti žymas',
+  'Set compliance': 'Nustatykite atitiktį',
   'Copy to property': 'Kopijuoti į nuosavybę',
   'Delete selected': 'Ištrinti pasirinktus',
   'Collected data will not be deleted': 'Surinkti duomenys nebus ištrinti',

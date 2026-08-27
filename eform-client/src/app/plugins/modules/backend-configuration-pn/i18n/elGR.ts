@@ -577,6 +577,7 @@ export const elGR = {
   'The eForm will be changed immediately for the selected tasks': 'Η ηλεκτρονική φόρμα θα αλλάξει αμέσως για τις επιλεγμένες εργασίες',
   'Add tags': 'Προσθήκη ετικετών',
   'Remove tags': 'Αφαίρεση ετικετών',
+  'Set compliance': 'Ορισμός συμμόρφωσης',
   'Copy to property': 'Αντιγραφή στην ιδιότητα',
   'Delete selected': 'Διαγραφή επιλεγμένων',
   'Collected data will not be deleted': 'Τα δεδομένα που συλλέγονται δεν θα διαγραφούν',

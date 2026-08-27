@@ -19,16 +19,17 @@ import { readFileSync } from 'fs';
  *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
  *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
  *     own paginator — always use `#taskListShowAllToggle` by id, never text.
- *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 8
+ *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 9
  *     options across 3 optgroups (`.ng-optgroup`), matching the mockup
  *     (opgaveliste.html #opgavelisteFilterHandling): "Medarbejdere"/Employees
  *     (assign/reassign/addWorker), "Opgaver"/Tasks (changeEform/addTags/
- *     removeTags/copy), "Slet"/Delete (delete). assign/reassign/addWorker/copy
+ *     removeTags/setCompliance/copy), "Slet"/Delete (delete).
+ *     assign/reassign/addWorker/copy
  *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
  *     they are never removed from the list, only grayed out.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
- *     (primary action), `#batchModalCancel` (all five modals — closes with no
+ *     (primary action), `#batchModalCancel` (all six modals — closes with no
  *     result, so selection/grid stay untouched) and — only the two-phase
  *     eForm-change modal — `#batchModalConfirm` (second step, after
  *     `#batchModalSubmit` flips the modal into a confirmation state).
@@ -243,6 +244,16 @@ export class TaskListPage {
     return this.page.locator('#batchModalTaskList');
   }
 
+  /**
+   * The shared `#batchModalSubmit` primary button, for enabled/disabled
+   * assertions. Five of the six batch modals gate it behind their own
+   * `[disabled]="!valid"`, so specs need to read its state and not only click
+   * it.
+   */
+  batchModalSubmitButton(): Locator {
+    return this.page.locator('#batchModalSubmit');
+  }
+
   async submitModal(): Promise<void> {
     await this.page.locator('#batchModalSubmit').click();
     await this.page.waitForTimeout(500);
@@ -254,7 +265,7 @@ export class TaskListPage {
   }
 
   /**
-   * Clicks the shared `#batchModalCancel` button present on all five batch
+   * Clicks the shared `#batchModalCancel` button present on all six batch
    * modals (`btn-cancel` in every modal template; the id was added
    * specifically so cancel-flow specs don't have to fall back to a
    * class/text selector). Calls `hide()` -> `dialogRef.close()` with no
@@ -286,6 +297,89 @@ export class TaskListPage {
       }
     }
     return disabled;
+  }
+
+  /**
+   * Labels of the batch-action options belonging to the optgroup whose header
+   * matches `groupLabel`, in DOM order.
+   *
+   * ng-select renders group headers and options as FLAT SIBLINGS inside the
+   * panel — one `<div>` per item, declared with a static `class="ng-option"`
+   * plus `[class.ng-optgroup]="item.children"` and
+   * `[class.ng-option]="!item.children"` (verified in
+   * `node_modules/@ng-select/ng-select` 20.7.0). The two rendered classes are
+   * mutually exclusive because Angular's class BINDING takes precedence over
+   * the static attribute, so on a group header `[class.ng-option]="false"`
+   * strips the statically declared `ng-option` again. There is
+   * no DOM nesting to scope by, so group membership can only be read as
+   * "options following this header, up to the next header" — which is what
+   * this does. Needed because a spec that only asserts an option EXISTS can't
+   * tell whether it landed in the intended optgroup.
+   */
+  async batchActionLabelsInGroup(groupLabel: string | RegExp): Promise<string[]> {
+    const entries = this.page.locator('.ng-dropdown-panel .ng-optgroup, .ng-dropdown-panel .ng-option');
+    const total = await entries.count();
+    const labels: string[] = [];
+    let inGroup = false;
+    for (let i = 0; i < total; i++) {
+      const entry = entries.nth(i);
+      const cls = (await entry.getAttribute('class')) ?? '';
+      const text = ((await entry.innerText()) ?? '').trim();
+      if (cls.includes('ng-optgroup')) {
+        inGroup = typeof groupLabel === 'string' ? text === groupLabel : groupLabel.test(text);
+        continue;
+      }
+      if (inGroup) {
+        labels.push(text);
+      }
+    }
+    return labels;
+  }
+
+  /**
+   * Native `<input type="radio">` behind one of the batch-compliance modal's
+   * two `mat-radio-button`s, for `toBeChecked()` assertions.
+   *
+   * Unlike `mat-slide-toggle` — which in Angular Material 20 is a bare
+   * `<button role="switch" aria-checked>` with NO input (see
+   * `h/task-list-compliance-inactive.spec.ts` CI2) — `mat-radio-button` DOES
+   * still render one: `radio.mjs`'s template has
+   * `<input #input class="mdc-radio__native-control" type="radio" ...>`, and
+   * the id we set lands on the HOST (`'[attr.id]': 'id'`) while the input gets
+   * `id + '-input'`. So the input is addressable as a descendant of `#id`.
+   */
+  complianceRadioInput(complianceEnabled: boolean): Locator {
+    const id = complianceEnabled ? 'batchComplianceOn' : 'batchComplianceOff';
+    return this.page.locator(`#${id} input[type="radio"]`);
+  }
+
+  /**
+   * Picks one of the batch-compliance modal's radio options and verifies it
+   * took.
+   *
+   * The click targets the option's `<label class="mdc-label">`, NOT the
+   * `mat-radio-button` host and not the native input. Material's radio
+   * template (`radio.mjs`) is
+   * `<div mat-internal-form-field><div class="mdc-radio">…<input
+   * class="mdc-radio__native-control" [id]="inputId">…</div><label
+   * class="mdc-label" [for]="inputId"><ng-content></ng-content></label></div>`
+   * — exactly one label per button, carrying the visible text and wired to the
+   * input by `for`, so clicking it toggles the radio the same way a real user
+   * does. The input itself is unclickable (`opacity: 0`, covered by the
+   * circle), and the HOST is the wrong target here: inside the modal's
+   * `.d-flex.flex-column` group the host is blockified to the full dialog
+   * width while the label only spans its own text, so Playwright's
+   * centre-of-element click can land in empty space to the right of the text
+   * as soon as a translation is short or the task-summary list makes the
+   * dialog wide.
+   */
+  async pickComplianceOption(complianceEnabled: boolean): Promise<void> {
+    const id = complianceEnabled ? 'batchComplianceOn' : 'batchComplianceOff';
+    await this.page.locator(`#${id} label.mdc-label`).click();
+    await this.page.waitForTimeout(300);
+    if (!(await this.complianceRadioInput(complianceEnabled).isChecked().catch(() => false))) {
+      throw new Error(`#${id} did not become checked after clicking it`);
+    }
   }
 
   /**

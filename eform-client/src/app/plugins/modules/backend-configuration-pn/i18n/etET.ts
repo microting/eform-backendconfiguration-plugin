@@ -577,6 +577,7 @@ export const etET = {
   'The eForm will be changed immediately for the selected tasks': 'Valitud ülesannete e-vormi muudetakse kohe',
   'Add tags': 'Lisa silte',
   'Remove tags': 'Eemalda sildid',
+  'Set compliance': 'Määrake vastavus',
   'Copy to property': 'Kopeeri atribuuti',
   'Delete selected': 'Kustuta valitud',
   'Collected data will not be deleted': 'Kogutud andmeid ei kustutata',

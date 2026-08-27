@@ -577,6 +577,7 @@ export const slSL = {
   'The eForm will be changed immediately for the selected tasks': 'E-obrazec bo za izbrane naloge takoj spremenjen',
   'Add tags': 'Dodaj oznake',
   'Remove tags': 'Odstrani oznake',
+  'Set compliance': 'Nastavite skladnost',
   'Copy to property': 'Kopiraj v lastnost',
   'Delete selected': 'Izbriši izbrano',
   'Collected data will not be deleted': 'Zbrani podatki ne bodo izbrisani',

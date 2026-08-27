@@ -577,6 +577,7 @@ export const nlNL = {
   'The eForm will be changed immediately for the selected tasks': 'Het e-formulier wordt direct aangepast voor de geselecteerde taken.',
   'Add tags': 'Tags toevoegen',
   'Remove tags': 'Verwijder tags',
+  'Set compliance': 'Naleving instellen',
   'Copy to property': 'Kopie naar eigendom',
   'Delete selected': 'Verwijder geselecteerde',
   'Collected data will not be deleted': 'De verzamelde gegevens worden niet verwijderd.',

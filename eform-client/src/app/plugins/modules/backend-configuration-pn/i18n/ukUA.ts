@@ -577,6 +577,7 @@ export const ukUA = {
   'The eForm will be changed immediately for the selected tasks': 'Електронну форму буде негайно змінено для вибраних завдань',
   'Add tags': 'Додати теги',
   'Remove tags': 'Видалити теги',
+  'Set compliance': 'Встановити відповідність',
   'Copy to property': 'Копіювати до ресурсу',
   'Delete selected': 'Видалити вибране',
   'Collected data will not be deleted': 'Зібрані дані не будуть видалені',

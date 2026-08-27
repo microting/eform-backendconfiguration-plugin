@@ -577,6 +577,7 @@ export const huHU = {
   'The eForm will be changed immediately for the selected tasks': 'Az eŰrlap azonnal módosul a kiválasztott feladatokhoz.',
   'Add tags': 'Címkék hozzáadása',
   'Remove tags': 'Címkék eltávolítása',
+  'Set compliance': 'Megfelelőség beállítása',
   'Copy to property': 'Másolás a tulajdonságba',
   'Delete selected': 'Kijelölt törlése',
   'Collected data will not be deleted': 'A gyűjtött adatok nem törlődnek',

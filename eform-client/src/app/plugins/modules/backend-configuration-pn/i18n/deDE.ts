@@ -625,6 +625,7 @@ export const deDE = {
   'The eForm will be changed immediately for the selected tasks': 'Das eForm wird für die ausgewählten Aufgaben sofort geändert.',
   'Add tags': 'Tags hinzufügen',
   'Remove tags': 'Tags entfernen',
+  'Set compliance': 'Überwachung festlegen',
   'Copy to property': 'Kopie an Eigentum',
   'Delete selected': 'Ausgewählte löschen',
   'Collected data will not be deleted': 'Die erhobenen Daten werden nicht gelöscht.',

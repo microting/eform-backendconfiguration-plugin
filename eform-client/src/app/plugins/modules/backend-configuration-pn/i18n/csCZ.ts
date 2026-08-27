@@ -577,6 +577,7 @@ export const csCZ = {
   'The eForm will be changed immediately for the selected tasks': 'Elektronický formulář bude pro vybrané úkoly okamžitě změněn.',
   'Add tags': 'Přidat štítky',
   'Remove tags': 'Odebrat štítky',
+  'Set compliance': 'Nastavit shodu',
   'Copy to property': 'Kopírovat do vlastnosti',
   'Delete selected': 'Smazat vybrané',
   'Collected data will not be deleted': 'Shromážděná data nebudou smazána',

@@ -29,6 +29,16 @@ public class TaskListBatchTagsModel : TaskListBatchRequestModel
     public List<int> TagIds { get; set; } = [];
 }
 
+public class TaskListBatchComplianceModel : TaskListBatchRequestModel
+{
+    /// <summary>
+    /// true  = "Overskredet opgave vises i app"  — an overdue case is moved
+    ///          into the property's "00. Overdue tasks" folder by the nightly job.
+    /// false = "Overskredet opgave vises ikke i app" — the job skips the task.
+    /// </summary>
+    public bool ComplianceEnabled { get; set; }
+}
+
 public class TaskListBatchCopyModel : TaskListBatchRequestModel
 {
     public int TargetPropertyId { get; set; }

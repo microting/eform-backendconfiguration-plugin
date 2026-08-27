@@ -577,6 +577,7 @@ export const itIT = {
   'The eForm will be changed immediately for the selected tasks': 'Il modulo elettronico verrà modificato immediatamente per le attività selezionate.',
   'Add tags': 'Aggiungi tag',
   'Remove tags': 'Rimuovi i tag',
+  'Set compliance': 'Imposta la conformità',
   'Copy to property': 'Copia nella proprietà',
   'Delete selected': 'Elimina selezionati',
   'Collected data will not be deleted': 'I dati raccolti non verranno cancellati',

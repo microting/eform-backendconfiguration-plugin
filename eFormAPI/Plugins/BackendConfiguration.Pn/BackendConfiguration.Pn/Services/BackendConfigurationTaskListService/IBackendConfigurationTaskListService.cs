@@ -12,6 +12,7 @@ public interface IBackendConfigurationTaskListService
     Task<OperationResult> ChangeEform(TaskListBatchChangeEformModel model);
     Task<OperationResult> AddTags(TaskListBatchTagsModel model);
     Task<OperationResult> RemoveTags(TaskListBatchTagsModel model);
+    Task<OperationResult> SetCompliance(TaskListBatchComplianceModel model);
     Task<OperationResult> Copy(TaskListBatchCopyModel model);
     Task<OperationResult> Delete(TaskListBatchRequestModel model);
 }

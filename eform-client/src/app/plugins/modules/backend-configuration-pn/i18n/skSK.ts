@@ -577,6 +577,7 @@ export const skSK = {
   'The eForm will be changed immediately for the selected tasks': 'Elektronický formulár sa pre vybrané úlohy okamžite zmení.',
   'Add tags': 'Pridať značky',
   'Remove tags': 'Odstrániť značky',
+  'Set compliance': 'Nastaviť súlad',
   'Copy to property': 'Kopírovať do vlastnosti',
   'Delete selected': 'Odstrániť vybrané',
   'Collected data will not be deleted': 'Zhromaždené údaje nebudú vymazané',

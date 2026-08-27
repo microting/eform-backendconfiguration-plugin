@@ -577,6 +577,7 @@ export const noNO = {
   'The eForm will be changed immediately for the selected tasks': 'E-skjemaet vil bli endret umiddelbart for de valgte oppgavene',
   'Add tags': 'Legg til tagger',
   'Remove tags': 'Fjern tagger',
+  'Set compliance': 'Angi samsvar',
   'Copy to property': 'Kopier til eiendom',
   'Delete selected': 'Slett valgte',
   'Collected data will not be deleted': 'Innsamlede data vil ikke bli slettet',
