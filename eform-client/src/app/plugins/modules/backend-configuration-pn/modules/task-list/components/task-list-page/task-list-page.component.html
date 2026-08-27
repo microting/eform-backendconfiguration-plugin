@@ -37,6 +37,9 @@
       <span id="taskListSelectionCount" *ngIf="selection.size > 0">
         {{ selection.size }} {{ 'tasks selected' | translate }}
       </span>
+      <button mat-raised-button color="accent" id="taskListManageTagsBtn" (click)="openTagsModal()">
+        <mat-icon>label</mat-icon>{{ 'Manage tags' | translate }}
+      </button>
       <button mat-raised-button color="accent" id="taskListCsvExportBtn" (click)="exportCsv()">
         <mat-icon>download</mat-icon>{{ 'Export CSV' | translate }}
       </button>
@@ -47,5 +50,11 @@
       (editTask)="onEditTask($event)"
       (selectionChanged)="onSelectionChanged($event)">
     </app-task-list-table>
+    <!-- Renders nothing; owns the shared tag dialogs opened by #taskListManageTagsBtn. -->
+    <app-task-list-tags
+      #tagsModal
+      [availableTags]="tags"
+      (tagsChanged)="onUpdateTags()">
+    </app-task-list-tags>
   </mat-card-content>
 </mat-card>

@@ -26,7 +26,11 @@
     font-weight: 600;
   }
 
-  #taskListCsvExportBtn {
+  // Right-aligns the trailing button GROUP (Manage tags + Export CSV) as one
+  // block — the auto margin sits on the first of the pair so the 16px flex gap
+  // still separates them; a second auto margin on the CSV button would split
+  // them to opposite ends of the toolbar.
+  #taskListManageTagsBtn {
     margin-left: auto;
   }
 }
