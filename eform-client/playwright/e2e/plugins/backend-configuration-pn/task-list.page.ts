@@ -93,9 +93,14 @@ export class TaskListPage {
    *    response lands gets a modal with no `#calendarEventBoard` row whose
    *    Save button is a silent no-op, surfacing only as an opaque 30s
    *    "waiting for mat-dialog-container to be hidden" timeout inside
-   *    `saveEditModal()` (CI shard-h CI2 on PR #1132 — and because that suite
-   *    is `describe.serial`, CI3/CI4 never ran). Awaiting the boards response
-   *    here closes the race for every current AND future caller.
+   *    `saveEditModal()`. Awaiting the boards response here closes the race
+   *    for every current AND future caller.
+   *
+   *    NB: this race was NOT what failed CI shard-h CI2 on PR #1132, despite
+   *    presenting with the same symptom. That was the `folderId: null`
+   *    product defect documented on `saveEditModal()` below — the board row
+   *    was present and correctly populated in the failure snapshot. The wait
+   *    is kept because the race above is real, just latent.
    *
    * Both waits are individually `.catch(() => null)`-guarded so a missing or
    * duplicated call can never hang the helper for longer than its own
@@ -472,10 +477,33 @@ export class TaskListPage {
    * of burning 30s on an opaque "waiting for mat-dialog-container to be
    * hidden" TimeoutError like CI shard-h CI2 did on PR #1132. The happy path
    * is untouched: the first `waitFor` resolves the moment the dialog detaches.
+   *
+   * CURRENTLY UNUSABLE — and it is the product, not this helper. Every save of
+   * the edit modal *as opened from the task list* fails server-side:
+   * `TaskListPageComponent.onEditTask` passes `folderId: null`
+   * (`onEditTask` in task-list-page.component.ts), the modal forwards it verbatim
+   * (`onSave` in task-create-edit-modal.component.ts) and
+   * `BackendConfigurationTaskWizardService.UpdateTask` does
+   * `areaRulePlanning.FolderId = (int)updateModel.FolderId` (:803), throwing
+   * "Nullable object must have a value". The PUT answers 200 with
+   * `{success:false, message:"ErrorWhileUpdatingCalendarTask"}` and `doSave()`
+   * only closes on success. The PUT probe below turns that into an immediate,
+   * quotable error instead of a 30s opaque hidden-state timeout (which is
+   * exactly how it presented on CI shard h, PR #1132). Until the product bug
+   * is fixed, persist edits through the calendar page's copy of the modal,
+   * which is handed a real folder id.
    */
   async saveEditModal(): Promise<void> {
     const reload = this.page.waitForResponse(
       (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 30000 },
+    ).catch(() => null);
+    // Captured up front so the listener cannot miss a fast round-trip. Read
+    // only on the not-closed branch, and `.catch`-guarded so a save that never
+    // issues a PUT (the board guard below) can't hang the helper.
+    const updatePut = this.page.waitForResponse(
+      (r) => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks')
+        && r.request().method() === 'PUT',
       { timeout: 30000 },
     ).catch(() => null);
     const dialog = this.page.locator('mat-dialog-container');
@@ -484,6 +512,25 @@ export class TaskListPage {
       .then(() => true)
       .catch(() => false);
     if (!closedFast) {
+      const failed = await Promise.race([
+        updatePut.then(async (r) => {
+          if (!r) return null;
+          const body = await r.json().catch(() => null);
+          return body && body.success === false ? body : null;
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+      ]);
+      if (failed) {
+        throw new Error(
+          'Save did not close the task edit modal because PUT '
+          + '/api/backend-configuration-pn/calendar/tasks answered '
+          + `success=false: "${failed.message}". TaskCreateEditModalComponent`
+          + ".doSave() only calls close() on success, so the dialog stays open "
+          + 'forever. Check the eFormAPI log for the underlying exception — a '
+          + '`folderId: null` payload (which the task list always sends) throws '
+          + '"Nullable object must have a value" in '
+          + 'BackendConfigurationTaskWizardService.UpdateTask:803.');
+      }
       if ((await this.page.locator('#calendarEventBoard').count()) === 0) {
         throw new Error(
           'Save did not close the task edit modal and the modal has no '

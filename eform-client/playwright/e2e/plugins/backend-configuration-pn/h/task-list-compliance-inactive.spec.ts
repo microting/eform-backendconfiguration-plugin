@@ -32,9 +32,14 @@ import {
  * CI1: a freshly created task is Active + Compliance "Ja" — `.badge.ja` in
  *      BOTH the Aktiv and the Compliance cell (the modal defaults are
  *      `statusControl = true`, `complianceEnabledControl = true`).
- * CI2: deactivating via the shared edit modal leaves the compliance
- *      toggles both OFF while the stored flag stays true — the modal
- *      semantics the grid has to mirror.
+ * CI2: picking Status=inactive in the shared edit modal (opened from the
+ *      TASK LIST) leaves the compliance toggles both OFF while the stored
+ *      flag stays true — the modal semantics the grid has to mirror. This
+ *      test asserts and then CANCELS; see the deactivation step below for
+ *      why it must not save.
+ * CI2b (deactivation step): actually persists the inactive status, from the
+ *      CALENDAR page's edit modal. CI3/CI4 need a stored-inactive task, and
+ *      the task-list modal cannot produce one — see the note on that test.
  * CI3: the grid's Compliance cell then renders `--` with NO badge, while
  *      the Aktiv cell renders `.badge.nej`. The Aktiv column is deliberately
  *      NOT gated.
@@ -46,7 +51,7 @@ import {
  * (`.badge.ja` / `.badge.nej`), never by the Danish display text.
  *
  * Seed: one property + one worker + one calendar-created task. `describe
- * .serial` — CI2 mutates the task the later tests read.
+ * .serial` — the deactivation step mutates the task the later tests read.
  */
 
 const property: PropertyCreateUpdate = {
@@ -166,7 +171,21 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
   // =======================================================================
   // CI2 — the modal contract the grid must mirror: with Status inactive,
   // BOTH compliance toggles read off even though the stored flag is true.
-  // Ends by saving, leaving the task inactive for CI3/CI4.
+  //
+  // Asserts only — it deliberately does NOT save. Saving the shared edit
+  // modal when it was opened from the TASK LIST is currently impossible:
+  // `TaskListPageComponent.onEditTask` hands the modal
+  // `folderId: null` (`onEditTask` in task-list-page.component.ts, hard-coded since the
+  // page was introduced), the modal ships that straight through as the
+  // payload's `folderId` (`onSave` in task-create-edit-modal.component.ts), and the
+  // server does `areaRulePlanning.FolderId = (int)updateModel.FolderId`
+  // (BackendConfigurationTaskWizardService.cs:803) — which throws
+  // "Nullable object must have a value" for EVERY task-list save, whatever
+  // was edited. UpdateTask catches it and answers
+  // `{success:false, message:"ErrorWhileUpdatingCalendarTask"}`, and
+  // `doSave()`'s success-only close leaves the dialog open forever.
+  // The calendar page passes a real folder id, so its copy of the same modal
+  // saves fine — which is why the deactivation step below drives that one.
   // =======================================================================
   test('CI2: the edit modal shows both compliance toggles off when inactive', async ({ page }) => {
     test.setTimeout(180000);
@@ -195,7 +214,54 @@ test.describe.serial('Task list compliance rendering for inactive tasks', () => 
     await expect(toggle('calendarEventComplianceOn')).toHaveAttribute('aria-checked', 'false');
     await expect(toggle('calendarEventComplianceOff')).toHaveAttribute('aria-checked', 'false');
 
-    await taskListPage.saveEditModal();
+    // Discard — see the block comment above.
+    await page.locator('#calendarEventCancelBtn').click();
+    await expect(page.locator('mat-dialog-container')).toBeHidden({ timeout: 15000 });
+  });
+
+  // =======================================================================
+  // CI2b — persist the inactive status so CI3/CI4 have something to read.
+  //
+  // Driven from the CALENDAR page rather than the task list: it is the same
+  // TaskCreateEditModalComponent with the same #calendarEventStatusInactive
+  // toggle and the same PUT, but opened with a real `folderId`, so the save
+  // actually lands (CalendarContainerComponent passes `logboegerFolderId`).
+  // The task-list route is blocked by the `folderId: null` defect documented
+  // on CI2; when that is fixed this step can be folded back into CI2.
+  //
+  // The seed created the event one week ahead (openCreateModalAtSlot advances
+  // a week before clicking the slot), so navigate forward once here too.
+  // =======================================================================
+  test('CI2b: deactivate the task via the calendar edit modal', async ({ page }) => {
+    test.setTimeout(180000);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+
+    await calendarPage.goToCalendar();
+    await calendarPage.ensureSidebarOpen();
+    await calendarPage.selectProperty(property.name);
+    await page.waitForTimeout(1000);
+    await calendarPage.navigateToNextWeek();
+
+    await calendarPage.openEditModal(task);
+    await page.locator('#calendarEventStatusInactive').click();
+    await page.waitForTimeout(300);
+
+    // Assert the PUT itself, not just that the modal closed: `doSave()` only
+    // closes on success, so a `success:false` body would otherwise surface as
+    // an opaque 30s "waiting for element to be hidden" timeout with no clue
+    // what the server objected to.
+    const putResponse = page.waitForResponse(
+      r => r.url().endsWith('/api/backend-configuration-pn/calendar/tasks')
+        && r.request().method() === 'PUT',
+      { timeout: 30000 },
+    );
+    await calendarPage.clickSaveInEditModal();
+    const body = await (await putResponse).json();
+    expect(body.success, `updateTask returned success=false: ${body.message}`).toBe(true);
+
+    // The edit modal is a CDK overlay portal, not a mat-dialog — assert on
+    // its own title input rather than mat-dialog-container.
+    await expect(page.locator('#calendarEventTitle')).toBeHidden({ timeout: 15000 });
   });
 
   // =======================================================================
