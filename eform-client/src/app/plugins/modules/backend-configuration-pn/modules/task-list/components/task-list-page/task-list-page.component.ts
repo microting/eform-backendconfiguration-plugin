@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateService} from '@ngx-translate/core';
@@ -14,6 +14,7 @@ import {
 import {
   BackendConfigurationPnCalendarService,
   BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnTaskListService,
 } from '../../../../services';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
@@ -29,6 +30,7 @@ import {BatchTagsModalComponent} from '../modals/batch-tags-modal/batch-tags-mod
 import {BatchComplianceModalComponent} from '../modals/batch-compliance-modal/batch-compliance-modal.component';
 import {BatchCopyModalComponent} from '../modals/batch-copy-modal/batch-copy-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
+import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 
 // Task 11 implements the batch action modals; this task only wires up the
 // dropdown + selection plumbing and stubs the modal opener.
@@ -76,6 +78,11 @@ export class TaskListPageComponent implements OnInit {
   tags: SharedTagModel[] = [];
   tasks: CalendarTaskModel[] = [];
 
+  // Headless controller for the shared tag dialogs (see TaskListTagsComponent).
+  // Always present in the template — no *ngIf — so it is resolvable without
+  // `{static: false}` timing games.
+  @ViewChild('tagsModal') tagsModal: TaskListTagsComponent;
+
   selection = new Set<number>();
   pendingAction: TaskListBatchAction | null = null;
 
@@ -94,6 +101,7 @@ export class TaskListPageComponent implements OnInit {
     private eformService: EFormService,
     private eformTagService: EformTagService,
     private repeatService: CalendarRepeatService,
+    private taskListService: BackendConfigurationPnTaskListService,
   ) {}
 
   ngOnInit() {
@@ -224,6 +232,44 @@ export class TaskListPageComponent implements OnInit {
         this.loadTasks();
       }
     });
+  }
+
+  openTagsModal() {
+    // `true` = also offer the bulk "Add bulk" affordance inside the dialog.
+    this.tagsModal.show(true);
+  }
+
+  /**
+   * Runs after every successful tag create/rename/delete/bulk-create.
+   *
+   * BOTH reloads are required, and for different columns:
+   *  - `loadTags()` refreshes `tags`, which feeds the filter bar, the "Report
+   *    headline" cell (resolved CLIENT-side from `t.itemPlanningTagId`), the
+   *    edit-modal payload, the add/remove-tags batch modals and the CSV export.
+   *  - `loadTasks()` is what refreshes the grid's **Tags** column: `t.tags` is a
+   *    `string[]` of tag NAMES resolved SERVER-side, so a rename or delete stays
+   *    stale in the grid until the tasks are re-fetched.
+   *
+   * It also fires `purgeOrphanTags()` first. Deleting a tag from the dialog only
+   * soft-deletes the items-planning `PlanningTag` and its `PlanningsTags` rows —
+   * the backend-configuration `AreaRulePlanningTag` join stores the tag id as a
+   * bare int in a DIFFERENT database, so the delete cannot reach it and those rows
+   * survive still marked `Created`, pointing at a dead id. The purge clears them
+   * so the deletion takes effect on this page immediately.
+   *
+   * Mirrors `TaskWizardPageComponent.onUpdateTags()`, plus the purge.
+   */
+  onUpdateTags() {
+    // The purge has to complete BEFORE the reloads, otherwise the freshly
+    // reloaded tasks would still carry the join rows that name the just-deleted
+    // tag. Reload on error too: a failed purge is not a reason to leave the grid
+    // showing pre-dialog data — and the next tag-dialog close retries it, since
+    // this endpoint (unlike the startup pass) is deliberately ungated.
+    const reload = () => {
+      this.loadTags();
+      this.loadTasks();
+    };
+    this.taskListService.purgeOrphanTags().subscribe({next: reload, error: reload});
   }
 
   onSelectionChanged(ids: number[]) {

@@ -94,6 +94,7 @@ using Services.TaskUpdateCompletionService;
 using Services.WordService;
 using Services.WorkorderCaseGroupIdBackfillService;
 using Services.CalendarConfigurationBackfillService;
+using Services.AreaRulePlanningTagPurgeService;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -152,6 +153,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddSingleton<ITaskUpdateCompletionService, TaskUpdateCompletionService>();
         services.AddTransient<WorkorderCaseGroupIdBackfillService>();
         services.AddTransient<CalendarConfigurationBackfillService>();
+        services.AddTransient<AreaRulePlanningTagPurgeService>();
         services.AddTransient<IExcelService, ExcelService>();
         services.AddTransient<IWordService, WordService>();
         services.AddTransient<IGoogleDriveAuthService, GoogleDriveAuthService>();
@@ -840,6 +842,24 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         var calendarBackfill = scope.ServiceProvider
             .GetRequiredService<CalendarConfigurationBackfillService>();
         calendarBackfill.RunIfNeededAsync().GetAwaiter().GetResult();
+
+        // One-time clearing of the AreaRulePlanningTag rows left behind by tag
+        // deletions performed before the purge existed. ItemsPlanningTagsService
+        // has no BackendConfigurationPnDbContext and so could never remove them.
+        // Gated on its own PluginConfigurationValues marker, so every boot after
+        // the first costs one SELECT against that tiny table. Wrapped because this
+        // hook blocks startup synchronously: a purge failure must not stop the
+        // plugin from loading.
+        try
+        {
+            var tagPurge = scope.ServiceProvider
+                .GetRequiredService<AreaRulePlanningTagPurgeService>();
+            tagPurge.RunIfNeededAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"AreaRulePlanningTagPurge failed at startup: {e}");
+        }
 
         appBuilder.UseEndpoints(endpoints =>
         {

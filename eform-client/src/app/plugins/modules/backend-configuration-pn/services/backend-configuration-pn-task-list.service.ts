@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import {OperationResult} from 'src/app/common/models';
+import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 
 export class TaskListBatchRequest { taskIds: number[] = []; }
@@ -47,5 +47,20 @@ export class BackendConfigurationPnTaskListService {
   }
   delete(model: TaskListBatchRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/delete`, model);
+  }
+
+  /**
+   * Soft-deletes AreaRulePlanningTag rows left pointing at a tag that has been
+   * deleted. `AreaRulePlanningTag.ItemPlanningTagId` is a bare int naming a row in
+   * the items-planning DATABASE, so the tag-delete endpoint cannot clean the join
+   * up itself; this is what makes a delete done in the Manage-tags dialog take
+   * effect on the task list right away.
+   *
+   * `postNoToast` on purpose: this fires after every tag create/rename/delete and
+   * is a no-op in most of those cases, so it must stay silent. Returns the number
+   * of rows purged.
+   */
+  purgeOrphanTags(): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.postNoToast(`${TaskListMethods.Base}/purge-orphan-tags`, {});
   }
 }

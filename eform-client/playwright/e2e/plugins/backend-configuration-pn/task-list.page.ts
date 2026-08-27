@@ -28,6 +28,9 @@ import { readFileSync } from 'fs';
  *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
  *     they are never removed from the list, only grayed out.
+ *   - `#taskListManageTagsBtn` — opens the SHARED tag-management dialogs
+ *     (create / rename / delete / bulk-create). See the "Tag management"
+ *     helper block below for the full id map and the two-reload contract.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
  *     (primary action), `#batchModalCancel` (all six modals — closes with no
  *     result, so selection/grid stay untouched) and — only the two-phase
@@ -643,6 +646,148 @@ export class TaskListPage {
     }
     await reload;
     await this.page.waitForTimeout(800);
+  }
+
+  // ----- Tag management (#taskListManageTagsBtn) -------------------------------------
+
+  /**
+   * The tag-management dialogs are the SHARED ones from
+   * `common/modules/eform-shared-tags` (the same ones the task wizard and the
+   * items-planning plannings page open), so their ids are fixed and global:
+   *   - list:        `#newTagBtn` (single create), `#newTagsBtn` (bulk create),
+   *                  `#tagsModalCloseBtn`, one `#tagName` + `#editTagBtn` +
+   *                  `#deleteTagBtn` per row (ids REPEAT per row — always
+   *                  address them through `tagRow()`, never on their own).
+   *   - create:      `#newTagName`, `#newTagSaveBtn`, `#newTagSaveCancelBtn`
+   *   - bulk create: `#newTagsName` (textarea, ONE NAME PER LINE),
+   *                  `#newTagsSaveBtn`, `#newTagsSaveCancelBtn`
+   *   - rename:      `#tagNameEdit`, `#tagEditSaveBtn`, `#tagEditSaveCancelBtn`
+   *   - delete:      `#tagDeleteSaveBtn`, `#tagDeleteSaveCancelBtn`
+   *
+   * Locked tags (`isLocked`) render NEITHER `#editTagBtn` nor `#deleteTagBtn`,
+   * so only ever rename/delete a tag the spec created itself.
+   */
+
+  /**
+   * Every successful tag mutation runs BOTH `loadTags()` (GET
+   * `items-planning-pn/tags` — refills the list dialog, the filter bar and the
+   * client-side "Report headline" column) and `loadTasks()` (POST
+   * `calendar/tasks/index` — the ONLY thing that refreshes the grid's **Tags**
+   * column, whose values are tag NAMES resolved server-side).
+   * `TaskListPageComponent.onUpdateTags()` fires them in that order; wait for
+   * both or a rename/delete assertion against the grid races the reload.
+   *
+   * Both waits are `.catch(() => null)`-guarded, in the same spirit as
+   * `selectProperty()`, so a mutation that legitimately issues only one of
+   * them can never hang a caller for longer than its own timeout.
+   */
+  private tagMutationReloads(): Promise<unknown> {
+    const tagsReload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/items-planning-pn/tags') && r.request().method() === 'GET',
+      { timeout: 20000 },
+    ).catch(() => null);
+    const tasksReload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 20000 },
+    ).catch(() => null);
+    return Promise.all([tagsReload, tasksReload]);
+  }
+
+  manageTagsButton(): Locator {
+    return this.page.locator('#taskListManageTagsBtn');
+  }
+
+  async openManageTagsDialog(): Promise<void> {
+    await this.manageTagsButton().click();
+    await this.page.locator('#tagsModalCloseBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForTimeout(300);
+  }
+
+  async closeManageTagsDialog(): Promise<void> {
+    await this.page.locator('#tagsModalCloseBtn').click();
+    await this.page.locator('mat-dialog-container').waitFor({ state: 'hidden', timeout: 10000 });
+  }
+
+  /**
+   * One row of the tag LIST dialog, matched on its exact `#tagName` text.
+   * Scoped to `mat-dialog-container` so it can never collide with the task
+   * grid's own `.mat-mdc-row`s underneath the overlay.
+   */
+  tagRow(name: string): Locator {
+    return this.page.locator(`mat-dialog-container .mat-mdc-row:has(#tagName:text-is("${name}"))`);
+  }
+
+  async tagNames(): Promise<string[]> {
+    return (await this.page.locator('mat-dialog-container #tagName').allInnerTexts())
+      .map((t) => t.trim());
+  }
+
+  /** Creates ONE tag through `#newTagBtn`; the list dialog stays open. */
+  async createTag(name: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.page.locator('#newTagBtn').click();
+    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagName').fill(name);
+    await this.page.locator('#newTagSaveBtn').click();
+    await this.page.locator('#newTagName').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  bulkCreateSubmitButton(): Locator {
+    return this.page.locator('#newTagsSaveBtn');
+  }
+
+  /** Opens the bulk-create dialog and types `rawText` verbatim into its textarea. */
+  async openBulkCreateTags(rawText: string): Promise<void> {
+    await this.page.locator('#newTagsBtn').click();
+    await this.page.locator('#newTagsName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagsName').fill(rawText);
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Submits the bulk-create dialog. Deliberately separate from
+   * `openBulkCreateTags` so a spec can assert the Save button's disabled state
+   * for a blank/whitespace-only textarea in between — the guard that keeps a
+   * trailing newline from posting a `""` name (`PlanningTag.Name` is
+   * `[Required]`, and the bulk endpoint wraps its whole create loop in ONE
+   * try/catch, so a late invalid name commits the earlier ones and still
+   * answers `success = false`).
+   */
+  async submitBulkCreateTags(): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.bulkCreateSubmitButton().click();
+    await this.page.locator('#newTagsName').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  /** Convenience: open + submit in one go (one name per line). */
+  async bulkCreateTags(rawText: string): Promise<void> {
+    await this.openBulkCreateTags(rawText);
+    await this.submitBulkCreateTags();
+  }
+
+  async renameTag(from: string, to: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.tagRow(from).locator('#editTagBtn').click();
+    await this.page.locator('#tagNameEdit').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagNameEdit').fill(to);
+    await this.page.locator('#tagEditSaveBtn').click();
+    await this.page.locator('#tagNameEdit').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
+  }
+
+  async deleteTag(name: string): Promise<void> {
+    const reloads = this.tagMutationReloads();
+    await this.tagRow(name).locator('#deleteTagBtn').click();
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagDeleteSaveBtn').click();
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'hidden', timeout: 20000 });
+    await reloads;
+    await this.page.waitForTimeout(500);
   }
 
   // ----- CSV export -----------------------------------------------------------------
