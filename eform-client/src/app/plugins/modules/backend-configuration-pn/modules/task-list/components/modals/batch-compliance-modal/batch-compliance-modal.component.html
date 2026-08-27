@@ -1,0 +1,21 @@
+<h3 mat-dialog-title>{{ 'Set compliance' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-radio-group id="batchComplianceGroup" class="d-flex flex-column" [(ngModel)]="complianceEnabled">
+    <mat-radio-button id="batchComplianceOn" [value]="true">
+      {{ 'Overdue task shown in app' | translate }}
+    </mat-radio-button>
+    <mat-radio-button id="batchComplianceOff" [value]="false">
+      {{ 'Overdue task not shown in app' | translate }}
+    </mat-radio-button>
+  </mat-radio-group>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

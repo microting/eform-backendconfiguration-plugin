@@ -577,6 +577,7 @@ export const svSE = {
   'The eForm will be changed immediately for the selected tasks': 'E-formuläret kommer att ändras omedelbart för de valda uppgifterna',
   'Add tags': 'Lägg till taggar',
   'Remove tags': 'Ta bort taggar',
+  'Set compliance': 'Ställ in efterlevnad',
   'Copy to property': 'Kopiera till egendom',
   'Delete selected': 'Ta bort markerade',
   'Collected data will not be deleted': 'Insamlad data kommer inte att raderas',

@@ -577,6 +577,7 @@ export const fiFI = {
   'The eForm will be changed immediately for the selected tasks': 'Sähköinen lomake muutetaan välittömästi valittujen tehtävien osalta.',
   'Add tags': 'Lisää tunnisteita',
   'Remove tags': 'Poista tunnisteet',
+  'Set compliance': 'Aseta vaatimustenmukaisuus',
   'Copy to property': 'Kopioi omaisuuteen',
   'Delete selected': 'Poista valitut',
   'Collected data will not be deleted': 'Kerättyjä tietoja ei poisteta',

@@ -577,6 +577,7 @@ export const plPL = {
   'The eForm will be changed immediately for the selected tasks': 'Formularz elektroniczny zostanie natychmiast zmieniony dla wybranych zadań',
   'Add tags': 'Dodaj tagi',
   'Remove tags': 'Usuń tagi',
+  'Set compliance': 'Ustaw zgodność',
   'Copy to property': 'Kopiuj do właściwości',
   'Delete selected': 'Usuń wybrane',
   'Collected data will not be deleted': 'Zebrane dane nie zostaną usunięte',

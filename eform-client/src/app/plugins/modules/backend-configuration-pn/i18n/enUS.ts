@@ -599,6 +599,7 @@ export const enUS= {
   'The eForm will be changed immediately for the selected tasks': 'The eForm will be changed immediately for the selected tasks',
   'Add tags': 'Add tags',
   'Remove tags': 'Remove tags',
+  'Set compliance': 'Set compliance',
   'Copy to property': 'Copy to property',
   'Delete selected': 'Delete selected',
   'Collected data will not be deleted': 'Collected data will not be deleted',

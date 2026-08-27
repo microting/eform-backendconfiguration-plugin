@@ -36,6 +36,10 @@ public class TaskListController(IBackendConfigurationTaskListService taskListSer
     public async Task<OperationResult> RemoveTags([FromBody] TaskListBatchTagsModel model)
         => await Validated(model) ?? await taskListService.RemoveTags(model);
 
+    [HttpPost("set-compliance")]
+    public async Task<OperationResult> SetCompliance([FromBody] TaskListBatchComplianceModel model)
+        => await Validated(model) ?? await taskListService.SetCompliance(model);
+
     [HttpPost("copy")]
     public async Task<OperationResult> Copy([FromBody] TaskListBatchCopyModel model)
         => await Validated(model) ?? await taskListService.Copy(model);

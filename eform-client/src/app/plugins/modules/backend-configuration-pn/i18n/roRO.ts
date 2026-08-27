@@ -577,6 +577,7 @@ export const roRO = {
   'The eForm will be changed immediately for the selected tasks': 'Formularul electronic va fi modificat imediat pentru sarcinile selectate.',
   'Add tags': 'Adăugați etichete',
   'Remove tags': 'Eliminați etichetele',
+  'Set compliance': 'Stabiliți conformitatea',
   'Copy to property': 'Copiați în proprietate',
   'Delete selected': 'Ștergeți selecția',
   'Collected data will not be deleted': 'Datele colectate nu vor fi șterse',

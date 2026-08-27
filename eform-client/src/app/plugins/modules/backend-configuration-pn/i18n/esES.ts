@@ -577,6 +577,7 @@ export const esES = {
   'The eForm will be changed immediately for the selected tasks': 'El formulario electrónico se modificará inmediatamente para las tareas seleccionadas.',
   'Add tags': 'Agregar etiquetas',
   'Remove tags': 'Eliminar etiquetas',
+  'Set compliance': 'Establecer cumplimiento',
   'Copy to property': 'Copiar a la propiedad',
   'Delete selected': 'Eliminar seleccionado',
   'Collected data will not be deleted': 'Los datos recopilados no serán eliminados.',

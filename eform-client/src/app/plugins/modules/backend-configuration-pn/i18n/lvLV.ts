@@ -577,6 +577,7 @@ export const lvLV = {
   'The eForm will be changed immediately for the selected tasks': 'Atlasītajiem uzdevumiem e-veidlapa tiks nekavējoties mainīta.',
   'Add tags': 'Pievienot tagus',
   'Remove tags': 'Noņemt atzīmes',
+  'Set compliance': 'Iestatīt atbilstību',
   'Copy to property': 'Kopēt uz īpašumu',
   'Delete selected': 'Dzēst atlasīto',
   'Collected data will not be deleted': 'Apkopotie dati netiks dzēsti',

@@ -8,6 +8,7 @@ export class TaskListBatchAssignRequest extends TaskListBatchRequest { siteId: n
 export class TaskListBatchReassignRequest extends TaskListBatchRequest { fromSiteId: number; toSiteId: number; }
 export class TaskListBatchChangeEformRequest extends TaskListBatchRequest { eformId: number; }
 export class TaskListBatchTagsRequest extends TaskListBatchRequest { tagIds: number[] = []; }
+export class TaskListBatchComplianceRequest extends TaskListBatchRequest { complianceEnabled: boolean; }
 export class TaskListBatchCopyRequest extends TaskListBatchRequest {
   targetPropertyId: number; targetBoardId: number; startDate: string; siteId: number;
 }
@@ -37,6 +38,9 @@ export class BackendConfigurationPnTaskListService {
   }
   removeTags(model: TaskListBatchTagsRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/remove-tags`, model);
+  }
+  setCompliance(model: TaskListBatchComplianceRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/set-compliance`, model);
   }
   copy(model: TaskListBatchCopyRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/copy`, model);

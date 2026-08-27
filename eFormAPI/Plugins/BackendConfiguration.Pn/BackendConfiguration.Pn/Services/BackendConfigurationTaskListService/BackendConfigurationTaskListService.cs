@@ -129,6 +129,35 @@ public class BackendConfigurationTaskListService(
             return (result.Success, result.Message);
         }, "Tasks updated");
 
+    // Sets AreaRulePlanning.ComplianceEnabled (and, downstream, the
+    // template-level AreaRule.ComplianceEnabled — the wizard writes both,
+    // BackendConfigurationTaskWizardService.UpdateTask:812,865) on every
+    // selected task. Same RunPerTask/BuildUpdateModel shape as ChangeEform.
+    //
+    // Deliberately does NOT touch Status, unlike the single-task calendar
+    // modal, whose onPickOverdueShown/onPickOverdueHidden handlers both force
+    // statusControl to true. An admin flipping compliance on 40 rows does not
+    // intend to silently reactivate dormant tasks and redeploy their cases;
+    // batch activation is its own action. BuildUpdateModel round-trips the
+    // planning's current Status, so an inactive task stays inactive.
+    //
+    // Deliberately does NOT eagerly clean up already-overdue Compliance rows
+    // either: the calendar path this page follows persists the flag and
+    // nothing else, and the effect appears on the next scheduled pass. (The
+    // older Property-Areas edit path in
+    // BackendConfigurationAreaRulePlanningsServiceHelper additionally deletes
+    // all Compliance rows inline and recomputes Property.ComplianceStatus —
+    // that is not the path this page uses.)
+    public async Task<OperationResult> SetCompliance(TaskListBatchComplianceModel model) =>
+        await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.ComplianceEnabled = model.ComplianceEnabled;
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+
     // Copy creates a brand-new AreaRulePlanning on the target property/board
     // via calendarService.CreateTask, seeded from the source task's full
     // current state (BuildUpdateModel). Two fields are deliberately NOT a

@@ -577,6 +577,7 @@ export const ptBR = {
   'The eForm will be changed immediately for the selected tasks': 'O formulário eletrônico será alterado imediatamente para as tarefas selecionadas.',
   'Add tags': 'Adicionar etiquetas',
   'Remove tags': 'Remover etiquetas',
+  'Set compliance': 'Definir conformidade',
   'Copy to property': 'Cópia para a propriedade',
   'Delete selected': 'Excluir selecionados',
   'Collected data will not be deleted': 'Os dados coletados não serão apagados.',

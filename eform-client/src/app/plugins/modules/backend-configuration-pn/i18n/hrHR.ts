@@ -577,6 +577,7 @@ export const hrHR = {
   'The eForm will be changed immediately for the selected tasks': 'E-obrazac će se odmah promijeniti za odabrane zadatke',
   'Add tags': 'Dodaj oznake',
   'Remove tags': 'Ukloni oznake',
+  'Set compliance': 'Postavite sukladnost',
   'Copy to property': 'Kopiraj u svojstvo',
   'Delete selected': 'Izbriši odabrano',
   'Collected data will not be deleted': 'Prikupljeni podaci neće biti izbrisani',
