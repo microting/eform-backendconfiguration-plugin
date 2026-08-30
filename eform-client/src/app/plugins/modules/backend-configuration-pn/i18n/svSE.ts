@@ -169,6 +169,8 @@ export const svSE = {
   Active: 'Aktiv',
   NotActive: 'Inte aktiv',
   'Task name': 'Uppgiftsnamn',
+  'Task name is required': 'Uppgiftsnamn krävs',
+  'Failed to rename task': 'Det gick inte att byta namn på uppgiften',
   Folder: 'Mapp',
   Notification: 'Meddelande',
   'Planned tasks per': 'Planerade arbetsuppgifter per',

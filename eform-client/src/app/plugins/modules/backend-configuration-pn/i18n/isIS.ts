@@ -169,6 +169,8 @@ export const isIS = {
   Active: 'Virkur',
   NotActive: 'Ekki virk',
   'Task name': 'Heiti verkefnis',
+  'Task name is required': 'Heiti verks er nauðsynlegt',
+  'Failed to rename task': 'Ekki tókst að endurnefna verkið',
   Folder: 'Mappa',
   Notification: 'Tilkynning',
   'Planned tasks per': 'Fyrirhuguð verkefni pr',

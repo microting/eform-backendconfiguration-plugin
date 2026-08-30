@@ -169,6 +169,8 @@ export const plPL = {
   Active: 'Aktywne',
   NotActive: 'Nieaktywne',
   'Task name': 'Nazwa zadania',
+  'Task name is required': 'Nazwa zadania jest wymagana',
+  'Failed to rename task': 'Nie udało się zmienić nazwy zadania',
   Folder: 'Folder',
   Notification: 'Powiadomienie',
   'Planned tasks per': 'Planowane zadania wg',

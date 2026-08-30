@@ -45,9 +45,11 @@
       </button>
     </div>
     <app-task-list-table
+      #taskListTable
       [tasks]="tasks" [properties]="properties" [boards]="boards"
       [eforms]="eforms" [planningTags]="tags"
       (editTask)="onEditTask($event)"
+      (renameTask)="onRenameTask($event)"
       (selectionChanged)="onSelectionChanged($event)">
     </app-task-list-table>
     <!-- Renders nothing; owns the shared tag dialogs opened by #taskListManageTagsBtn. -->

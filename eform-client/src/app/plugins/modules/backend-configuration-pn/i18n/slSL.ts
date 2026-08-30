@@ -169,6 +169,8 @@ export const slSL = {
   Active: 'Aktiven',
   NotActive: 'Ni aktivno',
   'Task name': 'Ime naloge',
+  'Task name is required': 'Ime naloge je obvezno',
+  'Failed to rename task': 'Preimenovanje naloge ni uspelo',
   Folder: 'Mapa',
   Notification: 'Obvestilo',
   'Planned tasks per': 'Načrtovane naloge po',

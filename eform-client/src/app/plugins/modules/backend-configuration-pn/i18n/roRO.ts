@@ -169,6 +169,8 @@ export const roRO = {
   Active: 'Activ',
   NotActive: 'Inactiv',
   'Task name': 'Numele sarcinii',
+  'Task name is required': 'Numele sarcinii este obligatoriu',
+  'Failed to rename task': 'Redenumirea sarcinii a eșuat',
   Folder: 'Pliant',
   Notification: 'Notificare',
   'Planned tasks per': 'Sarcini planificate per',

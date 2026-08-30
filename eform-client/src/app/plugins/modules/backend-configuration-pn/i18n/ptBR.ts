@@ -169,6 +169,8 @@ export const ptBR = {
   Active: 'Ativo',
   NotActive: 'Não ativo',
   'Task name': 'Nome da tarefa',
+  'Task name is required': 'O nome da tarefa é obrigatório',
+  'Failed to rename task': 'Falha ao renomear a tarefa',
   Folder: 'Pasta',
   Notification: 'Notificação',
   'Planned tasks per': 'Tarefas planejadas por',

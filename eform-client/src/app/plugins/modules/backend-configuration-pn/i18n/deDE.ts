@@ -269,6 +269,8 @@ export const deDE = {
   Active: 'Aktiv',
   NotActive: 'Nicht aktiv',
   'Task name': 'Aufgabenname',
+  'Task name is required': 'Aufgabenname ist erforderlich',
+  'Failed to rename task': 'Aufgabe konnte nicht umbenannt werden',
   Folder: 'Ordner',
   Notification: 'Benachrichtigung',
   'Checklist stable': 'Checkliste stabil',

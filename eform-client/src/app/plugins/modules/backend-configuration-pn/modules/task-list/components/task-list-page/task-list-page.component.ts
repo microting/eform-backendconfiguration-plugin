@@ -16,6 +16,7 @@ import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskListService,
 } from '../../../../services';
+import {TaskListRenameRequest} from '../../../../services/backend-configuration-pn-task-list.service';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {CalendarRepeatService} from '../../../calendar/services/calendar-repeat.service';
 import {mapResponseToCalendarTask} from '../../../calendar/services/calendar-task.mapper';
@@ -33,6 +34,7 @@ import {BatchStartDateModalComponent} from '../modals/batch-start-date-modal/bat
 import {BatchStatusModalComponent} from '../modals/batch-status-modal/batch-status-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
+import {TaskListTableComponent} from '../task-list-table/task-list-table.component';
 
 // Task 11 implements the batch action modals; this task only wires up the
 // dropdown + selection plumbing and stubs the modal opener.
@@ -86,6 +88,14 @@ export class TaskListPageComponent implements OnInit {
   // Always present in the template — no *ngIf — so it is resolvable without
   // `{static: false}` timing games.
   @ViewChild('tagsModal') tagsModal: TaskListTagsComponent;
+
+  // #1126 — the grid owns the inline-rename UI state (which row is open, the
+  // typed text, busy, the inline error); this page owns the API call. The
+  // result has to travel BACK so the editor knows whether to close or stay
+  // open for a retry, and a plain `{id, title}` @Output cannot carry it — so
+  // the page calls the table's `renameSucceeded()`/`renameFailed()` directly.
+  // Always present in the template (no *ngIf), like `tagsModal` above.
+  @ViewChild('taskListTable') taskListTable: TaskListTableComponent;
 
   selection = new Set<number>();
   pendingAction: TaskListBatchAction | null = null;
@@ -235,6 +245,38 @@ export class TaskListPageComponent implements OnInit {
       if (result) {
         this.loadTasks();
       }
+    });
+  }
+
+  /**
+   * #1126 — performs the inline rename the grid asked for, then refreshes.
+   *
+   * `loadTasks()` (not a local mutation of `task.title`) is what makes the new
+   * name appear: the grid's `title` is resolved SERVER-side from the
+   * AreaRuleTranslation matching the user's language, and the same round-trip
+   * also picks up anything else `UpdateTask` recomputed. It runs only AFTER
+   * `renameSucceeded()` has closed the editor, so the refresh cannot land on an
+   * open editor for the row that was just saved.
+   *
+   * The failure branch deliberately does NOT refresh: `renameFailed()` keeps
+   * the editor open with the typed text, and a `loadTasks()` would be a pure
+   * distraction (nothing changed server-side). The reason is already on screen
+   * as `apiBaseService.post`'s own toast.
+   */
+  onRenameTask(event: {id: number; title: string}) {
+    const model = new TaskListRenameRequest();
+    model.taskIds = [event.id];
+    model.title = event.title;
+    this.taskListService.rename(model).subscribe({
+      next: result => {
+        if (result && result.success) {
+          this.taskListTable.renameSucceeded();
+          this.loadTasks();
+        } else {
+          this.taskListTable.renameFailed();
+        }
+      },
+      error: () => this.taskListTable.renameFailed(),
     });
   }
 

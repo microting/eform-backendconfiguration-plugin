@@ -169,6 +169,8 @@ export const lvLV = {
   Active: 'Aktīvs',
   NotActive: 'Neaktīvs',
   'Task name': 'Uzdevuma nosaukums',
+  'Task name is required': 'Uzdevuma nosaukums ir obligāts',
+  'Failed to rename task': 'Neizdevās pārdēvēt uzdevumu',
   Folder: 'Mape',
   Notification: 'Paziņojums',
   'Planned tasks per': 'Plānotie uzdevumi per',

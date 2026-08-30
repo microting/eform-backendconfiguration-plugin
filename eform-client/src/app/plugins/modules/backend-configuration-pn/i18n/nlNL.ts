@@ -169,6 +169,8 @@ export const nlNL = {
   Active: 'Actief',
   NotActive: 'Niet actief',
   'Task name': 'Taaknaam',
+  'Task name is required': 'Taaknaam is verplicht',
+  'Failed to rename task': 'Kan taak niet hernoemen',
   Folder: 'Map',
   Notification: 'Melding',
   'Planned tasks per': 'Geplande taken per',

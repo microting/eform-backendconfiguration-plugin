@@ -5558,5 +5558,36 @@
       "el-GR": "Η ημερομηνία έναρξης είναι υποχρεωτική",
       "is-IS": "Upphafsdagsetning er nauðsynleg"
     }
+  },
+  {
+    "Key": "TaskNameIsRequired",
+    "LocalizedValue": {
+      "en-US": "Task name is required",
+      "da": "Opgavenavn er påkrævet",
+      "de": "Aufgabenname ist erforderlich",
+      "uk-UA": "Назва завдання є обов'язковою",
+      "pl-PL": "Nazwa zadania jest wymagana",
+      "no-NO": "Oppgavenavn er påkrevd",
+      "sv-SE": "Uppgiftsnamn krävs",
+      "es-ES": "El nombre de la tarea es obligatorio",
+      "fr-FR": "Le nom de la tâche est obligatoire",
+      "it-IT": "Il nome dell'attività è obbligatorio",
+      "nl-NL": "Taaknaam is verplicht",
+      "pt-BR": "O nome da tarefa é obrigatório",
+      "pt-PT": "O nome da tarefa é obrigatório",
+      "fi-FI": "Tehtävän nimi on pakollinen",
+      "et-ET": "Ülesande nimi on kohustuslik",
+      "lv-LV": "Uzdevuma nosaukums ir obligāts",
+      "lt-LT": "Užduoties pavadinimas yra privalomas",
+      "ro-RO": "Numele sarcinii este obligatoriu",
+      "hr-HR": "Naziv zadatka je obavezan",
+      "sl-SL": "Ime naloge je obvezno",
+      "cs-CZ": "Název úkolu je povinný",
+      "sk-SK": "Názov úlohy je povinný",
+      "hu-HU": "A feladat neve kötelező",
+      "bg-BG": "Името на задачата е задължително",
+      "el-GR": "Το όνομα εργασίας είναι υποχρεωτικό",
+      "is-IS": "Heiti verks er nauðsynlegt"
+    }
   }
 ]

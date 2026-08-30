@@ -174,6 +174,8 @@ export const da = {
   Active: 'Aktiv',
   NotActive: 'Ikke aktiv',
   'Task name': 'Opgavenavn',
+  'Task name is required': 'Opgavenavn er påkrævet',
+  'Failed to rename task': 'Kunne ikke omdøbe opgaven',
   Folder: 'Mappe',
   Notification: 'Notifikation',
   'Planned tasks per': 'Planlagte opgaver pr',

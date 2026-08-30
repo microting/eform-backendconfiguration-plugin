@@ -169,6 +169,8 @@ export const noNO = {
   Active: 'Aktiv',
   NotActive: 'Ikke aktiv',
   'Task name': 'Oppgavenavn',
+  'Task name is required': 'Oppgavenavn er påkrevd',
+  'Failed to rename task': 'Kunne ikke gi oppgaven nytt navn',
   Folder: 'Mappe',
   Notification: 'Varsel',
   'Planned tasks per': 'Planlagte oppgaver pr',

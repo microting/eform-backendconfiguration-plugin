@@ -169,6 +169,8 @@ export const csCZ = {
   Active: 'Aktivní',
   NotActive: 'Neaktivní',
   'Task name': 'Název úkolu',
+  'Task name is required': 'Název úkolu je povinný',
+  'Failed to rename task': 'Přejmenování úkolu se nezdařilo',
   Folder: 'Složka',
   Notification: 'Oznámení',
   'Planned tasks per': 'Plánované úkoly per',

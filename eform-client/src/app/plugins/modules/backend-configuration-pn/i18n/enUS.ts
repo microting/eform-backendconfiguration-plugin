@@ -195,6 +195,8 @@ export const enUS= {
   'Active': 'Active',
   'NotActive': 'Not active',
   'Task name': 'Task name',
+  'Task name is required': 'Task name is required',
+  'Failed to rename task': 'Failed to rename task',
   Folder: 'Folder',
   Notification: 'Notification',
   'Planned tasks per': 'Planned tasks per',

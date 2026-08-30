@@ -668,9 +668,18 @@ export class TaskListPage {
   // ----- Task edit modal (shared with the calendar) ---------------------------------
 
   /**
-   * Opens the per-task edit modal by clicking the grid row's title link
-   * (`titleTpl` renders `a.ctl-link`, wired to `onEditTask`). The task list
-   * reuses the calendar's `TaskCreateEditModalComponent`, so all
+   * Opens the per-task edit modal by clicking the row's hover-revealed
+   * "open the full editor" icon button (`#taskListEditModalBtn-<id>`, wired to
+   * `onEditTask`). Since #1126 the title TEXT is no longer the modal opener —
+   * clicking it starts the inline rename editor — so this must never go back to
+   * `a.ctl-link`, which that template no longer renders at all. The button is
+   * always in the DOM (only its opacity is animated on row hover), so it is
+   * click-reachable without an explicit hover.
+   *
+   * The row's own id is not known to callers, so the button is located by class
+   * within the row rather than by its per-row id.
+   *
+   * The task list reuses the calendar's `TaskCreateEditModalComponent`, so all
    * `#calendarEvent*` ids from `calendar-ui-enhancements.page.ts` apply here
    * too.
    *
@@ -683,7 +692,7 @@ export class TaskListPage {
    * `selectProperty()`'s boards wait.
    */
   async openEditModal(taskName: string): Promise<void> {
-    await this.row(taskName).locator('a.ctl-link').click();
+    await this.row(taskName).locator('.tl-title-modal-btn').click();
     await this.page.locator('mat-dialog-container').waitFor({ state: 'visible', timeout: 20000 });
     await this.page.waitForTimeout(800);
   }
@@ -946,5 +955,66 @@ export class TaskListPage {
     await this.page.locator('#taskListCsvExportBtn').click();
     const download = await downloadPromise;
     return download.suggestedFilename();
+  }
+
+  // ----- Inline rename in the title cell (#1126) ------------------------------------
+
+  /**
+   * The read-only title text of a row (`titleTpl`'s `<span class="tl-title-text">`).
+   * Present only while that row is NOT in edit mode.
+   */
+  titleText(taskName: string): Locator {
+    return this.row(taskName).locator('.tl-title-text');
+  }
+
+  /**
+   * The inline editor's `<input matInput>` for the row currently in edit mode.
+   * Scoped to the whole grid rather than to a row, because once editing starts
+   * the row no longer contains the task's old name and `row(taskName)`'s
+   * `hasText` filter would stop matching it.
+   */
+  titleInput(): Locator {
+    return this.getGrid().locator('input[id^="taskListTitleInput-"]');
+  }
+
+  /** The inline error rendered under the editor (empty title / failed save). */
+  titleError(): Locator {
+    return this.getGrid().locator('[id^="taskListTitleError-"]');
+  }
+
+  /** Clicks the title text to open the inline editor and waits for the input. */
+  async startInlineRename(taskName: string): Promise<void> {
+    await this.titleText(taskName).click();
+    await this.titleInput().waitFor({ state: 'visible', timeout: 10000 });
+  }
+
+  /**
+   * Replaces the editor's content. `fill()` rather than `type()`: the input is
+   * autofocused AND text-selected on open, so typing would depend on that
+   * selection still being live.
+   */
+  async setInlineRenameValue(value: string): Promise<void> {
+    await this.titleInput().fill(value);
+  }
+
+  /**
+   * Commits with Enter and waits for the tasks/index refresh the page fires
+   * from the rename's success handler — that round-trip, not the editor
+   * closing, is what puts the new name in the grid.
+   */
+  async commitInlineRenameWithEnter(): Promise<void> {
+    const reload = this.page.waitForResponse(
+      (r) => r.url().includes('/api/backend-configuration-pn/calendar/tasks/index'),
+      { timeout: 30000 },
+    ).catch(() => null);
+    await this.titleInput().press('Enter');
+    await reload;
+    await this.page.waitForTimeout(500);
+  }
+
+  /** Cancels with Escape; the editor closes without any request. */
+  async cancelInlineRenameWithEscape(): Promise<void> {
+    await this.titleInput().press('Escape');
+    await this.page.waitForTimeout(300);
   }
 }

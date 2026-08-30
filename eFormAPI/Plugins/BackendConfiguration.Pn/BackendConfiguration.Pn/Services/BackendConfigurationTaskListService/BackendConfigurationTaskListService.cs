@@ -400,6 +400,100 @@ public class BackendConfigurationTaskListService(
         return new OperationDataResult<TaskListBatchStartDatePreviewModel>(true, preview);
     }
 
+    // ------------------------------------------------------------------
+    // #1126 — inline rename
+    // ------------------------------------------------------------------
+
+    // Renames the task(s) named by model.TaskIds. The inline grid editor always
+    // sends a single id; the batch rail is reused deliberately, NOT as an
+    // accident of copy-paste. The task name lives in TWO tables that must not
+    // drift apart:
+    //
+    //   * AreaRuleTranslation.Name       — the READ source of truth for this
+    //     page (BackendConfigurationCalendarService.Index resolves `title` from
+    //     arp.AreaRule.AreaRuleTranslations, matching the user's language with a
+    //     first-row fallback).
+    //   * PlanningNameTranslation.Name   — what the items-planning Plannings
+    //     list renders.
+    //
+    // BackendConfigurationTaskWizardService.UpdateTask upserts BOTH from the one
+    // updateModel.Translates list (AreaRule translations unconditionally, the
+    // planning name translations in its still-active branch), and it runs
+    // AreaRuleLanguageHelper.RemapCommonTranslationLanguageIdsAsync FIRST so the
+    // rows never land under a language id no reader queries. Going through
+    // calendarService.UpdateTask therefore gets the dual write for free — a
+    // dedicated rename write path would have to re-implement both halves and
+    // could silently fall out of sync with the modal.
+    //
+    // KNOWN, PRE-EXISTING ASYMMETRY (not introduced here): UpdateTask only
+    // writes PlanningNameTranslation in its `case true when Status`
+    // (still-active) and `case false when Status` (reactivate) branches. A task
+    // that is inactive and STAYS inactive gets its AreaRuleTranslation renamed
+    // but not its PlanningNameTranslation — the grid, which reads the former,
+    // is correct either way, and the next activation's reactivate branch copies
+    // AreaRuleTranslation -> PlanningNameTranslation and resyncs them.
+    public async Task<OperationResult> Rename(TaskListRenameModel model)
+    {
+        // Batch-wide, PRE-LOOP validation, mirroring Copy's and
+        // ChangeStartDate's shape: a bad title must never rename half the
+        // selection. Trimmed once here so the stored name, the grid text and
+        // any test's exact-match assertion all agree — the value is a display
+        // name, and leading/trailing whitespace in it is never intentional.
+        var title = model.Title?.Trim();
+        if (string.IsNullOrEmpty(title))
+        {
+            return new OperationResult(false, localizationService.GetString("TaskNameIsRequired"));
+        }
+
+        // Resolved ONCE, outside the loop: it is a per-request property of the
+        // caller, not of the task, and GetCurrentUserLanguage() hits the DB.
+        // .Id is the real SDK Languages.Id — the same value the read path
+        // (Index) matches translations on, so the row we rewrite is exactly the
+        // row that renders in this user's grid.
+        var userLanguageId = (await userService.GetCurrentUserLanguage()).Id;
+
+        return await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+
+            // BuildUpdateModel populates Translates as a faithful round-trip of
+            // every non-removed AreaRuleTranslation (LanguageId + Name +
+            // Description). Rewrite exactly ONE entry's Name and leave the other
+            // languages — and every Description — untouched, so a rename is
+            // never an accidental wipe of the other translations.
+            //
+            // The fallback mirrors the READ path verbatim
+            // (`translations.First(LanguageId == userLanguageId) ?? translations.First()`):
+            // when the task has no row in the caller's language, the grid is
+            // showing the FIRST row, so that is the row the user just renamed and
+            // the row that must change. Rewriting it (instead of ADDING a
+            // caller-language row) also keeps the task single-named for everyone
+            // else, and — because it never grows the list — cannot produce two
+            // entries that collide after UpdateTask's language-id remap.
+            var target = update.Translates.FirstOrDefault(t => t.LanguageId == userLanguageId)
+                         ?? update.Translates.FirstOrDefault();
+            if (target == null)
+            {
+                // No translations at all (an AreaRule whose only rows were
+                // soft-removed). Nothing to rewrite, so seed one in the caller's
+                // language; the list was empty, so this cannot duplicate.
+                update.Translates.Add(new CommonTranslationsModel
+                {
+                    LanguageId = userLanguageId,
+                    Name = title
+                });
+            }
+            else
+            {
+                target.Name = title;
+            }
+
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+    }
+
     // Copy creates a brand-new AreaRulePlanning on the target property/board
     // via calendarService.CreateTask, seeded from the source task's full
     // current state (BuildUpdateModel). Two fields are deliberately NOT a

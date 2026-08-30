@@ -25,6 +25,15 @@ export class TaskListBatchCopyRequest extends TaskListBatchRequest {
 export class TaskListBatchStartDateRequest extends TaskListBatchRequest { startDate: string; }
 
 /**
+ * #1126 — inline rename from the task-list grid row. `taskIds` always carries
+ * exactly ONE id: the action is single-row, but it rides the batch rail so the
+ * server reuses `BuildUpdateModel` -> `UpdateTask` and the name lands in BOTH
+ * `AreaRuleTranslation` (what this grid reads) and `PlanningNameTranslation`
+ * (what the items-planning Plannings list reads).
+ */
+export class TaskListRenameRequest extends TaskListBatchRequest { title: string; }
+
+/**
  * Read-only projection of what `change-start-date` WOULD do, returned by the
  * `/preview` endpoint. Counted by enumerating exactly as the write path does,
  * but writing nothing.
@@ -99,6 +108,16 @@ export class BackendConfigurationPnTaskListService {
     model: TaskListBatchStartDateRequest,
   ): Observable<OperationDataResult<TaskListBatchStartDatePreviewModel>> {
     return this.apiBaseService.postNoToast(`${TaskListMethods.Base}/change-start-date/preview`, model);
+  }
+
+  /**
+   * Renames the single task in `model.taskIds`. Uses the toasting `post` like
+   * every other action on this page — the server's message carries the reason a
+   * rename was refused, which the grid's own inline error deliberately does not
+   * try to reproduce.
+   */
+  rename(model: TaskListRenameRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/rename`, model);
   }
 
   delete(model: TaskListBatchRequest): Observable<OperationResult> {
