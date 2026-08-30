@@ -169,6 +169,8 @@ export const huHU = {
   Active: 'Aktív',
   NotActive: 'Nem aktív',
   'Task name': 'A feladat neve',
+  'Task name is required': 'A feladat neve kötelező',
+  'Failed to rename task': 'A feladat átnevezése sikertelen',
   Folder: 'Mappa',
   Notification: 'Értesítés',
   'Planned tasks per': 'Tervezett feladatok per',

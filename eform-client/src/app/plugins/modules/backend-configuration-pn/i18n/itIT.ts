@@ -168,6 +168,8 @@ export const itIT = {
   Active: 'Attivo',
   NotActive: 'Non attivo',
   'Task name': 'Nome attività',
+  'Task name is required': 'Il nome del compito è obbligatorio',
+  'Failed to rename task': 'Impossibile rinominare il compito',
   Folder: 'Cartella',
   Notification: 'Notifica',
   'Planned tasks per': 'Attività pianificate per',

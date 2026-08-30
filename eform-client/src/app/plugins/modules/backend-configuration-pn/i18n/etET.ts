@@ -169,6 +169,8 @@ export const etET = {
   Active: 'Aktiivne',
   NotActive: 'Pole aktiivne',
   'Task name': 'Ülesande nimi',
+  'Task name is required': 'Ülesande nimi on kohustuslik',
+  'Failed to rename task': 'Ülesande ümbernimetamine ebaõnnestus',
   Folder: 'Kaust',
   Notification: 'Teavitus',
   'Planned tasks per': 'Planeeritud ülesanded per',

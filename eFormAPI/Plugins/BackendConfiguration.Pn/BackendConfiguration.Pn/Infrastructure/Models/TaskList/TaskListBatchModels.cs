@@ -101,3 +101,23 @@ public class TaskListBatchStartDatePreviewModel
     /// <summary>(past occurrence x effective site) pairs the backfill will materialise.</summary>
     public int OverdueToCreate { get; set; }
 }
+
+/// <summary>
+/// #1126 — "Omdøbe opgavenavn." Inline rename from the task-list grid row.
+///
+/// Extends <see cref="TaskListBatchRequestModel"/> even though the action is
+/// SINGLE-row: the controller's shared empty-<c>TaskIds</c> guard and the
+/// service's <c>RunPerTask</c>/<c>BuildUpdateModel</c>/<c>UpdateTask</c> rail
+/// are what keep the translation dual-write (AreaRuleTranslation +
+/// PlanningNameTranslation) and every other side effect identical to the
+/// modal's. The frontend always sends a one-element list.
+/// </summary>
+public class TaskListRenameModel : TaskListBatchRequestModel
+{
+    /// <summary>
+    /// The new task name, in the CALLING USER's language. Empty/whitespace is
+    /// rejected before the loop (the edit modal declares the title
+    /// <c>Validators.required</c>; the server honours the same rule).
+    /// </summary>
+    public string Title { get; set; }
+}

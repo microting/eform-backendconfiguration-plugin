@@ -23,8 +23,47 @@
   <span>{{ board(row.boardId)?.name ?? '' }}</span>
 </ng-template>
 
+<!-- #1126 — inline rename.
+     The whole cell stops click propagation: mtx-grid binds (click)="_selectRow()"
+     on the <tr>, which with [rowSelectable] CLEARS the batch selection and
+     toggles the clicked row. Without this, clicking into the editor (or on the
+     modal icon) would wipe a selection the admin had just built.
+     The title text is no longer the modal opener — #taskListEditModalBtn-<id>
+     is, revealed on row hover (and always rendered, so it stays keyboard- and
+     Playwright-reachable rather than being *ngIf'd away). -->
 <ng-template #titleTpl let-row>
-  <a class="ctl-link" (click)="onEdit(row)">{{ row.title }}</a>
+  <div class="tl-title-cell" (click)="stopRowClick($event)">
+    <ng-container *ngIf="editingId !== row.id; else titleEditTpl">
+      <span class="tl-title-text" [attr.id]="'taskListTitleText-' + row.id"
+            (click)="startRename(row, $event)">{{ row.title }}</span>
+      <button mat-icon-button class="tl-title-modal-btn"
+              [attr.id]="'taskListEditModalBtn-' + row.id"
+              [matTooltip]="'Edit' | translate"
+              (click)="stopRowClick($event); onEdit(row)">
+        <mat-icon>open_in_new</mat-icon>
+      </button>
+    </ng-container>
+    <ng-template #titleEditTpl>
+      <div class="tl-title-editor">
+        <!-- MUST be [id] (MatInput's own @Input), not [attr.id]: MatInput's host
+             binding '[id]': 'id' defaults to a generated mat-input-N and
+             overwrites attribute-bound ids, so [attr.id] never reaches the DOM.
+             (Same trap documented in adhoc-area-admin-modal.component.html.) -->
+        <mat-form-field class="tl-title-field" subscriptSizing="dynamic">
+          <input matInput
+                 [id]="'taskListTitleInput-' + row.id"
+                 [(ngModel)]="editTitle"
+                 [disabled]="busy"
+                 (keydown)="onRenameKeydown($event, row)"
+                 (blur)="onRenameBlur(row)"
+                 [attr.aria-label]="'Task name' | translate">
+        </mat-form-field>
+        <mat-spinner *ngIf="busy" diameter="18" class="tl-title-spinner"></mat-spinner>
+      </div>
+      <div class="tl-title-error" *ngIf="errorKey"
+           [attr.id]="'taskListTitleError-' + row.id">{{ errorKey | translate }}</div>
+    </ng-template>
+  </div>
 </ng-template>
 
 <ng-template #statusTpl let-row>

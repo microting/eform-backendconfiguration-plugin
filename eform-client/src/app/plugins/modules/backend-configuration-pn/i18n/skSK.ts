@@ -169,6 +169,8 @@ export const skSK = {
   Active: 'Aktívne',
   NotActive: 'Neaktívny',
   'Task name': 'Názov úlohy',
+  'Task name is required': 'Názov úlohy je povinný',
+  'Failed to rename task': 'Premenovanie úlohy zlyhalo',
   Folder: 'Priečinok',
   Notification: 'Oznámenie',
   'Planned tasks per': 'Plánované úlohy per',

@@ -169,6 +169,8 @@ export const ltLT = {
   Active: 'Aktyvus',
   NotActive: 'Neaktyvus',
   'Task name': 'Užduoties pavadinimas',
+  'Task name is required': 'Užduoties pavadinimas yra privalomas',
+  'Failed to rename task': 'Nepavyko pervadinti užduoties',
   Folder: 'Aplankas',
   Notification: 'Pranešimas',
   'Planned tasks per': 'Suplanuotos užduotys pagal',

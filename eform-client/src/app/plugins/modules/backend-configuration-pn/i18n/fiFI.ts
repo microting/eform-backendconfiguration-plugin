@@ -169,6 +169,8 @@ export const fiFI = {
   Active: 'Aktiivinen',
   NotActive: 'Ei aktiivinen',
   'Task name': 'Tehtävän nimi',
+  'Task name is required': 'Tehtävän nimi on pakollinen',
+  'Failed to rename task': 'Tehtävän nimeäminen uudelleen epäonnistui',
   Folder: 'Kansio',
   Notification: 'Ilmoitus',
   'Planned tasks per': 'Suunnitellut tehtävät per',

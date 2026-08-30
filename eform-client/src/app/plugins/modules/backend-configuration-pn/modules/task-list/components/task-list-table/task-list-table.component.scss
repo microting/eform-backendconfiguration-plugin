@@ -9,15 +9,74 @@
     vertical-align: middle;
   }
 
-  .ctl-link {
-    color: #1d4ed8;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
+  // #1126 — the title cell is now an inline editor rather than a link.
+  // `.ctl-link` is gone from THIS template; the sibling calendar-task-list
+  // table still has its own copy and is deliberately untouched.
+  .tl-title-cell {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    // The editor must not make the row jump in height when it opens, so the
+    // cell reserves the taller of the two states.
+    min-height: 40px;
   }
 
-  .ctl-link:hover {
-    text-decoration: underline;
+  // Kept visually close to the old link (blue + semibold) so the Task name
+  // column still reads as the actionable one, but with a text caret and a
+  // soft hover box instead of an underline: it now opens an editor in place,
+  // it does not navigate. rgba grey works on both the light and the dark
+  // variant of either theme, unlike a fixed hex.
+  .tl-title-text {
+    color: #1d4ed8;
+    font-weight: 600;
+    cursor: text;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+
+  .tl-title-text:hover {
+    background: rgba(128, 128, 128, 0.16);
+  }
+
+  // Revealed on row hover / keyboard focus. Always RENDERED (never *ngIf'd)
+  // so it stays reachable by keyboard and by Playwright.
+  .tl-title-modal-btn {
+    opacity: 0;
+    transition: opacity 120ms ease-in-out;
+    flex: 0 0 auto;
+  }
+
+  .mat-mdc-row:hover .tl-title-modal-btn,
+  .tl-title-modal-btn:focus-visible,
+  .tl-title-modal-btn:hover {
+    opacity: 1;
+  }
+
+  .tl-title-editor {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .tl-title-field {
+    flex: 1 1 auto;
+    // The global theme caps mtx-select/mat-form-field width at 320px; a grid
+    // cell is narrower than that, so flex-basis alone governs here.
+    min-width: 120px;
+  }
+
+  .tl-title-spinner {
+    flex: 0 0 auto;
+  }
+
+  // Matches the inline error style of adhoc-area-admin-modal.component.scss.
+  .tl-title-error {
+    flex: 1 0 100%;
+    color: #b3261e;
+    font-size: 12px;
   }
 
   .badge {

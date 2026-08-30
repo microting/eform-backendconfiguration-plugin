@@ -166,6 +166,8 @@ export const ukUA = {
   Active: 'Активне',
   NotActive: 'Неактивне',
   'Task name': 'Назва завдання',
+  'Task name is required': 'Потрібна назва завдання',
+  'Failed to rename task': 'Не вдалося перейменувати завдання',
   Folder: 'Папка',
   Notification: 'Сповіщення',
   'Planned tasks per': 'Планові завдання пер',

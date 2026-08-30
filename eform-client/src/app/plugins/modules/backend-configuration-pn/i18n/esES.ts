@@ -169,6 +169,8 @@ export const esES = {
   Active: 'Activo',
   NotActive: 'No activo',
   'Task name': 'Nombre de la tarea',
+  'Task name is required': 'El nombre de la tarea es obligatorio',
+  'Failed to rename task': 'No se pudo cambiar el nombre de la tarea',
   Folder: 'Carpeta',
   Notification: 'Notificación',
   'Planned tasks per': 'Tareas planificadas por',

@@ -169,6 +169,8 @@ export const bgBG = {
   Active: 'Активен',
   NotActive: 'Неактивен',
   'Task name': 'Име на задачата',
+  'Task name is required': 'Името на задачата е задължително',
+  'Failed to rename task': 'Преименуването на задачата е неуспешно',
   Folder: 'Папка',
   Notification: 'уведомление',
   'Planned tasks per': 'Планирани задачи по',

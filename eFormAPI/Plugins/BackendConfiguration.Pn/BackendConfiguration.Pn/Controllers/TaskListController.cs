@@ -63,6 +63,16 @@ public class TaskListController(
         => ValidatedData<TaskListBatchStartDatePreviewModel>(model)
            ?? await taskListService.ChangeStartDatePreview(model);
 
+    /// <summary>
+    /// #1126 — inline rename from the task-list grid row. Single-row action on
+    /// the batch rail (one-element TaskIds), so it inherits <see cref="Validated"/>'s
+    /// empty-TaskIds guard unchanged; the empty/whitespace TITLE guard lives in
+    /// the service, pre-loop, alongside Copy's and ChangeStartDate's.
+    /// </summary>
+    [HttpPost("rename")]
+    public async Task<OperationResult> Rename([FromBody] TaskListRenameModel model)
+        => await Validated(model) ?? await taskListService.Rename(model);
+
     [HttpPost("copy")]
     public async Task<OperationResult> Copy([FromBody] TaskListBatchCopyModel model)
         => await Validated(model) ?? await taskListService.Copy(model);

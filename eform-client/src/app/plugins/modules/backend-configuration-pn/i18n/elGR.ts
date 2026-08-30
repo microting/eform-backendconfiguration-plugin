@@ -169,6 +169,8 @@ export const elGR = {
   Active: 'Ενεργός',
   NotActive: 'Ανενεργός',
   'Task name': 'Ονομα εργασίας',
+  'Task name is required': 'Το όνομα εργασίας είναι υποχρεωτικό',
+  'Failed to rename task': 'Η μετονομασία της εργασίας απέτυχε',
   Folder: 'Ντοσιέ',
   Notification: 'Γνωστοποίηση',
   'Planned tasks per': 'Προγραμματισμένες εργασίες ανά',

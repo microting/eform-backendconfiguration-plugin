@@ -169,6 +169,8 @@ export const hrHR = {
   Active: 'Aktivan',
   NotActive: 'Nije aktivan',
   'Task name': 'Naziv zadatka',
+  'Task name is required': 'Naziv zadatka je obavezan',
+  'Failed to rename task': 'Preimenovanje zadatka nije uspjelo',
   Folder: 'Mapa',
   Notification: 'Obavijest',
   'Planned tasks per': 'Planirani zadaci po',

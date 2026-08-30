@@ -29,6 +29,12 @@ public interface IBackendConfigurationTaskListService
     /// </summary>
     Task<OperationDataResult<TaskListBatchStartDatePreviewModel>> ChangeStartDatePreview(
         TaskListBatchStartDateModel model);
+    /// <summary>
+    /// #1126 — renames every task in <paramref name="model"/> (the inline
+    /// grid-row rename always sends exactly one) by replacing the CALLING
+    /// USER's language entry in the round-tripped <c>Translates</c> list.
+    /// </summary>
+    Task<OperationResult> Rename(TaskListRenameModel model);
     Task<OperationResult> Copy(TaskListBatchCopyModel model);
     Task<OperationResult> Delete(TaskListBatchRequestModel model);
 }

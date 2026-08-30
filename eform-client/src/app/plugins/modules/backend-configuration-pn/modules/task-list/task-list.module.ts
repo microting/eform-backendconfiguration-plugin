@@ -10,6 +10,11 @@ import {MatCardModule} from '@angular/material/card';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatRadioModule} from '@angular/material/radio';
+// #1126 — the inline rename editor's saving spinner and the title cell's
+// "open the full editor" icon-button tooltip. EformSharedModule imports
+// MatTooltipModule but does not re-export it, so it has to be imported here.
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
@@ -52,6 +57,8 @@ import {
     MatDialogModule,
     MatDatepickerModule,
     MatRadioModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
     MtxGridModule,
     MtxSelectModule,
     CalendarModule,

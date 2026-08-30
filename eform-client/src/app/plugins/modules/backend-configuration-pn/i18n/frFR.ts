@@ -169,6 +169,8 @@ export const frFR = {
   Active: 'Actif',
   NotActive: 'Non actif',
   'Task name': 'Nom de la tâche',
+  'Task name is required': 'Le nom de la tâche est obligatoire',
+  'Failed to rename task': 'Échec du renommage de la tâche',
   Folder: 'Dossier',
   Notification: 'Notification',
   'Planned tasks per': 'Tâches planifiées par',
