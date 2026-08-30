@@ -13,7 +13,7 @@ import {
 } from '../BackendConfigurationPropertyWorkers.page';
 
 /**
- * Task list INLINE RENAME suite (#1126, shard k).
+ * Task list INLINE RENAME suite (#1126, shard b).
  *
  * Before this change the whole Task-name cell was a link that opened the
  * shared edit modal. Now the title TEXT opens an in-cell `<input matInput>`
@@ -107,31 +107,140 @@ test.describe.serial('Task list — inline rename of the task name', () => {
     await page.waitForTimeout(1500);
   });
 
+  // =======================================================================
+  // CLEANUP. Same house contract as every sibling suite: a 60s wall-clock
+  // budget, never fail the run, never eat the shard's time. Three things are
+  // tightened, each of which only adds work on a path that previously did
+  // nothing at all:
+  //
+  //   1. The race resolves with a SENTINEL. `Promise.race([cleanup(), new
+  //      Promise(r => setTimeout(r, 60000))])` swallows a hang in complete
+  //      silence — the catch is reachable only from a throw — so a cleanup
+  //      that stalls looked exactly like one that succeeded. Now a stall is
+  //      logged with the names of the rows it may have left behind.
+  //   2. The worker phase and the property phase are guarded SEPARATELY
+  //      inside the one shared budget. Before, a throw while clearing
+  //      workers skipped the property deletion entirely and handed the
+  //      leftover property to the next spec in the shard.
+  //   3. A verification read afterwards, so "cleanup ran" and "the rows are
+  //      gone" are no longer the same claim.
+  //
+  // The budget is a single deadline shared by all phases, so the worst case
+  // is still ~60s — deliberately not raised.
+  //
+  // Idempotence: `clearTable()` is a no-op on an empty grid (properties
+  // returns early at 0 rows, workers loops zero times), so a row that some
+  // earlier step already removed is tolerated rather than retried.
+  //
+  // A phase that TIMES OUT aborts the rest: its operations are still driving
+  // this page, and starting the next phase on top of them would be worse
+  // than skipping it. A phase that THROWS is idle, so the next one runs —
+  // except for the login, without which nothing downstream can succeed and
+  // every later phase would just burn the budget on doomed waits.
+  // =======================================================================
   test.afterAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    const cleanup = async () => {
-      await page.goto('http://localhost:4200');
-      await new LoginPage(page).login();
+    const CLEANUP_BUDGET_MS = 60000;
+    const deadline = Date.now() + CLEANUP_BUDGET_MS;
+    const problems: string[] = [];
+    let aborted = false;
 
-      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
-      await workersPage.goToPropertyWorkers();
-      await page.waitForTimeout(1000);
-      await workersPage.clearTable();
-
-      const propertiesPage = new BackendConfigurationPropertiesPage(page);
-      await propertiesPage.goToProperties();
-      await page.waitForTimeout(1000);
-      await propertiesPage.clearTable();
+    // Never throws. Returns whether the phase actually completed.
+    const phase = async (label: string, fn: () => Promise<void>): Promise<boolean> => {
+      if (aborted) {
+        problems.push(`${label}: skipped, an earlier phase did not complete`);
+        return false;
+      }
+      const budget = deadline - Date.now();
+      if (budget <= 0) {
+        problems.push(`${label}: skipped, cleanup budget exhausted`);
+        aborted = true;
+        return false;
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const outcome = await Promise.race([
+          fn().then(() => 'done' as const),
+          new Promise<'timeout'>(resolve => {
+            timer = setTimeout(() => resolve('timeout'), budget);
+          }),
+        ]);
+        if (outcome === 'timeout') {
+          aborted = true;
+          problems.push(`${label}: timed out after ${budget}ms`);
+          return false;
+        }
+        return true;
+      } catch (err: any) {
+        problems.push(`${label}: ${err?.message ?? err}`);
+        return false;
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      }
     };
+
+    const page = await browser.newPage();
     try {
-      await Promise.race([
-        cleanup(),
-        new Promise(resolve => setTimeout(resolve, 60000)),
-      ]);
+      const workersPage = new BackendConfigurationPropertyWorkersPage(page);
+      const propertiesPage = new BackendConfigurationPropertiesPage(page);
+
+      const loggedIn = await phase('login', async () => {
+        await page.goto('http://localhost:4200');
+        await new LoginPage(page).login();
+      });
+      if (!loggedIn) {
+        // Nothing below can work unauthenticated; stop rather than spend the
+        // remaining budget on waits that are certain to time out.
+        aborted = true;
+      }
+
+      // Workers first: the property cannot go while a worker is assigned to
+      // it. Waiting for the grid host instead of only sleeping matters here —
+      // counting rows before the page has rendered returns 0 and makes
+      // clearTable() a silent no-op, which is precisely the failure mode this
+      // block exists to surface.
+      await phase('clear workers', async () => {
+        await workersPage.goToPropertyWorkers();
+        await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: 15000 });
+        await page.waitForTimeout(1000);
+        await workersPage.clearTable();
+      });
+
+      await phase('clear properties', async () => {
+        await propertiesPage.goToProperties();
+        await page.locator('app-properties-table').waitFor({ state: 'visible', timeout: 15000 });
+        await page.waitForTimeout(1000);
+        await propertiesPage.clearTable();
+      });
+
+      await phase('verify', async () => {
+        await propertiesPage.goToProperties();
+        await page.locator('app-properties-table').waitFor({ state: 'visible', timeout: 15000 });
+        const propertiesLeft = await page.locator('app-properties-table .mat-mdc-row').count();
+        if (propertiesLeft > 0) {
+          problems.push(`verify: ${propertiesLeft} property row(s) still present`);
+        }
+        await workersPage.goToPropertyWorkers();
+        await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: 15000 });
+        const workersLeft = await workersPage.rowNum();
+        if (workersLeft > 0) {
+          problems.push(`verify: ${workersLeft} worker row(s) still present`);
+        }
+      });
     } catch (err: any) {
-      console.log(`afterAll cleanup failed (non-fatal): ${err?.message ?? err}`);
+      problems.push(`cleanup harness: ${err?.message ?? err}`);
+    } finally {
+      if (problems.length > 0) {
+        console.log(
+          '[task-list-inline-rename] afterAll cleanup INCOMPLETE (non-fatal) — ' +
+          `may have left property "${property.name}" / worker ` +
+          `"${worker.name} ${worker.surname}" for the next spec in this shard: ` +
+          problems.join(' | '),
+        );
+      }
+      try { await page.close(); } catch {}
     }
-    try { await page.close(); } catch {}
   });
 
   test('seed: create property + worker + task', async ({ page }) => {
