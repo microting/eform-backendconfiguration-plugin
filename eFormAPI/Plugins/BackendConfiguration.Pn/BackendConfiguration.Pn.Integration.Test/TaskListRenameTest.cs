@@ -116,34 +116,77 @@ public class TaskListRenameTest : TestBaseSetup
     {
         _today = DateTime.UtcNow.Date;
 
-        // FK-safe cleanup so each test starts fresh — same ordering as
-        // TaskListBatchEformTagsTest / CalendarUpdateTaskScopeTests.
-        BackendConfigurationPnDbContext!.Compliances.RemoveRange(
+        // ══ FK-ORDERED CLEANUP — the order below is load-bearing ═══════════
+        // Every foreign key named in the comments is ON DELETE RESTRICT in the
+        // schema these tests actually run against (the SQL dumps under SQL/,
+        // replayed by the base [SetUp]). The base [SetUp] replays those dumps
+        // only ONCE PER FIXTURE, so rows seeded by test N are still present
+        // when test N+1 cleans up. A child table cleared AFTER its parent
+        // therefore does not merely leak state: it aborts [SetUp] with
+        // MySqlException 1451 (RowIsReferenced2) and every test after the
+        // first fails before reaching a single assertion. Do not "tidy" this
+        // into alphabetical or seeding order.
+
+        // AreaRulePlanningWorkerTags → AreaRulePlannings (RESTRICT). Raw SQL
+        // because this table is newer than the backend-config snapshot the
+        // base [SetUp] replays: it is never dropped, so its rows outlive the
+        // AreaRulePlannings whose ids restart at 1. It must therefore run
+        // BEFORE the AreaRulePlannings delete below — same guard, and same
+        // position, as CalendarUpdateTaskRetractGateTests.
+        await BackendConfigurationPnDbContext!.Database
+            .ExecuteSqlRawAsync("DELETE FROM `AreaRulePlanningWorkerTags`;");
+
+        // No FK of their own, but Compliances carry PropertyId/AreaId/
+        // PlanningId, so a surviving row would dangle off a Property this
+        // method is about to delete (same reasoning as CalendarComplianceMoveTests).
+        BackendConfigurationPnDbContext.Compliances.RemoveRange(
             BackendConfigurationPnDbContext.Compliances);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // → AreaRulePlannings (RESTRICT).
         BackendConfigurationPnDbContext.AreaRulePlanningTags.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlanningTags);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // BC PlanningSites → AreaRulePlannings (RESTRICT). SeedTask seeds one
+        // per task.
         BackendConfigurationPnDbContext.PlanningSites.RemoveRange(
             BackendConfigurationPnDbContext.PlanningSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // → AreaRulePlannings. Not seeded here, but the calendar service under
+        // test upserts one per renamed task.
         BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
             BackendConfigurationPnDbContext.CalendarConfigurations);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // → AreaRules (RESTRICT).
         BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlannings);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // AreaRuleTranslation → AreaRule is DeleteBehavior.Restrict, so the
+        // children must go first (the comment CalendarComplianceMoveTests
+        // carries for the same line).
         BackendConfigurationPnDbContext.AreaRuleTranslations.RemoveRange(
             BackendConfigurationPnDbContext.AreaRuleTranslations);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // → Areas (RESTRICT). AreaRules → Properties is ON DELETE CASCADE, so
+        // this line is ordered against Areas, not against Properties.
         BackendConfigurationPnDbContext.AreaRules.RemoveRange(
             BackendConfigurationPnDbContext.AreaRules);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // → Properties (RESTRICT): FK_PropertyWorkers_Properties_PropertyId —
+        // the constraint that made every test after the first die in [SetUp].
+        // SeedTask no longer seeds a PropertyWorker (nothing on the rename
+        // path reads one — PropertyWorkers is only consulted by Copy's
+        // target-property guard and ToggleComplete's worker guard), but this
+        // clear stays: it is one statement, and it is what stops a future
+        // seed from silently reintroducing the same fixture-wide failure.
+        BackendConfigurationPnDbContext.PropertyWorkers.RemoveRange(
+            BackendConfigurationPnDbContext.PropertyWorkers);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
         BackendConfigurationPnDbContext.Areas.RemoveRange(
@@ -152,16 +195,21 @@ public class TaskListRenameTest : TestBaseSetup
             BackendConfigurationPnDbContext.Properties);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        ItemsPlanningPnDbContext!.Plannings.RemoveRange(
-            ItemsPlanningPnDbContext.Plannings);
+        // → Plannings (RESTRICT): FK_PlanningNameTranslation_Plannings_PlanningId.
+        // SeedTask seeds TWO of these per task and the wizard under test writes
+        // more — this fixture is the only one in the suite that populates the
+        // table at all, which is why no sibling's cleanup lists it and why the
+        // sibling ordering could not be copied verbatim. Its own children
+        // (PlanningNameTranslationVersions) are ON DELETE CASCADE, as are the
+        // items-planning PlanningSites and PlanningsTags that hang off
+        // Plannings, so none of those need a line of their own.
+        ItemsPlanningPnDbContext!.PlanningNameTranslation.RemoveRange(
+            ItemsPlanningPnDbContext.PlanningNameTranslation);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        // AreaRulePlanningWorkerTags is newer than the backend-config snapshot
-        // SQL the base [SetUp] replays, so it is never dropped and its rows
-        // accumulate while AreaRulePlanning ids restart at 1. Same guard as
-        // TaskListBatchStartDateTest / CalendarPastSeriesBackfillTests.
-        await BackendConfigurationPnDbContext.Database
-            .ExecuteSqlRawAsync("DELETE FROM `AreaRulePlanningWorkerTags`;");
+        ItemsPlanningPnDbContext.Plannings.RemoveRange(
+            ItemsPlanningPnDbContext.Plannings);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
 
         // Real SDK language rows, so RemapCommonTranslationLanguageIdsAsync's
         // existence guard leaves every LanguageId untouched. Taking the second
@@ -340,14 +388,17 @@ public class TaskListRenameTest : TestBaseSetup
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
+        // No PropertyWorker is seeded on purpose. Nothing the rename path
+        // touches reads that table — BuildUpdateModel takes Sites from the BC
+        // PlanningSites below, and PropertyWorkers is only consulted by Copy's
+        // target-property guard and ToggleComplete's worker guard, neither of
+        // which this fixture exercises. Seeding one bought nothing and cost
+        // the whole fixture: PropertyWorker → Property is ON DELETE RESTRICT,
+        // so the leftover row made [SetUp]'s Properties delete fail for every
+        // test after the first.
         await BackendConfigurationPnDbContext.PlanningSites.AddAsync(new BcPlanningSite
         {
             AreaRulePlanningsId = arp.Id, SiteId = sdkSite.Id,
-            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
-        });
-        await BackendConfigurationPnDbContext.PropertyWorkers.AddAsync(new PropertyWorker
-        {
-            PropertyId = property.Id, WorkerId = sdkSite.Id,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
