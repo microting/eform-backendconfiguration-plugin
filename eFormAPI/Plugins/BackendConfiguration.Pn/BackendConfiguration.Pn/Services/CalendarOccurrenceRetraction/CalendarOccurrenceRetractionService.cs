@@ -37,11 +37,16 @@ namespace BackendConfiguration.Pn.Services.CalendarOccurrenceRetraction;
 ///
 /// INVARIANT R2 — completed occurrences are immutable. An occurrence is
 /// completed iff its Compliance row has MicrotingSdkCaseId &gt; 0 AND the backing
-/// SDK Case.Status == 100. That pair is the ONLY gate: MicrotingSdkCaseDoneAt is
-/// read elsewhere for other purposes and is not it. Soft-removing a completed
-/// occurrence's Compliance row would destroy the only DB link between the
-/// rotation date and its answered SDK case, and DoneByName/DoneAt would stop
-/// rendering for that date.
+/// SDK Case is ANSWERED, i.e. <c>Status == 100 || DoneAt.HasValue</c> — the same
+/// predicate the closest analogous destructive path uses before it will touch a
+/// case (EventDeployService:1607 and :1776, the eForm swap). The fact that that
+/// path spells it with an <c>||</c> is the evidence that "DoneAt set while
+/// Status != 100" is a reachable state; in it, a Status-only gate would delete an
+/// ANSWERED case and soft-remove its Compliance row, destroying the only DB link
+/// between the rotation date and its answer, and DoneByName/DoneAt would stop
+/// rendering for that date. Note the direction: DoneAt WIDENS what counts as
+/// completed (strictly more preservation on a destructive operation); it never
+/// substitutes for the status check, which #1127 forbids.
 ///
 /// NOT handled here, by design: active CalendarOccurrenceException rows. This
 /// service answers "which deployed occurrences are open", nothing about
@@ -183,10 +188,13 @@ public class CalendarOccurrenceRetractionService(
 
     /// <summary>
     /// INVARIANT R2, expressed once. An occurrence is completed iff its
-    /// Compliance row references an SDK case AND that case is at status 100.
-    /// A row released back to MicrotingSdkCaseId == 0 by the reconciliation
-    /// engine has no backing case and is therefore NOT completed;
-    /// MicrotingSdkCaseDoneAt is deliberately not consulted.
+    /// Compliance row references an SDK case AND that case is ANSWERED
+    /// (<c>Status == 100 || DoneAt.HasValue</c>; the set is built in
+    /// LoadCandidatesAsync). A row released back to MicrotingSdkCaseId == 0 by
+    /// the reconciliation engine has no backing case and is therefore NOT
+    /// completed. <c>Compliance.MicrotingSdkCaseDoneAt</c> is a different,
+    /// BC-side column and is still deliberately not consulted — the DoneAt read
+    /// here is the SDK <c>Case.DoneAt</c>, exactly as at EventDeployService:1607.
     ///
     /// Both PlanRetractionAsync and RetractNonCompletedOccurrencesAsync call
     /// THIS method — there is no second copy of the predicate to drift from.
@@ -260,13 +268,19 @@ public class CalendarOccurrenceRetractionService(
             await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
             var sdkCases = await sdkDbContext.Cases
                 .Where(c => caseIds.Contains(c.Id))
-                .Select(c => new { c.Id, c.Status, c.MicrotingUid })
+                .Select(c => new { c.Id, c.Status, c.MicrotingUid, c.DoneAt })
                 .ToListAsync(ct).ConfigureAwait(false);
 
             foreach (var sdkCase in sdkCases)
             {
                 microtingUidByCaseId[sdkCase.Id] = sdkCase.MicrotingUid;
-                if (sdkCase.Status == CompletedStatus)
+                // Status == 100 OR DoneAt set — verbatim the guard
+                // EventDeployService:1607 applies before it will replace a case's
+                // eForm. See the R2 note on the class for why the OR is not
+                // belt-and-braces: an answered case can carry DoneAt while its
+                // Status has not (yet) reached 100, and retracting it would
+                // destroy the answer.
+                if (sdkCase.Status == CompletedStatus || sdkCase.DoneAt.HasValue)
                 {
                     completedCaseIds.Add(sdkCase.Id);
                 }

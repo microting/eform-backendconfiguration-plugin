@@ -308,13 +308,28 @@ public class CalendarCompletedPeriodSuppressionTests : TestBaseSetup
         var service = BuildService(core);
 
         // scope=all, change the 1st Friday → 1st Thursday going forward. Click a
-        // future occurrence (Sep 4, old Friday) and move it to Sep 3 (new Thursday).
+        // FUTURE occurrence (the old Friday) and move it to that month's new
+        // Thursday.
+        //
+        // The pair used to be hard-coded 2026-09-04 -> 2026-09-03. Derived from
+        // the clock now, because since #1122 an anchor in the past takes the
+        // RETRACT branch instead of the relocate branch this test is about: the
+        // hard-coded pair silently changed which code path ran on 2026-09-04 and
+        // the test would have started failing for a reason that has nothing to do
+        // with the invariant it pins. The relocation target asserted below
+        // (May 2026) is deliberately still absolute — it is history and the gate
+        // does not touch it.
+        var editMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1,
+            0, 0, 0, DateTimeKind.Utc).AddMonths(2);
+        var editFriday = FirstWeekdayOfMonth(editMonth, DayOfWeek.Friday);
+        var editThursday = FirstWeekdayOfMonth(editMonth, DayOfWeek.Thursday);
+
         var result = await service.UpdateTask(new CalendarTaskUpdateRequestModel
         {
             Id = arp.Id,
             Scope = "all",
-            OriginalDate = "2026-09-04T00:00:00Z",
-            StartDate = new DateTime(2026, 9, 3, 0, 0, 0, DateTimeKind.Utc), // 1st Thursday of Sep
+            OriginalDate = IsoUtc(editFriday),
+            StartDate = editThursday, // 1st Thursday of the edited month
             StartHour = 9.0,
             Duration = 1.0,
             Status = 1,
@@ -488,6 +503,17 @@ public class CalendarCompletedPeriodSuppressionTests : TestBaseSetup
         // NOT June 15 (arp.DayOfMonth from the request). Pre-fix it moved to June 15.
         Assert.That(reloaded.Deadline.Date, Is.EqualTo(new DateTime(2022, 6, 4)),
             "relocation uses planning.DayOfMonth (renderer's source), not arp.DayOfMonth");
+    }
+
+    /// <summary>
+    /// The first <paramref name="dayOfWeek"/> of the month <paramref name="month"/>
+    /// starts in. Computed here rather than reused from the service so the test
+    /// does not verify the enumerator against itself.
+    /// </summary>
+    private static DateTime FirstWeekdayOfMonth(DateTime month, DayOfWeek dayOfWeek)
+    {
+        var first = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        return first.AddDays(((int)dayOfWeek - (int)first.DayOfWeek + 7) % 7);
     }
 
     private BackendConfigurationCalendarService BuildService(eFormCore.Core core)

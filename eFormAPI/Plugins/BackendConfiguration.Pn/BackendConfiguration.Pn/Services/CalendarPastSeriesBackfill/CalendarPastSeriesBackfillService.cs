@@ -8,6 +8,8 @@ using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using BcRepeatType = BackendConfiguration.Pn.Infrastructure.Enums.RepeatType;
@@ -68,11 +70,25 @@ namespace BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
 /// </summary>
 public class CalendarPastSeriesBackfillService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+    // Read-only here, and only for the already-covered term of OverdueToCreate:
+    // the preview has to know which (occurrence, site) pairs
+    // EnsureComplianceForOccurrenceAsync's idempotence guard will short-circuit,
+    // and that guard reads Compliance rows + their SDK cases.
+    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    IEFormCoreService coreHelper,
     IEventDeployService eventDeployService,
     ICalendarAssignmentResolver assignmentResolver,
     ILogger<CalendarPastSeriesBackfillService> logger)
     : ICalendarPastSeriesBackfillService
 {
+    /// <summary>
+    /// SDK Case.Status for "answered". Same constant, same meaning and — with
+    /// DoneAt — the same predicate as CalendarOccurrenceRetractionService's
+    /// invariant R2 and EventDeployService:1607. It has to be the same one: this
+    /// class must count exactly the rows that survive the retraction.
+    /// </summary>
+    private const int CompletedStatus = 100;
+
     /// <summary>
     /// Parked far enough out that no realistic clock reaches it, used when the
     /// series has already ended and there IS no next occurrence. Null would be
@@ -261,9 +277,98 @@ public class CalendarPastSeriesBackfillService(
                 .ToList();
         }
 
+        var alreadyCovered = arp.ComplianceEnabled
+            ? await CountAlreadyCoveredPairsAsync(arp, pastOccurrences, siteIds, ct)
+                .ConfigureAwait(false)
+            : 0;
+
         return new PastSeriesBackfillPlan(
             anchor, AnchorIsInThePast: true, pastOccurrences, siteIds, firstFuture,
-            arp.ComplianceEnabled);
+            arp.ComplianceEnabled, alreadyCovered);
+    }
+
+    /// <summary>
+    /// How many (occurrence, site) pairs of the past grid are ALREADY
+    /// materialised by a Compliance row that will still be there when the
+    /// backfill runs — i.e. how many times
+    /// EventDeployService.EnsureComplianceForOccurrenceAsync will short-circuit
+    /// with Created = false.
+    ///
+    /// Only ANSWERED occurrences count. The caller's sequence is
+    /// retract-then-backfill (BackendConfigurationCalendarService.UpdateTask),
+    /// and this method only ever runs for an anchor in the past — where the
+    /// retraction bound min(newAnchor, today) IS newAnchor, so the retraction
+    /// covers the whole of the past grid. Every NON-answered row here is
+    /// therefore soft-removed before the backfill looks and cannot short-circuit
+    /// anything, while the answered ones are exactly the rows invariant R2
+    /// preserves and so are exactly the ones that will.
+    ///
+    /// Mirrors the guard it is predicting on all three axes: day granularity on
+    /// the deadline, site identity resolved through the backing SDK case, and
+    /// live rows with MicrotingSdkCaseId &gt; 0 only.
+    /// </summary>
+    private async Task<int> CountAlreadyCoveredPairsAsync(
+        AreaRulePlanning arp,
+        IReadOnlyList<DateTime> pastOccurrences,
+        IReadOnlyList<int> siteIds,
+        CancellationToken ct)
+    {
+        if (pastOccurrences.Count == 0 || siteIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var planningId = arp.ItemPlanningId;
+        // pastOccurrences is ascending and distinct (EnumerateOccurrences +
+        // ApplyRepeatEndBound), so first/last bound the whole grid. The set
+        // membership test below is what actually decides; this is only a range
+        // predicate the database can index.
+        var from = pastOccurrences[0].Date;
+        var toExclusive = pastOccurrences[^1].Date.AddDays(1);
+
+        var rows = await backendConfigurationPnDbContext.Compliances
+            .AsNoTracking()
+            .Where(c => c.PlanningId == planningId
+                        && c.WorkflowState != Constants.WorkflowStates.Removed
+                        && c.MicrotingSdkCaseId > 0
+                        && c.Deadline >= from
+                        && c.Deadline < toExclusive)
+            .Select(c => new { c.Deadline, c.MicrotingSdkCaseId })
+            .ToListAsync(ct).ConfigureAwait(false);
+        if (rows.Count == 0)
+        {
+            return 0;
+        }
+
+        var caseIds = rows.Select(r => r.MicrotingSdkCaseId).Distinct().ToList();
+        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+        // ONE batched SDK query, same shape as the retraction service's.
+        var answeredSiteByCaseId = (await sdkDbContext.Cases
+                .AsNoTracking()
+                .Where(c => caseIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Status, c.DoneAt, c.SiteId })
+                .ToListAsync(ct).ConfigureAwait(false))
+            .Where(c => c.SiteId.HasValue
+                        && (c.Status == CompletedStatus || c.DoneAt.HasValue))
+            .ToDictionary(c => c.Id, c => c.SiteId!.Value);
+
+        var siteSet = siteIds.ToHashSet();
+        var occurrenceDays = pastOccurrences.Select(d => d.Date).ToHashSet();
+
+        // A SET of pairs, not a row count: Compliance has no site column, so two
+        // rows can share a day, and a duplicate pair would over-subtract.
+        var covered = new HashSet<(DateTime Day, int SiteId)>();
+        foreach (var row in rows)
+        {
+            if (!answeredSiteByCaseId.TryGetValue(row.MicrotingSdkCaseId, out var siteId)) continue;
+            if (!siteSet.Contains(siteId)) continue;
+            var day = row.Deadline.Date;
+            if (!occurrenceDays.Contains(day)) continue;
+            covered.Add((day, siteId));
+        }
+
+        return covered.Count;
     }
 
     /// <summary>

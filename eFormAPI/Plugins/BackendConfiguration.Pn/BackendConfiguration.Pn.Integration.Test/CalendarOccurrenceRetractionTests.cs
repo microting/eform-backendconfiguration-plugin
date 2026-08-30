@@ -51,14 +51,18 @@ using BcCompliance = Microting.EformBackendConfigurationBase.Infrastructure.Data
 /// completed occurrences are immutable.
 ///
 /// The completion gate under test is exactly
-/// <c>MicrotingSdkCaseId &gt; 0 AND backing SDK Case.Status == 100</c>. Both
-/// halves are covered independently below, because each has its own way of
-/// going wrong: a row released back to <c>MicrotingSdkCaseId == 0</c> by the
-/// reconciliation engine has NO backing case at all and must NOT be mistaken
-/// for "completed", and a case parked one short of the completed status (99, or
-/// the ordinary in-progress 66) must not be either. <c>MicrotingSdkCaseDoneAt</c>
-/// is deliberately never consulted — it is written for other purposes and is not
-/// the gate.
+/// <c>MicrotingSdkCaseId &gt; 0 AND (Case.Status == 100 || Case.DoneAt != null)</c>
+/// — the same predicate EventDeployService:1607 applies before it will touch a
+/// case. Each conjunct has its own way of going wrong and is covered
+/// independently below: a row released back to <c>MicrotingSdkCaseId == 0</c> by
+/// the reconciliation engine has NO backing case at all and must NOT be mistaken
+/// for "completed"; a case parked one short of the completed status (99, or the
+/// ordinary in-progress 66) with no DoneAt must not be either; and a case that
+/// carries a DoneAt while its Status has not reached 100 IS answered and must be
+/// preserved. Note the direction of that last clause — DoneAt only ever WIDENS
+/// preservation on a destructive operation, it never stands in for the status
+/// check. The BC-side <c>Compliance.MicrotingSdkCaseDoneAt</c> column is a
+/// different thing and is still never consulted.
 ///
 /// Every case below seeds <c>MicrotingUid = null</c> so the SDK
 /// <c>core.CaseDelete</c> cloud call is skipped (there is no cloud in CI), while
@@ -168,15 +172,17 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
     /// <summary>
     /// Seeds one deployed occurrence: SDK Case (MicrotingUid null so CaseDelete
     /// is skipped) + PlanningCase + PlanningCaseSite + Compliance.
+    /// <paramref name="doneAt"/> is the SDK <c>Case.DoneAt</c>, the second half
+    /// of the completion predicate.
     /// </summary>
     private async Task<(int SdkCaseId, int ComplianceId, int PlanningCaseId, int PlanningCaseSiteId)>
-        SeedDeployedOccurrence(int planningId, DateTime deadline, int status)
+        SeedDeployedOccurrence(int planningId, DateTime deadline, int status, DateTime? doneAt = null)
     {
         var siteId = await SeedSdkSite();
 
         var sdkCase = new SdkCase
         {
-            SiteId = siteId, Status = status, MicrotingUid = null,
+            SiteId = siteId, Status = status, MicrotingUid = null, DoneAt = doneAt,
             WorkflowState = Constants.WorkflowStates.Created
         };
         await MicrotingDbContext!.Cases.AddAsync(sdkCase);
@@ -225,9 +231,17 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
         return compliance.Id;
     }
 
-    private async Task<CalendarOccurrenceRetractionService> BuildService()
+    private async Task<CalendarOccurrenceRetractionService> BuildService() =>
+        BuildService(await GetCore());
+
+    /// <summary>
+    /// Overload for the single-query test, which needs the SAME Core instance
+    /// the service will use so it can probe through
+    /// <c>core.DbContextHelper</c> — the seam the service resolves its SDK
+    /// context from.
+    /// </summary>
+    private CalendarOccurrenceRetractionService BuildService(eFormCore.Core core)
     {
-        var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
 
@@ -382,6 +396,80 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Gate half 2b — DoneAt set while Status != 100 IS completed
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The state that makes the <c>||</c> necessary: an answered case whose
+    /// Status has not reached 100. EventDeployService:1607/:1776 already refuses
+    /// to touch such a case (<c>Status == CompletedStatus || DoneAt.HasValue</c>)
+    /// — its existence with an OR is the evidence the state is reachable. A
+    /// Status-only gate here deletes an ANSWERED case off the device and
+    /// soft-removes the only row tying the rotation date to that answer.
+    ///
+    /// This is the widening direction ONLY. The neighbouring
+    /// <see cref="RetractNonCompleted_TreatsStatusJustBelowCompletedAsNotCompleted"/>
+    /// (status 99, DoneAt null) still retracts, so DoneAt has not been
+    /// substituted for the status check.
+    /// </summary>
+    [Test]
+    public async Task RetractNonCompleted_TreatsDoneAtWithoutCompletedStatusAsCompleted()
+    {
+        var (arp, planning) = await SeedEvent();
+
+        var answered = await SeedDeployedOccurrence(
+            planning.Id, SeriesStart.AddDays(7).AddHours(9), status: 66,
+            doneAt: SeriesStart.AddDays(7).AddHours(10));
+
+        var service = await BuildService();
+        var result = await service.RetractNonCompletedOccurrencesAsync(arp);
+
+        var pcs = await ItemsPlanningPnDbContext!.PlanningCaseSites
+            .AsNoTracking().FirstAsync(x => x.Id == answered.PlanningCaseSiteId);
+        var complianceState = await ComplianceWorkflowState(answered.ComplianceId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(complianceState,
+                Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "a case with DoneAt set is answered — its Compliance row is the only link to that answer and must survive");
+            Assert.That(pcs.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "an answered occurrence's PlanningCaseSite must not be soft-deleted");
+            Assert.That(result.CompletedPreserved, Is.EqualTo(1));
+            Assert.That(result.Retracted, Is.EqualTo(0));
+        });
+    }
+
+    /// <summary>
+    /// The read-only projection must apply the SAME widened predicate, or the
+    /// preview promises to retract an occurrence the apply preserves.
+    /// </summary>
+    [Test]
+    public async Task PlanRetraction_CountsDoneAtOccurrenceAsPreserved()
+    {
+        var (arp, planning) = await SeedEvent();
+
+        await SeedDeployedOccurrence(
+            planning.Id, SeriesStart.AddDays(7).AddHours(9), status: 66,
+            doneAt: SeriesStart.AddDays(7).AddHours(10));
+        await SeedDeployedOccurrence(
+            planning.Id, SeriesStart.AddDays(14).AddHours(9), status: 66);
+
+        var service = await BuildService();
+        var plan = await service.PlanRetractionAsync(arp);
+        var applied = await service.RetractNonCompletedOccurrencesAsync(arp);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plan.CompletedPreserved, Is.EqualTo(1));
+            Assert.That(plan.Retracted, Is.EqualTo(1));
+            Assert.That(applied.CompletedPreserved, Is.EqualTo(plan.CompletedPreserved),
+                "preview and apply must judge completion identically");
+            Assert.That(applied.Retracted, Is.EqualTo(plan.Retracted));
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // fromDate bound
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -390,7 +478,15 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
     {
         var (arp, planning) = await SeedEvent();
 
+        // Midnight of the boundary DAY, used to build the fixtures below...
         var cutoff = SeriesStart.AddDays(14);
+        // ...but what is handed to the service is deliberately NOT midnight.
+        // Production applies fromDate.Value.Date; if the test passed midnight,
+        // that .Date would be an identity and an implementation that dropped it
+        // would still pass. At 12:00 the .Date is load-bearing: without it the
+        // 09:00 occurrence ON the boundary day sorts BEFORE the bound and is
+        // silently left open.
+        var cutoffArgument = cutoff.AddHours(12);
 
         // Strictly before the cutoff — history the caller asked to keep.
         var before = await SeedDeployedOccurrence(
@@ -407,7 +503,7 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
             planning.Id, cutoff.AddDays(7).AddHours(9), status: 66);
 
         var service = await BuildService();
-        var result = await service.RetractNonCompletedOccurrencesAsync(arp, cutoff);
+        var result = await service.RetractNonCompletedOccurrencesAsync(arp, cutoffArgument);
 
         var beforeState = await ComplianceWorkflowState(before.ComplianceId);
         var onBoundaryState = await ComplianceWorkflowState(onBoundary.ComplianceId);
@@ -446,7 +542,8 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
         await SeedDeployedOccurrence(planning.Id, SeriesStart.AddDays(14).AddHours(9), status: 100);
         await SeedDeployedOccurrence(planning.Id, SeriesStart.AddDays(21).AddHours(9), status: 66);
 
-        var service = await BuildService();
+        var core = await GetCore();
+        var service = BuildService(core);
 
         // Scope the counter to THIS fixture's container. Fixtures run in
         // parallel against separate MariaDB containers on separate host ports,
@@ -458,9 +555,36 @@ public class CalendarOccurrenceRetractionTests : TestBaseSetup
         using var counter = new SdkCasesQueryCounter(port!);
 
         // Self-check first: prove the listener/filter chain actually observes a
-        // `Cases` SELECT on this connection, so a later count of 0 can only mean
-        // the service skipped the query, never that the plumbing is broken.
-        _ = await MicrotingDbContext.Cases.AsNoTracking().Select(c => c.Id).ToListAsync();
+        // `Cases` SELECT, so a later count of 0 can only mean the service
+        // skipped the query, never that the plumbing is broken.
+        //
+        // The probe MUST come from core.DbContextHelper.GetDbContext() and not
+        // from the fixture's MicrotingDbContext. EF Core's
+        // RelationalCommandDiagnosticsLogger caches the answer to "is anyone
+        // listening?" per DbContext for CoreOptionsExtension.DefaultLoggingCacheTime
+        // (1 second) in _suppressCommandExecuteExpiration: once a command has run
+        // with no subscriber, the next second of commands short-circuit WITHOUT
+        // re-checking, and never reach DiagnosticSource.Write at all. The fixture
+        // context has just executed a dozen seeding queries, so it is inside that
+        // window and a probe through it observes nothing — which is exactly the
+        // 0 this self-check saw in CI, and has nothing to do with the port filter.
+        // DbContextHelper.GetDbContext() news up a context per call, so its logger
+        // has never suppressed — and it is the very seam the service resolves its
+        // SDK context from, so the probe measures the same path the assertion does.
+        // Three attempts, each through a fresh context: the first is expected to
+        // succeed outright, and the 400 ms gaps outlast the 1 s cache window even
+        // if some future EF version armed it per service provider rather than per
+        // context. Costs nothing when the first attempt works.
+        for (var attempt = 0; attempt < 3 && counter.Count == 0; attempt++)
+        {
+            if (attempt > 0)
+            {
+                await Task.Delay(400);
+            }
+
+            await using var probeContext = core.DbContextHelper.GetDbContext();
+            _ = await probeContext.Cases.AsNoTracking().Select(c => c.Id).ToListAsync();
+        }
         Assert.That(counter.Count, Is.GreaterThanOrEqualTo(1),
             "self-check: the diagnostic listener must see a `Cases` SELECT on this container");
 

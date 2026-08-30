@@ -316,18 +316,26 @@ public class BackendConfigurationTaskListService(
             var previousAnchor = arp.StartDate.Value.Date;
             var effectiveArp = BackfillService.ApplyProspectiveAnchor(planning, arp, newAnchor);
             var anchorIsInThePast = newAnchor < today;
-            var stillInSamePeriod = CalendarService.IsSameRecurrencePeriod(
-                planning, effectiveArp, previousAnchor, newAnchor);
+            // `== false` mirrors UpdateTask exactly: IsSameRecurrencePeriod is
+            // tri-state and null ("this rule kind has no single per-period
+            // anchor") is NOT evidence of a period change, so it must not be
+            // previewed as a retraction either.
+            var leftItsRecurrencePeriod = CalendarService.IsSameRecurrencePeriod(
+                planning, effectiveArp, previousAnchor, newAnchor) == false;
 
-            if (stillInSamePeriod && !anchorIsInThePast)
+            if (!leftItsRecurrencePeriod && !anchorIsInThePast)
             {
                 // Relocate branch: Compliance deadlines are moved within their
                 // own periods, nothing is retracted and nothing is backfilled.
                 continue;
             }
 
-            // Whole series, no fromDate — exactly the call the retract branch makes.
-            var retraction = await occurrenceRetractionService.PlanRetractionAsync(arp);
+            // Same bound the retract branch passes -- min(newAnchor, today);
+            // see the long note at that call site in UpdateTask. The apply never
+            // retracts below it, so a preview over the whole series would promise
+            // to retract history the apply leaves alone.
+            var retraction = await occurrenceRetractionService
+                .PlanRetractionAsync(arp, newAnchor < today ? newAnchor : today);
             preview.OccurrencesToRetract += retraction.Retracted;
             preview.CompletedPreserved += retraction.CompletedPreserved;
 

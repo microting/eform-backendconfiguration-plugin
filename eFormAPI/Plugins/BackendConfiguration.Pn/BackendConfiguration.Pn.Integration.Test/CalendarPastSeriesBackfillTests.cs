@@ -34,6 +34,9 @@ using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
 using BcPlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
+using BcCompliance = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance;
+using SdkCase = Microting.eForm.Infrastructure.Data.Entities.Case;
+using SdkSite = Microting.eForm.Infrastructure.Data.Entities.Site;
 using CalendarSvc =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
 
@@ -83,7 +86,18 @@ using CalendarSvc =
 [TestFixture]
 public class CalendarPastSeriesBackfillTests : TestBaseSetup
 {
-    private static DateTime Today => DateTime.UtcNow.Date;
+    /// <summary>
+    /// Snapshotted ONCE per test in [SetUp], never re-derived. As a computed
+    /// property this read <c>DateTime.UtcNow.Date</c> afresh on every access —
+    /// including once while seeding and again while building <c>expected</c>
+    /// AFTER the service call — so any test that straddled 00:00 UTC seeded
+    /// against one day and asserted against the next. Sharpest in
+    /// <see cref="Backfill_Daily_EnumeratesEveryDayFromTheAnchorUpToButNotIncludingToday"/>,
+    /// where seed and expectation are 20-odd lines apart.
+    /// </summary>
+    private DateTime _today;
+
+    private DateTime Today => _today;
 
     /// <summary>
     /// AreaRulePlanningWorkerTags is newer than the backend-config snapshot SQL
@@ -96,6 +110,8 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
     [SetUp]
     public async Task ClearAccumulatingTables()
     {
+        _today = DateTime.UtcNow.Date;
+
         await BackendConfigurationPnDbContext!.Database
             .ExecuteSqlRawAsync("DELETE FROM `AreaRulePlanningWorkerTags`;");
     }
@@ -120,7 +136,8 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         int? repeatEndMode = null,
         DateTime? repeatUntilDate = null,
         int? repeatOccurrences = null,
-        string? repeatWeekdaysCsv = null)
+        string? repeatWeekdaysCsv = null,
+        int? repeatOrdinalWeek = null)
     {
         var area = new Area
         {
@@ -154,6 +171,7 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
             StartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc),
             DayOfWeek = startDate.DayOfWeek,
             DayOfMonth = dayOfMonth,
+            RepeatOrdinalWeek = repeatOrdinalWeek,
             RelatedEFormId = 0,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -173,6 +191,7 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
             RepeatUntilDate = repeatUntilDate,
             RepeatOccurrences = repeatOccurrences,
             RepeatWeekdaysCsv = repeatWeekdaysCsv,
+            RepeatOrdinalWeek = repeatOrdinalWeek,
             ComplianceEnabled = complianceEnabled,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
@@ -207,6 +226,7 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
         var deploy = Substitute.For<IEventDeployService>();
 
+
         // Default: every pair materialises a brand-new row. Tests that care
         // about the already-present branch override this.
         deploy.EnsureComplianceForOccurrenceAsync(
@@ -215,7 +235,8 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
             .Returns(_ => new EnsureComplianceResult { Created = true, ComplianceId = 1, SdkCaseId = 1 });
 
         var service = new CalendarPastSeriesBackfillService(
-            ItemsPlanningPnDbContext!, deploy, resolver,
+            ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
+            deploy, resolver,
             NullLogger<CalendarPastSeriesBackfillService>.Instance);
 
         return (service, deploy);
@@ -777,8 +798,22 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         });
     }
 
+    /// <summary>
+    /// The kinds with NO single per-period anchor answer <c>null</c> — "cannot
+    /// be represented" — and never <c>false</c>.
+    ///
+    /// This is the difference between a no-op and a data loss. On `stable` the
+    /// relocate path already handled the same null with
+    /// <c>if (newDate == null) continue;</c>, i.e. it did nothing. Reporting the
+    /// null as "different period" instead sent every daily rule, every
+    /// multi-weekday weekly rule and every non-recurring task down the RETRACT
+    /// branch on any ordinary date edit — CaseDeleting live cases off workers'
+    /// devices from the plain edit modal, not just from the new batch action.
+    /// The caller therefore tests <c>== false</c>, and null falls back to
+    /// relocate.
+    /// </summary>
     [Test]
-    public void IsSameRecurrencePeriod_DailyOrOneOff_NeverSharesAPeriodAcrossDays()
+    public void IsSameRecurrencePeriod_KindsWithoutAPerPeriodAnchor_AnswerNullNotFalse()
     {
         var from = new DateTime(2026, 3, 5, 0, 0, 0, DateTimeKind.Utc);
         var to = new DateTime(2026, 3, 6, 0, 0, 0, DateTimeKind.Utc);
@@ -788,13 +823,230 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
         var oneOff = PatternPlanning(0, to);
         var oneOffArp = PatternArp(0, to);
 
+        // A weekly rule listing more than one weekday has no single occurrence
+        // per week either, so it maps to null for the same reason.
+        var multiDayWeekly = PatternPlanning((int)RepeatType.Week, to);
+        var multiDayWeeklyArp = PatternArp((int)RepeatType.Week, to);
+        multiDayWeeklyArp.RepeatWeekdaysCsv = "1,3";
+
         Assert.Multiple(() =>
         {
-            Assert.That(CalendarSvc.IsSameRecurrencePeriod(daily, dailyArp, from, to), Is.False,
-                "relocation is a documented no-op for daily rules, so retract is the only branch with an effect");
-            Assert.That(CalendarSvc.IsSameRecurrencePeriod(oneOff, oneOffArp, from, to), Is.False);
+            Assert.That(CalendarSvc.IsSameRecurrencePeriod(daily, dailyArp, from, to), Is.Null,
+                "a daily rule has no per-period anchor — that is 'unknown', not 'different period'");
+            Assert.That(CalendarSvc.IsSameRecurrencePeriod(oneOff, oneOffArp, from, to), Is.Null);
+            Assert.That(
+                CalendarSvc.IsSameRecurrencePeriod(multiDayWeekly, multiDayWeeklyArp, from, to), Is.Null,
+                "a multi-weekday weekly rule emits several occurrences per week, so no single date represents the week");
             Assert.That(CalendarSvc.IsSameRecurrencePeriod(daily, dailyArp, from, from), Is.True,
                 "a time-only edit never leaves the period");
         });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // repeatEvery > 1 — the skip arithmetic
+    // ═════════════════════════════════════════════════════════════════════════
+    //
+    // Every other test in this fixture uses repeatEvery: 1, which makes the
+    // enumerator's "is this period a multiple of repeatEvery from the anchor?"
+    // arithmetic vacuously true. A backfill that ignored repeatEvery would
+    // materialise 2-3x too many red tasks and would be invisible to all of them.
+
+    [Test]
+    public async Task Backfill_DailyEveryThreeDays_SkipsTheDaysInBetween()
+    {
+        var seeded = await SeedEvent(
+            Today.AddDays(-9), repeatType: (int)RepeatType.Day, repeatEvery: 3);
+        await AddSite(seeded.Arp.Id, 91701);
+
+        var (service, deploy) = await BuildService();
+        await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var expected = new[] { -9, -6, -3 }.Select(i => Today.AddDays(i)).OrderBy(d => d).ToList();
+
+        Assert.That(DeployedDeadlines(deploy), Is.EqualTo(expected),
+            "every third day from the anchor, not every day");
+    }
+
+    [Test]
+    public async Task Backfill_WeeklyEveryTwoWeeks_SkipsTheOddWeeks()
+    {
+        var seeded = await SeedEvent(
+            Today.AddDays(-42), repeatType: (int)RepeatType.Week, repeatEvery: 2);
+        await AddSite(seeded.Arp.Id, 91801);
+
+        var (service, deploy) = await BuildService();
+        await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var expected = new[] { -42, -28, -14 }.Select(i => Today.AddDays(i)).OrderBy(d => d).ToList();
+
+        Assert.That(DeployedDeadlines(deploy), Is.EqualTo(expected),
+            "a fortnightly rule must skip the weeks in between");
+    }
+
+    [Test]
+    public async Task Backfill_MonthlyEveryTwoMonths_SkipsTheOddMonths()
+    {
+        // Day 10 keeps every candidate away from the 28/29/30/31 clamp.
+        var firstOfThisMonth = new DateTime(Today.Year, Today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var anchor = firstOfThisMonth.AddMonths(-4).AddDays(9);
+
+        var seeded = await SeedEvent(
+            anchor, repeatType: (int)RepeatType.Month, repeatEvery: 2, dayOfMonth: 10);
+        await AddSite(seeded.Arp.Id, 91901);
+
+        var (service, deploy) = await BuildService();
+        await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var expected = new List<DateTime>();
+        for (var m = -4; m <= 0; m += 2)
+        {
+            var candidate = firstOfThisMonth.AddMonths(m).AddDays(9);
+            if (candidate < Today)
+            {
+                expected.Add(candidate);
+            }
+        }
+
+        Assert.That(DeployedDeadlines(deploy), Is.EqualTo(expected),
+            "-4 and -2 months, never -3 or -1");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // The monthly Nth-weekday branch
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// "Second Tuesday of every month" is a whole separate branch of the shared
+    /// enumerator (RepeatOrdinalWeek + DayOfWeek instead of DayOfMonth) and no
+    /// backfill test reached it before — SeedEvent had no way to express it, so
+    /// the parameter is new too. A backfill that fell through to the
+    /// day-of-month branch would put every red task on the anchor's day number
+    /// rather than on the Nth weekday.
+    /// </summary>
+    [Test]
+    public async Task Backfill_MonthlyNthWeekday_EnumeratesTheNthWeekdayOfEveryPastMonth()
+    {
+        const int ordinal = 2;             // 2nd
+        const int targetDow = 2;           // Tuesday (.NET/JS style, Sun = 0)
+
+        var firstOfThisMonth = new DateTime(Today.Year, Today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var anchorMonth = firstOfThisMonth.AddMonths(-3);
+        var anchor = NthWeekday(anchorMonth.Year, anchorMonth.Month, ordinal, targetDow);
+
+        var seeded = await SeedEvent(
+            anchor, repeatType: (int)RepeatType.Month, repeatOrdinalWeek: ordinal);
+        await AddSite(seeded.Arp.Id, 92001);
+
+        var (service, deploy) = await BuildService();
+        await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        var expected = new List<DateTime>();
+        for (var m = -3; m <= 0; m++)
+        {
+            var month = firstOfThisMonth.AddMonths(m);
+            var candidate = NthWeekday(month.Year, month.Month, ordinal, targetDow);
+            if (candidate >= anchor && candidate < Today)
+            {
+                expected.Add(candidate);
+            }
+        }
+
+        Assert.That(DeployedDeadlines(deploy), Is.EqualTo(expected),
+            "the Nth-weekday branch must place each occurrence on the weekday, not on the anchor's day number");
+    }
+
+    /// <summary>
+    /// The Nth <paramref name="dayOfWeek"/> of a month, computed independently
+    /// of the enumerator under test.
+    /// </summary>
+    private static DateTime NthWeekday(int year, int month, int nth, int dayOfWeek)
+    {
+        var first = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var offset = (dayOfWeek - (int)first.DayOfWeek + 7) % 7;
+        return first.AddDays(offset + (nth - 1) * 7);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // OverdueToCreate must equal what the apply creates
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// The preview promise. <c>OverdueToCreate</c> used to be a bare
+    /// <c>PastOccurrences.Count * SiteIds.Count</c>, but the apply runs
+    /// retract-then-backfill and the retraction PRESERVES answered occurrences
+    /// (invariant R2); EnsureComplianceForOccurrenceAsync's site-aware
+    /// idempotence guard then returns Created = false for every (deadline, site)
+    /// those rows already cover. Preview said 10 where the apply created 7.
+    ///
+    /// Seeds one answered occurrence for one of two sites on one of five past
+    /// days: the grid is 5 x 2 = 10 and exactly one pair is already covered.
+    /// </summary>
+    [Test]
+    public async Task Plan_OverdueToCreate_ExcludesPairsAnAnsweredOccurrenceAlreadyCovers()
+    {
+        var seeded = await SeedEvent(Today.AddDays(-5), repeatType: (int)RepeatType.Day);
+        var siteA = await SeedSdkSite();
+        var siteB = await SeedSdkSite();
+        await AddSite(seeded.Arp.Id, siteA);
+        await AddSite(seeded.Arp.Id, siteB);
+
+        // Answered (status 100) on day -3 for site A only.
+        await SeedAnsweredOccurrence(seeded.Planning.Id, Today.AddDays(-3), siteA, status: 100);
+        // NOT answered, day -2, site B — retracted before the backfill runs, so
+        // it must NOT be subtracted.
+        await SeedAnsweredOccurrence(seeded.Planning.Id, Today.AddDays(-2), siteB, status: 66);
+
+        var (service, _) = await BuildService();
+        var plan = await service.PlanPastSeriesBackfillAsync(seeded.Arp);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(plan.PastOccurrences.Count, Is.EqualTo(5));
+            Assert.That(plan.SiteIds.Count, Is.EqualTo(2));
+            Assert.That(plan.AlreadyCovered, Is.EqualTo(1),
+                "only the ANSWERED (deadline, site) pair survives the retraction and short-circuits the guard");
+            Assert.That(plan.OverdueToCreate, Is.EqualTo(9),
+                "5 days x 2 sites, minus the one pair the apply will find already present");
+        });
+    }
+
+    /// <summary>Creates an SDK Site and returns its generated id.</summary>
+    private async Task<int> SeedSdkSite()
+    {
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var site = new SdkSite
+        {
+            Name = $"backfill-site-{Guid.NewGuid()}", MicrotingUid = null,
+            LanguageId = language.Id, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(site);
+        await MicrotingDbContext.SaveChangesAsync();
+        return site.Id;
+    }
+
+    /// <summary>
+    /// Seeds an SDK Case for <paramref name="sdkSiteId"/> plus the Compliance row
+    /// that points at it — the exact shape
+    /// EnsureComplianceForOccurrenceAsync's idempotence guard looks for.
+    /// </summary>
+    private async Task SeedAnsweredOccurrence(int planningId, DateTime deadline, int sdkSiteId, int status)
+    {
+        var sdkCase = new SdkCase
+        {
+            SiteId = sdkSiteId, Status = status, MicrotingUid = null,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(new BcCompliance
+        {
+            PlanningId = planningId,
+            Deadline = DateTime.SpecifyKind(deadline.Date, DateTimeKind.Utc),
+            StartDate = DateTime.SpecifyKind(deadline.Date.AddDays(-7), DateTimeKind.Utc),
+            MicrotingSdkCaseId = sdkCase.Id, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
     }
 }

@@ -1633,11 +1633,64 @@ public class BackendConfigurationCalendarService(
                         // 01.01.2026 stays inside ONE yearly period (2026), so only
                         // "the new anchor is in the past" makes it retract.
                         //
+                        // CONSERVATIVE BY DEFAULT. Retract is the destructive
+                        // branch — it CaseDeletes open cases off workers' devices —
+                        // while relocate is the pre-#1122 behaviour and degrades to
+                        // a no-op for any rule kind it cannot re-pattern. So the
+                        // gate fires ONLY on positive evidence: either the period
+                        // test answered a definite "different period", or the new
+                        // anchor is provably in the past. "Don't know" (an
+                        // unrepresentable period, or no date to compare against)
+                        // keeps today's relocate behaviour.
+                        //
                         // Completed occurrences survive both branches untouched
                         // (invariant R2) — relocate skips them, and the retraction
                         // service preserves them.
-                        var newAnchor = planning.StartDate.Date;
-                        var anchorIsInThePast = newAnchor < DateTime.UtcNow.Date;
+                        //
+                        // newAnchor is the anchor THIS REQUEST establishes, read
+                        // from the (already #966-normalised) request value — NOT
+                        // from planning.StartDate. planning.StartDate is written by
+                        // the task wizard, a collaborator this class does not own:
+                        // if the wizard declines the write, or is substituted, that
+                        // field still holds the PRE-edit anchor and the gate would
+                        // compare the old anchor with itself and mis-read an
+                        // ordinary forward edit as "moved into the past". The
+                        // wizard writes exactly this value anyway
+                        // (BackendConfigurationTaskWizardService.UpdateTask:821/1105),
+                        // so in production the two agree by construction.
+                        var newAnchor = wizardStartDate.Date;
+                        var todayUtc = DateTime.UtcNow.Date;
+                        var anchorIsInThePast = newAnchor < todayUtc;
+
+                        // The lower bound of the retraction, when it runs.
+                        //
+                        // Retraction is destructive and nothing re-creates what it
+                        // removes below this line, so it must not reach into
+                        // HISTORY. An unanswered overdue occurrence IS a record
+                        // ("this was not done on time"); deleting it deletes the
+                        // record. The backfill only ever re-materialises
+                        // [newAnchor, today) and on a FUTURE anchor it self-gates
+                        // off and re-materialises nothing at all — so unbounded, a
+                        // weekly task with 30 unanswered overdue occurrences lost
+                        // all 30 on any forward re-anchor, and a 2026-01-01 ->
+                        // 2026-06-01 move silently destroyed January–May.
+                        //
+                        // min(newAnchor, today), not newAnchor alone, because the
+                        // two branches need different halves of it:
+                        //   * PAST anchor   -> newAnchor. Everything from there on
+                        //     is about to be rebuilt by the backfill, and stale
+                        //     rows from the old pattern would collide with it on
+                        //     the very days it fills.
+                        //   * FUTURE anchor -> today. The old pattern's still-open
+                        //     occurrences between now and the new anchor sit on
+                        //     dates the new pattern no longer generates and are
+                        //     live on workers' devices; leaving them behind would
+                        //     strand them as orphan tiles. They are not history —
+                        //     nobody has done them yet.
+                        // Below the bound, in BOTH branches, an occurrence is
+                        // already past AND outside the new pattern: pure history,
+                        // left alone.
+                        var retractionFrom = anchorIsInThePast ? newAnchor : todayUtc;
 
                         // Compare against the date the new anchor REPLACES.
                         // For an edit-modal save that is the occurrence the user
@@ -1652,31 +1705,38 @@ public class BackendConfigurationCalendarService(
                         // Tuesday to Thursday" would read as a period change and
                         // retract every open case instead of relocating it.
                         var replacedDate = originalOccurrenceDate ?? previousStartDate;
-                        var stillInSamePeriod = replacedDate.HasValue
+                        // == false, never !stillInSamePeriod: the gate is
+                        // tri-state and null means "this rule kind has no single
+                        // per-period anchor", which is NOT evidence of a period
+                        // change. A missing replacedDate is likewise unknown.
+                        var leftItsRecurrencePeriod = replacedDate.HasValue
                             && IsSameRecurrencePeriod(planning, arp,
-                                replacedDate.Value, newAnchor);
+                                replacedDate.Value, newAnchor) == false;
 
-                        if (stillInSamePeriod && !anchorIsInThePast)
+                        if (!leftItsRecurrencePeriod && !anchorIsInThePast)
                         {
                             await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning);
                         }
                         else
                         {
                             await occurrenceRetractionService
-                                .RetractNonCompletedOccurrencesAsync(arp);
+                                .RetractNonCompletedOccurrencesAsync(arp, retractionFrom);
 
-                            // The whole occurrence grid just moved, so every
-                            // per-occurrence override is keyed on an OriginalDate
-                            // the new series no longer generates. The
-                            // thisAndFollowing path purges from its own
-                            // staleCutoff; this "all" path never had a purge at
+                            // The occurrence grid the new pattern owns just moved,
+                            // so every per-occurrence override inside that range is
+                            // keyed on an OriginalDate the new series no longer
+                            // generates. The thisAndFollowing path purges from its
+                            // own staleCutoff; this "all" path never had a purge at
                             // all, and a leftover exception would either hide a
                             // freshly deployed occurrence (IsDeleted) or shadow it
-                            // with pre-edit values.
+                            // with pre-edit values. Bounded by the same
+                            // retractionFrom as the retraction above: an occurrence
+                            // we deliberately preserve must keep its override too.
                             var staleExceptions = await backendConfigurationPnDbContext
                                 .CalendarOccurrenceExceptions
                                 .Where(x => x.AreaRulePlanningId == updateModel.Id)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.OriginalDate >= retractionFrom)
                                 .ToListAsync();
                             foreach (var staleException in staleExceptions)
                             {
@@ -2593,10 +2653,23 @@ public class BackendConfigurationCalendarService(
     // when that mapper sends them to the same date. So the gate is that one
     // function applied twice, and it cannot drift from the relocation it gates.
     //
+    // TRI-STATE, and that is the whole point:
+    //   true  — positively the same period.
+    //   false — positively a DIFFERENT period. The only value that may unlock
+    //           the destructive retract branch.
+    //   null  — cannot be answered for this rule kind, so the caller must fall
+    //           back to its non-destructive default.
+    //
     // A null from the mapper means "this kind has no single per-period anchor"
-    // (Day, multi-day weekly CSV, non-recurring). Relocation is a documented
-    // no-op for those, so any date move is reported as leaving the period —
-    // retract is then the only branch with an effect.
+    // (RepeatType.Day, a weekly rule whose RepeatWeekdaysCsv names more than one
+    // day, a non-recurring task, or an Nth-weekday ordinal that spills past the
+    // month). That is a statement about REPRESENTABILITY, not about the dates.
+    // Collapsing it to false was a live defect: on `stable` the relocate path
+    // handled the same null with `if (newDate == null) continue;` — a complete
+    // no-op — so folding it into "different period" turned a no-op into a
+    // CaseDelete of every open occurrence, reachable from the ordinary
+    // single-task edit modal. Unrepresentable now means "don't know", the caller
+    // relocates, and relocate no-ops exactly as it always did.
     //
     // Known and accepted: for a monthly rule whose Planning.DayOfMonth is null
     // the mapper falls back to the probe date's own day, so two dates in the
@@ -2605,7 +2678,7 @@ public class BackendConfigurationCalendarService(
     // anyway: with no stored DayOfMonth the pattern day IS the anchor day, so
     // relocate would leave the row on the old day while the rule renders on the
     // new one.
-    internal static bool IsSameRecurrencePeriod(
+    internal static bool? IsSameRecurrencePeriod(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         AreaRulePlanning arp,
         DateTime oldAnchor,
@@ -2617,7 +2690,7 @@ public class BackendConfigurationCalendarService(
 
         var oldPeriodDate = NewPatternDateForPeriodOf(planning, arp, oldAnchor.Date);
         var newPeriodDate = NewPatternDateForPeriodOf(planning, arp, newAnchor.Date);
-        if (oldPeriodDate == null || newPeriodDate == null) return false;
+        if (oldPeriodDate == null || newPeriodDate == null) return null;
 
         return oldPeriodDate.Value.Date == newPeriodDate.Value.Date;
     }

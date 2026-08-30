@@ -24,12 +24,15 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.CalendarOccurrenceRetraction;
+using BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -100,7 +103,16 @@ namespace BackendConfiguration.Pn.Integration.Test;
 [TestFixture]
 public class TaskListBatchStartDateTest : TestBaseSetup
 {
-    private static DateTime Today => DateTime.UtcNow.Date;
+    /// <summary>
+    /// Snapshotted ONCE per test in [SetUp], never re-derived. As a computed
+    /// property this read <c>DateTime.UtcNow.Date</c> afresh on every access —
+    /// at seed time and again when building the expectation after the call — so
+    /// any test straddling 00:00 UTC seeded against one day and asserted against
+    /// the next.
+    /// </summary>
+    private DateTime _today;
+
+    private DateTime Today => _today;
 
     private IUserService _userService = null!;
     private IBackendConfigurationTaskWizardService _taskWizardService = null!;
@@ -111,10 +123,14 @@ public class TaskListBatchStartDateTest : TestBaseSetup
     private IEventDeployService _deployService = null!;
     private BackendConfigurationTaskListService _taskListService = null!;
     private List<CalendarTaskUpdateRequestModel> _updateCalls = null!;
+    private eFormCore.Core _core = null!;
+    private IEFormCoreService _coreHelper = null!;
 
     [SetUp]
     public async Task SetupTaskListService()
     {
+        _today = DateTime.UtcNow.Date;
+
         // FK-safe cleanup so each test starts fresh (mirrors
         // TaskListBatchEformTagsTest / CalendarOccurrenceRetractionTests).
         BackendConfigurationPnDbContext!.Compliances.RemoveRange(
@@ -191,9 +207,10 @@ public class TaskListBatchStartDateTest : TestBaseSetup
         // The retraction and backfill services are REAL. They are the whole
         // point of the preview: substituting them would test that the preview
         // adds up numbers it was handed, not that those numbers match the apply.
-        var core = await GetCore();
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        coreHelper.GetCore().Returns(Task.FromResult(core));
+        _core = await GetCore();
+        _coreHelper = Substitute.For<IEFormCoreService>();
+        _coreHelper.GetCore().Returns(Task.FromResult(_core));
+        var coreHelper = _coreHelper;
 
         _retractionService = new CalendarOccurrenceRetractionService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
@@ -209,7 +226,8 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             .Returns(_ => new EnsureComplianceResult { Created = true, ComplianceId = 1, SdkCaseId = 1 });
 
         _backfillService = new CalendarPastSeriesBackfillService(
-            ItemsPlanningPnDbContext!, _deployService,
+            ItemsPlanningPnDbContext!, BackendConfigurationPnDbContext!, coreHelper,
+            _deployService,
             new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper),
             NullLogger<CalendarPastSeriesBackfillService>.Instance);
 
@@ -336,9 +354,13 @@ public class TaskListBatchStartDateTest : TestBaseSetup
     /// <paramref name="status"/> 100 == completed (the R2 gate), anything else
     /// (66 in-progress) == open.
     /// </summary>
-    private async Task SeedDeployedOccurrence(int planningId, DateTime deadline, int status)
+    private async Task SeedDeployedOccurrence(
+        int planningId, DateTime deadline, int status, int? sdkSiteId = null)
     {
-        var siteId = await SeedSdkSite();
+        // A caller that also seeds PlanningSites needs the occurrence to belong
+        // to one of THOSE sites, or the idempotence guard (which matches on the
+        // backing case's site) can never see it.
+        var siteId = sdkSiteId ?? await SeedSdkSite();
 
         var sdkCase = new SdkCase
         {
@@ -384,6 +406,230 @@ public class TaskListBatchStartDateTest : TestBaseSetup
 
     private const int CompletedStatus = 100;
     private const int OpenStatus = 66;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Wiring for the tests that drive the REAL calendar service
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Makes the substituted wizard do the two writes the real one does to the
+    /// anchor (BackendConfigurationTaskWizardService.UpdateTask:821 and :1105),
+    /// so a test can drive the REAL BackendConfigurationCalendarService.UpdateTask
+    /// end to end. Without it the anchor never moves and the backfill — which
+    /// reads planning.StartDate, by contract, never a request model — has nothing
+    /// to enumerate.
+    /// </summary>
+    private void ConfigureWizardToPersistTheAnchor()
+    {
+        _taskWizardService.UpdateTask(Arg.Any<TaskWizardCreateModel>())
+            .Returns(ci =>
+            {
+                var model = ci.Arg<TaskWizardCreateModel>();
+
+                var arp = BackendConfigurationPnDbContext!.AreaRulePlannings
+                    .First(x => x.Id == model.Id);
+                arp.StartDate = model.StartDate;
+                BackendConfigurationPnDbContext.SaveChanges();
+
+                var planning = ItemsPlanningPnDbContext!.Plannings
+                    .First(x => x.Id == arp.ItemPlanningId);
+                var anchor = arp.StartDate!.Value;
+                planning.StartDate = new DateTime(
+                    anchor.Year, anchor.Month, anchor.Day, 0, 0, 0, DateTimeKind.Utc);
+                planning.DayOfMonth = BackendConfigurationTaskWizardService
+                    .DeriveDayOfMonth(model.RepeatType, planning.StartDate);
+                planning.DayOfWeek = planning.StartDate.DayOfWeek;
+                planning.RepeatType = (RepeatType)(int)model.RepeatType;
+                planning.RepeatEvery = model.RepeatEvery;
+                ItemsPlanningPnDbContext.SaveChanges();
+
+                return Task.FromResult(new OperationResult(true));
+            });
+    }
+
+    /// <summary>
+    /// The batch service wired to the REAL calendar service (which in turn holds
+    /// the REAL retraction and backfill services). Everything below the calendar
+    /// service that talks to the cloud — deploy, reconciliation — stays
+    /// substituted.
+    /// </summary>
+    private BackendConfigurationTaskListService BuildTaskListServiceWithRealCalendar()
+    {
+        var realCalendarService = new BackendConfigurationCalendarService(
+            _localizationService,
+            _userService,
+            BackendConfigurationPnDbContext!,
+            _coreHelper,
+            _deployService,
+            ItemsPlanningPnDbContext!,
+            _taskWizardService,
+            Substitute.For<ICalendarAssignmentReconciliationService>(),
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            _retractionService,
+            _backfillService);
+
+        return new BackendConfigurationTaskListService(
+            _localizationService,
+            _userService,
+            BackendConfigurationPnDbContext!,
+            ItemsPlanningPnDbContext!,
+            realCalendarService,
+            _taskWizardService,
+            _retractionService,
+            _backfillService,
+            NullLogger<BackendConfigurationTaskListService>.Instance);
+    }
+
+    /// <summary>The deadlines the substituted deploy service was asked for, ascending.</summary>
+    private List<DateTime> DeployedDeadlines() =>
+        _deployService.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name
+                        == nameof(IEventDeployService.EnsureComplianceForOccurrenceAsync))
+            .Select(c => ((DateTime)c.GetArguments()[1]!).Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // The headline behaviour, through the REAL calendar service
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// "hvis jeg i dag 25.08.26 fx sætter startdato på en opgave til 01.01.2026
+    /// med årlig frekvens, så skal der oprettes en rød opgave 01.01.2026."
+    ///
+    /// <see cref="ChangeStartDate_OverridesStartDateOriginalDateAndScope"/> proves
+    /// the picked date REACHES UpdateTask, but its calendar service is a stub that
+    /// returns success unconditionally — it would pass verbatim with the old
+    /// CannotCreateTaskInThePast guard still in place, i.e. with the entire
+    /// feature broken. This test drives the REAL service instead, so the guard's
+    /// removal, the retract-vs-relocate gate, the scheduler neutralisation and the
+    /// overdue materialisation are all on the hook.
+    /// </summary>
+    [Test]
+    public async Task ChangeStartDate_PastAnchor_RealCalendarService_ReAnchorsAndBackfillsTheOverdueTask()
+    {
+        ConfigureWizardToPersistTheAnchor();
+
+        var sdkSiteId = await SeedSdkSite();
+        var seeded = await SeedTask(Today, repeatType: 4, siteIds: [sdkSiteId],
+            complianceEnabled: true, dayOfMonth: Today.Day);
+        var pastAnchor = Today.AddMonths(-7);
+
+        var service = BuildTaskListServiceWithRealCalendar();
+        var result = await service.ChangeStartDate(new TaskListBatchStartDateModel
+        {
+            TaskIds = [seeded.ArpId], StartDate = pastAnchor
+        });
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var arp = await ReloadArp(seeded.ArpId);
+        var planning = await ItemsPlanningPnDbContext!.Plannings
+            .AsNoTracking().FirstAsync(x => x.Id == seeded.PlanningId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(arp.StartDate!.Value.Date, Is.EqualTo(pastAnchor),
+                "the past anchor must actually be persisted — the removed guard would have rejected the save outright");
+            Assert.That(planning.StartDate.Date, Is.EqualTo(pastAnchor));
+            Assert.That(DeployedDeadlines(), Is.EqualTo(new List<DateTime> { pastAnchor }),
+                "a yearly series has exactly one occurrence in [anchor, today) — the anchor itself, the user's single red task");
+            Assert.That(planning.NextExecutionTime, Is.Not.Null,
+                "the scheduler must be neutralised, or SearchListJob back-deploys the missed occurrences one per hour");
+            Assert.That(planning.LastExecutedTime, Is.Not.Null,
+                "ExecuteCleanUp re-arms NextExecutionTime = null whenever LastExecutedTime is null");
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // OverdueToCreate must equal what the apply creates, with rows already there
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// OverdueToCreate used to be a bare (occurrences x sites) product, but the
+    /// apply is retract-then-backfill: the retraction PRESERVES answered
+    /// occurrences (R2) and EnsureComplianceForOccurrenceAsync's site-aware
+    /// idempotence guard then reports Created = false for the (deadline, site)
+    /// pairs they already cover. Preview said 6 where the apply created 5.
+    ///
+    /// The deploy substitute is replaced here by a stand-in for that REAL guard —
+    /// a live Compliance row on the day whose backing SDK case belongs to the
+    /// site short-circuits — so the assertion is not circular: nothing in the
+    /// double consults the plan.
+    /// </summary>
+    [Test]
+    public async Task Preview_OverdueCount_ExcludesPairsAnAnsweredOccurrenceAlreadyCovers()
+    {
+        var sdkSiteA = await SeedSdkSite();
+        var sdkSiteB = await SeedSdkSite();
+        var pastAnchor = Today.AddDays(-21);
+
+        var seeded = await SeedTask(Today, repeatType: 2, siteIds: [sdkSiteA, sdkSiteB],
+            complianceEnabled: true);
+
+        // Answered occurrence on the -14 grid day, for site A only.
+        await SeedDeployedOccurrence(
+            seeded.PlanningId, Today.AddDays(-14), CompletedStatus, sdkSiteId: sdkSiteA);
+
+        var planningId = seeded.PlanningId;
+        _deployService.EnsureComplianceForOccurrenceAsync(
+                Arg.Any<AreaRulePlanning>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                var day = ci.ArgAt<DateTime>(1).Date;
+                var siteId = ci.ArgAt<int>(2);
+                var caseIds = BackendConfigurationPnDbContext!.Compliances
+                    .Where(c => c.PlanningId == planningId
+                                && c.WorkflowState != Constants.WorkflowStates.Removed
+                                && c.MicrotingSdkCaseId > 0
+                                && c.Deadline >= day && c.Deadline < day.AddDays(1))
+                    .Select(c => c.MicrotingSdkCaseId)
+                    .ToList();
+                var alreadyThere = caseIds.Count > 0
+                                   && MicrotingDbContext!.Cases
+                                       .Any(sc => caseIds.Contains(sc.Id) && sc.SiteId == siteId);
+                return new EnsureComplianceResult
+                {
+                    Created = !alreadyThere, ComplianceId = 1, SdkCaseId = 1
+                };
+            });
+
+        var preview = await _taskListService.ChangeStartDatePreview(new TaskListBatchStartDateModel
+        {
+            TaskIds = [seeded.ArpId], StartDate = pastAnchor
+        });
+        Assert.That(preview.Success, Is.True, preview.Message);
+
+        // Now do what the apply does, in the apply's order and with the apply's
+        // retraction bound.
+        await _retractionService.RetractNonCompletedOccurrencesAsync(
+            await ReloadArp(seeded.ArpId), pastAnchor);
+
+        var planning = await ItemsPlanningPnDbContext!.Plannings.FirstAsync(x => x.Id == seeded.PlanningId);
+        planning.StartDate = DateTime.SpecifyKind(pastAnchor, DateTimeKind.Utc);
+        planning.DayOfWeek = pastAnchor.DayOfWeek;
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var arpRow = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .FirstAsync(x => x.Id == seeded.ArpId);
+        arpRow.StartDate = DateTime.SpecifyKind(pastAnchor, DateTimeKind.Utc);
+        arpRow.DayOfWeek = (int)pastAnchor.DayOfWeek;
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var applied = await _backfillService.BackfillPastSeriesAsync(await ReloadArp(seeded.ArpId));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(preview.Model.OverdueToCreate, Is.EqualTo(5),
+                "3 weekly occurrences x 2 recipients, minus the one pair the answered occurrence already covers");
+            Assert.That(applied.Created, Is.EqualTo(preview.Model.OverdueToCreate),
+                "the preview promise and the apply must be the same number");
+            Assert.That(applied.AlreadyPresent, Is.EqualTo(1));
+            Assert.That(preview.Model.CompletedPreserved, Is.EqualTo(1));
+        });
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // The apply — the three overrides

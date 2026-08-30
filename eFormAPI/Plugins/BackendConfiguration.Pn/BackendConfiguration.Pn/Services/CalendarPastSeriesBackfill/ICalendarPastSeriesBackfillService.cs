@@ -19,23 +19,41 @@ namespace BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
 /// <param name="SiteIds">Effective recipients resolved at plan time (explicit PlanningSites ∪ live worker-tag members).</param>
 /// <param name="FirstFutureOccurrence">First occurrence on/after today, or null when the series has already ended.</param>
 /// <param name="ComplianceEnabled">Mirror of AreaRulePlanning.ComplianceEnabled — false means no overdue rows are created.</param>
+/// <param name="AlreadyCovered">
+/// (occurrence, site) pairs the apply will NOT create because a row that
+/// survives the retraction already covers them — see OverdueToCreate.
+/// </param>
 public sealed record PastSeriesBackfillPlan(
     DateTime Anchor,
     bool AnchorIsInThePast,
     IReadOnlyList<DateTime> PastOccurrences,
     IReadOnlyList<int> SiteIds,
     DateTime? FirstFutureOccurrence,
-    bool ComplianceEnabled)
+    bool ComplianceEnabled,
+    int AlreadyCovered = 0)
 {
     public static PastSeriesBackfillPlan Nothing { get; } =
         new(default, false, [], [], null, false);
 
     /// <summary>
-    /// #1122 §4's "L overskredne opgaver oprettes". One Compliance row is
-    /// materialised per (occurrence, site), and none at all when compliance is
-    /// off — that is the whole of the compliance-OFF rule, expressed once.
+    /// #1122 §4's "L overskredne opgaver oprettes" — the number of Compliance
+    /// rows the apply will actually CREATE, which is not the same as the size of
+    /// the (occurrence x site) grid.
+    ///
+    /// Two subtractions, both of them things the apply really does:
+    ///   * compliance OFF materialises nothing at all;
+    ///   * <see cref="AlreadyCovered"/> pairs are short-circuited by
+    ///     EventDeployService.EnsureComplianceForOccurrenceAsync's site-aware
+    ///     idempotence guard, which returns Created = false for a (deadline,
+    ///     site) already carrying a live Compliance row. Those are precisely the
+    ///     COMPLETED occurrences the retraction preserves under invariant R2 —
+    ///     the non-completed ones are retracted first and so cannot short-circuit
+    ///     anything. Without this term the preview promised 10 where the apply
+    ///     created 7.
     /// </summary>
-    public int OverdueToCreate => ComplianceEnabled ? PastOccurrences.Count * SiteIds.Count : 0;
+    public int OverdueToCreate => ComplianceEnabled
+        ? Math.Max(0, PastOccurrences.Count * SiteIds.Count - AlreadyCovered)
+        : 0;
 }
 
 /// <summary>
