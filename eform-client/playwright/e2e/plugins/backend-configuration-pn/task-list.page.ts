@@ -550,9 +550,16 @@ export class TaskListPage {
    * filter on `:not(.mat-calendar-body-disabled)` the way
    * `pickFutureCopyDate()` above has to.
    *
-   * The day cell is matched on its exact text via `/^1$/` on
-   * `.mat-calendar-body-cell-content`; a plain `hasText: '1'` would also match
-   * 10-19 and 21/31.
+   * The day cell is matched on `.mat-calendar-body-cell-content` with
+   * `/^\s*1\s*$/`. The surrounding `\s*` is load-bearing, not cosmetic:
+   * Playwright tests a RegExp `hasText` against the element's RAW text
+   * (`elementText().full`), never the whitespace-normalized one, and Angular
+   * renders Material's `<span ...>{{item.displayValue}}</span>` with the
+   * template's whitespace collapsed to a single space either side (`" 1 "`).
+   * A bare `/^1$/` therefore matches ZERO cells, and `click()` parks on its
+   * implicit wait until the whole test times out. A plain `hasText: '1'` is
+   * not the alternative: string matching is a normalized SUBSTRING test, so it
+   * would also hit 10-19, 21 and 31.
    *
    * Returns the picked date already formatted the way the grid's Start date
    * column renders it ("dd-MM-yyyy", see
@@ -561,17 +568,27 @@ export class TaskListPage {
    */
   async pickPastStartDate(monthsBack: number): Promise<string> {
     await this.page.locator('mat-dialog-container mat-datepicker-toggle').click();
-    await this.page.locator('.mat-datepicker-content').waitFor({ state: 'visible', timeout: 5000 });
+    const calendar = this.page.locator('.mat-datepicker-content');
+    await calendar.waitFor({ state: 'visible', timeout: 5000 });
     for (let i = 0; i < monthsBack; i++) {
       await this.page.locator('.mat-calendar-previous-button').click();
       await this.page.waitForTimeout(250);
     }
-    await this.page.locator('.mat-calendar-body-cell-content')
-      .filter({ hasText: /^1$/ })
-      .first()
-      .click();
-    await this.page.locator('.mat-datepicker-content').waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {});
+    const firstOfMonth = calendar
+      .locator('.mat-calendar-body-cell-content')
+      .filter({ hasText: /^\s*1\s*$/ })
+      .first();
+    // Bounded on purpose. If this ever stops matching again, fail here in
+    // seconds naming the cause, instead of letting `click()` wait out the
+    // whole 120s test budget - in a `describe.serial` file that also skips
+    // every later test and leaves nothing for the afterAll cleanup.
+    await firstOfMonth.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+      throw new Error(
+        'pickPastStartDate: no day-1 cell in the open datepicker after stepping back ' +
+        `${monthsBack} month(s) - the .mat-calendar-body-cell-content text match found nothing.`);
+    });
+    await firstOfMonth.click();
+    await calendar.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
     const now = new Date();
     const picked = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
     const mm = (picked.getMonth() + 1).toString().padStart(2, '0');

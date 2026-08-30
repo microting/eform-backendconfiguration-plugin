@@ -198,7 +198,11 @@ test.describe.serial('Task list — batch change start date', () => {
 
     await page.route(PREVIEW_URL, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 4000));
-      await route.continue();
+      // If the page tore the request down while this handler slept (the
+      // component's switchMap superseding a preview, or teardown), continue()
+      // rejects. That is bookkeeping, not a test signal - swallow it so it
+      // cannot surface as a second, misleading error.
+      await route.continue().catch(() => {});
     });
 
     try {
@@ -230,7 +234,10 @@ test.describe.serial('Task list — batch change start date', () => {
 
       await taskListPage.cancelModal();
     } finally {
-      await page.unroute(PREVIEW_URL);
+      // Cleanup must never mask the real failure: once a test has timed out the
+      // page is already closed and a bare unroute() throws "Target page ... has
+      // been closed" on top of the actual error.
+      await page.unroute(PREVIEW_URL).catch(() => {});
     }
   });
 
