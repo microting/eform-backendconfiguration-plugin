@@ -71,6 +71,16 @@ using SdkSite = Microting.eForm.Infrastructure.Data.Entities.Site;
 /// is skipped (there is no cloud in CI) while all the local bookkeeping still
 /// runs — the same trick CalendarOccurrenceRetractionTests uses.
 ///
+/// THE SCOPE GAP THE FIX OPENED, also covered below. The occurrence-driven
+/// helper walks Compliance rows, so a deployed PlanningCaseSite that no
+/// Compliance row covers became invisible to deactivation and stayed live on the
+/// worker's device. RetractDeployedCasesWithoutComplianceAsync restores the old
+/// planning-driven reach WITH the completion guard the old loop lacked — judging
+/// completion from the SDK case's own Status/DoneAt, since with no Compliance row
+/// there is no deadline. The tests in the second section pin both halves of that
+/// (retract the open orphan, preserve the answered one) and pin that the sweep
+/// claims nothing the occurrence pass already owns.
+///
 /// Deadlines are kept DISTINCT throughout: Compliances carries a UNIQUE index on
 /// (PlanningId, Deadline).
 /// </summary>
@@ -86,6 +96,13 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
 
     private IEventDeployService _deployService = null!;
     private BackendConfigurationTaskWizardService _wizard = null!;
+
+    /// <summary>
+    /// The SAME instance the wizard below is given, kept so the no-double-handling
+    /// test can interrogate the orphan sweep directly instead of inferring its
+    /// scope from the wizard's side effects.
+    /// </summary>
+    private CalendarOccurrenceRetractionService _retraction = null!;
 
     [SetUp]
     public async Task SetupDeactivateFixture()
@@ -103,6 +120,12 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
 
         _deployService = Substitute.For<IEventDeployService>();
 
+        // REAL. Substituting this is exactly what would make every assertion
+        // below vacuous.
+        _retraction = new CalendarOccurrenceRetractionService(
+            BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
+            NullLogger<CalendarOccurrenceRetractionService>.Instance);
+
         _wizard = new BackendConfigurationTaskWizardService(
             new BackendConfigurationLocalizationService(),
             userService,
@@ -110,11 +133,7 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
             coreHelper,
             ItemsPlanningPnDbContext!,
             _deployService,
-            // REAL. Substituting this is exactly what would make every assertion
-            // below vacuous.
-            new CalendarOccurrenceRetractionService(
-                BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-                NullLogger<CalendarOccurrenceRetractionService>.Instance),
+            _retraction,
             NullLogger<BackendConfigurationTaskWizardService>.Instance);
     }
 
@@ -282,6 +301,56 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
     private async Task<SdkCase?> FindSdkCase(int id) =>
         await MicrotingDbContext!.Cases.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
 
+    private async Task<PlanningCaseSite> ReloadPlanningCaseSite(int id) =>
+        await ItemsPlanningPnDbContext!.PlanningCaseSites
+            .AsNoTracking().FirstAsync(x => x.Id == id);
+
+    private sealed record Orphan(int SdkCaseId, int PlanningCaseId, int PlanningCaseSiteId);
+
+    /// <summary>
+    /// Seeds a deployed case with NO Compliance row — the gap the
+    /// occurrence-driven retraction cannot see, because it walks Compliance rows
+    /// and there is none to walk. Everything else is identical to
+    /// <see cref="SeedDeployedOccurrence"/>: SDK Case (MicrotingUid null so
+    /// CaseDelete stays offline) + PlanningCase + PlanningCaseSite.
+    ///
+    /// <paramref name="doneAt"/> is the SDK <c>Case.DoneAt</c> — the second half
+    /// of the answered predicate (<c>Status == 100 || DoneAt.HasValue</c>). With
+    /// no Compliance row there is no deadline, so the case's own Status/DoneAt is
+    /// the ONLY thing completion can be judged from.
+    /// </summary>
+    private async Task<Orphan> SeedDeployedCaseWithoutCompliance(
+        Seeded seeded, int status, DateTime? doneAt = null)
+    {
+        var sdkCase = new SdkCase
+        {
+            SiteId = seeded.SdkSiteId, Status = status, MicrotingUid = null, DoneAt = doneAt,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext!.Cases.AddAsync(sdkCase);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var planningCase = new PlanningCase
+        {
+            PlanningId = seeded.PlanningId, Status = status, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.PlanningCases.AddAsync(planningCase);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var planningCaseSite = new PlanningCaseSite
+        {
+            PlanningId = seeded.PlanningId, PlanningCaseId = planningCase.Id,
+            MicrotingSdkSiteId = seeded.SdkSiteId, MicrotingSdkeFormId = 0,
+            MicrotingSdkCaseId = sdkCase.Id, Status = status,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext.PlanningCaseSites.AddAsync(planningCaseSite);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        return new Orphan(sdkCase.Id, planningCase.Id, planningCaseSite.Id);
+    }
+
     /// <summary>
     /// The batch/wizard shape a deactivate arrives in: Status = NotActive with
     /// the CURRENT assignee list still attached, exactly as
@@ -429,6 +498,194 @@ public class TaskWizardDeactivateRetractionTests : TestBaseSetup
                              && x.WorkflowState != Constants.WorkflowStates.Removed);
         Assert.That(liveBcPlanningSites, Is.EqualTo(1),
             "BC's PlanningSites survive, so a batch reactivate round-trips the assignee");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // The scope gap the occurrence-driven helper left behind: a DEPLOYED
+    // PlanningCaseSite that no Compliance row covers
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// RetractNonCompletedOccurrencesAsync walks Compliance rows, so a deployed
+    /// case with NO Compliance row is invisible to it and used to stay live on
+    /// the worker's device after the admin deactivated the task — a real
+    /// regression against the pre-#1123 planning-driven loop.
+    /// RetractDeployedCasesWithoutComplianceAsync closes that, and it must close
+    /// it WITH the completion guard the old loop lacked.
+    ///
+    /// Both halves are asserted here on purpose: a sweep that simply retracted
+    /// nothing would pass the preservation half, and the old destructive loop
+    /// would pass the retraction half. Only a completion-guarded sweep passes
+    /// both.
+    /// </summary>
+    [Test]
+    public async Task DeactivateList_RetractsDeployedCaseWithNoComplianceRow_ButPreservesTheCompletedOne()
+    {
+        var seeded = await SeedActiveTask("orphan-list");
+        var openOrphan = await SeedDeployedCaseWithoutCompliance(seeded, OpenStatus);
+        var completedOrphan = await SeedDeployedCaseWithoutCompliance(seeded, CompletedStatus);
+
+        var result = await _wizard.DeactivateList([seeded.ArpId]);
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var openSite = await ReloadPlanningCaseSite(openOrphan.PlanningCaseSiteId);
+        var openCase = await ReloadPlanningCase(openOrphan.PlanningCaseId);
+        var completedSite = await ReloadPlanningCaseSite(completedOrphan.PlanningCaseSiteId);
+        var completedCase = await ReloadPlanningCase(completedOrphan.PlanningCaseId);
+        var completedSdkCase = await FindSdkCase(completedOrphan.SdkCaseId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(openSite.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "a deployed, OPEN case with no Compliance row must still be pulled — otherwise it stays live on the worker's device after deactivation");
+            Assert.That(openCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted),
+                "and its PlanningCase goes with it, no live site left");
+
+            Assert.That(completedSite.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "R2: the sweep is completion-guarded — the missing guard, not the PlanningCaseSite walk, was what made the old loop destructive");
+            Assert.That(completedCase.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted),
+                "and the completed PlanningCase is not retracted either");
+            Assert.That(completedSdkCase, Is.Not.Null, "the answered SDK case must still exist");
+            Assert.That(completedSdkCase!.Status, Is.EqualTo(CompletedStatus));
+        });
+    }
+
+    /// <summary>
+    /// The same contract on <c>UpdateTask</c>'s deactivate branch. It is a
+    /// separate call site with its own body, and it is the one the wizard's edit
+    /// modal, the calendar edit modal and the batch action all take — wiring the
+    /// sweep into only DeactivateList would leave the busier path leaking live
+    /// cases.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_DeactivateBranch_RetractsDeployedCaseWithNoComplianceRow_ButPreservesTheCompletedOne()
+    {
+        var seeded = await SeedActiveTask("orphan-update");
+        var openOrphan = await SeedDeployedCaseWithoutCompliance(seeded, OpenStatus);
+        var completedOrphan = await SeedDeployedCaseWithoutCompliance(seeded, CompletedStatus);
+
+        var result = await _wizard.UpdateTask(DeactivateModel(seeded));
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var openSite = await ReloadPlanningCaseSite(openOrphan.PlanningCaseSiteId);
+        var completedSite = await ReloadPlanningCaseSite(completedOrphan.PlanningCaseSiteId);
+        var completedCase = await ReloadPlanningCase(completedOrphan.PlanningCaseId);
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .AsNoTracking().FirstAsync(x => x.Id == seeded.ArpId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(openSite.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the UpdateTask branch must sweep the orphans too");
+            Assert.That(completedSite.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "R2 holds on this path as well");
+            Assert.That(completedCase.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted));
+            Assert.That(arp.Status, Is.False, "and the task really was deactivated");
+        });
+    }
+
+    /// <summary>
+    /// The second half of the answered predicate: <c>DoneAt</c> set while
+    /// <c>Status</c> has not reached 100. EventDeployService spells its guard
+    /// <c>Status == 100 || DoneAt.HasValue</c>, which is the evidence that this
+    /// state is reachable; in it a Status-only gate would CaseDelete an answered
+    /// case whose answer has no other record. The sweep therefore reads the same
+    /// widened predicate, from the same loader, as the occurrence pass.
+    ///
+    /// The open orphan is the positive control: a status-99, DoneAt-null case
+    /// still gets pulled, so this test cannot be passed by a sweep that has
+    /// simply stopped working.
+    /// </summary>
+    [Test]
+    public async Task DeactivateList_OrphanWithDoneAtButStatusUnder100_IsPreserved()
+    {
+        var seeded = await SeedActiveTask("orphan-doneat");
+        var doneAt = DateTime.SpecifyKind(_today.AddDays(-3), DateTimeKind.Utc);
+        // 99, deliberately just short of 100: only DoneAt can save this row.
+        var answered = await SeedDeployedCaseWithoutCompliance(seeded, 99, doneAt);
+        // Same status, no DoneAt — the control.
+        var notAnswered = await SeedDeployedCaseWithoutCompliance(seeded, 99);
+
+        var result = await _wizard.DeactivateList([seeded.ArpId]);
+
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var answeredSite = await ReloadPlanningCaseSite(answered.PlanningCaseSiteId);
+        var answeredCase = await ReloadPlanningCase(answered.PlanningCaseId);
+        var controlSite = await ReloadPlanningCaseSite(notAnswered.PlanningCaseSiteId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answeredSite.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "a case carrying DoneAt is answered even below status 100 — retracting it would destroy the only record of that answer");
+            Assert.That(answeredCase.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted));
+            Assert.That(controlSite.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the identical row WITHOUT DoneAt is still retracted, so DoneAt is doing the work and the sweep has not simply stopped");
+        });
+    }
+
+    /// <summary>
+    /// No double-handling. The two passes divide the work by whether a Compliance
+    /// row covers the case, so the sweep is asked DIRECTLY — before the wizard
+    /// runs and mutates anything — what it claims for a planning whose every
+    /// deployed case HAS a Compliance row. The answer must be "nothing at all".
+    /// Without the exclusion gate this call would report Retracted = 1 and
+    /// CompletedPreserved = 1, i.e. it would be racing the occurrence pass for
+    /// the same two rows.
+    ///
+    /// The wizard is then run to confirm those rows are handled exactly once, by
+    /// the pass that owns them: the open one retracted, the completed one intact.
+    /// </summary>
+    [Test]
+    public async Task OrphanSweep_ClaimsNothingAlreadyCoveredByAComplianceRow()
+    {
+        var seeded = await SeedActiveTask("orphan-nodup");
+        // Distinct deadlines — UNIQUE (PlanningId, Deadline).
+        var open = await SeedDeployedOccurrence(seeded, _today.AddDays(-14), OpenStatus);
+        var completed = await SeedDeployedOccurrence(seeded, _today.AddDays(-21), CompletedStatus);
+
+        var arpEntity = await BackendConfigurationPnDbContext!.AreaRulePlannings
+            .FirstAsync(x => x.Id == seeded.ArpId);
+
+        var sweep = await _retraction.RetractDeployedCasesWithoutComplianceAsync(arpEntity);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sweep.Retracted, Is.EqualTo(0),
+                "every deployed case here is covered by a Compliance row, so the occurrence pass owns them — the sweep must not touch one");
+            Assert.That(sweep.CompletedPreserved, Is.EqualTo(0),
+                "and it must not even count them: overlapping scope is how the same row gets handled twice");
+            Assert.That(sweep.Failed, Is.EqualTo(0));
+        });
+
+        var openSiteBefore = await ReloadPlanningCaseSite(open.PlanningCaseSiteId);
+        Assert.That(openSiteBefore.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+            "the sweep reported nothing and must therefore have written nothing");
+
+        var result = await _wizard.DeactivateList([seeded.ArpId]);
+        Assert.That(result.Success, Is.True, result.Message);
+
+        var openCompliance = await ReloadCompliance(open.ComplianceId);
+        var openSite = await ReloadPlanningCaseSite(open.PlanningCaseSiteId);
+        var openCase = await ReloadPlanningCase(open.PlanningCaseId);
+        var completedCompliance = await ReloadCompliance(completed.ComplianceId);
+        var completedSite = await ReloadPlanningCaseSite(completed.PlanningCaseSiteId);
+        var completedCase = await ReloadPlanningCase(completed.PlanningCaseId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(openCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the open occurrence is retracted — once, by the occurrence pass");
+            Assert.That(openSite.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(openCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted));
+
+            Assert.That(completedCompliance.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed),
+                "and the completed one survives BOTH passes — the sweep running afterwards must not undo the preservation");
+            Assert.That(completedSite.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(completedCase.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Retracted));
+        });
     }
 
     // ═════════════════════════════════════════════════════════════════════════

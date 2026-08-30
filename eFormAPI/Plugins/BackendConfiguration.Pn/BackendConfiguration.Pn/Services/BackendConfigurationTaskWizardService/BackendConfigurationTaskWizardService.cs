@@ -652,12 +652,18 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     /// fromDate is null on purpose: deactivating a task retracts its WHOLE open series,
     /// past occurrences included (unlike #1122's re-anchor, which is bounded).
     ///
-    /// Scope note — the helper is occurrence-driven (it walks Compliance rows) where the
-    /// old loop was planning-driven (it walked every PlanningCase of the planning). A
-    /// deployed PlanningCaseSite with NO Compliance row is therefore no longer retracted
-    /// here. That is the R2-safe trade: without a Compliance row there is no deadline to
-    /// judge completion against, so the old code could not tell an answered case from an
-    /// open one and pulled both.
+    /// Scope note — the occurrence helper is occurrence-driven (it walks Compliance rows)
+    /// where the old loop was planning-driven (it walked every PlanningCase of the
+    /// planning), so on its own it cannot see a deployed PlanningCaseSite that has NO
+    /// Compliance row, and such a case would have stayed live on the worker's device after
+    /// deactivation. A second, deactivate-only pass —
+    /// RetractDeployedCasesWithoutComplianceAsync — closes that gap. It reuses the old
+    /// planning-driven row selection but adds the completion guard the old code lacked,
+    /// judging completion from the SDK case's own Status/DoneAt (there is no Compliance
+    /// row, hence no deadline, to judge against). It is a SEPARATE method because #1122's
+    /// bounded fromDate call must never pick up rows that have no date to bound.
+    /// The two passes cannot double-handle a row: the sweep skips every PlanningCaseSite
+    /// whose SDK case any Compliance row of this planning references.
     ///
     /// Per-task try/catch: this method previously had no error handling whatsoever, so a
     /// single missing or malformed id threw straight out of the loop and silently abandoned
@@ -712,9 +718,22 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .RetractNonCompletedOccurrencesAsync(areaRulePlanning)
                     .ConfigureAwait(false);
 
+                // Second pass, deactivate-only: the orphans the occurrence pass
+                // structurally cannot reach — deployed PlanningCaseSites with no
+                // Compliance row. Without this a case with no Compliance row stays
+                // live on the worker's device after the admin deactivates the task.
+                // Same completion guard, so it is NOT a return to the pre-#1123
+                // sweep. Runs AFTER the occurrence pass so anything that pass
+                // handled is already excluded; see the helper's doc comment for why
+                // this must never be folded into #1122's bounded call.
+                var orphanSweep = await _occurrenceRetractionService
+                    .RetractDeployedCasesWithoutComplianceAsync(areaRulePlanning)
+                    .ConfigureAwait(false);
+
                 _logger.LogInformation(
-                    "DeactivateList: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed",
-                    areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed);
+                    "DeactivateList: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed; orphan sweep {OrphanRetracted}/{OrphanPreserved}/{OrphanFailed}",
+                    areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed,
+                    orphanSweep.Retracted, orphanSweep.CompletedPreserved, orphanSweep.Failed);
 
                 areaRulePlanning.Status = false;
                 await areaRulePlanning.Update(_backendConfigurationPnDbContext)
@@ -1083,9 +1102,17 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .RetractNonCompletedOccurrencesAsync(areaRulePlanning)
                         .ConfigureAwait(false);
 
+                    // Same orphan sweep as DeactivateList — this branch deactivates
+                    // just as completely, so a deployed case with no Compliance row
+                    // must be pulled here too. See DeactivateList for the rationale.
+                    var orphanSweep = await _occurrenceRetractionService
+                        .RetractDeployedCasesWithoutComplianceAsync(areaRulePlanning)
+                        .ConfigureAwait(false);
+
                     _logger.LogInformation(
-                        "UpdateTask deactivate: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed",
-                        areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed);
+                        "UpdateTask deactivate: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed; orphan sweep {OrphanRetracted}/{OrphanPreserved}/{OrphanFailed}",
+                        areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed,
+                        orphanSweep.Retracted, orphanSweep.CompletedPreserved, orphanSweep.Failed);
 
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)

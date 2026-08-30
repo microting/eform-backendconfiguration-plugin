@@ -63,4 +63,38 @@ public interface ICalendarOccurrenceRetractionService
         AreaRulePlanning arp,
         DateTime? fromDate = null,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Sweeps the ORPHANS the occurrence-driven pass above cannot see: deployed
+    /// <c>PlanningCaseSite</c> rows of this series that no <c>Compliance</c> row
+    /// references. Completion-guarded, using the SAME predicate — an SDK case is
+    /// answered when <c>Status == 100 || DoneAt.HasValue</c>.
+    ///
+    /// WHY IT IS A SEPARATE METHOD, and must stay one. #1122 calls
+    /// <see cref="RetractNonCompletedOccurrencesAsync"/> with a
+    /// <c>fromDate</c> precisely to bound the blast radius to the date range the
+    /// new recurrence pattern owns; occurrences before it are deliberately left
+    /// alone. A PlanningCaseSite with no Compliance row has NO deadline, so it
+    /// cannot be filtered by <c>fromDate</c> at all. Folding this sweep into the
+    /// bounded method would therefore make #1122's re-anchor silently retract
+    /// unbounded rows it explicitly excluded. Only the two DEACTIVATE call sites
+    /// — <c>DeactivateList</c> and <c>UpdateTask</c>'s deactivate branch, which
+    /// retract the whole series unbounded — may call this.
+    ///
+    /// WHY IT EXISTS AT ALL. Before #1123 both deactivate paths walked every
+    /// PlanningCase of the planning and CaseDeleted its SDK case. That was wrong
+    /// only in lacking a completion guard, not in walking PlanningCaseSites:
+    /// dropping the walk entirely left a deployed case that has no Compliance row
+    /// live on a worker's device after the admin deactivated the task. This
+    /// restores the reach with the guard the old code was missing.
+    ///
+    /// Run it AFTER <see cref="RetractNonCompletedOccurrencesAsync"/>. The two
+    /// cannot double-handle a row: this one skips every PlanningCaseSite whose
+    /// SDK case is referenced by ANY Compliance row of the planning, removed
+    /// ones included (a removed row means the occurrence pass already pulled it;
+    /// a live one means it either preserved it as completed or will).
+    /// </summary>
+    Task<OccurrenceRetractionResult> RetractDeployedCasesWithoutComplianceAsync(
+        AreaRulePlanning arp,
+        CancellationToken ct = default);
 }
