@@ -83,6 +83,28 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     private Task<List<DeviceToken>> AllRowsAsync() =>
         BackendConfigurationPnDbContext!.DeviceTokens.AsNoTracking().OrderBy(t => t.Id).ToListAsync();
 
+    /// <summary>
+    /// A row exactly as the DeviceTokenIdentityModel migration leaves it: a
+    /// live adhoc token whose InstallationId is the synthetic
+    /// <c>legacy:&lt;Id&gt;</c> backfill instead of a client-sent uuid.
+    /// </summary>
+    private async Task<DeviceToken> SeedLegacyAdhocRowAsync(
+        string installationId,
+        string fcmToken,
+        int sdkSiteId)
+    {
+        var row = new DeviceToken
+        {
+            AppId = "adhoc",
+            InstallationId = installationId,
+            FcmToken = fcmToken,
+            SdkSiteId = sdkSiteId,
+            Platform = "android",
+        };
+        await row.Create(BackendConfigurationPnDbContext!);
+        return row;
+    }
+
     [Test]
     public async Task RegisterPushToken_NewToken_CreatesRow()
     {
@@ -214,15 +236,7 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     [Test]
     public async Task RegisterPushToken_AdoptsLegacyRowMatchingOnToken()
     {
-        var legacy = new DeviceToken
-        {
-            AppId = "adhoc",
-            InstallationId = "legacy:123",
-            FcmToken = "carried-over-token",
-            SdkSiteId = 900,
-            Platform = "android",
-        };
-        await legacy.Create(BackendConfigurationPnDbContext!);
+        var legacy = await SeedLegacyAdhocRowAsync("legacy:123", "carried-over-token", sdkSiteId: 900);
 
         await CreateSut(900).RegisterPushToken(
             MakeRequest("carried-over-token", "real-install-uuid"), Context());
@@ -245,14 +259,7 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     [Test]
     public async Task RegisterPushToken_DoesNotAdoptAcrossApps()
     {
-        await new DeviceToken
-        {
-            AppId = "adhoc",
-            InstallationId = "legacy:456",
-            FcmToken = "shared-looking-token",
-            SdkSiteId = 901,
-            Platform = "android",
-        }.Create(BackendConfigurationPnDbContext!);
+        await SeedLegacyAdhocRowAsync("legacy:456", "shared-looking-token", sdkSiteId: 901);
 
         await CreateSut(901).RegisterPushToken(
             MakeRequest("shared-looking-token", "eform-install", appId: "eform"), Context());
@@ -267,37 +274,68 @@ public class SettingsGrpcServicePushTokenTests : TestBaseSetup
     /// <summary>
     /// Two legacy rows can share an FcmToken: the outgoing key was
     /// (WorkerId, FcmToken), so two workers signing in on one shared device
-    /// each got a row. Adoption takes the lowest Id so that a retried or
-    /// repeated register always lands on the same row; the sibling is left live
-    /// for its own user's next register to adopt, or for FCM to prune.
-    /// Soft-deleting it here would silently stop push for a user who never
-    /// reopens the app.
+    /// each got their own row. Adoption takes the lowest Id, so a retried or
+    /// repeated register always lands on the same row, and the sibling is
+    /// retired — one token addresses one device, so a second live row holding
+    /// it is a second copy of every push.
     /// </summary>
     [Test]
-    public async Task RegisterPushToken_TwoLegacyRowsSharingToken_AdoptsLowestIdDeterministically()
+    public async Task RegisterPushToken_TwoLegacyRowsSharingToken_AdoptsLowestIdAndRetiresTheSibling()
     {
         foreach (var siteId in new[] { 910, 911 })
         {
-            await new DeviceToken
-            {
-                AppId = "adhoc",
-                InstallationId = "legacy:site-" + siteId,
-                FcmToken = "shared-device-token",
-                SdkSiteId = siteId,
-                Platform = "android",
-            }.Create(BackendConfigurationPnDbContext!);
+            await SeedLegacyAdhocRowAsync("legacy:site-" + siteId, "shared-device-token", siteId);
         }
 
-        var lowestId = (await AllRowsAsync())[0].Id;
+        var seeded = await AllRowsAsync();
+        Assert.That(seeded.Select(r => r.WorkflowState),
+            Is.All.EqualTo(Constants.WorkflowStates.Created), "both legacy rows start live");
 
         await CreateSut(910).RegisterPushToken(
             MakeRequest("shared-device-token", "real-shared-install"), Context());
 
         var rows = await AllRowsAsync();
         Assert.That(rows, Has.Count.EqualTo(2));
-        Assert.That(rows[0].Id, Is.EqualTo(lowestId));
+        Assert.That(rows[0].Id, Is.EqualTo(seeded[0].Id), "the lowest Id is the one adopted");
         Assert.That(rows[0].InstallationId, Is.EqualTo("real-shared-install"));
+        Assert.That(rows[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(rows[1].InstallationId, Is.EqualTo("legacy:site-911"));
+        Assert.That(rows[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+    }
+
+    /// <summary>
+    /// The case adoption alone cannot fix, and the reason the sibling is
+    /// retired rather than left for "its own user's next register".
+    /// InstallationId identifies the install, not the user: both workers on a
+    /// shared device register from the SAME install, so the second one hits the
+    /// row the first already adopted and never reaches the (AppId, FcmToken)
+    /// fallback. If the sibling stayed live it would end up alongside the
+    /// adopted row with the same site and the same token — every reminder for
+    /// site 911 delivered twice, and site 911's reminders still going to that
+    /// device while worker 910 is the one signed in.
+    /// </summary>
+    [Test]
+    public async Task RegisterPushToken_SharedDeviceUserSwitch_LeavesOneLiveRowForTheToken()
+    {
+        foreach (var siteId in new[] { 920, 921 })
+        {
+            await SeedLegacyAdhocRowAsync("legacy:shared-" + siteId, "one-device-token", siteId);
+        }
+
+        // Worker 920 opens the app first; worker 921 then signs in on the same
+        // device, so both registers carry the same installation id.
+        await CreateSut(920).RegisterPushToken(
+            MakeRequest("one-device-token", "shared-install"), Context());
+        await CreateSut(921).RegisterPushToken(
+            MakeRequest("one-device-token", "shared-install"), Context());
+
+        var live = (await AllRowsAsync())
+            .Where(r => r.WorkflowState == Constants.WorkflowStates.Created)
+            .ToList();
+        Assert.That(live, Has.Count.EqualTo(1));
+        Assert.That(live[0].SdkSiteId, Is.EqualTo(921));
+        Assert.That(live[0].InstallationId, Is.EqualTo("shared-install"));
+        Assert.That(live[0].FcmToken, Is.EqualTo("one-device-token"));
     }
 
     [Test]
