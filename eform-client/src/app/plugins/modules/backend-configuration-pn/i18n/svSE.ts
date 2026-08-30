@@ -593,4 +593,14 @@ export const svSE = {
   'Assigned workers': 'Tilldelade medarbetare',
   'Other workers': 'Övriga medarbetare',
   Sections: 'Avsnitt',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Ändra startdatum',
+  '{{count}} tasks': '{{count}} uppgifter',
+  '{{count}} open occurrences will be retracted': '{{count}} öppna förekomster återkallas',
+  '{{count}} completed will be preserved': '{{count}} slutförda bevaras',
+  '{{count}} overdue tasks will be created': '{{count}} försenade uppgifter skapas',
+  'Calculating preview': 'Beräknar förhandsgranskning',
+  'Preview could not be loaded': 'Förhandsgranskningen kunde inte laddas',
+  'Pick a start date to preview the change': 'Välj ett startdatum för att förhandsgranska ändringen',
 };

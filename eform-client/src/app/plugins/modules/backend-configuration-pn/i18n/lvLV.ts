@@ -593,4 +593,14 @@ export const lvLV = {
   'Assigned workers': 'Piešķirtie darbinieki',
   'Other workers': 'Citi darbinieki',
   Sections: 'Sadaļas',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Mainīt sākuma datumu',
+  '{{count}} tasks': '{{count}} uzdevumi',
+  '{{count}} open occurrences will be retracted': '{{count}} atvērti gadījumi tiks atsaukti',
+  '{{count}} completed will be preserved': '{{count}} pabeigti tiks saglabāti',
+  '{{count}} overdue tasks will be created': '{{count}} nokavēti uzdevumi tiks izveidoti',
+  'Calculating preview': 'Priekšskatījuma aprēķināšana',
+  'Preview could not be loaded': 'Neizdevās ielādēt priekšskatījumu',
+  'Pick a start date to preview the change': 'Izvēlieties sākuma datumu, lai priekšskatītu izmaiņas',
 };

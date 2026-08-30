@@ -593,4 +593,14 @@ export const nlNL = {
   'Assigned workers': 'Toegewezen medewerkers',
   'Other workers': 'Overige medewerkers',
   Sections: 'Secties',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Startdatum wijzigen',
+  '{{count}} tasks': '{{count}} taken',
+  '{{count}} open occurrences will be retracted': '{{count}} open voorvallen worden ingetrokken',
+  '{{count}} completed will be preserved': '{{count}} voltooide blijven behouden',
+  '{{count}} overdue tasks will be created': '{{count}} achterstallige taken worden aangemaakt',
+  'Calculating preview': 'Voorbeeld wordt berekend',
+  'Preview could not be loaded': 'Voorbeeld kon niet worden geladen',
+  'Pick a start date to preview the change': 'Kies een startdatum om de wijziging te bekijken',
 };

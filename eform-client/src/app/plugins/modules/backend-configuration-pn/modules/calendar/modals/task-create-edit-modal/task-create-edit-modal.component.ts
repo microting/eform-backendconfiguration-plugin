@@ -101,6 +101,18 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   timeSlots: string[] = [];
   showDriveInput = false;
   filteredBoards: CalendarBoardModel[] = [];
+  // KEPT at today, deliberately, even though #1122 lifted the backend's
+  // CannotCreateTaskInThePast guard.
+  //
+  // #1122 is about the BATCH "change start date" action, which owns its own
+  // (floor-free) picker in BatchStartDateModalComponent and never routes
+  // through this modal. Dropping the floor here would only change interactive
+  // single-task behaviour that nobody asked for — and in edit mode it would
+  // make Save a SILENT NO-OP: `onSave()` early-returns on `isInPast(...)`
+  // below, so a user allowed to pick a past day would click Save and see
+  // nothing happen. Lifting this floor is therefore inseparable from lifting
+  // the `isInPast()` readonly/save gate, which is a much larger product
+  // decision about occurrence immutability. Do both together or neither.
   minDate = new Date();
   selectedTemplate: EformVisualEditorModel | null = null;
   isLoadingTemplate = false;
@@ -791,6 +803,12 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     return d.toLocaleDateString(getCurrentLocale(this.translate), {weekday: 'long', day: 'numeric', month: 'long'});
   }
 
+  /**
+   * NOT relaxed for #1122, and it does not need to be: the past-slot trim is
+   * keyed on `isToday`, so a date in the PAST already yields all 96 slots.
+   * The trim only ever bites on today, where "you cannot schedule 09:00 once
+   * it is 14:00" is still the intended interactive behaviour.
+   */
   private generateTimeSlots(): string[] {
     const slots: string[] = [];
     const now = new Date();
@@ -924,6 +942,18 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     });
   }
 
+  /**
+   * Drives BOTH the readonly gate in `ngOnInit` (every control disabled) and
+   * `onSave()`'s early return.
+   *
+   * NOT lifted for #1122. That issue makes past START DATES a normal thing to
+   * have, which does mean a batch-re-anchored series opens readonly here — a
+   * real consequence, recorded rather than silently "fixed". Lifting it is a
+   * product decision about occurrence immutability (the same gate enforces R2
+   * for COMPLETED tasks via the `|| task?.completed` arm) and is far wider
+   * than the batch action this issue asked for; the batch modal reaches the
+   * server directly and never opens this modal.
+   */
   private isInPast(date: Date, timeStr: string): boolean {
     const [hours, minutes] = timeStr.split(':').map(Number);
     const taskDate = new Date(date);

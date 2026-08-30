@@ -593,4 +593,14 @@ export const itIT = {
   'Assigned workers': 'Lavoratori assegnati',
   'Other workers': 'Altri lavoratori',
   Sections: 'Sezioni',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Modifica data di inizio',
+  '{{count}} tasks': '{{count}} attività',
+  '{{count}} open occurrences will be retracted': '{{count}} occorrenze aperte verranno ritirate',
+  '{{count}} completed will be preserved': '{{count}} completate verranno conservate',
+  '{{count}} overdue tasks will be created': '{{count}} attività scadute verranno create',
+  'Calculating preview': 'Calcolo anteprima',
+  'Preview could not be loaded': 'Caricamento anteprima non riuscito',
+  'Pick a start date to preview the change': 'Scegli una data di inizio per visualizzare in anteprima la modifica',
 };

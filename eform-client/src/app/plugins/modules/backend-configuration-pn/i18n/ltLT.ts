@@ -593,4 +593,14 @@ export const ltLT = {
   'Assigned workers': 'Priskirti darbuotojai',
   'Other workers': 'Kiti darbuotojai',
   Sections: 'Skyriai',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Keisti pradžios datą',
+  '{{count}} tasks': '{{count}} užduočių',
+  '{{count}} open occurrences will be retracted': '{{count}} atvirų įvykių bus atšaukta',
+  '{{count}} completed will be preserved': '{{count}} užbaigtų bus išsaugota',
+  '{{count}} overdue tasks will be created': '{{count}} pradelstų užduočių bus sukurta',
+  'Calculating preview': 'Skaičiuojama peržiūra',
+  'Preview could not be loaded': 'Nepavyko įkelti peržiūros',
+  'Pick a start date to preview the change': 'Pasirinkite pradžios datą, kad peržiūrėtumėte pakeitimą',
 };

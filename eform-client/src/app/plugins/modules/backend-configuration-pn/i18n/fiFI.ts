@@ -593,4 +593,14 @@ export const fiFI = {
   'Assigned workers': 'Määrätyt työntekijät',
   'Other workers': 'Muut työntekijät',
   Sections: 'Osiot',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Muuta aloituspäivää',
+  '{{count}} tasks': '{{count}} tehtävää',
+  '{{count}} open occurrences will be retracted': '{{count}} avointa esiintymää perutaan',
+  '{{count}} completed will be preserved': '{{count}} valmista säilytetään',
+  '{{count}} overdue tasks will be created': '{{count}} myöhässä olevaa tehtävää luodaan',
+  'Calculating preview': 'Lasketaan esikatselua',
+  'Preview could not be loaded': 'Esikatselua ei voitu ladata',
+  'Pick a start date to preview the change': 'Valitse aloituspäivä nähdäksesi muutoksen esikatselun',
 };

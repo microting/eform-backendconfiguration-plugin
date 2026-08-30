@@ -736,4 +736,14 @@ export const enUS= {
   'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.': 'The eForm applies to the whole series. Changing it updates every occurrence that has not been completed yet, including occurrences in the past. Completed occurrences keep the eForm they were completed with.',
   // Calendar: Save with no calendar selected must not be a silent no-op.
   'Select a calendar': 'Select a calendar',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Change start date',
+  '{{count}} tasks': '{{count}} tasks',
+  '{{count}} open occurrences will be retracted': '{{count}} open occurrences will be retracted',
+  '{{count}} completed will be preserved': '{{count}} completed will be preserved',
+  '{{count}} overdue tasks will be created': '{{count}} overdue tasks will be created',
+  'Calculating preview': 'Calculating preview',
+  'Preview could not be loaded': 'Preview could not be loaded',
+  'Pick a start date to preview the change': 'Pick a start date to preview the change',
 };

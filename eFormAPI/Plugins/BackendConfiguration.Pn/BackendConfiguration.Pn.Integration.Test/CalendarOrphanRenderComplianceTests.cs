@@ -249,7 +249,11 @@ public class CalendarOrphanRenderComplianceTests : TestBaseSetup
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            // #1122 — the calendar service now delegates the retract/backfill
+            // halves of a cross-period re-anchor. Neither fires in these fixtures.
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
     }
 
     private static string Key(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

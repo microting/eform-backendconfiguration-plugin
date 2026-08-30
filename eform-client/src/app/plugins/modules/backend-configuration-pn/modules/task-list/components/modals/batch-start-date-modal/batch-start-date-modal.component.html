@@ -1,0 +1,48 @@
+<h3 mat-dialog-title>{{ 'Change start date' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-form-field>
+    <mat-label>{{ 'Start date' | translate }}</mat-label>
+    <!-- NO [min] binding. A past date is the point of this action (#1122);
+         see the component's class comment before adding a floor here. -->
+    <input id="batchStartDateInput"
+           matInput
+           [matDatepicker]="batchStartDatePicker"
+           [(ngModel)]="startDate"
+           (ngModelChange)="onDateChange($event)">
+    <mat-datepicker-toggle matSuffix [for]="batchStartDatePicker"></mat-datepicker-toggle>
+    <mat-datepicker #batchStartDatePicker></mat-datepicker>
+  </mat-form-field>
+
+  <!-- Preview panel. Exactly one of the four states renders at a time, and
+       only 'resolved' enables Save (see `get valid()`). -->
+  <div id="batchStartDatePreview" [attr.data-state]="previewState">
+    <span id="batchStartDatePreviewHint" *ngIf="previewState === 'idle'">
+      {{ 'Pick a start date to preview the change' | translate }}
+    </span>
+    <span id="batchStartDatePreviewLoading" *ngIf="previewState === 'loading'">
+      {{ 'Calculating preview' | translate }}
+    </span>
+    <span id="batchStartDatePreviewError" *ngIf="previewState === 'failed'">
+      {{ 'Preview could not be loaded' | translate }}
+    </span>
+    <span *ngIf="previewState === 'resolved' && preview">
+      <span id="batchStartDatePreviewTasks">{{ '{{count}} tasks' | translate: {count: preview.taskCount} }}</span>
+      &middot;
+      <span id="batchStartDatePreviewRetract">{{ '{{count}} open occurrences will be retracted' | translate: {count: preview.occurrencesToRetract} }}</span>
+      &middot;
+      <span id="batchStartDatePreviewCompleted">{{ '{{count}} completed will be preserved' | translate: {count: preview.completedPreserved} }}</span>
+      &middot;
+      <span id="batchStartDatePreviewOverdue">{{ '{{count}} overdue tasks will be created' | translate: {count: preview.overdueToCreate} }}</span>
+    </span>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

@@ -268,6 +268,8 @@ public class CalendarMultiLanguageTitleDescriptionTests : TestBaseSetup
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
     }
 }

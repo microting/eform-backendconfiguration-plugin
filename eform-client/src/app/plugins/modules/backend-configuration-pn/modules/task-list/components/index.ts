@@ -7,4 +7,5 @@ export * from './modals/batch-eform-modal/batch-eform-modal.component';
 export * from './modals/batch-tags-modal/batch-tags-modal.component';
 export * from './modals/batch-compliance-modal/batch-compliance-modal.component';
 export * from './modals/batch-copy-modal/batch-copy-modal.component';
+export * from './modals/batch-start-date-modal/batch-start-date-modal.component';
 export * from './modals/batch-delete-modal/batch-delete-modal.component';

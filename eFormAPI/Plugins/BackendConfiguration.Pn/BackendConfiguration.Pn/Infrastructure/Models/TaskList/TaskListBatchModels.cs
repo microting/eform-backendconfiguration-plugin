@@ -46,3 +46,42 @@ public class TaskListBatchCopyModel : TaskListBatchRequestModel
     public DateTime StartDate { get; set; }
     public int SiteId { get; set; }
 }
+
+/// <summary>
+/// #1122 — "Batch: Ændre startdato til HVILKEN som helst dato." The only
+/// caller-supplied value is the new series anchor; every other field of the
+/// affected tasks round-trips through BuildUpdateModel unchanged.
+/// </summary>
+public class TaskListBatchStartDateModel : TaskListBatchRequestModel
+{
+    public DateTime StartDate { get; set; }
+}
+
+/// <summary>
+/// #1122 §5 — the read-only projection behind
+/// "N opgaver · M åbne forekomster tilbagekaldes · K gennemførte bevares ·
+/// L overskredne opgaver oprettes".
+///
+/// Every number here is produced by the SAME code the apply runs
+/// (ICalendarOccurrenceRetractionService.PlanRetractionAsync and
+/// ICalendarPastSeriesBackfillService.PlanPastSeriesBackfillAsync), so the
+/// preview cannot promise something the save does not deliver.
+/// </summary>
+public class TaskListBatchStartDatePreviewModel
+{
+    /// <summary>Selected tasks the apply will actually be able to re-anchor.</summary>
+    public int TaskCount { get; set; }
+
+    /// <summary>
+    /// Compliance ROWS that will be retracted — not distinct dates. Compliance
+    /// has no site column, so one occurrence deployed to two workers is two
+    /// rows and can be half-completed; counting dates would under-report.
+    /// </summary>
+    public int OccurrencesToRetract { get; set; }
+
+    /// <summary>Rows left untouched because their SDK case is completed (invariant R2).</summary>
+    public int CompletedPreserved { get; set; }
+
+    /// <summary>(past occurrence x effective site) pairs the backfill will materialise.</summary>
+    public int OverdueToCreate { get; set; }
+}

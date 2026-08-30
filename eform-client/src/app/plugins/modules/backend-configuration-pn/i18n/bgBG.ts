@@ -593,4 +593,14 @@ export const bgBG = {
   'Assigned workers': 'Назначени работници',
   'Other workers': 'Други работници',
   Sections: 'Раздели',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Промяна на началната дата',
+  '{{count}} tasks': '{{count}} задачи',
+  '{{count}} open occurrences will be retracted': '{{count}} отворени случая ще бъдат оттеглени',
+  '{{count}} completed will be preserved': '{{count}} завършени ще бъдат запазени',
+  '{{count}} overdue tasks will be created': '{{count}} просрочени задачи ще бъдат създадени',
+  'Calculating preview': 'Изчисляване на визуализацията',
+  'Preview could not be loaded': 'Визуализацията не можа да бъде заредена',
+  'Pick a start date to preview the change': 'Изберете начална дата, за да визуализирате промяната',
 };

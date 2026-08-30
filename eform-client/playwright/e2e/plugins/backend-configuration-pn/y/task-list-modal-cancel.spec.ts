@@ -15,11 +15,12 @@ import {
 /**
  * Task list BATCH MODAL CANCEL suite (backend-configuration-task-list-page
  * feature, shard y): one representative action per of the FIVE modal
- * COMPONENTS (`batch-worker-modal`, `batch-eform-modal`, `batch-tags-modal`,
- * `batch-copy-modal`, `batch-delete-modal` — not per the 9 batch actions),
- * proving `#batchModalCancel` (added to all five templates specifically for
- * this suite — see the sibling template edits — they previously only had an
- * unidentified `.btn-cancel`) leaves everything exactly as it was:
+ * COMPONENTS covered here (`batch-worker-modal`, `batch-eform-modal`,
+ * `batch-tags-modal`, `batch-copy-modal`, `batch-delete-modal` — not per the
+ * 10 batch actions), proving `#batchModalCancel` (added to those templates
+ * specifically for this suite — see the sibling template edits — they
+ * previously only had an unidentified `.btn-cancel`) leaves everything
+ * exactly as it was:
  *   - `hide()` -> `dialogRef.close()` with NO result, so `openBatchModal`'s
  *     `afterClosed()` subscriber in `task-list-page.component.ts` never
  *     enters its `if (result)` branch — `this.selection` is NOT cleared and
@@ -28,6 +29,13 @@ import {
  *     while `selection.size > 0` — must show the exact same text before and
  *     after cancel, and the acted-on row's relevant cell must be byte-equal
  *     before/after.
+ *
+ * The two LATER modal components carry the same `#batchModalCancel` and the
+ * same inert-cancel contract, but are cancel-tested in their own suites
+ * alongside the behaviour that is unique to them:
+ * `batch-compliance-modal` in `e/task-list-batch-compliance.spec.ts` and
+ * `batch-start-date-modal` (whose cancel must additionally discard a
+ * RESOLVED preview) in `i/task-list-batch-start-date.spec.ts` SD3.
  *
  * eForm modal cancel here is PHASE-1 cancel (before `#batchModalSubmit` is
  * even clicked) — deliberately different from

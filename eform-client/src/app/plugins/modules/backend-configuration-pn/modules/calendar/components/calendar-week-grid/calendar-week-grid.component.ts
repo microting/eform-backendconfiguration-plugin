@@ -267,7 +267,14 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
     // unconstrained.
     const startHour = Math.max(0, Math.round((relY / this.hourHeight) * 2) / 2);
 
-    // Reject clicks on past time slots
+    // Reject clicks on past time slots.
+    //
+    // KEPT for #1122: that issue gives the admin an explicit, previewed BATCH
+    // action for back-dating a series. Making a stray click on yesterday open
+    // a create modal is a different (and much easier to trigger by accident)
+    // interaction, and was not asked for. Worth noting separately that the
+    // rejection is SILENT — a UX defect on its own terms, but one that
+    // predates this issue and is not made worse by it.
     const clickDateTime = new Date(date);
     clickDateTime.setHours(Math.floor(startHour), (startHour % 1) * 60, 0, 0);
     if (clickDateTime < new Date()) {
@@ -401,6 +408,11 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
         const sourceIsPast = sourceDateTime < now;
         const targetIsPast = targetDateTime < now;
 
+        // KEPT for #1122. The rule below is deliberate, not an accidental
+        // floor: dragging a FUTURE event into the past would create history
+        // that never happened, with no preview and no confirmation. The batch
+        // action back-dates a whole SERIES on purpose, having shown the admin
+        // exactly how many occurrences it will retract and backfill first.
         if (!sourceIsPast && targetIsPast) {
           // Future task dropped before now: rejected. Reset the CDK
           // transform and force a tasks reload so the parent re-renders

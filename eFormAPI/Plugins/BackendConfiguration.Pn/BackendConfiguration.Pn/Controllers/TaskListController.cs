@@ -43,6 +43,22 @@ public class TaskListController(
     public async Task<OperationResult> SetCompliance([FromBody] TaskListBatchComplianceModel model)
         => await Validated(model) ?? await taskListService.SetCompliance(model);
 
+    [HttpPost("change-start-date")]
+    public async Task<OperationResult> ChangeStartDate([FromBody] TaskListBatchStartDateModel model)
+        => await Validated(model) ?? await taskListService.ChangeStartDate(model);
+
+    /// <summary>
+    /// #1122 §5 — read-only projection behind the batch modal's preview panel.
+    /// Returns data, so it cannot reuse <see cref="Validated"/> (whose null-vs-
+    /// OperationResult idiom does not carry a payload); <see cref="ValidatedData{T}"/>
+    /// applies the identical empty-TaskIds rule in the data-result shape.
+    /// </summary>
+    [HttpPost("change-start-date/preview")]
+    public async Task<OperationDataResult<TaskListBatchStartDatePreviewModel>> ChangeStartDatePreview(
+        [FromBody] TaskListBatchStartDateModel model)
+        => ValidatedData<TaskListBatchStartDatePreviewModel>(model)
+           ?? await taskListService.ChangeStartDatePreview(model);
+
     [HttpPost("copy")]
     public async Task<OperationResult> Copy([FromBody] TaskListBatchCopyModel model)
         => await Validated(model) ?? await taskListService.Copy(model);
@@ -77,4 +93,13 @@ public class TaskListController(
         => model == null || model.TaskIds == null || model.TaskIds.Count == 0
             ? Task.FromResult<OperationResult>(new OperationResult(false, "TaskIds must not be empty"))
             : Task.FromResult<OperationResult>(null);
+
+    /// <summary>
+    /// <see cref="Validated"/> for endpoints that return a payload. Same rule and
+    /// same message, kept adjacent so the two can be changed together.
+    /// </summary>
+    private static OperationDataResult<T> ValidatedData<T>(TaskListBatchRequestModel model)
+        => model == null || model.TaskIds == null || model.TaskIds.Count == 0
+            ? new OperationDataResult<T>(false, "TaskIds must not be empty")
+            : null;
 }

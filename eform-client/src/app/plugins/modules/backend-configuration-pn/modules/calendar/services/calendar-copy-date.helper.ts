@@ -2,6 +2,12 @@
  * Adjusts the source event's date forward when it is in the past so that a
  * copy lands on a valid (today or future) day.
  *
+ * KEPT as-is for #1122 (batch change start date). This is the COPY path's
+ * default-date seeding: it picks what the copy dialog opens on, it is not a
+ * validation floor, and the copy endpoint still anchors on "now". Changing it
+ * would silently alter where every copied event lands — unrelated to
+ * re-anchoring an existing series.
+ *
  * Rules:
  * - If sourceDate is before today → today
  * - If sourceDate is today AND sourceStartHour is before now's hour-of-day → tomorrow

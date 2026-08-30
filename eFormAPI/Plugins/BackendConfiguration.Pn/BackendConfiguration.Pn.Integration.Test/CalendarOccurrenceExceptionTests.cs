@@ -77,7 +77,9 @@ public class CalendarOccurrenceExceptionTests : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>()
         );
     }
 

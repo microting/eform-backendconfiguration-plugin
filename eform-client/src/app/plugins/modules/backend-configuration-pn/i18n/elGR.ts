@@ -593,4 +593,14 @@ export const elGR = {
   'Assigned workers': 'Ανατεθειμένοι εργαζόμενοι',
   'Other workers': 'Άλλοι εργαζόμενοι',
   Sections: 'Ενότητες',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Αλλαγή ημερομηνίας έναρξης',
+  '{{count}} tasks': '{{count}} εργασίες',
+  '{{count}} open occurrences will be retracted': '{{count}} ανοιχτές εμφανίσεις θα ανακληθούν',
+  '{{count}} completed will be preserved': '{{count}} ολοκληρωμένες θα διατηρηθούν',
+  '{{count}} overdue tasks will be created': '{{count}} εκπρόθεσμες εργασίες θα δημιουργηθούν',
+  'Calculating preview': 'Υπολογισμός προεπισκόπησης',
+  'Preview could not be loaded': 'Δεν ήταν δυνατή η φόρτωση της προεπισκόπησης',
+  'Pick a start date to preview the change': 'Επιλέξτε ημερομηνία έναρξης για προεπισκόπηση της αλλαγής',
 };
