@@ -234,7 +234,9 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             BackendConfigurationPnDbContext, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
 
         // Act: complete the past occurrence in place.
         var result = await service.ToggleComplete(arp.Id, true, compliance.Id, null, null);
@@ -529,7 +531,9 @@ public class CalendarCompleteInPlaceReportSyncTests : TestBaseSetup
             BackendConfigurationPnDbContext, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
 
         return new InPlaceScenario
         {

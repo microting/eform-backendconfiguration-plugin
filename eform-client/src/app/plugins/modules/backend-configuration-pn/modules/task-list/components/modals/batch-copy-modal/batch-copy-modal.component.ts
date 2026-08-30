@@ -25,6 +25,11 @@ export class BatchCopyModalComponent {
   targetBoardId: number | null = null;
   siteId: number | null = null;
   startDate: Date = new Date();
+  // KEPT at today. #1122 lifted the past-date guard for CHANGE START DATE, not
+  // for COPY: copy CREATES new plannings on a target property, and
+  // BackendConfigurationTaskListService.Copy still resolves the copy's first
+  // occurrence against "now". Relaxing this floor is a separate decision about
+  // the copy endpoint, not collateral of the batch re-anchor action.
   minDate: Date = new Date();
 
   boards: CalendarBoardModel[] = [];

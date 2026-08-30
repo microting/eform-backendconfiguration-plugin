@@ -30,6 +30,7 @@ import {
   BatchTagsModalComponent,
   BatchComplianceModalComponent,
   BatchCopyModalComponent,
+  BatchStartDateModalComponent,
   BatchDeleteModalComponent,
 } from './components';
 
@@ -64,6 +65,7 @@ import {
     BatchTagsModalComponent,
     BatchComplianceModalComponent,
     BatchCopyModalComponent,
+    BatchStartDateModalComponent,
     BatchDeleteModalComponent,
   ],
 })

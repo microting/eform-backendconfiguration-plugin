@@ -138,6 +138,13 @@ public class TaskListBatchEformTagsTest : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _calendarService,
             _taskWizardService,
+            // #1122 added the change-start-date action, which needs the
+            // retraction/backfill projections for its PREVIEW only. None of the
+            // actions these fixtures exercise touches either, so substitutes
+            // that are never called keep the constructor satisfied without
+            // pulling an SDK core into fixtures that do not need one.
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
             NullLogger<BackendConfigurationTaskListService>.Instance
         );
     }

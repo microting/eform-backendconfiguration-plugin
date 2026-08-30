@@ -641,4 +641,14 @@ export const deDE = {
   'Assigned workers': 'Zugewiesene Mitarbeiter',
   'Other workers': 'Weitere Mitarbeiter',
   Sections: 'Abschnitte',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Startdatum ändern',
+  '{{count}} tasks': '{{count}} Aufgaben',
+  '{{count}} open occurrences will be retracted': '{{count}} offene Vorkommen werden zurückgezogen',
+  '{{count}} completed will be preserved': '{{count}} abgeschlossene bleiben erhalten',
+  '{{count}} overdue tasks will be created': '{{count}} überfällige Aufgaben werden erstellt',
+  'Calculating preview': 'Vorschau wird berechnet',
+  'Preview could not be loaded': 'Vorschau konnte nicht geladen werden',
+  'Pick a start date to preview the change': 'Wählen Sie ein Startdatum, um die Änderung anzuzeigen',
 };

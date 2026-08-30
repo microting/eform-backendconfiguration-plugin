@@ -593,4 +593,14 @@ export const huHU = {
   'Assigned workers': 'Hozzárendelt munkatársak',
   'Other workers': 'Egyéb munkatársak',
   Sections: 'Szakaszok',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Kezdő dátum módosítása',
+  '{{count}} tasks': '{{count}} feladat',
+  '{{count}} open occurrences will be retracted': '{{count}} nyitott előfordulás visszavonásra kerül',
+  '{{count}} completed will be preserved': '{{count}} befejezett megmarad',
+  '{{count}} overdue tasks will be created': '{{count}} lejárt feladat jön létre',
+  'Calculating preview': 'Előnézet számítása',
+  'Preview could not be loaded': 'Az előnézetet nem sikerült betölteni',
+  'Pick a start date to preview the change': 'Válasszon kezdő dátumot a módosítás előnézetéhez',
 };

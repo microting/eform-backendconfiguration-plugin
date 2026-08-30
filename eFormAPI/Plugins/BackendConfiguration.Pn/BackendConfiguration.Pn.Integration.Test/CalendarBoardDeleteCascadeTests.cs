@@ -41,7 +41,9 @@ public class CalendarBoardDeleteCascadeTests : TestBaseSetup
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
     }
 
     /// <summary>Seeds a board plus <paramref name="eventCount"/> events placed on it.

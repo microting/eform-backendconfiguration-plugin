@@ -593,4 +593,14 @@ export const hrHR = {
   'Assigned workers': 'Dodijeljeni radnici',
   'Other workers': 'Ostali radnici',
   Sections: 'Odjeljci',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Promijeni datum početka',
+  '{{count}} tasks': '{{count}} zadataka',
+  '{{count}} open occurrences will be retracted': '{{count}} otvorenih pojavljivanja bit će povučeno',
+  '{{count}} completed will be preserved': '{{count}} dovršenih bit će sačuvano',
+  '{{count}} overdue tasks will be created': '{{count}} zakašnjelih zadataka bit će stvoreno',
+  'Calculating preview': 'Izračun pretpregleda',
+  'Preview could not be loaded': 'Pretpregled nije moguće učitati',
+  'Pick a start date to preview the change': 'Odaberite datum početka za pretpregled promjene',
 };

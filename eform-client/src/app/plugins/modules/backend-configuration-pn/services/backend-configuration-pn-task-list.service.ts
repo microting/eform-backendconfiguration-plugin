@@ -12,6 +12,23 @@ export class TaskListBatchComplianceRequest extends TaskListBatchRequest { compl
 export class TaskListBatchCopyRequest extends TaskListBatchRequest {
   targetPropertyId: number; targetBoardId: number; startDate: string; siteId: number;
 }
+// `startDate` is a date-only "yyyy-MM-dd" string, NOT an ISO instant: the
+// backend binds it to a `DateTime`, and sending `toISOString()` would shift the
+// picked calendar day across a UTC offset. Same convention as
+// TaskListBatchCopyRequest above.
+export class TaskListBatchStartDateRequest extends TaskListBatchRequest { startDate: string; }
+
+/**
+ * Read-only projection of what `change-start-date` WOULD do, returned by the
+ * `/preview` endpoint. Counted by enumerating exactly as the write path does,
+ * but writing nothing.
+ */
+export class TaskListBatchStartDatePreviewModel {
+  taskCount: number;
+  occurrencesToRetract: number;
+  completedPreserved: number;
+  overdueToCreate: number;
+}
 
 export const TaskListMethods = {
   Base: 'api/backend-configuration-pn/task-list',
@@ -45,6 +62,30 @@ export class BackendConfigurationPnTaskListService {
   copy(model: TaskListBatchCopyRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/copy`, model);
   }
+  /**
+   * Re-anchors every selected task's series to `model.startDate`. The date may
+   * be in the PAST — that is the whole point of the action (#1122) — so the
+   * modal's picker deliberately carries no `minDate`.
+   */
+  changeStartDate(model: TaskListBatchStartDateRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/change-start-date`, model);
+  }
+
+  /**
+   * Preview counts for `changeStartDate`, with no writes.
+   *
+   * `postNoToast` on purpose, for the same reason as `purgeOrphanTags` below:
+   * this fires on EVERY date change in the modal (debounced), so a toast per
+   * keystroke/day-click would bury the screen — and a failed preview is
+   * surfaced inline in the modal's preview panel instead, where it also has to
+   * keep Save disabled.
+   */
+  changeStartDatePreview(
+    model: TaskListBatchStartDateRequest,
+  ): Observable<OperationDataResult<TaskListBatchStartDatePreviewModel>> {
+    return this.apiBaseService.postNoToast(`${TaskListMethods.Base}/change-start-date/preview`, model);
+  }
+
   delete(model: TaskListBatchRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/delete`, model);
   }

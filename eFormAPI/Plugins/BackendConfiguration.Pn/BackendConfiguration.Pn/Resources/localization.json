@@ -5527,5 +5527,36 @@
       "el-GR": "Συνδεδεμένοι λογαριασμοί Google Drive",
       "is-IS": "Tengdir Google Drive-reikningar"
     }
+  },
+  {
+    "Key": "StartDateIsRequired",
+    "LocalizedValue": {
+      "en-US": "Start date is required",
+      "da": "Startdato er påkrævet",
+      "de": "Startdatum ist erforderlich",
+      "uk-UA": "Потрібна дата початку",
+      "pl-PL": "Data rozpoczęcia jest wymagana",
+      "no-NO": "Startdato er påkrevd",
+      "sv-SE": "Startdatum krävs",
+      "es-ES": "La fecha de inicio es obligatoria",
+      "fr-FR": "La date de début est obligatoire",
+      "it-IT": "La data di inizio è obbligatoria",
+      "nl-NL": "Startdatum is verplicht",
+      "pt-BR": "A data de início é obrigatória",
+      "pt-PT": "A data de início é obrigatória",
+      "fi-FI": "Aloituspäivä on pakollinen",
+      "et-ET": "Alguskuupäev on kohustuslik",
+      "lv-LV": "Sākuma datums ir obligāts",
+      "lt-LT": "Pradžios data yra privaloma",
+      "ro-RO": "Data de început este obligatorie",
+      "hr-HR": "Datum početka je obavezan",
+      "sl-SL": "Datum začetka je obvezen",
+      "cs-CZ": "Datum zahájení je povinné",
+      "sk-SK": "Dátum začiatku je povinný",
+      "hu-HU": "A kezdő dátum megadása kötelező",
+      "bg-BG": "Началната дата е задължителна",
+      "el-GR": "Η ημερομηνία έναρξης είναι υποχρεωτική",
+      "is-IS": "Upphafsdagsetning er nauðsynleg"
+    }
   }
 ]

@@ -593,4 +593,14 @@ export const slSL = {
   'Assigned workers': 'Dodeljeni delavci',
   'Other workers': 'Drugi delavci',
   Sections: 'Razdelki',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Spremeni datum začetka',
+  '{{count}} tasks': '{{count}} opravil',
+  '{{count}} open occurrences will be retracted': '{{count}} odprtih pojavitev bo preklicanih',
+  '{{count}} completed will be preserved': '{{count}} dokončanih bo ohranjenih',
+  '{{count}} overdue tasks will be created': '{{count}} zapadlih opravil bo ustvarjenih',
+  'Calculating preview': 'Izračun predogleda',
+  'Preview could not be loaded': 'Predogleda ni bilo mogoče naložiti',
+  'Pick a start date to preview the change': 'Izberite datum začetka za predogled spremembe',
 };

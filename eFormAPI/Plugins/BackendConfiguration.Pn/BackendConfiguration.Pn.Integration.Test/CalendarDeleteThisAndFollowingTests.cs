@@ -302,7 +302,11 @@ public class CalendarDeleteThisAndFollowingTests : TestBaseSetup
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            NullLogger<BackendConfigurationCalendarService>.Instance);
+            NullLogger<BackendConfigurationCalendarService>.Instance,
+            // #1122 — the calendar service now delegates the retract/backfill
+            // halves of a cross-period re-anchor. Neither fires in these fixtures.
+            Substitute.For<ICalendarOccurrenceRetractionService>(),
+            Substitute.For<ICalendarPastSeriesBackfillService>());
     }
 
     private async Task<List<CalendarTaskResponseModel>> TilesForWeek(

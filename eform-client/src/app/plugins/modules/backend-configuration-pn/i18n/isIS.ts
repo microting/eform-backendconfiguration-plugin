@@ -593,4 +593,14 @@ export const isIS = {
   'Assigned workers': 'Úthlutaðir starfsmenn',
   'Other workers': 'Aðrir starfsmenn',
   Sections: 'Kaflar',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Breyta upphafsdagsetningu',
+  '{{count}} tasks': '{{count}} verkefni',
+  '{{count}} open occurrences will be retracted': '{{count}} opin tilvik verða afturkölluð',
+  '{{count}} completed will be preserved': '{{count}} lokið verða varðveitt',
+  '{{count}} overdue tasks will be created': '{{count}} verkefni í vanskilum verða búin til',
+  'Calculating preview': 'Reiknar forskoðun',
+  'Preview could not be loaded': 'Ekki tókst að hlaða forskoðun',
+  'Pick a start date to preview the change': 'Veldu upphafsdagsetningu til að forskoða breytinguna',
 };

@@ -593,4 +593,14 @@ export const ptPT = {
   'Assigned workers': 'Trabalhadores atribuídos',
   'Other workers': 'Outros trabalhadores',
   Sections: 'Secções',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Alterar a data de início',
+  '{{count}} tasks': '{{count}} tarefas',
+  '{{count}} open occurrences will be retracted': '{{count}} ocorrências abertas serão retiradas',
+  '{{count}} completed will be preserved': '{{count}} concluídas serão preservadas',
+  '{{count}} overdue tasks will be created': '{{count}} tarefas em atraso serão criadas',
+  'Calculating preview': 'A calcular a pré-visualização',
+  'Preview could not be loaded': 'Não foi possível carregar a pré-visualização',
+  'Pick a start date to preview the change': 'Escolha uma data de início para pré-visualizar a alteração',
 };

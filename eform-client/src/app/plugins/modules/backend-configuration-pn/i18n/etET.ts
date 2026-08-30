@@ -593,4 +593,14 @@ export const etET = {
   'Assigned workers': 'Määratud töötajad',
   'Other workers': 'Muud töötajad',
   Sections: 'Jaotised',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Muuda alguskuupäeva',
+  '{{count}} tasks': '{{count}} ülesannet',
+  '{{count}} open occurrences will be retracted': '{{count}} avatud esinemist võetakse tagasi',
+  '{{count}} completed will be preserved': '{{count}} lõpetatut säilitatakse',
+  '{{count}} overdue tasks will be created': '{{count}} tähtaja ületanud ülesannet luuakse',
+  'Calculating preview': 'Eelvaate arvutamine',
+  'Preview could not be loaded': 'Eelvaadet ei õnnestunud laadida',
+  'Pick a start date to preview the change': 'Vali alguskuupäev, et muudatust eelvaadata',
 };

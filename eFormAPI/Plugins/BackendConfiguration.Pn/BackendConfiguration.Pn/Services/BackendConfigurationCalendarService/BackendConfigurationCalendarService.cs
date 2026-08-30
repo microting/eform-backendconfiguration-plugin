@@ -13,6 +13,8 @@ using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Helpers;
 using CalendarAssignmentReconciliation;
+using CalendarOccurrenceRetraction;
+using CalendarPastSeriesBackfill;
 using EventDeployService;
 using Infrastructure.Models.Calendar;
 using Infrastructure.Models.TaskWizard;
@@ -39,7 +41,13 @@ public class BackendConfigurationCalendarService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationTaskWizardService taskWizardService,
     ICalendarAssignmentReconciliationService reconciliationService,
-    ILogger<BackendConfigurationCalendarService> logger)
+    ILogger<BackendConfigurationCalendarService> logger,
+    // #1122 §3/§2 — the two halves of "the anchor left its recurrence period":
+    // wipe the open occurrences of the OLD grid, then materialise the past range
+    // of the NEW one. Both are deliberately non-request-shaped services so the
+    // batch/background callers of #1122 §4 can reuse them without this class.
+    ICalendarOccurrenceRetractionService occurrenceRetractionService,
+    ICalendarPastSeriesBackfillService pastSeriesBackfillService)
     : IBackendConfigurationCalendarService
 {
     public async Task<OperationDataResult<List<CalendarTaskResponseModel>>> GetTasksForWeek(
@@ -479,26 +487,12 @@ public class BackendConfigurationCalendarService(
                 var occurrences = GetOccurrencesInWeek(planning, weekStart, weekEnd, arp.RepeatWeekdaysCsv,
                     arp.RepeatOrdinalWeek, arp.DayOfWeek);
 
-                // Filter by repeat end mode
-                if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
-                    occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
-                else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
-                {
-                    // Use EnumerateOccurrences (week-loop iterator) instead of
-                    // GetOccurrencesInWeek for the cumulative count: the latter's
-                    // multi-day weekly branch emits at most one matching week, so
-                    // the after-cap would never fire for CSV rules. Upper bound
-                    // on EnumerateOccurrences is exclusive — add a day.
-                    var allOccsSince = EnumerateOccurrences(planning,
-                        planning.StartDate.Date, weekEnd.AddDays(1),
-                        arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek).ToList();
-                    var maxOcc = arp.RepeatOccurrences.Value;
-                    if (allOccsSince.Count > maxOcc)
-                    {
-                        var cutoff = allOccsSince[maxOcc - 1];
-                        occurrences.RemoveAll(d => d > cutoff);
-                    }
-                }
+                // Filter by repeat end mode. Extracted to ApplyRepeatEndBound
+                // (#1122) so this render path and the past-series backfill apply
+                // the SAME bound — EnumerateOccurrences does not self-apply
+                // RepeatUntil/after-N, so every caller has to, and two hand-rolled
+                // copies would drift.
+                ApplyRepeatEndBound(planning, arp, occurrences, weekEnd);
 
                 // Even when the rule generates no occurrences for this week,
                 // we still need to consider per-occurrence exceptions whose
@@ -1246,13 +1240,12 @@ public class BackendConfigurationCalendarService(
             // recurrence to the wrong weekday.
             createModel.StartDate = NormalizeStartDateToLocalDay(createModel.StartDate);
 
-            // Validate: cannot create task in the past
-            var taskDateTime = createModel.StartDate.AddHours(createModel.StartHour);
-            if (taskDateTime < DateTime.UtcNow)
-            {
-                return new OperationDataResult<int>(false,
-                    localizationService.GetString("CannotCreateTaskInThePast"));
-            }
+            // NOTE (#1122): there is deliberately NO "cannot create in the past"
+            // guard here any more. Back-dating a series is a first-class action —
+            // the task-list batch "change start date" feeds an arbitrary anchor
+            // through this path so a past-dated series can be re-created and its
+            // missed occurrences backfilled as overdue. Callers that still want a
+            // future-only anchor must enforce that themselves.
 
             // Validate: at least one worker must be assigned. Events without
             // an assignee would be downgraded to NotActive by task-wizard and
@@ -1420,7 +1413,12 @@ public class BackendConfigurationCalendarService(
     // day. A value already at midnight (a tz-stable instant, or the date-only
     // string the FE now sends) is unchanged. Applied once at each entry point so
     // every downstream .Date/.DayOfWeek read sees the corrected day.
-    private static DateTime NormalizeStartDateToLocalDay(DateTime startDate)
+    // internal (not private) so #1122 §4's change-start-date PREVIEW can compute
+    // the same anchor UpdateTask will persist. The preview has to answer
+    // "same recurrence period or not?" about the POST-save anchor, and that
+    // anchor is this function's output — re-implementing the rounding in the
+    // preview would put a second, drifting copy of the #966 fix in the codebase.
+    internal static DateTime NormalizeStartDateToLocalDay(DateTime startDate)
     {
         var shifted = DateTime.SpecifyKind(startDate, DateTimeKind.Utc).AddHours(12);
         return new DateTime(shifted.Year, shifted.Month, shifted.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -1435,13 +1433,11 @@ public class BackendConfigurationCalendarService(
             // wizard StartDate handed off below.
             updateModel.StartDate = NormalizeStartDateToLocalDay(updateModel.StartDate);
 
-            // Validate: cannot update task to the past
-            var taskDateTime = updateModel.StartDate.AddHours(updateModel.StartHour);
-            if (taskDateTime < DateTime.UtcNow)
-            {
-                return new OperationResult(false,
-                    localizationService.GetString("CannotCreateTaskInThePast"));
-            }
+            // NOTE (#1122): no past-date guard here either — see CreateTask.
+            // Re-anchoring an existing series backwards is exactly what the
+            // task-list batch "change start date" does, and BuildUpdateModel's
+            // synthetic "nearest future same-weekday" anchor only ever existed to
+            // dodge the guard that used to sit on this line.
 
             // Validate: at least one worker must remain assigned. Clearing
             // assignees would downgrade the task to NotActive (same as the
@@ -1499,25 +1495,35 @@ public class BackendConfigurationCalendarService(
             // genuine date change, or a one-off (whose anchor == its own date),
             // still flows through to relocate as before.
             var wizardStartDate = updateModel.StartDate;
+            // The series anchor as it stands BEFORE this edit. Read once, here,
+            // because the wizard call below overwrites it and #1122 §3's
+            // relocate-vs-retract gate needs the pre-edit value. (This read used
+            // to sit inside the !dateChanged branch; hoisting it is behaviour-
+            // preserving — same query, same single execution per request.)
+            var previousStartDate = await backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == updateModel.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.StartDate)
+                .FirstOrDefaultAsync();
             // Whether this "all" edit actually moves the occurrence date (and so
             // potentially re-patterns the rule). A pure time/field edit keeps the
             // anchor and must not relocate any past Compliance rows (#960).
             var dateChanged = true;
+            // The occurrence the user actually had open, when there was one.
+            // Needed by the #1122 §3 gate below, which must compare the date the
+            // new anchor REPLACES — not the series anchor, see there.
+            DateTime? originalOccurrenceDate = null;
             if (!string.IsNullOrEmpty(updateModel.OriginalDate))
             {
                 var parsedOriginalDate = DateTime.Parse(updateModel.OriginalDate, CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal).Date;
+                originalOccurrenceDate = parsedOriginalDate;
                 if (updateModel.StartDate.Date == parsedOriginalDate)
                 {
                     dateChanged = false;
-                    var currentStartDate = await backendConfigurationPnDbContext.AreaRulePlannings
-                        .Where(x => x.Id == updateModel.Id)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.StartDate)
-                        .FirstOrDefaultAsync();
-                    if (currentStartDate.HasValue)
+                    if (previousStartDate.HasValue)
                     {
-                        wizardStartDate = currentStartDate.Value;
+                        wizardStartDate = previousStartDate.Value;
                     }
                 }
             }
@@ -1603,7 +1609,87 @@ public class BackendConfigurationCalendarService(
                     // frozen and never touched (R2 immutability).
                     if (dateChanged)
                     {
-                        await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning);
+                        // #1122 §3 — relocate and retract are two mutually
+                        // exclusive notions of "adjust the existing occurrences";
+                        // exactly one of them may fire.
+                        //
+                        // RELOCATE (#960) moves each non-completed Compliance row
+                        // to the new-pattern date WITHIN ITS OWN recurrence
+                        // period. That is meaningful only while the period grid
+                        // itself is unchanged — "same periods, new weekday / new
+                        // day-of-month". Once the date crosses into a different
+                        // period (a weekly task moved into another week, a monthly
+                        // one into another month) every period boundary moves, so
+                        // there is no "own period" left to relocate within.
+                        //
+                        // RETRACT then kills the open occurrences outright and the
+                        // new pattern deploys fresh. A PAST anchor always retracts
+                        // regardless of period, because the backfill below
+                        // re-creates the entire [anchor, today) range from the new
+                        // pattern and leftovers from the old one would collide
+                        // with it on the very days it is about to fill. That past
+                        // clause — not the period test — is what covers the issue's
+                        // headline example: a yearly task moved 25.08.2026 ->
+                        // 01.01.2026 stays inside ONE yearly period (2026), so only
+                        // "the new anchor is in the past" makes it retract.
+                        //
+                        // Completed occurrences survive both branches untouched
+                        // (invariant R2) — relocate skips them, and the retraction
+                        // service preserves them.
+                        var newAnchor = planning.StartDate.Date;
+                        var anchorIsInThePast = newAnchor < DateTime.UtcNow.Date;
+
+                        // Compare against the date the new anchor REPLACES.
+                        // For an edit-modal save that is the occurrence the user
+                        // had open (OriginalDate); for a batch re-anchor, which
+                        // sends no OriginalDate, it is the series' own previous
+                        // anchor.
+                        //
+                        // Using the series anchor in the first case would undo
+                        // #960 outright: the wizard re-anchors StartDate onto the
+                        // EDITED occurrence, which is virtually never inside the
+                        // old anchor's own period, so "move this weekly task from
+                        // Tuesday to Thursday" would read as a period change and
+                        // retract every open case instead of relocating it.
+                        var replacedDate = originalOccurrenceDate ?? previousStartDate;
+                        var stillInSamePeriod = replacedDate.HasValue
+                            && IsSameRecurrencePeriod(planning, arp,
+                                replacedDate.Value, newAnchor);
+
+                        if (stillInSamePeriod && !anchorIsInThePast)
+                        {
+                            await RelocateNonCompletedComplianceRowsToNewPattern(arp, planning);
+                        }
+                        else
+                        {
+                            await occurrenceRetractionService
+                                .RetractNonCompletedOccurrencesAsync(arp);
+
+                            // The whole occurrence grid just moved, so every
+                            // per-occurrence override is keyed on an OriginalDate
+                            // the new series no longer generates. The
+                            // thisAndFollowing path purges from its own
+                            // staleCutoff; this "all" path never had a purge at
+                            // all, and a leftover exception would either hide a
+                            // freshly deployed occurrence (IsDeleted) or shadow it
+                            // with pre-edit values.
+                            var staleExceptions = await backendConfigurationPnDbContext
+                                .CalendarOccurrenceExceptions
+                                .Where(x => x.AreaRulePlanningId == updateModel.Id)
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .ToListAsync();
+                            foreach (var staleException in staleExceptions)
+                            {
+                                await staleException.Delete(backendConfigurationPnDbContext);
+                            }
+
+                            // Self-gating: a no-op unless the new anchor really is
+                            // in the past. Called AFTER the wizard has persisted
+                            // the anchor, so it enumerates from what was actually
+                            // written (including any normalisation the write path
+                            // applied) rather than from the request model.
+                            await pastSeriesBackfillService.BackfillPastSeriesAsync(arp);
+                        }
                     }
                 }
 
@@ -2494,6 +2580,46 @@ public class BackendConfigurationCalendarService(
             default:
                 return null; // Day / None — no single per-period anchor to relocate.
         }
+    }
+
+    // #1122 §3 — does `newAnchor` fall in the SAME recurrence period as
+    // `oldAnchor` under the rule's CURRENT (post-edit) pattern?
+    //
+    // Deliberately NOT a second notion of "period". NewPatternDateForPeriodOf
+    // above already IS the codebase's definition: it maps an arbitrary date to
+    // the single occurrence that its recurrence period gets — the Monday-aligned
+    // week for a single-weekday weekly rule, the (year, month) for a monthly
+    // one, the year for a yearly one. Two dates therefore share a period exactly
+    // when that mapper sends them to the same date. So the gate is that one
+    // function applied twice, and it cannot drift from the relocation it gates.
+    //
+    // A null from the mapper means "this kind has no single per-period anchor"
+    // (Day, multi-day weekly CSV, non-recurring). Relocation is a documented
+    // no-op for those, so any date move is reported as leaving the period —
+    // retract is then the only branch with an effect.
+    //
+    // Known and accepted: for a monthly rule whose Planning.DayOfMonth is null
+    // the mapper falls back to the probe date's own day, so two dates in the
+    // same calendar month can map apart and be reported as different periods.
+    // That errs toward retract-and-redeploy, which is the correct outcome there
+    // anyway: with no stored DayOfMonth the pattern day IS the anchor day, so
+    // relocate would leave the row on the old day while the rule renders on the
+    // new one.
+    internal static bool IsSameRecurrencePeriod(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning arp,
+        DateTime oldAnchor,
+        DateTime newAnchor)
+    {
+        // dateChanged can be true for a time-only edit of a one-off (no
+        // OriginalDate on the wire). Same day == same period, always.
+        if (oldAnchor.Date == newAnchor.Date) return true;
+
+        var oldPeriodDate = NewPatternDateForPeriodOf(planning, arp, oldAnchor.Date);
+        var newPeriodDate = NewPatternDateForPeriodOf(planning, arp, newAnchor.Date);
+        if (oldPeriodDate == null || newPeriodDate == null) return false;
+
+        return oldPeriodDate.Value.Date == newPeriodDate.Value.Date;
     }
 
     public async Task<OperationResult> MoveTask(CalendarTaskMoveRequestModel moveModel)
@@ -3897,7 +4023,13 @@ public class BackendConfigurationCalendarService(
     // the weekly branch emits one occurrence per matching weekday in each
     // matching week (anchored to startDate's week, every repeatEvery weeks).
     // Null/empty CSV preserves the legacy single-day-per-week behavior.
-    private static IEnumerable<DateTime> EnumerateOccurrences(
+    //
+    // internal (not private) for the same reason as ApplyRepeatEndBound below:
+    // #1122's past-series backfill (CalendarPastSeriesBackfillService) must
+    // enumerate with EXACTLY this iterator, never a second implementation, or a
+    // backfilled occurrence and a rendered occurrence could land on different
+    // days for the same rule.
+    internal static IEnumerable<DateTime> EnumerateOccurrences(
         Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
         DateTime fromInclusive, DateTime toExclusive,
         string? repeatWeekdaysCsv = null,
@@ -4052,6 +4184,51 @@ public class BackendConfigurationCalendarService(
             default:
                 // Non-recurring (RepeatType.None) — no past occurrences to anchor.
                 yield break;
+        }
+    }
+
+    // Applies the rule's repeat-END bound to an already-enumerated occurrence
+    // list, IN PLACE. EnumerateOccurrences/GetOccurrencesInWeek generate the
+    // recurrence pattern but deliberately know nothing about where it stops, so
+    // every consumer must call this or it will render/deploy past the end of the
+    // series. The bound fields live on the AreaRulePlanning (arp), not on the
+    // items-planning Planning.
+    //
+    //   RepeatEndMode 2 ("until date")  -> drop everything after RepeatUntilDate
+    //   RepeatEndMode 1 ("after N")     -> drop everything after the Nth
+    //                                      occurrence counted from the anchor
+    //   anything else                   -> unbounded, list untouched
+    //
+    // rangeEndInclusive is the last date the caller cares about; the after-N
+    // branch needs it because the cumulative count has to be re-derived from the
+    // series anchor, not from the (possibly windowed) list handed in.
+    // internal (not private) so the #1122 past-series backfill can share it from
+    // wherever it ends up living in this assembly, and so it is directly unit
+    // testable (InternalsVisibleTo BackendConfiguration.Pn.Integration.Test).
+    internal static void ApplyRepeatEndBound(
+        Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning planning,
+        AreaRulePlanning arp,
+        List<DateTime> occurrences,
+        DateTime rangeEndInclusive)
+    {
+        if (arp.RepeatEndMode == 2 && arp.RepeatUntilDate.HasValue)
+            occurrences.RemoveAll(d => d > arp.RepeatUntilDate.Value);
+        else if (arp.RepeatEndMode == 1 && arp.RepeatOccurrences.HasValue)
+        {
+            // Use EnumerateOccurrences (week-loop iterator) instead of
+            // GetOccurrencesInWeek for the cumulative count: the latter's
+            // multi-day weekly branch emits at most one matching week, so
+            // the after-cap would never fire for CSV rules. Upper bound
+            // on EnumerateOccurrences is exclusive — add a day.
+            var allOccsSince = EnumerateOccurrences(planning,
+                planning.StartDate.Date, rangeEndInclusive.AddDays(1),
+                arp.RepeatWeekdaysCsv, arp.RepeatOrdinalWeek, arp.DayOfWeek).ToList();
+            var maxOcc = arp.RepeatOccurrences.Value;
+            if (allOccsSince.Count > maxOcc)
+            {
+                var cutoff = allOccsSince[maxOcc - 1];
+                occurrences.RemoveAll(d => d > cutoff);
+            }
         }
     }
 

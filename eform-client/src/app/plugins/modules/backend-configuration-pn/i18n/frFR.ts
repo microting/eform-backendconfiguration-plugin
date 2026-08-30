@@ -592,4 +592,14 @@ export const frFR = {
   'Assigned workers': 'Employés assignés',
   'Other workers': 'Autres employés',
   Sections: 'Sections',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Modifier la date de début',
+  '{{count}} tasks': '{{count}} tâches',
+  '{{count}} open occurrences will be retracted': '{{count}} occurrences ouvertes seront retirées',
+  '{{count}} completed will be preserved': '{{count}} terminées seront conservées',
+  '{{count}} overdue tasks will be created': '{{count}} tâches en retard seront créées',
+  'Calculating preview': 'Calcul de la prévisualisation',
+  'Preview could not be loaded': 'Impossible de charger la prévisualisation',
+  'Pick a start date to preview the change': 'Choisissez une date de début pour prévisualiser la modification',
 };

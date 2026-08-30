@@ -593,4 +593,14 @@ export const noNO = {
   'Assigned workers': 'Tildelte medarbeidere',
   'Other workers': 'Øvrige medarbeidere',
   Sections: 'Seksjoner',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Endre startdato',
+  '{{count}} tasks': '{{count}} oppgaver',
+  '{{count}} open occurrences will be retracted': '{{count}} åpne forekomster tilbakekalles',
+  '{{count}} completed will be preserved': '{{count}} fullførte bevares',
+  '{{count}} overdue tasks will be created': '{{count}} forfalte oppgaver opprettes',
+  'Calculating preview': 'Beregner forhåndsvisning',
+  'Preview could not be loaded': 'Forhåndsvisningen kunne ikke lastes',
+  'Pick a start date to preview the change': 'Velg en startdato for å forhåndsvise endringen',
 };

@@ -19,11 +19,11 @@ import { readFileSync } from 'fs';
  *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
  *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
  *     own paginator — always use `#taskListShowAllToggle` by id, never text.
- *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 9
+ *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 10
  *     options across 3 optgroups (`.ng-optgroup`), matching the mockup
  *     (opgaveliste.html #opgavelisteFilterHandling): "Medarbejdere"/Employees
  *     (assign/reassign/addWorker), "Opgaver"/Tasks (changeEform/addTags/
- *     removeTags/setCompliance/copy), "Slet"/Delete (delete).
+ *     removeTags/setCompliance/copy/changeStartDate), "Slet"/Delete (delete).
  *     assign/reassign/addWorker/copy
  *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
@@ -32,7 +32,7 @@ import { readFileSync } from 'fs';
  *     (create / rename / delete / bulk-create). See the "Tag management"
  *     helper block below for the full id map and the two-reload contract.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
- *     (primary action), `#batchModalCancel` (all six modals — closes with no
+ *     (primary action), `#batchModalCancel` (all seven modals — closes with no
  *     result, so selection/grid stay untouched) and — only the two-phase
  *     eForm-change modal — `#batchModalConfirm` (second step, after
  *     `#batchModalSubmit` flips the modal into a confirmation state).
@@ -249,9 +249,12 @@ export class TaskListPage {
 
   /**
    * The shared `#batchModalSubmit` primary button, for enabled/disabled
-   * assertions. Five of the six batch modals gate it behind their own
+   * assertions. Six of the seven batch modals gate it behind their own
    * `[disabled]="!valid"`, so specs need to read its state and not only click
-   * it.
+   * it. The change-start-date modal additionally gates it on a RESOLVED
+   * preview (`previewState === 'resolved'`), so it stays disabled while a
+   * preview is in flight even once a date is picked — see
+   * `pickPastStartDate()` below.
    */
   batchModalSubmitButton(): Locator {
     return this.page.locator('#batchModalSubmit');
@@ -268,7 +271,7 @@ export class TaskListPage {
   }
 
   /**
-   * Clicks the shared `#batchModalCancel` button present on all six batch
+   * Clicks the shared `#batchModalCancel` button present on all seven batch
    * modals (`btn-cancel` in every modal template; the id was added
    * specifically so cancel-flow specs don't have to fall back to a
    * class/text selector). Calls `hide()` -> `dialogRef.close()` with no
@@ -532,6 +535,78 @@ export class TaskListPage {
     await this.page.waitForTimeout(300);
     await this.page.locator('.mat-calendar-body-cell:not(.mat-calendar-body-disabled)').first().click();
     await this.page.waitForTimeout(300);
+  }
+
+  // ----- Batch "change start date" modal (#1122) ------------------------------------
+
+  /**
+   * Opens `#batchStartDateInput`'s datepicker, steps BACK `monthsBack` months
+   * and picks the 1st of that month — i.e. a date guaranteed to be in the
+   * PAST, which is exactly what this modal exists to allow.
+   *
+   * `.mat-calendar-previous-button` is never disabled here because the input
+   * carries NO `[min]` binding (deliberately — see
+   * `BatchStartDateModalComponent`), which is also why this helper does not
+   * filter on `:not(.mat-calendar-body-disabled)` the way
+   * `pickFutureCopyDate()` above has to.
+   *
+   * The day cell is matched on its exact text via `/^1$/` on
+   * `.mat-calendar-body-cell-content`; a plain `hasText: '1'` would also match
+   * 10-19 and 21/31.
+   *
+   * Returns the picked date already formatted the way the grid's Start date
+   * column renders it ("dd-MM-yyyy", see
+   * `TaskListTableComponent.formatStartDate`), so a caller can assert the cell
+   * without recomputing the format.
+   */
+  async pickPastStartDate(monthsBack: number): Promise<string> {
+    await this.page.locator('mat-dialog-container mat-datepicker-toggle').click();
+    await this.page.locator('.mat-datepicker-content').waitFor({ state: 'visible', timeout: 5000 });
+    for (let i = 0; i < monthsBack; i++) {
+      await this.page.locator('.mat-calendar-previous-button').click();
+      await this.page.waitForTimeout(250);
+    }
+    await this.page.locator('.mat-calendar-body-cell-content')
+      .filter({ hasText: /^1$/ })
+      .first()
+      .click();
+    await this.page.locator('.mat-datepicker-content').waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {});
+    const now = new Date();
+    const picked = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const mm = (picked.getMonth() + 1).toString().padStart(2, '0');
+    return `01-${mm}-${picked.getFullYear()}`;
+  }
+
+  /**
+   * The preview panel. Its `data-state` attribute mirrors the component's
+   * `previewState` (`idle` | `loading` | `resolved` | `failed`) — assert on
+   * THAT, never on the panel's translated text.
+   */
+  startDatePreview(): Locator {
+    return this.page.locator('#batchStartDatePreview');
+  }
+
+  async startDatePreviewState(): Promise<string> {
+    return (await this.startDatePreview().getAttribute('data-state')) ?? '';
+  }
+
+  /**
+   * Waits for a preview to RESOLVE, which is also what un-disables
+   * `#batchModalSubmit` (`get valid()` requires `previewState === 'resolved'`).
+   *
+   * Generous timeout on purpose: the preview enumerates every occurrence of
+   * every selected series server-side, and it only starts after the
+   * component's own 400 ms debounce.
+   */
+  async waitForStartDatePreviewResolved(): Promise<void> {
+    await this.page.locator('#batchStartDatePreview[data-state="resolved"]')
+      .waitFor({ state: 'attached', timeout: 30000 });
+  }
+
+  /** The four resolved-preview count spans, addressed by id (never by text). */
+  startDatePreviewCount(which: 'Tasks' | 'Retract' | 'Completed' | 'Overdue'): Locator {
+    return this.page.locator(`#batchStartDatePreview${which}`);
   }
 
   // ----- Task edit modal (shared with the calendar) ---------------------------------

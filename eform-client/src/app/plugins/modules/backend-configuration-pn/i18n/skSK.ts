@@ -593,4 +593,14 @@ export const skSK = {
   'Assigned workers': 'Priradení pracovníci',
   'Other workers': 'Ostatní pracovníci',
   Sections: 'Sekcie',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Zmeniť dátum začiatku',
+  '{{count}} tasks': '{{count}} úloh',
+  '{{count}} open occurrences will be retracted': '{{count}} otvorených výskytov bude stiahnutých',
+  '{{count}} completed will be preserved': '{{count}} dokončených bude zachovaných',
+  '{{count}} overdue tasks will be created': '{{count}} úloh po termíne bude vytvorených',
+  'Calculating preview': 'Výpočet náhľadu',
+  'Preview could not be loaded': 'Náhľad sa nepodarilo načítať',
+  'Pick a start date to preview the change': 'Vyberte dátum začiatku na zobrazenie náhľadu zmeny',
 };

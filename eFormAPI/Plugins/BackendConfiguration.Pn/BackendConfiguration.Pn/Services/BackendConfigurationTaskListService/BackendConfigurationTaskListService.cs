@@ -8,6 +8,8 @@ using BackendConfiguration.Pn.Infrastructure.Models.TaskList;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Services.CalendarOccurrenceRetraction;
+using BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -16,6 +18,10 @@ using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using CalendarService =
+    BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
+using BackfillService =
+    BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill.CalendarPastSeriesBackfillService;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
 
@@ -26,6 +32,8 @@ public class BackendConfigurationTaskListService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationCalendarService calendarService,
     IBackendConfigurationTaskWizardService taskWizardService,
+    ICalendarOccurrenceRetractionService occurrenceRetractionService,
+    ICalendarPastSeriesBackfillService pastSeriesBackfillService,
     ILogger<BackendConfigurationTaskListService> logger)
     : IBackendConfigurationTaskListService
 {
@@ -158,6 +166,182 @@ public class BackendConfigurationTaskListService(
             return (result.Success, result.Message);
         }, "Tasks updated");
 
+    // ------------------------------------------------------------------
+    // #1122 — change start date
+    // ------------------------------------------------------------------
+
+    // Re-anchors every selected series to model.StartDate, forwards or
+    // BACKWARDS. Same RunPerTask/BuildUpdateModel/UpdateTask shape as
+    // ChangeEform, with three deliberate overrides on the built model:
+    //
+    //  * StartDate — BuildUpdateModel synthesizes a fake "nearest future
+    //    same-weekday" anchor (see its comment). That synthetic value exists so
+    //    worker/eForm/tag batches never move a series; this action's ENTIRE
+    //    purpose is to move it, so the user's date replaces it. Without this
+    //    override the picked date is silently discarded.
+    //
+    //  * OriginalDate = null — forces dateChanged = true in UpdateTask. Leaving
+    //    it equal to StartDate makes UpdateTask treat the edit as "occurrence
+    //    not moved", re-fetch the CURRENT anchor from the DB and hand THAT to
+    //    the wizard, again discarding the user's date. Null cannot NRE: the only
+    //    DateTime.Parse of OriginalDate is guarded by IsNullOrEmpty. It is NOT
+    //    scope-neutral though — UpdateTask's this/thisAndFollowing dispatch is
+    //    `scope == "..." && !IsNullOrEmpty(OriginalDate)`, so a null OriginalDate
+    //    makes both branches fall through to "all". Benign here because "all" is
+    //    exactly what we set, but it means the two overrides below are not
+    //    independent.
+    //
+    //  * Scope = "all" — re-anchor the whole series, not one occurrence.
+    //
+    // Downstream, UpdateTask's #1122 §3 gate decides relocate vs retract. Its
+    // comparison basis is `originalOccurrenceDate ?? previousStartDate`; with
+    // OriginalDate null the first is null, so it falls back to the series'
+    // PREVIOUS anchor — which is precisely the right question for a batch
+    // re-anchor ("did the series move to another period?").
+    //
+    // Weekday re-anchoring is INTENDED here. For RepeatType == Week or
+    // RepeatOrdinalWeek.HasValue, UpdateTask writes
+    // `arp.DayOfWeek = updateModel.StartDate.DayOfWeek` verbatim. That is why
+    // BuildUpdateModel goes to the trouble of picking a same-weekday synthetic
+    // anchor for the other batch actions. Moving a weekly task's start date to a
+    // Thursday SHOULD make it recur on Thursdays.
+    public async Task<OperationResult> ChangeStartDate(TaskListBatchStartDateModel model)
+    {
+        var invalidStartDate = ValidateStartDate(model);
+        if (invalidStartDate != null)
+        {
+            return invalidStartDate;
+        }
+
+        return await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.StartDate = model.StartDate;
+            update.OriginalDate = null;
+            update.Scope = "all";
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+    }
+
+    // The ONLY batch-wide, pre-loop guard this action admits, mirroring Copy's
+    // "validate once so a failure never produces a partial batch" shape.
+    //
+    // The action's whole input is a single DateTime, and the issue is explicit
+    // that there is NO cap on how far back it may go ("Large past range […] No
+    // cap — the preview surfaces the magnitude before the admin commits"), so
+    // there is deliberately no range check here. What IS worth rejecting is the
+    // unset sentinel: an absent, null or unparsable `startDate` field
+    // deserialises to default(DateTime) == 0001-01-01, which is not a date any
+    // picker can produce, yet would re-anchor the series to year 1 and make the
+    // backfill enumerate two millennia of occurrences x sites synchronously.
+    // Everything else the user can pick is, by design, legal.
+    private OperationResult ValidateStartDate(TaskListBatchStartDateModel model) =>
+        model.StartDate == default
+            ? new OperationResult(false, localizationService.GetString("StartDateIsRequired"))
+            : null;
+
+    // Read-only projection of what ChangeStartDate would do to the selected
+    // tasks (#1122 §5). Writes NOTHING: every query below is AsNoTracking, the
+    // retraction projection is AsNoTracking, and the backfill plan is documented
+    // as a pure read.
+    //
+    // It must agree with the apply on THREE separate things, and each is handled
+    // by calling the apply's own code rather than by re-deriving it:
+    //
+    //  1. WHICH ANCHOR gets persisted — CalendarService.NormalizeStartDateToLocalDay,
+    //     the same rounding UpdateTask applies to the incoming StartDate. (The
+    //     wizard's own `Hour != 0` round-up can then never fire, because the
+    //     normalised value is always midnight.)
+    //  2. WHICH BRANCH the apply takes — CalendarService.IsSameRecurrencePeriod,
+    //     fed the POST-save pattern via BackfillService.ApplyProspectiveAnchor,
+    //     because the apply evaluates that gate on the already-written entities.
+    //     A task that stays in the same period AND in the future relocates
+    //     instead of retracting, and relocation retracts nothing and backfills
+    //     nothing — so it contributes only to TaskCount.
+    //  3. HOW MANY ROWS each branch touches — PlanRetractionAsync and
+    //     PlanPastSeriesBackfillAsync, which are the read halves of the very
+    //     methods the apply calls.
+    //
+    // Ineligible ids (missing, not CreatedInGuide, anchorless, no planning) are
+    // skipped rather than counted: the apply reports them as per-task failures
+    // and changes nothing for them, so counting them would over-promise.
+    public async Task<OperationDataResult<TaskListBatchStartDatePreviewModel>> ChangeStartDatePreview(
+        TaskListBatchStartDateModel model)
+    {
+        var invalidStartDate = ValidateStartDate(model);
+        if (invalidStartDate != null)
+        {
+            return new OperationDataResult<TaskListBatchStartDatePreviewModel>(
+                false, invalidStartDate.Message);
+        }
+
+        var newAnchor = CalendarService.NormalizeStartDateToLocalDay(model.StartDate).Date;
+        var today = DateTime.UtcNow.Date;
+        var preview = new TaskListBatchStartDatePreviewModel();
+
+        // Distinct: a selection is a set. The apply would run a repeated id
+        // twice, but the second pass finds the occurrences already retracted and
+        // the overdue rows already present (both operations are idempotent), so
+        // counting a duplicate twice would report work that never happens.
+        foreach (var id in model.TaskIds.Distinct())
+        {
+            var arp = await backendConfigurationPnDbContext.AreaRulePlannings
+                .AsNoTracking()
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            // arp.StartDate == null makes BuildUpdateModel throw, so the apply
+            // fails this task without touching anything.
+            if (arp?.StartDate == null) continue;
+
+            // Same eligibility rule as BuildUpdateModel / IsEligibleTaskAsync.
+            var rule = await backendConfigurationPnDbContext.AreaRules
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == arp.AreaRuleId);
+            if (rule is not { CreatedInGuide: true }) continue;
+
+            // AsNoTracking is load-bearing: ApplyProspectiveAnchor MUTATES this
+            // planning to model the post-save pattern, and a tracked entity would
+            // carry that speculative anchor into the next SaveChanges on the
+            // shared request DbContext.
+            var planning = await itemsPlanningPnDbContext.Plannings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == arp.ItemPlanningId
+                                          && x.WorkflowState != Constants.WorkflowStates.Removed);
+            if (planning == null) continue;
+
+            preview.TaskCount++;
+
+            var previousAnchor = arp.StartDate.Value.Date;
+            var effectiveArp = BackfillService.ApplyProspectiveAnchor(planning, arp, newAnchor);
+            var anchorIsInThePast = newAnchor < today;
+            var stillInSamePeriod = CalendarService.IsSameRecurrencePeriod(
+                planning, effectiveArp, previousAnchor, newAnchor);
+
+            if (stillInSamePeriod && !anchorIsInThePast)
+            {
+                // Relocate branch: Compliance deadlines are moved within their
+                // own periods, nothing is retracted and nothing is backfilled.
+                continue;
+            }
+
+            // Whole series, no fromDate — exactly the call the retract branch makes.
+            var retraction = await occurrenceRetractionService.PlanRetractionAsync(arp);
+            preview.OccurrencesToRetract += retraction.Retracted;
+            preview.CompletedPreserved += retraction.CompletedPreserved;
+
+            // OverdueToCreate is already 0 for a future anchor (no past
+            // occurrences) and 0 when compliance is off, so this one call covers
+            // the whole of the issue's compliance ON/OFF rule.
+            var plan = await pastSeriesBackfillService
+                .PlanPastSeriesBackfillAsync(arp, newAnchor);
+            preview.OverdueToCreate += plan.OverdueToCreate;
+        }
+
+        return new OperationDataResult<TaskListBatchStartDatePreviewModel>(true, preview);
+    }
+
     // Copy creates a brand-new AreaRulePlanning on the target property/board
     // via calendarService.CreateTask, seeded from the source task's full
     // current state (BuildUpdateModel). Two fields are deliberately NOT a
@@ -239,11 +423,11 @@ public class BackendConfigurationTaskListService(
                 // dialog — unlike BuildUpdateModel's synthetic anchor (which
                 // exists only because batch worker actions have no user
                 // input to preserve), there is no reason to override it
-                // here. If it trips CreateTask's own CannotCreateTaskInThePast
-                // guard (e.g. "today" after StartHour has already passed),
-                // that failure is legitimate and surfaces per-task through
-                // RunPerTask/Aggregate, exactly as it would from the
-                // interactive calendar create modal given the same input.
+                // here. Since #1122 CreateTask has no past-date guard at all,
+                // so a back-dated copy is accepted; any other per-task failure
+                // still surfaces through RunPerTask/Aggregate, exactly as it
+                // would from the interactive calendar create modal given the
+                // same input.
                 StartDate = model.StartDate,
                 RepeatType = source.RepeatType,
                 RepeatEvery = source.RepeatEvery,
@@ -328,11 +512,12 @@ public class BackendConfigurationTaskListService(
     //
     // StartDate/OriginalDate deliberately do NOT carry the planning's real
     // series anchor (arp.StartDate). Two reasons:
-    //  1. UpdateTask rejects any edit whose StartDate+StartHour has already
-    //     passed ("CannotCreateTaskInThePast") — for an existing recurring
-    //     series that has been running for a while, arp.StartDate itself is
-    //     very likely in the past, which would make every batch action on
-    //     an established series fail outright.
+    //  1. HISTORICAL, no longer true since #1122: UpdateTask used to reject
+    //     any edit whose StartDate+StartHour had already passed
+    //     ("CannotCreateTaskInThePast"), and arp.StartDate on an established
+    //     series is very likely in the past, so every batch action on such a
+    //     series would have failed outright. The guard is gone; reason 2 and
+    //     the weekday note below are what keep the synthetic anchor necessary.
     //  2. For Scope="all" with OriginalDate == StartDate.Date, UpdateTask
     //     treats the edit as NOT moving the occurrence ("dateChanged =
     //     false") and re-fetches the TRUE current arp.StartDate from the DB

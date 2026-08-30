@@ -106,6 +106,10 @@
             (backdropClick)="showMiniPicker = false"
             (overlayOutsideClick)="showMiniPicker = false">
             <div class="mini-picker-overlay-card">
+              <!-- Floors RepeatUntil at the TASK's own date, not at today: a
+                   series that ends before it starts is meaningless. Relative,
+                   so it relaxes by itself once #1122 puts `data.date` in the
+                   past — nothing to change here. -->
               <app-calendar-mini-calendar
                 [selectedDate]="untilDateObj"
                 [minDate]="data.date"

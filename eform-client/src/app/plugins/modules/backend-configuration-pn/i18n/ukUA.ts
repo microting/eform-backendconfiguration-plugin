@@ -593,4 +593,14 @@ export const ukUA = {
   'Assigned workers': 'Призначені працівники',
   'Other workers': 'Інші працівники',
   Sections: 'Розділи',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Змінити дату початку',
+  '{{count}} tasks': '{{count}} завдань',
+  '{{count}} open occurrences will be retracted': '{{count}} відкритих випадків буде відкликано',
+  '{{count}} completed will be preserved': '{{count}} завершених буде збережено',
+  '{{count}} overdue tasks will be created': '{{count}} прострочених завдань буде створено',
+  'Calculating preview': 'Обчислення попереднього перегляду',
+  'Preview could not be loaded': 'Не вдалося завантажити попередній перегляд',
+  'Pick a start date to preview the change': 'Виберіть дату початку, щоб переглянути зміну',
 };

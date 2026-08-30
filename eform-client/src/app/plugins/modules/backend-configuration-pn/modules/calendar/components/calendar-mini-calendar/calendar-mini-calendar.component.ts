@@ -24,6 +24,11 @@ interface CalendarWeek {
 })
 export class CalendarMiniCalendarComponent implements OnInit, OnChanges {
   @Input() selectedDate: Date | null = null;
+  // Optional floor: `null` means "no floor" and every day stays selectable.
+  // This component only ENFORCES what its caller passes (see `isDisabled` in
+  // buildCalendar) — it has no opinion about "today", so #1122 needs no change
+  // here. The two callers decide: the task create/edit modal passes today (see
+  // its `minDate` comment), the custom-repeat modal passes the task's own date.
   @Input() minDate: Date | null = null;
   @Output() dateSelected = new EventEmitter<Date>();
 

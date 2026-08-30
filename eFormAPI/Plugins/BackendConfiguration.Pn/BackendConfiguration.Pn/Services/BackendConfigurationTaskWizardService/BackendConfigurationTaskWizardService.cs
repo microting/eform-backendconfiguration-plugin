@@ -410,6 +410,20 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 createModel.Status = TaskWizardStatuses.NotActive;
             }
 
+            // #1122 — NOTE, deliberately left as-is. This rounds a StartDate
+            // carrying any time-of-day UP to the next midnight, so 01.01 15:30
+            // lands on 02.01, and the DayOfWeek/DayOfMonth derived just below
+            // come from the SHIFTED day. Now that the past-date guards are gone
+            // this is reachable with a past date too. It is NOT neutralised
+            // here because the rule is unchanged for future dates and altering
+            // it is a product decision belonging to #1122 §1/§4, not to the
+            // backfill. Both calendar entry points (CreateTask / UpdateTask)
+            // are already immune: NormalizeStartDateToLocalDay hands the wizard
+            // an exact midnight, so the branch below never fires for them. And
+            // the past-series backfill enumerates from the PERSISTED
+            // planning.StartDate, never from a request model, so whatever this
+            // writes is what gets backfilled — the calendar and the overdue
+            // rows can never disagree about which day the series starts.
             if (createModel.StartDate != null)
             {
                 if (createModel.StartDate!.Value.Hour != 0)
@@ -742,6 +756,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 updateModel.Status = TaskWizardStatuses.NotActive;
             }
 
+            // #1122 — same midnight-rounding note as in CreateTask above; left
+            // deliberately unchanged for the same reasons.
             if (updateModel.StartDate != null)
             {
                 if (updateModel.StartDate!.Value.Hour != 0)

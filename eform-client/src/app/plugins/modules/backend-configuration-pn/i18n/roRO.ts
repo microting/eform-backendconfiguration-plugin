@@ -593,4 +593,14 @@ export const roRO = {
   'Assigned workers': 'Lucrători alocați',
   'Other workers': 'Alți lucrători',
   Sections: 'Secțiuni',
+  // Task list batch: change start date (#1122). The preview panel's four
+  // counts are one key each so each language can word-order them freely.
+  'Change start date': 'Modificați data de început',
+  '{{count}} tasks': '{{count}} sarcini',
+  '{{count}} open occurrences will be retracted': '{{count}} apariții deschise vor fi retrase',
+  '{{count}} completed will be preserved': '{{count}} finalizate vor fi păstrate',
+  '{{count}} overdue tasks will be created': '{{count}} sarcini restante vor fi create',
+  'Calculating preview': 'Se calculează previzualizarea',
+  'Preview could not be loaded': 'Previzualizarea nu a putut fi încărcată',
+  'Pick a start date to preview the change': 'Alegeți o dată de început pentru a previzualiza modificarea',
 };
