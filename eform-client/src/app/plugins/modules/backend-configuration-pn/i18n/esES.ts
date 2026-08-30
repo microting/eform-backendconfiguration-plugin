@@ -603,4 +603,9 @@ export const esES = {
   'Calculating preview': 'Calculando la vista previa',
   'Preview could not be loaded': 'No se pudo cargar la vista previa',
   'Pick a start date to preview the change': 'Elija una fecha de inicio para ver la vista previa del cambio',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Activar / desactivar',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La desactivación retira de la aplicación las repeticiones abiertas. Las repeticiones completadas y los datos ya recopilados se conservan.',
 };

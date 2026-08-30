@@ -603,4 +603,9 @@ export const huHU = {
   'Calculating preview': 'Előnézet számítása',
   'Preview could not be loaded': 'Az előnézetet nem sikerült betölteni',
   'Pick a start date to preview the change': 'Válasszon kezdő dátumot a módosítás előnézetéhez',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktiválás / deaktiválás',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A deaktiválás visszavonja a nyitott előfordulásokat az alkalmazásból. A befejezett előfordulások és a már összegyűjtött adatok megmaradnak.',
 };

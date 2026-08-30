@@ -603,4 +603,9 @@ export const slSL = {
   'Calculating preview': 'Izračun predogleda',
   'Preview could not be loaded': 'Predogleda ni bilo mogoče naložiti',
   'Pick a start date to preview the change': 'Izberite datum začetka za predogled spremembe',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktiviraj / deaktiviraj',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija umakne odprte pojavitve iz aplikacije. Dokončane pojavitve in že zbrani podatki se ohranijo.',
 };

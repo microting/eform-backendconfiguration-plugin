@@ -603,4 +603,9 @@ export const noNO = {
   'Calculating preview': 'Beregner forhåndsvisning',
   'Preview could not be loaded': 'Forhåndsvisningen kunne ikke lastes',
   'Pick a start date to preview the change': 'Velg en startdato for å forhåndsvise endringen',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktiver / deaktiver',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivering trekker de åpne forekomstene tilbake fra appen. Fullførte forekomster og dataene som allerede er samlet inn, bevares.',
 };

@@ -603,4 +603,9 @@ export const ltLT = {
   'Calculating preview': 'Skaičiuojama peržiūra',
   'Preview could not be loaded': 'Nepavyko įkelti peržiūros',
   'Pick a start date to preview the change': 'Pasirinkite pradžios datą, kad peržiūrėtumėte pakeitimą',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktyvinti / deaktyvinti',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktyvinimas atšaukia atvirus įvykius iš programėlės. Užbaigti įvykiai ir jau surinkti duomenys išsaugomi.',
 };

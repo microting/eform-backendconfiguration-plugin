@@ -14,6 +14,12 @@ public interface IBackendConfigurationTaskListService
     Task<OperationResult> RemoveTags(TaskListBatchTagsModel model);
     Task<OperationResult> SetCompliance(TaskListBatchComplianceModel model);
 
+    /// <summary>
+    /// #1123 — activates or deactivates every selected task. Deactivation
+    /// retracts the OPEN occurrences and preserves the completed ones (R2).
+    /// </summary>
+    Task<OperationResult> SetStatus(TaskListBatchStatusModel model);
+
     /// <summary>#1122 — re-anchors every selected series to the given date, past or future.</summary>
     Task<OperationResult> ChangeStartDate(TaskListBatchStartDateModel model);
 

@@ -3,6 +3,7 @@ using Sentry;
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 using BackendConfigurationLocalizationService;
+using CalendarOccurrenceRetraction;
 using EventDeployService;
 using Infrastructure;
 using Infrastructure.Enums;
@@ -32,6 +33,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     private readonly IEFormCoreService _coreHelper;
     private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
     private readonly IEventDeployService _eventDeployService;
+    // #1123 — the ONE completed-aware retraction path. Both deactivation call
+    // sites below used to carry their own line-for-line identical copy that
+    // retracted EVERY occurrence, completed ones included (invariant R2), so
+    // the helper is a dependency rather than a local method: the calendar
+    // re-anchor path (#1122) has to reach the exact same code.
+    private readonly ICalendarOccurrenceRetractionService _occurrenceRetractionService;
     private readonly ILogger<BackendConfigurationTaskWizardService> _logger;
 
     public BackendConfigurationTaskWizardService(
@@ -41,6 +48,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         IEFormCoreService coreHelper,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         IEventDeployService eventDeployService,
+        ICalendarOccurrenceRetractionService occurrenceRetractionService,
         ILogger<BackendConfigurationTaskWizardService> logger)
     {
         _localizationService = localizationService;
@@ -49,6 +57,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         _coreHelper = coreHelper;
         _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
         _eventDeployService = eventDeployService;
+        _occurrenceRetractionService = occurrenceRetractionService;
         _logger = logger;
     }
 
@@ -624,93 +633,122 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
     }
 
+    /// <summary>
+    /// Deactivates every listed task (#1123). Four writes per task, in this order:
+    /// Planning.Enabled = false, retract the OPEN occurrences, AreaRulePlanning.Status
+    /// = false, drop the items-planning PlanningSite rows.
+    ///
+    /// The retraction itself is delegated to <see cref="ICalendarOccurrenceRetractionService"/>
+    /// — the same helper the deactivate branch of <see cref="UpdateTask"/> now calls.
+    /// The hand-rolled loop that used to live here (and, verbatim, there) soft-deleted
+    /// EVERY non-removed Compliance row for the planning and CaseDeleted EVERY
+    /// PlanningCaseSite with no completion filter at all, which violates invariant R2:
+    /// a completed occurrence's Compliance row is the only DB link between its rotation
+    /// date and the answered SDK case, so removing it permanently breaks DoneByName /
+    /// DoneAt rendering for that date. Every other selective path in this codebase
+    /// guards on completion; these two did not, and a batch action multiplies the loss
+    /// across the whole selection.
+    ///
+    /// fromDate is null on purpose: deactivating a task retracts its WHOLE open series,
+    /// past occurrences included (unlike #1122's re-anchor, which is bounded).
+    ///
+    /// Scope note — the helper is occurrence-driven (it walks Compliance rows) where the
+    /// old loop was planning-driven (it walked every PlanningCase of the planning). A
+    /// deployed PlanningCaseSite with NO Compliance row is therefore no longer retracted
+    /// here. That is the R2-safe trade: without a Compliance row there is no deadline to
+    /// judge completion against, so the old code could not tell an answered case from an
+    /// open one and pulled both.
+    ///
+    /// Per-task try/catch: this method previously had no error handling whatsoever, so a
+    /// single missing or malformed id threw straight out of the loop and silently abandoned
+    /// every task after it — with the earlier ones already half-written. Each task is now
+    /// independent and failures are reported, mirroring
+    /// BackendConfigurationTaskListService.RunPerTask/Aggregate.
+    /// </summary>
     public async Task<OperationResult> DeactivateList(List<int> ids)
     {
-        var core = await _coreHelper.GetCore();
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
-
-        // update all area rule plannings and plannings in parallel
+        var failures = new List<string>();
 
         foreach (var id in ids)
         {
-            var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
-                .Where(x => x.Id == id)
-                .Include(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
-                .FirstOrDefaultAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-            var planning = await _itemsPlanningPnDbContext.Plannings
-                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                .Include(x => x.NameTranslations)
-                .Include(x => x.PlanningsTags)
-                .Include(x => x.PlanningSites)
-                .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-            planning.Enabled = false;
-            await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-
-            var complianceList = await _backendConfigurationPnDbContext.Compliances
-                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
-                            && x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync().ConfigureAwait(false);
-            foreach (var compliance in complianceList)
+            try
             {
-                if (compliance != null)
+                var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.Id == id)
+                    .Include(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
+                    .FirstOrDefaultAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (areaRulePlanning == null)
                 {
-                    await compliance.Delete(_backendConfigurationPnDbContext)
-                        .ConfigureAwait(false);
-                }
-            }
-
-            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PlanningId == planning.Id)
-                .ToListAsync().ConfigureAwait(false);
-
-            foreach (var planningCase in planningCases)
-            {
-                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningCaseId == planningCase.Id)
-                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
-                                               planningCaseSite.MicrotingCheckListSitId != 0)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
-                {
-                    var result =
-                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                    if (result is { MicrotingUid: { } })
-                    {
-                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
-                    }
+                    // Previously an unhandled NullReferenceException on the very next
+                    // line, which aborted the whole batch.
+                    failures.Add($"#{id}: {_localizationService.GetString("TaskNotFound")}");
+                    continue;
                 }
 
-                planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
-                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
+                var planning = await _itemsPlanningPnDbContext.Plannings
+                    .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                    .Include(x => x.NameTranslations)
+                    .Include(x => x.PlanningsTags)
+                    .Include(x => x.PlanningSites)
+                    .FirstOrDefaultAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-            areaRulePlanning.Status = false;
-            await areaRulePlanning.Update(_backendConfigurationPnDbContext)
-                .ConfigureAwait(false);
+                if (planning == null)
+                {
+                    // Was `FirstAsync`, i.e. an InvalidOperationException that took the
+                    // rest of the batch with it.
+                    failures.Add($"#{id}: {_localizationService.GetString("TaskNotFound")}");
+                    continue;
+                }
 
-            var planningSites =
-                await _itemsPlanningPnDbContext.PlanningSites.Where(x => x.PlanningId == planning.Id).ToListAsync()
+                planning.Enabled = false;
+                await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                // Replaces the Compliance sweep + the PlanningCase/PlanningCaseSite
+                // CaseDelete loop. Per-row CaseDelete failures are isolated inside the
+                // helper (reported as Failed) and leave the row re-runnable, so one
+                // unreachable cloud case no longer aborts the task, let alone the batch.
+                var retraction = await _occurrenceRetractionService
+                    .RetractNonCompletedOccurrencesAsync(areaRulePlanning)
                     .ConfigureAwait(false);
 
-            foreach (var planningSite in planningSites)
+                _logger.LogInformation(
+                    "DeactivateList: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed",
+                    areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed);
+
+                areaRulePlanning.Status = false;
+                await areaRulePlanning.Update(_backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                // NOT the helper's job, and deliberately kept here: these are the
+                // ITEMS-PLANNING PlanningSite rows the scheduler deploys from. BC's own
+                // AreaRulePlanning.PlanningSites are untouched, which is what lets a
+                // later reactivation round-trip the assignees.
+                var planningSites =
+                    await _itemsPlanningPnDbContext.PlanningSites.Where(x => x.PlanningId == planning.Id).ToListAsync()
+                        .ConfigureAwait(false);
+
+                foreach (var planningSite in planningSites)
+                {
+                    await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+            }
+            catch (Exception e)
             {
-                await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                SentrySdk.CaptureException(e);
+                _logger.LogError(e, "DeactivateList failed for AreaRulePlanning {ArpId}", id);
+                failures.Add($"#{id}: {e.Message}");
             }
         }
 
-        return new OperationResult(true, _localizationService.GetString("TasksDeactivatedSuccessful"));
+        if (failures.Count == 0)
+        {
+            return new OperationResult(true, _localizationService.GetString("TasksDeactivatedSuccessful"));
+        }
+
+        var ok = ids.Count - failures.Count;
+        return new OperationResult(ok > 0,
+            $"{_localizationService.GetString("PartiallyCompleted")} {ok}/{ids.Count}. {string.Join("; ", failures)}");
     }
 
     /// <inheritdoc />
@@ -1031,59 +1069,32 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.RelatedEFormName = eformName;
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                    var complianceList = await _backendConfigurationPnDbContext.Compliances
-                        .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
-                                    && x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync().ConfigureAwait(false);
-                    foreach (var compliance in complianceList)
-                    {
-                        if (compliance != null)
-                        {
-                            await compliance.Delete(_backendConfigurationPnDbContext)
-                                .ConfigureAwait(false);
-                        }
-                    }
+                    // #1123 — was a line-for-line copy of DeactivateList's own
+                    // hand-rolled retraction: a Compliance sweep with NO completion
+                    // filter followed by a CaseDelete of every PlanningCaseSite and an
+                    // unconditional PlanningCase -> Retracted. That destroyed completed
+                    // history (invariant R2). Both call sites now share the one
+                    // completed-aware helper; see DeactivateList's doc comment for the
+                    // full rationale and for the occurrence-vs-planning scope note.
+                    //
+                    // fromDate null = the whole open series, past included: deactivating
+                    // a task is not a bounded re-anchor.
+                    var retraction = await _occurrenceRetractionService
+                        .RetractNonCompletedOccurrencesAsync(areaRulePlanning)
+                        .ConfigureAwait(false);
 
-                    var planningCases = await _itemsPlanningPnDbContext.PlanningCases
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.PlanningId == planning.Id)
-                        .ToListAsync().ConfigureAwait(false);
-
-                    foreach (var planningCase in planningCases)
-                    {
-                        var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .Where(x => x.PlanningCaseId == planningCase.Id)
-                            .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
-                                                       planningCaseSite.MicrotingCheckListSitId != 0)
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .ToListAsync().ConfigureAwait(false);
-                        foreach (var planningCaseSite in planningCaseSites)
-                        {
-                            var result =
-                                await sdkDbContext.Cases
-                                    .SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                                    .ConfigureAwait(false);
-                            if (result is { MicrotingUid: { } })
-                            {
-                                await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                                    x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                                await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
-                            }
-                        }
-
-                        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
-                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
+                    _logger.LogInformation(
+                        "UpdateTask deactivate: AreaRulePlanning {ArpId} — {Retracted} occurrence(s) retracted, {Preserved} completed preserved, {Failed} failed",
+                        areaRulePlanning.Id, retraction.Retracted, retraction.CompletedPreserved, retraction.Failed);
 
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
                         .ConfigureAwait(false);
 
+                    // NOT the helper's job — the ITEMS-PLANNING PlanningSite rows the
+                    // scheduler deploys from. BC's own AreaRulePlanning.PlanningSites
+                    // survive, which is what lets the reactivation branch above
+                    // round-trip the assignees.
                     var planningSites =
                         await _itemsPlanningPnDbContext.PlanningSites.Where(x => x.PlanningId == planning.Id)
                             .ToListAsync().ConfigureAwait(false);
@@ -1268,15 +1279,17 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             //
             // NEVER for a task that is inactive after this save. The
             // deactivation branch (`case true when !areaRulePlanning.Status`)
-            // CaseDeletes the cloud cases and retracts the PlanningCases, but
-            // leaves every PlanningCaseSite non-removed — and for calendar-created
-            // cases the CaseDelete is a verified no-op (CaseCreateLocalOnly
-            // assigns a synthetic MicrotingUid the cloud has never seen), so the
-            // SDK Case rows stay live too. The repair pass's sweep would happily
-            // pick those up and create a BRAND-NEW live case, on the new eForm,
-            // for a task the user just DEACTIVATED. The same holds for the
-            // "still inactive" branch: an inactive task has nothing deployed
-            // that should be kept alive.
+            // retracts the OPEN occurrences, but by design leaves live
+            // PlanningCaseSite rows behind: the ones belonging to COMPLETED
+            // occurrences (frozen by R2) and any with no Compliance row at all
+            // (#1123's occurrence-scoped retraction cannot judge those). And for
+            // calendar-created cases the CaseDelete is a verified no-op
+            // (CaseCreateLocalOnly assigns a synthetic MicrotingUid the cloud has
+            // never seen), so those SDK Case rows stay live too. The repair
+            // pass's sweep would happily pick any of them up and create a
+            // BRAND-NEW live case, on the new eForm, for a task the user just
+            // DEACTIVATED. The same holds for the "still inactive" branch: an
+            // inactive task has nothing deployed that should be kept alive.
             if (oldEformId != updateModel.EformId && areaRulePlanning.Status)
             {
                 await _eventDeployService.RepairEformForOpenOccurrencesAsync(

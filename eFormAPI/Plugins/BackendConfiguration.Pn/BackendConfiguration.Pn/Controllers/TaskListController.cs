@@ -43,6 +43,10 @@ public class TaskListController(
     public async Task<OperationResult> SetCompliance([FromBody] TaskListBatchComplianceModel model)
         => await Validated(model) ?? await taskListService.SetCompliance(model);
 
+    [HttpPost("set-status")]
+    public async Task<OperationResult> SetStatus([FromBody] TaskListBatchStatusModel model)
+        => await Validated(model) ?? await taskListService.SetStatus(model);
+
     [HttpPost("change-start-date")]
     public async Task<OperationResult> ChangeStartDate([FromBody] TaskListBatchStartDateModel model)
         => await Validated(model) ?? await taskListService.ChangeStartDate(model);

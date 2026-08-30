@@ -603,4 +603,9 @@ export const itIT = {
   'Calculating preview': 'Calcolo anteprima',
   'Preview could not be loaded': 'Caricamento anteprima non riuscito',
   'Pick a start date to preview the change': 'Scegli una data di inizio per visualizzare in anteprima la modifica',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Attiva / disattiva',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La disattivazione ritira dall’app le occorrenze aperte. Le occorrenze completate e i dati già raccolti vengono conservati.',
 };

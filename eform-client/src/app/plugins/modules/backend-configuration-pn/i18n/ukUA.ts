@@ -603,4 +603,9 @@ export const ukUA = {
   'Calculating preview': 'Обчислення попереднього перегляду',
   'Preview could not be loaded': 'Не вдалося завантажити попередній перегляд',
   'Pick a start date to preview the change': 'Виберіть дату початку, щоб переглянути зміну',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Активувати / деактивувати',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивація відкликає відкриті екземпляри з застосунку. Завершені екземпляри та вже зібрані дані зберігаються.',
 };

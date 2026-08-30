@@ -9,6 +9,12 @@ export class TaskListBatchReassignRequest extends TaskListBatchRequest { fromSit
 export class TaskListBatchChangeEformRequest extends TaskListBatchRequest { eformId: number; }
 export class TaskListBatchTagsRequest extends TaskListBatchRequest { tagIds: number[] = []; }
 export class TaskListBatchComplianceRequest extends TaskListBatchRequest { complianceEnabled: boolean; }
+/**
+ * #1123 — `active` is the whole payload: true activates every selected task,
+ * false deactivates them (retracting the OPEN occurrences server-side and
+ * preserving the completed ones).
+ */
+export class TaskListBatchStatusRequest extends TaskListBatchRequest { active: boolean; }
 export class TaskListBatchCopyRequest extends TaskListBatchRequest {
   targetPropertyId: number; targetBoardId: number; startDate: string; siteId: number;
 }
@@ -58,6 +64,15 @@ export class BackendConfigurationPnTaskListService {
   }
   setCompliance(model: TaskListBatchComplianceRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/set-compliance`, model);
+  }
+  /**
+   * Activates or deactivates every selected task. Deactivation goes through the
+   * calendar/task-wizard path, which retracts only the NOT-yet-completed
+   * occurrences — completed ones and their collected data survive (invariant
+   * R2), which is what the modal's warning promises.
+   */
+  setStatus(model: TaskListBatchStatusRequest): Observable<OperationResult> {
+    return this.apiBaseService.post(`${TaskListMethods.Base}/set-status`, model);
   }
   copy(model: TaskListBatchCopyRequest): Observable<OperationResult> {
     return this.apiBaseService.post(`${TaskListMethods.Base}/copy`, model);

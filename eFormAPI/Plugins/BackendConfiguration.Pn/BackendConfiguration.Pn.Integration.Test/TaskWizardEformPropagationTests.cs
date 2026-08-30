@@ -200,6 +200,12 @@ public class TaskWizardEformPropagationTests : TestBaseSetup
             coreHelper,
             ItemsPlanningPnDbContext,
             eventDeployService,
+            // #1123 — the REAL retraction helper. Substituting it would make the
+            // deactivation test below prove nothing about what deactivating
+            // actually does to deployed occurrences.
+            new CalendarOccurrenceRetractionService(
+                BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,
+                NullLogger<CalendarOccurrenceRetractionService>.Instance),
             NullLogger<BackendConfigurationTaskWizardService>.Instance);
 
         // Reactivate AND change the eForm in the same save — the combination
@@ -383,6 +389,12 @@ public class TaskWizardEformPropagationTests : TestBaseSetup
             coreHelper,
             ItemsPlanningPnDbContext,
             eventDeployService,
+            // #1123 — the REAL retraction helper. Substituting it would make the
+            // deactivation test below prove nothing about what deactivating
+            // actually does to deployed occurrences.
+            new CalendarOccurrenceRetractionService(
+                BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,
+                NullLogger<CalendarOccurrenceRetractionService>.Instance),
             NullLogger<BackendConfigurationTaskWizardService>.Instance);
     }
 

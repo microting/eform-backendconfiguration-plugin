@@ -603,4 +603,9 @@ export const bgBG = {
   'Calculating preview': 'Изчисляване на визуализацията',
   'Preview could not be loaded': 'Визуализацията не можа да бъде заредена',
   'Pick a start date to preview the change': 'Изберете начална дата, за да визуализирате промяната',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Активиране / деактивиране',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивирането оттегля отворените събития от приложението. Завършените събития и вече събраните данни се запазват.',
 };

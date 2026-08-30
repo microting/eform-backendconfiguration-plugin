@@ -603,4 +603,9 @@ export const roRO = {
   'Calculating preview': 'Se calculează previzualizarea',
   'Preview could not be loaded': 'Previzualizarea nu a putut fi încărcată',
   'Pick a start date to preview the change': 'Alegeți o dată de început pentru a previzualiza modificarea',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Activare / dezactivare',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezactivarea retrage din aplicație aparițiile deschise. Aparițiile finalizate și datele deja colectate sunt păstrate.',
 };

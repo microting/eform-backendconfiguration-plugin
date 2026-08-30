@@ -1,0 +1,28 @@
+<h3 mat-dialog-title>{{ 'Activate / deactivate' | translate }}</h3>
+<div mat-dialog-content>
+  <ul id="batchModalTaskList">
+    <li *ngFor="let t of data.selectedTasks">{{ t.title }}; {{ t.tags?.join(', ') }}</li>
+  </ul>
+
+  <mat-radio-group id="batchStatusGroup" class="d-flex flex-column" [(ngModel)]="active">
+    <mat-radio-button id="batchStatusActive" [value]="true">
+      {{ 'Task visible on calendar' | translate }}
+    </mat-radio-button>
+    <mat-radio-button id="batchStatusInactive" [value]="false">
+      {{ 'Task dimmed on calendar' | translate }}
+    </mat-radio-button>
+  </mat-radio-group>
+
+  <!-- Only deactivation destroys anything, so the warning appears only for it -
+       an always-visible notice would be noise on the activate path and would
+       train the admin to skip reading it. -->
+  <p id="batchStatusDeactivateWarning" *ngIf="active === false">
+    {{ 'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.' | translate }}
+  </p>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button id="batchModalCancel" class="btn-cancel" (click)="hide()">{{ 'Cancel' | translate }}</button>
+  <button id="batchModalSubmit" class="btn-primary" [disabled]="!valid" (click)="submit()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

@@ -603,4 +603,9 @@ export const hrHR = {
   'Calculating preview': 'Izračun pretpregleda',
   'Preview could not be loaded': 'Pretpregled nije moguće učitati',
   'Pick a start date to preview the change': 'Odaberite datum početka za pretpregled promjene',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktiviraj / deaktiviraj',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija povlači otvorena pojavljivanja iz aplikacije. Dovršena pojavljivanja i već prikupljeni podaci se čuvaju.',
 };

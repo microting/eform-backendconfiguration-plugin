@@ -603,4 +603,9 @@ export const ptPT = {
   'Calculating preview': 'A calcular a pré-visualização',
   'Preview could not be loaded': 'Não foi possível carregar a pré-visualização',
   'Pick a start date to preview the change': 'Escolha uma data de início para pré-visualizar a alteração',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Ativar / desativar',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A desativação retira da aplicação as ocorrências em aberto. As ocorrências concluídas e os dados já recolhidos são preservados.',
 };

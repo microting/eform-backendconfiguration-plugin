@@ -602,4 +602,9 @@ export const frFR = {
   'Calculating preview': 'Calcul de la prévisualisation',
   'Preview could not be loaded': 'Impossible de charger la prévisualisation',
   'Pick a start date to preview the change': 'Choisissez une date de début pour prévisualiser la modification',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Activer / désactiver',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La désactivation retire de l’application les occurrences ouvertes. Les occurrences terminées et les données déjà collectées sont conservées.',
 };

@@ -603,4 +603,9 @@ export const fiFI = {
   'Calculating preview': 'Lasketaan esikatselua',
   'Preview could not be loaded': 'Esikatselua ei voitu ladata',
   'Pick a start date to preview the change': 'Valitse aloituspäivä nähdäksesi muutoksen esikatselun',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktivoi / poista käytöstä',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Käytöstä poistaminen peruuttaa avoimet esiintymät sovelluksesta. Valmiit esiintymät ja jo kerätyt tiedot säilyvät.',
 };

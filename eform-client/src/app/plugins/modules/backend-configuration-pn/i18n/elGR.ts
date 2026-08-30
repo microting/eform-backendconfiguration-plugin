@@ -603,4 +603,9 @@ export const elGR = {
   'Calculating preview': 'Υπολογισμός προεπισκόπησης',
   'Preview could not be loaded': 'Δεν ήταν δυνατή η φόρτωση της προεπισκόπησης',
   'Pick a start date to preview the change': 'Επιλέξτε ημερομηνία έναρξης για προεπισκόπηση της αλλαγής',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Ενεργοποίηση / απενεργοποίηση',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Η απενεργοποίηση ανακαλεί τις ανοιχτές εμφανίσεις από την εφαρμογή. Οι ολοκληρωμένες εμφανίσεις και τα ήδη συλλεγμένα δεδομένα διατηρούνται.',
 };
