@@ -10,6 +10,8 @@ service Settings {
 message RegisterPushTokenRequest {
   string fcm_token = 1;
   string platform = 2;          // "android" | "ios"
+  string app_id = 3;            // "eform" | "adhoc" - which app minted the token
+  string installation_id = 4;   // stable per-install UUID; identity of the row
 }
 message RegisterPushTokenResponse {}
 

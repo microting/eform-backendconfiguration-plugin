@@ -34,11 +34,21 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// sender's assumptions, which is exactly the regression the device-token
 /// identity model change could introduce.
 /// </para>
+/// <para>
+/// It includes the AppId predicate, because DeviceTokens is shared by every
+/// app on this backend and an FcmToken minted by another app's Firebase
+/// project answers SenderIdMismatch. The adhoc sender therefore filters on
+/// AppId == "adhoc" (AdhocReminderJob.AppId); this copy must keep doing the
+/// same or it would stop describing the sender.
+/// </para>
 /// </summary>
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
 public class DeviceTokenRecipientSeamTests : TestBaseSetup
 {
+    /// <summary>Mirrors <c>AdhocReminderJob.AppId</c>.</summary>
+    private const string AdhocAppId = "adhoc";
+
     // The DeviceToken tables were added after the raw SQL bootstrap script
     // (SQL/420_eform-backend-configuration-plugin.sql) was last regenerated,
     // so TestBaseSetup.Setup's DROP+CREATE pass never touches them and rows
@@ -58,10 +68,10 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
 
     // Same construction as SettingsGrpcServicePushTokenTests.CreateSut/Context:
     // the resolver stands in for the authenticated caller's SDK site id.
-    private SettingsGrpcService CreateSut(int resolvedWorkerId)
+    private SettingsGrpcService CreateSut(int resolvedSdkSiteId)
     {
         var resolver = Substitute.For<IGrpcSiteResolver>();
-        resolver.GetSdkSiteIdAsync().Returns(resolvedWorkerId);
+        resolver.GetSdkSiteIdAsync().Returns(resolvedSdkSiteId);
         return new SettingsGrpcService(
             BackendConfigurationPnDbContext!,
             resolver,
@@ -73,11 +83,12 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
     /// <summary>
     /// Mirrors <c>AdhocReminderJob.SendReminderForTask</c>'s token query.
     /// </summary>
-    private Task<List<DeviceToken>> SelectRecipientsAsync(List<int> workerIds) =>
+    private Task<List<DeviceToken>> SelectRecipientsAsync(List<int> sdkSiteIds) =>
         BackendConfigurationPnDbContext!.DeviceTokens
             .AsNoTracking()
+            .Where(x => x.AppId == AdhocAppId)
             .Where(x => x.WorkflowState == Constants.WorkflowStates.Created)
-            .Where(x => workerIds.Contains(x.WorkerId))
+            .Where(x => sdkSiteIds.Contains(x.SdkSiteId))
             .ToListAsync();
 
     [Test]
@@ -87,7 +98,13 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
 
         // The seam itself: production's write path, then production's read path.
         await CreateSut(siteId).RegisterPushToken(
-            new RegisterPushTokenRequest { FcmToken = "seam-token-1", Platform = "android" },
+            new RegisterPushTokenRequest
+            {
+                FcmToken = "seam-token-1",
+                Platform = "android",
+                AppId = AdhocAppId,
+                InstallationId = "seam-install-1",
+            },
             Context());
 
         var selected = await SelectRecipientsAsync([siteId]);
@@ -109,7 +126,9 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
 
         var token = new DeviceToken
         {
-            WorkerId = siteId,
+            AppId = AdhocAppId,
+            InstallationId = "seam-install-2",
+            SdkSiteId = siteId,
             FcmToken = "seam-token-2",
             Platform = "android",
         };
@@ -142,7 +161,9 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
         {
             await new DeviceToken
             {
-                WorkerId = siteId,
+                AppId = AdhocAppId,
+                InstallationId = "seam-install-" + fcmToken,
+                SdkSiteId = siteId,
                 FcmToken = fcmToken,
                 Platform = "android",
             }.Create(BackendConfigurationPnDbContext!);
@@ -153,5 +174,42 @@ public class DeviceTokenRecipientSeamTests : TestBaseSetup
         Assert.That(
             selected.Select(x => x.FcmToken),
             Is.EquivalentTo(new[] { "seam-multi-a", "seam-multi-b" }));
+    }
+
+    /// <summary>
+    /// The other half of the seam under the identity model: DeviceTokens is
+    /// shared across apps, and a token minted by flutter-eform's Firebase
+    /// project would answer SenderIdMismatch if the adhoc sender targeted it.
+    /// Both rows below are written by the same production register path, so
+    /// this pins that AppId actually separates them.
+    /// </summary>
+    [Test]
+    public async Task ForeignAppToken_IsNotSelected()
+    {
+        const int siteId = 4714;
+
+        await CreateSut(siteId).RegisterPushToken(
+            new RegisterPushTokenRequest
+            {
+                FcmToken = "seam-adhoc-token",
+                Platform = "android",
+                AppId = AdhocAppId,
+                InstallationId = "seam-install-adhoc",
+            },
+            Context());
+
+        await CreateSut(siteId).RegisterPushToken(
+            new RegisterPushTokenRequest
+            {
+                FcmToken = "seam-eform-token",
+                Platform = "android",
+                AppId = "eform",
+                InstallationId = "seam-install-eform",
+            },
+            Context());
+
+        var selected = await SelectRecipientsAsync([siteId]);
+
+        Assert.That(selected.Select(x => x.FcmToken), Is.EquivalentTo(new[] { "seam-adhoc-token" }));
     }
 }
