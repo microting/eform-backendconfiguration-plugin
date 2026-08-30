@@ -603,4 +603,9 @@ export const lvLV = {
   'Calculating preview': 'Priekšskatījuma aprēķināšana',
   'Preview could not be loaded': 'Neizdevās ielādēt priekšskatījumu',
   'Pick a start date to preview the change': 'Izvēlieties sākuma datumu, lai priekšskatītu izmaiņas',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktivizēt / deaktivizēt',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivizēšana atsauc atvērtos gadījumus no lietotnes. Pabeigtie gadījumi un jau savāktie dati tiek saglabāti.',
 };

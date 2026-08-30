@@ -17,7 +17,7 @@ import {
  * feature, shard y): one representative action per of the FIVE modal
  * COMPONENTS covered here (`batch-worker-modal`, `batch-eform-modal`,
  * `batch-tags-modal`, `batch-copy-modal`, `batch-delete-modal` — not per the
- * 10 batch actions), proving `#batchModalCancel` (added to those templates
+ * 11 batch actions), proving `#batchModalCancel` (added to those templates
  * specifically for this suite — see the sibling template edits — they
  * previously only had an unidentified `.btn-cancel`) leaves everything
  * exactly as it was:

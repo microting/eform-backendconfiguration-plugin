@@ -603,4 +603,9 @@ export const nlNL = {
   'Calculating preview': 'Voorbeeld wordt berekend',
   'Preview could not be loaded': 'Voorbeeld kon niet worden geladen',
   'Pick a start date to preview the change': 'Kies een startdatum om de wijziging te bekijken',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Activeren / deactiveren',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Bij deactiveren worden de openstaande voorkomens uit de app teruggetrokken. Voltooide voorkomens en de al verzamelde gegevens blijven behouden.',
 };

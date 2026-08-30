@@ -651,4 +651,9 @@ export const deDE = {
   'Calculating preview': 'Vorschau wird berechnet',
   'Preview could not be loaded': 'Vorschau konnte nicht geladen werden',
   'Pick a start date to preview the change': 'Wählen Sie ein Startdatum, um die Änderung anzuzeigen',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktivieren / deaktivieren',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Beim Deaktivieren werden die offenen Vorkommen aus der App zurückgezogen. Abgeschlossene Vorkommen und die bereits erfassten Daten bleiben erhalten.',
 };

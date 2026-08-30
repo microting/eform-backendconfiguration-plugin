@@ -603,4 +603,9 @@ export const plPL = {
   'Calculating preview': 'Obliczanie podglądu',
   'Preview could not be loaded': 'Nie udało się załadować podglądu',
   'Pick a start date to preview the change': 'Wybierz datę rozpoczęcia, aby zobaczyć podgląd zmiany',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktywuj / dezaktywuj',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezaktywacja wycofuje otwarte wystąpienia z aplikacji. Ukończone wystąpienia i już zebrane dane zostają zachowane.',
 };

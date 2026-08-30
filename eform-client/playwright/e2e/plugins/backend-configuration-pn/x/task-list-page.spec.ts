@@ -274,14 +274,14 @@ test.describe.serial('Task list page', () => {
   });
 
   // =======================================================================
-  // PP9 — the batch-action dropdown ALWAYS shows all 10 options across 3
+  // PP9 — the batch-action dropdown ALWAYS shows all 11 options across 3
   // groups (mockup opgaveliste.html #opgavelisteFilterHandling): the 4
   // property-scoped actions (assign/reassign/addWorker/copy) are DISABLED
   // (`.ng-option-disabled`) — never removed — until exactly one property is
   // filtered, at which point they become selectable. Asserted purely by
   // element/class, never by translated label text (i18n-safe).
   // =======================================================================
-  test('PP9: batch action dropdown shows all 10 grouped options, property-scoped ones disabled until a single property is filtered', async ({ page }) => {
+  test('PP9: batch action dropdown shows all 11 grouped options, property-scoped ones disabled until a single property is filtered', async ({ page }) => {
     const taskListPage = new TaskListPage(page);
     const countDisabled = async (): Promise<number> => {
       const options = taskListPage.batchActionOptions();
@@ -305,7 +305,7 @@ test.describe.serial('Task list page', () => {
     await taskListPage.selectRow(taskZ);
 
     await taskListPage.openBatchActionPanel();
-    await expect(taskListPage.batchActionOptions()).toHaveCount(10);
+    await expect(taskListPage.batchActionOptions()).toHaveCount(11);
     await expect(taskListPage.batchActionGroups()).toHaveCount(3);
     expect(await countDisabled()).toBe(4);
 
@@ -326,12 +326,12 @@ test.describe.serial('Task list page', () => {
     await expect(taskListPage.getModalTaskList()).toHaveCount(0);
     await page.keyboard.press('Escape');
 
-    // Now filter to exactly one property: all 10 options become enabled.
+    // Now filter to exactly one property: all 11 options become enabled.
     await taskListPage.selectProperty(property.name);
     await expect(taskListPage.row(taskZ)).toBeVisible();
     await taskListPage.selectRow(taskZ);
     await taskListPage.openBatchActionPanel();
-    await expect(taskListPage.batchActionOptions()).toHaveCount(10);
+    await expect(taskListPage.batchActionOptions()).toHaveCount(11);
     expect(await countDisabled()).toBe(0);
     await page.keyboard.press('Escape');
   });

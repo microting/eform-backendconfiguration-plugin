@@ -603,4 +603,9 @@ export const skSK = {
   'Calculating preview': 'Výpočet náhľadu',
   'Preview could not be loaded': 'Náhľad sa nepodarilo načítať',
   'Pick a start date to preview the change': 'Vyberte dátum začiatku na zobrazenie náhľadu zmeny',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktivovať / deaktivovať',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivácia stiahne otvorené výskyty z aplikácie. Dokončené výskyty a už zozbierané údaje zostávajú zachované.',
 };

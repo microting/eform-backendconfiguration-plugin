@@ -30,6 +30,7 @@ import {BatchTagsModalComponent} from '../modals/batch-tags-modal/batch-tags-mod
 import {BatchComplianceModalComponent} from '../modals/batch-compliance-modal/batch-compliance-modal.component';
 import {BatchCopyModalComponent} from '../modals/batch-copy-modal/batch-copy-modal.component';
 import {BatchStartDateModalComponent} from '../modals/batch-start-date-modal/batch-start-date-modal.component';
+import {BatchStatusModalComponent} from '../modals/batch-status-modal/batch-status-modal.component';
 import {BatchDeleteModalComponent} from '../modals/batch-delete-modal/batch-delete-modal.component';
 import {TaskListTagsComponent} from '../task-list-tags/task-list-tags.component';
 
@@ -45,6 +46,7 @@ export type TaskListBatchAction =
   | 'setCompliance'
   | 'copy'
   | 'changeStartDate'
+  | 'setStatus'
   | 'delete';
 
 interface TaskListBatchActionOption {
@@ -306,7 +308,7 @@ export class TaskListPageComponent implements OnInit {
     const employees = this.translate.instant('Employees');
     const tasksGroup = this.translate.instant('Tasks');
     const deleteGroup = this.translate.instant('Delete');
-    // Mockup rule: all 10 options are always shown, grouped exactly as the mockup's
+    // Mockup rule: all 11 options are always shown, grouped exactly as the mockup's
     // three optgroups (Medarbejdere / Opgaver / Slet). Property-scoped actions
     // (assign/reassign/addWorker/copy) are disabled — not removed — when no single
     // property is filtered, since their option-lists (workers, target property) are
@@ -331,6 +333,12 @@ export class TaskListPageComponent implements OnInit {
       // here — `y/task-list-dropdown-gating.spec.ts` pins the disabled counts
       // at 4 (no filter) / 0 (single property) precisely to catch that.
       {id: 'changeStartDate', label: this.translate.instant('Change start date'), group: tasksGroup, disabled: false},
+      // NEVER disabled either: Status is a per-planning flag like
+      // setCompliance/changeStartDate, so it needs no single-property filter the
+      // way assign/reassign/addWorker/copy do. Same pinning as above —
+      // `y/task-list-dropdown-gating.spec.ts` holds the disabled counts at
+      // 4 (no filter) / 0 (single property).
+      {id: 'setStatus', label: this.translate.instant('Activate / deactivate'), group: tasksGroup, disabled: false},
       {id: 'delete', label: this.translate.instant('Delete selected'), group: deleteGroup, disabled: false},
     ];
     this._batchActionsCache = all;
@@ -404,6 +412,11 @@ export class TaskListPageComponent implements OnInit {
         // No extra option-lists: the modal owns its own (deliberately
         // floor-free) date picker and asks the server for its preview.
         component = BatchStartDateModalComponent;
+        break;
+      case 'setStatus':
+        // No extra option-lists either — the modal's whole input is one
+        // two-valued radio group.
+        component = BatchStatusModalComponent;
         break;
       case 'delete':
         component = BatchDeleteModalComponent;

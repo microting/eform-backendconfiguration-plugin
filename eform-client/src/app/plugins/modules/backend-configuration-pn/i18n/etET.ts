@@ -603,4 +603,9 @@ export const etET = {
   'Calculating preview': 'Eelvaate arvutamine',
   'Preview could not be loaded': 'Eelvaadet ei õnnestunud laadida',
   'Pick a start date to preview the change': 'Vali alguskuupäev, et muudatust eelvaadata',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktiveeri / deaktiveeri',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktiveerimine tühistab avatud esinemised rakendusest. Lõpetatud esinemised ja juba kogutud andmed säilivad.',
 };

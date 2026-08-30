@@ -48,6 +48,22 @@ public class TaskListBatchCopyModel : TaskListBatchRequestModel
 }
 
 /// <summary>
+/// #1123 — "Batch: Aktivere/de-aktivere opgaver." One boolean for the whole
+/// selection; every other field of the affected tasks round-trips through
+/// BuildUpdateModel unchanged.
+/// </summary>
+public class TaskListBatchStatusModel : TaskListBatchRequestModel
+{
+    /// <summary>
+    /// true  = "Task visible on calendar"  — TaskWizardStatuses.Active (1).
+    /// false = "Task dimmed on calendar" — TaskWizardStatuses.NotActive (2);
+    ///          the open occurrences are retracted from the app while the
+    ///          completed ones and their collected data are preserved.
+    /// </summary>
+    public bool Active { get; set; }
+}
+
+/// <summary>
 /// #1122 — "Batch: Ændre startdato til HVILKEN som helst dato." The only
 /// caller-supplied value is the new series anchor; every other field of the
 /// affected tasks round-trips through BuildUpdateModel unchanged.

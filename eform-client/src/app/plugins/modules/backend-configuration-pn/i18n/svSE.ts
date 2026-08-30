@@ -603,4 +603,9 @@ export const svSE = {
   'Calculating preview': 'Beräknar förhandsgranskning',
   'Preview could not be loaded': 'Förhandsgranskningen kunde inte laddas',
   'Pick a start date to preview the change': 'Välj ett startdatum för att förhandsgranska ändringen',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Aktivera / inaktivera',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Inaktivering drar tillbaka de öppna förekomsterna från appen. Slutförda förekomster och de data som redan samlats in bevaras.',
 };

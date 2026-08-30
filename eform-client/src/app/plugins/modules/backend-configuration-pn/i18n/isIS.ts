@@ -603,4 +603,9 @@ export const isIS = {
   'Calculating preview': 'Reiknar forskoðun',
   'Preview could not be loaded': 'Ekki tókst að hlaða forskoðun',
   'Pick a start date to preview the change': 'Veldu upphafsdagsetningu til að forskoða breytinguna',
+  // Task list batch: activate / deactivate (#1123). The two radio labels
+  // reuse the existing calendar-modal status keys; only the action label
+  // and the honest deactivate warning are new.
+  'Activate / deactivate': 'Virkja / afvirkja',
+  'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Afvirkjun dregur opnu tilvikin til baka úr forritinu. Lokin tilvik og þau gögn sem þegar hafa safnast varðveitast.',
 };

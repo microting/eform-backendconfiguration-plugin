@@ -19,11 +19,12 @@ import { readFileSync } from 'fs';
  *     `mtxGrid.mjs` template), so specs must assert VISIBILITY, never
  *     element count. NOTE: a SECOND "Vis alle" button belongs to mtx-grid's
  *     own paginator — always use `#taskListShowAllToggle` by id, never text.
- *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 10
+ *   - `#taskListBatchAction` — mtx-select (single); ALWAYS renders all 11
  *     options across 3 optgroups (`.ng-optgroup`), matching the mockup
  *     (opgaveliste.html #opgavelisteFilterHandling): "Medarbejdere"/Employees
  *     (assign/reassign/addWorker), "Opgaver"/Tasks (changeEform/addTags/
- *     removeTags/setCompliance/copy/changeStartDate), "Slet"/Delete (delete).
+ *     removeTags/setCompliance/copy/changeStartDate/setStatus), "Slet"/Delete
+ *     (delete).
  *     assign/reassign/addWorker/copy
  *     are DISABLED (`.ng-option-disabled`, non-clickable) unless the property
  *     filter (`#taskListPropertyFilter`) has EXACTLY ONE property selected —
@@ -32,7 +33,7 @@ import { readFileSync } from 'fs';
  *     (create / rename / delete / bulk-create). See the "Tag management"
  *     helper block below for the full id map and the two-reload contract.
  *   - Batch modals share `#batchModalTaskList` (task summary), `#batchModalSubmit`
- *     (primary action), `#batchModalCancel` (all seven modals — closes with no
+ *     (primary action), `#batchModalCancel` (all eight modals — closes with no
  *     result, so selection/grid stay untouched) and — only the two-phase
  *     eForm-change modal — `#batchModalConfirm` (second step, after
  *     `#batchModalSubmit` flips the modal into a confirmation state).
@@ -249,7 +250,7 @@ export class TaskListPage {
 
   /**
    * The shared `#batchModalSubmit` primary button, for enabled/disabled
-   * assertions. Six of the seven batch modals gate it behind their own
+   * assertions. Seven of the eight batch modals gate it behind their own
    * `[disabled]="!valid"`, so specs need to read its state and not only click
    * it. The change-start-date modal additionally gates it on a RESOLVED
    * preview (`previewState === 'resolved'`), so it stays disabled while a
@@ -271,7 +272,7 @@ export class TaskListPage {
   }
 
   /**
-   * Clicks the shared `#batchModalCancel` button present on all seven batch
+   * Clicks the shared `#batchModalCancel` button present on all eight batch
    * modals (`btn-cancel` in every modal template; the id was added
    * specifically so cancel-flow specs don't have to fall back to a
    * class/text selector). Calls `hide()` -> `dialogRef.close()` with no
@@ -386,6 +387,44 @@ export class TaskListPage {
     if (!(await this.complianceRadioInput(complianceEnabled).isChecked().catch(() => false))) {
       throw new Error(`#${id} did not become checked after clicking it`);
     }
+  }
+
+  // ----- Batch STATUS modal (#1123) -----------------------------------------
+
+  /**
+   * Native `<input type="radio">` behind one of the batch-STATUS modal's two
+   * `mat-radio-button`s. Same host-id/`-input` mechanics as
+   * `complianceRadioInput` above (Material 20 `radio.mjs` still renders a real
+   * input; `mat-slide-toggle` does NOT).
+   */
+  statusRadioInput(active: boolean): Locator {
+    const id = active ? 'batchStatusActive' : 'batchStatusInactive';
+    return this.page.locator(`#${id} input[type="radio"]`);
+  }
+
+  /**
+   * Picks one of the batch-status modal's radio options and verifies it took.
+   * Clicks the option's `<label class="mdc-label">` for exactly the reasons
+   * spelled out on `pickComplianceOption` — the host is blockified to the full
+   * dialog width inside the `.d-flex.flex-column` group, so a centre-of-element
+   * click on it can land in empty space next to the text.
+   */
+  async pickStatusOption(active: boolean): Promise<void> {
+    const id = active ? 'batchStatusActive' : 'batchStatusInactive';
+    await this.page.locator(`#${id} label.mdc-label`).click();
+    await this.page.waitForTimeout(300);
+    if (!(await this.statusRadioInput(active).isChecked().catch(() => false))) {
+      throw new Error(`#${id} did not become checked after clicking it`);
+    }
+  }
+
+  /**
+   * The deactivate-only warning paragraph. Rendered by `*ngIf="active === false"`,
+   * so it is ABSENT (count 0) both on a fresh open and after picking "active" —
+   * the modal only warns about the destructive direction.
+   */
+  statusDeactivateWarning(): Locator {
+    return this.page.locator('#batchStatusDeactivateWarning');
   }
 
   /**

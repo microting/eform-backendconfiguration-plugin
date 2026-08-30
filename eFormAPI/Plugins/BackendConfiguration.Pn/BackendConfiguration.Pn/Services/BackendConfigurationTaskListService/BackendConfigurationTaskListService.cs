@@ -167,6 +167,56 @@ public class BackendConfigurationTaskListService(
         }, "Tasks updated");
 
     // ------------------------------------------------------------------
+    // #1123 — activate / deactivate
+    // ------------------------------------------------------------------
+
+    // Flips AreaRulePlanning.Status (and, downstream, Planning.Enabled — the
+    // field the items-planning scheduler filters on) for every selected task.
+    // Same RunPerTask/BuildUpdateModel/UpdateTask shape as ChangeEform, with a
+    // single override: Status.
+    //
+    // Wire values are the TaskWizardStatuses convention BuildUpdateModel itself
+    // round-trips (`arp.Status ? 1 : 2`) and the Angular edit modal writes:
+    // 1 = Active, 2 = NotActive. Spelled through the enum rather than as
+    // literals so a future renumbering cannot silently invert the action.
+    //
+    // Delegating to calendarService.UpdateTask is what makes the side effects
+    // correct, and they are asymmetric:
+    //  * DEACTIVATE takes the task wizard's `case true when !Status` branch,
+    //    which since #1123 retracts only the NON-completed occurrences through
+    //    ICalendarOccurrenceRetractionService. Completed occurrences, their SDK
+    //    cases and their Compliance rows survive (invariant R2), so the
+    //    collected data stays readable — which is exactly what the modal
+    //    promises the admin.
+    //  * ACTIVATE takes `case false when Status`, which re-enables the planning,
+    //    re-derives DayOfMonth/DayOfWeek from the anchor, revives the
+    //    items-planning PlanningSite rows and re-pairs the sites (deploying
+    //    fresh cases). Compliance rows are deliberately NOT recreated.
+    //
+    // A round trip preserves assignees because deactivation only deletes the
+    // ITEMS-PLANNING PlanningSite rows; BC's AreaRulePlanning.PlanningSites —
+    // which is what BuildUpdateModel reads for `Sites` — are untouched. Without
+    // that, a batch reactivate would send Sites = [] and UpdateTask would
+    // silently coerce Status back to NotActive
+    // (BackendConfigurationTaskWizardService.UpdateTask's
+    // "Active && Sites.Count == 0" guard).
+    //
+    // No pre-loop guard: unlike Copy (SiteId/BoardId) or ChangeStartDate (the
+    // default(DateTime) sentinel), the whole input is one bool and both values
+    // are legal, so there is nothing a batch-wide check could reject.
+    public async Task<OperationResult> SetStatus(TaskListBatchStatusModel model) =>
+        await RunPerTask(model.TaskIds, async id =>
+        {
+            var update = await BuildUpdateModel(id);
+            if (update == null) return (false, "Task not found");
+            update.Status = (int)(model.Active
+                ? TaskWizardStatuses.Active
+                : TaskWizardStatuses.NotActive);
+            var result = await calendarService.UpdateTask(update);
+            return (result.Success, result.Message);
+        }, "Tasks updated");
+
+    // ------------------------------------------------------------------
     // #1122 — change start date
     // ------------------------------------------------------------------
 
