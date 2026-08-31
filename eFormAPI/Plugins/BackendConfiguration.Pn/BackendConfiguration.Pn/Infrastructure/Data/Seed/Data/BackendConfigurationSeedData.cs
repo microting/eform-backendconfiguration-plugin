@@ -51,18 +51,25 @@ public class BackendConfigurationSeedData : IPluginConfigurationSeedData
         {
             Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
             Value = "1000"
-        },
-        // Firebase service-account key for the flutter-eform push sender
-        // (Services/PushNotificationService). Seeded empty on purpose: an
-        // empty value means "push disabled", which is the correct state for
-        // every deployment that has not opted in, and the row gives the fleet
-        // script a place to UPDATE into. The seeder only inserts when the name
-        // is absent (BackendConfigurationPluginSeed.SeedData), so a restart can
-        // never overwrite a configured credential with this empty default.
-        new PluginConfigurationValue
-        {
-            Name = $"{TagBackendConfigurationSettingsName}:EformFirebaseServiceAccountJson",
-            Value = ""
         }
+        // NOT seeded here, deliberately:
+        // BackendConfigurationSettings:EformFirebaseServiceAccountJson, the
+        // Firebase service-account key read by
+        // Services/PushNotificationService.
+        //
+        // It follows its sibling secret,
+        // BackendConfigurationSettings:AdhocFirebaseServiceAccountJson (read by
+        // AdhocReminderJob in eform-service-backendconfiguration-plugin), which
+        // is likewise absent here and written out of band by the fleet script.
+        // A seeded empty row would buy nothing - the sender reads the key with
+        // FirstOrDefault(...)?.Value and treats absent and empty identically -
+        // while adding a real hazard: BackendConfigurationPluginSeed.SeedData
+        // is a non-atomic Any()/Add()/SaveChanges() against an unconstrained
+        // Name column, so several hosts booting at once on the first deploy
+        // after this change can each insert the row. BasePn's
+        // PluginConfigurationProvider.Load then ToDictionary()s by Name and
+        // throws on the duplicate, and the plugin fails to load on every host
+        // from then on. The keys above predate that risk; a new one need not
+        // take it.
     ];
 }

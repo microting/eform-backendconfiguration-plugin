@@ -16,20 +16,30 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Sentry;
 
 /// <summary>
-/// Sends FCM pushes to flutter-eform devices. Mirrors
-/// TimePlanning.Pn's PushNotificationService; the two differ only in which
-/// app's tokens they own and which Firebase project they hold.
+/// Sends FCM pushes to flutter-eform devices. Shaped after TimePlanning.Pn's
+/// PushNotificationService, which it now sits beside in one eFormAPI.Web
+/// process. It is not a copy: this one has no minBuild gate (DeviceToken here
+/// carries no AppBuildNumber), stays silent rather than warning when push is
+/// simply not configured, and reports a SenderIdMismatch from the prune
+/// decision instead of the catch site, so a credential fault raises one Sentry
+/// event rather than one per device.
 /// </summary>
 public class PushNotificationService : IPushNotificationService
 {
     /// <summary>
-    /// AppId of the tokens this sender owns, as registered by
-    /// <c>SettingsGrpcService.RegisterPushToken</c>. It holds the credential
-    /// for one Firebase project; a token minted by any other app returns
-    /// SENDER_ID_MISMATCH, so those are filtered out at selection time rather
-    /// than discovered at send time.
+    /// AppId of the tokens this sender owns. This service holds the credential
+    /// for exactly one Firebase project, and a token minted by any other app
+    /// returns SENDER_ID_MISMATCH - so foreign tokens are excluded at selection
+    /// time rather than discovered at send time.
+    ///
+    /// The value originates on the client and is stored verbatim:
+    /// <c>SettingsGrpcService.RegisterPushToken</c> only passes through
+    /// whatever <c>app_id</c> the caller sent, so the counterpart constant
+    /// lives in flutter-eform
+    /// (packages/microting_mobile/lib/features/settings/data/settings_repository.dart).
+    /// Renaming one without the other silently empties this query.
     /// </summary>
-    public const string EformAppId = "eform";
+    private const string EformAppId = "eform";
 
     /// <summary>
     /// Name of the FirebaseApp this sender owns, namespaced vendor-then-sender
@@ -55,8 +65,16 @@ public class PushNotificationService : IPushNotificationService
     /// than through IDbOptions/PluginConfigurationProvider, matching
     /// TimePlanning's sender and the adhoc reminder job. The value is written
     /// out of band by a fleet script; routing it through the bound options
-    /// snapshot would mean an operator's UPDATE is not seen until the host is
+    /// snapshot would mean an operator's INSERT is not seen until the host is
     /// restarted.
+    ///
+    /// CAVEAT: that only makes TURNING PUSH ON restart-free. The FirebaseApp
+    /// this credential builds is cached process-wide under
+    /// <see cref="FirebaseAppName"/> and is never rebuilt, so ROTATING or
+    /// REPOINTING the key has no effect until the host restarts - the app
+    /// created from the first credential keeps being used. Say so to whoever
+    /// you tell to fix a credential fault; see
+    /// <see cref="PruneSenderIdMismatchesAsync"/>.
     /// </summary>
     private const string ServiceAccountConfigurationKey =
         "BackendConfigurationSettings:EformFirebaseServiceAccountJson";
@@ -75,11 +93,7 @@ public class PushNotificationService : IPushNotificationService
     {
         _dbContext = dbContext;
         _logger = logger;
-
-        var serviceAccountJson = _dbContext.PluginConfigurationValues
-            .FirstOrDefault(x => x.Name == ServiceAccountConfigurationKey)?.Value;
-
-        _firebaseApp = ResolveFirebaseApp(serviceAccountJson, logger);
+        _firebaseApp = ResolveFirebaseApp(dbContext, logger);
     }
 
     /// <summary>
@@ -94,16 +108,24 @@ public class PushNotificationService : IPushNotificationService
     /// logged as one, because someone configured it and it does not work.
     /// </remarks>
     private static FirebaseApp? ResolveFirebaseApp(
-        string? serviceAccountJson,
+        BackendConfigurationPnDbContext dbContext,
         ILogger<PushNotificationService> logger)
     {
-        if (string.IsNullOrWhiteSpace(serviceAccountJson))
-        {
-            return null;
-        }
-
         try
         {
+            // Inside the try on purpose. This is the only I/O the constructor
+            // does, and a constructor that throws fails DI resolution in the
+            // caller - i.e. it fails the very request that a push must never
+            // be able to fail. A database blip here means push is off for this
+            // request, nothing more.
+            var serviceAccountJson = dbContext.PluginConfigurationValues
+                .FirstOrDefault(x => x.Name == ServiceAccountConfigurationKey)?.Value;
+
+            if (string.IsNullOrWhiteSpace(serviceAccountJson))
+            {
+                return null;
+            }
+
             var app = EnsureFirebaseApp(serviceAccountJson);
             logger.LogInformation(
                 "Firebase push notifications initialized on app {FirebaseAppName}",
@@ -192,7 +214,7 @@ public class PushNotificationService : IPushNotificationService
     /// process the data payload. Otherwise a normal visible notification is
     /// attached alongside the data.
     /// </summary>
-    public static Message BuildMessage(
+    internal static Message BuildMessage(
         string token,
         string title,
         string body,
@@ -208,7 +230,9 @@ public class PushNotificationService : IPushNotificationService
             // is an FCM registration token. Putting one in the other's field
             // makes every send fail. TimePlanning.Pn's sender ships the same
             // property against the same package version.
+#pragma warning disable CS0618
             Token = token,
+#pragma warning restore CS0618
             Data = data
         };
 
@@ -232,8 +256,8 @@ public class PushNotificationService : IPushNotificationService
     }
 
     /// <summary>
-    /// The live device tokens targeted by a push: this app's tokens, same
-    /// site, still in the Created workflow state.
+    /// The query selecting the live device tokens a push targets: this app's
+    /// tokens, same site, still in the Created workflow state.
     ///
     /// INVARIANT: this query must always carry an equality predicate on AppId.
     /// AppId is the leading column of
@@ -249,9 +273,6 @@ public class PushNotificationService : IPushNotificationService
             .Where(dt => dt.AppId == EformAppId
                          && dt.SdkSiteId == targetSdkSiteId
                          && dt.WorkflowState == Constants.WorkflowStates.Created);
-
-    internal Task<List<DeviceToken>> ResolveTargetTokensAsync(int targetSdkSiteId) =>
-        TargetTokenQuery(targetSdkSiteId).ToListAsync();
 
     public async Task SendToSiteAsync(
         int targetSdkSiteId,
@@ -270,7 +291,7 @@ public class PushNotificationService : IPushNotificationService
 
         try
         {
-            var tokens = await ResolveTargetTokensAsync(targetSdkSiteId);
+            var tokens = await TargetTokenQuery(targetSdkSiteId).ToListAsync();
 
             if (tokens.Count == 0)
             {
@@ -358,11 +379,14 @@ public class PushNotificationService : IPushNotificationService
             _logger.LogWarning(
                 "All {Count} eform device tokens for SdkSiteId {SdkSiteId} returned "
                 + "SenderIdMismatch. This is a Firebase credential fault, not a token "
-                + "fault - keeping the tokens. Check {ConfigurationKey}",
+                + "fault - keeping the tokens. Check {ConfigurationKey}, then RESTART "
+                + "the host: the Firebase app is cached process-wide and is not "
+                + "rebuilt when the credential changes",
                 targetedCount, targetSdkSiteId, ServiceAccountConfigurationKey);
             SentrySdk.CaptureMessage(
                 $"All {targetedCount} eform device tokens for SdkSiteId {targetSdkSiteId} "
-                + $"returned SenderIdMismatch - check {ServiceAccountConfigurationKey}",
+                + $"returned SenderIdMismatch - check {ServiceAccountConfigurationKey}, "
+                + "then restart the host (the Firebase app is cached process-wide)",
                 SentryLevel.Warning);
             return;
         }

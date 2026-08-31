@@ -35,7 +35,11 @@ public class PushNotificationMessageTests
             Assert.That(message.Apns.Aps.ContentAvailable, Is.True,
                 "iOS needs content-available to wake the app for a silent data push");
             Assert.That(message.Data["type"], Is.EqualTo("events_changed"));
+#pragma warning disable CS0618 // Token is the FCM registration token; Fid is a
+            // different identifier and would break every send. See the comment
+            // on BuildMessage's Token assignment.
             Assert.That(message.Token, Is.EqualTo("tok"));
+#pragma warning restore CS0618
         });
     }
 

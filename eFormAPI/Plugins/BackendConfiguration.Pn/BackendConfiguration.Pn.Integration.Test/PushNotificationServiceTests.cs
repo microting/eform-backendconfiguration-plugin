@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -23,9 +22,11 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// table-scans DeviceTokens, and a wrong credential silently soft-deletes a
 /// tenant's entire token set.
 ///
-/// Deliberately NOT [Parallelizable]: FirebaseApp instances live in a
-/// process-wide registry that the setup and teardown below clear, so a fixture
-/// running beside this one would have its app deleted mid-test.
+/// Deliberately NOT [Parallelizable]: this fixture creates and deletes an app
+/// in the process-wide FirebaseApp registry, so a fixture running beside it
+/// that touched the same registry would have its app deleted mid-test. NUnit
+/// runs non-parallel work items in a shift of their own, which is what keeps
+/// that from happening.
 /// </summary>
 [TestFixture]
 public class PushNotificationServiceTests : TestBaseSetup
@@ -40,18 +41,17 @@ public class PushNotificationServiceTests : TestBaseSetup
     private const string ServiceAccountKeyName =
         "BackendConfigurationSettings:EformFirebaseServiceAccountJson";
 
-    // The base [SetUp] has already built the DbContexts by the time this runs.
+    /// <summary>
+    /// FirebaseApp instances live in a process-wide registry that outlives the
+    /// fixture, so every test starts and ends with this sender's app absent.
+    /// Only the named app is deleted: DefaultInstance is shared with the whole
+    /// host and nothing here ever creates it, so deleting it could only ever
+    /// destroy someone else's.
+    /// </summary>
     [SetUp]
-    public void DeleteFirebaseAppsBeforeTest() => DeleteFirebaseApps();
-
     [TearDown]
-    public void DeleteFirebaseAppsAfterTest() => DeleteFirebaseApps();
-
-    private static void DeleteFirebaseApps()
-    {
+    public void DeleteOwnFirebaseApp() =>
         FirebaseApp.GetInstance(ExpectedFirebaseAppName)?.Delete();
-        FirebaseApp.DefaultInstance?.Delete();
-    }
 
     // ---- disabled by absence ----------------------------------------------
     //
@@ -81,8 +81,9 @@ public class PushNotificationServiceTests : TestBaseSetup
     // ---- recipient selection ----------------------------------------------
 
     [Test]
-    public async Task ResolveTargetTokens_SelectsOnlyLiveEformTokensForTheSite()
+    public async Task TargetTokenQuery_SelectsOnlyLiveEformTokensForTheSite()
     {
+        await ClearServiceAccount();
         var mine = await SeedToken("eform-live", sdkSiteId: 610);
         await SeedToken("adhoc-token", sdkSiteId: 610, appId: "adhoc");
         await SeedToken("time-token", sdkSiteId: 610, appId: "time");
@@ -90,7 +91,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         var dead = await SeedToken("eform-dead", sdkSiteId: 610);
         await dead.Delete(BackendConfigurationPnDbContext!);
 
-        var tokens = await CreateService().ResolveTargetTokensAsync(610);
+        var tokens = await CreateService().TargetTokenQuery(610).ToListAsync();
 
         Assert.That(tokens.Select(t => t.FcmToken), Is.EquivalentTo(new[] { mine.FcmToken }),
             "the eform sender holds one project's credential: a token minted by "
@@ -109,15 +110,24 @@ public class PushNotificationServiceTests : TestBaseSetup
     /// that clause fail here rather than in production - the rows the query
     /// returns would still be correct in any database holding only eform
     /// tokens, which is every developer's.
+    ///
+    /// The assertion is scoped to the WHERE clause on purpose. AppId is a
+    /// mapped column, so it appears in the SELECT projection of an unprojected
+    /// IQueryable&lt;DeviceToken&gt; whether or not anything filters on it - a
+    /// bare Does.Contain("AppId") over the whole statement passes with the
+    /// predicate deleted, which is precisely the regression this exists for.
     /// </summary>
     [Test]
-    public void ResolveTargetTokens_QueryFiltersOnAppId()
+    public async Task TargetTokenQuery_FiltersOnAppId()
     {
-        var sql = CreateService().TargetTokenQuery(620).ToQueryString();
+        await ClearServiceAccount();
 
-        Assert.That(sql, Does.Contain("AppId"),
+        var sql = CreateService().TargetTokenQuery(620).ToQueryString();
+        var whereClause = sql[sql.IndexOf("WHERE", StringComparison.Ordinal)..];
+
+        Assert.That(whereClause, Does.Contain("AppId"),
             "without an AppId predicate the send-path query cannot use "
-            + "IX_DeviceTokens_AppId_SdkSiteId_WorkflowState and table-scans");
+            + $"IX_DeviceTokens_AppId_SdkSiteId_WorkflowState and table-scans. SQL: {sql}");
     }
 
     // ---- credential-fault guard -------------------------------------------
@@ -126,11 +136,12 @@ public class PushNotificationServiceTests : TestBaseSetup
     // mismatch among healthy sends is a foreign token and is pruned. EVERY
     // targeted token mismatching instead means this sender holds the wrong
     // credential, where pruning would wipe the tenant's whole token set over a
-    // mistake an operator fixes with one UPDATE.
+    // misconfiguration that is recoverable and the tokens are not.
 
     [Test]
     public async Task PruneSenderIdMismatches_MixedResults_PrunesOnlyTheMismatchingToken()
     {
+        await ClearServiceAccount();
         var healthy = await SeedToken("healthy", sdkSiteId: 630);
         var mismatching = await SeedToken("mismatching", sdkSiteId: 630);
 
@@ -148,31 +159,33 @@ public class PushNotificationServiceTests : TestBaseSetup
         });
     }
 
-    [Test]
-    public async Task PruneSenderIdMismatches_EveryTargetedTokenMismatched_PrunesNothing()
+    // n=1 is the boundary and not a separate rule: a lone device that
+    // mismatches on its own send is indistinguishable from a credential fault,
+    // so it is kept too.
+    [TestCase(1)]
+    [TestCase(2)]
+    public async Task PruneSenderIdMismatches_EveryTargetedTokenMismatched_PrunesNothing(
+        int tokenCount)
     {
-        var first = await SeedToken("cred-1", sdkSiteId: 640);
-        var second = await SeedToken("cred-2", sdkSiteId: 640);
+        await ClearServiceAccount();
+        var site = 640 + tokenCount;
+        var tokens = new List<DeviceToken>();
+        for (var i = 0; i < tokenCount; i++)
+        {
+            tokens.Add(await SeedToken($"cred-{tokenCount}-{i}", sdkSiteId: site));
+        }
 
         await CreateService().PruneSenderIdMismatchesAsync(
-            [first, second], targetedCount: 2, targetSdkSiteId: 640);
+            tokens, targetedCount: tokenCount, targetSdkSiteId: site);
 
-        var states = new[] { await ReadWorkflowState(first.Id), await ReadWorkflowState(second.Id) };
+        var states = new List<string>();
+        foreach (var token in tokens)
+        {
+            states.Add(await ReadWorkflowState(token.Id));
+        }
+
         Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Created),
             "a wholesale mismatch is a credential fault; the tokens must survive it");
-    }
-
-    [Test]
-    public async Task PruneSenderIdMismatches_SoleTargetMismatched_PrunesNothing()
-    {
-        var only = await SeedToken("cred-only", sdkSiteId: 650);
-
-        await CreateService().PruneSenderIdMismatchesAsync(
-            [only], targetedCount: 1, targetSdkSiteId: 650);
-
-        Assert.That(await ReadWorkflowState(only.Id), Is.EqualTo(Constants.WorkflowStates.Created),
-            "one device that mismatches on its own send is indistinguishable from a "
-            + "credential fault, so it is kept");
     }
 
     // ---- Firebase app ownership -------------------------------------------
@@ -244,11 +257,6 @@ public class PushNotificationServiceTests : TestBaseSetup
         });
     }
 
-    /// <summary>
-    /// The invariant every initialisation path must hold: this plugin owns its
-    /// own named app and has NOT claimed the process-wide default that every
-    /// other sender in the eFormAPI.Web host also needs.
-    /// </summary>
     private static void AssertOwnsNamedAppAndNotTheDefault()
     {
         Assert.Multiple(() =>
@@ -272,7 +280,7 @@ public class PushNotificationServiceTests : TestBaseSetup
     /// </summary>
     private sealed class RecordingLogger : ILogger<PushNotificationService>
     {
-        private readonly ConcurrentQueue<string> _errors = new();
+        private readonly List<string> _errors = new();
 
         public IReadOnlyCollection<string> Errors => _errors;
 
@@ -289,7 +297,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         {
             if (logLevel >= LogLevel.Error)
             {
-                _errors.Enqueue($"{formatter(state, exception)} :: {exception}");
+                _errors.Add($"{formatter(state, exception)} :: {exception}");
             }
         }
     }

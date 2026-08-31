@@ -15,10 +15,10 @@ public interface IPushNotificationService
     /// send a data-only silent push: no visible notification, and iOS is woken
     /// in the background to process <paramref name="data"/>.
     ///
-    /// Never throws and never reports failure. A push is a courtesy on top of
-    /// whatever request triggered it, so a Firebase outage, an unconfigured
-    /// credential or a dead token must not fail that request; the mobile client
-    /// reconciles on its next foreground either way.
+    /// This method never throws and never reports failure. A push is a
+    /// courtesy on top of whatever request triggered it, so a Firebase outage,
+    /// an unconfigured credential or a dead token must not fail that request;
+    /// the mobile client reconciles on its next foreground either way.
     /// </remarks>
     Task SendToSiteAsync(
         int targetSdkSiteId,

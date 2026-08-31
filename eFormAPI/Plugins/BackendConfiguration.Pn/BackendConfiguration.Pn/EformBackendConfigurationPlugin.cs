@@ -127,11 +127,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.BackendConfigurationAdhocService.AdhocPhotoStorage>();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
-        // Transient, like the other DbContext-backed services here: it takes a
-        // scoped BackendConfigurationPnDbContext, and reads its Firebase
-        // credential from that context per instance so an out-of-band UPDATE
-        // takes effect without a host restart. The FirebaseApp itself is
-        // process-wide and created at most once - see PushNotificationService.
+        // Transient, like the sibling DbContext-backed services here; see
+        // PushNotificationService for why the credential is read per instance.
         services.AddTransient<Services.PushNotificationService.IPushNotificationService,
             Services.PushNotificationService.PushNotificationService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
