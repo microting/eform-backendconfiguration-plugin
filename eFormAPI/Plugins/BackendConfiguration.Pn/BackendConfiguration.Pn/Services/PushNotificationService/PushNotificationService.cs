@@ -20,9 +20,11 @@ using Sentry;
 /// PushNotificationService, which it now sits beside in one eFormAPI.Web
 /// process. It is not a copy: this one has no minBuild gate (DeviceToken here
 /// carries no AppBuildNumber), stays silent rather than warning when push is
-/// simply not configured, and reports a SenderIdMismatch from the prune
-/// decision instead of the catch site, so a credential fault raises one Sentry
-/// event rather than one per device.
+/// simply not configured, and defers every permanent per-token failure to one
+/// prune decision taken over the whole send instead of acting at the catch
+/// site - so a fault in this sender rather than in the devices is recognised
+/// as such, keeps the tokens, and raises one Sentry event rather than one per
+/// device.
 /// </summary>
 public class PushNotificationService : IPushNotificationService
 {
@@ -373,22 +375,51 @@ public class PushNotificationService : IPushNotificationService
             }
         }
 
-        await PrunePermanentFailuresAsync(permanentFailures, tokens.Count, targetSdkSiteId);
+        await PrunePermanentFailuresAsync(permanentFailures, respondedCount, targetSdkSiteId);
     }
+
+    /// <summary>
+    /// Permanent FCM codes that a fault OUTSIDE the token can produce for
+    /// every token of a send at once, and which therefore must not be pruned
+    /// on when they account for the whole send:
+    ///
+    /// - SENDER_ID_MISMATCH: this sender holds the wrong credential
+    ///   (<see cref="ServiceAccountConfigurationKey"/> pointing at another
+    ///   Firebase project), so every token was minted by "a different app".
+    /// - INVALID_ARGUMENT: the message payload is malformed, so FCM rejects
+    ///   the send before the token can matter.
+    ///
+    /// UNREGISTERED is deliberately excluded, and not for want of symmetry.
+    /// Every systemic cause has a code of its own - a wrong credential is
+    /// SENDER_ID_MISMATCH, a bad payload INVALID_ARGUMENT, a bad APNs key
+    /// THIRD_PARTY_AUTH_ERROR - and nothing this server can misconfigure makes
+    /// FCM answer UNREGISTERED for a live token: it means that registration is
+    /// gone, and only that. Most sites hold one or two tokens, so "every token
+    /// unregistered" is the ORDINARY shape of an uninstall; guarding it would
+    /// block nearly every legitimate prune and leave dead rows accumulating
+    /// forever, in exchange for protection against a cause that does not exist.
+    /// </summary>
+    private static bool CanBeSystemic(MessagingErrorCode code) =>
+        code is MessagingErrorCode.SenderIdMismatch or MessagingErrorCode.InvalidArgument;
 
     /// <summary>
     /// Applies the prune decision for the tokens of one send that FCM
     /// permanently rejected.
     ///
-    /// SENDER_ID_MISMATCH has two causes. Either the token was minted by a
-    /// different app's Firebase project - a token fault, and pruning it is
-    /// right - or this sender is holding the wrong credential
-    /// (<see cref="ServiceAccountConfigurationKey"/> pointing at the wrong
-    /// project), in which case EVERY token mismatches and a naive prune
-    /// silently soft-deletes the tenant's entire token set. The two are
-    /// indistinguishable per token, but not per send: a mismatch alongside
-    /// tokens that went through is a token fault, while a wholesale mismatch
-    /// is a credential fault and is left alone for an operator to fix.
+    /// A permanent rejection is not always about the token. When EVERY token
+    /// FCM answered for failed with the SAME code, and that code is one a
+    /// server-side fault can produce (see <see cref="CanBeSystemic"/>), the
+    /// fault is this sender's, not the devices': a naive prune would silently
+    /// soft-delete the tenant's entire token set over a misconfiguration that
+    /// is recoverable when the tokens are not, and the next send would then
+    /// find no tokens at all. Such a send prunes nothing and alerts instead.
+    /// Anything else - a failure alongside tokens that went through, or a mix
+    /// of codes that rules out one common cause - is per-token and is pruned.
+    ///
+    /// <paramref name="respondedCount"/> is the tokens FCM ANSWERED for, not
+    /// the tokens targeted. A send that failed transiently returned no verdict
+    /// about its token, and counting it would make a wholesale systemic fault
+    /// read as partial - one flaky socket then prunes a live token.
     /// </summary>
     internal async Task PrunePermanentFailuresAsync(
         IReadOnlyList<(DeviceToken Token, MessagingErrorCode Code)> permanentFailures,
@@ -400,20 +431,26 @@ public class PushNotificationService : IPushNotificationService
             return;
         }
 
+        var firstCode = permanentFailures[0].Code;
         if (permanentFailures.Count == respondedCount
-            && permanentFailures.All(f => f.Code == MessagingErrorCode.SenderIdMismatch))
+            && CanBeSystemic(firstCode)
+            && permanentFailures.All(f => f.Code == firstCode))
         {
             _logger.LogWarning(
-                "All {Count} eform device tokens for SdkSiteId {SdkSiteId} returned "
-                + "SenderIdMismatch. This is a Firebase credential fault, not a token "
-                + "fault - keeping the tokens. Check {ConfigurationKey}, then RESTART "
-                + "the host: the Firebase app is cached process-wide and is not "
-                + "rebuilt when the credential changes",
-                respondedCount, targetSdkSiteId, ServiceAccountConfigurationKey);
+                "All {Count} eform device tokens FCM answered for on SdkSiteId {SdkSiteId} "
+                + "failed with {Error}. That is a fault in this sender, not in the tokens "
+                + "- keeping them. SenderIdMismatch means {ConfigurationKey} holds the "
+                + "wrong Firebase project's credential; fix it and then RESTART the host, "
+                + "because the Firebase app is cached process-wide and is not rebuilt when "
+                + "the credential changes. InvalidArgument means the message payload this "
+                + "server built is malformed",
+                respondedCount, targetSdkSiteId, firstCode, ServiceAccountConfigurationKey);
             SentrySdk.CaptureMessage(
-                $"All {respondedCount} eform device tokens for SdkSiteId {targetSdkSiteId} "
-                + $"returned SenderIdMismatch - check {ServiceAccountConfigurationKey}, "
-                + "then restart the host (the Firebase app is cached process-wide)",
+                $"All {respondedCount} eform device tokens answered for on SdkSiteId "
+                + $"{targetSdkSiteId} failed with {firstCode} - treated as a fault in this "
+                + "sender, no tokens pruned. Check "
+                + $"{ServiceAccountConfigurationKey} (then restart the host; the Firebase "
+                + "app is cached process-wide) or the message payload",
                 SentryLevel.Warning);
             return;
         }
