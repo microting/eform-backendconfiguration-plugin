@@ -127,6 +127,10 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             Services.BackendConfigurationAdhocService.AdhocPhotoStorage>();
         services.AddTransient<Services.EventDeployService.IEventDeployService,
             Services.EventDeployService.EventDeployService>();
+        // Transient, like the sibling DbContext-backed services here; see
+        // PushNotificationService for why the credential is read per instance.
+        services.AddTransient<Services.PushNotificationService.IPushNotificationService,
+            Services.PushNotificationService.PushNotificationService>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
             Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService,
