@@ -398,6 +398,16 @@ public class PushNotificationService : IPushNotificationService
     /// unregistered" is the ORDINARY shape of an uninstall; guarding it would
     /// block nearly every legitimate prune and leave dead rows accumulating
     /// forever, in exchange for protection against a cause that does not exist.
+    ///
+    /// INVALID_ARGUMENT is included even though it is NOT purely systemic: FCM
+    /// also returns it for a token string it cannot parse. So on a site holding
+    /// a single genuinely malformed token this reads the fault as a payload
+    /// fault, keeps the row forever and warns on every send to that site.
+    /// That cost is accepted rather than narrowed to respondedCount > 1,
+    /// because most sites hold one or two tokens - so narrowing would re-open
+    /// the payload-fault hole for exactly the commonest site shape, and there
+    /// the wrong call deletes a live user's only token silently instead of
+    /// leaving a dead row and an alert an operator can act on.
     /// </summary>
     private static bool CanBeSystemic(MessagingErrorCode code) =>
         code is MessagingErrorCode.SenderIdMismatch or MessagingErrorCode.InvalidArgument;
@@ -420,8 +430,12 @@ public class PushNotificationService : IPushNotificationService
     /// the tokens targeted. A send that failed transiently returned no verdict
     /// about its token, and counting it would make a wholesale systemic fault
     /// read as partial - one flaky socket then prunes a live token.
+    ///
+    /// Private on purpose. This decision is only ever correct in terms of what
+    /// the send loop counted, so it is reached - and driven by tests - through
+    /// <see cref="SendAndPruneAsync"/> rather than called on its own.
     /// </summary>
-    internal async Task PrunePermanentFailuresAsync(
+    private async Task PrunePermanentFailuresAsync(
         IReadOnlyList<(DeviceToken Token, MessagingErrorCode Code)> permanentFailures,
         int respondedCount,
         int targetSdkSiteId)
@@ -457,27 +471,44 @@ public class PushNotificationService : IPushNotificationService
 
         foreach (var (deviceToken, code) in permanentFailures)
         {
-            if (code == MessagingErrorCode.SenderIdMismatch)
+            // Per token, because Delete writes to the database. While the
+            // prune still lived in the send loop's catch site, that loop's
+            // handler isolated a failing delete; without this, the first row
+            // that will not delete strands every remaining dead token
+            // un-pruned and carries the fault out to SendToSiteAsync.
+            try
             {
-                _logger.LogWarning(
-                    "Removing foreign device token {TokenId} for SdkSiteId {SdkSiteId}: "
-                    + "SenderIdMismatch (minted by a different Firebase project)",
-                    deviceToken.Id, targetSdkSiteId);
-                SentrySdk.CaptureMessage(
-                    $"SenderIdMismatch for DeviceToken {deviceToken.Id} (SdkSiteId {targetSdkSiteId})",
-                    SentryLevel.Warning);
+                if (code == MessagingErrorCode.SenderIdMismatch)
+                {
+                    _logger.LogWarning(
+                        "Removing foreign device token {TokenId} for SdkSiteId {SdkSiteId}: "
+                        + "SenderIdMismatch (minted by a different Firebase project)",
+                        deviceToken.Id, targetSdkSiteId);
+                    SentrySdk.CaptureMessage(
+                        $"SenderIdMismatch for DeviceToken {deviceToken.Id} "
+                        + $"(SdkSiteId {targetSdkSiteId})",
+                        SentryLevel.Warning);
+                }
+                else
+                {
+                    // The token is permanently dead - the app was uninstalled,
+                    // or FCM rejects the token itself as malformed. Retrying it
+                    // would fail identically forever. Routine, so no Sentry
+                    // event.
+                    _logger.LogInformation(
+                        "Removing stale device token {TokenId} for SdkSiteId {SdkSiteId}: {Error}",
+                        deviceToken.Id, targetSdkSiteId, code);
+                }
+
+                await deviceToken.Delete(_dbContext);
             }
-            else
+            catch (Exception ex)
             {
-                // The token is permanently dead - the app was uninstalled, or
-                // FCM rejects the token itself as malformed. Retrying it would
-                // fail identically forever. Routine, so no Sentry event.
-                _logger.LogInformation(
-                    "Removing stale device token {TokenId} for SdkSiteId {SdkSiteId}: {Error}",
+                _logger.LogError(ex,
+                    "Failed to prune device token {TokenId} for SdkSiteId {SdkSiteId} "
+                    + "after {Error}",
                     deviceToken.Id, targetSdkSiteId, code);
             }
-
-            await deviceToken.Delete(_dbContext);
         }
     }
 }

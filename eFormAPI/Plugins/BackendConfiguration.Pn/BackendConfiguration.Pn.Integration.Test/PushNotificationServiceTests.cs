@@ -154,16 +154,16 @@ public class PushNotificationServiceTests : TestBaseSetup
         var healthy = await SeedToken("mixed-healthy", sdkSiteId: 630);
         var mismatching = await SeedToken("mixed-mismatch", sdkSiteId: 630);
 
-        await SendWith(630, new Dictionary<string, Exception?>
+        await SendWith(630, new Dictionary<string, Exception>
         {
             [mismatching.FcmToken] = Fcm(MessagingErrorCode.SenderIdMismatch)
         });
 
-        await AssertSurvival(
+        await AssertAllSurvive([healthy],
+            "a token FCM delivered to must never be pruned");
+        await AssertAllPruned([mismatching],
             "a permanent failure alongside a token that went through is a token "
-            + "fault and must be pruned",
-            (healthy, true),
-            (mismatching, false));
+            + "fault and must be pruned");
     }
 
     // n=1 is the boundary and not a separate rule: a lone device that
@@ -177,8 +177,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         var site = 640 + tokenCount;
         var tokens = await SeedTokens(site, tokenCount, $"cred-{tokenCount}");
 
-        await SendWith(site, tokens.ToDictionary(
-            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.SenderIdMismatch)));
+        await SendWithAllFailing(site, tokens, MessagingErrorCode.SenderIdMismatch);
 
         await AssertAllSurvive(tokens,
             "a wholesale mismatch is a credential fault; the tokens must survive it");
@@ -199,8 +198,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         var site = 650 + tokenCount;
         var tokens = await SeedTokens(site, tokenCount, $"payload-{tokenCount}");
 
-        await SendWith(site, tokens.ToDictionary(
-            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.InvalidArgument)));
+        await SendWithAllFailing(site, tokens, MessagingErrorCode.InvalidArgument);
 
         await AssertAllSurvive(tokens,
             "every token rejected with the same permanent code is a systemic fault - "
@@ -228,11 +226,9 @@ public class PushNotificationServiceTests : TestBaseSetup
         var site = 660 + tokenCount;
         var tokens = await SeedTokens(site, tokenCount, $"gone-{tokenCount}");
 
-        await SendWith(site, tokens.ToDictionary(
-            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.Unregistered)));
+        await SendWithAllFailing(site, tokens, MessagingErrorCode.Unregistered);
 
-        var states = await ReadWorkflowStates(tokens);
-        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Removed),
+        await AssertAllPruned(tokens,
             "Unregistered is only ever about the registration; a site whose every "
             + "device uninstalled must still have its rows pruned");
     }
@@ -241,22 +237,31 @@ public class PushNotificationServiceTests : TestBaseSetup
     /// Two different permanent codes cannot come from one systemic cause: a
     /// malformed payload would have failed both tokens with INVALID_ARGUMENT.
     /// A mix is therefore per-token, and both are pruned.
+    ///
+    /// Both seeding orders, because the guard reads the FIRST failure's code to
+    /// decide whether the code is even systemic-capable. Order the Unregistered
+    /// token first and that check short-circuits, so the "all the same code"
+    /// clause this exists to pin is never reached and the test passes with that
+    /// clause deleted. TargetTokenQuery is unordered, so the order cannot be
+    /// assumed either way - covering both is what makes the pin hold.
     /// </summary>
-    [Test]
-    public async Task Send_AnsweredTokensFailedWithDifferentPermanentCodes_PrunesThemAll()
+    [TestCase(MessagingErrorCode.InvalidArgument, MessagingErrorCode.Unregistered)]
+    [TestCase(MessagingErrorCode.Unregistered, MessagingErrorCode.InvalidArgument)]
+    public async Task Send_AnsweredTokensFailedWithDifferentPermanentCodes_PrunesThemAll(
+        MessagingErrorCode firstSeeded, MessagingErrorCode secondSeeded)
     {
         await ClearServiceAccount();
-        var gone = await SeedToken("mixedcode-gone", sdkSiteId: 670);
-        var malformed = await SeedToken("mixedcode-bad", sdkSiteId: 670);
+        var site = firstSeeded == MessagingErrorCode.InvalidArgument ? 671 : 672;
+        var first = await SeedToken($"mixedcode-{site}-a", sdkSiteId: site);
+        var second = await SeedToken($"mixedcode-{site}-b", sdkSiteId: site);
 
-        await SendWith(670, new Dictionary<string, Exception?>
+        await SendWith(site, new Dictionary<string, Exception>
         {
-            [gone.FcmToken] = Fcm(MessagingErrorCode.Unregistered),
-            [malformed.FcmToken] = Fcm(MessagingErrorCode.InvalidArgument)
+            [first.FcmToken] = Fcm(firstSeeded),
+            [second.FcmToken] = Fcm(secondSeeded)
         });
 
-        var states = await ReadWorkflowStates([gone, malformed]);
-        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Removed),
+        await AssertAllPruned([first, second],
             "differing permanent codes rule out a single systemic cause, so each "
             + "failure is about its own token");
     }
@@ -275,7 +280,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         var mismatching = await SeedToken("diluted-mismatch", sdkSiteId: 680);
         var unanswered = await SeedToken("diluted-transient", sdkSiteId: 680);
 
-        await SendWith(680, new Dictionary<string, Exception?>
+        await SendWith(680, new Dictionary<string, Exception>
         {
             [mismatching.FcmToken] = Fcm(MessagingErrorCode.SenderIdMismatch),
             [unanswered.FcmToken] = new HttpRequestException("connection reset")
@@ -292,7 +297,7 @@ public class PushNotificationServiceTests : TestBaseSetup
         await ClearServiceAccount();
         var token = await SeedToken("all-transient", sdkSiteId: 690);
 
-        await SendWith(690, new Dictionary<string, Exception?>
+        await SendWith(690, new Dictionary<string, Exception>
         {
             [token.FcmToken] = new HttpRequestException("connection reset")
         });
@@ -473,14 +478,22 @@ public class PushNotificationServiceTests : TestBaseSetup
 
     /// <summary>
     /// Runs the real send loop against the site's real rows with the FCM call
-    /// replaced: a token mapped to an exception fails that way, anything else
-    /// is delivered.
+    /// replaced: a token listed in <paramref name="failures"/> fails that way,
+    /// anything else is delivered.
     /// </summary>
-    private Task SendWith(int sdkSiteId, Dictionary<string, Exception?> outcomes) =>
+    private Task SendWith(int sdkSiteId, Dictionary<string, Exception> failures) =>
         CreateService().SendAndPruneAsync(sdkSiteId, deviceToken =>
-            outcomes.TryGetValue(deviceToken.FcmToken, out var failure) && failure != null
+            failures.TryGetValue(deviceToken.FcmToken, out var failure)
                 ? Task.FromException(failure)
                 : Task.CompletedTask);
+
+    /// <summary>
+    /// The shape of a systemic fault: every token of the site fails with the
+    /// same <paramref name="code"/>.
+    /// </summary>
+    private Task SendWithAllFailing(
+        int sdkSiteId, IReadOnlyList<DeviceToken> tokens, MessagingErrorCode code) =>
+        SendWith(sdkSiteId, tokens.ToDictionary(t => t.FcmToken, _ => (Exception)Fcm(code)));
 
     /// <summary>
     /// A FirebaseMessagingException carrying the per-token verdict the send
@@ -520,21 +533,10 @@ public class PushNotificationServiceTests : TestBaseSetup
         Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Created), because);
     }
 
-    private async Task AssertSurvival(
-        string because, params (DeviceToken Token, bool Survives)[] expectations)
+    private async Task AssertAllPruned(IReadOnlyList<DeviceToken> tokens, string because)
     {
-        var actual = new List<string>();
-        foreach (var (token, _) in expectations)
-        {
-            actual.Add(await ReadWorkflowState(token.Id));
-        }
-
-        var expected = expectations
-            .Select(e => e.Survives
-                ? Constants.WorkflowStates.Created
-                : Constants.WorkflowStates.Removed)
-            .ToList();
-        Assert.That(actual, Is.EqualTo(expected), because);
+        var states = await ReadWorkflowStates(tokens);
+        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Removed), because);
     }
 
     private async Task<List<string>> ReadWorkflowStates(IReadOnlyList<DeviceToken> tokens)
