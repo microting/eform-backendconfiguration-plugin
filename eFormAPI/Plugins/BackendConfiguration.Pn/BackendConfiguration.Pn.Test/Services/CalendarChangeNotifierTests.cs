@@ -44,13 +44,15 @@ public class CalendarChangeNotifierTests
 
         var services = new ServiceCollection();
         services.AddSingleton(push);
-        var provider = services.BuildServiceProvider();
 
-        var notifier = new CalendarChangeNotifier(
+        return (CreateNotifier(services.BuildServiceProvider()), sent);
+    }
+
+    private static CalendarChangeNotifier CreateNotifier(IServiceProvider provider)
+    {
+        return new CalendarChangeNotifier(
             provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<CalendarChangeNotifier>.Instance);
-
-        return (notifier, sent);
     }
 
     /// <summary>
@@ -183,6 +185,51 @@ public class CalendarChangeNotifierTests
         });
     }
 
+    /// <summary>
+    /// The per-operation cap is spread across every worker, so it cannot bound
+    /// what ONE device receives: a worker tag on 60 events with a single member
+    /// is 60 pairs, well under the cap, and 60 wake-ups for that one phone. The
+    /// per-worker cap is what stops that, and only for the worker that trips
+    /// it - everyone else keeps their event_id.
+    /// </summary>
+    [Test]
+    public async Task Dispatch_ManyEventsForOneWorker_CollapsesOnlyThatWorker()
+    {
+        var (notifier, sent) = BuildNotifier();
+
+        var pairs = Enumerable
+            .Range(1, CalendarChangeNotifier.MaxEventsPerSitePerOperation + 1)
+            .Select(eventId => new CalendarChangePair(10, eventId))
+            .Append(new CalendarChangePair(11, 99))
+            .ToList();
+
+        await notifier.DispatchAsync(pairs);
+
+        Assert.That(sent.Count(x => x.SiteId == 10), Is.EqualTo(1),
+            "the flooded worker gets one push, not one per event");
+        Assert.That(sent.Single(x => x.SiteId == 10).Data.ContainsKey("event_id"), Is.False);
+
+        var untouched = sent.Single(x => x.SiteId == 11);
+        Assert.That(untouched.Data["event_id"], Is.EqualTo("99"),
+            "one worker over the cap must not cost every other worker their event_id");
+    }
+
+    [Test]
+    public async Task Dispatch_AtThePerWorkerCap_StillSendsThePerEventSignal()
+    {
+        var (notifier, sent) = BuildNotifier();
+
+        var pairs = Enumerable
+            .Range(1, CalendarChangeNotifier.MaxEventsPerSitePerOperation)
+            .Select(eventId => new CalendarChangePair(10, eventId))
+            .ToList();
+
+        await notifier.DispatchAsync(pairs);
+
+        Assert.That(sent, Has.Count.EqualTo(CalendarChangeNotifier.MaxEventsPerSitePerOperation));
+        Assert.That(sent.All(x => x.Data.ContainsKey("event_id")), Is.True);
+    }
+
     [Test]
     public void NotifyInBackground_EmptyBatch_SendsNothing()
     {
@@ -221,10 +268,8 @@ public class CalendarChangeNotifierTests
     [Test]
     public void Dispatch_WhenTheSenderCannotBeResolved_DoesNotPropagate()
     {
-        var provider = new ServiceCollection().BuildServiceProvider();
-        var notifier = new CalendarChangeNotifier(
-            provider.GetRequiredService<IServiceScopeFactory>(),
-            NullLogger<CalendarChangeNotifier>.Instance);
+        // Nothing registered: resolving IPushNotificationService throws.
+        var notifier = CreateNotifier(new ServiceCollection().BuildServiceProvider());
 
         Assert.DoesNotThrowAsync(() =>
             notifier.DispatchAsync(new[] { new CalendarChangePair(10, 5) }));

@@ -188,8 +188,12 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
     }
 
+    /// <summary>
+    /// Builds the engine; <c>batches</c> collects every batch the engine hands
+    /// to the notifier, in order.
+    /// </summary>
     private async Task<(CalendarAssignmentReconciliationService engine, IEventDeployService deploy,
-            ICalendarChangeNotifier notifier)>
+            List<CalendarChangeBatch> batches)>
         BuildEngine()
     {
         var core = await GetCore();
@@ -197,12 +201,15 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         coreHelper.GetCore().Returns(Task.FromResult(core));
         var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
         var deploy = Substitute.For<IEventDeployService>();
+        var batches = new List<CalendarChangeBatch>();
         var notifier = Substitute.For<ICalendarChangeNotifier>();
+        notifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
+            .Do(ci => batches.Add(ci.Arg<CalendarChangeBatch>()));
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
             deploy, resolver, notifier,
             NullLogger<CalendarAssignmentReconciliationService>.Instance);
-        return (engine, deploy, notifier);
+        return (engine, deploy, batches);
     }
 
     /// <summary>Deploys a Compliance + backing SDK Case for one (planning, date, site).</summary>
@@ -412,14 +419,6 @@ public class WorkerTagAssignmentTest : TestBaseSetup
     // Tests 6-8 — the calendar-change push hook
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static List<CalendarChangeBatch> CaptureBatches(ICalendarChangeNotifier notifier)
-    {
-        var batches = new List<CalendarChangeBatch>();
-        notifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
-            .Do(ci => batches.Add(ci.Arg<CalendarChangeBatch>()));
-        return batches;
-    }
-
     /// <summary>
     /// The reassignment the push exists for: the loser's app must stop showing
     /// the event and the gainer's must start showing it, and neither happens
@@ -440,8 +439,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         await SeedDeployedOccurrence(planning.Id, futureDate.AddHours(9), loser,
             status: 66, microtingUid: null);
 
-        var (engine, _, notifier) = await BuildEngine();
-        var batches = CaptureBatches(notifier);
+        var (engine, _, batches) = await BuildEngine();
 
         await engine.ReconcileEventAsync(arp.Id);
 
@@ -475,8 +473,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
                 loser, status: 66, microtingUid: null);
         }
 
-        var (engine, _, notifier) = await BuildEngine();
-        var batches = CaptureBatches(notifier);
+        var (engine, _, batches) = await BuildEngine();
 
         await engine.ReconcileEventAsync(arp.Id);
 
@@ -510,8 +507,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         await SeedDeployedOccurrence(planningB.Id, DateTime.UtcNow.Date.AddDays(8).AddHours(9),
             loserB, status: 66, microtingUid: null);
 
-        var (engine, _, notifier) = await BuildEngine();
-        var batches = CaptureBatches(notifier);
+        var (engine, _, batches) = await BuildEngine();
 
         await engine.ReconcileEventsForWorkerTagsAsync(new[] { tagId });
 

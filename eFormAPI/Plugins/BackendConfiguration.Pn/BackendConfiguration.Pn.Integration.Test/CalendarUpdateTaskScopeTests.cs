@@ -33,7 +33,6 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
     private IUserService _userService;
     private IBackendConfigurationTaskWizardService _taskWizardService;
     private BackendConfigurationCalendarService _calendarService;
-    private ICalendarChangeNotifier _changeNotifier;
     private List<CalendarChangeBatch> _notifiedBatches;
 
     [SetUp]
@@ -50,6 +49,10 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
 
         BackendConfigurationPnDbContext.CalendarConfigurations.RemoveRange(
             BackendConfigurationPnDbContext.CalendarConfigurations);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        BackendConfigurationPnDbContext.PlanningSites.RemoveRange(
+            BackendConfigurationPnDbContext.PlanningSites);
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
         BackendConfigurationPnDbContext.AreaRulePlannings.RemoveRange(
@@ -88,9 +91,9 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         _taskWizardService.ApplyEformChangeToSeries(Arg.Any<int>(), Arg.Any<int>())
             .Returns(Task.FromResult(new OperationResult(true)));
 
-        _changeNotifier = Substitute.For<ICalendarChangeNotifier>();
         _notifiedBatches = [];
-        _changeNotifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
+        var changeNotifier = Substitute.For<ICalendarChangeNotifier>();
+        changeNotifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
             .Do(ci => _notifiedBatches.Add(ci.Arg<CalendarChangeBatch>()));
 
         _calendarService = new BackendConfigurationCalendarService(
@@ -102,7 +105,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
-            _changeNotifier,
+            changeNotifier,
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>()
@@ -559,6 +562,87 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
 
         await BackendConfigurationPnDbContext.SaveChangesAsync();
         return exception;
+    }
+
+    /// <summary>Series-level assignees (PlanningSites) for the event.</summary>
+    private async Task SeedSeriesAssignees(int arpId, params int[] siteIds)
+    {
+        foreach (var siteId in siteIds)
+        {
+            await BackendConfigurationPnDbContext!.PlanningSites.AddAsync(
+                new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
+                {
+                    AreaRulePlanningsId = arpId, SiteId = siteId,
+                    WorkflowState = Constants.WorkflowStates.Created,
+                    CreatedByUserId = 1, UpdatedByUserId = 1
+                });
+        }
+
+        await BackendConfigurationPnDbContext!.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The FIRST per-occurrence reassignment of an event, which is where the
+    /// exception row is created rather than found - so there are no prior
+    /// ExceptionSites rows to diff against. An empty per-occurrence set means
+    /// "inherit the series" everywhere this file reads it, so the previous
+    /// assignees are the SERIES assignees. Read as "nobody" instead, this case
+    /// notifies the worker who kept the occurrence and misses the one who lost
+    /// it - which is precisely the state the push exists to correct.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeThis_FirstOccurrenceReassignment_NotifiesTheDroppedSeriesAssignee()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        // The series is assigned to 101 and 202. No occurrence exception yet.
+        await SeedSeriesAssignees(arpId, 101, 202);
+
+        // This occurrence only: drop 202, add 303, keep 101.
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday);
+        model.Sites = [101, 303];
+
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_notifiedBatches, Has.Count.EqualTo(1));
+        Assert.That(_notifiedBatches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(202, arpId),
+            new CalendarChangePair(303, arpId)
+        }));
+    }
+
+    /// <summary>
+    /// The mirror: an edit carrying no Sites at all (worker tags alone satisfy
+    /// the at-least-one-assignee gate) hands the occurrence back to the series,
+    /// so the series assignees are the NEW set, not an empty one.
+    /// </summary>
+    [Test]
+    public async Task UpdateTask_ScopeThis_ClearingTheOccurrenceOverride_FallsBackToTheSeries()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        await SeedSeriesAssignees(arpId, 101);
+        // The occurrence currently overrides the series with 202 alone.
+        await SeedOccurrenceAssignees(arpId, baseMonday, 202);
+
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday);
+        model.Sites = [];
+        model.WorkerTagIds = [7];
+
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_notifiedBatches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(202, arpId),
+            new CalendarChangePair(101, arpId)
+        }), "202 loses the occurrence back to the series, 101 regains it");
     }
 
     [Test]

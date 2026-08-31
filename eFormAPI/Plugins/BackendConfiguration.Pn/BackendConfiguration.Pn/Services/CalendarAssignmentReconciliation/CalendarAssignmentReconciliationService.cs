@@ -162,12 +162,7 @@ public class CalendarAssignmentReconciliationService(
             // asks the client to re-read its window - a push for a change that
             // failed to land shows the worker the unchanged truth, while a
             // change that landed with no push shows them a stale one.
-            foreach (var siteId in plan.ToAdd)
-            {
-                changes.Add(siteId, areaRulePlanningId);
-            }
-
-            foreach (var siteId in plan.ToRemove)
+            foreach (var siteId in plan.ToAdd.Concat(plan.ToRemove))
             {
                 changes.Add(siteId, areaRulePlanningId);
             }

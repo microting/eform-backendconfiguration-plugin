@@ -16,11 +16,9 @@ using Microsoft.Extensions.Logging;
 ///
 /// The payload is the contract shared with the client (flutter-eform PR #905):
 /// <c>{"type":"calendar_changed","event_id":"&lt;AreaRulePlanning id&gt;"}</c>,
-/// data-only. Empty title and body are what make
-/// <c>PushNotificationService</c> omit the Notification block and set
-/// APNs content-available: there is no sensible user-facing text for "an event
-/// you never saw was taken off you", and a visible banner for it would be
-/// wrong, not merely noisy.
+/// data-only and silent (see <see cref="SendSilentAsync"/>): there is no
+/// sensible user-facing text for "an event you never saw was taken off you",
+/// and a visible banner for it would be wrong, not merely noisy.
 /// </summary>
 public class CalendarChangeNotifier(
     IServiceScopeFactory scopeFactory,
@@ -51,6 +49,21 @@ public class CalendarChangeNotifier(
     internal const int MaxDistinctPairsPerOperation = 100;
 
     /// <summary>
+    /// Distinct events ONE worker may be told about individually in one
+    /// operation. Beyond it that worker gets a single coarse push instead.
+    ///
+    /// The per-operation cap above counts pairs across every worker, so it does
+    /// not bound what any single device receives: a worker tag carried by 60
+    /// events with one member is 60 pairs - comfortably under 100 - and 60
+    /// separate wake-ups for that one phone, 59 of which tell it nothing the
+    /// first did not. 5 is above any single-event edit (which is one pair per
+    /// worker) and above an admin touching a handful of related events, and an
+    /// operation that moved more than five of one worker's events is a bulk
+    /// change where the coarse "your calendar changed" says exactly as much.
+    /// </summary>
+    internal const int MaxEventsPerSitePerOperation = 5;
+
+    /// <summary>
     /// The background dispatch started by the last
     /// <see cref="NotifyInBackground"/> call, or null when that call had
     /// nothing to send.
@@ -66,7 +79,7 @@ public class CalendarChangeNotifier(
 
     public void NotifyInBackground(CalendarChangeBatch batch)
     {
-        if (batch == null || batch.Count == 0)
+        if (batch == null || batch.Pairs.Count == 0)
         {
             LastDispatch = null;
             return;
@@ -125,6 +138,7 @@ public class CalendarChangeNotifier(
     internal async Task SendAsync(
         IPushNotificationService push, IReadOnlyCollection<CalendarChangePair> pairs)
     {
+        // Outer bound - the operation. Nothing keeps its event_id above it.
         if (pairs.Count > MaxDistinctPairsPerOperation)
         {
             var siteIds = pairs.Select(p => p.SiteId).Distinct().ToList();
@@ -136,23 +150,56 @@ public class CalendarChangeNotifier(
 
             foreach (var siteId in siteIds)
             {
-                await push.SendToSiteAsync(siteId, string.Empty, string.Empty,
-                    new Dictionary<string, string> { [TypeKey] = CalendarChangedType })
-                    .ConfigureAwait(false);
+                await SendCoarseAsync(push, siteId).ConfigureAwait(false);
             }
 
             return;
         }
 
-        foreach (var (siteId, eventId) in pairs)
+        // Inner bound - one worker's device. See MaxEventsPerSitePerOperation:
+        // the outer cap is spread across every worker and so cannot bound this.
+        foreach (var perSite in pairs.GroupBy(p => p.SiteId))
         {
-            await push.SendToSiteAsync(siteId, string.Empty, string.Empty,
-                new Dictionary<string, string>
+            var events = perSite.ToList();
+            if (events.Count > MaxEventsPerSitePerOperation)
+            {
+                logger.LogInformation(
+                    "Calendar-change push: {EventCount} events changed for SdkSiteId "
+                    + "{SdkSiteId} in one operation, over the per-worker cap of {Cap}; "
+                    + "collapsing to one event-less push",
+                    events.Count, perSite.Key, MaxEventsPerSitePerOperation);
+                await SendCoarseAsync(push, perSite.Key).ConfigureAwait(false);
+                continue;
+            }
+
+            foreach (var pair in events)
+            {
+                await SendSilentAsync(push, pair.SiteId, new Dictionary<string, string>
                 {
                     [TypeKey] = CalendarChangedType,
-                    [EventIdKey] = eventId.ToString(CultureInfo.InvariantCulture)
-                })
-                .ConfigureAwait(false);
+                    [EventIdKey] = pair.EventId.ToString(CultureInfo.InvariantCulture)
+                }).ConfigureAwait(false);
+            }
         }
+    }
+
+    /// <summary>
+    /// "Your calendar changed, somewhere" - the collapsed form both caps fall
+    /// back to. Correct, only less diagnostic: the client refreshes its whole
+    /// window on this push and never narrows by event_id.
+    /// </summary>
+    private static Task SendCoarseAsync(IPushNotificationService push, int siteId) =>
+        SendSilentAsync(push, siteId,
+            new Dictionary<string, string> { [TypeKey] = CalendarChangedType });
+
+    /// <summary>
+    /// The empty title and body are the payload contract, not a placeholder:
+    /// they are what make <c>PushNotificationService</c> omit the Notification
+    /// block and send a data-only, content-available wake-up.
+    /// </summary>
+    private static Task SendSilentAsync(
+        IPushNotificationService push, int siteId, Dictionary<string, string> data)
+    {
+        return push.SendToSiteAsync(siteId, string.Empty, string.Empty, data);
     }
 }

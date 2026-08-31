@@ -1920,11 +1920,32 @@ public class BackendConfigurationCalendarService(
         // the occurrence across a pure field edit has nothing to re-sync, and
         // waking every assignee on every edit is what the volume design of
         // CalendarChangeBatch exists to avoid.
-        var previousSiteIds = currentSites.Select(x => x.SiteId).ToHashSet();
-        var newSiteIds = updateModel.Sites?.ToHashSet() ?? [];
+        //
+        // An EMPTY per-occurrence set means "inherit the series", not "nobody"
+        // - that is how every reader of ExceptionSites in this file treats it
+        // (see the effectiveAssignees fallbacks in GetTasksForWeek). Reading it
+        // as "nobody" would break the commonest shape there is: the FIRST
+        // per-occurrence reassignment, which creates the exception row right
+        // here, would find no prior rows, call every kept assignee a gainer and
+        // miss the loser entirely - the loser being the whole point. The same
+        // fallback applies on the new side, because an edit may legitimately
+        // arrive with no Sites at all (worker tags alone satisfy the
+        // at-least-one-assignee gate above), which hands the occurrence back to
+        // the series.
+        var seriesSiteIds = await backendConfigurationPnDbContext.PlanningSites
+            .Where(x => x.AreaRulePlanningsId == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.SiteId)
+            .ToListAsync();
+
+        var reassignedSiteIds = currentSites.Count > 0
+            ? currentSites.Select(x => x.SiteId).ToHashSet()
+            : seriesSiteIds.ToHashSet();
+        reassignedSiteIds.SymmetricExceptWith(
+            updateModel.Sites is { Count: > 0 } ? updateModel.Sites : seriesSiteIds);
+
         var assignmentChanges = new CalendarChangeBatch();
-        foreach (var siteId in previousSiteIds.Except(newSiteIds)
-                     .Concat(newSiteIds.Except(previousSiteIds)))
+        foreach (var siteId in reassignedSiteIds)
         {
             assignmentChanges.Add(siteId, updateModel.Id);
         }
@@ -1970,11 +1991,11 @@ public class BackendConfigurationCalendarService(
             }
         }
 
-        // After every write above, never between them: the sender's token prune
+        // After every write above, never between them: this is the point at
+        // which the reassignment is actually true, and the sender's token prune
         // calls PnBase.Delete, which saves everything pending on the context it
-        // is handed. (It gets a context of its own here - see
-        // CalendarChangeNotifier - but the ordering rule holds regardless, and
-        // this is the point at which the reassignment is actually true.)
+        // is handed (a context of its own here - see CalendarChangeNotifier -
+        // but the ordering rule holds regardless).
         // Notified even when the series-level eForm widening failed: the
         // occurrence's own rows are already written and saved, so the
         // reassignment landed and the workers still need to know.
@@ -1984,6 +2005,16 @@ public class BackendConfigurationCalendarService(
             localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
     }
 
+    // NO calendar-change push hook here, deliberately. This scope reassigns the
+    // SERIES through the wizard (Sites goes into the TaskWizardCreateModel
+    // below) but - unlike scope="all" - never calls
+    // reconciliationService.ReconcileEventAsync, so no already-deployed
+    // occurrence is deployed or retracted and nothing a worker's device can see
+    // changes. Pushing here would wake phones for a change that is not there
+    // yet. The real gap is that missing reconcile call; hook the push when that
+    // is fixed, and it will then come for free through the reconciler like the
+    // "all" scope does.
+    //
     // Edit scope="thisAndFollowing" (#885): anchor every PAST occurrence with
     // the OLD field values, then apply the NEW values to the series WITHOUT
     // relocating its StartDate (the wizard is given the unchanged anchor), and

@@ -40,6 +40,4 @@ public sealed class CalendarChangeBatch
     public void Add(int siteId, int eventId) => _pairs.Add(new CalendarChangePair(siteId, eventId));
 
     public IReadOnlyCollection<CalendarChangePair> Pairs => _pairs;
-
-    public int Count => _pairs.Count;
 }
