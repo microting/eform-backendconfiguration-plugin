@@ -51,6 +51,18 @@ public class BackendConfigurationSeedData : IPluginConfigurationSeedData
         {
             Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
             Value = "1000"
+        },
+        // Firebase service-account key for the flutter-eform push sender
+        // (Services/PushNotificationService). Seeded empty on purpose: an
+        // empty value means "push disabled", which is the correct state for
+        // every deployment that has not opted in, and the row gives the fleet
+        // script a place to UPDATE into. The seeder only inserts when the name
+        // is absent (BackendConfigurationPluginSeed.SeedData), so a restart can
+        // never overwrite a configured credential with this empty default.
+        new PluginConfigurationValue
+        {
+            Name = $"{TagBackendConfigurationSettingsName}:EformFirebaseServiceAccountJson",
+            Value = ""
         }
     ];
 }

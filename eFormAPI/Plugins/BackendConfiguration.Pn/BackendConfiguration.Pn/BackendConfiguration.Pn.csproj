@@ -19,6 +19,7 @@
 
     <ItemGroup>
       <InternalsVisibleTo Include="BackendConfiguration.Pn.Test" />
+      <InternalsVisibleTo Include="BackendConfiguration.Pn.Integration.Test" />
     </ItemGroup>
 
     <ItemGroup>
@@ -276,6 +277,7 @@
 
   <ItemGroup>
     <PackageReference Include="ChemicalsBase" Version="10.0.16" />
+    <PackageReference Include="FirebaseAdmin" Version="3.6.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.75.0.4178" />
     <PackageReference Include="Google.Protobuf" Version="3.36.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.83.0" />

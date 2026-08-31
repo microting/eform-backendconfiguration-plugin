@@ -276,7 +276,7 @@ public class PushNotificationServiceTests : TestBaseSetup
 
         public IReadOnlyCollection<string> Errors => _errors;
 
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull => null!;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
@@ -284,8 +284,8 @@ public class PushNotificationServiceTests : TestBaseSetup
             LogLevel logLevel,
             EventId eventId,
             TState state,
-            Exception exception,
-            Func<TState, Exception, string> formatter)
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
         {
             if (logLevel >= LogLevel.Error)
             {
