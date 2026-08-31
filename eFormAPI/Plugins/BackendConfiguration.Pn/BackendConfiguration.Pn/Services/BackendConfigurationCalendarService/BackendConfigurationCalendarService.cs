@@ -13,6 +13,7 @@ using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Helpers;
 using CalendarAssignmentReconciliation;
+using CalendarChangeNotification;
 using CalendarOccurrenceRetraction;
 using CalendarPastSeriesBackfill;
 using EventDeployService;
@@ -41,6 +42,7 @@ public class BackendConfigurationCalendarService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationTaskWizardService taskWizardService,
     ICalendarAssignmentReconciliationService reconciliationService,
+    ICalendarChangeNotifier changeNotifier,
     ILogger<BackendConfigurationCalendarService> logger,
     // #1122 §3/§2 — the two halves of "the anchor left its recurrence period":
     // wipe the open occurrences of the OLD grid, then materialise the past range
@@ -1911,6 +1913,43 @@ public class BackendConfigurationCalendarService(
             await exceptionSite.Create(backendConfigurationPnDbContext);
         }
 
+        // Who to wake up. scope="this" does NOT go through
+        // CalendarAssignmentReconciliationService, so without this hook a
+        // per-occurrence reassignment is the one reassignment shape that never
+        // reaches a phone. The symmetric difference only: a worker who keeps
+        // the occurrence across a pure field edit has nothing to re-sync, and
+        // waking every assignee on every edit is what the volume design of
+        // CalendarChangeBatch exists to avoid.
+        //
+        // An EMPTY per-occurrence set means "inherit the series", not "nobody"
+        // - that is how every reader of ExceptionSites in this file treats it
+        // (see the effectiveAssignees fallbacks in GetTasksForWeek). Reading it
+        // as "nobody" would break the commonest shape there is: the FIRST
+        // per-occurrence reassignment, which creates the exception row right
+        // here, would find no prior rows, call every kept assignee a gainer and
+        // miss the loser entirely - the loser being the whole point. The same
+        // fallback applies on the new side, because an edit may legitimately
+        // arrive with no Sites at all (worker tags alone satisfy the
+        // at-least-one-assignee gate above), which hands the occurrence back to
+        // the series.
+        var seriesSiteIds = await backendConfigurationPnDbContext.PlanningSites
+            .Where(x => x.AreaRulePlanningsId == updateModel.Id)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Select(x => x.SiteId)
+            .ToListAsync();
+
+        var reassignedSiteIds = currentSites.Count > 0
+            ? currentSites.Select(x => x.SiteId).ToHashSet()
+            : seriesSiteIds.ToHashSet();
+        reassignedSiteIds.SymmetricExceptWith(
+            updateModel.Sites is { Count: > 0 } ? updateModel.Sites : seriesSiteIds);
+
+        var assignmentChanges = new CalendarChangeBatch();
+        foreach (var siteId in reassignedSiteIds)
+        {
+            assignmentChanges.Add(siteId, updateModel.Id);
+        }
+
         // The eForm is a SERIES-level property — there is no per-occurrence
         // column for it, and the completion path resolves the eForm from the
         // occurrence's own SDK case. A scope="this" edit that changes it would
@@ -1935,6 +1974,7 @@ public class BackendConfigurationCalendarService(
             .Select(x => new { CurrentEformId = x.AreaRule.EformId })
             .FirstOrDefaultAsync();
 
+        OperationResult eformFailure = null;
         if (series == null)
         {
             logger.LogWarning(
@@ -1943,18 +1983,38 @@ public class BackendConfigurationCalendarService(
         }
         else if (updateModel.EformId > 0 && series.CurrentEformId != updateModel.EformId)
         {
-            var eformResult = await taskWizardService
+            var result = await taskWizardService
                 .ApplyEformChangeToSeries(updateModel.Id, updateModel.EformId);
-            if (eformResult is { Success: false })
+            if (result is { Success: false })
             {
-                return eformResult;
+                eformFailure = result;
             }
         }
 
-        return new OperationResult(true,
+        // After every write above, never between them: this is the point at
+        // which the reassignment is actually true, and the sender's token prune
+        // calls PnBase.Delete, which saves everything pending on the context it
+        // is handed (a context of its own here - see CalendarChangeNotifier -
+        // but the ordering rule holds regardless).
+        // Notified even when the series-level eForm widening failed: the
+        // occurrence's own rows are already written and saved, so the
+        // reassignment landed and the workers still need to know.
+        changeNotifier.NotifyInBackground(assignmentChanges);
+
+        return eformFailure ?? new OperationResult(true,
             localizationService.GetString("CalendarTaskUpdatedSuccessfully"));
     }
 
+    // NO calendar-change push hook here, deliberately. This scope reassigns the
+    // SERIES through the wizard (Sites goes into the TaskWizardCreateModel
+    // below) but - unlike scope="all" - never calls
+    // reconciliationService.ReconcileEventAsync, so no already-deployed
+    // occurrence is deployed or retracted and nothing a worker's device can see
+    // changes. Pushing here would wake phones for a change that is not there
+    // yet. The real gap is that missing reconcile call; hook the push when that
+    // is fixed, and it will then come for free through the reconciler like the
+    // "all" scope does.
+    //
     // Edit scope="thisAndFollowing" (#885): anchor every PAST occurrence with
     // the OLD field values, then apply the NEW values to the series WITHOUT
     // relocating its StartDate (the wizard is given the unchanged anchor), and

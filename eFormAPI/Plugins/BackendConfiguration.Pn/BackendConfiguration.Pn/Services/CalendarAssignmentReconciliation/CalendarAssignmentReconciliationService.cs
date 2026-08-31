@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,12 +32,32 @@ public class CalendarAssignmentReconciliationService(
     IEFormCoreService coreHelper,
     IEventDeployService eventDeployService,
     ICalendarAssignmentResolver resolver,
+    ICalendarChangeNotifier changeNotifier,
     ILogger<CalendarAssignmentReconciliationService> logger)
     : ICalendarAssignmentReconciliationService
 {
     private const int CompletedStatus = 100;
 
     public async Task ReconcileEventAsync(int areaRulePlanningId, CancellationToken ct = default)
+    {
+        var changes = new CalendarChangeBatch();
+        await ReconcileEventAsync(areaRulePlanningId, changes, ct).ConfigureAwait(false);
+        changeNotifier.NotifyInBackground(changes);
+    }
+
+    /// <summary>
+    /// Reconciles one event, recording every worker whose assignment changed
+    /// into <paramref name="changes"/> instead of notifying them.
+    ///
+    /// The split is what bounds the push volume. The caller owns the batch for
+    /// the WHOLE operation, so <see cref="ReconcileEventsForWorkerTagsAsync"/>
+    /// can walk every event carrying a changed tag and still notify once, with
+    /// one entry per (worker, event) - rather than once per event, or (worse)
+    /// once per occurrence, which is what the per-occurrence loop below would
+    /// otherwise produce.
+    /// </summary>
+    private async Task ReconcileEventAsync(
+        int areaRulePlanningId, CalendarChangeBatch changes, CancellationToken ct)
     {
         // 1. Load the AreaRulePlanning (not removed). Skip if missing or inactive.
         var arp = await backendConfigurationPnDbContext.AreaRulePlannings
@@ -133,6 +154,18 @@ public class CalendarAssignmentReconciliationService(
 
             // d. Plan add/remove.
             var plan = AssignmentReconciliationPlanner.Plan(desired, actualNonCompleted, completed);
+
+            // Both sides of the delta are recorded, not just the gainers: the
+            // reported bug is a LOST event still sitting on a backgrounded
+            // worker's phone. Recorded from the plan rather than from what the
+            // deploy/retract steps below managed to do, because the push only
+            // asks the client to re-read its window - a push for a change that
+            // failed to land shows the worker the unchanged truth, while a
+            // change that landed with no push shows them a stale one.
+            foreach (var siteId in plan.ToAdd.Concat(plan.ToRemove))
+            {
+                changes.Add(siteId, areaRulePlanningId);
+            }
 
             // e. Deploy missing sites. Keep the SDK case id each deploy produced:
             //    step (g) needs a case that belongs to THIS occurrence, and the
@@ -292,10 +325,17 @@ public class CalendarAssignmentReconciliationService(
             .Distinct()
             .ToListAsync(ct).ConfigureAwait(false);
 
+        // One batch for the whole fan-out. This path is the volume risk: it
+        // walks every AreaRulePlanning referencing a changed tag x every future
+        // occurrence, unbounded, inside one HTTP request.
+        var changes = new CalendarChangeBatch();
+
         foreach (var areaRulePlanningId in areaRulePlanningIds)
         {
-            await ReconcileEventAsync(areaRulePlanningId, ct).ConfigureAwait(false);
+            await ReconcileEventAsync(areaRulePlanningId, changes, ct).ConfigureAwait(false);
         }
+
+        changeNotifier.NotifyInBackground(changes);
     }
 
     /// <summary>

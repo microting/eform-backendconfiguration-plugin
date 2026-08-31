@@ -30,6 +30,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskListService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarOccurrenceRetraction;
 using BackendConfiguration.Pn.Services.CalendarPastSeriesBackfill;
@@ -464,6 +465,7 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
+            Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
             _backfillService);

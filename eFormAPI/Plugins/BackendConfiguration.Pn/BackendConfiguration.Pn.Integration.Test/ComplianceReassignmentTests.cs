@@ -18,6 +18,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -224,7 +225,7 @@ public class ComplianceReassignmentTests : TestBaseSetup
 
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, coreHelper,
-            deployService, resolver,
+            deployService, resolver, Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<CalendarAssignmentReconciliationService>.Instance);
 
         return new Scenario
