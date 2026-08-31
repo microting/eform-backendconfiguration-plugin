@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.PushNotificationService;
 using FirebaseAdmin;
+using FirebaseAdmin.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
@@ -130,33 +133,37 @@ public class PushNotificationServiceTests : TestBaseSetup
             + $"IX_DeviceTokens_AppId_SdkSiteId_WorkflowState and table-scans. SQL: {sql}");
     }
 
-    // ---- credential-fault guard -------------------------------------------
+    // ---- systemic-fault guard ----------------------------------------------
     //
-    // SENDER_ID_MISMATCH has two causes and only one is about tokens. A single
-    // mismatch among healthy sends is a foreign token and is pruned. EVERY
-    // targeted token mismatching instead means this sender holds the wrong
-    // credential, where pruning would wipe the tenant's whole token set over a
-    // misconfiguration that is recoverable and the tokens are not.
+    // A permanent FCM rejection is not always about the token. A wrong
+    // credential makes EVERY token return SENDER_ID_MISMATCH; a malformed
+    // message payload makes EVERY token return INVALID_ARGUMENT. Pruning on
+    // either would wipe the tenant's whole token set over a misconfiguration
+    // that is recoverable when the tokens are not, and would do it silently -
+    // the tokens are gone, the next send finds none, and push is simply dead.
+    //
+    // These drive the real send loop through the injected FCM call, so they
+    // pin the counting at the call site as well as the decision it feeds. A
+    // test of the decision alone passes while the loop hands it the wrong
+    // denominator.
 
     [Test]
-    public async Task PruneSenderIdMismatches_MixedResults_PrunesOnlyTheMismatchingToken()
+    public async Task Send_MixedResults_PrunesOnlyTheFailingToken()
     {
         await ClearServiceAccount();
-        var healthy = await SeedToken("healthy", sdkSiteId: 630);
-        var mismatching = await SeedToken("mismatching", sdkSiteId: 630);
+        var healthy = await SeedToken("mixed-healthy", sdkSiteId: 630);
+        var mismatching = await SeedToken("mixed-mismatch", sdkSiteId: 630);
 
-        await CreateService().PruneSenderIdMismatchesAsync(
-            [mismatching], targetedCount: 2, targetSdkSiteId: 630);
-
-        var healthyState = await ReadWorkflowState(healthy.Id);
-        var mismatchingState = await ReadWorkflowState(mismatching.Id);
-        Assert.Multiple(() =>
+        await SendWith(630, new Dictionary<string, Exception?>
         {
-            Assert.That(healthyState, Is.EqualTo(Constants.WorkflowStates.Created));
-            Assert.That(mismatchingState, Is.EqualTo(Constants.WorkflowStates.Removed),
-                "a mismatch alongside a token that went through is a foreign token "
-                + "and must be pruned");
+            [mismatching.FcmToken] = Fcm(MessagingErrorCode.SenderIdMismatch)
         });
+
+        await AssertSurvival(
+            "a permanent failure alongside a token that went through is a token "
+            + "fault and must be pruned",
+            (healthy, true),
+            (mismatching, false));
     }
 
     // n=1 is the boundary and not a separate rule: a lone device that
@@ -164,28 +171,134 @@ public class PushNotificationServiceTests : TestBaseSetup
     // so it is kept too.
     [TestCase(1)]
     [TestCase(2)]
-    public async Task PruneSenderIdMismatches_EveryTargetedTokenMismatched_PrunesNothing(
-        int tokenCount)
+    public async Task Send_EveryAnsweredTokenReturnedSenderIdMismatch_PrunesNothing(int tokenCount)
     {
         await ClearServiceAccount();
         var site = 640 + tokenCount;
-        var tokens = new List<DeviceToken>();
-        for (var i = 0; i < tokenCount; i++)
-        {
-            tokens.Add(await SeedToken($"cred-{tokenCount}-{i}", sdkSiteId: site));
-        }
+        var tokens = await SeedTokens(site, tokenCount, $"cred-{tokenCount}");
 
-        await CreateService().PruneSenderIdMismatchesAsync(
-            tokens, targetedCount: tokenCount, targetSdkSiteId: site);
+        await SendWith(site, tokens.ToDictionary(
+            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.SenderIdMismatch)));
 
-        var states = new List<string>();
-        foreach (var token in tokens)
-        {
-            states.Add(await ReadWorkflowState(token.Id));
-        }
-
-        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Created),
+        await AssertAllSurvive(tokens,
             "a wholesale mismatch is a credential fault; the tokens must survive it");
+    }
+
+    /// <summary>
+    /// The gap the SenderIdMismatch guard left open. A malformed message
+    /// payload is rejected identically for every token in the send, so an
+    /// INVALID_ARGUMENT sweep is a fault in what this server sent, not N dead
+    /// devices - and pruning on it destroys the token set of every site the
+    /// bad payload is sent to.
+    /// </summary>
+    [TestCase(1)]
+    [TestCase(2)]
+    public async Task Send_EveryAnsweredTokenReturnedInvalidArgument_PrunesNothing(int tokenCount)
+    {
+        await ClearServiceAccount();
+        var site = 650 + tokenCount;
+        var tokens = await SeedTokens(site, tokenCount, $"payload-{tokenCount}");
+
+        await SendWith(site, tokens.ToDictionary(
+            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.InvalidArgument)));
+
+        await AssertAllSurvive(tokens,
+            "every token rejected with the same permanent code is a systemic fault - "
+            + "here a malformed payload - and must prune nothing");
+    }
+
+    /// <summary>
+    /// UNREGISTERED is deliberately NOT covered by the guard, and this pins
+    /// that judgement rather than inheriting it from symmetry.
+    ///
+    /// The systemic causes are server-side and each has its own code: a wrong
+    /// credential is SENDER_ID_MISMATCH, a bad payload is INVALID_ARGUMENT, a
+    /// bad APNs key is THIRD_PARTY_AUTH_ERROR. Nothing this server can
+    /// misconfigure makes FCM answer UNREGISTERED for a live token - it means
+    /// that registration is gone, and only that. Meanwhile most sites have one
+    /// or two devices, so "every token unregistered" is the ORDINARY shape of
+    /// an uninstall. Guarding it would block nearly every legitimate prune and
+    /// leave dead rows accumulating forever, buying nothing back.
+    /// </summary>
+    [TestCase(1)]
+    [TestCase(2)]
+    public async Task Send_EveryAnsweredTokenReturnedUnregistered_PrunesThemAll(int tokenCount)
+    {
+        await ClearServiceAccount();
+        var site = 660 + tokenCount;
+        var tokens = await SeedTokens(site, tokenCount, $"gone-{tokenCount}");
+
+        await SendWith(site, tokens.ToDictionary(
+            t => t.FcmToken, _ => (Exception?)Fcm(MessagingErrorCode.Unregistered)));
+
+        var states = await ReadWorkflowStates(tokens);
+        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Removed),
+            "Unregistered is only ever about the registration; a site whose every "
+            + "device uninstalled must still have its rows pruned");
+    }
+
+    /// <summary>
+    /// Two different permanent codes cannot come from one systemic cause: a
+    /// malformed payload would have failed both tokens with INVALID_ARGUMENT.
+    /// A mix is therefore per-token, and both are pruned.
+    /// </summary>
+    [Test]
+    public async Task Send_AnsweredTokensFailedWithDifferentPermanentCodes_PrunesThemAll()
+    {
+        await ClearServiceAccount();
+        var gone = await SeedToken("mixedcode-gone", sdkSiteId: 670);
+        var malformed = await SeedToken("mixedcode-bad", sdkSiteId: 670);
+
+        await SendWith(670, new Dictionary<string, Exception?>
+        {
+            [gone.FcmToken] = Fcm(MessagingErrorCode.Unregistered),
+            [malformed.FcmToken] = Fcm(MessagingErrorCode.InvalidArgument)
+        });
+
+        var states = await ReadWorkflowStates([gone, malformed]);
+        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Removed),
+            "differing permanent codes rule out a single systemic cause, so each "
+            + "failure is about its own token");
+    }
+
+    /// <summary>
+    /// The guard divides by the tokens FCM ANSWERED for, not the tokens
+    /// targeted. A send that failed transiently returned no verdict about its
+    /// token, so counting it makes a wholesale credential fault look partial -
+    /// and one flaky socket is then enough to prune a live token that the guard
+    /// exists to protect.
+    /// </summary>
+    [Test]
+    public async Task Send_TokensFcmNeverAnsweredFor_DoNotDiluteTheGuard()
+    {
+        await ClearServiceAccount();
+        var mismatching = await SeedToken("diluted-mismatch", sdkSiteId: 680);
+        var unanswered = await SeedToken("diluted-transient", sdkSiteId: 680);
+
+        await SendWith(680, new Dictionary<string, Exception?>
+        {
+            [mismatching.FcmToken] = Fcm(MessagingErrorCode.SenderIdMismatch),
+            [unanswered.FcmToken] = new HttpRequestException("connection reset")
+        });
+
+        await AssertAllSurvive([mismatching, unanswered],
+            "every token FCM answered for mismatched, so this is a credential fault "
+            + "however many sends never reached FCM at all");
+    }
+
+    [Test]
+    public async Task Send_WhenNoSendReachedFcm_PrunesNothing()
+    {
+        await ClearServiceAccount();
+        var token = await SeedToken("all-transient", sdkSiteId: 690);
+
+        await SendWith(690, new Dictionary<string, Exception?>
+        {
+            [token.FcmToken] = new HttpRequestException("connection reset")
+        });
+
+        await AssertAllSurvive([token],
+            "a send that never got a verdict says nothing about the token");
     }
 
     // ---- Firebase app ownership -------------------------------------------
@@ -356,6 +469,83 @@ public class PushNotificationServiceTests : TestBaseSetup
         }
 
         await BackendConfigurationPnDbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Runs the real send loop against the site's real rows with the FCM call
+    /// replaced: a token mapped to an exception fails that way, anything else
+    /// is delivered.
+    /// </summary>
+    private Task SendWith(int sdkSiteId, Dictionary<string, Exception?> outcomes) =>
+        CreateService().SendAndPruneAsync(sdkSiteId, deviceToken =>
+            outcomes.TryGetValue(deviceToken.FcmToken, out var failure) && failure != null
+                ? Task.FromException(failure)
+                : Task.CompletedTask);
+
+    /// <summary>
+    /// A FirebaseMessagingException carrying the per-token verdict the send
+    /// loop classifies on. Only MessagingErrorCode is read; the transport-level
+    /// ErrorCode is incidental.
+    ///
+    /// Built by reflection because FirebaseAdmin 3.6.0 exposes no public
+    /// constructor - the type is sealed with a single internal ctor, so the
+    /// exception the production catch filters on cannot otherwise be produced
+    /// outside the SDK. Single() rather than a lookup by signature: it fails
+    /// loudly on a package bump that changes the shape, instead of silently
+    /// picking a different overload.
+    /// </summary>
+    private static readonly ConstructorInfo FirebaseMessagingExceptionCtor =
+        typeof(FirebaseMessagingException)
+            .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Single();
+
+    private static FirebaseMessagingException Fcm(MessagingErrorCode code) =>
+        (FirebaseMessagingException)FirebaseMessagingExceptionCtor.Invoke(
+            [ErrorCode.InvalidArgument, code.ToString(), (MessagingErrorCode?)code, null, null]);
+
+    private async Task<List<DeviceToken>> SeedTokens(int sdkSiteId, int count, string prefix)
+    {
+        var tokens = new List<DeviceToken>();
+        for (var i = 0; i < count; i++)
+        {
+            tokens.Add(await SeedToken($"{prefix}-{i}", sdkSiteId));
+        }
+
+        return tokens;
+    }
+
+    private async Task AssertAllSurvive(IReadOnlyList<DeviceToken> tokens, string because)
+    {
+        var states = await ReadWorkflowStates(tokens);
+        Assert.That(states, Is.All.EqualTo(Constants.WorkflowStates.Created), because);
+    }
+
+    private async Task AssertSurvival(
+        string because, params (DeviceToken Token, bool Survives)[] expectations)
+    {
+        var actual = new List<string>();
+        foreach (var (token, _) in expectations)
+        {
+            actual.Add(await ReadWorkflowState(token.Id));
+        }
+
+        var expected = expectations
+            .Select(e => e.Survives
+                ? Constants.WorkflowStates.Created
+                : Constants.WorkflowStates.Removed)
+            .ToList();
+        Assert.That(actual, Is.EqualTo(expected), because);
+    }
+
+    private async Task<List<string>> ReadWorkflowStates(IReadOnlyList<DeviceToken> tokens)
+    {
+        var states = new List<string>();
+        foreach (var token in tokens)
+        {
+            states.Add(await ReadWorkflowState(token.Id));
+        }
+
+        return states;
     }
 
     private async Task<DeviceToken> SeedToken(string token, int sdkSiteId, string appId = "eform")

@@ -53,7 +53,7 @@ public class PushNotificationService : IPushNotificationService
     /// whichever plugin initialised first would own the default instance and
     /// every other sender would silently push through that first project.
     /// Every token then comes back SENDER_ID_MISMATCH, which
-    /// <see cref="PruneSenderIdMismatchesAsync"/> correctly reads as a
+    /// <see cref="PrunePermanentFailuresAsync"/> correctly reads as a
     /// credential fault and leaves alone - so the send is retried forever and
     /// never surfaces as an error. A named app keeps the credentials
     /// per-plugin, which is what rules that failure out.
@@ -74,7 +74,7 @@ public class PushNotificationService : IPushNotificationService
     /// REPOINTING the key has no effect until the host restarts - the app
     /// created from the first credential keeps being used. Say so to whoever
     /// you tell to fix a credential fault; see
-    /// <see cref="PruneSenderIdMismatchesAsync"/>.
+    /// <see cref="PrunePermanentFailuresAsync"/>.
     /// </summary>
     private const string ServiceAccountConfigurationKey =
         "BackendConfigurationSettings:EformFirebaseServiceAccountJson";
@@ -291,56 +291,15 @@ public class PushNotificationService : IPushNotificationService
 
         try
         {
-            var tokens = await TargetTokenQuery(targetSdkSiteId).ToListAsync();
-
-            if (tokens.Count == 0)
-            {
-                _logger.LogInformation(
-                    "No eform device tokens found for SdkSiteId {SdkSiteId}", targetSdkSiteId);
-                return;
-            }
-
-            var senderIdMismatches = new List<DeviceToken>();
-
             // GetMessaging(app), never DefaultInstance: see FirebaseAppName.
             // Hoisted - it is the same client for every token, and each call
             // takes FirebaseAdmin's global lock to re-derive it.
             var messaging = FirebaseMessaging.GetMessaging(_firebaseApp);
 
-            foreach (var deviceToken in tokens)
-            {
-                try
-                {
-                    await messaging.SendAsync(BuildMessage(deviceToken.FcmToken, title, body, data));
-                }
-                catch (FirebaseMessagingException fex)
-                    when (fex.MessagingErrorCode == MessagingErrorCode.SenderIdMismatch)
-                {
-                    // Collected, not pruned here: the decision needs the whole
-                    // send's outcome. See PruneSenderIdMismatchesAsync.
-                    senderIdMismatches.Add(deviceToken);
-                }
-                catch (FirebaseMessagingException fex)
-                    when (fex.MessagingErrorCode is MessagingErrorCode.Unregistered
-                          or MessagingErrorCode.InvalidArgument)
-                {
-                    // The token is permanently dead - the app was uninstalled,
-                    // or FCM rejects the token as malformed. Retrying it would
-                    // fail identically forever.
-                    _logger.LogInformation(
-                        "Removing stale device token {TokenId} for SdkSiteId {SdkSiteId}: {Error}",
-                        deviceToken.Id, targetSdkSiteId, fex.MessagingErrorCode);
-                    await deviceToken.Delete(_dbContext);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "Failed to send push notification to token {TokenId} for SdkSiteId {SdkSiteId}",
-                        deviceToken.Id, targetSdkSiteId);
-                }
-            }
-
-            await PruneSenderIdMismatchesAsync(senderIdMismatches, tokens.Count, targetSdkSiteId);
+            await SendAndPruneAsync(
+                targetSdkSiteId,
+                deviceToken => messaging.SendAsync(
+                    BuildMessage(deviceToken.FcmToken, title, body, data)));
         }
         catch (Exception ex)
         {
@@ -353,12 +312,77 @@ public class PushNotificationService : IPushNotificationService
     }
 
     /// <summary>
-    /// Applies the prune decision for the tokens of one send that failed with
-    /// SENDER_ID_MISMATCH.
+    /// Sends to every live token of the site through <paramref name="sendOne"/>,
+    /// then applies the prune decision for the whole send.
     ///
-    /// That error has two causes. Either the token was minted by a different
-    /// app's Firebase project - a token fault, and pruning it is right - or
-    /// this sender is holding the wrong credential
+    /// The FCM call is a parameter rather than a hard-coded
+    /// <see cref="FirebaseMessaging.SendAsync(Message)"/> so that the part of
+    /// this class that can silently soft-delete a tenant's entire token set -
+    /// how per-token outcomes are counted and classified, and the systemic-fault
+    /// arithmetic in <see cref="PrunePermanentFailuresAsync"/> that reads them -
+    /// can be driven against real rows without a Firebase project. Testing the
+    /// prune decision alone cannot catch the counting being wrong at this call
+    /// site, which is exactly how a systemic fault reads as N dead devices.
+    ///
+    /// Unlike <see cref="SendToSiteAsync"/> this has no catch-all: it is called
+    /// from inside that boundary, and a test must see a fault rather than a log
+    /// line.
+    /// </summary>
+    internal async Task SendAndPruneAsync(int targetSdkSiteId, Func<DeviceToken, Task> sendOne)
+    {
+        var tokens = await TargetTokenQuery(targetSdkSiteId).ToListAsync();
+
+        if (tokens.Count == 0)
+        {
+            _logger.LogInformation(
+                "No eform device tokens found for SdkSiteId {SdkSiteId}", targetSdkSiteId);
+            return;
+        }
+
+        var permanentFailures = new List<(DeviceToken Token, MessagingErrorCode Code)>();
+
+        // Tokens FCM actually answered for - a delivery, or a permanent
+        // rejection of that specific token. A send that failed transiently or
+        // unrecognisably (a network blip, UNAVAILABLE, a quota) says nothing
+        // about its token and must not count: see PrunePermanentFailuresAsync,
+        // which divides by this.
+        var respondedCount = 0;
+
+        foreach (var deviceToken in tokens)
+        {
+            try
+            {
+                await sendOne(deviceToken);
+                respondedCount++;
+            }
+            catch (FirebaseMessagingException fex)
+                when (fex.MessagingErrorCode is MessagingErrorCode.SenderIdMismatch
+                      or MessagingErrorCode.Unregistered
+                      or MessagingErrorCode.InvalidArgument)
+            {
+                // Collected, not pruned here: the decision needs the whole
+                // send's outcome. See PrunePermanentFailuresAsync.
+                respondedCount++;
+                permanentFailures.Add((deviceToken, fex.MessagingErrorCode!.Value));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to send push notification to token {TokenId} for SdkSiteId {SdkSiteId}",
+                    deviceToken.Id, targetSdkSiteId);
+            }
+        }
+
+        await PrunePermanentFailuresAsync(permanentFailures, tokens.Count, targetSdkSiteId);
+    }
+
+    /// <summary>
+    /// Applies the prune decision for the tokens of one send that FCM
+    /// permanently rejected.
+    ///
+    /// SENDER_ID_MISMATCH has two causes. Either the token was minted by a
+    /// different app's Firebase project - a token fault, and pruning it is
+    /// right - or this sender is holding the wrong credential
     /// (<see cref="ServiceAccountConfigurationKey"/> pointing at the wrong
     /// project), in which case EVERY token mismatches and a naive prune
     /// silently soft-deletes the tenant's entire token set. The two are
@@ -366,15 +390,18 @@ public class PushNotificationService : IPushNotificationService
     /// tokens that went through is a token fault, while a wholesale mismatch
     /// is a credential fault and is left alone for an operator to fix.
     /// </summary>
-    internal async Task PruneSenderIdMismatchesAsync(
-        IReadOnlyList<DeviceToken> senderIdMismatches, int targetedCount, int targetSdkSiteId)
+    internal async Task PrunePermanentFailuresAsync(
+        IReadOnlyList<(DeviceToken Token, MessagingErrorCode Code)> permanentFailures,
+        int respondedCount,
+        int targetSdkSiteId)
     {
-        if (senderIdMismatches.Count == 0)
+        if (permanentFailures.Count == 0)
         {
             return;
         }
 
-        if (senderIdMismatches.Count == targetedCount)
+        if (permanentFailures.Count == respondedCount
+            && permanentFailures.All(f => f.Code == MessagingErrorCode.SenderIdMismatch))
         {
             _logger.LogWarning(
                 "All {Count} eform device tokens for SdkSiteId {SdkSiteId} returned "
@@ -382,24 +409,37 @@ public class PushNotificationService : IPushNotificationService
                 + "fault - keeping the tokens. Check {ConfigurationKey}, then RESTART "
                 + "the host: the Firebase app is cached process-wide and is not "
                 + "rebuilt when the credential changes",
-                targetedCount, targetSdkSiteId, ServiceAccountConfigurationKey);
+                respondedCount, targetSdkSiteId, ServiceAccountConfigurationKey);
             SentrySdk.CaptureMessage(
-                $"All {targetedCount} eform device tokens for SdkSiteId {targetSdkSiteId} "
+                $"All {respondedCount} eform device tokens for SdkSiteId {targetSdkSiteId} "
                 + $"returned SenderIdMismatch - check {ServiceAccountConfigurationKey}, "
                 + "then restart the host (the Firebase app is cached process-wide)",
                 SentryLevel.Warning);
             return;
         }
 
-        foreach (var deviceToken in senderIdMismatches)
+        foreach (var (deviceToken, code) in permanentFailures)
         {
-            _logger.LogWarning(
-                "Removing foreign device token {TokenId} for SdkSiteId {SdkSiteId}: "
-                + "SenderIdMismatch (minted by a different Firebase project)",
-                deviceToken.Id, targetSdkSiteId);
-            SentrySdk.CaptureMessage(
-                $"SenderIdMismatch for DeviceToken {deviceToken.Id} (SdkSiteId {targetSdkSiteId})",
-                SentryLevel.Warning);
+            if (code == MessagingErrorCode.SenderIdMismatch)
+            {
+                _logger.LogWarning(
+                    "Removing foreign device token {TokenId} for SdkSiteId {SdkSiteId}: "
+                    + "SenderIdMismatch (minted by a different Firebase project)",
+                    deviceToken.Id, targetSdkSiteId);
+                SentrySdk.CaptureMessage(
+                    $"SenderIdMismatch for DeviceToken {deviceToken.Id} (SdkSiteId {targetSdkSiteId})",
+                    SentryLevel.Warning);
+            }
+            else
+            {
+                // The token is permanently dead - the app was uninstalled, or
+                // FCM rejects the token itself as malformed. Retrying it would
+                // fail identically forever. Routine, so no Sentry event.
+                _logger.LogInformation(
+                    "Removing stale device token {TokenId} for SdkSiteId {SdkSiteId}: {Error}",
+                    deviceToken.Id, targetSdkSiteId, code);
+            }
+
             await deviceToken.Delete(_dbContext);
         }
     }
