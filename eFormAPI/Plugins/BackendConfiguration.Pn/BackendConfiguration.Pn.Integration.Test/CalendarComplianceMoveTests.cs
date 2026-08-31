@@ -24,6 +24,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -279,6 +280,7 @@ public class CalendarComplianceMoveTests : TestBaseSetup
             BackendConfigurationPnDbContext!, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext!, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
+            Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             // #1122 — the calendar service now delegates the retract/backfill
             // halves of a cross-period re-anchor. Neither fires in these fixtures.

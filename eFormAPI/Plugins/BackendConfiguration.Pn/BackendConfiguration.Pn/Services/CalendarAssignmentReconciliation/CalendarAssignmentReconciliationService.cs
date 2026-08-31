@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,7 @@ public class CalendarAssignmentReconciliationService(
     IEFormCoreService coreHelper,
     IEventDeployService eventDeployService,
     ICalendarAssignmentResolver resolver,
+    ICalendarChangeNotifier changeNotifier,
     ILogger<CalendarAssignmentReconciliationService> logger)
     : ICalendarAssignmentReconciliationService
 {

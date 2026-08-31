@@ -22,6 +22,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.ExcelService;
 using BackendConfiguration.Pn.Services.WordService;
@@ -869,6 +870,7 @@ public class ComplianceCompletionCalendarAndReportTests : TestBaseSetup
             BackendConfigurationPnDbContext, coreHelper, Substitute.For<IEventDeployService>(),
             ItemsPlanningPnDbContext, taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
+            Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>());

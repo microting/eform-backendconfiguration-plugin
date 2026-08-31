@@ -13,6 +13,7 @@ using BackendConfigurationLocalizationService;
 using BackendConfigurationTaskWizardService;
 using Infrastructure.Helpers;
 using CalendarAssignmentReconciliation;
+using CalendarChangeNotification;
 using CalendarOccurrenceRetraction;
 using CalendarPastSeriesBackfill;
 using EventDeployService;
@@ -41,6 +42,7 @@ public class BackendConfigurationCalendarService(
     ItemsPlanningPnDbContext itemsPlanningPnDbContext,
     IBackendConfigurationTaskWizardService taskWizardService,
     ICalendarAssignmentReconciliationService reconciliationService,
+    ICalendarChangeNotifier changeNotifier,
     ILogger<BackendConfigurationCalendarService> logger,
     // #1122 §3/§2 — the two halves of "the anchor left its recurrence period":
     // wipe the open occurrences of the OLD grid, then materialise the past range

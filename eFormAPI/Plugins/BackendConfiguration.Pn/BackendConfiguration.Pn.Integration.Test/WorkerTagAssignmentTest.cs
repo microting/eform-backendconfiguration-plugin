@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -187,7 +188,8 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
     }
 
-    private async Task<(CalendarAssignmentReconciliationService engine, IEventDeployService deploy)>
+    private async Task<(CalendarAssignmentReconciliationService engine, IEventDeployService deploy,
+            ICalendarChangeNotifier notifier)>
         BuildEngine()
     {
         var core = await GetCore();
@@ -195,11 +197,12 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         coreHelper.GetCore().Returns(Task.FromResult(core));
         var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
         var deploy = Substitute.For<IEventDeployService>();
+        var notifier = Substitute.For<ICalendarChangeNotifier>();
         var engine = new CalendarAssignmentReconciliationService(
             BackendConfigurationPnDbContext!, ItemsPlanningPnDbContext!, coreHelper,
-            deploy, resolver,
+            deploy, resolver, notifier,
             NullLogger<CalendarAssignmentReconciliationService>.Instance);
-        return (engine, deploy);
+        return (engine, deploy, notifier);
     }
 
     /// <summary>Deploys a Compliance + backing SDK Case for one (planning, date, site).</summary>
@@ -311,7 +314,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         await SeedDeployedOccurrence(planning.Id, futureDate, alreadyDeployedSite,
             status: 66, microtingUid: 555001);
 
-        var (engine, deploy) = await BuildEngine();
+        var (engine, deploy, _) = await BuildEngine();
         await engine.ReconcileEventAsync(arp.Id);
 
         // desiredSite is desired but not deployed → engine must add it for the future date.
@@ -346,7 +349,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         await SeedDeployedOccurrence(planning.Id, pastDate, deployedSite,
             status: 66, microtingUid: 555002);
 
-        var (engine, deploy) = await BuildEngine();
+        var (engine, deploy, _) = await BuildEngine();
         await engine.ReconcileEventAsync(arp.Id);
 
         // Past date must never be reconciled (no add of desiredSite for the past date).
@@ -387,7 +390,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var (_, completedComplianceId) = await SeedDeployedOccurrence(
             planning.Id, futureDate.AddHours(10), completedSite, status: 100, microtingUid: null);
 
-        var (engine, _) = await BuildEngine();
+        var (engine, _, _) = await BuildEngine();
         await engine.ReconcileEventAsync(arp.Id);
 
         // The non-completed compliance must be soft-removed.
@@ -403,5 +406,121 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         Assert.That(reloadedCompleted.WorkflowState,
             Is.Not.EqualTo(Constants.WorkflowStates.Removed),
             "completed compliance (Status 100) is immutable and must survive");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Tests 6-8 — the calendar-change push hook
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private static List<CalendarChangeBatch> CaptureBatches(ICalendarChangeNotifier notifier)
+    {
+        var batches = new List<CalendarChangeBatch>();
+        notifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
+            .Do(ci => batches.Add(ci.Arg<CalendarChangeBatch>()));
+        return batches;
+    }
+
+    /// <summary>
+    /// The reassignment the push exists for: the loser's app must stop showing
+    /// the event and the gainer's must start showing it, and neither happens
+    /// while the app sits backgrounded unless it is told. BOTH sides of the
+    /// delta must be notified — notifying only gainers is the easy half and
+    /// leaves the actual reported bug (a lost event still on screen) unfixed.
+    /// </summary>
+    [Test]
+    public async Task ReconcileEvent_ReassignsWorker_NotifiesLoserAndGainer()
+    {
+        var (arp, planning, _) = await SeedEvent();
+
+        var gainer = await SeedSdkSite();
+        var loser = await SeedSdkSite();
+        await AddExplicitSite(arp.Id, gainer);
+
+        var futureDate = DateTime.UtcNow.Date.AddDays(7);
+        await SeedDeployedOccurrence(planning.Id, futureDate.AddHours(9), loser,
+            status: 66, microtingUid: null);
+
+        var (engine, _, notifier) = await BuildEngine();
+        var batches = CaptureBatches(notifier);
+
+        await engine.ReconcileEventAsync(arp.Id);
+
+        Assert.That(batches, Has.Count.EqualTo(1),
+            "one operation notifies once, after the work — not per occurrence");
+        Assert.That(batches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(gainer, arp.Id),
+            new CalendarChangePair(loser, arp.Id)
+        }));
+    }
+
+    /// <summary>
+    /// The volume guard at the source. ReconcileEventAsync plans the SAME
+    /// (worker, event) delta once per future occurrence, so a year of a weekly
+    /// event is ~50 identical deltas for one reassignment. The batch must
+    /// collapse them; a per-occurrence push here is the incident.
+    /// </summary>
+    [Test]
+    public async Task ReconcileEvent_ManyFutureOccurrences_RecordsOnePairPerWorker()
+    {
+        var (arp, planning, _) = await SeedEvent();
+
+        var loser = await SeedSdkSite();
+        // Effective set is empty (no explicit sites, no tags) — every occurrence
+        // plans the same single removal.
+        var firstDate = DateTime.UtcNow.Date.AddDays(7);
+        for (var week = 0; week < 4; week++)
+        {
+            await SeedDeployedOccurrence(planning.Id, firstDate.AddDays(7 * week).AddHours(9),
+                loser, status: 66, microtingUid: null);
+        }
+
+        var (engine, _, notifier) = await BuildEngine();
+        var batches = CaptureBatches(notifier);
+
+        await engine.ReconcileEventAsync(arp.Id);
+
+        Assert.That(batches, Has.Count.EqualTo(1));
+        Assert.That(batches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(loser, arp.Id)
+        }), "four future occurrences of one event are still one push for that worker");
+    }
+
+    /// <summary>
+    /// The tag fan-out walks every event carrying the changed tag. It must
+    /// accumulate into ONE batch for the whole operation, so the cap and the
+    /// dedupe apply across events — flushing per event would put the volume
+    /// ceiling back where it cannot bound anything.
+    /// </summary>
+    [Test]
+    public async Task ReconcileEventsForWorkerTags_AccumulatesEveryEventIntoOneBatch()
+    {
+        var tagId = await SeedSdkTag();
+
+        var (arpA, planningA, _) = await SeedEvent();
+        var loserA = await SeedSdkSite();
+        await AddWorkerTagLink(arpA.Id, tagId);
+        await SeedDeployedOccurrence(planningA.Id, DateTime.UtcNow.Date.AddDays(7).AddHours(9),
+            loserA, status: 66, microtingUid: null);
+
+        var (arpB, planningB, _) = await SeedEvent();
+        var loserB = await SeedSdkSite();
+        await AddWorkerTagLink(arpB.Id, tagId);
+        await SeedDeployedOccurrence(planningB.Id, DateTime.UtcNow.Date.AddDays(8).AddHours(9),
+            loserB, status: 66, microtingUid: null);
+
+        var (engine, _, notifier) = await BuildEngine();
+        var batches = CaptureBatches(notifier);
+
+        await engine.ReconcileEventsForWorkerTagsAsync(new[] { tagId });
+
+        Assert.That(batches, Has.Count.EqualTo(1),
+            "the whole tag fan-out is one operation and notifies once");
+        Assert.That(batches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(loserA, arpA.Id),
+            new CalendarChangePair(loserB, arpB.Id)
+        }));
     }
 }

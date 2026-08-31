@@ -131,6 +131,12 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         // PushNotificationService for why the credential is read per instance.
         services.AddTransient<Services.PushNotificationService.IPushNotificationService,
             Services.PushNotificationService.PushNotificationService>();
+        // The calendar-change push hook. Transient like every other caller-side
+        // service here; it holds only IServiceScopeFactory, and it opens a
+        // scope of its OWN for the send rather than reusing the request's
+        // pooled DbContext (see CalendarChangeNotifier).
+        services.AddTransient<Services.CalendarChangeNotification.ICalendarChangeNotifier,
+            Services.CalendarChangeNotification.CalendarChangeNotifier>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentResolver,
             Services.CalendarAssignmentReconciliation.CalendarAssignmentResolver>();
         services.AddTransient<Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService,

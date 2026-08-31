@@ -5,6 +5,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
+using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -32,6 +33,8 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
     private IUserService _userService;
     private IBackendConfigurationTaskWizardService _taskWizardService;
     private BackendConfigurationCalendarService _calendarService;
+    private ICalendarChangeNotifier _changeNotifier;
+    private List<CalendarChangeBatch> _notifiedBatches;
 
     [SetUp]
     public async Task SetupCalendarService()
@@ -85,6 +88,11 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
         _taskWizardService.ApplyEformChangeToSeries(Arg.Any<int>(), Arg.Any<int>())
             .Returns(Task.FromResult(new OperationResult(true)));
 
+        _changeNotifier = Substitute.For<ICalendarChangeNotifier>();
+        _notifiedBatches = [];
+        _changeNotifier.When(x => x.NotifyInBackground(Arg.Any<CalendarChangeBatch>()))
+            .Do(ci => _notifiedBatches.Add(ci.Arg<CalendarChangeBatch>()));
+
         _calendarService = new BackendConfigurationCalendarService(
             new BackendConfigurationLocalizationService(),
             _userService,
@@ -94,6 +102,7 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
             ItemsPlanningPnDbContext!,
             _taskWizardService,
             Substitute.For<ICalendarAssignmentReconciliationService>(),
+            _changeNotifier,
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>()
@@ -513,5 +522,86 @@ public class CalendarUpdateTaskScopeTests : TestBaseSetup
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
             .SingleAsync();
         Assert.That(exception.StartHour, Is.EqualTo(13.0));
+    }
+
+    // -------------------------------------------------------------------------
+    // scope="this" reassignment -> calendar-change push
+    //
+    // This scope does NOT go through CalendarAssignmentReconciliationService,
+    // so it needs a hook of its own or a per-occurrence reassignment is the one
+    // reassignment shape that silently never reaches a phone.
+    // -------------------------------------------------------------------------
+
+    /// <summary>Pre-existing per-occurrence assignees for a date.</summary>
+    private async Task<CalendarOccurrenceException> SeedOccurrenceAssignees(
+        int arpId, DateTime originalDate, params int[] siteIds)
+    {
+        var exception = new CalendarOccurrenceException
+        {
+            AreaRulePlanningId = arpId, OriginalDate = originalDate, IsDeleted = false,
+            StartHour = 9.0, Duration = 1.0,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.CalendarOccurrenceExceptions.AddAsync(exception);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        foreach (var siteId in siteIds)
+        {
+            await BackendConfigurationPnDbContext.CalendarOccurrenceExceptionSites.AddAsync(
+                new CalendarOccurrenceExceptionSite
+                {
+                    CalendarOccurrenceExceptionId = exception.Id, SiteId = siteId,
+                    WorkflowState = Constants.WorkflowStates.Created,
+                    CreatedByUserId = 1, UpdatedByUserId = 1
+                });
+        }
+
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return exception;
+    }
+
+    [Test]
+    public async Task UpdateTask_ScopeThis_ReassigningTheOccurrence_NotifiesLoserAndGainer()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        // 101 keeps the occurrence, 202 loses it, 303 gains it.
+        await SeedOccurrenceAssignees(arpId, baseMonday, 101, 202);
+
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday);
+        model.Sites = [101, 303];
+
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_notifiedBatches, Has.Count.EqualTo(1));
+        Assert.That(_notifiedBatches[0].Pairs, Is.EquivalentTo(new[]
+        {
+            new CalendarChangePair(202, arpId),
+            new CalendarChangePair(303, arpId)
+        }), "only the workers whose assignment actually changed are pushed to");
+    }
+
+    [Test]
+    public async Task UpdateTask_ScopeThis_WithNoAssigneeChange_PushesNothing()
+    {
+        var baseMonday = GetNextMonday();
+        var startDate = DateTime.SpecifyKind(baseMonday, DateTimeKind.Utc);
+        var arpId = await SeedWeeklyTask(startDate);
+
+        await SeedOccurrenceAssignees(arpId, baseMonday, 101);
+
+        // Same assignee (BuildEdit assigns 101), different start hour - a field
+        // edit, not a reassignment.
+        var model = BuildEdit(arpId, baseMonday, "this", baseMonday, startHour: 16.0);
+
+        var result = await _calendarService.UpdateTask(model);
+
+        Assert.That(result.Success, Is.True, result.Message);
+        Assert.That(_notifiedBatches.SelectMany(b => b.Pairs), Is.Empty,
+            "a pure field edit must not wake every assignee's phone");
     }
 }
