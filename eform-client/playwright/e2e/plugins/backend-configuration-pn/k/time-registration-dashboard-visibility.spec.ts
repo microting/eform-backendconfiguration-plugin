@@ -181,7 +181,8 @@ test.describe('Time Registration Dashboard Visibility', () => {
     // 7 min: the heaviest spec in the suite — one tag, one property, four device
     // users (each a ~60s SDK provisioning call at worst), six login/logout phases
     // and a full cleanup. Kept generous because the work is genuinely long, not
-    // to cover for an unbounded wait.
+    // to cover for an unbounded wait. For scale, the whole k shard (this spec
+    // plus two others) ran in 86s on green trunk run 33406521590.
     test.setTimeout(420000);
 
     const rand = generateRandmString(8);

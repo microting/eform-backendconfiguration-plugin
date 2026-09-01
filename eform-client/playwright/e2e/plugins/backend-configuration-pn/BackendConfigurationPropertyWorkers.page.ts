@@ -1,6 +1,13 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector } from '../../helper-functions';
-import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
+import { openRowActionMenu } from './row-action-menu';
+import {
+  API_TIMEOUT,
+  ignoreUnhandledRejections,
+  SLOW_API_TIMEOUT,
+  UI_TIMEOUT,
+  waitForApiResponse,
+} from './wait-helpers';
 
 export class BackendConfigurationPropertyWorkersPage {
   constructor(private page: Page) {}
@@ -245,13 +252,8 @@ export class BackendConfigurationPropertyWorkersPage {
           r.request().method() === 'POST',
         API_TIMEOUT
       );
-      // Now that these waits are bounded they can reject before we get around to
-      // awaiting them (the backend-error path below never awaits the last two).
-      // A no-op handler keeps that from surfacing as an unhandled rejection; the
-      // `await`s further down still observe the failure.
-      for (const pending of [createResponsePromise, assignResponsePromise, indexResponsePromise]) {
-        pending.catch(() => undefined);
-      }
+      // The backend-error path below never awaits the last two.
+      ignoreUnhandledRejections(createResponsePromise, assignResponsePromise, indexResponsePromise);
 
       // Ensure we're on the General tab so save button validation settles
       const generalTab = this.page.locator('mat-tab-group > .mat-mdc-tab-header .mat-mdc-tab').filter({ hasText: 'General' }).first();
@@ -291,25 +293,28 @@ export class BackendConfigurationPropertyWorkersPage {
     await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#newTagName').fill(tagName);
     await this.page.locator('#newTagSaveBtn').click();
-    // The saved tag showing up in the modal's list is the post-condition.
-    await this.page
-      .locator('.mat-mdc-row')
-      .filter({ hasText: tagName })
-      .first()
-      .waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    // The saved tag showing up in the modal's list is the post-condition. Scope
+    // to the dialog: the device-user table behind it also has .mat-mdc-row rows,
+    // and a worker carrying this tag would otherwise win the match.
+    await this.tagsModalRow(tagName).waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.closeTagsModal();
   }
 
   async deleteTag(tagName: string): Promise<void> {
     await this.sitesManageTagsBtn().click();
     await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    const tagRow = this.page.locator('.mat-mdc-row').filter({ hasText: tagName }).first();
+    const tagRow = this.tagsModalRow(tagName);
     await tagRow.locator('#deleteTagBtn').click();
     await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#tagDeleteSaveBtn').click();
     // The row disappearing from the modal's list is the post-condition.
     await tagRow.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
     await this.closeTagsModal();
+  }
+
+  /** A row of the open tags dialog, never the table behind it. */
+  private tagsModalRow(tagName: string): Locator {
+    return this.page.locator('mat-dialog-container .mat-mdc-row').filter({ hasText: tagName }).first();
   }
 
   private async closeTagsModal(): Promise<void> {
@@ -319,7 +324,7 @@ export class BackendConfigurationPropertyWorkersPage {
 
   async clearTable(): Promise<void> {
     const rows = this.page.locator('.mat-mdc-row');
-    const rowNum = await this.rowNum();
+    const rowNum = await rows.count();
     for (let i = rowNum; i > 0; i--) {
       await this.getFirstRowObject().delete();
       await expect(rows).toHaveCount(i - 1, { timeout: UI_TIMEOUT });
@@ -345,41 +350,14 @@ export class WorkerRowObject {
     return this.page.locator('.mat-mdc-row').nth(this.rowNum - 1);
   }
 
-  /**
-   * Opens this row's action menu and returns the row's template index.
-   *
-   * Angular Material projects `mat-menu` content into a CDK overlay attached to
-   * `<body>`, so the menu items are NOT in the row's DOM subtree — scoping them
-   * to the row finds nothing, and a page-wide `.first()` can resolve to another
-   * row's stale, detached menu item that never becomes clickable. The
-   * `action-items-<i>` id is the only reliable link, so callers address the
-   * exact item by index.
-   */
-  private async openActionMenu(): Promise<string> {
-    const actionCell = this.getRowLocator().locator('[id^="action-items"]').first();
-    await actionCell.scrollIntoViewIfNeeded({ timeout: UI_TIMEOUT });
-    const actionCellId = await actionCell.getAttribute('id', { timeout: UI_TIMEOUT });
-    if (!actionCellId) {
-      throw new Error('Device-user row action cell has no id — cannot resolve its action-menu index');
-    }
-    await actionCell.locator('#actionMenu').click({ timeout: UI_TIMEOUT });
-    await this.page.locator('.mat-mdc-menu-panel').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    return actionCellId.replace('action-items-', '');
-  }
-
-  /** A menu item of the currently open action menu, addressed by row index. */
-  private menuItem(idPrefix: string, rowIndex: string): Locator {
-    return this.page.locator('.cdk-overlay-container').locator(`#${idPrefix}-${rowIndex}`);
-  }
-
   async delete(clickCancel = false): Promise<void> {
     await this.openDeleteModal();
     await this.closeDeleteModal(clickCancel);
   }
 
   async openDeleteModal(): Promise<void> {
-    const rowIndex = await this.openActionMenu();
-    await this.menuItem('deleteDeviceUserBtn', rowIndex).click({ timeout: UI_TIMEOUT });
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Device-user row');
+    await menuItem('deleteDeviceUserBtn').click({ timeout: UI_TIMEOUT });
     await this.parentPage.cancelDeleteBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 

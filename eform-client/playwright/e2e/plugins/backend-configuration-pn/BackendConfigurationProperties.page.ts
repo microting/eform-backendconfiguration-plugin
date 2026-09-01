@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { openRowActionMenu } from './row-action-menu';
 import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 export class BackendConfigurationPropertiesPage {
@@ -269,35 +270,9 @@ export class PropertyRowObject {
     return this.page.locator('.mat-mdc-row').nth((this.rowNum ?? 1) - 1);
   }
 
-  /**
-   * Opens this row's action menu and returns the row's template index.
-   *
-   * Angular Material projects `mat-menu` content into a CDK overlay attached to
-   * `<body>`, so the menu items are NOT in the row's DOM subtree and cannot be
-   * scoped to it. The `action-items-<i>` id is the only reliable link between a
-   * row and its menu, so callers address the exact item by index rather than
-   * taking a page-wide `.first()` that can resolve to another row's stale menu.
-   */
-  private async openActionMenu(): Promise<string> {
-    const actionCell = this.getRowLocator().locator('[id^="action-items"]').first();
-    await actionCell.scrollIntoViewIfNeeded({ timeout: UI_TIMEOUT });
-    const actionCellId = await actionCell.getAttribute('id', { timeout: UI_TIMEOUT });
-    if (!actionCellId) {
-      throw new Error('Property row action cell has no id — cannot resolve its action-menu index');
-    }
-    await actionCell.locator('#actionMenu').click({ timeout: UI_TIMEOUT });
-    await this.page.locator('.mat-mdc-menu-panel').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
-    return actionCellId.replace('action-items-', '');
-  }
-
-  /** A menu item of the currently open action menu, addressed by row index. */
-  private menuItem(idPrefix: string, rowIndex: string): Locator {
-    return this.page.locator('.cdk-overlay-container').locator(`#${idPrefix}-${rowIndex}`);
-  }
-
   async goToAreas(): Promise<void> {
-    const rowIndex = await this.openActionMenu();
-    await this.menuItem('showPropertyAreasBtn', rowIndex).click({ timeout: UI_TIMEOUT });
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Property row');
+    await menuItem('showPropertyAreasBtn').click({ timeout: UI_TIMEOUT });
     await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
@@ -307,8 +282,8 @@ export class PropertyRowObject {
   }
 
   async openDeleteModal(): Promise<void> {
-    const rowIndex = await this.openActionMenu();
-    await this.menuItem('deletePropertyBtn', rowIndex).click({ timeout: UI_TIMEOUT });
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Property row');
+    await menuItem('deletePropertyBtn').click({ timeout: UI_TIMEOUT });
     await this.parentPage.propertyDeleteCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 

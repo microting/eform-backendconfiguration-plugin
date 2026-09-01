@@ -29,8 +29,9 @@ cause — never hang and then say nothing.
    in `k/time-registration-dashboard-visibility.spec.ts`.
 7. **Angular Material menus are not in their row.** `mat-menu` content is projected into a CDK
    overlay on `<body>`, so scope menu items to `.cdk-overlay-container` and address them by the
-   row's `action-items-<i>` index (see `openActionMenu()` in the two page objects). Scoping them
-   to the row finds nothing at all.
+   row's `action-items-<i>` index — `openRowActionMenu()` in
+   `eform-client/playwright/e2e/plugins/backend-configuration-pn/row-action-menu.ts` does both.
+   Scoping them to the row finds nothing at all.
 8. **`test.setTimeout()` states a budget, not a hiding place.** Size it to the work the test
    actually does and say why in a comment. A 10-minute ceiling is a smell that an inner wait is
    unbounded.

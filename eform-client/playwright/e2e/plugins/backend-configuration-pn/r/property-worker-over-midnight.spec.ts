@@ -9,7 +9,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
-import { SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
+import { ignoreUnhandledRejections, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // "Shifts across midnight" (overMidnight) in the property-worker edit modal.
 //
@@ -138,11 +138,9 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
         r.request().method() === 'POST',
       SLOW_API_TIMEOUT
     );
-    // These are awaited one after another below; a no-op handler keeps a timeout
-    // on a later one from surfacing as an unhandled rejection in the meantime.
-    for (const pending of [updateDeviceUserPromise, assignedSitePromise, indexPromise]) {
-      pending.catch(() => undefined);
-    }
+    // These are awaited one after another below, so a later one can time out
+    // while we are still waiting on an earlier one.
+    ignoreUnhandledRejections(updateDeviceUserPromise, assignedSitePromise, indexPromise);
     await page.locator('#saveEditBtn').click();
     const updateDeviceUserResponse = await updateDeviceUserPromise;
     const assignedSiteResponse = await assignedSitePromise;

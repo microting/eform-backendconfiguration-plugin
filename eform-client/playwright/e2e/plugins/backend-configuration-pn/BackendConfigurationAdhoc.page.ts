@@ -1,6 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper-functions';
-import { waitForApiResponse } from './wait-helpers';
+import { API_TIMEOUT, ignoreUnhandledRejections, waitForApiResponse } from './wait-helpers';
 
 /**
  * Page object for the "Adhoc overblik" dashboard
@@ -123,7 +123,11 @@ export class BackendConfigurationAdhocPage {
       this.page,
       'POST /api/backend-configuration-pn/adhoc/history/index (history tab)',
       (r) => r.url().includes('/api/backend-configuration-pn/adhoc/history/index') && r.request().method() === 'POST',
+      API_TIMEOUT,
     );
+    // The click is awaited first, so this bounded wait can reject before we
+    // reach its `await`; the handler keeps that from failing the run early.
+    ignoreUnhandledRejections(historyResponsePromise);
     await this.viewHistoryBtn().click();
     await historyResponsePromise;
     await this.historyView().waitFor({ state: 'visible', timeout: 15000 });
@@ -556,6 +560,7 @@ export class BackendConfigurationAdhocPage {
           this.page,
           'POST /api/backend-configuration-pn/adhoc/ (save adhoc task)',
           (r) => r.url().endsWith('/api/backend-configuration-pn/adhoc/') && r.request().method() === 'POST',
+          API_TIMEOUT,
         ),
         this.drawerSaveBtn().click(),
       ]);
@@ -581,6 +586,7 @@ export class BackendConfigurationAdhocPage {
         this.page,
         'DELETE /api/backend-configuration-pn/adhoc/ (delete adhoc task)',
         (r) => r.url().includes('/api/backend-configuration-pn/adhoc/') && r.request().method() === 'DELETE',
+        API_TIMEOUT,
       ),
       this.deleteConfirmBtn().click(),
     ]);
@@ -616,6 +622,7 @@ export class BackendConfigurationAdhocPage {
         this.page,
         'POST .../completed (complete adhoc task)',
         (r) => r.url().includes('/completed') && r.request().method() === 'POST',
+        API_TIMEOUT,
       ),
       this.completeConfirmBtn().click(),
     ]);
@@ -661,6 +668,7 @@ export class BackendConfigurationAdhocPage {
         this.page,
         'POST .../archive (archive adhoc task)',
         (r) => r.url().includes('/archive') && r.request().method() === 'POST',
+        API_TIMEOUT,
       ),
       this.historyArchiveMenuItem().click(),
     ]);
