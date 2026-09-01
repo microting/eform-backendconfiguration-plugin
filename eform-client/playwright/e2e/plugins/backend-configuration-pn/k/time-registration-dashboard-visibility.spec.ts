@@ -178,7 +178,11 @@ async function getAvailableSiteNames(page: Page): Promise<string[]> {
 
 test.describe('Time Registration Dashboard Visibility', () => {
   test('should show correct workers based on user role and tags', async ({ page }) => {
-    test.setTimeout(600000);
+    // 7 min: the heaviest spec in the suite — one tag, one property, four device
+    // users (each a ~60s SDK provisioning call at worst), six login/logout phases
+    // and a full cleanup. Kept generous because the work is genuinely long, not
+    // to cover for an unbounded wait.
+    test.setTimeout(420000);
 
     const rand = generateRandmString(8);
     const tagName = `TeamAlpha-${rand}`;

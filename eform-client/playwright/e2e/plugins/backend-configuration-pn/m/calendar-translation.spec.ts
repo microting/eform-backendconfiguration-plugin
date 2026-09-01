@@ -245,7 +245,9 @@ test.describe.serial('Calendar task-modal translation', () => {
   // Seed test — property + TWO workers (Deutsch + Dansk). Runs first.
   // -----------------------------------------------------------------------
   test('seed: create property + Deutsch + Dansk workers', async ({ page }) => {
-    test.setTimeout(600000);
+    // 5 min: property + device user, then the event is re-opened once per UI
+    // language to verify the translated labels. Inner waits are all bounded.
+    test.setTimeout(300000);
 
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);

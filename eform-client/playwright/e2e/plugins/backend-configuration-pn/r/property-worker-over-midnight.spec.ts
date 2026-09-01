@@ -9,6 +9,7 @@ import {
   BackendConfigurationPropertyWorkersPage,
   PropertyWorker,
 } from '../BackendConfigurationPropertyWorkers.page';
+import { SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from '../wait-helpers';
 
 // "Shifts across midnight" (overMidnight) in the property-worker edit modal.
 //
@@ -113,21 +114,35 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
 
     // Check it and save; both persistence calls must succeed.
     await page.locator('#overMidnight input').check();
-    const updateDeviceUserPromise = page.waitForResponse(
+    const updateDeviceUserPromise = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/update-device-user',
       r =>
         r.url().includes('/api/backend-configuration-pn/properties/assignment/update-device-user') &&
-        r.request().method() === 'POST'
+        r.request().method() === 'POST',
+      SLOW_API_TIMEOUT
     );
-    const assignedSitePromise = page.waitForResponse(
+    const assignedSitePromise = waitForApiResponse(
+      page,
+      'PUT /api/time-planning-pn/settings/assigned-site',
       r =>
         r.url().includes('/api/time-planning-pn/settings/assigned-site') &&
-        r.request().method() === 'PUT'
+        r.request().method() === 'PUT',
+      SLOW_API_TIMEOUT
     );
-    const indexPromise = page.waitForResponse(
+    const indexPromise = waitForApiResponse(
+      page,
+      'POST /api/backend-configuration-pn/properties/assignment/index-device-user (list refresh)',
       r =>
         r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
-        r.request().method() === 'POST'
+        r.request().method() === 'POST',
+      SLOW_API_TIMEOUT
     );
+    // These are awaited one after another below; a no-op handler keeps a timeout
+    // on a later one from surfacing as an unhandled rejection in the meantime.
+    for (const pending of [updateDeviceUserPromise, assignedSitePromise, indexPromise]) {
+      pending.catch(() => undefined);
+    }
     await page.locator('#saveEditBtn').click();
     const updateDeviceUserResponse = await updateDeviceUserPromise;
     const assignedSiteResponse = await assignedSitePromise;
@@ -140,7 +155,7 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
     // Wait for the post-save table refresh to finish before touching the row
     // again — reopening the menu mid-refresh detaches it.
     await indexPromise;
-    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible' });
+    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await page.waitForTimeout(1000);
 
     // Round-trip: reopen and the value must have come back from the DB.
@@ -161,6 +176,6 @@ test.describe.serial('Property-worker overMidnight toggle', () => {
     await expect(page.locator('#overMidnight input')).not.toBeChecked();
 
     await page.locator('#cancelEditBtn').click();
-    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible' });
+    await workersPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   });
 });

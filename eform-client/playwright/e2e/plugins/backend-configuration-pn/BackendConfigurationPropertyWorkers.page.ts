@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { selectValueInNgSelector } from '../../helper-functions';
+import { API_TIMEOUT, SLOW_API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 export class BackendConfigurationPropertyWorkersPage {
   constructor(private page: Page) {}
@@ -128,7 +129,7 @@ export class BackendConfigurationPropertyWorkersPage {
 
   async openCreateModal(propertyWorker: PropertyWorker): Promise<void> {
     await this.newDeviceUserBtn().click();
-    await this.cancelCreateBtn().waitFor({ state: 'visible' });
+    await this.cancelCreateBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     // Wait for the component's async init (languages) to complete before
     // filling fields — component exposes this via a data-form-ready
     // attribute so we don't have to poll the save-button's disabled state.
@@ -161,42 +162,46 @@ export class BackendConfigurationPropertyWorkersPage {
       }
       if (propertyWorker.workOrderFlow === true) {
         await this.TaskManagementEnableToggleInput().locator('button').click();
-        await this.page.waitForTimeout(500);
+        await expect(
+          this.TaskManagementEnableToggleInput().locator('button[role="switch"]')
+        ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
       }
       if (propertyWorker.timeRegistrationEnabled === true) {
         const toggle = this.timeRegistrationEnabledToggle();
-        await toggle.waitFor({ state: 'visible', timeout: 10000 });
+        await toggle.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         await toggle.locator('button').click();
-        await this.page.waitForTimeout(500);
-        await expect(toggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true');
+        await expect(toggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true', {
+          timeout: UI_TIMEOUT,
+        });
         if (propertyWorker.enableMobileAccess === true) {
           const mobileToggle = this.page.locator('#enableMobileAccessToggle');
-          await mobileToggle.waitFor({ state: 'visible', timeout: 10000 });
+          await mobileToggle.waitFor({ state: 'visible', timeout: UI_TIMEOUT });
           await mobileToggle.locator('button').click();
-          await this.page.waitForTimeout(500);
-          await expect(mobileToggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true');
+          await expect(mobileToggle.locator('button[role="switch"]')).toHaveAttribute('aria-checked', 'true', {
+            timeout: UI_TIMEOUT,
+          });
         }
       }
       // Switch to Properties tab
       if (propertyWorker.properties) {
         await this.page.locator('.mat-mdc-tab').filter({ hasText: 'Ejendomme' }).click();
-        await this.page.waitForTimeout(500);
+        await this.page.locator('#pairingModalTableBody').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           const row = this.page
             .locator('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row')
             .filter({ hasText: propertyWorker.properties[i] });
           await row.scrollIntoViewIfNeeded();
           await row.locator('mat-checkbox').click();
-          await this.page.waitForTimeout(500);
+          await expect(row.locator('mat-checkbox input[type="checkbox"]')).toBeChecked({ timeout: UI_TIMEOUT });
         }
       }
       // Switch to Timeregistration tab (only visible after toggle was clicked)
       if (propertyWorker.timeRegistrationEnabled === true && (propertyWorker.isManager || propertyWorker.managingTags)) {
         await this.page.locator('.mat-mdc-tab').filter({ hasText: 'Timeregistrering' }).click();
-        await this.page.waitForTimeout(500);
+        await this.page.locator('#isManager').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
         if (propertyWorker.isManager === true) {
           await this.page.locator('#isManager').click();
-          await this.page.waitForTimeout(500);
+          await expect(this.page.locator('#isManager input[type="checkbox"]')).toBeChecked({ timeout: UI_TIMEOUT });
           if (propertyWorker.managingTags && propertyWorker.managingTags.length > 0) {
             for (const tag of propertyWorker.managingTags) {
               await selectValueInNgSelector(this.page, 'mtx-select[formControlName="managingTagIds"]', tag);
@@ -212,29 +217,47 @@ export class BackendConfigurationPropertyWorkersPage {
       await this.cancelCreateBtn().click();
     } else {
       // Set up all response listeners before clicking save
-      const createResponsePromise = this.page.waitForResponse(
+      // create-device-user provisions through the Microting SDK, so it gets the
+      // slower budget; the two follow-ups are plain CRUD calls.
+      const createResponsePromise = waitForApiResponse(
+        this.page,
+        'PUT /api/backend-configuration-pn/properties/assignment/create-device-user',
         r =>
           r.url().includes('/api/backend-configuration-pn/properties/assignment/create-device-user') &&
-          r.request().method() === 'PUT'
+          r.request().method() === 'PUT',
+        SLOW_API_TIMEOUT
       );
-      const assignResponsePromise = this.page.waitForResponse(
+      const assignResponsePromise = waitForApiResponse(
+        this.page,
+        'POST /api/backend-configuration-pn/properties/assignment (assign worker to properties)',
         r =>
           r.url().includes('/api/backend-configuration-pn/properties/assignment') &&
           !r.url().includes('create-device-user') &&
           !r.url().includes('index-device-user') &&
-          r.request().method() === 'POST'
+          r.request().method() === 'POST',
+        API_TIMEOUT
       );
-      const indexResponsePromise = this.page.waitForResponse(
+      const indexResponsePromise = waitForApiResponse(
+        this.page,
+        'POST /api/backend-configuration-pn/properties/assignment/index-device-user (device user list refresh)',
         r =>
           r.url().includes('/api/backend-configuration-pn/properties/assignment/index-device-user') &&
-          r.request().method() === 'POST'
+          r.request().method() === 'POST',
+        API_TIMEOUT
       );
+      // Now that these waits are bounded they can reject before we get around to
+      // awaiting them (the backend-error path below never awaits the last two).
+      // A no-op handler keeps that from surfacing as an unhandled rejection; the
+      // `await`s further down still observe the failure.
+      for (const pending of [createResponsePromise, assignResponsePromise, indexResponsePromise]) {
+        pending.catch(() => undefined);
+      }
 
       // Ensure we're on the General tab so save button validation settles
       const generalTab = this.page.locator('mat-tab-group > .mat-mdc-tab-header .mat-mdc-tab').filter({ hasText: 'General' }).first();
       if (await generalTab.count() > 0) {
         await generalTab.click();
-        await this.page.waitForTimeout(300);
+        await expect(generalTab).toHaveAttribute('aria-selected', 'true', { timeout: UI_TIMEOUT });
       }
       await expect(this.saveCreateBtn()).toBeEnabled({ timeout: 30000 });
       await this.saveCreateBtn().click();
@@ -257,38 +280,49 @@ export class BackendConfigurationPropertyWorkersPage {
         await indexResponsePromise;
       }
     }
-    await this.newDeviceUserBtn().waitFor({ state: 'visible' });
+    await this.cancelCreateBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async createTag(tagName: string): Promise<void> {
     await this.sitesManageTagsBtn().click();
-    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#newTagBtn').click();
-    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagName').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#newTagName').fill(tagName);
     await this.page.locator('#newTagSaveBtn').click();
-    await this.page.waitForTimeout(500);
-    await this.page.locator('#tagsModalCloseBtn').click();
-    await this.page.waitForTimeout(500);
+    // The saved tag showing up in the modal's list is the post-condition.
+    await this.page
+      .locator('.mat-mdc-row')
+      .filter({ hasText: tagName })
+      .first()
+      .waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    await this.closeTagsModal();
   }
 
   async deleteTag(tagName: string): Promise<void> {
     await this.sitesManageTagsBtn().click();
-    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#newTagBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     const tagRow = this.page.locator('.mat-mdc-row').filter({ hasText: tagName }).first();
     await tagRow.locator('#deleteTagBtn').click();
-    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('#tagDeleteSaveBtn').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     await this.page.locator('#tagDeleteSaveBtn').click();
-    await this.page.waitForTimeout(500);
+    // The row disappearing from the modal's list is the post-condition.
+    await tagRow.waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.closeTagsModal();
+  }
+
+  private async closeTagsModal(): Promise<void> {
     await this.page.locator('#tagsModalCloseBtn').click();
-    await this.page.waitForTimeout(500);
+    await this.page.locator('#newTagBtn').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
   }
 
   async clearTable(): Promise<void> {
+    const rows = this.page.locator('.mat-mdc-row');
     const rowNum = await this.rowNum();
     for (let i = rowNum; i > 0; i--) {
       await this.getFirstRowObject().delete();
-      await this.page.waitForTimeout(500);
+      await expect(rows).toHaveCount(i - 1, { timeout: UI_TIMEOUT });
     }
   }
 }
@@ -311,32 +345,31 @@ export class WorkerRowObject {
     return this.page.locator('.mat-mdc-row').nth(this.rowNum - 1);
   }
 
-  private async openActionMenu(): Promise<void> {
-    const row = this.getRowLocator();
-    const actionCell = row.locator('[id^="action-items"]').first();
-    const actionMenu = actionCell.locator('#actionMenu').first();
-    await actionMenu.click({ force: true });
+  /**
+   * Opens this row's action menu and returns the row's template index.
+   *
+   * Angular Material projects `mat-menu` content into a CDK overlay attached to
+   * `<body>`, so the menu items are NOT in the row's DOM subtree — scoping them
+   * to the row finds nothing, and a page-wide `.first()` can resolve to another
+   * row's stale, detached menu item that never becomes clickable. The
+   * `action-items-<i>` id is the only reliable link, so callers address the
+   * exact item by index.
+   */
+  private async openActionMenu(): Promise<string> {
+    const actionCell = this.getRowLocator().locator('[id^="action-items"]').first();
+    await actionCell.scrollIntoViewIfNeeded({ timeout: UI_TIMEOUT });
+    const actionCellId = await actionCell.getAttribute('id', { timeout: UI_TIMEOUT });
+    if (!actionCellId) {
+      throw new Error('Device-user row action cell has no id — cannot resolve its action-menu index');
+    }
+    await actionCell.locator('#actionMenu').click({ timeout: UI_TIMEOUT });
+    await this.page.locator('.mat-mdc-menu-panel').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    return actionCellId.replace('action-items-', '');
   }
 
-  editAssignmentsBtn(): Locator {
-    if (this.deviceUserName) {
-      return this.getRowLocator().locator('[id^=editAssignmentsBtn]').first();
-    }
-    return this.page.locator('[id^=editAssignmentsBtn]').first();
-  }
-
-  editDeviceUserBtn(): Locator {
-    if (this.deviceUserName) {
-      return this.getRowLocator().locator('[id^=editDeviceUserBtn]').first();
-    }
-    return this.page.locator('[id^=editDeviceUserBtn]').first();
-  }
-
-  deleteBtn(): Locator {
-    if (this.deviceUserName) {
-      return this.getRowLocator().locator('[id^=deleteDeviceUserBtn]').first();
-    }
-    return this.page.locator('[id^=deleteDeviceUserBtn]').first();
+  /** A menu item of the currently open action menu, addressed by row index. */
+  private menuItem(idPrefix: string, rowIndex: string): Locator {
+    return this.page.locator('.cdk-overlay-container').locator(`#${idPrefix}-${rowIndex}`);
   }
 
   async delete(clickCancel = false): Promise<void> {
@@ -345,9 +378,9 @@ export class WorkerRowObject {
   }
 
   async openDeleteModal(): Promise<void> {
-    await this.openActionMenu();
-    await this.deleteBtn().click();
-    await this.parentPage.cancelDeleteBtn().waitFor({ state: 'visible' });
+    const rowIndex = await this.openActionMenu();
+    await this.menuItem('deleteDeviceUserBtn', rowIndex).click({ timeout: UI_TIMEOUT });
+    await this.parentPage.cancelDeleteBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async closeDeleteModal(clickCancel = false): Promise<void> {
@@ -355,16 +388,23 @@ export class WorkerRowObject {
       await this.parentPage.cancelDeleteBtn().click();
     } else {
       await Promise.all([
-        this.page.waitForResponse(
-          r => r.url().includes('/api/device-users/delete/') && r.request().method() === 'DELETE'
+        waitForApiResponse(
+          this.page,
+          'DELETE /api/device-users/delete/ (delete device user)',
+          r => r.url().includes('/api/device-users/delete/') && r.request().method() === 'DELETE',
+          API_TIMEOUT
         ),
-        this.page.waitForResponse(
-          r => r.url().includes('/api/backend-configuration-pn/properties/assignment') && r.request().method() === 'GET'
+        waitForApiResponse(
+          this.page,
+          'GET /api/backend-configuration-pn/properties/assignment (device user list refresh after delete)',
+          r => r.url().includes('/api/backend-configuration-pn/properties/assignment') && r.request().method() === 'GET',
+          API_TIMEOUT
         ),
         this.parentPage.saveDeleteBtn().click(),
       ]);
     }
-    await this.parentPage.newDeviceUserBtn().waitFor({ state: 'visible' });
+    await this.parentPage.cancelDeleteBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.parentPage.newDeviceUserBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 }
 

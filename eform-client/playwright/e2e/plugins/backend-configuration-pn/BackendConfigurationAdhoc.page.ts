@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { selectValueInNgSelector, selectDateOnNewDatePicker } from '../../helper-functions';
+import { waitForApiResponse } from './wait-helpers';
 
 /**
  * Page object for the "Adhoc overblik" dashboard
@@ -118,7 +119,9 @@ export class BackendConfigurationAdhocPage {
     // (AdhocHistoryComponent.ngOnInit) so callers see a populated table,
     // not a still-loading one - returning on #history-view visibility alone
     // would let a subsequent row lookup race the data fetch.
-    const historyResponsePromise = this.page.waitForResponse(
+    const historyResponsePromise = waitForApiResponse(
+      this.page,
+      'POST /api/backend-configuration-pn/adhoc/history/index (history tab)',
       (r) => r.url().includes('/api/backend-configuration-pn/adhoc/history/index') && r.request().method() === 'POST',
     );
     await this.viewHistoryBtn().click();
@@ -549,7 +552,9 @@ export class BackendConfigurationAdhocPage {
   async saveDrawer(waitForCreate = false): Promise<void> {
     if (waitForCreate) {
       await Promise.all([
-        this.page.waitForResponse(
+        waitForApiResponse(
+          this.page,
+          'POST /api/backend-configuration-pn/adhoc/ (save adhoc task)',
           (r) => r.url().endsWith('/api/backend-configuration-pn/adhoc/') && r.request().method() === 'POST',
         ),
         this.drawerSaveBtn().click(),
@@ -572,7 +577,9 @@ export class BackendConfigurationAdhocPage {
 
   async confirmDelete(): Promise<void> {
     await Promise.all([
-      this.page.waitForResponse(
+      waitForApiResponse(
+        this.page,
+        'DELETE /api/backend-configuration-pn/adhoc/ (delete adhoc task)',
         (r) => r.url().includes('/api/backend-configuration-pn/adhoc/') && r.request().method() === 'DELETE',
       ),
       this.deleteConfirmBtn().click(),
@@ -605,7 +612,11 @@ export class BackendConfigurationAdhocPage {
 
   async confirmComplete(): Promise<void> {
     await Promise.all([
-      this.page.waitForResponse((r) => r.url().includes('/completed') && r.request().method() === 'POST'),
+      waitForApiResponse(
+        this.page,
+        'POST .../completed (complete adhoc task)',
+        (r) => r.url().includes('/completed') && r.request().method() === 'POST',
+      ),
       this.completeConfirmBtn().click(),
     ]);
   }
@@ -646,7 +657,11 @@ export class BackendConfigurationAdhocPage {
   async archiveFromHistory(taskTitle: string): Promise<void> {
     await this.openHistoryRowMenu(taskTitle);
     await Promise.all([
-      this.page.waitForResponse((r) => r.url().includes('/archive') && r.request().method() === 'POST'),
+      waitForApiResponse(
+        this.page,
+        'POST .../archive (archive adhoc task)',
+        (r) => r.url().includes('/archive') && r.request().method() === 'POST',
+      ),
       this.historyArchiveMenuItem().click(),
     ]);
   }
