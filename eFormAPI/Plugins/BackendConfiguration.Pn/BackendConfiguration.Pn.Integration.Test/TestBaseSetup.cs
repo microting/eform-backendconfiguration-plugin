@@ -13,20 +13,28 @@ using Testcontainers.MariaDb;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// Bootstraps the plugin databases from the checked-in raw mysqldump files in SQL/.
+/// Bootstraps the plugin databases: EnsureCreated() builds the schema from the entity model,
+/// then the matching file in SQL/ seeds the rows.
 /// <para>
-/// Those dumps are hand-maintained and are NOT regenerated from the base packages, so every
-/// column a base package adds has to be added to the matching dump by hand. Bumping
+/// Schema is therefore never hand-maintained. A column a base package adds is created by
+/// EnsureCreated() from the model that ships with the package, so bumping
 /// Microting.TimePlanningBase / .ItemsPlanningBase / .EformBackendConfigurationBase /
-/// .eFormCaseTemplateBase without doing so fails the suite with "Unknown column '&lt;NewColumn&gt;'"
-/// the moment a test reads or writes the affected table - the dump's CREATE TABLE wins, because
-/// it replaces whatever EnsureCreated() built from the current model. The dumps' INSERTs are
-/// positional and carry no column list, so a new column also has to be backfilled into every
-/// VALUES row of that table.
+/// .eFormCaseTemplateBase can no longer fail the suite with "Unknown column '&lt;NewColumn&gt;'".
+/// A seed file holds INSERTs only - no CREATE TABLE to go stale, and every INSERT names its
+/// columns, so a new column cannot break the arity of an existing VALUES row either.
 /// </para>
 /// <para>
-/// The SDK database is the exception: Core.StartSqlOnly constructs a SqlController, which runs
-/// Database.Migrate() and therefore pulls 420_SDK.sql forward to the current model on its own.
+/// Converted so far: 420_eform-angular-time-planning-plugin.sql. The items-planning,
+/// case-template and backend-configuration files are still schema+data dumps whose CREATE TABLEs
+/// replace what EnsureCreated() built, and so are still exposed to the drift above.
+/// </para>
+/// <para>
+/// Files that are still schema+data dumps, and why they are safe:
+/// 420_SDK.sql - Core.StartSqlOnly constructs a SqlController, which runs Database.Migrate() and
+/// pulls the SDK database forward to the current model on its own (it needs the dump's
+/// __EFMigrationsHistory rows to know where to resume, so this one must stay a full dump).
+/// 420_Angular.sql - never replayed; GetBaseDbContext only calls EnsureCreated().
+/// 420_chemical-base-plugin.sql - not loaded by this fixture at all.
 /// </para>
 /// </summary>
 public abstract class TestBaseSetup
