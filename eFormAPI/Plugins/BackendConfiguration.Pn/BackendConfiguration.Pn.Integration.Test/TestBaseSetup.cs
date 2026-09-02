@@ -24,11 +24,6 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// columns, so a new column cannot break the arity of an existing VALUES row either.
 /// </para>
 /// <para>
-/// Converted so far: 420_eform-angular-time-planning-plugin.sql. The items-planning,
-/// case-template and backend-configuration files are still schema+data dumps whose CREATE TABLEs
-/// replace what EnsureCreated() built, and so are still exposed to the drift above.
-/// </para>
-/// <para>
 /// Files that are still schema+data dumps, and why they are safe:
 /// 420_SDK.sql - Core.StartSqlOnly constructs a SqlController, which runs Database.Migrate() and
 /// pulls the SDK database forward to the current model on its own (it needs the dump's

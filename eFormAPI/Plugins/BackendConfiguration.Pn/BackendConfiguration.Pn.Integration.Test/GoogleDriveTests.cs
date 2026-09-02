@@ -63,12 +63,6 @@ public class GoogleDriveTests : TestBaseSetup
     [SetUp]
     public async Task SetupGoogleDriveTests()
     {
-        // The TestBaseSetup loads a snapshot SQL file that predates the
-        // Google Drive integration. Bring the schema up to v10.0.33 by
-        // adding the new tables + columns here before we touch them. Use
-        // IF NOT EXISTS so re-running the test fixture is idempotent.
-        await BackendConfigurationPnDbContext!.Database.ExecuteSqlRawAsync(GoogleDriveSchemaSql);
-
         // Wipe Drive-related rows so each test starts clean.
         BackendConfigurationPnDbContext!.AreaRulePlanningFiles.RemoveRange(
             BackendConfigurationPnDbContext.AreaRulePlanningFiles);
@@ -1638,92 +1632,4 @@ public class GoogleDriveTests : TestBaseSetup
         public Task<RefreshResult> RefreshAsync(string refreshToken)
             => throw new InvalidOperationException("Proxy client should not be invoked in this test.");
     }
-
-    /// <summary>
-    /// DDL to upgrade the test bootstrap schema (snapshot of base v10.0.32)
-    /// to the v10.0.33 shape this PR depends on. Created idempotently so
-    /// it's safe to re-run across test fixtures sharing a container. The
-    /// columns mirror the entity declarations in the base repo's
-    /// GoogleOAuthToken.cs / DriveWatchChannel.cs / AreaRulePlanningFile.cs.
-    /// </summary>
-    private const string GoogleDriveSchemaSql = @"
-ALTER TABLE `AreaRulePlanningFiles`
-  ADD COLUMN IF NOT EXISTS `DriveFileId` varchar(64) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `DriveModifiedTime` datetime(6) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `GoogleOAuthTokenId` int(11) DEFAULT NULL;
-
-ALTER TABLE `AreaRulePlanningFileVersions`
-  ADD COLUMN IF NOT EXISTS `DriveFileId` varchar(64) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `DriveModifiedTime` datetime(6) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `GoogleOAuthTokenId` int(11) DEFAULT NULL;
-
-CREATE TABLE IF NOT EXISTS `GoogleOAuthTokens` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `UserId` int(11) NOT NULL,
-  `GoogleAccountEmail` varchar(255) DEFAULT NULL,
-  `EncryptedRefreshToken` varchar(2048) DEFAULT NULL,
-  `ConnectedAt` datetime(6) NOT NULL,
-  `LastUsedAt` datetime(6) DEFAULT NULL,
-  `RevokedAt` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `GoogleOAuthTokenVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `GoogleOAuthTokenId` int(11) NOT NULL,
-  `UserId` int(11) NOT NULL,
-  `GoogleAccountEmail` varchar(255) DEFAULT NULL,
-  `EncryptedRefreshToken` varchar(2048) DEFAULT NULL,
-  `ConnectedAt` datetime(6) NOT NULL,
-  `LastUsedAt` datetime(6) DEFAULT NULL,
-  `RevokedAt` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `DriveWatchChannels` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `GoogleOAuthTokenId` int(11) NOT NULL,
-  `ChannelId` varchar(64) DEFAULT NULL,
-  `ResourceId` varchar(64) DEFAULT NULL,
-  `SignedToken` varchar(2048) DEFAULT NULL,
-  `ExpiresAt` datetime(6) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_DriveWatchChannels_GoogleOAuthTokenId` (`GoogleOAuthTokenId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `DriveWatchChannelVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `DriveWatchChannelId` int(11) NOT NULL,
-  `GoogleOAuthTokenId` int(11) NOT NULL,
-  `ChannelId` varchar(64) DEFAULT NULL,
-  `ResourceId` varchar(64) DEFAULT NULL,
-  `SignedToken` varchar(2048) DEFAULT NULL,
-  `ExpiresAt` datetime(6) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-";
 }
