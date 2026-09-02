@@ -12,6 +12,23 @@ using Testcontainers.MariaDb;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
+/// <summary>
+/// Bootstraps the plugin databases from the checked-in raw mysqldump files in SQL/.
+/// <para>
+/// Those dumps are hand-maintained and are NOT regenerated from the base packages, so every
+/// column a base package adds has to be added to the matching dump by hand. Bumping
+/// Microting.TimePlanningBase / .ItemsPlanningBase / .EformBackendConfigurationBase /
+/// .eFormCaseTemplateBase without doing so fails the suite with "Unknown column '&lt;NewColumn&gt;'"
+/// the moment a test reads or writes the affected table - the dump's CREATE TABLE wins, because
+/// it replaces whatever EnsureCreated() built from the current model. The dumps' INSERTs are
+/// positional and carry no column list, so a new column also has to be backfilled into every
+/// VALUES row of that table.
+/// </para>
+/// <para>
+/// The SDK database is the exception: Core.StartSqlOnly constructs a SqlController, which runs
+/// Database.Migrate() and therefore pulls 420_SDK.sql forward to the current model on its own.
+/// </para>
+/// </summary>
 public abstract class TestBaseSetup
 {
     private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder("mariadb:11.2")
