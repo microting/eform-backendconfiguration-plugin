@@ -45,9 +45,8 @@ public class WorkerTagAssignmentTest : TestBaseSetup
 
     /// <summary>
     /// The shared test container is NOT fully reset between tests: the backend-config
-    /// snapshot SQL re-run each [SetUp] only drops/recreates tables present in that
-    /// (older) dump. <c>AreaRulePlanningWorkerTags</c> was added after the snapshot was
-    /// taken, so it is never recreated and its rows accumulate across tests while
+    /// seed file only truncates the tables it lists. <c>AreaRulePlanningWorkerTags</c> is
+    /// not one of them, so it is never emptied and its rows accumulate across tests while
     /// AreaRulePlannings/Tags ids restart at 1 — causing prior tests' links to attach
     /// to this test's arp/tag. Clear it explicitly after the base [SetUp] (NUnit runs
     /// the base-class [SetUp] before this derived one).

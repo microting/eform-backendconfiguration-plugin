@@ -147,9 +147,9 @@ public class CalendarPrepareCompleteTests : TestBaseSetup
         var core = await GetCore();
         var language = await MicrotingDbContext!.Languages.FirstAsync();
 
-        // The per-test SQL fixture reset predates the calendar tables: it
-        // drops/recreates AreaRulePlannings (auto-increment restarts at 1)
-        // but never mentions CalendarConfigurations / CalendarOccurrenceExceptions,
+        // The SQL fixture reset predates the calendar tables: it truncates
+        // AreaRulePlannings (auto-increment restarts at 1) but never mentions
+        // CalendarConfigurations / CalendarOccurrenceExceptions,
         // so those tables SURVIVE across tests within this fixture. A StartHour
         // row created by an earlier test would silently attach to this test's
         // freshly-seeded ARP (which reuses the same id). Clear them explicitly.

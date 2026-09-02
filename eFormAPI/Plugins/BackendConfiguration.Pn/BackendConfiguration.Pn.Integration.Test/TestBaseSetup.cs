@@ -16,12 +16,10 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// Bootstraps the plugin databases: EnsureCreated() builds the schema from the entity model,
 /// then the matching file in SQL/ seeds the rows.
 /// <para>
-/// Schema is therefore never hand-maintained. A column a base package adds is created by
-/// EnsureCreated() from the model that ships with the package, so bumping
-/// Microting.TimePlanningBase / .ItemsPlanningBase / .EformBackendConfigurationBase /
-/// .eFormCaseTemplateBase can no longer fail the suite with "Unknown column '&lt;NewColumn&gt;'".
-/// A seed file holds INSERTs only - no CREATE TABLE to go stale, and every INSERT names its
-/// columns, so a new column cannot break the arity of an existing VALUES row either.
+/// Schema is therefore never hand-maintained, so bumping Microting.TimePlanningBase /
+/// .ItemsPlanningBase / .EformBackendConfigurationBase / .eFormCaseTemplateBase can no longer
+/// fail the suite with "Unknown column '&lt;NewColumn&gt;'". Keep the seed files data-only -
+/// each one's header states the rules for editing it.
 /// </para>
 /// <para>
 /// Files that are still schema+data dumps, and why they are safe:
@@ -31,16 +29,28 @@ namespace BackendConfiguration.Pn.Integration.Test;
 /// 420_Angular.sql - never replayed; GetBaseDbContext only calls EnsureCreated().
 /// 420_chemical-base-plugin.sql - not loaded by this fixture at all.
 /// </para>
+/// <para>
+/// EnsureCreated() does not create __EFMigrationsHistory, and the seed files no longer carry
+/// its rows, so the four plugin databases have no migration history here. Nothing in the
+/// fixture reads one. Production does - EformBackendConfigurationPlugin.ConfigureDbContext
+/// calls Migrate() behind an IHistoryRepository.Exists() gate - so a test that ever
+/// constructs the plugin would find that gate open against an already-complete schema.
+/// </para>
 /// </summary>
 public abstract class TestBaseSetup
 {
+    /// <summary>
+    /// Fixture queries are far slower than a production request, so every context gets the
+    /// same generous command timeout. It is applied after the bootstrap, as it was before
+    /// this was hoisted out of Setup(), so the seed replay still runs at the default timeout.
+    /// </summary>
+    private const int CommandTimeoutSeconds = 300;
+
     private readonly MariaDbContainer _mariadbTestcontainer = new MariaDbBuilder("mariadb:11.2")
         .WithDatabase(
             "myDb").WithUsername("bla").WithPassword("secretpassword")
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
         .Build();
-
-    protected MicrotingDbContext? DbContext;
 
     protected BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;
     protected ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
@@ -50,135 +60,66 @@ public abstract class TestBaseSetup
     protected BaseDbContext BaseDbContext;
     protected IBus? Bus;
 
-    private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr, bool bootstrapSchema)
+    /// <summary>
+    /// Points a context at one database on the shared test container. The container hands out a
+    /// single "myDb"/"bla" connection string, so each database is addressed by substituting its
+    /// own name and connecting as root.
+    /// </summary>
+    private static DbContextOptions<TContext> BuildOptions<TContext>(string connectionStr, string databaseName)
+        where TContext : DbContext
     {
-        var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<TContext>();
 
         optionsBuilder.UseMySql(
-            connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin").Replace("bla", "root"),
+            connectionStr.Replace("myDb", databaseName).Replace("bla", "root"),
             new MariaDbServerVersion(
                 ServerVersion.AutoDetect(connectionStr)),
             mySqlOptionsAction: builder => {
                 builder.EnableRetryOnFailure();
             });
 
-        var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
-        var file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
-        var rawSql = File.ReadAllText(file);
+        return optionsBuilder.Options;
+    }
 
-        try
+    /// <summary>
+    /// Creates a context for <paramref name="databaseName"/>. When <paramref name="bootstrapSchema"/>
+    /// is set, EnsureCreated() builds the schema from the entity model and SQL/&lt;databaseName&gt;.sql
+    /// is replayed on top to seed the rows - each database's seed file is named after it.
+    /// </summary>
+    private static TContext CreateSeededContext<TContext>(
+        string connectionStr,
+        string databaseName,
+        bool bootstrapSchema,
+        Func<DbContextOptions<TContext>, TContext> createContext)
+        where TContext : DbContext
+    {
+        var context = createContext(BuildOptions<TContext>(connectionStr, databaseName));
+
+        if (bootstrapSchema)
         {
-            if (bootstrapSchema) backendConfigurationPnDbContext.Database.EnsureCreated();
+            context.Database.EnsureCreated();
+            context.Database.ExecuteSqlRaw(File.ReadAllText(Path.Combine("SQL", $"{databaseName}.sql")));
         }
-        catch (Exception e)
+
+        context.Database.SetCommandTimeout(CommandTimeoutSeconds);
+
+        return context;
+    }
+
+    /// <summary>
+    /// The Angular base database has no seed file - 420_Angular.sql is never replayed - so
+    /// EnsureCreated() is the whole bootstrap.
+    /// </summary>
+    private static BaseDbContext GetBaseDbContext(string connectionStr, bool bootstrapSchema)
+    {
+        var baseDbContext = new BaseDbContext(BuildOptions<BaseDbContext>(connectionStr, "420_Angular"));
+
+        if (bootstrapSchema)
         {
-            Console.WriteLine(e);
+            baseDbContext.Database.EnsureCreated();
         }
 
-        if (bootstrapSchema) backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr, bool bootstrapSchema)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(
-            connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
-            new MariaDbServerVersion(
-                ServerVersion.AutoDetect(connectionStr)),
-            mySqlOptionsAction: builder => {
-                builder.EnableRetryOnFailure();
-            });
-
-        var itemsPlanningPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
-        var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
-        var rawSql = File.ReadAllText(file);
-
-        if (bootstrapSchema) itemsPlanningPnDbContext.Database.EnsureCreated();
-        if (bootstrapSchema) itemsPlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return itemsPlanningPnDbContext;
-    }
-
-    private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr, bool bootstrapSchema)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(
-            connectionStr.Replace("myDb", "420_eform-angular-time-planning-plugin").Replace("bla", "root"),
-            new MariaDbServerVersion(
-                ServerVersion.AutoDetect(connectionStr)),
-            mySqlOptionsAction: builder => {
-                builder.EnableRetryOnFailure();
-            });
-
-        var timePlanningPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
-        var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
-        var rawSql = File.ReadAllText(file);
-
-        if (bootstrapSchema) timePlanningPnDbContext.Database.EnsureCreated();
-        if (bootstrapSchema) timePlanningPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return timePlanningPnDbContext;
-    }
-
-    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr, bool bootstrapSchema)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
-
-        optionsBuilder.UseMySql(
-            connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin").Replace("bla", "root"),
-            new MariaDbServerVersion(
-                ServerVersion.AutoDetect(connectionStr)),
-            mySqlOptionsAction: builder => {
-                builder.EnableRetryOnFailure();
-            });
-
-        var caseTemplatePnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
-        var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
-        var rawSql = File.ReadAllText(file);
-
-        if (bootstrapSchema) caseTemplatePnDbContext.Database.EnsureCreated();
-        if (bootstrapSchema) caseTemplatePnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return caseTemplatePnDbContext;
-    }
-
-    private MicrotingDbContext GetContext(string connectionStr, bool bootstrapSchema)
-    {
-        var dbContextOptionsBuilder = new DbContextOptionsBuilder();
-
-        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root")
-            , new MariaDbServerVersion(
-                ServerVersion.AutoDetect(connectionStr)),
-            mySqlOptionsAction: builder => {
-                builder.EnableRetryOnFailure();
-            });
-        var microtingDbContext = new MicrotingDbContext(dbContextOptionsBuilder.Options);
-        var file = Path.Combine("SQL", "420_SDK.sql");
-        var rawSql = File.ReadAllText(file);
-
-        if (bootstrapSchema) microtingDbContext.Database.EnsureCreated();
-        if (bootstrapSchema) microtingDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return microtingDbContext;
-    }
-
-    private BaseDbContext GetBaseDbContext(string connectionStr, bool bootstrapSchema)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<BaseDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_Angular").Replace("bla", "root")
-            , new MariaDbServerVersion(
-                ServerVersion.AutoDetect(connectionStr)),
-            mySqlOptionsAction: builder => {
-                builder.EnableRetryOnFailure();
-            });
-        var baseDbContext = new BaseDbContext(optionsBuilder.Options);
-
-        if (bootstrapSchema) baseDbContext.Database.EnsureCreated();
+        baseDbContext.Database.SetCommandTimeout(CommandTimeoutSeconds);
 
         return baseDbContext;
     }
@@ -202,14 +143,14 @@ public abstract class TestBaseSetup
     private bool _schemaBootstrapped;
 
     /// <summary>
-    /// Replay the six SQL dumps before EVERY test instead of once per fixture.
+    /// Rebuild and reseed the databases before EVERY test instead of once per fixture.
     /// <para>
-    /// The replay is ~586 DROP/CREATE TABLE statements costing ~34 seconds per
-    /// test - the dominant cost of the whole integration suite. Replaying once
-    /// per fixture means tests share accumulated rows and identity counters no
-    /// longer restart at 1. Most fixtures already tolerate that: the Calendar*
-    /// and Adhoc* tables were never in the dumps and have therefore always
-    /// accumulated, which is why ~32 fixtures already carry FK-ordered cleanup.
+    /// That bootstrap - EnsureCreated(), the seed replay, and the full DROP/CREATE pass
+    /// 420_SDK.sql still carries - is the dominant cost of the whole integration suite.
+    /// Bootstrapping once per fixture means tests share accumulated rows and identity
+    /// counters no longer restart at 1. Most fixtures already tolerate that: the Calendar*
+    /// and Adhoc* tables are in no seed file and have therefore always accumulated, which
+    /// is why ~32 fixtures already carry FK-ordered cleanup.
     /// </para>
     /// <para>
     /// Override to <c>true</c> only where assertions are absolute whole-table
@@ -231,28 +172,24 @@ public abstract class TestBaseSetup
         var bootstrapSchema = !_schemaBootstrapped || ResetDatabasePerTest;
         _schemaBootstrapped = true;
 
-        BackendConfigurationPnDbContext = GetBackendDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
+        var connectionStr = _mariadbTestcontainer.GetConnectionString();
 
-        BackendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
+        BackendConfigurationPnDbContext = CreateSeededContext<BackendConfigurationPnDbContext>(
+            connectionStr, "420_eform-backend-configuration-plugin", bootstrapSchema, options => new(options));
 
-        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
+        ItemsPlanningPnDbContext = CreateSeededContext<ItemsPlanningPnDbContext>(
+            connectionStr, "420_eform-angular-items-planning-plugin", bootstrapSchema, options => new(options));
 
-        ItemsPlanningPnDbContext.Database.SetCommandTimeout(300);
+        TimePlanningPnDbContext = CreateSeededContext<TimePlanningPnDbContext>(
+            connectionStr, "420_eform-angular-time-planning-plugin", bootstrapSchema, options => new(options));
 
-        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
+        MicrotingDbContext = CreateSeededContext<MicrotingDbContext>(
+            connectionStr, "420_SDK", bootstrapSchema, options => new(options));
 
-        TimePlanningPnDbContext.Database.SetCommandTimeout(300);
+        CaseTemplatePnDbContext = CreateSeededContext<CaseTemplatePnDbContext>(
+            connectionStr, "420_eform-angular-case-template-plugin", bootstrapSchema, options => new(options));
 
-        MicrotingDbContext = GetContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
-
-        MicrotingDbContext.Database.SetCommandTimeout(300);
-
-        CaseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
-
-        CaseTemplatePnDbContext.Database.SetCommandTimeout(300);
-
-        BaseDbContext = GetBaseDbContext(_mariadbTestcontainer.GetConnectionString(), bootstrapSchema);
-        BaseDbContext.Database.SetCommandTimeout(300);
+        BaseDbContext = GetBaseDbContext(connectionStr, bootstrapSchema);
 
         // var rebusService =
             // new RebusService(
