@@ -1,4 +1,6 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
+import { openRowActionMenu } from './row-action-menu';
+import { API_TIMEOUT, UI_TIMEOUT, waitForApiResponse } from './wait-helpers';
 
 export class BackendConfigurationPropertiesPage {
   constructor(private page: Page) {}
@@ -18,7 +20,7 @@ export class BackendConfigurationPropertiesPage {
       await this.backendConfigurationPnButton().click();
     }
     await propertiesBtn.click();
-    await this.page.locator('app-properties-container').waitFor({ state: 'visible' });
+    await this.page.locator('app-properties-container').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   propertyCreateBtn(): Locator {
@@ -132,7 +134,7 @@ export class BackendConfigurationPropertiesPage {
 
   async openCreatePropertyModal(property: PropertyCreateUpdate): Promise<void> {
     await this.propertyCreateBtn().click();
-    await this.propertyCreateSaveCancelBtn().waitFor({ state: 'visible' });
+    await this.propertyCreateSaveCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     if (property) {
       if (property.cvrNumber) {
         await this.createCVRNumber().fill(property.cvrNumber);
@@ -148,7 +150,9 @@ export class BackendConfigurationPropertiesPage {
       }
       if (property.workOrderFlow === true) {
         await this.propertyCreateWorkorderFlowEnableToggle().click();
-        await this.page.waitForTimeout(500);
+        await expect(
+          this.page.locator('#propertyCreateWorkorderFlowEnableToggle button[role="switch"]')
+        ).toHaveAttribute('aria-checked', 'true', { timeout: UI_TIMEOUT });
       }
     }
   }
@@ -157,15 +161,20 @@ export class BackendConfigurationPropertiesPage {
     if (clickCancel) {
       await this.propertyCreateSaveCancelBtn().click();
     } else {
-      const [_response] = await Promise.all([
-        this.page.waitForResponse(
-          r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST'
+      await Promise.all([
+        waitForApiResponse(
+          this.page,
+          'POST /api/backend-configuration-pn/properties/index (property list refresh after save)',
+          r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST',
+          API_TIMEOUT
         ),
         this.propertyCreateSaveBtn().click(),
       ]);
     }
-    await this.page.waitForTimeout(500);
-    await this.propertyCreateBtn().waitFor({ state: 'visible' });
+    // The dialog closing is the real post-condition; propertyCreateBtn lives on
+    // the page *behind* the dialog, so waiting on it alone proves nothing.
+    await this.propertyCreateSaveCancelBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.propertyCreateBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   getFirstRowObject(): PropertyRowObject {
@@ -189,19 +198,20 @@ export class BackendConfigurationPropertiesPage {
   }
 
   async clearTable(): Promise<void> {
-    await this.page.locator('app-properties-table').waitFor({ state: 'visible' });
-    const rowNum = await this.page.locator('app-properties-table .mat-mdc-row').count();
-    if (rowNum === 0) {
-      return;
-    }
+    await this.page.locator('app-properties-table').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
+    const rows = this.page.locator('app-properties-table .mat-mdc-row');
+    const rowNum = await rows.count();
     for (let i = rowNum; i > 0; i--) {
-      const [_response] = await Promise.all([
-        this.page.waitForResponse(
-          r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST'
+      await Promise.all([
+        waitForApiResponse(
+          this.page,
+          'POST /api/backend-configuration-pn/properties/index (property list refresh after delete)',
+          r => r.url().includes('/api/backend-configuration-pn/properties/index') && r.request().method() === 'POST',
+          API_TIMEOUT
         ),
         this.getFirstRowObject().delete(),
       ]);
-      await this.page.waitForTimeout(500);
+      await expect(rows).toHaveCount(i - 1, { timeout: UI_TIMEOUT });
     }
   }
 
@@ -211,13 +221,16 @@ export class BackendConfigurationPropertiesPage {
     if (!isVisible) {
       await this.itemPlanningButton().click();
     }
-    const [_response] = await Promise.all([
-      this.page.waitForResponse(
-        r => r.url().includes('/api/items-planning-pn/plannings/index') && r.request().method() === 'POST'
+    await Promise.all([
+      waitForApiResponse(
+        this.page,
+        'POST /api/items-planning-pn/plannings/index (plannings list)',
+        r => r.url().includes('/api/items-planning-pn/plannings/index') && r.request().method() === 'POST',
+        API_TIMEOUT
       ),
       planningsBtn.click(),
     ]);
-    await this.planningCreateBtn().waitFor({ state: 'visible' });
+    await this.planningCreateBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   planningsButton(): Locator {
@@ -257,29 +270,10 @@ export class PropertyRowObject {
     return this.page.locator('.mat-mdc-row').nth((this.rowNum ?? 1) - 1);
   }
 
-  private async openActionMenu(): Promise<void> {
-    const row = this.getRowLocator();
-    const actionCell = row.locator('[id^="action-items"]').filter({ hasText: '' }).first();
-    const actionMenu = actionCell.locator('#actionMenu').first();
-    await actionMenu.click({ force: true });
-  }
-
-  viewAreasBtn(): Locator {
-    return this.page.locator('[id^=showPropertyAreasBtn]').first();
-  }
-
-  editPropertyBtn(): Locator {
-    return this.page.locator('[id^=editPropertyBtn]').first();
-  }
-
-  deleteBtn(): Locator {
-    return this.page.locator('[id^=deletePropertyBtn]').first();
-  }
-
   async goToAreas(): Promise<void> {
-    await this.openActionMenu();
-    await this.viewAreasBtn().click();
-    await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible' });
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Property row');
+    await menuItem('showPropertyAreasBtn').click({ timeout: UI_TIMEOUT });
+    await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async delete(clickCancel = false): Promise<void> {
@@ -288,23 +282,27 @@ export class PropertyRowObject {
   }
 
   async openDeleteModal(): Promise<void> {
-    await this.openActionMenu();
-    await this.deleteBtn().click();
-    await this.parentPage.propertyDeleteCancelBtn().waitFor({ state: 'visible' });
+    const menuItem = await openRowActionMenu(this.page, this.getRowLocator(), 'Property row');
+    await menuItem('deletePropertyBtn').click({ timeout: UI_TIMEOUT });
+    await this.parentPage.propertyDeleteCancelBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async closeDeleteModal(clickCancel = false): Promise<void> {
     if (clickCancel) {
       await this.parentPage.propertyDeleteCancelBtn().click();
     } else {
-      const [_response] = await Promise.all([
-        this.page.waitForResponse(
-          r => r.url().includes('/api/backend-configuration-pn/properties') && r.request().method() === 'DELETE'
+      await Promise.all([
+        waitForApiResponse(
+          this.page,
+          'DELETE /api/backend-configuration-pn/properties (delete property)',
+          r => r.url().includes('/api/backend-configuration-pn/properties') && r.request().method() === 'DELETE',
+          API_TIMEOUT
         ),
         this.parentPage.propertyDeleteDeleteBtn().click(),
       ]);
     }
-    await this.parentPage.propertyCreateBtn().waitFor({ state: 'visible' });
+    await this.parentPage.propertyDeleteCancelBtn().waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    await this.parentPage.propertyCreateBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async bindAreasByName(areasName: string[] = [], clickCancel = false, returnToProperties = false): Promise<void> {
@@ -343,21 +341,24 @@ export class PropertyRowObject {
 
   async openBindAreasModal(): Promise<void> {
     await this.parentPage.configurePropertyAreasBtn().click();
-    await this.parentPage.editPropertyAreasViewCloseBtn().waitFor({ state: 'visible' });
+    await this.parentPage.editPropertyAreasViewCloseBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
   async closeBindAreasModal(clickCancel = false, returnToProperties = false): Promise<void> {
     if (clickCancel) {
       await this.parentPage.editPropertyAreasViewCloseBtn().click();
     } else {
-      const [_response] = await Promise.all([
-        this.page.waitForResponse(
-          r => r.url().includes('/api/backend-configuration-pn/property-areas') && r.request().method() === 'PUT'
+      await Promise.all([
+        waitForApiResponse(
+          this.page,
+          'PUT /api/backend-configuration-pn/property-areas (bind areas to property)',
+          r => r.url().includes('/api/backend-configuration-pn/property-areas') && r.request().method() === 'PUT',
+          API_TIMEOUT
         ),
         this.parentPage.editPropertyAreasViewSaveBtn().click(),
       ]);
     }
-    await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible' });
+    await this.parentPage.configurePropertyAreasBtn().waitFor({ state: 'visible', timeout: UI_TIMEOUT });
     if (returnToProperties) {
       await this.parentPage.goToProperties();
     }

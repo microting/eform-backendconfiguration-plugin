@@ -57,7 +57,10 @@ test.describe('Calendar tags + report tag round-trip', () => {
   });
 
   test('event tags + report tag round-trip with edit', async ({ page }) => {
-    test.setTimeout(900000);
+    // 6 min: two tags + property + device user, then a create/update roundtrip on
+    // a calendar event with assertions in between. The old 15 min ceiling existed
+    // only to absorb the unbounded waits in the page objects, which are now gone.
+    test.setTimeout(360000);
 
     const calendarPage = new CalendarPage(page);
     const propertiesPage = new BackendConfigurationPropertiesPage(page);

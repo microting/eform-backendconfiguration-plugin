@@ -51,7 +51,11 @@ test.describe('Calendar: save event on fresh property with newly-assigned worker
   });
 
   test('saving a new calendar event should succeed', async ({ page }) => {
-    test.setTimeout(600000);
+    // 4 min: creates one property + one device user (the device-user PUT goes
+    // through the Microting SDK and gets a 60s budget of its own) and saves one
+    // calendar event. Every inner wait is bounded, so this only has to be larger
+    // than the worst legitimate path — not large enough to absorb a hang.
+    test.setTimeout(240000);
 
     const propertiesPage = new BackendConfigurationPropertiesPage(page);
     const workersPage = new BackendConfigurationPropertyWorkersPage(page);
