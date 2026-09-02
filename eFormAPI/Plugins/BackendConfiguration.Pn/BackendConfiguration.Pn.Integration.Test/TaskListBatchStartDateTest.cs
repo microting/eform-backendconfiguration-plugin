@@ -179,8 +179,8 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             ItemsPlanningPnDbContext.Plannings);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        // AreaRulePlanningWorkerTags is newer than the backend-config snapshot
-        // SQL the base [SetUp] replays, so it is never dropped and its rows
+        // AreaRulePlanningWorkerTags is in no seed file's TRUNCATE list,
+        // so the base [SetUp] never empties it and its rows
         // accumulate while AreaRulePlanning ids restart at 1 — a previous
         // fixture's link would otherwise add phantom recipients to every
         // resolved site set. Same guard as CalendarPastSeriesBackfillTests.

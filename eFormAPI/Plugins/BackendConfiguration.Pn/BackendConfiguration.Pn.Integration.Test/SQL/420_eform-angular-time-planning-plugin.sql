@@ -1,415 +1,77 @@
+-- Seed data for 420_eform-angular-time-planning-plugin.
+--
+-- DATA ONLY: no CREATE TABLE, no __EFMigrationsHistory. The schema comes from
+-- the entity model via Database.EnsureCreated() in TestBaseSetup, so a column
+-- added to the base package appears here for free and can never be "missing"
+-- from a hand-maintained CREATE TABLE again. Every INSERT names its columns,
+-- so a new column also cannot break the arity of an existing VALUES row - and
+-- SQL_MODE is relaxed below, so a new NOT NULL column without a default takes
+-- the implicit default instead of rejecting the row.
+--
+-- Only the ADDED-column case is handled automatically. A column a base package
+-- renames or removes still breaks the INSERTs below, and has to be fixed here.
+--
+-- The TRUNCATE list below IS the list of tables this fixture owns and resets.
+-- To seed a new table, add it there and add an INSERT that names its columns.
+--
+-- The SET @OLD_... statements below are plain SQL, not the /*!40014 ... */
+-- executable comments mysqldump wraps them in. MySqlConnector's parser reads a
+-- bare @name as a parameter placeholder and would reject these, but
+-- Microting.EntityFrameworkCore.MySql forces AllowUserVariables=True onto the
+-- connection string, so they reach the server. Re-check that before changing
+-- provider or connection string.
+
+SET @OLD_UNIQUE_CHECKS = @@UNIQUE_CHECKS, UNIQUE_CHECKS = 0;
+SET @OLD_FOREIGN_KEY_CHECKS = @@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0;
+SET @OLD_SQL_MODE = @@SQL_MODE, SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+
+-- Empty every table this fixture owns, so re-running the seed is idempotent
+-- (ResetDatabasePerTest fixtures replay it before each test).
+TRUNCATE TABLE `AbsenceRequestDayVersions`;
+TRUNCATE TABLE `AbsenceRequestDays`;
+TRUNCATE TABLE `AbsenceRequestVersions`;
+TRUNCATE TABLE `AbsenceRequests`;
+TRUNCATE TABLE `AssignedSiteManagingTagVersions`;
+TRUNCATE TABLE `AssignedSiteManagingTags`;
+TRUNCATE TABLE `AssignedSiteVersions`;
+TRUNCATE TABLE `AssignedSites`;
+TRUNCATE TABLE `BreakPolicies`;
+TRUNCATE TABLE `BreakPolicyRuleVersions`;
+TRUNCATE TABLE `BreakPolicyRules`;
+TRUNCATE TABLE `BreakPolicyVersions`;
+TRUNCATE TABLE `GpsCoordinateVersions`;
+TRUNCATE TABLE `GpsCoordinates`;
+TRUNCATE TABLE `HolidayVersions`;
+TRUNCATE TABLE `Holidays`;
+TRUNCATE TABLE `Messages`;
+TRUNCATE TABLE `PayDayRuleVersions`;
+TRUNCATE TABLE `PayDayRules`;
+TRUNCATE TABLE `PayRuleSetVersions`;
+TRUNCATE TABLE `PayRuleSets`;
+TRUNCATE TABLE `PayTierRuleVersions`;
+TRUNCATE TABLE `PayTierRules`;
+TRUNCATE TABLE `PictureSnapshotVersions`;
+TRUNCATE TABLE `PictureSnapshots`;
+TRUNCATE TABLE `PlanRegistrationContentHandoverRequestVersions`;
+TRUNCATE TABLE `PlanRegistrationContentHandoverRequests`;
+TRUNCATE TABLE `PlanRegistrationPayLineVersions`;
+TRUNCATE TABLE `PlanRegistrationPayLines`;
+TRUNCATE TABLE `PlanRegistrationVersions`;
+TRUNCATE TABLE `PlanRegistrations`;
+TRUNCATE TABLE `PluginConfigurationValueVersions`;
+TRUNCATE TABLE `PluginConfigurationValues`;
+TRUNCATE TABLE `PluginGroupPermissionVersions`;
+TRUNCATE TABLE `PluginGroupPermissions`;
+TRUNCATE TABLE `PluginPermissions`;
+TRUNCATE TABLE `RegistrationDeviceVersions`;
+TRUNCATE TABLE `RegistrationDevices`;
+TRUNCATE TABLE `WorkingTimeRuleSetVersions`;
+TRUNCATE TABLE `WorkingTimeRuleSets`;
+TRUNCATE TABLE `WorkingTimeRuleSettings`;
+TRUNCATE TABLE `WorkingTimeRuleSettingsVersions`;
+
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.13-MariaDB, for debian-linux-gnu (x86_64)
---
--- Host: 127.0.0.1    Database: 420_eform-angular-time-planning-plugin
--- ------------------------------------------------------
--- Server version	11.7.2-MariaDB-ubu2404
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `AbsenceRequestDayVersions`
---
-
-DROP TABLE IF EXISTS `AbsenceRequestDayVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AbsenceRequestDayVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `AbsenceRequestDayId` int(11) NOT NULL,
-  `AbsenceRequestId` int(11) NOT NULL,
-  `Date` datetime(6) NOT NULL,
-  `MessageId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AbsenceRequestDayVersions`
---
-
-LOCK TABLES `AbsenceRequestDayVersions` WRITE;
-/*!40000 ALTER TABLE `AbsenceRequestDayVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AbsenceRequestDayVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AbsenceRequestDays`
---
-
-DROP TABLE IF EXISTS `AbsenceRequestDays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AbsenceRequestDays` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `AbsenceRequestId` int(11) NOT NULL,
-  `Date` datetime(6) NOT NULL,
-  `MessageId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_AbsenceRequestDays_AbsenceRequestId` (`AbsenceRequestId`),
-  KEY `IX_AbsenceRequestDays_MessageId` (`MessageId`),
-  CONSTRAINT `FK_AbsenceRequestDays_AbsenceRequests_AbsenceRequestId` FOREIGN KEY (`AbsenceRequestId`) REFERENCES `AbsenceRequests` (`Id`) ON DELETE CASCADE,
-  CONSTRAINT `FK_AbsenceRequestDays_Messages_MessageId` FOREIGN KEY (`MessageId`) REFERENCES `Messages` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AbsenceRequestDays`
---
-
-LOCK TABLES `AbsenceRequestDays` WRITE;
-/*!40000 ALTER TABLE `AbsenceRequestDays` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AbsenceRequestDays` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AbsenceRequestVersions`
---
-
-DROP TABLE IF EXISTS `AbsenceRequestVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AbsenceRequestVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `AbsenceRequestId` int(11) NOT NULL,
-  `RequestedBySdkSitId` int(11) NOT NULL,
-  `DecidedBySdkSitId` int(11) DEFAULT NULL,
-  `Status` int(11) NOT NULL,
-  `DateFrom` datetime(6) NOT NULL,
-  `DateTo` datetime(6) NOT NULL,
-  `RequestComment` longtext DEFAULT NULL,
-  `DecisionComment` longtext DEFAULT NULL,
-  `RequestedAtUtc` datetime(6) NOT NULL,
-  `DecidedAtUtc` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AbsenceRequestVersions`
---
-
-LOCK TABLES `AbsenceRequestVersions` WRITE;
-/*!40000 ALTER TABLE `AbsenceRequestVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AbsenceRequestVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AbsenceRequests`
---
-
-DROP TABLE IF EXISTS `AbsenceRequests`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AbsenceRequests` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `RequestedBySdkSitId` int(11) NOT NULL,
-  `DecidedBySdkSitId` int(11) DEFAULT NULL,
-  `Status` int(11) NOT NULL,
-  `DateFrom` datetime(6) NOT NULL,
-  `DateTo` datetime(6) NOT NULL,
-  `RequestComment` longtext DEFAULT NULL,
-  `DecisionComment` longtext DEFAULT NULL,
-  `RequestedAtUtc` datetime(6) NOT NULL,
-  `DecidedAtUtc` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AbsenceRequests`
---
-
-LOCK TABLES `AbsenceRequests` WRITE;
-/*!40000 ALTER TABLE `AbsenceRequests` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AbsenceRequests` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AssignedSiteManagingTagVersions`
---
-
-DROP TABLE IF EXISTS `AssignedSiteManagingTagVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AssignedSiteManagingTagVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `AssignedSiteManagingTagId` int(11) NOT NULL,
-  `AssignedSiteId` int(11) NOT NULL,
-  `TagId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AssignedSiteManagingTagVersions`
---
-
-LOCK TABLES `AssignedSiteManagingTagVersions` WRITE;
-/*!40000 ALTER TABLE `AssignedSiteManagingTagVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AssignedSiteManagingTagVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AssignedSiteManagingTags`
---
-
-DROP TABLE IF EXISTS `AssignedSiteManagingTags`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AssignedSiteManagingTags` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `AssignedSiteId` int(11) NOT NULL,
-  `TagId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_AssignedSiteManagingTags_AssignedSiteId_TagId` (`AssignedSiteId`,`TagId`),
-  CONSTRAINT `FK_AssignedSiteManagingTags_AssignedSites_AssignedSiteId` FOREIGN KEY (`AssignedSiteId`) REFERENCES `AssignedSites` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AssignedSiteManagingTags`
---
-
-LOCK TABLES `AssignedSiteManagingTags` WRITE;
-/*!40000 ALTER TABLE `AssignedSiteManagingTags` DISABLE KEYS */;
-/*!40000 ALTER TABLE `AssignedSiteManagingTags` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AssignedSiteVersions`
---
-
-DROP TABLE IF EXISTS `AssignedSiteVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AssignedSiteVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `SiteId` int(11) NOT NULL,
-  `AssignedSiteId` int(11) NOT NULL,
-  `CaseMicrotingUid` int(11) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `BreakFriday` int(11) DEFAULT NULL,
-  `BreakMonday` int(11) DEFAULT NULL,
-  `BreakSaturday` int(11) DEFAULT NULL,
-  `BreakSunday` int(11) DEFAULT NULL,
-  `BreakThursday` int(11) DEFAULT NULL,
-  `BreakTuesday` int(11) DEFAULT NULL,
-  `BreakWednesday` int(11) DEFAULT NULL,
-  `EndFriday` int(11) DEFAULT NULL,
-  `EndMonday` int(11) DEFAULT NULL,
-  `EndSaturday` int(11) DEFAULT NULL,
-  `EndSunday` int(11) DEFAULT NULL,
-  `EndThursday` int(11) DEFAULT NULL,
-  `EndTuesday` int(11) DEFAULT NULL,
-  `EndWednesday` int(11) DEFAULT NULL,
-  `StartFriday` int(11) DEFAULT NULL,
-  `StartMonday` int(11) DEFAULT NULL,
-  `StartSaturday` int(11) DEFAULT NULL,
-  `StartSunday` int(11) DEFAULT NULL,
-  `StartThursday` int(11) DEFAULT NULL,
-  `StartTuesday` int(11) DEFAULT NULL,
-  `StartWednesday` int(11) DEFAULT NULL,
-  `Resigned` tinyint(1) NOT NULL DEFAULT 0,
-  `AutoBreakCalculationActive` tinyint(1) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `AllowAcceptOfPlannedHours` tinyint(1) NOT NULL DEFAULT 0,
-  `AllowEditOfRegistrations` tinyint(1) NOT NULL DEFAULT 0,
-  `AllowPersonalTimeRegistration` tinyint(1) NOT NULL DEFAULT 0,
-  `BreakFriday2NdShift` int(11) DEFAULT NULL,
-  `BreakFriday3RdShift` int(11) DEFAULT NULL,
-  `BreakFriday4ThShift` int(11) DEFAULT NULL,
-  `BreakFriday5ThShift` int(11) DEFAULT NULL,
-  `BreakMonday2NdShift` int(11) DEFAULT NULL,
-  `BreakMonday3RdShift` int(11) DEFAULT NULL,
-  `BreakMonday4ThShift` int(11) DEFAULT NULL,
-  `BreakMonday5ThShift` int(11) DEFAULT NULL,
-  `BreakSaturday2NdShift` int(11) DEFAULT NULL,
-  `BreakSaturday3RdShift` int(11) DEFAULT NULL,
-  `BreakSaturday4ThShift` int(11) DEFAULT NULL,
-  `BreakSaturday5ThShift` int(11) DEFAULT NULL,
-  `BreakSunday2NdShift` int(11) DEFAULT NULL,
-  `BreakSunday3RdShift` int(11) DEFAULT NULL,
-  `BreakSunday4ThShift` int(11) DEFAULT NULL,
-  `BreakSunday5ThShift` int(11) DEFAULT NULL,
-  `BreakThursday2NdShift` int(11) DEFAULT NULL,
-  `BreakThursday3RdShift` int(11) DEFAULT NULL,
-  `BreakThursday4ThShift` int(11) DEFAULT NULL,
-  `BreakThursday5ThShift` int(11) DEFAULT NULL,
-  `BreakTuesday2NdShift` int(11) DEFAULT NULL,
-  `BreakTuesday3RdShift` int(11) DEFAULT NULL,
-  `BreakTuesday4ThShift` int(11) DEFAULT NULL,
-  `BreakTuesday5ThShift` int(11) DEFAULT NULL,
-  `BreakWednesday2NdShift` int(11) DEFAULT NULL,
-  `BreakWednesday3RdShift` int(11) DEFAULT NULL,
-  `BreakWednesday4ThShift` int(11) DEFAULT NULL,
-  `BreakWednesday5ThShift` int(11) DEFAULT NULL,
-  `EndFriday2NdShift` int(11) DEFAULT NULL,
-  `EndFriday3RdShift` int(11) DEFAULT NULL,
-  `EndFriday4ThShift` int(11) DEFAULT NULL,
-  `EndFriday5ThShift` int(11) DEFAULT NULL,
-  `EndMonday2NdShift` int(11) DEFAULT NULL,
-  `EndMonday3RdShift` int(11) DEFAULT NULL,
-  `EndMonday4ThShift` int(11) DEFAULT NULL,
-  `EndMonday5ThShift` int(11) DEFAULT NULL,
-  `EndSaturday2NdShift` int(11) DEFAULT NULL,
-  `EndSaturday3RdShift` int(11) DEFAULT NULL,
-  `EndSaturday4ThShift` int(11) DEFAULT NULL,
-  `EndSaturday5ThShift` int(11) DEFAULT NULL,
-  `EndSunday2NdShift` int(11) DEFAULT NULL,
-  `EndSunday3RdShift` int(11) DEFAULT NULL,
-  `EndSunday4ThShift` int(11) DEFAULT NULL,
-  `EndSunday5ThShift` int(11) DEFAULT NULL,
-  `EndThursday2NdShift` int(11) DEFAULT NULL,
-  `EndThursday3RdShift` int(11) DEFAULT NULL,
-  `EndThursday4ThShift` int(11) DEFAULT NULL,
-  `EndThursday5ThShift` int(11) DEFAULT NULL,
-  `EndTuesday2NdShift` int(11) DEFAULT NULL,
-  `EndTuesday3RdShift` int(11) DEFAULT NULL,
-  `EndTuesday4ThShift` int(11) DEFAULT NULL,
-  `EndTuesday5ThShift` int(11) DEFAULT NULL,
-  `EndWednesday2NdShift` int(11) DEFAULT NULL,
-  `EndWednesday3RdShift` int(11) DEFAULT NULL,
-  `EndWednesday4ThShift` int(11) DEFAULT NULL,
-  `EndWednesday5ThShift` int(11) DEFAULT NULL,
-  `StartFriday2NdShift` int(11) DEFAULT NULL,
-  `StartFriday3RdShift` int(11) DEFAULT NULL,
-  `StartFriday4ThShift` int(11) DEFAULT NULL,
-  `StartFriday5ThShift` int(11) DEFAULT NULL,
-  `StartMonday2NdShift` int(11) DEFAULT NULL,
-  `StartMonday3RdShift` int(11) DEFAULT NULL,
-  `StartMonday4ThShift` int(11) DEFAULT NULL,
-  `StartMonday5ThShift` int(11) DEFAULT NULL,
-  `StartSaturday2NdShift` int(11) DEFAULT NULL,
-  `StartSaturday3RdShift` int(11) DEFAULT NULL,
-  `StartSaturday4ThShift` int(11) DEFAULT NULL,
-  `StartSaturday5ThShift` int(11) DEFAULT NULL,
-  `StartSunday2NdShift` int(11) DEFAULT NULL,
-  `StartSunday3RdShift` int(11) DEFAULT NULL,
-  `StartSunday4ThShift` int(11) DEFAULT NULL,
-  `StartSunday5ThShift` int(11) DEFAULT NULL,
-  `StartThursday2NdShift` int(11) DEFAULT NULL,
-  `StartThursday3RdShift` int(11) DEFAULT NULL,
-  `StartThursday4ThShift` int(11) DEFAULT NULL,
-  `StartThursday5ThShift` int(11) DEFAULT NULL,
-  `StartTuesday2NdShift` int(11) DEFAULT NULL,
-  `StartTuesday3RdShift` int(11) DEFAULT NULL,
-  `StartTuesday4ThShift` int(11) DEFAULT NULL,
-  `StartTuesday5ThShift` int(11) DEFAULT NULL,
-  `StartWednesday2NdShift` int(11) DEFAULT NULL,
-  `StartWednesday3RdShift` int(11) DEFAULT NULL,
-  `StartWednesday4ThShift` int(11) DEFAULT NULL,
-  `StartWednesday5ThShift` int(11) DEFAULT NULL,
-  `UseOneMinuteIntervals` tinyint(1) NOT NULL DEFAULT 0,
-  `UseGoogleSheetAsDefault` tinyint(1) NOT NULL DEFAULT 1,
-  `UseOnlyPlanHours` tinyint(1) NOT NULL DEFAULT 0,
-  `FridayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `MondayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `SaturdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `SundayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `ThursdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `TuesdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `WednesdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `UsePunchClock` tinyint(1) NOT NULL DEFAULT 0,
-  `UseDetailedPauseEditing` tinyint(1) NOT NULL DEFAULT 0,
-  `UsePunchClockWithAllowRegisteringInHistory` tinyint(1) NOT NULL DEFAULT 0,
-  `FifthShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `FourthShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `ThirdShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `DaysBackInTimeAllowedEditing` int(11) NOT NULL DEFAULT 0,
-  `DaysBackInTimeAllowedEditingEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `ResignedAtDate` datetime(6) NOT NULL DEFAULT '0001-01-01 00:00:00.000000',
-  `EnableMobileAccess` tinyint(1) NOT NULL DEFAULT 0,
-  `GpsEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `SnapshotEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `BreakPolicyId` int(11) DEFAULT NULL,
-  `PayRuleSetId` int(11) DEFAULT NULL,
-  `WorkingTimeRuleSetId` int(11) DEFAULT NULL,
-  `IsManager` tinyint(1) NOT NULL DEFAULT 0,
-  `OverMidnight` tinyint(1) NOT NULL DEFAULT 0,
-  `UseOneMinuteIntervalsFrom` datetime(6) DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AssignedSiteVersions`
---
-
-LOCK TABLES `AssignedSiteVersions` WRITE;
-/*!40000 ALTER TABLE `AssignedSiteVersions` DISABLE KEYS */;
-INSERT INTO `AssignedSiteVersions` VALUES
-(1,16172,1,NULL,'2022-09-21 08:45:32.313238','2022-09-21 08:45:32.313238','created',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
+INSERT INTO `AssignedSiteVersions` (`Id`, `SiteId`, `AssignedSiteId`, `CaseMicrotingUid`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `BreakFriday`, `BreakMonday`, `BreakSaturday`, `BreakSunday`, `BreakThursday`, `BreakTuesday`, `BreakWednesday`, `EndFriday`, `EndMonday`, `EndSaturday`, `EndSunday`, `EndThursday`, `EndTuesday`, `EndWednesday`, `StartFriday`, `StartMonday`, `StartSaturday`, `StartSunday`, `StartThursday`, `StartTuesday`, `StartWednesday`, `Resigned`, `AutoBreakCalculationActive`, `FridayBreakMinutesDivider`, `FridayBreakMinutesPrDivider`, `FridayBreakMinutesUpperLimit`, `MondayBreakMinutesDivider`, `MondayBreakMinutesPrDivider`, `MondayBreakMinutesUpperLimit`, `SaturdayBreakMinutesDivider`, `SaturdayBreakMinutesPrDivider`, `SaturdayBreakMinutesUpperLimit`, `SundayBreakMinutesDivider`, `SundayBreakMinutesPrDivider`, `SundayBreakMinutesUpperLimit`, `ThursdayBreakMinutesDivider`, `ThursdayBreakMinutesPrDivider`, `ThursdayBreakMinutesUpperLimit`, `TuesdayBreakMinutesDivider`, `TuesdayBreakMinutesPrDivider`, `TuesdayBreakMinutesUpperLimit`, `WednesdayBreakMinutesDivider`, `WednesdayBreakMinutesPrDivider`, `WednesdayBreakMinutesUpperLimit`, `AllowAcceptOfPlannedHours`, `AllowEditOfRegistrations`, `AllowPersonalTimeRegistration`, `BreakFriday2NdShift`, `BreakFriday3RdShift`, `BreakFriday4ThShift`, `BreakFriday5ThShift`, `BreakMonday2NdShift`, `BreakMonday3RdShift`, `BreakMonday4ThShift`, `BreakMonday5ThShift`, `BreakSaturday2NdShift`, `BreakSaturday3RdShift`, `BreakSaturday4ThShift`, `BreakSaturday5ThShift`, `BreakSunday2NdShift`, `BreakSunday3RdShift`, `BreakSunday4ThShift`, `BreakSunday5ThShift`, `BreakThursday2NdShift`, `BreakThursday3RdShift`, `BreakThursday4ThShift`, `BreakThursday5ThShift`, `BreakTuesday2NdShift`, `BreakTuesday3RdShift`, `BreakTuesday4ThShift`, `BreakTuesday5ThShift`, `BreakWednesday2NdShift`, `BreakWednesday3RdShift`, `BreakWednesday4ThShift`, `BreakWednesday5ThShift`, `EndFriday2NdShift`, `EndFriday3RdShift`, `EndFriday4ThShift`, `EndFriday5ThShift`, `EndMonday2NdShift`, `EndMonday3RdShift`, `EndMonday4ThShift`, `EndMonday5ThShift`, `EndSaturday2NdShift`, `EndSaturday3RdShift`, `EndSaturday4ThShift`, `EndSaturday5ThShift`, `EndSunday2NdShift`, `EndSunday3RdShift`, `EndSunday4ThShift`, `EndSunday5ThShift`, `EndThursday2NdShift`, `EndThursday3RdShift`, `EndThursday4ThShift`, `EndThursday5ThShift`, `EndTuesday2NdShift`, `EndTuesday3RdShift`, `EndTuesday4ThShift`, `EndTuesday5ThShift`, `EndWednesday2NdShift`, `EndWednesday3RdShift`, `EndWednesday4ThShift`, `EndWednesday5ThShift`, `StartFriday2NdShift`, `StartFriday3RdShift`, `StartFriday4ThShift`, `StartFriday5ThShift`, `StartMonday2NdShift`, `StartMonday3RdShift`, `StartMonday4ThShift`, `StartMonday5ThShift`, `StartSaturday2NdShift`, `StartSaturday3RdShift`, `StartSaturday4ThShift`, `StartSaturday5ThShift`, `StartSunday2NdShift`, `StartSunday3RdShift`, `StartSunday4ThShift`, `StartSunday5ThShift`, `StartThursday2NdShift`, `StartThursday3RdShift`, `StartThursday4ThShift`, `StartThursday5ThShift`, `StartTuesday2NdShift`, `StartTuesday3RdShift`, `StartTuesday4ThShift`, `StartTuesday5ThShift`, `StartWednesday2NdShift`, `StartWednesday3RdShift`, `StartWednesday4ThShift`, `StartWednesday5ThShift`, `UseOneMinuteIntervals`, `UseGoogleSheetAsDefault`, `UseOnlyPlanHours`, `FridayPlanHours`, `MondayPlanHours`, `SaturdayPlanHours`, `SundayPlanHours`, `ThursdayPlanHours`, `TuesdayPlanHours`, `WednesdayPlanHours`, `UsePunchClock`, `UseDetailedPauseEditing`, `UsePunchClockWithAllowRegisteringInHistory`, `FifthShiftActive`, `FourthShiftActive`, `ThirdShiftActive`, `DaysBackInTimeAllowedEditing`, `DaysBackInTimeAllowedEditingEnabled`, `ResignedAtDate`, `EnableMobileAccess`, `GpsEnabled`, `SnapshotEnabled`, `BreakPolicyId`, `PayRuleSetId`, `WorkingTimeRuleSetId`, `IsManager`, `OverMidnight`, `UseOneMinuteIntervalsFrom`) VALUES (1,16172,1,NULL,'2022-09-21 08:45:32.313238','2022-09-21 08:45:32.313238','created',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (2,16172,1,2,'2022-09-21 08:45:32.313238','2022-09-21 08:45:37.872319','created',1,1,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (3,16178,2,NULL,'2022-09-23 12:13:31.492144','2022-09-23 12:13:31.492147','created',2,2,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (4,16178,2,4,'2022-09-23 12:13:31.492144','2022-09-23 12:13:33.334108','created',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
@@ -469,203 +131,7 @@ INSERT INTO `AssignedSiteVersions` VALUES
 (58,16170,29,58,'2022-09-26 12:04:37.350289','2022-09-26 12:04:39.659647','created',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (61,16184,31,NULL,'2023-02-06 13:27:33.282709','2023-02-06 13:27:33.282794','created',4,4,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (64,16184,31,2790,'2023-02-06 13:27:33.282709','2023-02-06 13:27:36.888965','created',4,4,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL);
-/*!40000 ALTER TABLE `AssignedSiteVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `AssignedSites`
---
-
-DROP TABLE IF EXISTS `AssignedSites`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `AssignedSites` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `SiteId` int(11) NOT NULL,
-  `CaseMicrotingUid` int(11) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `BreakFriday` int(11) DEFAULT NULL,
-  `BreakMonday` int(11) DEFAULT NULL,
-  `BreakSaturday` int(11) DEFAULT NULL,
-  `BreakSunday` int(11) DEFAULT NULL,
-  `BreakThursday` int(11) DEFAULT NULL,
-  `BreakTuesday` int(11) DEFAULT NULL,
-  `BreakWednesday` int(11) DEFAULT NULL,
-  `EndFriday` int(11) DEFAULT NULL,
-  `EndMonday` int(11) DEFAULT NULL,
-  `EndSaturday` int(11) DEFAULT NULL,
-  `EndSunday` int(11) DEFAULT NULL,
-  `EndThursday` int(11) DEFAULT NULL,
-  `EndTuesday` int(11) DEFAULT NULL,
-  `EndWednesday` int(11) DEFAULT NULL,
-  `StartFriday` int(11) DEFAULT NULL,
-  `StartMonday` int(11) DEFAULT NULL,
-  `StartSaturday` int(11) DEFAULT NULL,
-  `StartSunday` int(11) DEFAULT NULL,
-  `StartThursday` int(11) DEFAULT NULL,
-  `StartTuesday` int(11) DEFAULT NULL,
-  `StartWednesday` int(11) DEFAULT NULL,
-  `Resigned` tinyint(1) NOT NULL DEFAULT 0,
-  `AutoBreakCalculationActive` tinyint(1) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `FridayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `MondayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `SaturdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `SundayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `ThursdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `TuesdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesDivider` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesPrDivider` int(11) NOT NULL DEFAULT 0,
-  `WednesdayBreakMinutesUpperLimit` int(11) NOT NULL DEFAULT 0,
-  `AllowAcceptOfPlannedHours` tinyint(1) NOT NULL DEFAULT 0,
-  `AllowEditOfRegistrations` tinyint(1) NOT NULL DEFAULT 0,
-  `AllowPersonalTimeRegistration` tinyint(1) NOT NULL DEFAULT 0,
-  `BreakFriday2NdShift` int(11) DEFAULT NULL,
-  `BreakFriday3RdShift` int(11) DEFAULT NULL,
-  `BreakFriday4ThShift` int(11) DEFAULT NULL,
-  `BreakFriday5ThShift` int(11) DEFAULT NULL,
-  `BreakMonday2NdShift` int(11) DEFAULT NULL,
-  `BreakMonday3RdShift` int(11) DEFAULT NULL,
-  `BreakMonday4ThShift` int(11) DEFAULT NULL,
-  `BreakMonday5ThShift` int(11) DEFAULT NULL,
-  `BreakSaturday2NdShift` int(11) DEFAULT NULL,
-  `BreakSaturday3RdShift` int(11) DEFAULT NULL,
-  `BreakSaturday4ThShift` int(11) DEFAULT NULL,
-  `BreakSaturday5ThShift` int(11) DEFAULT NULL,
-  `BreakSunday2NdShift` int(11) DEFAULT NULL,
-  `BreakSunday3RdShift` int(11) DEFAULT NULL,
-  `BreakSunday4ThShift` int(11) DEFAULT NULL,
-  `BreakSunday5ThShift` int(11) DEFAULT NULL,
-  `BreakThursday2NdShift` int(11) DEFAULT NULL,
-  `BreakThursday3RdShift` int(11) DEFAULT NULL,
-  `BreakThursday4ThShift` int(11) DEFAULT NULL,
-  `BreakThursday5ThShift` int(11) DEFAULT NULL,
-  `BreakTuesday2NdShift` int(11) DEFAULT NULL,
-  `BreakTuesday3RdShift` int(11) DEFAULT NULL,
-  `BreakTuesday4ThShift` int(11) DEFAULT NULL,
-  `BreakTuesday5ThShift` int(11) DEFAULT NULL,
-  `BreakWednesday2NdShift` int(11) DEFAULT NULL,
-  `BreakWednesday3RdShift` int(11) DEFAULT NULL,
-  `BreakWednesday4ThShift` int(11) DEFAULT NULL,
-  `BreakWednesday5ThShift` int(11) DEFAULT NULL,
-  `EndFriday2NdShift` int(11) DEFAULT NULL,
-  `EndFriday3RdShift` int(11) DEFAULT NULL,
-  `EndFriday4ThShift` int(11) DEFAULT NULL,
-  `EndFriday5ThShift` int(11) DEFAULT NULL,
-  `EndMonday2NdShift` int(11) DEFAULT NULL,
-  `EndMonday3RdShift` int(11) DEFAULT NULL,
-  `EndMonday4ThShift` int(11) DEFAULT NULL,
-  `EndMonday5ThShift` int(11) DEFAULT NULL,
-  `EndSaturday2NdShift` int(11) DEFAULT NULL,
-  `EndSaturday3RdShift` int(11) DEFAULT NULL,
-  `EndSaturday4ThShift` int(11) DEFAULT NULL,
-  `EndSaturday5ThShift` int(11) DEFAULT NULL,
-  `EndSunday2NdShift` int(11) DEFAULT NULL,
-  `EndSunday3RdShift` int(11) DEFAULT NULL,
-  `EndSunday4ThShift` int(11) DEFAULT NULL,
-  `EndSunday5ThShift` int(11) DEFAULT NULL,
-  `EndThursday2NdShift` int(11) DEFAULT NULL,
-  `EndThursday3RdShift` int(11) DEFAULT NULL,
-  `EndThursday4ThShift` int(11) DEFAULT NULL,
-  `EndThursday5ThShift` int(11) DEFAULT NULL,
-  `EndTuesday2NdShift` int(11) DEFAULT NULL,
-  `EndTuesday3RdShift` int(11) DEFAULT NULL,
-  `EndTuesday4ThShift` int(11) DEFAULT NULL,
-  `EndTuesday5ThShift` int(11) DEFAULT NULL,
-  `EndWednesday2NdShift` int(11) DEFAULT NULL,
-  `EndWednesday3RdShift` int(11) DEFAULT NULL,
-  `EndWednesday4ThShift` int(11) DEFAULT NULL,
-  `EndWednesday5ThShift` int(11) DEFAULT NULL,
-  `StartFriday2NdShift` int(11) DEFAULT NULL,
-  `StartFriday3RdShift` int(11) DEFAULT NULL,
-  `StartFriday4ThShift` int(11) DEFAULT NULL,
-  `StartFriday5ThShift` int(11) DEFAULT NULL,
-  `StartMonday2NdShift` int(11) DEFAULT NULL,
-  `StartMonday3RdShift` int(11) DEFAULT NULL,
-  `StartMonday4ThShift` int(11) DEFAULT NULL,
-  `StartMonday5ThShift` int(11) DEFAULT NULL,
-  `StartSaturday2NdShift` int(11) DEFAULT NULL,
-  `StartSaturday3RdShift` int(11) DEFAULT NULL,
-  `StartSaturday4ThShift` int(11) DEFAULT NULL,
-  `StartSaturday5ThShift` int(11) DEFAULT NULL,
-  `StartSunday2NdShift` int(11) DEFAULT NULL,
-  `StartSunday3RdShift` int(11) DEFAULT NULL,
-  `StartSunday4ThShift` int(11) DEFAULT NULL,
-  `StartSunday5ThShift` int(11) DEFAULT NULL,
-  `StartThursday2NdShift` int(11) DEFAULT NULL,
-  `StartThursday3RdShift` int(11) DEFAULT NULL,
-  `StartThursday4ThShift` int(11) DEFAULT NULL,
-  `StartThursday5ThShift` int(11) DEFAULT NULL,
-  `StartTuesday2NdShift` int(11) DEFAULT NULL,
-  `StartTuesday3RdShift` int(11) DEFAULT NULL,
-  `StartTuesday4ThShift` int(11) DEFAULT NULL,
-  `StartTuesday5ThShift` int(11) DEFAULT NULL,
-  `StartWednesday2NdShift` int(11) DEFAULT NULL,
-  `StartWednesday3RdShift` int(11) DEFAULT NULL,
-  `StartWednesday4ThShift` int(11) DEFAULT NULL,
-  `StartWednesday5ThShift` int(11) DEFAULT NULL,
-  `UseOneMinuteIntervals` tinyint(1) NOT NULL DEFAULT 0,
-  `UseGoogleSheetAsDefault` tinyint(1) NOT NULL DEFAULT 0,
-  `UseOnlyPlanHours` tinyint(1) NOT NULL DEFAULT 0,
-  `FridayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `MondayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `SaturdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `SundayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `ThursdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `TuesdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `WednesdayPlanHours` int(11) NOT NULL DEFAULT 0,
-  `UsePunchClock` tinyint(1) NOT NULL DEFAULT 0,
-  `UseDetailedPauseEditing` tinyint(1) NOT NULL DEFAULT 0,
-  `UsePunchClockWithAllowRegisteringInHistory` tinyint(1) NOT NULL DEFAULT 0,
-  `FifthShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `FourthShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `ThirdShiftActive` tinyint(1) NOT NULL DEFAULT 0,
-  `DaysBackInTimeAllowedEditing` int(11) NOT NULL DEFAULT 0,
-  `DaysBackInTimeAllowedEditingEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `ResignedAtDate` datetime(6) NOT NULL DEFAULT '0001-01-01 00:00:00.000000',
-  `EnableMobileAccess` tinyint(1) NOT NULL DEFAULT 0,
-  `GpsEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `SnapshotEnabled` tinyint(1) NOT NULL DEFAULT 0,
-  `BreakPolicyId` int(11) DEFAULT NULL,
-  `PayRuleSetId` int(11) DEFAULT NULL,
-  `WorkingTimeRuleSetId` int(11) DEFAULT NULL,
-  `IsManager` tinyint(1) NOT NULL DEFAULT 0,
-  `OverMidnight` tinyint(1) NOT NULL DEFAULT 0,
-  `UseOneMinuteIntervalsFrom` datetime(6) DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_AssignedSites_BreakPolicyId` (`BreakPolicyId`),
-  KEY `IX_AssignedSites_PayRuleSetId` (`PayRuleSetId`),
-  KEY `IX_AssignedSites_WorkingTimeRuleSetId` (`WorkingTimeRuleSetId`),
-  CONSTRAINT `FK_AssignedSites_BreakPolicies_BreakPolicyId` FOREIGN KEY (`BreakPolicyId`) REFERENCES `BreakPolicies` (`Id`),
-  CONSTRAINT `FK_AssignedSites_PayRuleSets_PayRuleSetId` FOREIGN KEY (`PayRuleSetId`) REFERENCES `PayRuleSets` (`Id`),
-  CONSTRAINT `FK_AssignedSites_WorkingTimeRuleSets_WorkingTimeRuleSetId` FOREIGN KEY (`WorkingTimeRuleSetId`) REFERENCES `WorkingTimeRuleSets` (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `AssignedSites`
---
-
-LOCK TABLES `AssignedSites` WRITE;
-/*!40000 ALTER TABLE `AssignedSites` DISABLE KEYS */;
-INSERT INTO `AssignedSites` VALUES
-(1,16172,2,'2022-09-21 08:45:32.313238','2022-09-21 08:45:37.872319','created',1,1,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
+INSERT INTO `AssignedSites` (`Id`, `SiteId`, `CaseMicrotingUid`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `BreakFriday`, `BreakMonday`, `BreakSaturday`, `BreakSunday`, `BreakThursday`, `BreakTuesday`, `BreakWednesday`, `EndFriday`, `EndMonday`, `EndSaturday`, `EndSunday`, `EndThursday`, `EndTuesday`, `EndWednesday`, `StartFriday`, `StartMonday`, `StartSaturday`, `StartSunday`, `StartThursday`, `StartTuesday`, `StartWednesday`, `Resigned`, `AutoBreakCalculationActive`, `FridayBreakMinutesDivider`, `FridayBreakMinutesPrDivider`, `FridayBreakMinutesUpperLimit`, `MondayBreakMinutesDivider`, `MondayBreakMinutesPrDivider`, `MondayBreakMinutesUpperLimit`, `SaturdayBreakMinutesDivider`, `SaturdayBreakMinutesPrDivider`, `SaturdayBreakMinutesUpperLimit`, `SundayBreakMinutesDivider`, `SundayBreakMinutesPrDivider`, `SundayBreakMinutesUpperLimit`, `ThursdayBreakMinutesDivider`, `ThursdayBreakMinutesPrDivider`, `ThursdayBreakMinutesUpperLimit`, `TuesdayBreakMinutesDivider`, `TuesdayBreakMinutesPrDivider`, `TuesdayBreakMinutesUpperLimit`, `WednesdayBreakMinutesDivider`, `WednesdayBreakMinutesPrDivider`, `WednesdayBreakMinutesUpperLimit`, `AllowAcceptOfPlannedHours`, `AllowEditOfRegistrations`, `AllowPersonalTimeRegistration`, `BreakFriday2NdShift`, `BreakFriday3RdShift`, `BreakFriday4ThShift`, `BreakFriday5ThShift`, `BreakMonday2NdShift`, `BreakMonday3RdShift`, `BreakMonday4ThShift`, `BreakMonday5ThShift`, `BreakSaturday2NdShift`, `BreakSaturday3RdShift`, `BreakSaturday4ThShift`, `BreakSaturday5ThShift`, `BreakSunday2NdShift`, `BreakSunday3RdShift`, `BreakSunday4ThShift`, `BreakSunday5ThShift`, `BreakThursday2NdShift`, `BreakThursday3RdShift`, `BreakThursday4ThShift`, `BreakThursday5ThShift`, `BreakTuesday2NdShift`, `BreakTuesday3RdShift`, `BreakTuesday4ThShift`, `BreakTuesday5ThShift`, `BreakWednesday2NdShift`, `BreakWednesday3RdShift`, `BreakWednesday4ThShift`, `BreakWednesday5ThShift`, `EndFriday2NdShift`, `EndFriday3RdShift`, `EndFriday4ThShift`, `EndFriday5ThShift`, `EndMonday2NdShift`, `EndMonday3RdShift`, `EndMonday4ThShift`, `EndMonday5ThShift`, `EndSaturday2NdShift`, `EndSaturday3RdShift`, `EndSaturday4ThShift`, `EndSaturday5ThShift`, `EndSunday2NdShift`, `EndSunday3RdShift`, `EndSunday4ThShift`, `EndSunday5ThShift`, `EndThursday2NdShift`, `EndThursday3RdShift`, `EndThursday4ThShift`, `EndThursday5ThShift`, `EndTuesday2NdShift`, `EndTuesday3RdShift`, `EndTuesday4ThShift`, `EndTuesday5ThShift`, `EndWednesday2NdShift`, `EndWednesday3RdShift`, `EndWednesday4ThShift`, `EndWednesday5ThShift`, `StartFriday2NdShift`, `StartFriday3RdShift`, `StartFriday4ThShift`, `StartFriday5ThShift`, `StartMonday2NdShift`, `StartMonday3RdShift`, `StartMonday4ThShift`, `StartMonday5ThShift`, `StartSaturday2NdShift`, `StartSaturday3RdShift`, `StartSaturday4ThShift`, `StartSaturday5ThShift`, `StartSunday2NdShift`, `StartSunday3RdShift`, `StartSunday4ThShift`, `StartSunday5ThShift`, `StartThursday2NdShift`, `StartThursday3RdShift`, `StartThursday4ThShift`, `StartThursday5ThShift`, `StartTuesday2NdShift`, `StartTuesday3RdShift`, `StartTuesday4ThShift`, `StartTuesday5ThShift`, `StartWednesday2NdShift`, `StartWednesday3RdShift`, `StartWednesday4ThShift`, `StartWednesday5ThShift`, `UseOneMinuteIntervals`, `UseGoogleSheetAsDefault`, `UseOnlyPlanHours`, `FridayPlanHours`, `MondayPlanHours`, `SaturdayPlanHours`, `SundayPlanHours`, `ThursdayPlanHours`, `TuesdayPlanHours`, `WednesdayPlanHours`, `UsePunchClock`, `UseDetailedPauseEditing`, `UsePunchClockWithAllowRegisteringInHistory`, `FifthShiftActive`, `FourthShiftActive`, `ThirdShiftActive`, `DaysBackInTimeAllowedEditing`, `DaysBackInTimeAllowedEditingEnabled`, `ResignedAtDate`, `EnableMobileAccess`, `GpsEnabled`, `SnapshotEnabled`, `BreakPolicyId`, `PayRuleSetId`, `WorkingTimeRuleSetId`, `IsManager`, `OverMidnight`, `UseOneMinuteIntervalsFrom`) VALUES (1,16172,2,'2022-09-21 08:45:32.313238','2022-09-21 08:45:37.872319','created',1,1,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (2,16178,4,'2022-09-23 12:13:31.492144','2022-09-23 12:13:33.334108','created',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (3,4,6,'2022-09-23 12:13:56.753796','2022-09-23 12:13:58.617323','removed',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (4,5,8,'2022-09-23 12:14:13.017549','2022-09-23 12:14:14.827839','removed',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
@@ -695,294 +161,7 @@ INSERT INTO `AssignedSites` VALUES
 (28,16206,56,'2022-09-26 12:04:28.977874','2022-09-26 12:04:31.483222','created',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (29,16170,58,'2022-09-26 12:04:37.350289','2022-09-26 12:04:39.659647','removed',2,2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL),
 (31,16184,2790,'2023-02-06 13:27:33.282709','2023-02-06 13:27:36.888965','created',4,4,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'0001-01-01 00:00:00.000000',0,0,0,NULL,NULL,NULL,0,0,NULL);
-/*!40000 ALTER TABLE `AssignedSites` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `BreakPolicies`
---
-
-DROP TABLE IF EXISTS `BreakPolicies`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `BreakPolicies` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `AppliesOnlyIfWorkMinutesAtLeast` int(11) DEFAULT NULL,
-  `ExtraPauseCountsAsUnpaid` tinyint(1) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BreakPolicies`
---
-
-LOCK TABLES `BreakPolicies` WRITE;
-/*!40000 ALTER TABLE `BreakPolicies` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BreakPolicies` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `BreakPolicyRuleVersions`
---
-
-DROP TABLE IF EXISTS `BreakPolicyRuleVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `BreakPolicyRuleVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `BreakPolicyRuleId` int(11) NOT NULL,
-  `BreakPolicyId` int(11) NOT NULL,
-  `DayOfWeek` int(11) NOT NULL,
-  `UnpaidBreakMinutes` int(11) NOT NULL,
-  `PaidBreakMinutes` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BreakPolicyRuleVersions`
---
-
-LOCK TABLES `BreakPolicyRuleVersions` WRITE;
-/*!40000 ALTER TABLE `BreakPolicyRuleVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BreakPolicyRuleVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `BreakPolicyRules`
---
-
-DROP TABLE IF EXISTS `BreakPolicyRules`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `BreakPolicyRules` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `BreakPolicyId` int(11) NOT NULL,
-  `DayOfWeek` int(11) NOT NULL,
-  `UnpaidBreakMinutes` int(11) NOT NULL,
-  `PaidBreakMinutes` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_BreakPolicyRules_BreakPolicyId` (`BreakPolicyId`),
-  CONSTRAINT `FK_BreakPolicyRules_BreakPolicies_BreakPolicyId` FOREIGN KEY (`BreakPolicyId`) REFERENCES `BreakPolicies` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BreakPolicyRules`
---
-
-LOCK TABLES `BreakPolicyRules` WRITE;
-/*!40000 ALTER TABLE `BreakPolicyRules` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BreakPolicyRules` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `BreakPolicyVersions`
---
-
-DROP TABLE IF EXISTS `BreakPolicyVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `BreakPolicyVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `BreakPolicyId` int(11) NOT NULL,
-  `Name` longtext DEFAULT NULL,
-  `AppliesOnlyIfWorkMinutesAtLeast` int(11) DEFAULT NULL,
-  `ExtraPauseCountsAsUnpaid` tinyint(1) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BreakPolicyVersions`
---
-
-LOCK TABLES `BreakPolicyVersions` WRITE;
-/*!40000 ALTER TABLE `BreakPolicyVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BreakPolicyVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `GpsCoordinateVersions`
---
-
-DROP TABLE IF EXISTS `GpsCoordinateVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `GpsCoordinateVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `GpsCoordinateId` int(11) NOT NULL,
-  `Latitude` double NOT NULL,
-  `Longitude` double NOT NULL,
-  `RegistrationType` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `GpsCoordinateVersions`
---
-
-LOCK TABLES `GpsCoordinateVersions` WRITE;
-/*!40000 ALTER TABLE `GpsCoordinateVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `GpsCoordinateVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `GpsCoordinates`
---
-
-DROP TABLE IF EXISTS `GpsCoordinates`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `GpsCoordinates` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `Latitude` double NOT NULL,
-  `Longitude` double NOT NULL,
-  `RegistrationType` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_GpsCoordinates_PlanRegistrationId` (`PlanRegistrationId`),
-  CONSTRAINT `FK_GpsCoordinates_PlanRegistrations_PlanRegistrationId` FOREIGN KEY (`PlanRegistrationId`) REFERENCES `PlanRegistrations` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `GpsCoordinates`
---
-
-LOCK TABLES `GpsCoordinates` WRITE;
-/*!40000 ALTER TABLE `GpsCoordinates` DISABLE KEYS */;
-/*!40000 ALTER TABLE `GpsCoordinates` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `HolidayVersions`
---
-
-DROP TABLE IF EXISTS `HolidayVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `HolidayVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `HolidayId` int(11) NOT NULL,
-  `Name` longtext DEFAULT NULL,
-  `Date` datetime(6) NOT NULL,
-  `DayOffPercentage` double NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `HolidayVersions`
---
-
-LOCK TABLES `HolidayVersions` WRITE;
-/*!40000 ALTER TABLE `HolidayVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `HolidayVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `Holidays`
---
-
-DROP TABLE IF EXISTS `Holidays`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Holidays` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `Date` datetime(6) NOT NULL,
-  `DayOffPercentage` double NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `Holidays`
---
-
-LOCK TABLES `Holidays` WRITE;
-/*!40000 ALTER TABLE `Holidays` DISABLE KEYS */;
-/*!40000 ALTER TABLE `Holidays` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `Messages`
---
-
-DROP TABLE IF EXISTS `Messages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Messages` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `DaName` longtext DEFAULT NULL,
-  `DeName` longtext DEFAULT NULL,
-  `EnName` longtext DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `Messages`
---
-
-LOCK TABLES `Messages` WRITE;
-/*!40000 ALTER TABLE `Messages` DISABLE KEYS */;
-INSERT INTO `Messages` VALUES
-(1,'DayOff','Fridag','Freier Tag','Day off'),
+INSERT INTO `Messages` (`Id`, `Name`, `DaName`, `DeName`, `EnName`) VALUES (1,'DayOff','Fridag','Freier Tag','Day off'),
 (2,'Vacation','Ferie','Urlaub','Vacation'),
 (3,'Sick','Syg','Krank','Sick'),
 (4,'Course','Kursus','Kurs','Course'),
@@ -993,613 +172,7 @@ INSERT INTO `Messages` VALUES
 (10,'Maternity','Barsel','Barsel Tag','Maternity day off'),
 (11,'VacationDayOff','Ferie fridag','Ferie fridag Tag','Vacation day off'),
 (12,'Holiday','Helligdag','Helligdag Tag','Holiday day off');
-/*!40000 ALTER TABLE `Messages` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayDayRuleVersions`
---
-
-DROP TABLE IF EXISTS `PayDayRuleVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayDayRuleVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PayDayRuleId` int(11) NOT NULL,
-  `PayRuleSetId` int(11) NOT NULL,
-  `DayCode` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayDayRuleVersions`
---
-
-LOCK TABLES `PayDayRuleVersions` WRITE;
-/*!40000 ALTER TABLE `PayDayRuleVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayDayRuleVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayDayRules`
---
-
-DROP TABLE IF EXISTS `PayDayRules`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayDayRules` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PayRuleSetId` int(11) NOT NULL,
-  `DayCode` varchar(255) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_PayDayRules_PayRuleSetId_DayCode` (`PayRuleSetId`,`DayCode`),
-  CONSTRAINT `FK_PayDayRules_PayRuleSets_PayRuleSetId` FOREIGN KEY (`PayRuleSetId`) REFERENCES `PayRuleSets` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayDayRules`
---
-
-LOCK TABLES `PayDayRules` WRITE;
-/*!40000 ALTER TABLE `PayDayRules` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayDayRules` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayRuleSetVersions`
---
-
-DROP TABLE IF EXISTS `PayRuleSetVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayRuleSetVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PayRuleSetId` int(11) NOT NULL,
-  `Name` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayRuleSetVersions`
---
-
-LOCK TABLES `PayRuleSetVersions` WRITE;
-/*!40000 ALTER TABLE `PayRuleSetVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayRuleSetVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayRuleSets`
---
-
-DROP TABLE IF EXISTS `PayRuleSets`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayRuleSets` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayRuleSets`
---
-
-LOCK TABLES `PayRuleSets` WRITE;
-/*!40000 ALTER TABLE `PayRuleSets` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayRuleSets` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayTierRuleVersions`
---
-
-DROP TABLE IF EXISTS `PayTierRuleVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayTierRuleVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PayTierRuleId` int(11) NOT NULL,
-  `PayDayRuleId` int(11) NOT NULL,
-  `UpToSeconds` int(11) DEFAULT NULL,
-  `PayCode` longtext DEFAULT NULL,
-  `Order` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayTierRuleVersions`
---
-
-LOCK TABLES `PayTierRuleVersions` WRITE;
-/*!40000 ALTER TABLE `PayTierRuleVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayTierRuleVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PayTierRules`
---
-
-DROP TABLE IF EXISTS `PayTierRules`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PayTierRules` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PayDayRuleId` int(11) NOT NULL,
-  `UpToSeconds` int(11) DEFAULT NULL,
-  `PayCode` longtext DEFAULT NULL,
-  `Order` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_PayTierRules_PayDayRuleId_Order` (`PayDayRuleId`,`Order`),
-  CONSTRAINT `FK_PayTierRules_PayDayRules_PayDayRuleId` FOREIGN KEY (`PayDayRuleId`) REFERENCES `PayDayRules` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PayTierRules`
---
-
-LOCK TABLES `PayTierRules` WRITE;
-/*!40000 ALTER TABLE `PayTierRules` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PayTierRules` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PictureSnapshotVersions`
---
-
-DROP TABLE IF EXISTS `PictureSnapshotVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PictureSnapshotVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `PictureSnapshotId` int(11) NOT NULL,
-  `PictureHash` longtext DEFAULT NULL,
-  `RegistrationType` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `FileExtension` longtext DEFAULT NULL,
-  `FileName` longtext DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PictureSnapshotVersions`
---
-
-LOCK TABLES `PictureSnapshotVersions` WRITE;
-/*!40000 ALTER TABLE `PictureSnapshotVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PictureSnapshotVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PictureSnapshots`
---
-
-DROP TABLE IF EXISTS `PictureSnapshots`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PictureSnapshots` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `PictureHash` longtext DEFAULT NULL,
-  `RegistrationType` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `FileExtension` longtext DEFAULT NULL,
-  `FileName` longtext DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_PictureSnapshots_PlanRegistrationId` (`PlanRegistrationId`),
-  CONSTRAINT `FK_PictureSnapshots_PlanRegistrations_PlanRegistrationId` FOREIGN KEY (`PlanRegistrationId`) REFERENCES `PlanRegistrations` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PictureSnapshots`
---
-
-LOCK TABLES `PictureSnapshots` WRITE;
-/*!40000 ALTER TABLE `PictureSnapshots` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PictureSnapshots` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrationContentHandoverRequestVersions`
---
-
-DROP TABLE IF EXISTS `PlanRegistrationContentHandoverRequestVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrationContentHandoverRequestVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationContentHandoverRequestId` int(11) NOT NULL,
-  `Date` datetime(6) NOT NULL,
-  `FromSdkSitId` int(11) NOT NULL,
-  `ToSdkSitId` int(11) NOT NULL,
-  `FromPlanRegistrationId` int(11) NOT NULL,
-  `ToPlanRegistrationId` int(11) NOT NULL,
-  `Status` int(11) NOT NULL,
-  `RequestedByComment` longtext DEFAULT NULL,
-  `DecisionComment` longtext DEFAULT NULL,
-  `RequestedAtUtc` datetime(6) NOT NULL,
-  `RespondedAtUtc` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationContentHandoverRequestVersions`
---
-
-LOCK TABLES `PlanRegistrationContentHandoverRequestVersions` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationContentHandoverRequestVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrationContentHandoverRequestVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrationContentHandoverRequests`
---
-
-DROP TABLE IF EXISTS `PlanRegistrationContentHandoverRequests`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrationContentHandoverRequests` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Date` datetime(6) NOT NULL,
-  `FromSdkSitId` int(11) NOT NULL,
-  `ToSdkSitId` int(11) NOT NULL,
-  `FromPlanRegistrationId` int(11) NOT NULL,
-  `ToPlanRegistrationId` int(11) NOT NULL,
-  `Status` int(11) NOT NULL,
-  `RequestedByComment` longtext DEFAULT NULL,
-  `DecisionComment` longtext DEFAULT NULL,
-  `RequestedAtUtc` datetime(6) NOT NULL,
-  `RespondedAtUtc` datetime(6) DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_PlanRegistrationContentHandoverRequests_FromSdkSitId_Status_~` (`FromSdkSitId`,`Status`,`Date`),
-  KEY `IX_PlanRegistrationContentHandoverRequests_ToSdkSitId_Status_Da~` (`ToSdkSitId`,`Status`,`Date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationContentHandoverRequests`
---
-
-LOCK TABLES `PlanRegistrationContentHandoverRequests` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationContentHandoverRequests` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrationContentHandoverRequests` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrationPayLineVersions`
---
-
-DROP TABLE IF EXISTS `PlanRegistrationPayLineVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrationPayLineVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationPayLineId` int(11) NOT NULL,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `PayCode` longtext DEFAULT NULL,
-  `Hours` double NOT NULL,
-  `HoursInSeconds` int(11) NOT NULL,
-  `PayRuleSetId` int(11) DEFAULT NULL,
-  `CalculatedAt` datetime(6) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationPayLineVersions`
---
-
-LOCK TABLES `PlanRegistrationPayLineVersions` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationPayLineVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrationPayLineVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrationPayLines`
---
-
-DROP TABLE IF EXISTS `PlanRegistrationPayLines`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrationPayLines` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `PayCode` varchar(255) DEFAULT NULL,
-  `Hours` double NOT NULL,
-  `HoursInSeconds` int(11) NOT NULL,
-  `PayRuleSetId` int(11) DEFAULT NULL,
-  `CalculatedAt` datetime(6) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_PlanRegistrationPayLines_PlanRegistrationId_PayCode` (`PlanRegistrationId`,`PayCode`),
-  KEY `IX_PlanRegistrationPayLines_PlanRegistrationId` (`PlanRegistrationId`),
-  CONSTRAINT `FK_PlanRegistrationPayLines_PlanRegistrations_PlanRegistrationId` FOREIGN KEY (`PlanRegistrationId`) REFERENCES `PlanRegistrations` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationPayLines`
---
-
-LOCK TABLES `PlanRegistrationPayLines` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationPayLines` DISABLE KEYS */;
-/*!40000 ALTER TABLE `PlanRegistrationPayLines` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrationVersions`
---
-
-DROP TABLE IF EXISTS `PlanRegistrationVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrationVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `SdkSitId` int(11) NOT NULL,
-  `Date` datetime(6) NOT NULL,
-  `PlanText` longtext DEFAULT NULL,
-  `PlanHours` double NOT NULL,
-  `Start1Id` int(11) NOT NULL,
-  `Stop1Id` int(11) NOT NULL,
-  `Pause1Id` int(11) NOT NULL,
-  `Start2Id` int(11) NOT NULL,
-  `Stop2Id` int(11) NOT NULL,
-  `Pause2Id` int(11) NOT NULL,
-  `NettoHours` double NOT NULL,
-  `Flex` double NOT NULL,
-  `SumFlexEnd` double NOT NULL,
-  `PaiedOutFlex` double NOT NULL,
-  `MessageId` int(11) DEFAULT NULL,
-  `CommentOffice` longtext DEFAULT NULL,
-  `CommentOfficeAll` longtext DEFAULT NULL,
-  `PlanRegistrationId` int(11) NOT NULL,
-  `StatusCaseId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `WorkerComment` longtext DEFAULT NULL,
-  `SumFlexStart` double NOT NULL DEFAULT 0,
-  `DataFromDevice` tinyint(1) NOT NULL DEFAULT 0,
-  `RegistrationDeviceId` int(11) DEFAULT NULL,
-  `Pause1StartedAt` datetime(6) DEFAULT NULL,
-  `Pause1StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause2StartedAt` datetime(6) DEFAULT NULL,
-  `Pause2StoppedAt` datetime(6) DEFAULT NULL,
-  `Start1StartedAt` datetime(6) DEFAULT NULL,
-  `Start2StartedAt` datetime(6) DEFAULT NULL,
-  `Stop1StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop2StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause100StartedAt` datetime(6) DEFAULT NULL,
-  `Pause100StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause101StartedAt` datetime(6) DEFAULT NULL,
-  `Pause101StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause102StartedAt` datetime(6) DEFAULT NULL,
-  `Pause102StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause10StartedAt` datetime(6) DEFAULT NULL,
-  `Pause10StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause11StartedAt` datetime(6) DEFAULT NULL,
-  `Pause11StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause12StartedAt` datetime(6) DEFAULT NULL,
-  `Pause12StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause13StartedAt` datetime(6) DEFAULT NULL,
-  `Pause13StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause14StartedAt` datetime(6) DEFAULT NULL,
-  `Pause14StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause15StartedAt` datetime(6) DEFAULT NULL,
-  `Pause15StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause16StartedAt` datetime(6) DEFAULT NULL,
-  `Pause16StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause17StartedAt` datetime(6) DEFAULT NULL,
-  `Pause17StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause18StartedAt` datetime(6) DEFAULT NULL,
-  `Pause18StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause19StartedAt` datetime(6) DEFAULT NULL,
-  `Pause19StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause200StartedAt` datetime(6) DEFAULT NULL,
-  `Pause200StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause201StartedAt` datetime(6) DEFAULT NULL,
-  `Pause201StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause202StartedAt` datetime(6) DEFAULT NULL,
-  `Pause202StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause20StartedAt` datetime(6) DEFAULT NULL,
-  `Pause20StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause21StartedAt` datetime(6) DEFAULT NULL,
-  `Pause21StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause22StartedAt` datetime(6) DEFAULT NULL,
-  `Pause22StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause23StartedAt` datetime(6) DEFAULT NULL,
-  `Pause23StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause24StartedAt` datetime(6) DEFAULT NULL,
-  `Pause24StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause25StartedAt` datetime(6) DEFAULT NULL,
-  `Pause25StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause26StartedAt` datetime(6) DEFAULT NULL,
-  `Pause26StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause27StartedAt` datetime(6) DEFAULT NULL,
-  `Pause27StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause28StartedAt` datetime(6) DEFAULT NULL,
-  `Pause28StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause29StartedAt` datetime(6) DEFAULT NULL,
-  `Pause29StoppedAt` datetime(6) DEFAULT NULL,
-  `Shift1PauseNumber` int(11) NOT NULL DEFAULT 0,
-  `Shift2PauseNumber` int(11) NOT NULL DEFAULT 0,
-  `IsDoubleShift` tinyint(1) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift2` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift2` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift2` int(11) NOT NULL DEFAULT 0,
-  `AbsenceWithoutPermission` tinyint(1) NOT NULL DEFAULT 0,
-  `OnVacation` tinyint(1) NOT NULL DEFAULT 0,
-  `OtherAllowedAbsence` tinyint(1) NOT NULL DEFAULT 0,
-  `Sick` tinyint(1) NOT NULL DEFAULT 0,
-  `Pause3Id` int(11) NOT NULL DEFAULT 0,
-  `Pause3StartedAt` datetime(6) DEFAULT NULL,
-  `Pause3StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause4Id` int(11) NOT NULL DEFAULT 0,
-  `Pause4StartedAt` datetime(6) DEFAULT NULL,
-  `Pause4StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause5Id` int(11) NOT NULL DEFAULT 0,
-  `Pause5StartedAt` datetime(6) DEFAULT NULL,
-  `Pause5StoppedAt` datetime(6) DEFAULT NULL,
-  `Start3Id` int(11) NOT NULL DEFAULT 0,
-  `Start3StartedAt` datetime(6) DEFAULT NULL,
-  `Start4Id` int(11) NOT NULL DEFAULT 0,
-  `Start4StartedAt` datetime(6) DEFAULT NULL,
-  `Start5Id` int(11) NOT NULL DEFAULT 0,
-  `Start5StartedAt` datetime(6) DEFAULT NULL,
-  `Stop3Id` int(11) NOT NULL DEFAULT 0,
-  `Stop3StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop4Id` int(11) NOT NULL DEFAULT 0,
-  `Stop4StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop5Id` int(11) NOT NULL DEFAULT 0,
-  `Stop5StoppedAt` datetime(6) DEFAULT NULL,
-  `PlannedBreakOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlanChangedByAdmin` tinyint(1) NOT NULL DEFAULT 0,
-  `NettoHoursOverride` double NOT NULL,
-  `NettoHoursOverrideActive` tinyint(1) NOT NULL DEFAULT 0,
-  `AbsenceHours` double DEFAULT NULL,
-  `EffectiveNetHours` double DEFAULT NULL,
-  `FirstWorkStartUtc` datetime(6) DEFAULT NULL,
-  `HolidayHours` double DEFAULT NULL,
-  `IsSaturday` tinyint(1) NOT NULL DEFAULT 0,
-  `IsSunday` tinyint(1) NOT NULL DEFAULT 0,
-  `LastWorkEndUtc` datetime(6) DEFAULT NULL,
-  `NightHours` double DEFAULT NULL,
-  `NormalHours` double DEFAULT NULL,
-  `OvertimeHours` double DEFAULT NULL,
-  `RuleEngineCalculated` tinyint(1) NOT NULL DEFAULT 0,
-  `RuleEngineCalculatedAt` datetime(6) DEFAULT NULL,
-  `WeekendHours` double DEFAULT NULL,
-  `AbsenceHoursInSeconds` int(11) DEFAULT NULL,
-  `FlexInSeconds` int(11) NOT NULL DEFAULT 0,
-  `HolidayHoursInSeconds` int(11) DEFAULT NULL,
-  `NettoHoursInSeconds` int(11) NOT NULL DEFAULT 0,
-  `NettoHoursOverrideInSeconds` int(11) NOT NULL DEFAULT 0,
-  `NightHoursInSeconds` int(11) DEFAULT NULL,
-  `NormalHoursInSeconds` int(11) DEFAULT NULL,
-  `OvertimeHoursInSeconds` int(11) DEFAULT NULL,
-  `PaiedOutFlexInSeconds` int(11) NOT NULL DEFAULT 0,
-  `PlanHoursInSeconds` int(11) NOT NULL DEFAULT 0,
-  `SumFlexEndInSeconds` int(11) NOT NULL DEFAULT 0,
-  `SumFlexStartInSeconds` int(11) NOT NULL DEFAULT 0,
-  `WeekendHoursInSeconds` int(11) DEFAULT NULL,
-  `Reconciled` tinyint(1) NOT NULL DEFAULT 0,
-  `ReconciledAt` datetime(6) DEFAULT NULL,
-  `TransferredToPayroll` tinyint(1) NOT NULL DEFAULT 0,
-  `TransferredToPayrollAt` datetime(6) DEFAULT NULL,
-  `ContentHandedOverAtUtc` datetime(6) DEFAULT NULL,
-  `ContentHandoverFromSdkSitId` int(11) DEFAULT NULL,
-  `ContentHandoverRequestId` int(11) DEFAULT NULL,
-  `ContentHandoverToSdkSitId` int(11) DEFAULT NULL,
-  `AbsenceApprovedAtUtc` datetime(6) DEFAULT NULL,
-  `AbsenceApprovedBySdkSitId` int(11) DEFAULT NULL,
-  `AbsenceMessageId` int(11) DEFAULT NULL,
-  `AbsenceRequestId` int(11) DEFAULT NULL,
-  `EffectiveNetHoursInSeconds` int(11) DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31793 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrationVersions`
---
-
-LOCK TABLES `PlanRegistrationVersions` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrationVersions` DISABLE KEYS */;
-INSERT INTO `PlanRegistrationVersions` VALUES
-(1,16172,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,206,243,0,0,0,0,0,NULL,NULL,NULL,1,0,'2022-09-26 12:19:26.569267','2022-09-26 12:19:26.569328','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (1,16172,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,206,243,0,0,0,0,0,NULL,NULL,NULL,1,0,'2022-09-26 12:19:26.569267','2022-09-26 12:19:26.569328','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2,16172,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,206,243,0,11.583333333333334,11.583333333333334,11.583333333333334,0,NULL,NULL,NULL,1,60,'2022-09-26 12:19:26.569267','2022-09-26 12:19:27.540634','created',0,0,2,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (3,16170,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,217,265,0,0,0,0,0,NULL,NULL,NULL,2,0,'2022-09-26 12:19:33.874610','2022-09-26 12:19:33.874611','created',0,0,1,'Tester',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (4,16170,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,217,265,0,12.5,12.5,12.5,0,NULL,NULL,NULL,2,62,'2022-09-26 12:19:33.874610','2022-09-26 12:19:34.252945','created',0,0,2,'Tester',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -2934,12 +1507,11 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (1333,16188,'2022-11-05 00:00:00.000000',NULL,0,72,85,0,0,0,0,1.08,1.08,42.08,0,NULL,'','',233,774,'2022-11-06 11:37:06.207543','2022-11-18 08:58:57.583377','created',0,4,5,'',41,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1334,16188,'2022-11-06 00:00:00.000000',NULL,0,72,85,0,0,0,0,1.08,1.08,43.16,0,NULL,'','',234,776,'2022-11-06 11:37:43.051604','2022-11-18 08:58:57.615189','created',0,4,5,'',42.08,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1335,16188,'2022-11-07 00:00:00.000000',NULL,0,61,205,7,0,0,0,11.5,11.5,54.66,0,NULL,'','',241,778,'2022-11-07 16:42:52.629829','2022-11-18 08:58:57.639069','created',0,4,5,'',43.16,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1336,16188,'2022-11-08 00:00:00.000000',NULL,0,61,187,13,0,0,0,9.5,9.5,64.16,0,NULL,'','',275,780,'2022-11-08 15:27:34.011649','2022-11-18 08:58:57.666625','created',0,4,5,'',54.66,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1337,16188,'2022-11-09 00:00:00.000000',NULL,0,60,191,15,0,0,0,9.75,9.75,73.91,0,NULL,'','',289,782,'2022-11-09 18:38:47.473333','2022-11-18 08:58:57.705074','created',0,4,5,'',64.16,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1336,16188,'2022-11-08 00:00:00.000000',NULL,0,61,187,13,0,0,0,9.5,9.5,64.16,0,NULL,'','',275,780,'2022-11-08 15:27:34.011649','2022-11-18 08:58:57.666625','created',0,4,5,'',54.66,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (1337,16188,'2022-11-09 00:00:00.000000',NULL,0,60,191,15,0,0,0,9.75,9.75,73.91,0,NULL,'','',289,782,'2022-11-09 18:38:47.473333','2022-11-18 08:58:57.705074','created',0,4,5,'',64.16,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1338,16188,'2022-11-10 00:00:00.000000',NULL,0,61,193,25,0,0,0,9,9,82.91,0,NULL,'','',297,784,'2022-11-10 20:12:16.319781','2022-11-18 08:58:57.729398','created',0,4,5,'',73.91,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1339,16188,'2022-11-11 00:00:00.000000',NULL,0,61,163,13,0,0,0,7.5,7.5,90.41,0,NULL,'','',304,786,'2022-11-11 15:40:17.832691','2022-11-18 08:58:57.759846','created',0,4,5,'',82.91,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1340,16188,'2022-11-12 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,90.41,0,NULL,'','',356,0,'2022-11-17 10:40:33.127758','2022-11-18 08:58:57.784941','created',4,4,2,NULL,90.41,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(1340,16188,'2022-11-12 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,90.41,0,NULL,'','',356,0,'2022-11-17 10:40:33.127758','2022-11-18 08:58:57.784941','created',4,4,2,NULL,90.41,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1341,16188,'2022-11-13 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,90.41,0,NULL,'','',357,0,'2022-11-17 10:40:33.157199','2022-11-18 08:58:57.811018','created',4,4,2,NULL,90.41,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1342,16188,'2022-11-14 00:00:00.000000',NULL,0,59,191,13,217,277,1,15,15,105.41,0,NULL,'','',320,788,'2022-11-14 22:06:32.904910','2022-11-18 08:58:57.843244','created',0,4,5,'',90.41,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1343,16188,'2022-11-15 00:00:00.000000',NULL,0,46,103,1,182,212,1,7.25,7.25,112.66,0,NULL,'','',327,790,'2022-11-15 17:39:55.505487','2022-11-18 08:58:57.876935','created',0,4,5,'',105.41,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -4248,8 +2820,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (2646,16188,'2022-12-13 00:00:00.000000',NULL,0,60,217,13,0,0,0,12.08,12.08,133.24,0,NULL,'','',586,2014,'2022-12-13 21:57:56.716779','2022-12-31 08:40:54.847290','created',0,4,4,'',121.16000000000001,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2647,16188,'2022-12-14 00:00:00.000000',NULL,0,61,193,13,0,0,0,10,10,143.24,0,NULL,'','',602,2016,'2022-12-15 19:16:39.994475','2022-12-31 08:40:55.479455','created',0,4,4,'',133.24,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2648,16188,'2022-12-15 00:00:00.000000',NULL,0,43,200,13,0,0,0,12.08,12.08,155.32000000000002,0,NULL,'','',603,2018,'2022-12-15 19:17:26.714787','2022-12-31 08:40:55.922211','created',0,4,4,'',143.24,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(2649,16188,'2022-12-19 00:00:00.000000',NULL,0,60,199,7,0,0,0,11.08,11.08,166.40000000000003,0,NULL,'','',645,2020,'2022-12-19 17:31:41.691447','2022-12-31 08:40:56.582025','created',0,4,4,'',155.32000000000002,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(2650,16188,'2022-12-20 00:00:00.000000',NULL,0,61,205,16,0,0,0,10.75,10.75,177.15000000000003,0,NULL,'','',670,2022,'2022-12-20 17:17:24.594707','2022-12-31 08:40:56.996840','created',0,4,4,'',166.40000000000003,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(2649,16188,'2022-12-19 00:00:00.000000',NULL,0,60,199,7,0,0,0,11.08,11.08,166.40000000000003,0,NULL,'','',645,2020,'2022-12-19 17:31:41.691447','2022-12-31 08:40:56.582025','created',0,4,4,'',155.32000000000002,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (2650,16188,'2022-12-20 00:00:00.000000',NULL,0,61,205,16,0,0,0,10.75,10.75,177.15000000000003,0,NULL,'','',670,2022,'2022-12-20 17:17:24.594707','2022-12-31 08:40:56.996840','created',0,4,4,'',166.40000000000003,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2651,16188,'2022-12-21 00:00:00.000000',NULL,0,61,202,15,0,0,0,10.58,10.58,187.73000000000005,0,NULL,'','',677,2024,'2022-12-21 16:10:48.891564','2022-12-31 08:40:57.494564','created',0,4,4,'',177.15000000000003,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2652,16188,'2022-12-22 00:00:00.000000',NULL,0,76,193,13,0,0,0,8.75,8.75,196.48000000000005,0,NULL,'','',687,2026,'2022-12-22 18:16:23.381652','2022-12-31 08:40:57.950858','created',0,4,4,'',187.73000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2653,16188,'2022-12-23 00:00:00.000000',NULL,0,61,139,7,169,193,1,8,8,204.48000000000005,0,NULL,'','',696,2028,'2022-12-24 16:43:03.648123','2022-12-31 08:40:58.396136','created',0,4,4,'',196.48000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -4257,8 +2829,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (2655,16188,'2022-12-28 00:00:00.000000',NULL,0,49,151,7,0,0,0,8,8,220.48000000000005,0,NULL,'','',716,2032,'2022-12-28 17:20:58.922187','2022-12-31 08:40:59.259879','created',0,4,4,'',212.48000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2656,16188,'2022-12-29 00:00:00.000000',NULL,0,61,169,13,0,0,0,8,8,228.48000000000005,0,NULL,'','',724,2034,'2022-12-29 13:19:55.771330','2022-12-31 08:40:59.695639','created',0,4,4,'',220.48000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2657,16188,'2022-12-30 00:00:00.000000',NULL,0,73,157,13,193,205,1,7,7,235.48000000000005,0,NULL,'','',756,2036,'2022-12-30 22:18:41.910977','2022-12-31 08:41:00.134186','created',0,4,4,'',228.48000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(2658,16194,'2022-12-30 00:00:00.000000',NULL,0,83,161,13,0,0,0,0,0,0,0,NULL,NULL,NULL,784,0,'2022-12-31 21:16:55.792991','2022-12-31 21:16:55.793015','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(2658,16194,'2022-12-30 00:00:00.000000',NULL,0,83,161,13,0,0,0,0,0,0,0,NULL,NULL,NULL,784,0,'2022-12-31 21:16:55.792991','2022-12-31 21:16:55.793015','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2659,16194,'2022-12-30 00:00:00.000000',NULL,0,83,161,13,0,0,0,5.5,5.5,54.90666666666668,0,NULL,NULL,NULL,784,2038,'2022-12-31 21:16:55.792991','2022-12-31 21:16:56.139945','created',0,0,2,'',49.40666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2660,16200,'2022-12-31 00:00:00.000000',NULL,0,77,127,0,0,0,0,0,0,0,0,NULL,NULL,NULL,785,0,'2022-12-31 22:14:23.206637','2022-12-31 22:14:23.206638','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2661,16200,'2022-12-31 00:00:00.000000',NULL,0,77,127,0,0,0,0,4.166666666666667,4.166666666666667,314.0000000000001,0,NULL,NULL,NULL,785,2040,'2022-12-31 22:14:23.206637','2022-12-31 22:14:23.595803','created',0,0,2,'',309.8333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -5558,8 +4129,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (5772,16190,'2023-02-27 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,210.79999999999993,0,NULL,'','',1731,0,'2023-02-24 10:30:23.266341','2023-02-24 10:30:23.266341','created',4,4,1,NULL,210.79999999999993,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5775,16190,'2023-02-28 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,50.469999999999914,160.33,NULL,'','',1734,0,'2023-02-24 10:30:23.288288','2023-02-24 10:30:23.288288','created',4,4,1,NULL,210.79999999999993,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5778,16190,'2023-01-26 00:00:00.000000',NULL,0,84,199,13,0,0,0,8.58,8.58,189.60999999999999,0,NULL,'','',1086,3236,'2023-01-26 17:06:20.938015','2023-02-24 10:30:25.782399','created',0,4,5,'',181.02999999999997,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(5781,16190,'2023-01-27 00:00:00.000000',NULL,0,67,175,13,0,0,0,8,8,197.60999999999999,0,NULL,'','',1109,3238,'2023-01-27 13:42:05.563122','2023-02-24 10:30:26.230640','created',0,4,5,'',189.60999999999999,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(5784,16190,'2023-01-30 00:00:00.000000',NULL,0,83,193,13,0,0,0,8.17,8.17,205.77999999999997,0,NULL,'','',1152,3240,'2023-01-27 15:55:48.322745','2023-02-24 10:30:26.727613','created',4,4,5,'',197.60999999999999,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(5781,16190,'2023-01-27 00:00:00.000000',NULL,0,67,175,13,0,0,0,8,8,197.60999999999999,0,NULL,'','',1109,3238,'2023-01-27 13:42:05.563122','2023-02-24 10:30:26.230640','created',0,4,5,'',189.60999999999999,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (5784,16190,'2023-01-30 00:00:00.000000',NULL,0,83,193,13,0,0,0,8.17,8.17,205.77999999999997,0,NULL,'','',1152,3240,'2023-01-27 15:55:48.322745','2023-02-24 10:30:26.727613','created',4,4,5,'',197.60999999999999,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5787,16190,'2023-01-31 00:00:00.000000',NULL,0,83,193,13,0,0,0,8.17,8.17,53.61999999999995,160.33,NULL,'Udbetalt løn','',1155,3242,'2023-01-27 15:55:48.347811','2023-02-24 10:30:27.132353','created',4,4,6,'',205.77999999999997,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5790,16190,'2023-02-01 00:00:00.000000',NULL,0,61,193,7,0,0,0,10.5,10.5,64.11999999999995,0,NULL,'','',1251,3244,'2023-02-01 15:42:32.701701','2023-02-24 10:30:27.555089','created',0,4,4,'',53.61999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5793,16190,'2023-02-02 00:00:00.000000',NULL,0,84,193,13,0,0,0,8.08,8.08,72.19999999999995,0,NULL,'','',1275,3246,'2023-02-02 22:02:51.966157','2023-02-24 10:30:27.959928','created',0,4,4,'',64.11999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -5571,8 +4142,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (5811,16190,'2023-02-08 00:00:00.000000',NULL,0,58,205,1,0,0,0,12.25,12.25,118.78999999999995,0,NULL,'','',1362,3258,'2023-02-08 16:15:16.327251','2023-02-24 10:30:32.749591','created',0,4,4,'',106.53999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5814,16190,'2023-02-09 00:00:00.000000',NULL,0,83,196,13,0,0,0,8.42,8.42,127.20999999999995,0,NULL,'','',1411,3260,'2023-02-09 16:48:46.554719','2023-02-24 10:30:33.231357','created',0,4,4,'',118.78999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5817,16190,'2023-02-10 00:00:00.000000',NULL,0,73,151,13,0,0,0,5.5,5.5,132.70999999999995,0,NULL,'','',1439,3262,'2023-02-10 14:51:37.905455','2023-02-24 10:30:33.650774','created',0,4,4,'',127.20999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(5820,16190,'2023-02-13 00:00:00.000000',NULL,0,79,193,13,0,0,0,8.5,8.5,141.20999999999995,0,NULL,'','',1478,3264,'2023-02-13 15:26:44.120669','2023-02-24 10:30:34.280922','created',0,4,4,'',132.70999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(5820,16190,'2023-02-13 00:00:00.000000',NULL,0,79,193,13,0,0,0,8.5,8.5,141.20999999999995,0,NULL,'','',1478,3264,'2023-02-13 15:26:44.120669','2023-02-24 10:30:34.280922','created',0,4,4,'',132.70999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5823,16190,'2023-02-14 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,149.20999999999995,0,NULL,'','',1504,3266,'2023-02-14 17:44:15.961333','2023-02-24 10:30:34.699436','created',0,4,4,'',141.20999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5826,16190,'2023-02-15 00:00:00.000000',NULL,0,61,193,1,0,0,0,11,11,160.20999999999995,0,NULL,'','',1517,3268,'2023-02-15 15:27:28.155161','2023-02-24 10:30:35.145237','created',0,4,4,'',149.20999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (5829,16190,'2023-02-16 00:00:00.000000',NULL,0,76,181,13,0,0,0,7.75,7.75,167.95999999999995,0,NULL,'','',1533,3270,'2023-02-16 15:15:54.624499','2023-02-24 10:30:35.593510','created',0,4,4,'',160.20999999999995,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -6867,8 +5437,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (9459,16172,'2023-02-14 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2750,0,'2023-03-27 12:59:31.062623','2023-03-27 13:20:08.213079','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9462,16172,'2023-02-15 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2753,0,'2023-03-27 12:59:31.106373','2023-03-27 13:20:08.276330','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9465,16172,'2023-02-16 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2756,0,'2023-03-27 12:59:31.143894','2023-03-27 13:20:08.360902','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(9468,16172,'2023-02-17 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2759,0,'2023-03-27 12:59:31.201141','2023-03-27 13:20:08.458956','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(9471,16172,'2023-02-18 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2762,0,'2023-03-27 12:59:31.239936','2023-03-27 13:20:08.558552','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(9468,16172,'2023-02-17 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2759,0,'2023-03-27 12:59:31.201141','2023-03-27 13:20:08.458956','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (9471,16172,'2023-02-18 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2762,0,'2023-03-27 12:59:31.239936','2023-03-27 13:20:08.558552','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9474,16172,'2023-02-19 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,498.19000000000005,0,NULL,'','',2765,0,'2023-03-27 12:59:31.278591','2023-03-27 13:20:08.620287','created',4,4,2,NULL,498.19000000000005,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9477,16172,'2023-02-20 00:00:00.000000',NULL,0,85,205,13,0,0,0,9,9,507.19000000000005,0,NULL,'','',1649,3174,'2023-02-21 05:52:02.736081','2023-03-27 13:20:08.689715','created',0,4,4,'',498.19000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9480,16172,'2023-02-21 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,515.19,0,NULL,'','',1699,3228,'2023-02-23 17:52:02.186563','2023-03-27 13:20:08.745333','created',0,4,4,'',507.19000000000005,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -6885,8 +5455,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (9513,16172,'2023-03-04 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,566.94,0,NULL,'','',2777,0,'2023-03-27 12:59:31.943057','2023-03-27 13:20:09.473803','created',4,4,2,NULL,566.94,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9516,16172,'2023-03-05 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,566.94,0,NULL,'','',2780,0,'2023-03-27 12:59:31.987326','2023-03-27 13:20:09.536061','created',4,4,2,NULL,566.94,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9519,16172,'2023-03-06 00:00:00.000000',NULL,0,41,208,13,0,0,0,12.92,12.92,579.86,0,NULL,'','',1980,4270,'2023-03-06 18:29:46.743186','2023-03-27 13:20:09.607748','created',0,4,5,'',566.94,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(9522,16172,'2023-03-07 00:00:00.000000',NULL,0,109,193,7,0,0,0,6.5,6.5,586.36,0,NULL,'','',2158,4272,'2023-03-09 19:20:09.857794','2023-03-27 13:20:09.679408','created',0,4,5,'',579.86,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(9522,16172,'2023-03-07 00:00:00.000000',NULL,0,109,193,7,0,0,0,6.5,6.5,586.36,0,NULL,'','',2158,4272,'2023-03-09 19:20:09.857794','2023-03-27 13:20:09.679408','created',0,4,5,'',579.86,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9525,16172,'2023-03-08 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,594.36,0,NULL,'','',2161,4274,'2023-03-09 19:20:44.448075','2023-03-27 13:20:09.747969','created',0,4,5,'',586.36,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9528,16172,'2023-03-09 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,602.36,0,NULL,'','',2164,4276,'2023-03-09 19:21:19.077913','2023-03-27 13:20:09.807689','created',0,4,5,'',594.36,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (9531,16172,'2023-03-10 00:00:00.000000',NULL,0,73,145,7,0,0,0,5.5,5.5,607.86,0,NULL,'','',2192,4278,'2023-03-11 16:09:05.066310','2023-03-27 13:20:09.865078','created',0,4,5,'',602.36,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -8175,8 +6744,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (13173,16178,'2023-04-21 00:00:00.000000',NULL,0,82,273,7,0,0,0,0,0,0,0,NULL,NULL,NULL,3903,0,'2023-04-21 20:43:48.666799','2023-04-21 20:43:48.666800','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13176,16178,'2023-04-21 00:00:00.000000',NULL,0,82,273,7,0,0,0,15.416666666666666,15.416666666666666,162.37333333333336,0,NULL,NULL,NULL,3903,5440,'2023-04-21 20:43:48.666799','2023-04-21 20:43:48.979919','created',0,0,2,'',146.9566666666667,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13178,16190,'2023-04-21 00:00:00.000000',NULL,0,83,33,7,0,0,0,0,0,0,0,NULL,NULL,NULL,3905,0,'2023-04-22 01:01:28.686376','2023-04-22 01:01:28.686377','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(13181,16190,'2023-04-21 00:00:00.000000',NULL,0,83,33,7,0,0,0,-4.666666666666667,-4.666666666666667,245.0033333333331,0,NULL,NULL,NULL,3905,5442,'2023-04-22 01:01:28.686376','2023-04-22 01:01:28.997319','created',0,0,2,'',249.66999999999976,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(13182,16188,'2023-04-21 00:00:00.000000',NULL,0,1,145,7,246,288,1,0,0,0,0,NULL,NULL,NULL,3906,0,'2023-04-22 01:16:33.098198','2023-04-22 01:16:33.098199','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(13181,16190,'2023-04-21 00:00:00.000000',NULL,0,83,33,7,0,0,0,-4.666666666666667,-4.666666666666667,245.0033333333331,0,NULL,NULL,NULL,3905,5442,'2023-04-22 01:01:28.686376','2023-04-22 01:01:28.997319','created',0,0,2,'',249.66999999999976,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (13182,16188,'2023-04-21 00:00:00.000000',NULL,0,1,145,7,246,288,1,0,0,0,0,NULL,NULL,NULL,3906,0,'2023-04-22 01:16:33.098198','2023-04-22 01:16:33.098199','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13185,16188,'2023-04-21 00:00:00.000000',NULL,0,1,145,7,246,288,1,15,15,468.65333333333325,0,NULL,NULL,NULL,3906,5444,'2023-04-22 01:16:33.098198','2023-04-22 01:16:33.378616','created',0,0,2,'',453.65333333333325,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13188,16172,'2023-04-21 00:00:00.000000',NULL,0,37,288,10,0,0,0,0,0,-115.29999999999981,0,NULL,'','',3434,0,'2023-04-17 15:26:18.774233','2023-04-22 01:19:05.691990','created',4,4,6,'',-115.29999999999981,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13191,16172,'2023-04-21 00:00:00.000000',NULL,0,37,288,10,0,0,0,20.166666666666668,20.166666666666668,-95.13333333333314,0,NULL,'','',3434,5446,'2023-04-17 15:26:18.774233','2023-04-22 01:19:06.005091','created',4,4,7,'',-115.29999999999981,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -8197,8 +6766,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (13234,16194,'2023-04-17 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,0.6500000000000057,0,NULL,'','',3442,5468,'2023-04-17 20:55:35.960604','2023-04-22 06:29:47.184880','created',0,4,6,'',0.6500000000000057,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13237,16178,'2023-03-31 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,13.123333333333335,0,NULL,'','',3907,0,'2023-04-22 06:32:54.462735','2023-04-22 06:32:54.462735','created',4,4,1,NULL,13.123333333333335,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13240,16178,'2023-04-01 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,17.873333333333335,0,NULL,'','',3910,0,'2023-04-22 06:32:54.493617','2023-04-22 06:32:54.493618','created',4,4,1,NULL,17.873333333333335,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(13243,16178,'2023-04-02 00:00:00.000000',NULL,0,78,120,0,198,215,0,4.92,4.92,22.793333333333337,0,NULL,'','',2996,4686,'2023-04-02 13:15:49.652927','2023-04-22 06:32:54.515678','created',4,4,4,'',17.873333333333335,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(13243,16178,'2023-04-02 00:00:00.000000',NULL,0,78,120,0,198,215,0,4.92,4.92,22.793333333333337,0,NULL,'','',2996,4686,'2023-04-02 13:15:49.652927','2023-04-22 06:32:54.515678','created',4,4,4,'',17.873333333333335,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13246,16178,'2023-04-02 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,22.793333333333337,0,NULL,'','',3913,0,'2023-04-22 06:32:54.535930','2023-04-22 06:32:54.535930','created',4,4,1,NULL,22.793333333333337,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13249,16178,'2023-04-03 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,30.793333333333337,0,NULL,'','',3081,4688,'2023-04-03 19:19:38.309685','2023-04-22 06:32:54.561674','created',0,4,4,'',22.793333333333337,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (13252,16178,'2023-04-03 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,30.793333333333337,0,NULL,'','',3916,0,'2023-04-22 06:32:54.582277','2023-04-22 06:32:54.582277','created',4,4,1,NULL,30.793333333333337,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -9478,8 +8046,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (16945,16178,'2023-03-25 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,132.20666666666668,0,NULL,'','',2990,0,'2023-04-02 13:15:49.348540','2023-05-09 05:03:21.107344','created',4,4,6,NULL,132.20666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (16948,16178,'2023-03-26 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,132.20666666666668,0,NULL,'','',2993,0,'2023-04-02 13:15:49.381050','2023-05-09 05:03:21.124691','created',4,4,6,NULL,132.20666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (16951,16178,'2023-03-27 00:00:00.000000',NULL,0,85,217,7,0,0,0,10.5,10.5,142.70666666666668,0,NULL,'','',2853,6844,'2023-03-27 16:05:18.173681','2023-05-09 05:03:21.638539','created',0,4,13,'',132.20666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(16954,16178,'2023-03-28 00:00:00.000000',NULL,0,83,182,7,0,0,0,7.75,7.75,150.45666666666668,0,NULL,'','',2868,6846,'2023-03-28 13:28:54.237633','2023-05-09 05:03:22.087588','created',0,4,13,'',142.70666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(16957,16178,'2023-03-29 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,158.45666666666668,0,NULL,'','',2883,6848,'2023-03-29 14:30:02.941898','2023-05-09 05:03:22.937981','created',0,4,13,'',150.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(16954,16178,'2023-03-28 00:00:00.000000',NULL,0,83,182,7,0,0,0,7.75,7.75,150.45666666666668,0,NULL,'','',2868,6846,'2023-03-28 13:28:54.237633','2023-05-09 05:03:22.087588','created',0,4,13,'',142.70666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (16957,16178,'2023-03-29 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,158.45666666666668,0,NULL,'','',2883,6848,'2023-03-29 14:30:02.941898','2023-05-09 05:03:22.937981','created',0,4,13,'',150.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (16960,16178,'2023-03-30 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,166.45666666666668,0,NULL,'','',2945,6850,'2023-04-01 06:52:38.171963','2023-05-09 05:03:23.589572','created',0,4,13,'',158.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (16963,16178,'2023-03-31 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',2938,6852,'2023-03-31 13:06:06.702680','2023-05-09 05:03:24.179656','created',0,4,16,'',166.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (16966,16178,'2023-03-31 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3907,0,'2023-04-22 06:32:54.462735','2023-05-09 05:03:24.214749','removed',4,4,7,NULL,166.45666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -9504,8 +8072,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (17023,16178,'2023-04-10 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3207,6866,'2023-04-10 16:20:49.669633','2023-05-09 05:03:28.189016','created',0,4,15,'',166.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (17026,16178,'2023-04-10 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3937,0,'2023-04-22 06:32:54.911353','2023-05-09 05:03:28.218117','removed',4,4,7,NULL,166.45666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (17029,16178,'2023-04-11 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3269,6868,'2023-04-11 19:41:49.847733','2023-05-09 05:03:28.759198','created',0,4,15,'',166.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(17032,16178,'2023-04-11 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3940,0,'2023-04-22 06:32:54.961667','2023-05-09 05:03:28.786064','removed',4,4,7,NULL,166.45666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(17032,16178,'2023-04-11 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3940,0,'2023-04-22 06:32:54.961667','2023-05-09 05:03:28.786064','removed',4,4,7,NULL,166.45666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (17035,16178,'2023-04-12 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3278,6870,'2023-04-12 14:36:31.667306','2023-05-09 05:03:29.265032','created',0,4,15,'',166.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (17038,16178,'2023-04-12 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3943,0,'2023-04-22 06:32:55.006235','2023-05-09 05:03:29.289326','removed',4,4,7,NULL,166.45666666666668,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (17041,16178,'2023-04-13 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,166.45666666666668,0,NULL,'','',3316,6872,'2023-04-13 14:20:24.696805','2023-05-09 05:03:29.801625','created',0,4,15,'',166.45666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -10774,8 +9341,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (20827,16190,'2023-05-02 00:00:00.000000',NULL,0,73,277,9,0,0,0,16.333333333333332,16.333333333333332,192.4999999999999,0,NULL,NULL,NULL,4357,8594,'2023-05-02 21:13:49.217066','2023-05-09 09:13:03.298043','created',0,0,8,'',176.16666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20830,16190,'2023-05-03 00:00:00.000000',NULL,0,73,225,13,0,0,0,11.666666666666666,11.666666666666666,204.16666666666654,0,NULL,NULL,NULL,4415,8596,'2023-05-03 17:14:40.167127','2023-05-09 09:13:04.361606','created',0,0,8,'',192.4999999999999,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20833,16190,'2023-05-04 00:00:00.000000',NULL,0,61,211,1,0,0,0,12.5,12.5,216.66666666666654,0,NULL,NULL,NULL,4433,8598,'2023-05-04 15:33:39.838981','2023-05-09 09:13:05.046554','created',0,0,8,'',204.16666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(20836,16190,'2023-05-05 00:00:00.000000',NULL,0,73,127,1,0,0,0,4.5,4.5,221.16666666666654,0,NULL,NULL,NULL,4456,8600,'2023-05-05 21:12:02.643400','2023-05-09 09:13:05.890940','created',0,0,8,'',216.66666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(20839,16190,'2023-05-08 00:00:00.000000',NULL,0,83,199,13,0,0,0,8.666666666666666,8.666666666666666,229.8333333333332,0,NULL,NULL,NULL,4498,8602,'2023-05-08 16:46:48.237621','2023-05-09 09:13:06.542203','created',0,0,8,'',221.16666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(20836,16190,'2023-05-05 00:00:00.000000',NULL,0,73,127,1,0,0,0,4.5,4.5,221.16666666666654,0,NULL,NULL,NULL,4456,8600,'2023-05-05 21:12:02.643400','2023-05-09 09:13:05.890940','created',0,0,8,'',216.66666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (20839,16190,'2023-05-08 00:00:00.000000',NULL,0,83,199,13,0,0,0,8.666666666666666,8.666666666666666,229.8333333333332,0,NULL,NULL,NULL,4498,8602,'2023-05-08 16:46:48.237621','2023-05-09 09:13:06.542203','created',0,0,8,'',221.16666666666654,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20842,16190,'2023-04-04 00:00:00.000000',NULL,0,73,199,13,0,0,0,0,0,271.6566666666665,0,NULL,'','',3103,8548,'2023-04-04 18:58:27.491318','2023-05-09 09:13:15.171944','created',0,4,13,'',271.6566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20845,16190,'2023-04-04 00:00:00.000000',NULL,0,73,199,13,0,0,0,9.5,9.5,281.1566666666665,0,NULL,'','',3103,8604,'2023-04-04 18:58:27.491318','2023-05-09 09:13:17.357832','created',0,4,14,'',271.6566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20848,16190,'2023-04-04 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',3983,0,'2023-04-22 09:43:13.696212','2023-05-09 09:13:17.424633','removed',4,4,6,NULL,281.1566666666665,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -10805,8 +9372,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (20920,16190,'2023-04-16 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',4019,0,'2023-04-22 09:43:14.191829','2023-05-09 09:13:23.547300','removed',4,4,6,NULL,281.1566666666665,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20923,16190,'2023-04-17 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',3419,8622,'2023-04-17 15:00:14.787318','2023-05-09 09:13:24.142028','created',0,4,13,'',281.1566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20926,16190,'2023-04-17 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',4022,0,'2023-04-22 09:43:14.243963','2023-05-09 09:13:24.163595','removed',4,4,6,NULL,281.1566666666665,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(20929,16190,'2023-04-18 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',3448,8624,'2023-04-18 16:30:46.532199','2023-05-09 09:13:24.777563','created',0,4,13,'',281.1566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(20929,16190,'2023-04-18 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',3448,8624,'2023-04-18 16:30:46.532199','2023-05-09 09:13:24.777563','created',0,4,13,'',281.1566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20932,16190,'2023-04-18 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',4025,0,'2023-04-22 09:43:14.291315','2023-05-09 09:13:24.809807','removed',4,4,6,NULL,281.1566666666665,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20935,16190,'2023-04-19 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',3471,8626,'2023-04-19 21:51:54.768317','2023-05-09 09:13:25.805784','created',0,4,13,'',281.1566666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (20938,16190,'2023-04-19 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,281.1566666666665,0,NULL,'','',4028,0,'2023-04-22 09:43:14.346312','2023-05-09 09:13:25.834710','removed',4,4,6,NULL,281.1566666666665,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -12067,8 +10633,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (24703,16194,'2023-05-03 00:00:00.000000',NULL,0,81,181,7,0,0,0,7.833333333333333,7.833333333333333,326.24333333333334,0,NULL,NULL,NULL,4443,10370,'2023-05-04 18:59:17.196056','2023-05-09 09:31:13.674682','created',0,0,31,'',318.41,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24706,16194,'2023-05-04 00:00:00.000000',NULL,0,83,250,7,0,0,0,13.416666666666666,13.416666666666666,339.66,0,NULL,NULL,NULL,4446,10372,'2023-05-04 18:59:46.086787','2023-05-09 09:31:14.247461','created',0,0,31,'',326.24333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24709,16194,'2023-05-03 00:00:00.000000',NULL,0,81,181,7,0,0,0,7.833333333333333,7.833333333333333,326.24333333333334,0,NULL,NULL,NULL,4443,10374,'2023-05-04 18:59:17.196056','2023-05-09 09:31:22.700381','created',0,0,32,'',318.41,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(24712,16194,'2023-05-04 00:00:00.000000',NULL,0,83,250,7,0,0,0,13.416666666666666,13.416666666666666,339.66,0,NULL,NULL,NULL,4446,10376,'2023-05-04 18:59:46.086787','2023-05-09 09:31:23.311494','created',0,0,32,'',326.24333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(24715,16194,'2023-05-04 00:00:00.000000',NULL,0,83,250,7,0,0,0,13.416666666666666,13.416666666666666,339.66,0,NULL,NULL,NULL,4446,10378,'2023-05-04 18:59:46.086787','2023-05-09 09:31:32.661616','created',0,0,33,'',326.24333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(24712,16194,'2023-05-04 00:00:00.000000',NULL,0,83,250,7,0,0,0,13.416666666666666,13.416666666666666,339.66,0,NULL,NULL,NULL,4446,10376,'2023-05-04 18:59:46.086787','2023-05-09 09:31:23.311494','created',0,0,32,'',326.24333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (24715,16194,'2023-05-04 00:00:00.000000',NULL,0,83,250,7,0,0,0,13.416666666666666,13.416666666666666,339.66,0,NULL,NULL,NULL,4446,10378,'2023-05-04 18:59:46.086787','2023-05-09 09:31:32.661616','created',0,0,33,'',326.24333333333334,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24718,16186,'2023-03-27 00:00:00.000000',NULL,0,97,202,13,0,0,0,7.75,7.75,190.93,0,NULL,'','',2858,10380,'2023-03-27 17:25:32.732472','2023-05-09 09:31:41.700994','created',0,4,5,'',183.18,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24721,16186,'2023-03-28 00:00:00.000000',NULL,0,85,199,13,0,0,0,8.5,8.5,199.43,0,NULL,'','',2879,10382,'2023-03-29 13:56:04.943633','2023-05-09 09:31:42.410471','created',0,4,5,'',190.93,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24724,16186,'2023-03-29 00:00:00.000000',NULL,0,97,187,13,0,0,0,6.5,6.5,205.93,0,NULL,'','',2882,10384,'2023-03-29 13:56:42.064255','2023-05-09 09:31:43.034653','created',0,4,5,'',199.43,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -12103,8 +10669,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (24811,16186,'2023-04-13 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3879,0,'2023-04-21 17:16:37.047188','2023-05-09 09:31:50.669167','removed',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24814,16186,'2023-04-14 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3348,10406,'2023-04-14 19:50:04.941274','2023-05-09 09:31:51.420300','created',0,4,9,'',213.93,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24817,16186,'2023-04-14 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3882,0,'2023-04-21 17:16:37.086669','2023-05-09 09:31:51.465337','removed',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(24820,16186,'2023-04-15 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',4380,0,'2023-05-03 13:04:40.320633','2023-05-09 09:31:51.495279','created',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(24820,16186,'2023-04-15 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',4380,0,'2023-05-03 13:04:40.320633','2023-05-09 09:31:51.495279','created',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24823,16186,'2023-04-15 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3885,0,'2023-04-21 17:16:37.104907','2023-05-09 09:31:51.522099','removed',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24826,16186,'2023-04-16 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3392,10408,'2023-04-16 12:17:21.627443','2023-05-09 09:31:52.441399','created',0,4,9,'',213.93,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (24829,16186,'2023-04-16 22:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,213.93,0,NULL,'','',3888,0,'2023-04-21 17:16:37.152278','2023-05-09 09:31:52.476932','removed',4,4,2,NULL,213.93,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -13368,8 +11933,8 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (28600,16178,'2023-04-03 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,191.12333333333333,0,NULL,'','',3081,12502,'2023-04-03 19:19:38.309685','2023-05-09 14:08:30.736023','created',0,4,29,'',183.12333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28603,16178,'2023-04-04 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,199.12333333333333,0,NULL,'','',3090,12504,'2023-04-04 15:29:20.162592','2023-05-09 14:08:31.150369','created',0,4,29,'',191.12333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28606,16178,'2023-04-05 00:00:00.000000',NULL,0,85,193,7,0,0,0,8.5,8.5,207.62333333333333,0,NULL,'','',3117,12506,'2023-04-05 14:15:25.077152','2023-05-09 14:08:31.591215','created',0,4,30,'',199.12333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(28609,16178,'2023-04-09 00:00:00.000000',NULL,0,85,260,0,0,0,0,14.58,14.58,222.20333333333335,0,NULL,'','',3195,12508,'2023-04-09 19:38:01.157186','2023-05-09 14:08:31.970834','created',0,4,32,'',207.62333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(28612,16178,'2023-04-10 00:00:00.000000',NULL,0,80,125,0,203,220,0,5.17,5.17,227.37666666666667,0,NULL,'','',3207,12510,'2023-04-10 16:20:49.669633','2023-05-09 14:08:32.384785','created',0,4,33,'',222.20666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(28609,16178,'2023-04-09 00:00:00.000000',NULL,0,85,260,0,0,0,0,14.58,14.58,222.20333333333335,0,NULL,'','',3195,12508,'2023-04-09 19:38:01.157186','2023-05-09 14:08:31.970834','created',0,4,32,'',207.62333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrationVersions` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `PlanRegistrationId`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`, `EffectiveNetHoursInSeconds`) VALUES (28612,16178,'2023-04-10 00:00:00.000000',NULL,0,80,125,0,203,220,0,5.17,5.17,227.37666666666667,0,NULL,'','',3207,12510,'2023-04-10 16:20:49.669633','2023-05-09 14:08:32.384785','created',0,4,33,'',222.20666666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28615,16178,'2023-04-11 00:00:00.000000',NULL,0,85,261,7,0,0,0,14.17,14.17,241.54333333333332,0,NULL,'','',3269,12512,'2023-04-11 19:41:49.847733','2023-05-09 14:08:32.819575','created',0,4,34,'',227.37333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28618,16178,'2023-04-12 00:00:00.000000',NULL,0,85,197,0,0,0,0,9.33,9.33,250.87,0,NULL,'','',3278,12514,'2023-04-12 14:36:31.667306','2023-05-09 14:08:33.307361','created',0,4,35,'',241.54,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28621,16178,'2023-04-13 00:00:00.000000',NULL,0,84,196,13,0,0,0,8.33,8.33,259.2033333333333,0,NULL,'','',3316,12516,'2023-04-13 14:20:24.696805','2023-05-09 14:08:33.689680','created',0,4,36,'',250.87333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -13407,8 +11972,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (28717,16178,'2023-04-11 00:00:00.000000',NULL,0,85,261,7,0,0,0,14.17,14.17,241.54333333333332,0,NULL,'','',3269,12580,'2023-04-11 19:41:49.847733','2023-05-09 14:09:51.537961','created',0,4,35,'',227.37333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28720,16178,'2023-04-12 00:00:00.000000',NULL,0,85,197,0,0,0,0,9.33,9.33,250.87,0,NULL,'','',3278,12582,'2023-04-12 14:36:31.667306','2023-05-09 14:09:51.957144','created',0,4,36,'',241.54,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28723,16178,'2023-04-13 00:00:00.000000',NULL,0,84,196,13,0,0,0,8.33,8.33,259.2033333333333,0,NULL,'','',3316,12584,'2023-04-13 14:20:24.696805','2023-05-09 14:09:52.376588','created',0,4,37,'',250.87333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(28726,16178,'2023-04-14 00:00:00.000000',NULL,0,61,145,7,0,0,0,6.5,6.5,265.70666666666665,0,NULL,'','',3337,12586,'2023-04-14 10:40:43.356369','2023-05-09 14:09:52.787717','created',0,4,37,'',259.20666666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrationVersions` VALUES
+(28726,16178,'2023-04-14 00:00:00.000000',NULL,0,61,145,7,0,0,0,6.5,6.5,265.70666666666665,0,NULL,'','',3337,12586,'2023-04-14 10:40:43.356369','2023-05-09 14:09:52.787717','created',0,4,37,'',259.20666666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28729,16178,'2023-04-17 00:00:00.000000',NULL,0,84,206,13,0,0,0,9.17,9.17,274.87666666666667,0,NULL,'','',3421,12588,'2023-04-17 15:19:33.727101','2023-05-09 14:09:53.276708','created',0,4,39,'',265.70666666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28732,16178,'2023-04-18 00:00:00.000000',NULL,0,84,288,7,0,0,0,16.5,16.5,291.37333333333333,0,NULL,'','',3458,12590,'2023-04-18 21:59:09.722215','2023-05-09 14:09:53.699939','created',0,4,39,'',274.87333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (28735,16178,'2023-04-19 00:00:00.000000',NULL,0,103,197,13,0,0,0,6.83,6.83,298.2033333333333,0,NULL,'','',3465,12592,'2023-04-19 14:21:58.997615','2023-05-09 14:09:54.115734','created',0,4,41,'',291.37333333333333,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -14437,206 +13001,7 @@ INSERT INTO `PlanRegistrationVersions` VALUES
 (31786,16202,'2023-05-10 00:00:00.000000',NULL,0,79,221,13,0,0,0,10.833333333333334,10.833333333333334,1020.3100000000002,0,NULL,NULL,NULL,4588,13890,'2023-05-11 10:08:16.615661','2023-05-11 10:08:17.769556','created',0,0,2,'',1009.4766666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (31789,16198,'2023-05-11 00:00:00.000000',NULL,0,79,146,7,0,0,0,0,0,0,0,NULL,NULL,NULL,4591,0,'2023-05-11 10:52:03.534247','2023-05-11 10:52:03.534247','created',0,0,1,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (31792,16198,'2023-05-11 00:00:00.000000',NULL,0,79,146,7,0,0,0,5.083333333333333,5.083333333333333,686.466666666667,0,NULL,NULL,NULL,4591,13892,'2023-05-11 10:52:03.534247','2023-05-11 10:52:04.037327','created',0,0,2,'',681.3833333333337,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-/*!40000 ALTER TABLE `PlanRegistrationVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PlanRegistrations`
---
-
-DROP TABLE IF EXISTS `PlanRegistrations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PlanRegistrations` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `SdkSitId` int(11) NOT NULL,
-  `Date` datetime(6) NOT NULL,
-  `PlanText` longtext DEFAULT NULL,
-  `PlanHours` double NOT NULL,
-  `Start1Id` int(11) NOT NULL,
-  `Stop1Id` int(11) NOT NULL,
-  `Pause1Id` int(11) NOT NULL,
-  `Start2Id` int(11) NOT NULL,
-  `Stop2Id` int(11) NOT NULL,
-  `Pause2Id` int(11) NOT NULL,
-  `NettoHours` double NOT NULL,
-  `Flex` double NOT NULL,
-  `SumFlexEnd` double NOT NULL,
-  `PaiedOutFlex` double NOT NULL,
-  `MessageId` int(11) DEFAULT NULL,
-  `CommentOffice` longtext DEFAULT NULL,
-  `CommentOfficeAll` longtext DEFAULT NULL,
-  `StatusCaseId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `WorkerComment` longtext DEFAULT NULL,
-  `SumFlexStart` double NOT NULL DEFAULT 0,
-  `DataFromDevice` tinyint(1) NOT NULL DEFAULT 0,
-  `RegistrationDeviceId` int(11) DEFAULT NULL,
-  `Pause1StartedAt` datetime(6) DEFAULT NULL,
-  `Pause1StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause2StartedAt` datetime(6) DEFAULT NULL,
-  `Pause2StoppedAt` datetime(6) DEFAULT NULL,
-  `Start1StartedAt` datetime(6) DEFAULT NULL,
-  `Start2StartedAt` datetime(6) DEFAULT NULL,
-  `Stop1StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop2StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause100StartedAt` datetime(6) DEFAULT NULL,
-  `Pause100StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause101StartedAt` datetime(6) DEFAULT NULL,
-  `Pause101StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause102StartedAt` datetime(6) DEFAULT NULL,
-  `Pause102StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause10StartedAt` datetime(6) DEFAULT NULL,
-  `Pause10StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause11StartedAt` datetime(6) DEFAULT NULL,
-  `Pause11StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause12StartedAt` datetime(6) DEFAULT NULL,
-  `Pause12StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause13StartedAt` datetime(6) DEFAULT NULL,
-  `Pause13StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause14StartedAt` datetime(6) DEFAULT NULL,
-  `Pause14StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause15StartedAt` datetime(6) DEFAULT NULL,
-  `Pause15StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause16StartedAt` datetime(6) DEFAULT NULL,
-  `Pause16StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause17StartedAt` datetime(6) DEFAULT NULL,
-  `Pause17StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause18StartedAt` datetime(6) DEFAULT NULL,
-  `Pause18StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause19StartedAt` datetime(6) DEFAULT NULL,
-  `Pause19StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause200StartedAt` datetime(6) DEFAULT NULL,
-  `Pause200StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause201StartedAt` datetime(6) DEFAULT NULL,
-  `Pause201StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause202StartedAt` datetime(6) DEFAULT NULL,
-  `Pause202StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause20StartedAt` datetime(6) DEFAULT NULL,
-  `Pause20StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause21StartedAt` datetime(6) DEFAULT NULL,
-  `Pause21StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause22StartedAt` datetime(6) DEFAULT NULL,
-  `Pause22StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause23StartedAt` datetime(6) DEFAULT NULL,
-  `Pause23StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause24StartedAt` datetime(6) DEFAULT NULL,
-  `Pause24StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause25StartedAt` datetime(6) DEFAULT NULL,
-  `Pause25StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause26StartedAt` datetime(6) DEFAULT NULL,
-  `Pause26StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause27StartedAt` datetime(6) DEFAULT NULL,
-  `Pause27StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause28StartedAt` datetime(6) DEFAULT NULL,
-  `Pause28StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause29StartedAt` datetime(6) DEFAULT NULL,
-  `Pause29StoppedAt` datetime(6) DEFAULT NULL,
-  `Shift1PauseNumber` int(11) NOT NULL DEFAULT 0,
-  `Shift2PauseNumber` int(11) NOT NULL DEFAULT 0,
-  `IsDoubleShift` tinyint(1) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift2` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift2` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift1` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift2` int(11) NOT NULL DEFAULT 0,
-  `AbsenceWithoutPermission` tinyint(1) NOT NULL DEFAULT 0,
-  `OnVacation` tinyint(1) NOT NULL DEFAULT 0,
-  `OtherAllowedAbsence` tinyint(1) NOT NULL DEFAULT 0,
-  `Sick` tinyint(1) NOT NULL DEFAULT 0,
-  `Pause3Id` int(11) NOT NULL DEFAULT 0,
-  `Pause3StartedAt` datetime(6) DEFAULT NULL,
-  `Pause3StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause4Id` int(11) NOT NULL DEFAULT 0,
-  `Pause4StartedAt` datetime(6) DEFAULT NULL,
-  `Pause4StoppedAt` datetime(6) DEFAULT NULL,
-  `Pause5Id` int(11) NOT NULL DEFAULT 0,
-  `Pause5StartedAt` datetime(6) DEFAULT NULL,
-  `Pause5StoppedAt` datetime(6) DEFAULT NULL,
-  `Start3Id` int(11) NOT NULL DEFAULT 0,
-  `Start3StartedAt` datetime(6) DEFAULT NULL,
-  `Start4Id` int(11) NOT NULL DEFAULT 0,
-  `Start4StartedAt` datetime(6) DEFAULT NULL,
-  `Start5Id` int(11) NOT NULL DEFAULT 0,
-  `Start5StartedAt` datetime(6) DEFAULT NULL,
-  `Stop3Id` int(11) NOT NULL DEFAULT 0,
-  `Stop3StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop4Id` int(11) NOT NULL DEFAULT 0,
-  `Stop4StoppedAt` datetime(6) DEFAULT NULL,
-  `Stop5Id` int(11) NOT NULL DEFAULT 0,
-  `Stop5StoppedAt` datetime(6) DEFAULT NULL,
-  `PlannedBreakOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedBreakOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedEndOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift3` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift4` int(11) NOT NULL DEFAULT 0,
-  `PlannedStartOfShift5` int(11) NOT NULL DEFAULT 0,
-  `PlanChangedByAdmin` tinyint(1) NOT NULL DEFAULT 0,
-  `NettoHoursOverride` double NOT NULL,
-  `NettoHoursOverrideActive` tinyint(1) NOT NULL DEFAULT 0,
-  `AbsenceHours` double DEFAULT NULL,
-  `EffectiveNetHours` double DEFAULT NULL,
-  `FirstWorkStartUtc` datetime(6) DEFAULT NULL,
-  `HolidayHours` double DEFAULT NULL,
-  `IsSaturday` tinyint(1) NOT NULL DEFAULT 0,
-  `IsSunday` tinyint(1) NOT NULL DEFAULT 0,
-  `LastWorkEndUtc` datetime(6) DEFAULT NULL,
-  `NightHours` double DEFAULT NULL,
-  `NormalHours` double DEFAULT NULL,
-  `OvertimeHours` double DEFAULT NULL,
-  `RuleEngineCalculated` tinyint(1) NOT NULL DEFAULT 0,
-  `RuleEngineCalculatedAt` datetime(6) DEFAULT NULL,
-  `WeekendHours` double DEFAULT NULL,
-  `AbsenceHoursInSeconds` int(11) DEFAULT NULL,
-  `EffectiveNetHoursInSeconds` int(11) DEFAULT NULL,
-  `FlexInSeconds` int(11) NOT NULL DEFAULT 0,
-  `HolidayHoursInSeconds` int(11) DEFAULT NULL,
-  `NettoHoursInSeconds` int(11) NOT NULL DEFAULT 0,
-  `NettoHoursOverrideInSeconds` int(11) NOT NULL DEFAULT 0,
-  `NightHoursInSeconds` int(11) DEFAULT NULL,
-  `NormalHoursInSeconds` int(11) DEFAULT NULL,
-  `OvertimeHoursInSeconds` int(11) DEFAULT NULL,
-  `PaiedOutFlexInSeconds` int(11) NOT NULL DEFAULT 0,
-  `PlanHoursInSeconds` int(11) NOT NULL DEFAULT 0,
-  `SumFlexEndInSeconds` int(11) NOT NULL DEFAULT 0,
-  `SumFlexStartInSeconds` int(11) NOT NULL DEFAULT 0,
-  `WeekendHoursInSeconds` int(11) DEFAULT NULL,
-  `Reconciled` tinyint(1) NOT NULL DEFAULT 0,
-  `ReconciledAt` datetime(6) DEFAULT NULL,
-  `TransferredToPayroll` tinyint(1) NOT NULL DEFAULT 0,
-  `TransferredToPayrollAt` datetime(6) DEFAULT NULL,
-  `ContentHandedOverAtUtc` datetime(6) DEFAULT NULL,
-  `ContentHandoverFromSdkSitId` int(11) DEFAULT NULL,
-  `ContentHandoverRequestId` int(11) DEFAULT NULL,
-  `ContentHandoverToSdkSitId` int(11) DEFAULT NULL,
-  `AbsenceApprovedAtUtc` datetime(6) DEFAULT NULL,
-  `AbsenceApprovedBySdkSitId` int(11) DEFAULT NULL,
-  `AbsenceMessageId` int(11) DEFAULT NULL,
-  `AbsenceRequestId` int(11) DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `IX_PlanRegistrations_SdkSitId_Date_WorkflowState` (`SdkSitId`,`Date`,`WorkflowState`),
-  KEY `IX_PlanRegistrations_MessageId` (`MessageId`),
-  CONSTRAINT `FK_PlanRegistrations_Messages_MessageId` FOREIGN KEY (`MessageId`) REFERENCES `Messages` (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4594 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PlanRegistrations`
---
-
-LOCK TABLES `PlanRegistrations` WRITE;
-/*!40000 ALTER TABLE `PlanRegistrations` DISABLE KEYS */;
-INSERT INTO `PlanRegistrations` VALUES
-(1,16172,'2022-09-26 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,0,0,NULL,'','',134,'2022-09-26 12:19:26.569267','2022-11-08 14:37:21.877942','created',0,4,6,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+INSERT INTO `PlanRegistrations` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `EffectiveNetHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`) VALUES (1,16172,'2022-09-26 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,0,0,NULL,'','',134,'2022-09-26 12:19:26.569267','2022-11-08 14:37:21.877942','created',0,4,6,'',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (2,16170,'2022-09-26 00:00:00.000000',NULL,0,85,193,7,217,265,0,12.5,12.5,21.83,0,NULL,'','',0,'2022-09-26 12:19:33.874610','2022-10-18 06:24:21.674194','removed',0,2,14,'Tester',9.33,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (3,16204,'2022-09-26 00:00:00.000000',NULL,0,85,193,13,0,0,0,8,8,-152,160,NULL,'','',136,'2022-09-26 12:19:40.043882','2022-10-18 07:41:58.284304','created',0,2,22,'Test<br/>',0,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (4,16204,'2022-08-31 00:00:00.000000',NULL,0,0,0,0,0,0,0,0,0,0,0,NULL,'','',0,'2022-09-26 12:27:13.759141','2022-09-26 12:27:13.759142','created',2,2,1,NULL,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -15954,12 +14319,11 @@ INSERT INTO `PlanRegistrations` VALUES
 (1919,16178,'2023-03-04 00:00:00.000000',NULL,0,82,123,0,191,206,0,4.67,4.67,5.373333333333335,0,NULL,'','',4510,'2023-03-04 16:50:08.464020','2023-04-02 13:15:50.850243','created',0,4,6,'',0.7033333333333349,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1922,16188,'2023-03-04 00:00:00.000000',NULL,0,73,214,7,0,0,0,11.25,11.25,210.40000000000006,0,NULL,'','',4602,'2023-03-04 17:29:49.610423','2023-04-02 13:19:17.422949','created',0,4,4,'',199.15000000000006,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1923,16184,'2023-03-04 00:00:00.000000',NULL,0,73,103,0,193,201,0,3.17,3.17,167.50666666666663,0,NULL,'','',3740,'2023-03-04 20:29:15.118982','2023-03-08 16:47:12.253789','created',0,4,4,'',164.33666666666664,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1924,16202,'2023-03-03 00:00:00.000000',NULL,0,71,151,7,0,0,0,6.166666666666667,6.166666666666667,638.5600000000002,0,NULL,NULL,NULL,3588,'2023-03-05 20:04:40.871637','2023-03-05 20:05:01.564824','created',0,0,3,'',632.3933333333335,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1927,16200,'2023-03-02 00:00:00.000000',NULL,0,76,147,13,195,229,0,7.75,7.75,373.07666666666677,0,NULL,NULL,NULL,3592,'2023-03-05 20:12:47.920124','2023-03-05 20:14:12.677657','created',0,0,3,'',365.32666666666677,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1924,16202,'2023-03-03 00:00:00.000000',NULL,0,71,151,7,0,0,0,6.166666666666667,6.166666666666667,638.5600000000002,0,NULL,NULL,NULL,3588,'2023-03-05 20:04:40.871637','2023-03-05 20:05:01.564824','created',0,0,3,'',632.3933333333335,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `PlanRegistrations` (`Id`, `SdkSitId`, `Date`, `PlanText`, `PlanHours`, `Start1Id`, `Stop1Id`, `Pause1Id`, `Start2Id`, `Stop2Id`, `Pause2Id`, `NettoHours`, `Flex`, `SumFlexEnd`, `PaiedOutFlex`, `MessageId`, `CommentOffice`, `CommentOfficeAll`, `StatusCaseId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`, `WorkerComment`, `SumFlexStart`, `DataFromDevice`, `RegistrationDeviceId`, `Pause1StartedAt`, `Pause1StoppedAt`, `Pause2StartedAt`, `Pause2StoppedAt`, `Start1StartedAt`, `Start2StartedAt`, `Stop1StoppedAt`, `Stop2StoppedAt`, `Pause100StartedAt`, `Pause100StoppedAt`, `Pause101StartedAt`, `Pause101StoppedAt`, `Pause102StartedAt`, `Pause102StoppedAt`, `Pause10StartedAt`, `Pause10StoppedAt`, `Pause11StartedAt`, `Pause11StoppedAt`, `Pause12StartedAt`, `Pause12StoppedAt`, `Pause13StartedAt`, `Pause13StoppedAt`, `Pause14StartedAt`, `Pause14StoppedAt`, `Pause15StartedAt`, `Pause15StoppedAt`, `Pause16StartedAt`, `Pause16StoppedAt`, `Pause17StartedAt`, `Pause17StoppedAt`, `Pause18StartedAt`, `Pause18StoppedAt`, `Pause19StartedAt`, `Pause19StoppedAt`, `Pause200StartedAt`, `Pause200StoppedAt`, `Pause201StartedAt`, `Pause201StoppedAt`, `Pause202StartedAt`, `Pause202StoppedAt`, `Pause20StartedAt`, `Pause20StoppedAt`, `Pause21StartedAt`, `Pause21StoppedAt`, `Pause22StartedAt`, `Pause22StoppedAt`, `Pause23StartedAt`, `Pause23StoppedAt`, `Pause24StartedAt`, `Pause24StoppedAt`, `Pause25StartedAt`, `Pause25StoppedAt`, `Pause26StartedAt`, `Pause26StoppedAt`, `Pause27StartedAt`, `Pause27StoppedAt`, `Pause28StartedAt`, `Pause28StoppedAt`, `Pause29StartedAt`, `Pause29StoppedAt`, `Shift1PauseNumber`, `Shift2PauseNumber`, `IsDoubleShift`, `PlannedBreakOfShift1`, `PlannedBreakOfShift2`, `PlannedEndOfShift1`, `PlannedEndOfShift2`, `PlannedStartOfShift1`, `PlannedStartOfShift2`, `AbsenceWithoutPermission`, `OnVacation`, `OtherAllowedAbsence`, `Sick`, `Pause3Id`, `Pause3StartedAt`, `Pause3StoppedAt`, `Pause4Id`, `Pause4StartedAt`, `Pause4StoppedAt`, `Pause5Id`, `Pause5StartedAt`, `Pause5StoppedAt`, `Start3Id`, `Start3StartedAt`, `Start4Id`, `Start4StartedAt`, `Start5Id`, `Start5StartedAt`, `Stop3Id`, `Stop3StoppedAt`, `Stop4Id`, `Stop4StoppedAt`, `Stop5Id`, `Stop5StoppedAt`, `PlannedBreakOfShift3`, `PlannedBreakOfShift4`, `PlannedBreakOfShift5`, `PlannedEndOfShift3`, `PlannedEndOfShift4`, `PlannedEndOfShift5`, `PlannedStartOfShift3`, `PlannedStartOfShift4`, `PlannedStartOfShift5`, `PlanChangedByAdmin`, `NettoHoursOverride`, `NettoHoursOverrideActive`, `AbsenceHours`, `EffectiveNetHours`, `FirstWorkStartUtc`, `HolidayHours`, `IsSaturday`, `IsSunday`, `LastWorkEndUtc`, `NightHours`, `NormalHours`, `OvertimeHours`, `RuleEngineCalculated`, `RuleEngineCalculatedAt`, `WeekendHours`, `AbsenceHoursInSeconds`, `EffectiveNetHoursInSeconds`, `FlexInSeconds`, `HolidayHoursInSeconds`, `NettoHoursInSeconds`, `NettoHoursOverrideInSeconds`, `NightHoursInSeconds`, `NormalHoursInSeconds`, `OvertimeHoursInSeconds`, `PaiedOutFlexInSeconds`, `PlanHoursInSeconds`, `SumFlexEndInSeconds`, `SumFlexStartInSeconds`, `WeekendHoursInSeconds`, `Reconciled`, `ReconciledAt`, `TransferredToPayroll`, `TransferredToPayrollAt`, `ContentHandedOverAtUtc`, `ContentHandoverFromSdkSitId`, `ContentHandoverRequestId`, `ContentHandoverToSdkSitId`, `AbsenceApprovedAtUtc`, `AbsenceApprovedBySdkSitId`, `AbsenceMessageId`, `AbsenceRequestId`) VALUES (1927,16200,'2023-03-02 00:00:00.000000',NULL,0,76,147,13,195,229,0,7.75,7.75,373.07666666666677,0,NULL,NULL,NULL,3592,'2023-03-05 20:12:47.920124','2023-03-05 20:14:12.677657','created',0,0,3,'',365.32666666666677,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1930,16200,'2023-03-03 00:00:00.000000',NULL,0,63,135,10,0,0,0,5.25,5.25,378.32666666666677,0,NULL,NULL,NULL,3596,'2023-03-05 20:16:18.635340','2023-03-05 20:16:49.756489','created',0,0,3,'',373.07666666666677,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1933,16200,'2023-03-04 00:00:00.000000',NULL,0,76,119,0,199,205,0,4.083333333333333,4.083333333333333,382.4100000000001,0,NULL,NULL,NULL,3600,'2023-03-05 20:18:11.370183','2023-03-05 20:19:10.557339','created',0,0,3,'',378.32666666666677,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1936,16200,'2023-03-05 00:00:00.000000',NULL,0,76,115,0,193,211,0,4.75,4.75,387.1600000000001,0,NULL,NULL,NULL,3604,'2023-03-05 20:21:17.803190','2023-03-05 20:22:28.389350','created',0,0,3,'',382.4100000000001,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `PlanRegistrations` VALUES
+(1936,16200,'2023-03-05 00:00:00.000000',NULL,0,76,115,0,193,211,0,4.75,4.75,387.1600000000001,0,NULL,NULL,NULL,3604,'2023-03-05 20:21:17.803190','2023-03-05 20:22:28.389350','created',0,0,3,'',382.4100000000001,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1939,16178,'2023-03-05 00:00:00.000000',NULL,0,79,124,0,211,228,0,5.17,5.17,10.543333333333335,0,NULL,'','',4512,'2023-03-05 20:33:35.599330','2023-04-02 13:15:51.858880','created',0,4,6,'',5.373333333333335,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1942,16184,'2023-03-05 00:00:00.000000',NULL,0,73,101,0,204,246,0,5.83,5.83,173.33666666666664,0,NULL,'','',3742,'2023-03-05 20:36:02.576406','2023-03-08 16:47:12.679692','created',0,4,4,'',167.50666666666663,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1944,16188,'2023-03-05 00:00:00.000000',NULL,0,61,118,1,0,0,0,4.75,4.75,215.15000000000006,0,NULL,'','',4604,'2023-03-06 03:37:57.868917','2023-04-02 13:19:17.880887','created',0,4,4,'',210.40000000000006,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -17007,72 +15371,10 @@ INSERT INTO `PlanRegistrations` VALUES
 (4587,16184,'2023-05-10 00:00:00.000000',NULL,0,73,127,7,181,223,0,7.5,7.5,554.1666666666665,0,NULL,NULL,NULL,13888,'2023-05-10 20:17:20.870892','2023-05-10 20:17:21.284675','created',0,0,2,'',546.6666666666665,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (4588,16202,'2023-05-10 00:00:00.000000',NULL,0,79,221,13,0,0,0,10.833333333333334,10.833333333333334,1020.3100000000002,0,NULL,NULL,NULL,13890,'2023-05-11 10:08:16.615661','2023-05-11 10:08:17.769556','created',0,0,2,'',1009.4766666666668,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (4591,16198,'2023-05-11 00:00:00.000000',NULL,0,79,146,7,0,0,0,5.083333333333333,5.083333333333333,686.466666666667,0,NULL,NULL,NULL,13892,'2023-05-11 10:52:03.534247','2023-05-11 10:52:04.037327','created',0,0,2,'',681.3833333333337,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,0,NULL,NULL,0,NULL,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,NULL,0,0,0,0,0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,NULL,0,NULL,0,0,NULL,NULL,NULL,0,0,0,0,NULL,0,NULL,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-/*!40000 ALTER TABLE `PlanRegistrations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PluginConfigurationValueVersions`
---
-
-DROP TABLE IF EXISTS `PluginConfigurationValueVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PluginConfigurationValueVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `Value` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginConfigurationValueVersions`
---
-
-LOCK TABLES `PluginConfigurationValueVersions` WRITE;
-/*!40000 ALTER TABLE `PluginConfigurationValueVersions` DISABLE KEYS */;
-INSERT INTO `PluginConfigurationValueVersions` VALUES
-(1,'TimePlanningBaseSettings:EformId','0','2022-09-20 15:00:41.335947','2022-09-20 15:00:41.335947','created',0,0,1),
+INSERT INTO `PluginConfigurationValueVersions` (`Id`, `Name`, `Value`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`) VALUES (1,'TimePlanningBaseSettings:EformId','0','2022-09-20 15:00:41.335947','2022-09-20 15:00:41.335947','created',0,0,1),
 (2,'TimePlanningBaseSettings:InfoeFormId','0','2022-09-20 15:00:44.560360','2022-09-20 15:00:44.560360','created',0,0,1),
 (3,'TimePlanningBaseSettings:InfoeFormId','5','2024-05-22 06:04:43.279511','2024-05-22 06:04:43.279881','created',0,0,2);
-/*!40000 ALTER TABLE `PluginConfigurationValueVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PluginConfigurationValues`
---
-
-DROP TABLE IF EXISTS `PluginConfigurationValues`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PluginConfigurationValues` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `Value` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=75 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginConfigurationValues`
---
-
-LOCK TABLES `PluginConfigurationValues` WRITE;
-/*!40000 ALTER TABLE `PluginConfigurationValues` DISABLE KEYS */;
-INSERT INTO `PluginConfigurationValues` VALUES
-(1,'TimePlanningBaseSettings:FolderId','1','2025-01-25 04:39:26.778746','2025-01-25 04:41:37.460412','created',1,0,2),
+INSERT INTO `PluginConfigurationValues` (`Id`, `Name`, `Value`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`) VALUES (1,'TimePlanningBaseSettings:FolderId','1','2025-01-25 04:39:26.778746','2025-01-25 04:41:37.460412','created',1,0,2),
 (2,'TimePlanningBaseSettings:EformId','1','2025-01-25 04:39:27.010123','2025-01-25 04:41:34.810739','created',1,0,2),
 (3,'TimePlanningBaseSettings:InfoeFormId','13','2025-01-25 04:39:27.020965','2025-01-25 04:41:35.992385','created',1,0,2),
 (4,'TimePlanningBaseSettings:MaxHistoryDays','30','2025-01-25 04:39:27.025951','2025-01-25 04:39:27.025953','created',1,0,1),
@@ -17109,438 +15411,37 @@ INSERT INTO `PluginConfigurationValues` VALUES
 (72,'TimePlanningBaseSettings:ShowCalculationsAsNumber','1','2025-12-18 12:32:24.147063','2025-12-18 12:32:24.147063','created',1,0,1),
 (73,'TimePlanningBaseSettings:GpsEnabled','0','2026-01-23 12:28:18.909013','2026-01-23 12:28:18.909265','created',1,0,1),
 (74,'TimePlanningBaseSettings:SnapshotEnabled','0','2026-01-23 12:28:19.273118','2026-01-23 12:28:19.273118','created',1,0,1);
-/*!40000 ALTER TABLE `PluginConfigurationValues` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PluginGroupPermissionVersions`
---
-
-DROP TABLE IF EXISTS `PluginGroupPermissionVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PluginGroupPermissionVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `GroupId` int(11) NOT NULL,
-  `PermissionId` int(11) NOT NULL,
-  `IsEnabled` tinyint(1) NOT NULL,
-  `PluginGroupPermissionId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginGroupPermissionVersions`
---
-
-LOCK TABLES `PluginGroupPermissionVersions` WRITE;
-/*!40000 ALTER TABLE `PluginGroupPermissionVersions` DISABLE KEYS */;
-INSERT INTO `PluginGroupPermissionVersions` VALUES
-(1,1,5,1,1,'2022-09-20 14:55:38.927630','2022-09-20 14:55:38.927631','created',0,0,1),
+INSERT INTO `PluginGroupPermissionVersions` (`Id`, `GroupId`, `PermissionId`, `IsEnabled`, `PluginGroupPermissionId`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`) VALUES (1,1,5,1,1,'2022-09-20 14:55:38.927630','2022-09-20 14:55:38.927631','created',0,0,1),
 (2,1,2,1,2,'2022-09-20 14:55:38.997339','2022-09-20 14:55:38.997340','created',0,0,1),
 (3,1,3,1,3,'2022-09-20 14:55:39.029188','2022-09-20 14:55:39.029189','created',0,0,1),
 (4,1,4,1,4,'2022-09-20 14:55:39.053922','2022-09-20 14:55:39.053923','created',0,0,1),
 (5,1,1,1,5,'2022-09-20 14:55:39.086986','2022-09-20 14:55:39.086987','created',0,0,1),
 (6,1,6,1,6,'2022-09-20 14:55:39.106107','2022-09-20 14:55:39.106108','created',0,0,1);
-/*!40000 ALTER TABLE `PluginGroupPermissionVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PluginGroupPermissions`
---
-
-DROP TABLE IF EXISTS `PluginGroupPermissions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PluginGroupPermissions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `GroupId` int(11) NOT NULL,
-  `PermissionId` int(11) NOT NULL,
-  `IsEnabled` tinyint(1) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`),
-  KEY `IX_PluginGroupPermissions_PermissionId` (`PermissionId`),
-  CONSTRAINT `FK_PluginGroupPermissions_PluginPermissions_PermissionId` FOREIGN KEY (`PermissionId`) REFERENCES `PluginPermissions` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginGroupPermissions`
---
-
-LOCK TABLES `PluginGroupPermissions` WRITE;
-/*!40000 ALTER TABLE `PluginGroupPermissions` DISABLE KEYS */;
-INSERT INTO `PluginGroupPermissions` VALUES
-(1,1,5,1,'2022-09-20 14:55:38.927630','2022-09-20 14:55:38.927631','created',0,0,1),
+INSERT INTO `PluginGroupPermissions` (`Id`, `GroupId`, `PermissionId`, `IsEnabled`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`) VALUES (1,1,5,1,'2022-09-20 14:55:38.927630','2022-09-20 14:55:38.927631','created',0,0,1),
 (2,1,2,1,'2022-09-20 14:55:38.997339','2022-09-20 14:55:38.997340','created',0,0,1),
 (3,1,3,1,'2022-09-20 14:55:39.029188','2022-09-20 14:55:39.029189','created',0,0,1),
 (4,1,4,1,'2022-09-20 14:55:39.053922','2022-09-20 14:55:39.053923','created',0,0,1),
 (5,1,1,1,'2022-09-20 14:55:39.086986','2022-09-20 14:55:39.086987','created',0,0,1),
 (6,1,6,1,'2022-09-20 14:55:39.106107','2022-09-20 14:55:39.106108','created',0,0,1);
-/*!40000 ALTER TABLE `PluginGroupPermissions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `PluginPermissions`
---
-
-DROP TABLE IF EXISTS `PluginPermissions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `PluginPermissions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `PermissionName` longtext DEFAULT NULL,
-  `ClaimName` longtext DEFAULT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `PluginPermissions`
---
-
-LOCK TABLES `PluginPermissions` WRITE;
-/*!40000 ALTER TABLE `PluginPermissions` DISABLE KEYS */;
-INSERT INTO `PluginPermissions` VALUES
-(1,'Access ItemsPlanning Plugin','time_planning_plugin_access','2022-09-20 14:55:38.739360',NULL,'created',1,0,1),
+INSERT INTO `PluginPermissions` (`Id`, `PermissionName`, `ClaimName`, `CreatedAt`, `UpdatedAt`, `WorkflowState`, `CreatedByUserId`, `UpdatedByUserId`, `Version`) VALUES (1,'Access ItemsPlanning Plugin','time_planning_plugin_access','2022-09-20 14:55:38.739360',NULL,'created',1,0,1),
 (2,'Create Notification Rules','time_planning_plannings_create','2022-09-20 14:55:38.767638',NULL,'created',1,0,1),
 (3,'Edit Planning','time_planning_plannings_edit','2022-09-20 14:55:38.769848',NULL,'created',1,0,1),
 (4,'Obtain plannings','time_planning_plannings_get','2022-09-20 14:55:38.771636',NULL,'created',1,0,1),
 (5,'Obtain flex','time_planning_flex_get','2022-09-20 14:55:38.773483',NULL,'created',1,0,1),
 (6,'Obtain working hours','time_planning_working_hours_get','2022-09-20 14:55:38.775483',NULL,'created',1,0,1);
-/*!40000 ALTER TABLE `PluginPermissions` ENABLE KEYS */;
-UNLOCK TABLES;
 
---
--- Table structure for table `RegistrationDeviceVersions`
---
+-- Identity counters the legacy dump carried in its CREATE TABLE clauses.
+ALTER TABLE `AssignedSiteVersions` AUTO_INCREMENT = 65;
+ALTER TABLE `AssignedSites` AUTO_INCREMENT = 32;
+ALTER TABLE `Messages` AUTO_INCREMENT = 13;
+ALTER TABLE `PlanRegistrationVersions` AUTO_INCREMENT = 31793;
+ALTER TABLE `PlanRegistrations` AUTO_INCREMENT = 4594;
+ALTER TABLE `PluginConfigurationValueVersions` AUTO_INCREMENT = 4;
+ALTER TABLE `PluginConfigurationValues` AUTO_INCREMENT = 75;
+ALTER TABLE `PluginGroupPermissionVersions` AUTO_INCREMENT = 7;
+ALTER TABLE `PluginGroupPermissions` AUTO_INCREMENT = 7;
+ALTER TABLE `PluginPermissions` AUTO_INCREMENT = 7;
 
-DROP TABLE IF EXISTS `RegistrationDeviceVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `RegistrationDeviceVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Token` longtext DEFAULT NULL,
-  `SoftwareVersion` longtext DEFAULT NULL,
-  `Model` longtext DEFAULT NULL,
-  `Manufacturer` longtext DEFAULT NULL,
-  `OsVersion` longtext DEFAULT NULL,
-  `LastIp` longtext DEFAULT NULL,
-  `LastKnownLocation` longtext DEFAULT NULL,
-  `LookedUpIp` longtext DEFAULT NULL,
-  `OtpCode` longtext DEFAULT NULL,
-  `OtpEnabled` tinyint(1) NOT NULL,
-  `RegistrationDeviceId` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `Description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci DEFAULT NULL,
-  `Name` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `RegistrationDeviceVersions`
---
-
-LOCK TABLES `RegistrationDeviceVersions` WRITE;
-/*!40000 ALTER TABLE `RegistrationDeviceVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `RegistrationDeviceVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `RegistrationDevices`
---
-
-DROP TABLE IF EXISTS `RegistrationDevices`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `RegistrationDevices` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Token` longtext DEFAULT NULL,
-  `SoftwareVersion` longtext DEFAULT NULL,
-  `Model` longtext DEFAULT NULL,
-  `Manufacturer` longtext DEFAULT NULL,
-  `OsVersion` longtext DEFAULT NULL,
-  `LastIp` longtext DEFAULT NULL,
-  `LastKnownLocation` longtext DEFAULT NULL,
-  `LookedUpIp` longtext DEFAULT NULL,
-  `OtpCode` longtext DEFAULT NULL,
-  `OtpEnabled` tinyint(1) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  `Description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci DEFAULT NULL,
-  `Name` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci DEFAULT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `RegistrationDevices`
---
-
-LOCK TABLES `RegistrationDevices` WRITE;
-/*!40000 ALTER TABLE `RegistrationDevices` DISABLE KEYS */;
-/*!40000 ALTER TABLE `RegistrationDevices` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `WorkingTimeRuleSetVersions`
---
-
-DROP TABLE IF EXISTS `WorkingTimeRuleSetVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `WorkingTimeRuleSetVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `WorkingTimeRuleSetId` int(11) NOT NULL,
-  `Name` longtext DEFAULT NULL,
-  `WeeklyNormalSeconds` int(11) NOT NULL,
-  `DailyNormalSeconds` int(11) DEFAULT NULL,
-  `MinimumDailyRestSeconds` int(11) NOT NULL,
-  `MinimumWeeklyRestSeconds` int(11) NOT NULL,
-  `WeekStartsOn` int(11) NOT NULL,
-  `NightStartSeconds` int(11) NOT NULL,
-  `NightEndSeconds` int(11) NOT NULL,
-  `OvertimeBasis` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `WorkingTimeRuleSetVersions`
---
-
-LOCK TABLES `WorkingTimeRuleSetVersions` WRITE;
-/*!40000 ALTER TABLE `WorkingTimeRuleSetVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `WorkingTimeRuleSetVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `WorkingTimeRuleSets`
---
-
-DROP TABLE IF EXISTS `WorkingTimeRuleSets`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `WorkingTimeRuleSets` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Name` longtext DEFAULT NULL,
-  `WeeklyNormalSeconds` int(11) NOT NULL,
-  `DailyNormalSeconds` int(11) DEFAULT NULL,
-  `MinimumDailyRestSeconds` int(11) NOT NULL,
-  `MinimumWeeklyRestSeconds` int(11) NOT NULL,
-  `WeekStartsOn` int(11) NOT NULL,
-  `NightStartSeconds` int(11) NOT NULL,
-  `NightEndSeconds` int(11) NOT NULL,
-  `OvertimeBasis` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `WorkingTimeRuleSets`
---
-
-LOCK TABLES `WorkingTimeRuleSets` WRITE;
-/*!40000 ALTER TABLE `WorkingTimeRuleSets` DISABLE KEYS */;
-/*!40000 ALTER TABLE `WorkingTimeRuleSets` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `WorkingTimeRuleSettings`
---
-
-DROP TABLE IF EXISTS `WorkingTimeRuleSettings`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `WorkingTimeRuleSettings` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `WeeklyNormalHours` time(6) NOT NULL,
-  `DailyNormalHours` time(6) NOT NULL,
-  `MinimumDailyRest` time(6) NOT NULL,
-  `MinimumWeeklyRest` time(6) NOT NULL,
-  `WeekStartsOn` int(11) NOT NULL,
-  `NightStart` time(6) NOT NULL,
-  `NightEnd` time(6) NOT NULL,
-  `OvertimeBasis` int(11) NOT NULL,
-  `UnpaidBreakPerDay` time(6) NOT NULL,
-  `PaidBreakPerDay` time(6) NOT NULL,
-  `RuleSetName` longtext DEFAULT NULL,
-  `RuleSetVersion` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `WorkingTimeRuleSettings`
---
-
-LOCK TABLES `WorkingTimeRuleSettings` WRITE;
-/*!40000 ALTER TABLE `WorkingTimeRuleSettings` DISABLE KEYS */;
-/*!40000 ALTER TABLE `WorkingTimeRuleSettings` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `WorkingTimeRuleSettingsVersions`
---
-
-DROP TABLE IF EXISTS `WorkingTimeRuleSettingsVersions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `WorkingTimeRuleSettingsVersions` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `WorkingTimeRuleSettingsId` int(11) NOT NULL,
-  `WeeklyNormalHours` time(6) NOT NULL,
-  `DailyNormalHours` time(6) NOT NULL,
-  `MinimumDailyRest` time(6) NOT NULL,
-  `MinimumWeeklyRest` time(6) NOT NULL,
-  `WeekStartsOn` int(11) NOT NULL,
-  `NightStart` time(6) NOT NULL,
-  `NightEnd` time(6) NOT NULL,
-  `OvertimeBasis` int(11) NOT NULL,
-  `UnpaidBreakPerDay` time(6) NOT NULL,
-  `PaidBreakPerDay` time(6) NOT NULL,
-  `RuleSetName` longtext DEFAULT NULL,
-  `RuleSetVersion` int(11) NOT NULL,
-  `CreatedAt` datetime(6) NOT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedByUserId` int(11) NOT NULL,
-  `UpdatedByUserId` int(11) NOT NULL,
-  `Version` int(11) NOT NULL,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `WorkingTimeRuleSettingsVersions`
---
-
-LOCK TABLES `WorkingTimeRuleSettingsVersions` WRITE;
-/*!40000 ALTER TABLE `WorkingTimeRuleSettingsVersions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `WorkingTimeRuleSettingsVersions` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `__EFMigrationsHistory`
---
-
-DROP TABLE IF EXISTS `__EFMigrationsHistory`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `__EFMigrationsHistory` (
-  `MigrationId` varchar(150) NOT NULL,
-  `ProductVersion` varchar(32) NOT NULL,
-  PRIMARY KEY (`MigrationId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `__EFMigrationsHistory`
---
-
-LOCK TABLES `__EFMigrationsHistory` WRITE;
-/*!40000 ALTER TABLE `__EFMigrationsHistory` DISABLE KEYS */;
-INSERT INTO `__EFMigrationsHistory` VALUES
-('20211202224031_InitialCreate','6.0.8'),
-('20211203051857_AddingWorkerComment','6.0.8'),
-('20211209152624_AddingTranslationsToMessages','6.0.8'),
-('20220511073516_AddingSumFlexStartEnd','6.0.8'),
-('20220705191333_AddingDataFromDeviceToPlanRegistration','6.0.8'),
-('20240516051057_AddingRegistrationDevice','8.0.5'),
-('20240516053212_AddingRegistrationDeviceIdToPlanRegistrations','8.0.5'),
-('20240613044202_AdditionalAttributesPlanRegistration','9.0.11'),
-('20240721063407_AddingTenPausesExtraPrShift','9.0.11'),
-('20240722090400_AddPauseNumberToPlanRegistration','9.0.11'),
-('20241025091732_AddNameAndDescriptionToRegistrationDevice','9.0.11'),
-('20250124063807_AddDefaultHours','9.0.11'),
-('20250214063817_AddingBetterOptionsForPlanning','9.0.11'),
-('20250214064554_AddingMoreOptionsForPlanning','9.0.11'),
-('20250217090340_AddingMoreAttributesToAssignedSite','9.0.11'),
-('20250218062239_ChangingToBeNullable','9.0.11'),
-('20250218082436_FixNullableDefaultValue','9.0.11'),
-('20250226060341_Adding3MoreShifts','9.0.11'),
-('20250226085052_AddingMorePlannedShifts','9.0.11'),
-('20250228070654_AddMoreBoolsToAssignedSite','9.0.11'),
-('20250304071505_AddPlanHoursPrDayToAssignedSites','9.0.11'),
-('20250308060119_AddUsePunchClockToAssignedSite','9.0.11'),
-('20250402042404_AddingUseDetailedPauseEditingToAssignedSite','9.0.11'),
-('20250430141123_AddUsePunchClockWithAllowRegisteringInHistoryToAssignedSite','9.0.11'),
-('20250523040010_AddActicatingOfShifts','9.0.11'),
-('20250705045927_AddingNettoHoursOverrideEtc','9.0.11'),
-('20250804043409_AddingResignedAtDateToAssignedSite','9.0.11'),
-('20250806075907_AddingNettoHoursOverrideActiveToPlanRegistration','9.0.11'),
-('20250812072352_AlteringNettoHoursOverrideToDouble','9.0.11'),
-('20251202113038_AddingNewFieldsToPlanRegistration','9.0.11'),
-('20251209042439_AddEnableMobileAccessToAssignedSite','9.0.11'),
-('20251216054046_AddGpsCoordinateAndPictureSnapshotEntities','9.0.11'),
-('20251216055654_AddGpsAndSnapshotEnabledToAssignedSite','9.0.11'),
-('20251216061628_AddHolidayEntity','9.0.11'),
-('20251216073453_AddWorkingTimeRuleSettings','9.0.11'),
-('20251216091712_AddBreakPolicyEntities','9.0.11'),
-('20251217171744_AddUniqueIndexToPlanRegistrations','9.0.11'),
-('20260108054344_AddingSecondsAttributesForBetterPrecision','10.0.2'),
-('20260114062142_AddPayRuleModelsAndWorkingTimeRuleSet','10.0.2'),
-('20260125141506_AddingFileNameAndExtensionToPictureSnapshot','10.0.2'),
-('20260127060748_AddReconciledAndTransferredToPayrollToPlanRegistration','10.0.2'),
-('20260129150243_AddPlanRegistrationContentHandoverRequestEntity','10.0.2'),
-('20260129165252_AddHandoverIndexesAndPlanRegistrationFields','10.0.2'),
-('20260129173707_AddAbsenceRequestEntitiesAndPlanRegistrationAudit','10.0.2'),
-('20260131155249_AddIsManagerToAssignedSiteAndAssignedSiteManagingTagEntity','10.0.2');
-/*!40000 ALTER TABLE `__EFMigrationsHistory` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-02-01  6:36:17
+SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS = @OLD_UNIQUE_CHECKS;
+SET SQL_MODE = @OLD_SQL_MODE;

@@ -119,8 +119,8 @@ public class TaskListRenameTest : TestBaseSetup
 
         // ══ FK-ORDERED CLEANUP — the order below is load-bearing ═══════════
         // Every foreign key named in the comments is ON DELETE RESTRICT in the
-        // schema these tests actually run against (the SQL dumps under SQL/,
-        // replayed by the base [SetUp]). The base [SetUp] replays those dumps
+        // schema these tests actually run against (built from the entity model
+        // by the base [SetUp]). The base [SetUp] bootstraps and seeds
         // only ONCE PER FIXTURE, so rows seeded by test N are still present
         // when test N+1 cleans up. A child table cleared AFTER its parent
         // therefore does not merely leak state: it aborts [SetUp] with
@@ -129,8 +129,8 @@ public class TaskListRenameTest : TestBaseSetup
         // into alphabetical or seeding order.
 
         // AreaRulePlanningWorkerTags → AreaRulePlannings (RESTRICT). Raw SQL
-        // because this table is newer than the backend-config snapshot the
-        // base [SetUp] replays: it is never dropped, so its rows outlive the
+        // because this table is in no seed file's TRUNCATE list: the base
+        // [SetUp] never empties it, so its rows outlive the
         // AreaRulePlannings whose ids restart at 1. It must therefore run
         // BEFORE the AreaRulePlannings delete below — same guard, and same
         // position, as CalendarUpdateTaskRetractGateTests.

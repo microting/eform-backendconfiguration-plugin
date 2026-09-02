@@ -100,8 +100,8 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
     private DateTime Today => _today;
 
     /// <summary>
-    /// AreaRulePlanningWorkerTags is newer than the backend-config snapshot SQL
-    /// the base [SetUp] replays, so it is never dropped and its rows accumulate
+    /// AreaRulePlanningWorkerTags is in no seed file's TRUNCATE list, so the base
+    /// [SetUp] never empties it and its rows accumulate
     /// while AreaRulePlanning ids restart at 1 — a previous fixture's worker-tag
     /// link would otherwise attach to this test's event and add phantom
     /// recipients to every resolved site set. Same guard as
