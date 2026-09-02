@@ -11,6 +11,7 @@ using Microting.eForm.Infrastructure.Constants;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Entities.Permissions;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -155,31 +156,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Arrange
         var core = await GetCore();
 
-        // PayRuleSetId is a real FK on AssignedSite, so seed a PayRuleSet row
-        // to reference rather than an arbitrary int. Inserted via raw SQL
-        // (rather than the PayRuleSet EF entity) because the integration
-        // tests' checked-in SQL/420_eform-angular-time-planning-plugin.sql
-        // fixture predates PayRuleSet's HolidayPaidOff* columns — an EF
-        // Create() against the full entity 500s with "Unknown column
-        // 'HolidayPaidOffFixedSeconds'". The FK only cares that the row
-        // exists, so a minimal insert is sufficient here.
-        int payRuleSetId;
-        {
-            var connection = TimePlanningPnDbContext!.Database.GetDbConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
-            await using var command = connection.CreateCommand();
-            command.CommandText =
-                "INSERT INTO PayRuleSets (Name, CreatedAt, WorkflowState, CreatedByUserId, UpdatedByUserId, Version) " +
-                "VALUES (@name, UTC_TIMESTAMP(), 'created', 1, 1, 1); SELECT LAST_INSERT_ID();";
-            var nameParam = command.CreateParameter();
-            nameParam.ParameterName = "@name";
-            nameParam.Value = Guid.NewGuid().ToString();
-            command.Parameters.Add(nameParam);
-            payRuleSetId = Convert.ToInt32(await command.ExecuteScalarAsync());
-        }
+        // PayRuleSetId is a real FK on AssignedSite, so seed a PayRuleSet row to
+        // reference rather than an arbitrary int.
+        var payRuleSet = new PayRuleSet { Name = Guid.NewGuid().ToString() };
+        await payRuleSet.Create(TimePlanningPnDbContext!);
+        var payRuleSetId = payRuleSet.Id;
 
         var deviceUserModel = new DeviceUserModel
         {
