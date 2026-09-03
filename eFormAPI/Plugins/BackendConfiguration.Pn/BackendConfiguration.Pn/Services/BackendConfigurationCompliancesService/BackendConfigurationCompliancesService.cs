@@ -310,8 +310,18 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 // }
                 // else
                 // {
+                // Resolve the occurrence by its SDK case id — the only per-occurrence
+                // key. The previous CreatedAt.Date == Compliance.StartDate.Date
+                // heuristic assumed a planning deploys at most one occurrence per day;
+                // back-filled past series break that (every back-filled
+                // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
+                // day the backfill ran), so it kept returning the same sibling row and
+                // only the first completed occurrence ever reached Status 100.
+                // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
+                // scheduler path (eFormCompletedHandler.cs:62-63).
                 var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .FirstOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                    .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
                 if (planningCaseSite != null)
                 {
                     planningCaseSite.Status = 100;
@@ -339,6 +349,12 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     }
                     planningCaseSite.PlanningCaseId = planningCase.Id;
                     await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+                else
+                {
+                    Log.LogException(
+                        $"[ERROR] BackendConfigurationCompliancesService.Update: no PlanningCaseSite found for MicrotingSdkCaseId {foundCase.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId})");
+                    return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
                 }
                 // }
             }
@@ -492,8 +508,18 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                         func.DynamicInvoke(model.Id);
                     }
                 }
+                // Resolve the occurrence by its SDK case id — the only per-occurrence
+                // key. The previous CreatedAt.Date == Compliance.StartDate.Date
+                // heuristic assumed a planning deploys at most one occurrence per day;
+                // back-filled past series break that (every back-filled
+                // PlanningCaseSite.CreatedAt and Compliance.StartDate collapse to the
+                // day the backfill ran), so it kept returning the same sibling row and
+                // only the first completed occurrence ever reached Status 100.
+                // Matches the mobile path (EventsGrpcService.cs:1703-1707) and the
+                // scheduler path (eFormCompletedHandler.cs:62-63).
                 var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .FirstOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                    .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
                 if (planningCaseSite != null)
                 {
                     planningCaseSite.Status = 100;
@@ -521,6 +547,12 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     }
                     planningCaseSite.PlanningCaseId = planningCase.Id;
                     await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+                else
+                {
+                    Log.LogException(
+                        $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: no PlanningCaseSite found for MicrotingSdkCaseId {foundCase.Id} (complianceId: {compliance.Id}, planningId: {compliance.PlanningId})");
+                    return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
                 }
             }
             else
