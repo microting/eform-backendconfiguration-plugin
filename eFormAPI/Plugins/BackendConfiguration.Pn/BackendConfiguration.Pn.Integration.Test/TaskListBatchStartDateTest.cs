@@ -468,7 +468,8 @@ public class TaskListBatchStartDateTest : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             _retractionService,
-            _backfillService);
+            _backfillService,
+            Substitute.For<IBackendConfigurationComplianceReportService>());
 
         return new BackendConfigurationTaskListService(
             _localizationService,

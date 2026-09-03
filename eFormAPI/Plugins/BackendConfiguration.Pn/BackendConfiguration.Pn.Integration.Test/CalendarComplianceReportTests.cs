@@ -159,7 +159,14 @@ public class CalendarComplianceReportTests : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            // #1161: GetComplianceReport is now an unpaged delegate onto this
+            // service, so it must be the REAL implementation - these tests
+            // exercise its behaviour through the delegate.
+            new BackendConfigurationComplianceReportService(
+                new BackendConfigurationLocalizationService(), userService,
+                BackendConfigurationPnDbContext!, coreHelper, ItemsPlanningPnDbContext!,
+                NullLogger<BackendConfigurationComplianceReportService>.Instance));
     }
 
     // ------------------------------------------------------------------
