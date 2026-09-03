@@ -242,10 +242,11 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 
     /// <summary>
     /// <c>Update</c>/<c>UpdateFromCalendar</c> locate the occurrence's
-    /// PlanningCaseSite by <c>CreatedAt.Date == Compliance.StartDate.Date</c>
-    /// (BackendConfigurationCompliancesService.cs:313-314), so CreatedAt is set
-    /// explicitly here and <see cref="SeedComplianceAsync"/> pins StartDate to the
-    /// same UTC day.
+    /// PlanningCaseSite by <c>MicrotingSdkCaseId == foundCase.Id</c>, so
+    /// <c>MicrotingSdkCaseId</c> is the field that must be seeded from the SDK
+    /// case. (It used to be a <c>CreatedAt.Date == Compliance.StartDate.Date</c>
+    /// heuristic, which collapsed to one row per planning for back-filled past
+    /// series — see issue #1156.)
     /// </summary>
     private async Task<PlanningCaseSite> SeedPlanningCaseSiteAsync(Scenario s, PlanningCase planningCase, Case sdkCase)
     {
@@ -269,8 +270,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
 
     /// <summary>
     /// Compliance row for one occurrence. Deadline is in the past so the
-    /// <c>Property.ComplianceStatus</c> recompute has something to flip, and
-    /// StartDate is today so the PlanningCaseSite lookup matches.
+    /// <c>Property.ComplianceStatus</c> recompute has something to flip.
     /// </summary>
     private async Task<Compliance> SeedComplianceAsync(Scenario s, PlanningCase planningCase, Case sdkCase)
     {
