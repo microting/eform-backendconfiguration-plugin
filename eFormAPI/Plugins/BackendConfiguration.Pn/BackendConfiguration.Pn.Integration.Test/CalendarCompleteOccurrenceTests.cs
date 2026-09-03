@@ -171,7 +171,8 @@ public class CalendarCompleteOccurrenceTests : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            Substitute.For<IBackendConfigurationComplianceReportService>());
 
         // Calendar UI fetch (ActionableOnly=false) for the week of the series.
         var result = await service.GetTasksForWeek(new CalendarTaskRequestModel

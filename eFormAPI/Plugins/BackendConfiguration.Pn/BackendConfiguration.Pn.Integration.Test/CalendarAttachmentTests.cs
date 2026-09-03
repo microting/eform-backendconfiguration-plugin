@@ -106,7 +106,8 @@ public class CalendarAttachmentTests : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>()
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            Substitute.For<IBackendConfigurationComplianceReportService>()
         );
     }
 

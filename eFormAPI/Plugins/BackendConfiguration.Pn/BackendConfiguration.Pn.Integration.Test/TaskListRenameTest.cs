@@ -256,7 +256,8 @@ public class TaskListRenameTest : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             retraction,
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            Substitute.For<IBackendConfigurationComplianceReportService>());
 
         // Echoes the key back, matching the plugin's convention where
         // GetString("SomeKey") is itself the message under test — so the

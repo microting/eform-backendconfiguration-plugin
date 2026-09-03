@@ -74,6 +74,7 @@ using Services.BackendConfigurationAreaRulesService;
 using Services.BackendConfigurationAssignmentWorkerService;
 using Services.BackendConfigurationCalendarService;
 using Services.BackendConfigurationCaseService;
+using Services.BackendConfigurationComplianceReportService;
 using Services.BackendConfigurationCompliancesService;
 using Services.BackendConfigurationDocumentService;
 using Services.BackendConfigurationFilesService;
@@ -151,6 +152,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
         services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
         services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
+        services.AddTransient<IBackendConfigurationComplianceReportService, BackendConfigurationComplianceReportService>();
         services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
         services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
         services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();

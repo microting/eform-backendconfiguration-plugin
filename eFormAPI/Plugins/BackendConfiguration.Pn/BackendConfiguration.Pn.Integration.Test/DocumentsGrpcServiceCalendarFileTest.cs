@@ -108,7 +108,8 @@ public class DocumentsGrpcServiceCalendarFileTest : TestBaseSetup
             Substitute.For<ICalendarChangeNotifier>(),
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>()
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            Substitute.For<IBackendConfigurationComplianceReportService>()
         );
 
         // Setup mocks for DocumentsGrpcService dependencies

@@ -308,7 +308,8 @@ public class CalendarDeleteThisAndFollowingTests : TestBaseSetup
             // #1122 — the calendar service now delegates the retract/backfill
             // halves of a cross-period re-anchor. Neither fires in these fixtures.
             Substitute.For<ICalendarOccurrenceRetractionService>(),
-            Substitute.For<ICalendarPastSeriesBackfillService>());
+            Substitute.For<ICalendarPastSeriesBackfillService>(),
+            Substitute.For<IBackendConfigurationComplianceReportService>());
     }
 
     private async Task<List<CalendarTaskResponseModel>> TilesForWeek(
