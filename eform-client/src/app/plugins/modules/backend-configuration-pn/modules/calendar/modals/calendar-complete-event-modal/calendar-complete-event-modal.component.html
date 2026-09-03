@@ -62,6 +62,7 @@
       <app-case-edit-element
         [element]="elem"
         [showSectionTitle]="showSectionTitles"
+        [caseId]="prepared?.sdkCaseId"
         *ngFor="let elem of replyElement.elementList"
         (needUpdate)="partialLoadCase()"
       ></app-case-edit-element>
