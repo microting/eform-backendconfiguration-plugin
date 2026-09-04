@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -73,4 +74,41 @@ public interface IBackendConfigurationComplianceReportService
     /// </summary>
     Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
         ComplianceReportOverviewRequestModel requestModel);
+
+    /// <summary>
+    /// The Rapport view's read model (#1166): the filtered compliance set grouped
+    /// by TAG, then by the eForm TEMPLATE actually answered, with a per-template
+    /// column schema and one KEYED cell bag per case.
+    ///
+    /// <para>
+    /// The template key is the SDK <c>Case.CheckListId</c> — never
+    /// <c>AreaRule.EformId</c>, which tracks current configuration rather than what
+    /// was answered (#1160 finding 1).
+    /// </para>
+    ///
+    /// <para>
+    /// Cells are a <c>Dictionary&lt;string,string&gt;</c> keyed on
+    /// <c>$"f{Field.Id}"</c>. A missing key means UNANSWERED; there is no
+    /// empty-string placeholder, and excluded field types get neither a column nor
+    /// a cell. That is what makes the positional column-desync of #1160 finding 3
+    /// inexpressible here.
+    /// </para>
+    ///
+    /// <para>
+    /// Runs the SAME candidate-set builder as <see cref="Index"/> and
+    /// <see cref="Overview"/>, with the request's own <c>Status</c>. It is UNPAGED
+    /// — <c>PageIndex</c>, <c>PageSize</c>, <c>Sort</c> and <c>IsSortDsc</c> are
+    /// ignored — but the 5000-row safety cap still applies, silently and logged.
+    /// Rows with no answered template (no SDK case, or a case with no
+    /// <c>CheckListId</c>) carry no answers and form no group.
+    /// </para>
+    ///
+    /// <para>
+    /// Images are REFERENCES only: ids, a derived
+    /// <c>{UploadedDataId}_700_{Checksum}{Extension}</c> display name and a geo
+    /// link. No image bytes are read or returned.
+    /// </para>
+    /// </summary>
+    Task<OperationDataResult<List<ComplianceReportTagGroupModel>>> EformColumns(
+        ComplianceReportRequestModel requestModel);
 }

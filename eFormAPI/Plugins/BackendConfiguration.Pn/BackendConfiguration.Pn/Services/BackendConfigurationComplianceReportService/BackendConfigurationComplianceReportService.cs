@@ -810,6 +810,366 @@ public class BackendConfigurationComplianceReportService(
             ? null
             : (int)Math.Round(done / (double)total * 100d, MidpointRounding.AwayFromZero);
 
+
+    /// <summary>
+    /// The Rapport view's read model (#1166): the filtered compliance set grouped
+    /// by TAG, then by the eForm TEMPLATE that was actually answered, each template
+    /// group carrying its own column schema and one keyed cell bag per case.
+    ///
+    /// <para>
+    /// Runs the SAME <see cref="BuildCandidateSet"/> as <see cref="Index"/> and
+    /// <see cref="Overview"/>, so a Rapport section can never disagree with the
+    /// Detaljer row count or the Oversigt percentage for identical filters.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Unpaged by design.</b> <c>PageIndex</c>, <c>PageSize</c>, <c>Sort</c> and
+    /// <c>IsSortDsc</c> on the request are IGNORED here — Rapport groups the whole
+    /// filtered set — and the same <see cref="MaxRowsReturned"/> ceiling applies,
+    /// silently and logged, so a too-wide filter degrades instead of failing.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Rows with no answered template are dropped.</b> A compliance row with no
+    /// backing SDK case (never deployed) or whose case has a null
+    /// <c>CheckListId</c> has no answers and therefore no column set to render
+    /// against. Rapport is a report of answers, so those rows form no group; the
+    /// number dropped is logged rather than silently swallowed. Detaljer (#1165)
+    /// still shows them.
+    /// </para>
+    /// </summary>
+    public async Task<OperationDataResult<List<ComplianceReportTagGroupModel>>> EformColumns(
+        ComplianceReportRequestModel requestModel)
+    {
+        try
+        {
+            // The SDK Language entity, not just its id: Advanced_TemplateFieldReadAll
+            // takes one, and the option/checklist translation fallbacks key off it.
+            var userLanguage = await userService.GetCurrentUserLanguage();
+            var dateFrom = requestModel.DateFrom.Date;
+            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            // Must outlive every enrichment pass below — worker names, the column
+            // derivation and all of the answer/image loading read from it.
+            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+
+            var candidateSet = await BuildCandidateSet(
+                new CandidateFilter
+                {
+                    PropertyId = requestModel.PropertyId,
+                    BoardIds = requestModel.BoardIds,
+                    TagIds = requestModel.TagIds,
+                    SiteIds = requestModel.SiteIds,
+                    DateFrom = dateFrom,
+                    DateTo = dateTo,
+                    Status = requestModel.Status,
+                    // DoneAt is the "Udført dato" column, so the display fields are on.
+                    ComputeDisplayFields = true
+                },
+                sdkDbContext);
+
+            // Rows with no answered template are dropped BEFORE the cap, never
+            // after. Capping first and filtering second makes the cap mean
+            // something unpredictable — 6000 matches of which half never deployed
+            // would yield ~2500 groups while the log claimed a 5000-row
+            // truncation. Filtering first makes MaxRowsReturned a ceiling on the
+            // rows actually RENDERED, which is what the number is for.
+            var answerable = candidateSet.MatchedRows
+                .Where(r => r.Candidate.MicrotingSdkCaseId > 0 && r.SdkCase?.CheckListId != null)
+                .ToList();
+
+            var withoutTemplate = candidateSet.MatchedRows.Count - answerable.Count;
+            if (withoutTemplate > 0)
+            {
+                logger.LogInformation(
+                    "BackendConfigurationComplianceReportService.EformColumns: {Dropped} of {Total} matching rows "
+                    + "have no answered template (no SDK case, or the case has no CheckListId) and form no group.",
+                    withoutTemplate, candidateSet.MatchedRows.Count);
+            }
+
+            // One deterministic order for the whole response: cases appear inside
+            // every template group in occurrence-date order, oldest first, with the
+            // compliance id as the total tiebreak. The cap is applied to that
+            // order, so it truncates the tail rather than an arbitrary slice.
+            var answered = answerable
+                .OrderBy(r => r.EffectiveTaskDate)
+                .ThenBy(r => r.Candidate.ComplianceId)
+                .ToList();
+
+            if (answered.Count > MaxRowsReturned)
+            {
+                logger.LogWarning(
+                    "BackendConfigurationComplianceReportService.EformColumns: {Total} rows with an answered "
+                    + "template, truncated to the {Cap}-row cap. Filters: propertyId={PropertyId}, "
+                    + "status={Status}, dateFrom={DateFrom:yyyy-MM-dd}, dateTo={DateTo:yyyy-MM-dd}",
+                    answered.Count, MaxRowsReturned, requestModel.PropertyId, requestModel.Status,
+                    dateFrom, dateTo);
+                answered = answered.Take(MaxRowsReturned).ToList();
+            }
+
+            if (answered.Count == 0)
+            {
+                return new OperationDataResult<List<ComplianceReportTagGroupModel>>(
+                    true, new List<ComplianceReportTagGroupModel>());
+            }
+
+            // ==========================================================
+            // Enrichment — the same helpers Index's phase E uses.
+            // ==========================================================
+            var arpDetailsById = await LoadArpDetails(answered);
+            var propertyNamesById = await LoadPropertyNames(answered);
+            ApplyTitles(answered, arpDetailsById, userLanguage.Id);
+            ApplyPropertyNames(answered, propertyNamesById);
+
+            var arpIds = answered
+                .Where(r => r.Arp != null)
+                .Select(r => r.Arp.Id)
+                .Distinct()
+                .ToList();
+
+            // Tags are read per PLANNING, over EVERY live ARP on it — not off
+            // row.Arp alone. BuildCandidateSet pins row.Arp to the LOWEST-Id live
+            // ARP (a deliberate, documented choice for the two-live-ARPs-on-one-
+            // planning data anomaly), while its tag filter is an EXISTS over ANY
+            // live ARP of the planning. Reading tags off row.Arp only would let a
+            // row whose tag sits on a higher-Id ARP pass the filter and then fall
+            // into the untagged bucket — a "Uden tag" section inside a report the
+            // user filtered TO a named tag. One join, no per-row query.
+            var planningIdsForTags = answered
+                .Select(r => r.Candidate.PlanningId)
+                .Distinct()
+                .ToList();
+
+            // No emptiness guard needed: answered.Count == 0 already returned above,
+            // so planningIdsForTags always holds at least one id.
+            var arpTags = await backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Join(
+                    backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(a => a.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(a => planningIdsForTags.Contains(a.ItemPlanningId)),
+                    tag => tag.AreaRulePlanningId,
+                    arp => arp.Id,
+                    (tag, arp) => new { arp.ItemPlanningId, tag.ItemPlanningTagId })
+                .Distinct()
+                .ToListAsync();
+
+            var tagIdsByPlanningId = arpTags
+                .GroupBy(x => x.ItemPlanningId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.ItemPlanningTagId).Distinct().ToList());
+
+            // Tag ids live in the BC database, tag NAMES in the items-planning one.
+            var tagItemIds = arpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            var planningTagNames = tagItemIds.Count > 0
+                ? await itemsPlanningPnDbContext.PlanningTags
+                    .Where(x => tagItemIds.Contains(x.Id))
+                    .ToDictionaryAsync(x => x.Id, x => x.Name)
+                : new Dictionary<int, string>();
+
+            var siteIdsByArpId = new Dictionary<int, List<int>>();
+            foreach (var arpId in arpIds)
+            {
+                if (!arpDetailsById.TryGetValue(arpId, out var detail)) continue;
+                siteIdsByArpId[arpId] = (detail.PlanningSites ?? new List<PlanningSite>())
+                    .Where(ps => ps.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(ps => ps.SiteId)
+                    .ToList();
+            }
+
+            var siteIdsNeeded = siteIdsByArpId.Values.SelectMany(x => x).Distinct().ToList();
+            var siteNamesById = siteIdsNeeded.Count > 0
+                ? await sdkDbContext.Sites
+                    .Where(s => siteIdsNeeded.Contains(s.Id))
+                    .ToDictionaryAsync(s => s.Id, s => s.Name)
+                : new Dictionary<int, string>();
+
+            // ==========================================================
+            // Column schemas, answers and images — ONCE per template, never
+            // per case, and every bulk query led by FieldId (#1160 finding 2).
+            // ==========================================================
+            var projector = new ComplianceReportEformProjector(sdkCore, sdkDbContext, userLanguage, logger);
+
+            var caseIdsByCheckList = answered
+                .GroupBy(r => r.SdkCase.CheckListId.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(r => r.Candidate.MicrotingSdkCaseId).Distinct().ToList());
+
+            var projections = new Dictionary<int, ComplianceReportEformProjector.TemplateProjection>();
+            foreach (var (checkListId, caseIds) in caseIdsByCheckList)
+            {
+                projections[checkListId] = await projector.ProjectAsync(checkListId, caseIds);
+            }
+
+            // ==========================================================
+            // Tag -> template grouping (#1160 decision 5).
+            // ==========================================================
+            // NEVER key a Dictionary on a NULLABLE VALUE TYPE here. Dictionary<TKey,
+            // TValue> null-checks its key in both FindValue and TryInsert, and
+            // boxing an EMPTY Nullable<int> produces a null reference — so
+            // Dictionary<int?, …> throws ArgumentNullException the moment the
+            // untagged group is looked up or inserted, which is the NORMAL path,
+            // not an edge case. (The compiler would normally warn CS8714, but this
+            // csproj sets no <Nullable>, so nothing warns.) Hence: a plain int-keyed
+            // dictionary for the named tags plus a dedicated holder for the untagged
+            // group.
+            var tagGroupsByTagId = new Dictionary<int, ComplianceReportTagGroupModel>();
+            ComplianceReportTagGroupModel untaggedGroup = null;
+            // templateGroups is keyed on a ValueTuple, which is a struct and is
+            // never a null reference when boxed — a null TagId inside it is safe.
+            var templateGroups = new Dictionary<(int? TagId, int CheckListId), ComplianceReportTemplateGroupModel>();
+
+            foreach (var row in answered)
+            {
+                var checkListId = row.SdkCase.CheckListId.Value;
+                var projection = projections[checkListId];
+                var sdkCaseId = row.Candidate.MicrotingSdkCaseId;
+
+                var rowSiteIds = row.Arp != null
+                    ? siteIdsByArpId.GetValueOrDefault(row.Arp.Id, new List<int>())
+                    : new List<int>();
+
+                var images = projection.ImagesByCaseId.GetValueOrDefault(sdkCaseId, []);
+
+                // ONE model per compliance row, shared by reference when the row
+                // carries several tags — it is never mutated after construction.
+                var caseModel = new ComplianceReportCaseModel
+                {
+                    ComplianceId = row.Candidate.ComplianceId,
+                    SdkCaseId = sdkCaseId,
+                    PropertyId = row.Candidate.PropertyId,
+                    PropertyName = row.PropertyName ?? string.Empty,
+                    Title = row.Title,
+                    TaskDate = row.EffectiveTaskDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    Completed = row.Completed,
+                    // Case METADATA — the prototype's "Udført dato". Never an answer
+                    // field (#1160 finding 7).
+                    DoneAt = row.DoneAt,
+                    WorkerNames = rowSiteIds
+                        .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .ToList(),
+                    Cells = projection.CellsByCaseId.GetValueOrDefault(sdkCaseId, new Dictionary<string, string>()),
+                    ImagesCount = images.Count,
+                    Images = images
+                };
+
+                // Only a row carrying NO live AreaRulePlanningTag at all lands in
+                // the single untagged group, whose label ("Uden tag") is #1167's,
+                // not this API's.
+                //
+                // A tag id is deliberately NOT dropped when its NAME cannot be
+                // resolved. Tag ids live in the BC database and names in the
+                // items-planning one, with no foreign key between them, so an
+                // AreaRulePlanningTag whose ItemPlanningTagId has no PlanningTags
+                // row is possible — and filtering those out would empty rowTagIds,
+                // trip the null sentinel below, and render a "Uden tag" section
+                // inside a report the user had filtered TO a named tag, which is
+                // precisely the failure this grouping exists to avoid. The row
+                // therefore lands in the NAMED group for the tag it actually
+                // carries; that group's TagName is simply null (#1167 renders it
+                // without a name — the residual, cosmetic gap).
+                //
+                // When the request carries a TAG FILTER, only the SELECTED tags form
+                // groups. Otherwise a row tagged {A, B} filtered to {A} would render
+                // a "B" section too, and the report would look as if the filter had
+                // leaked. No row can be lost this way: BuildCandidateSet's EXISTS
+                // push-down guarantees every matched row's planning carries at least
+                // one of the requested tags on SOME live ARP, and the tag lookup
+                // above spans exactly those same ARPs — so a filtered row always
+                // finds its tag and can never fall through to the untagged group.
+                // #1166 does not settle this either way — it is one predicate to
+                // remove if #1167 wants the row's full tag membership instead.
+                var rowTagIds = tagIdsByPlanningId
+                    .GetValueOrDefault(row.Candidate.PlanningId, [])
+                    .Where(id => requestModel.TagIds is not { Count: > 0 } || requestModel.TagIds.Contains(id))
+                    .Select(id => (int?)id)
+                    .ToList();
+
+                if (rowTagIds.Count == 0) rowTagIds.Add(null);
+
+                foreach (var tagId in rowTagIds)
+                {
+                    ComplianceReportTagGroupModel tagGroup;
+                    if (tagId.HasValue)
+                    {
+                        if (!tagGroupsByTagId.TryGetValue(tagId.Value, out tagGroup))
+                        {
+                            tagGroup = new ComplianceReportTagGroupModel
+                            {
+                                TagId = tagId,
+                                TagName = planningTagNames.GetValueOrDefault(tagId.Value)
+                            };
+                            tagGroupsByTagId[tagId.Value] = tagGroup;
+                        }
+                    }
+                    else
+                    {
+                        tagGroup = untaggedGroup ??= new ComplianceReportTagGroupModel
+                        {
+                            TagId = null,
+                            TagName = null
+                        };
+                    }
+
+                    if (!templateGroups.TryGetValue((tagId, checkListId), out var templateGroup))
+                    {
+                        templateGroup = new ComplianceReportTemplateGroupModel
+                        {
+                            CheckListId = checkListId,
+                            CheckListName = projection.Schema.CheckListName,
+                            // Single-valued today: merging structurally-identical
+                            // cloned templates is filed, not built (#1166 §8). Two
+                            // clones therefore render as two adjacent groups.
+                            MergedCheckListIds = [checkListId],
+                            Columns = projection.Schema.Columns,
+                            // Zero columns because DERIVATION FAILED, not because
+                            // the template has no answerable fields — #1167 renders
+                            // "columns unavailable" rather than an empty table.
+                            SchemaUnavailable = projection.Schema.SchemaUnavailable
+                        };
+                        templateGroups[(tagId, checkListId)] = templateGroup;
+                        tagGroup.Templates.Add(templateGroup);
+                    }
+
+                    templateGroup.Cases.Add(caseModel);
+                }
+            }
+
+            // Stable output order. The untagged group sorts LAST in every locale
+            // because it is keyed on the null tag id, not on a translated label.
+            // The ordering expression is unchanged by the untagged group living in
+            // its own variable rather than in the dictionary: it is simply appended
+            // to the same sequence before the sort runs.
+            var allTagGroups = tagGroupsByTagId.Values.ToList();
+            if (untaggedGroup != null) allTagGroups.Add(untaggedGroup);
+
+            var result = allTagGroups
+                .OrderBy(g => g.TagId.HasValue ? 0 : 1)
+                .ThenBy(g => g.TagName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(g => g.TagId ?? int.MaxValue)
+                .ToList();
+
+            foreach (var tagGroup in result)
+            {
+                tagGroup.Templates = tagGroup.Templates
+                    .OrderBy(t => t.CheckListName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(t => t.CheckListId)
+                    .ToList();
+            }
+
+            return new OperationDataResult<List<ComplianceReportTagGroupModel>>(true, result);
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationComplianceReportService.EformColumns: {Message}", e.Message);
+            return new OperationDataResult<List<ComplianceReportTagGroupModel>>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
+    }
+
     // ------------------------------------------------------------------
     // Shared-builder input / output shapes
     // ------------------------------------------------------------------
