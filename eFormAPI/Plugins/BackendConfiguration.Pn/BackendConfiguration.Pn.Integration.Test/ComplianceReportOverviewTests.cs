@@ -298,6 +298,22 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         return board.Id;
     }
 
+    /// <summary>
+    /// Seeds one Compliance row.
+    ///
+    /// <para>
+    /// <b>CONSTRAINT — <c>Compliances</c> is UNIQUE on <c>(PlanningId, Deadline)</c></b>
+    /// (<c>IX_Compliances_PlanningId_Deadline</c>, migration
+    /// <c>20230703112050_AddingIndexOnCompliancePlanningIdAndDeadline</c> in
+    /// eform-backendconfiguration-base). A planning has AT MOST ONE occurrence per deadline
+    /// date — including soft-removed ones, because the index does not look at
+    /// <c>WorkflowState</c>. Seeding two rows on the same planning with the same deadline
+    /// throws <c>MySqlException: Duplicate entry</c> at <c>SaveChangesAsync</c>, so when a
+    /// test needs N rows either give them N DISTINCT deadlines inside the requested window,
+    /// or call <see cref="SeedSeries"/> again to get a SECOND planning on the same property
+    /// (the only way to put two rows on one property on the SAME date).
+    /// </para>
+    /// </summary>
     private async Task<int> SeedCompliance(
         int planningId, int propertyId, int areaId, DateTime deadline, int sdkCaseId,
         bool removed = false)
@@ -435,9 +451,11 @@ public class ComplianceReportOverviewTests : TestBaseSetup
 
         var a = await SeedSeries("Ejendom 1", "T", today.AddDays(-30));
         await SeedCalendarConfig(a.ArpId);
+        // Two rows on one planning, so two DISTINCT deadlines (see SeedCompliance). Both are
+        // strictly before today, so both are due and neither classification changes.
         await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-1),
             await SeedSdkCase(100));
-        await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-1),
+        await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-2),
             await SeedSdkCase(50));
 
         var b = await SeedSeries("Ejendom 2", "T", today.AddDays(-30));
@@ -579,7 +597,9 @@ public class ComplianceReportOverviewTests : TestBaseSetup
     /// Prototype <c>:43</c> — "overdue counts only incomplete cases dated before today".
     /// Four rows on one property: not-done yesterday (OVERDUE), not-done tomorrow (not due
     /// at all), not-done TODAY (due, so it lowers the percentage, but NOT overdue), and
-    /// done yesterday.
+    /// done the day before yesterday. All four sit on the same planning, so all four need
+    /// distinct deadlines (see <see cref="SeedCompliance"/>) — the done row is the one moved
+    /// off yesterday, and "strictly before today" is all its classification depends on.
     /// </summary>
     [Test]
     public async Task ComplianceReportOverview_OverdueCountsOnlyIncompleteCasesDatedBeforeToday()
@@ -595,7 +615,7 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             await SeedSdkCase(50));
         await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today,
             await SeedSdkCase(50));
-        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-2),
             await SeedSdkCase(100));
 
         var service = BuildService(core);
@@ -609,7 +629,7 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             Assert.That(row.Overdue, Is.EqualTo(1),
                 "only the not-done row dated STRICTLY before today is overdue");
             Assert.That(row.DueTotal, Is.EqualTo(3),
-                "yesterday x2 and today are due; tomorrow is not");
+                "yesterday, the day before and today are due; tomorrow is not");
             Assert.That(row.DueDone, Is.EqualTo(1));
             Assert.That(row.Done, Is.EqualTo(1));
             // The not-done row dated TODAY is in the denominator (33 %) but not in Overdue.
@@ -631,9 +651,12 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         await SeedCalendarConfig(p.ArpId);
         var siteId = await SeedSdkSite("shared");
 
+        // 18 done rows on ONE planning, so 18 distinct deadlines (see SeedCompliance):
+        // yesterday back to 18 days ago. Every one is still strictly before today and inside
+        // the -60 window, so all 18 are due-and-done exactly as a single shared date made them.
         for (var i = 0; i < 18; i++)
         {
-            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1 - i),
                 await SeedSdkCase(100, siteId));
         }
         await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(1),
@@ -665,9 +688,11 @@ public class ComplianceReportOverviewTests : TestBaseSetup
 
         var p = await SeedSeries("Ejendom 1", "T", today.AddDays(-60));
         await SeedCalendarConfig(p.ArpId);
+        // One done and one open in the past — distinct deadlines, because they share a
+        // planning (see SeedCompliance). Both are still due, so DueTotal is 2 and DueDone 1.
         await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
             await SeedSdkCase(100));
-        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-2),
             await SeedSdkCase(50));
         await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(1),
             await SeedSdkCase(50));
@@ -735,9 +760,12 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         await SeedCalendarConfig(p.ArpId);
         var siteId = await SeedSdkSite("shared");
 
+        // 41 rows on ONE planning need 41 distinct deadlines (see SeedCompliance): yesterday
+        // back to 41 days ago, all inside the -60 window and all strictly before today, so
+        // all 41 are due. The exact dates are incidental — only 33-of-41 is the point.
         for (var i = 0; i < 41; i++)
         {
-            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1 - i),
                 await SeedSdkCase(i < 33 ? 100 : 50, siteId));
         }
 
@@ -766,22 +794,26 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         var core = await GetCore();
         var today = DateTime.UtcNow.Date;
 
-        var a = await SeedSeries("Ejendom 1", "T", today.AddDays(-60));
+        var a = await SeedSeries("Ejendom 1", "T", today.AddDays(-110));
         await SeedCalendarConfig(a.ArpId);
         await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-1),
             await SeedSdkCase(100));
 
-        var b = await SeedSeries("Ejendom 2", "T", today.AddDays(-60));
+        var b = await SeedSeries("Ejendom 2", "T", today.AddDays(-110));
         await SeedCalendarConfig(b.ArpId);
         var siteId = await SeedSdkSite("shared");
+        // 100 rows on ONE planning need 100 distinct deadlines (see SeedCompliance):
+        // yesterday back to 100 days ago. The window below is widened to -110 so every one of
+        // them is still inside it, and every one is still strictly before today, so property
+        // B is still 0-of-100 due.
         for (var i = 0; i < 100; i++)
         {
-            await SeedCompliance(b.PlanningId, b.PropertyId, b.AreaId, today.AddDays(-1),
+            await SeedCompliance(b.PlanningId, b.PropertyId, b.AreaId, today.AddDays(-1 - i),
                 await SeedSdkCase(50, siteId));
         }
 
         var service = BuildService(core);
-        var result = await service.Overview(Request(today.AddDays(-60), today.AddDays(30)));
+        var result = await service.Overview(Request(today.AddDays(-110), today.AddDays(30)));
 
         Assert.That(result.Success, Is.True, result.Message);
         Assert.Multiple(() =>
@@ -819,9 +851,12 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         await SeedCalendarConfig(p.ArpId);
         var siteId = await SeedSdkSite("shared");
 
+        // 8 rows on ONE planning need 8 distinct deadlines (see SeedCompliance): yesterday
+        // back to 8 days ago, all inside the -60 window and all strictly before today, so all
+        // 8 are due and exactly 1 is done — 12.5 %, which is the whole point.
         for (var i = 0; i < 8; i++)
         {
-            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1 - i),
                 await SeedSdkCase(i < 1 ? 100 : 50, siteId));
         }
 
@@ -903,14 +938,17 @@ public class ComplianceReportOverviewTests : TestBaseSetup
         await SeedCalendarConfig(p.ArpId);
         var siteId = await SeedSdkSite("shared");
 
+        // All five rows share a planning, so all five get distinct deadlines (see
+        // SeedCompliance): done on days -1..-3, open on days -4..-5. Every one is still
+        // strictly before today, so all five are due and the two open ones are still overdue.
         for (var i = 0; i < 3; i++)
         {
-            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1 - i),
                 await SeedSdkCase(100, siteId));
         }
         for (var i = 0; i < 2; i++)
         {
-            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+            await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-4 - i),
                 await SeedSdkCase(50, siteId));
         }
 
@@ -951,7 +989,10 @@ public class ComplianceReportOverviewTests : TestBaseSetup
             await SeedSdkCase(50, siteId));
         // Dropped: soft-removed and NOT done. MicrotingSdkCaseId > 0 so it survives phase A
         // and is genuinely rejected by the phase-C rule rather than never being selected.
-        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-1),
+        // Dated the day before the kept row: the unique index spans soft-removed rows too
+        // (see SeedCompliance), and being one more day in the past changes nothing — it
+        // would have been overdue on either date, and it reaches no counter regardless.
+        await SeedCompliance(p.PlanningId, p.PropertyId, p.AreaId, today.AddDays(-2),
             await SeedSdkCase(50, siteId), removed: true);
 
         var service = BuildService(core);
@@ -1069,10 +1110,12 @@ public class ComplianceReportOverviewTests : TestBaseSetup
 
         // A spread that exercises every phase-C branch at once: done, open, future,
         // soft-removed-and-done (counted), soft-removed-and-open (dropped), deleted
-        // occurrence (dropped) and a moved one.
+        // occurrence (dropped) and a moved one. Every row on planning A gets its own
+        // deadline (-1, -2, +2, -4, -5, -6, -7) because they share a planning — see
+        // SeedCompliance. Property B's single row can stay on -1: a different planning.
         await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-1),
             await SeedSdkCase(100, siteId));
-        await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-1),
+        await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(-2),
             await SeedSdkCase(50, siteId));
         await SeedCompliance(a.PlanningId, a.PropertyId, a.AreaId, today.AddDays(2),
             await SeedSdkCase(50, siteId));
