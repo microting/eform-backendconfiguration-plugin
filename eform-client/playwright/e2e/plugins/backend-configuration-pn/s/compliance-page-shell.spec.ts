@@ -8,9 +8,16 @@ import { generateRandmString } from '../../../helper-functions';
  * Covers only what the shell owns: the route, the ten filter controls, the
  * mode toggle, the blank-on-change state machine and the pagination chrome.
  * The rows themselves belong to #1164 (Oversigt), #1165 (Detaljer) and #1167
- * (Rapport) and are asserted by their own suites — until those land the result
- * container is deliberately empty after a fetch and the pagination reads
- * "Ingen resultater".
+ * (Rapport) and are asserted by their own suites — Oversigt's is
+ * `compliance-overview.spec.ts`, in this same shard. Where a child has not
+ * landed the result container is deliberately empty after a fetch and the
+ * pagination reads "Ingen resultater".
+ *
+ * One shell guarantee is genuinely #1164's and is asserted HERE because the
+ * template that carries it is the shell's: the pagination <nav> exists in
+ * Detaljer ONLY. Oversigt is one row per property and never pages; Rapport
+ * renders whole sub-reports and does not page either (the prototype empties the
+ * same container in both — compliance.js:1460 and :1820-1821).
  *
  * Structural notes, each of them a trap this repo has already been bitten by:
  *
@@ -223,20 +230,30 @@ test.describe('Compliance page shell (#1163)', () => {
   test('a filter change blanks the result and clears the pagination, and fetches nothing', async ({ page }) => {
     await goToCompliancePage(page);
 
-    // The page auto-fetches Oversigt once on load, so the placeholder is gone
-    // and the pagination chrome is present to begin with.
-    await expect(page.locator('#compliancePagination')).toBeVisible();
+    // The page auto-fetches Oversigt once on load, so `reportVisible` is true
+    // and the placeholder is gone to begin with. The pagination chrome is NOT:
+    // #1164 hides the whole <nav> outside Detaljer (Oversigt is one row per
+    // property, and the aggregation endpoint has no paging parameters to
+    // honour), so it does not exist until the mode is Detaljer.
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await expect(page.locator('#compliancePagination')).toHaveCount(0);
 
     // Switch to Detaljer first: the status control is disabled in Oversigt.
     // This is SETUP, not the thing under test — and it is deliberately done
     // BEFORE the request counter is armed. A mode switch destroys the ngSwitch
     // child and creates the next one, which subscribes to `fetchRequested$`
-    // and receives the REPLAYED trigger; that replay is the design, and the
-    // day #1165 wires the Detaljer query this click will legitimately issue
-    // exactly one request. Counting from here would make this test fail on
-    // correct behaviour.
+    // and receives the REPLAYED trigger; that replay is the design, and both
+    // children now query (#1165 Detaljer, #1164 Oversigt), so this click
+    // legitimately issues exactly one request. Counting from here would make
+    // this test fail on correct behaviour.
     await page.locator('#complianceMode-details').click();
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    // Only HERE does the pagination chrome exist — the mode switch preserves
+    // `reportVisible`, and Detaljer is the ONE mode that pages. This is the
+    // premise the `toHaveCount(0)` at the end of the test measures the change
+    // against; taking it in Oversigt would have asserted the pre-#1164
+    // behaviour.
+    await expect(page.locator('#compliancePagination')).toBeVisible();
 
     // Armed only now, so the assertion below covers exactly one gesture: the
     // FILTER CHANGE. `setFilter` must blank the result and issue no request —
@@ -244,10 +261,10 @@ test.describe('Compliance page shell (#1163)', () => {
     //
     // The URL substring is the whole controller prefix (no trailing slash, so
     // a POST to the bare controller root is counted too) rather than one
-    // endpoint, so it keeps holding as #1164/#1165/#1167 add their queries.
-    // Today, with no child wired, the counter is trivially 0 whatever
-    // `setFilter` does; it only becomes a real regression guard once a child
-    // actually queries — but it will not need rewriting then.
+    // endpoint, so it keeps holding as #1167 adds its query.
+    // Both children wired here DO query — #1165's Detaljer index and #1164's
+    // Oversigt aggregation — so this is a real regression guard now, not a
+    // trivially-zero one: a `setFilter` that fetched would be caught.
     let requests = 0;
     page.on('request', r => {
       if (r.url().includes('/api/backend-configuration-pn/compliance-report')) {
@@ -279,8 +296,13 @@ test.describe('Compliance page shell (#1163)', () => {
     // A mode switch never re-blanks: one fetch serves all three modes.
     await page.locator('#complianceMode-report').click();
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    // ...but the pagination chrome is Detaljer-only, so leaving Detaljer takes
+    // it away again — in Rapport as well as in Oversigt. The prototype empties
+    // this container in both (compliance.js:1820-1821 and :1460).
+    await expect(page.locator('#compliancePagination')).toHaveCount(0);
     await page.locator('#complianceMode-overview').click();
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await expect(page.locator('#compliancePagination')).toHaveCount(0);
   });
 
   test('an invalid custom period disables the button and says why', async ({ page }) => {

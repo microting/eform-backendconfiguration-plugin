@@ -788,4 +788,20 @@ export const enUS= {
   // distinct from 'No tasks match the selected filters.' on purpose: a
   // transport or server error is not the filters' fault.
   'Could not load the data': 'Could not load the data',
+  // Oversigt view (#1164). The property and overdue COLUMN HEADERS reuse the
+  // existing 'Property' (Ejendom) and 'Overdue' (Overskredet) keys rather than
+  // adding near-duplicates: #1169's export already renders the property column
+  // as Ejendom, and a user must not see one Danish word on screen and another
+  // in the file they download from that screen (decision recorded on #1164).
+  // The prototype's 'Virksomhed' is deliberately not used.
+  'Compliance %': 'Compliance %',
+  // The <tfoot> label. NOT the core frontend's 'Total' key, whose Danish is
+  // 'Total' and which is used on unrelated screens; same pattern as
+  // 'Compliance overview' above.
+  'Compliance total': 'Total',
+  'No properties match the selected filters.': 'No properties match the selected filters.',
+  // Accessible name of a sortable column header, prefixed to the visible label
+  // ('Sortér efter Overskredet'), so the visible text stays part of the
+  // accessible name.
+  'Sort by': 'Sort by',
 };

@@ -1,0 +1,152 @@
+<div class="compliance-overview">
+  <!--
+    A failed FIRST fetch. Its own wording, deliberately NOT the empty-result
+    line below: a transport or server error is not the filters' fault. Mutually
+    exclusive with that line by construction — `loadFailed` is only ever set
+    while `hasFetched` is false.
+  -->
+  <div
+    *ngIf="loadFailed && !state.loading"
+    id="complianceOverviewError"
+    class="compliance-overview__empty"
+    role="alert"
+  >
+    {{ 'Could not load the data' | translate }}
+  </div>
+
+  <!--
+    Only after a response, and never while the shell's spinner is up: an empty
+    body during the first load would flash "no properties match" before any
+    query had returned. NO <table> is rendered in this state — the empty state
+    replaces the table rather than sitting inside an empty one.
+  -->
+  <div
+    *ngIf="hasFetched && !state.loading && rows.length === 0"
+    id="complianceOverviewEmpty"
+    class="compliance-overview__empty"
+  >
+    {{ 'No properties match the selected filters.' | translate }}
+  </div>
+
+  <!--
+    Its own horizontal scroller: on a narrow viewport the TABLE scrolls inside
+    this box rather than the page scrolling sideways (the table carries a
+    min-width in the stylesheet).
+  -->
+  <div class="compliance-overview__scroll" *ngIf="rows.length > 0">
+    <table class="compliance-overview__table">
+      <thead>
+        <tr>
+          <!--
+            aria-sort goes on the <th>, and only on the ACTIVE column. The
+            header itself is a <button> so it is reachable and operable from the
+            keyboard for free.
+
+            Hand-rolled rather than mat-sort-header: Material's cycle is
+            asc → desc → none and always starts ascending, while this table has
+            a two-state cycle with a per-key initial direction (asc for the
+            name, desc for the two numeric columns) — see nextOverviewSort.
+          -->
+          <th
+            *ngFor="let col of columns"
+            scope="col"
+            class="compliance-overview__th"
+            [class.is-num]="col.numeric"
+            [class.is-sorted]="isSorted(col.key)"
+            [attr.aria-sort]="ariaSort(col.key)"
+          >
+            <button
+              type="button"
+              class="compliance-overview__sort-btn"
+              id="complianceOverviewSort-{{ col.key }}"
+              [attr.aria-label]="('Sort by' | translate) + ' ' + (col.label | translate)"
+              (click)="onSortHeader(col.key)"
+            >
+              <span>{{ col.label | translate }}</span>
+              <!--
+                Rendered only in the sorted header and rotated 180° for
+                descending, so the indicator never claims a column is sorted
+                when it is not.
+              -->
+              <mat-icon
+                *ngIf="isSorted(col.key)"
+                class="compliance-overview__sort-icon"
+                [class.is-desc]="isSortedDescending(col.key)"
+                aria-hidden="true"
+                >arrow_drop_up</mat-icon
+              >
+            </button>
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <!--
+          Rendered in the order `rows` is handed over — the component sorts, the
+          template never does. Each row is the drill-down target: clickable,
+          focusable and activated by Enter or Space (preventDefault on both, so
+          Space does not scroll the page instead).
+
+          `tabindex="0"` WITHOUT `role="button"`, deliberately. A table's rows
+          are its required owned elements, so re-roling a <tr> takes it out of
+          the table structure and orphans its <td>s — a screen-reader user would
+          stop hearing the very numbers the row exists to report, in exchange
+          for the word "button". The prototype sets tabindex alone for the same
+          shape (compliance.js:1491-1503). Discoverability comes from the hover
+          background and the focus ring instead.
+        -->
+        <tr
+          *ngFor="let row of rows; trackBy: trackByRow"
+          class="compliance-overview__row"
+          tabindex="0"
+          [attr.data-property-id]="row.propertyId"
+          (click)="onRowActivated(row)"
+          (keydown.enter)="$event.preventDefault(); onRowActivated(row)"
+          (keydown.space)="$event.preventDefault(); onRowActivated(row)"
+        >
+          <td class="compliance-overview__property">{{ row.propertyName }}</td>
+          <td class="is-num">
+            <span
+              class="compliance-overview__overdue"
+              [ngClass]="'is-' + overdueLevel(row.overdue)"
+              >{{ row.overdue }}</span
+            >
+          </td>
+          <td class="is-num">
+            <span
+              class="compliance-overview__pill"
+              [ngClass]="'is-' + complianceLevel(row.compliancePct)"
+              >{{ formatPercent(row.compliancePct) }}</span
+            >
+          </td>
+        </tr>
+      </tbody>
+
+      <!--
+        The totals row. WEIGHTED by the server (totals.dueDone / totals.dueTotal,
+        never the average of the row percentages) and carried straight through.
+        Deliberately NOT drillable: it carries propertyId 0 and is not a
+        property, so it gets no role, no tabindex and no handler.
+      -->
+      <tfoot *ngIf="totals">
+        <tr class="compliance-overview__totals">
+          <td class="compliance-overview__property">{{ 'Compliance total' | translate }}</td>
+          <td class="is-num">
+            <span
+              class="compliance-overview__overdue"
+              [ngClass]="'is-' + overdueLevel(totals.overdue)"
+              >{{ totals.overdue }}</span
+            >
+          </td>
+          <td class="is-num">
+            <span
+              class="compliance-overview__pill"
+              [ngClass]="'is-' + complianceLevel(totals.compliancePct)"
+              >{{ formatPercent(totals.compliancePct) }}</span
+            >
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
