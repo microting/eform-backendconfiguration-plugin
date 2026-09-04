@@ -10,6 +10,7 @@ import {
   ComplianceReportOverviewRequestModel,
   ComplianceReportPagedModel,
   ComplianceReportRequestModel,
+  ComplianceReportTagGroupModel,
 } from '../models';
 
 export let BackendConfigurationPnComplianceReportMethods = {
@@ -19,6 +20,11 @@ export let BackendConfigurationPnComplianceReportMethods = {
   // The Oversigt aggregation (#1162). Unpaged and unsorted by decision — one
   // row per property plus a weighted totals row.
   Overview: 'api/backend-configuration-pn/compliance-report/overview',
+  // The Rapport projection (#1166). UNPAGED and UNSORTED by decision: it
+  // ignores `sort`/`pageIndex`/`pageSize` on the request body and applies the
+  // service's own row cap instead, because Rapport groups the whole filtered
+  // set and every sub-report is rendered whole.
+  EformColumns: 'api/backend-configuration-pn/compliance-report/eform-columns',
 };
 
 /**
@@ -62,6 +68,27 @@ export class BackendConfigurationPnComplianceReportService {
     return this.apiBaseService
       .postNoToast<ComplianceReportOverviewModel>(
         BackendConfigurationPnComplianceReportMethods.Overview,
+        model
+      )
+      .pipe(tap((res) => this.notifyError(res)));
+  }
+
+  /**
+   * The Rapport projection (#1166): tag groups → template groups → an ordered
+   * column schema plus one KEYED cell bag per case.
+   *
+   * Takes the same request model as `index()` — the shared filter set — and
+   * ignores its paging and sorting fields server-side. `postNoToast` + the
+   * shared `notifyError` matches the two siblings: one toast on failure, and
+   * the caller still sees `success: false` so it can decide what to leave on
+   * screen.
+   */
+  eformColumns(
+    model: ComplianceReportRequestModel
+  ): Observable<OperationDataResult<ComplianceReportTagGroupModel[]>> {
+    return this.apiBaseService
+      .postNoToast<ComplianceReportTagGroupModel[]>(
+        BackendConfigurationPnComplianceReportMethods.EformColumns,
         model
       )
       .pipe(tap((res) => this.notifyError(res)));

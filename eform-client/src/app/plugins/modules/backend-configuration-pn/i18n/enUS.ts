@@ -804,4 +804,36 @@ export const enUS= {
   // ('Sortér efter Overskredet'), so the visible text stays part of the
   // accessible name.
   'Sort by': 'Sort by',
+  // Rapport view (#1167). Everything the sub-report tables need beyond the keys
+  // that already exist above: the metadata headers reuse 'Id' (Id),
+  // 'Property' (Ejendom), 'Completed by' (Udført af), 'Area' (Område),
+  // 'Pictures' (Billeder) and 'Actions' (Handlinger); the meta line reuses
+  // 'Property', 'Calendar' (Kalender), 'Period' (Periode) and 'All' (Alle);
+  // the empty state reuses 'No tasks match the selected filters.'; the delete
+  // confirm reuses 'Delete log' / 'This action cannot be undone' / 'Cancel' /
+  // 'Delete'; the per-sub-report reveal reuses 'Showing' and 'Show all' plus
+  // the CORE frontend's 'of'.
+  //
+  // NOT the existing 'Completed date' key for the Udført dato column: its
+  // Danish is 'Udført', while #1169's export renders the same column from the
+  // backend's own CompletedDate entry as 'Udført dato'. A user must not see one
+  // Danish word on screen and another in the file downloaded from that screen,
+  // and retranslating 'Completed date' would silently move its one other
+  // consumer (adhoc-history).
+  'Completion date': 'Completion date',
+  // The label of the tag group that carries NO tag at all. A group whose tag id
+  // could not be resolved to a name is rendered as #{tagId} instead — it is a
+  // named group, and filing it here would merge two different sub-reports.
+  // Matches the backend's WithoutTag entry, which #1169's export uses.
+  'Without tag': 'Without tag',
+  // A template whose column schema could not be derived: zero answer columns
+  // for a reason that is neither "no answerable fields" nor "nobody answered".
+  // Matches the backend's ColumnsUnavailable entry.
+  'Columns unavailable': 'Columns unavailable',
+  // Accessible name of the Billeder cell. Two keys rather than one plural
+  // string so each language can word the singular its own way.
+  '1 image': '1 image',
+  '{{count}} images': '{{count}} images',
+  // Tooltip on the disabled Rediger button (compliance.js:1648).
+  'Only completed tasks can be edited': 'Only completed tasks can be edited',
 };
