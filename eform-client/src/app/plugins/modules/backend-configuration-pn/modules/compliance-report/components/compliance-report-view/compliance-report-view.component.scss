@@ -1,0 +1,254 @@
+// Theme custom properties only — no colour literal anywhere in this file.
+// Every token used here is defined in BOTH scss/themes/_eform.scss and
+// scss/themes/_workspace.scss, in both their light and dark colour maps.
+//
+// TWO SURFACES, not one. This view has an unusual property the two sibling
+// views do not: its chrome and its cells sit on DIFFERENT backgrounds.
+//
+//  1. THE CARD, for everything outside a grid — the meta line, the tag line,
+//     the heading, the schema notice, the empty state, the "Vis alle" footer.
+//     They live in `<mat-card id="complianceCasesRoot">`
+//     (compliance-report-page.component.html:30), whose `.mat-mdc-card` paints
+//     `--mat-card-elevated-container-color`, which
+//     scss/themes/_theme-mixin.scss:266 redeclares `!important` as
+//     `--md-surface-container`:
+//
+//         eform  L #F7F9FA   eform  D #2D2F31
+//         works. L #ffffff   works. D #1e1f20
+//
+//     It is NOT `--content-card-bg` (one unrelated consumer, the routed-page
+//     wrapper outside this card) and NOT Material's default
+//     surface-container-low.
+//
+//  2. THE GRID'S OWN TABLE, for anything inside an mtx-grid cell.
+//     `.mat-mdc-table` paints `--mat-table-background-color`, which
+//     _theme-mixin.scss:268 wires to the `tp-td-bg` token:
+//
+//         eform  L #ffffff   eform  D #424242
+//         works. L #ffffff   works. D #1e1f20
+//
+//     So an mtx-grid inside this card is a lighter (eform light) or lighter-grey
+//     (eform dark) plate ON the card, and cell text must be measured against
+//     `tp-td-bg`, never against the card.
+//
+// CONTRAST — every token this file applies, in all four theme x mode
+// combinations. WCAG AA for normal text is 4.5:1; the 3:1 floor of WCAG 1.4.11
+// applies to the icon, which is a non-text UI component.
+//
+//   on the CARD (--md-surface-container)
+//   ----------------------------------------------------------------------
+//   --text-primary        heading, meta values
+//                         eform  L #0F1316 on #F7F9FA = 17.68
+//                         eform  D #F3F5F7 on #2D2F31 = 12.30
+//                         works. L #1f1f1f on #ffffff = 16.48
+//                         works. D #e3e3e3 on #1e1f20 = 12.86
+//   --text-child-muted    meta labels, tag line, schema notice, empty state,
+//                         "Viser N af M"
+//                         eform  L #666666 on #F7F9FA = 5.44
+//                         eform  D #9CA3AF on #2D2F31 = 5.29
+//                         works. L #5f6368 on #ffffff = 6.05
+//                         works. D #c4c7c5 on #1e1f20 = 9.69
+//   --border-primary      the section rule. Non-text, decorative.
+//
+//   inside a GRID CELL (--tp-td-bg)
+//   ----------------------------------------------------------------------
+//   --text-primary        every cell's text — the six metadata columns, the
+//                         answer columns and the images count
+//                         eform  L #0F1316 on #ffffff = 18.67
+//                         eform  D #F3F5F7 on #424242 =  9.20
+//                         works. L #1f1f1f on #ffffff = 16.48
+//                         works. D #e3e3e3 on #1e1f20 = 12.86
+//   --icon-secondary      the photo_library icon (non-text, 3:1 floor)
+//                         eform  L #0F1316 on #ffffff = 18.67
+//                         eform  D #FFFFFF on #424242 = 10.05
+//                         works. L #444746 on #ffffff =  9.39
+//                         works. D #c4c7c5 on #1e1f20 =  9.69
+//
+// NOT --text-secondary and NOT --text-tertiary for any of the muted text: on
+// the eform-LIGHT card they are 3.49:1 and 4.58:1 respectively, i.e. one fails
+// outright and the other has no headroom. The other three combinations pass for
+// both, which is exactly why the eform-light failure hides. `--text-child-muted`
+// clears 4.5:1 in all four ON THE CARD, so that is the only surface it is used
+// on here — inside a grid cell it drops to 3.96:1 in eform dark (#9CA3AF on
+// #424242) and would fail. #1164 made the same swap for the same reason.
+//
+// Cell text is pinned to `--text-primary` rather than left on mtx-grid's
+// default `--mat-table-row-item-label-text-color` (the `text-body` token), which
+// is #7F868D on #ffffff = 3.69:1 in eform light — a failure this view would
+// otherwise inherit, and one that would also make the answer columns a
+// different weight of grey from the metadata columns beside them. That default
+// is an app-wide condition of every mtx-grid, not something introduced here;
+// the override below is scoped to this view's own grids and changes no other
+// screen.
+
+.compliance-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+
+  // --text-child-muted, not --text-secondary: on the eform-light card that
+  // token is 3.49:1. See the header.
+  &__empty {
+    padding: var(--spacing-2xl);
+    text-align: center;
+    color: var(--text-child-muted);
+  }
+
+  // `Ejendom: … Kalender: … Periode: …`. Wraps rather than scrolls: it is a
+  // sentence about the filters, not tabular data.
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs) var(--spacing-lg);
+    margin: 0;
+    font-size: var(--font-size-table-header);
+  }
+
+  &__meta-item {
+    display: inline-flex;
+    gap: var(--spacing-xs);
+  }
+
+  &__meta-label {
+    color: var(--text-child-muted);
+  }
+
+  &__meta-value {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-primary);
+
+    // The first section sits directly under the meta line, which is already a
+    // separator; a rule there would read as a double line.
+    &:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+  }
+
+  // The tag group. An eyebrow above the heading, not a heading itself: the tag
+  // repeats across every template sub-group under it, so promoting it to a
+  // second <h*> would put the same text in the document outline once per
+  // template.
+  &__tag {
+    margin: 0;
+    font-size: var(--font-size-table-header);
+    color: var(--text-child-muted);
+  }
+
+  // The TEMPLATE name. Never the prototype's `Rapportoverskrift`.
+  &__heading {
+    margin: 0 0 var(--spacing-xs);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+  }
+
+  &__notice {
+    margin: 0 0 var(--spacing-xs);
+    color: var(--text-child-muted);
+    font-style: italic;
+  }
+
+  &__grid {
+    display: block;
+    // The grid scrolls horizontally inside its own box (mtx-grid's own
+    // `.mtx-grid-content` owns the overflow); this only stops it from forcing
+    // the page wider than the card.
+    max-width: 100%;
+  }
+
+  // The per-sub-report reveal. Right-aligned under the grid so it reads as a
+  // footer of that table rather than as a heading of the next section.
+  &__more {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    padding-top: var(--spacing-xs);
+  }
+
+  &__more-count {
+    color: var(--text-child-muted);
+    font-size: var(--font-size-table-header);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  // --- cell contents (surface: --tp-td-bg, see the header) -----------------
+
+  &__answer {
+    color: var(--text-primary);
+  }
+
+  &__images {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--text-primary);
+  }
+
+  &__images-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    color: var(--icon-secondary);
+  }
+
+  &__images-count {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-xs);
+  }
+}
+
+// mtx-grid renders its cells outside this component's view encapsulation, so
+// the two rules below need ::ng-deep — scoped to this component's own grid via
+// the :host prefix, so nothing else in the app is touched.
+:host ::ng-deep .compliance-report__grid {
+  // Every cell, metadata and answer alike, on --text-primary. See the header:
+  // the inherited `text-body` default is 3.69:1 in eform light.
+  .mat-mdc-cell {
+    color: var(--text-primary);
+  }
+
+  // The `is-num` class the Id column carries.
+  .is-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  // scss/styles.scss:1625-1627 paints the LEFT-pinned cells globally
+  // (`--tp-td-bg !important` on :1626), but the matching background for the
+  // RIGHT-pinned column is declared only under `body.theme-eform`
+  // (scss/styles.scss:1754-1765, the background itself on :1762) —
+  // the file says so itself: "the right-pinned rule below is theme-eform-scoped
+  // and has the same latent gap on other themes". Under theme-workspace the
+  // Handlinger column would therefore be transparent and the answer columns
+  // would scroll visibly underneath its buttons. Painting it with the same
+  // token the left-pinned rule uses closes that for this view without touching
+  // the global rule, whose blast radius is every mtx-grid in the app.
+  //
+  // `!important` is required, not decorative: under theme-eform the global rule
+  // DOES paint the right-pinned cell, with `--bg !important` — and `--bg` is
+  // #202122 in eform dark while the table it sits in is `--tp-td-bg` #424242,
+  // so the frozen column reads as a darker stripe. This selector carries three
+  // class-level components against that rule's two, so it wins the important
+  // cascade for this view's grids only.
+  th.mat-table-sticky-right,
+  td.mat-table-sticky-right {
+    background: var(--tp-td-bg) !important;
+  }
+}

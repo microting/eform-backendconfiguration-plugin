@@ -173,3 +173,123 @@ export interface ComplianceReportOverviewModel {
    */
   totals: ComplianceReportOverviewRowModel;
 }
+
+// ---------------------------------------------------------------------------
+// Rapport — the per-template answer columns (#1166 endpoint, #1167 view)
+// ---------------------------------------------------------------------------
+
+/**
+ * One answer column of a template group. Mirrors the C#
+ * `ComplianceReportColumnModel`.
+ *
+ * `key` — NOT `label`, NOT an array position — is how a cell is addressed. It
+ * is `f{fieldId}`, derived from the SDK `Field.Id`, and it does not move when a
+ * translation, a label or the display order changes.
+ */
+export interface ComplianceReportColumnModel {
+  key: string;
+  fieldId: number;
+  /** Translated field label, prefixed with the child checklist's name where they differ. */
+  label: string;
+  /** The SDK `Constants.FieldTypes` value. */
+  fieldType: string;
+}
+
+/** A reference to one image answer. References only — no bytes (#1166 §6). */
+export interface ComplianceReportImageModel {
+  fieldValueId: number;
+  uploadedDataId: number;
+  /**
+   * `{UploadedData.Id}_700_{Checksum}{Extension}`, DERIVED — `null` when the
+   * `UploadedData.FileName` existence check failed, i.e. the file cannot be
+   * fetched at all.
+   */
+  fileName: string | null;
+  geoLink: string | null;
+}
+
+/** One answered occurrence inside a template group. */
+export interface ComplianceReportCaseModel {
+  complianceId: number;
+  /** The backing SDK case. Always > 0. */
+  sdkCaseId: number;
+  propertyId: number;
+  propertyName: string;
+  /** The task title — the prototype's `Område` column. */
+  title: string;
+  /** yyyy-MM-dd, occurrence exception NewDate already applied. */
+  taskDate: string;
+  completed: boolean;
+  /**
+   * `DoneAtUserModifiable ?? DoneAt` — the prototype's `Udført dato`. CASE
+   * METADATA, never an eForm answer (#1160 finding 7).
+   *
+   * Typed `string` because that is what the wire carries; the app's HTTP layer
+   * auto-parses ISO strings into `Date` instances, so a consumer sees whichever
+   * of the two the interceptor produced. Both are accepted by Angular's
+   * `date` pipe, which is the only reader.
+   */
+  doneAt: string | null;
+  workerNames: string[];
+  /**
+   * Answers keyed by `ComplianceReportColumnModel.key`. A MISSING key means
+   * unanswered — there is no empty-string placeholder and no positional slot,
+   * which is what makes the #1160-finding-3 column desync inexpressible.
+   * NEVER index into this by column position.
+   *
+   * `Dictionary<string,string>` on the wire, but the VALUES are not all strings
+   * by the time a component sees them: the host frontend's global
+   * `DateInterceptor` (app.declarations.ts:120) walks the whole response body
+   * recursively and turns every ISO-datetime string into a `Date` — it cannot
+   * tell an opaque bag from a DTO, so it descends in here too, and an answer
+   * stored as a full timestamp arrives as a `Date` (same reality as e.g.
+   * `AdhocTaskHistoryRowModel.completedAt`). Read a cell ONLY through
+   * `complianceAnswerText`, which narrows both shapes to display text.
+   */
+  cells: {[key: string]: string};
+  /**
+   * Images attached to the case — INCLUDING ones whose file name could not be
+   * derived and which therefore cannot be fetched. It is not a count of
+   * renderable images.
+   */
+  imagesCount: number;
+  images: ComplianceReportImageModel[];
+}
+
+/** One eForm template inside a tag group: its column schema and its cases. */
+export interface ComplianceReportTemplateGroupModel {
+  /** SDK `Case.CheckListId` — the template ACTUALLY answered (#1160 finding 1). */
+  checkListId: number;
+  checkListName: string | null;
+  /**
+   * Every `checkListId` merged into this group. The cloned-template merge is
+   * deliberately NOT implemented (#1166 §8), so today this always holds exactly
+   * one id — `checkListId` itself — and structurally identical clones render as
+   * two adjacent groups.
+   */
+  mergedCheckListIds: number[];
+  columns: ComplianceReportColumnModel[];
+  /**
+   * True when deriving the schema FAILED, so `columns` is empty because it
+   * could not be read — not because the template has no answerable fields and
+   * not because nobody answered. The three are indistinguishable without it.
+   */
+  schemaUnavailable: boolean;
+  cases: ComplianceReportCaseModel[];
+}
+
+/**
+ * One tag group of the Rapport view.
+ *
+ * `tagId == null` is the genuinely untagged group, and the ONLY one that gets
+ * the "Uden tag" label. A group with `tagId != null` and `tagName == null` is a
+ * NAMED group whose name could not be resolved — tag ids live in the BC
+ * database and tag names in the items-planning one with no foreign key between
+ * them — and is labelled `#{tagId}`, exactly as #1169's export labels it.
+ * Discriminating on the NAME would merge two different sections.
+ */
+export interface ComplianceReportTagGroupModel {
+  tagId: number | null;
+  tagName: string | null;
+  templates: ComplianceReportTemplateGroupModel[];
+}

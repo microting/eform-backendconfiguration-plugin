@@ -15,6 +15,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {EFORM_MAT_DATEFNS_DATE_FORMATS} from 'src/app/common/modules/eform-date-adapter/eform-mat-datefns-date-formats';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
@@ -25,6 +26,7 @@ import {
   ComplianceOverviewViewComponent,
   ComplianceReportFiltersComponent,
   ComplianceReportPageComponent,
+  ComplianceReportViewComponent,
 } from './components';
 import {ComplianceReportStateService} from './store';
 
@@ -39,6 +41,7 @@ import {ComplianceReportStateService} from './store';
     ComplianceReportFiltersComponent,
     ComplianceOverviewViewComponent,
     ComplianceDetailsViewComponent,
+    ComplianceReportViewComponent,
   ],
   imports: [
     CommonModule,
@@ -58,6 +61,11 @@ import {ComplianceReportStateService} from './store';
     MatInputModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    // Rapport (#1167) renders one grid per sub-report. mtx-grid is used for its
+    // `pinned` columns — the metadata block sticky-left, Handlinger
+    // sticky-right — which is what replaces the prototype's hand-rolled
+    // `applyFrozenColumnOffsets` measure-and-write loop (#1167 §5).
+    MtxGridModule,
     MtxSelectModule,
     // Detaljer (#1165) opens the calendar's completion modal
     // (CalendarCompleteEventModalComponent) rather than re-declaring the whole

@@ -757,4 +757,11 @@ export const da = {
   'Compliance total': 'I alt',
   'No properties match the selected filters.': 'Ingen ejendomme matcher de valgte filtre.',
   'Sort by': 'Sortér efter',
+  // Rapport view (#1167).
+  'Completion date': 'Udført dato',
+  'Without tag': 'Uden tag',
+  'Columns unavailable': 'Kolonner utilgængelige',
+  '1 image': '1 billede',
+  '{{count}} images': '{{count}} billeder',
+  'Only completed tasks can be edited': 'Kun udførte opgaver kan redigeres',
 };

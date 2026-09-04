@@ -1,0 +1,254 @@
+<div class="compliance-report">
+  <!--
+    A failed FIRST fetch. Its own wording, deliberately NOT the empty-result
+    line below: a transport or server error is not the filters' fault. Mutually
+    exclusive with that line by construction — `loadFailed` is only ever set
+    while `hasFetched` is false.
+  -->
+  <div
+    *ngIf="loadFailed && !state.loading"
+    id="complianceReportError"
+    class="compliance-report__empty"
+    role="alert"
+  >
+    {{ 'Could not load the data' | translate }}
+  </div>
+
+  <!--
+    The meta line (getReportMetaHtml, compliance.js:1677-1686). It renders for
+    an EMPTY result too (renderReportPage:1826-1830) — the filters a report was
+    run with are part of the report, and "nothing matched" is only meaningful
+    next to them.
+  -->
+  <p
+    *ngIf="hasFetched && !loadFailed"
+    id="complianceReportMeta"
+    class="compliance-report__meta"
+  >
+    <span class="compliance-report__meta-item">
+      <span class="compliance-report__meta-label">{{ 'Property' | translate }}:</span>
+      <span class="compliance-report__meta-value">{{ propertyLabel }}</span>
+    </span>
+    <span class="compliance-report__meta-item">
+      <span class="compliance-report__meta-label">{{ 'Calendar' | translate }}:</span>
+      <span class="compliance-report__meta-value">{{ boardLabel }}</span>
+    </span>
+    <span class="compliance-report__meta-item" *ngIf="periodLabel">
+      <span class="compliance-report__meta-label">{{ 'Period' | translate }}:</span>
+      <span class="compliance-report__meta-value">{{ periodLabel }}</span>
+    </span>
+  </p>
+
+  <!--
+    Only after a response, and never while the shell's spinner is up: an empty
+    body during the first load would flash "no tasks match" before any query had
+    returned. The shell owns the separate not-yet-fetched placeholder.
+  -->
+  <div
+    *ngIf="hasFetched && !state.loading && sections.length === 0"
+    id="complianceReportEmpty"
+    class="compliance-report__empty"
+  >
+    {{ 'No tasks match the selected filters.' | translate }}
+  </div>
+
+  <!--
+    One section per TAG GROUP per TEMPLATE (#1160 decision 5). A tag group whose
+    tasks were answered on two templates therefore produces two tables, each
+    with its own column set — the prototype's tag-set-only grouping had nowhere
+    to put the second template's answers.
+  -->
+  <section
+    *ngFor="let section of sections; trackBy: trackBySection"
+    class="compliance-report__section"
+    [attr.data-section-key]="section.key"
+  >
+    <p class="compliance-report__tag">{{ section.tagLabel }}</p>
+    <!--
+      The heading is the TEMPLATE NAME. The prototype emitted the literal
+      placeholder `Rapportoverskrift` on every sub-report (compliance.js:1805);
+      it appears nowhere here.
+    -->
+    <h3 class="compliance-report__heading">{{ section.templateLabel }}</h3>
+
+    <!--
+      The schema could not be derived (#1166: the SDK's TemplateFieldReadAll
+      throws for a language with a translation gap), so this template has ZERO
+      answer columns for a reason that is neither "it has no answerable fields"
+      nor "nobody answered". Say so rather than rendering a metadata-only table
+      that looks complete.
+    -->
+    <p
+      *ngIf="section.schemaUnavailable"
+      class="compliance-report__notice"
+      role="note"
+    >
+      {{ 'Columns unavailable' | translate }}
+    </p>
+
+    <!--
+      Omitted entirely for a sub-report the page budget collapsed to zero rows:
+      an empty mtx-grid draws its own "no records" body, which would read as
+      "this template has no answers" directly under a heading whose footer says
+      "Viser 0 af 37". The footer's `Vis alle` builds the grid.
+    -->
+    <mtx-grid
+      *ngIf="section.rows.length > 0"
+      class="compliance-report__grid"
+      [data]="section.rows"
+      [columns]="section.gridColumns"
+      [trackBy]="trackByRow"
+      [emptyValuePlaceholder]="emptyCell"
+      [showPaginator]="false"
+      [pageOnFront]="false"
+      [sortOnFront]="false"
+      [rowStriped]="false"
+      [columnResizable]="false"
+      [showToolbar]="false"
+      [showColumnMenuButton]="false"
+    ></mtx-grid>
+
+    <!--
+      The large-result answer. Rapport does not paginate, and the endpoint is
+      unpaged behind a 5000-row server cap, so a sub-report renders at most its
+      first COMPLIANCE_REPORT_SECTION_ROW_CAP rows AND at most what is left of
+      the page-wide COMPLIANCE_REPORT_PAGE_ROW_BUDGET, then states its TRUE row
+      count next to the control that reveals the rest. A section past the budget
+      renders "Viser 0 af N" and the same button — collapsed, never dropped.
+      Nothing is hidden — the export covers the whole filtered set regardless —
+      and the common sub-report never shows this footer at all, so it still
+      reads as one whole document.
+    -->
+    <div *ngIf="!section.expanded" class="compliance-report__more">
+      <span class="compliance-report__more-count">
+        {{ 'Showing' | translate }} {{ section.rows.length }} {{ 'of' | translate }}
+        {{ section.allRows.length }}
+      </span>
+      <button
+        type="button"
+        class="btn-quiet"
+        id="complianceReportShowAll-{{ section.key }}"
+        (click)="expandSection(section)"
+      >
+        {{ 'Show all' | translate }}
+      </button>
+    </div>
+  </section>
+</div>
+
+<!--
+  ANSWER CELL. The one place an answer is read, and it is read BY COLUMN KEY.
+  A key the case's bag does not carry renders the en dash IN PLACE, so no later
+  column shifts — see complianceAnswerText and its spec. Interpolated, never
+  bound through [innerHTML]: an answer containing `<` is worker-entered text,
+  not markup.
+-->
+<ng-template #answerTpl let-row let-col="colDef">
+  <span class="compliance-report__answer">{{ answerText(row, col) }}</span>
+</ng-template>
+
+<!--
+  BILLEDER, two of the prototype's three states (renderReportImagesCell,
+  compliance.js:1617-1638): `0` renders the en dash, `>= 1` renders a
+  photo_library icon and the count with the `1 billede` / `{n} billeder`
+  accessible name.
+
+  The third state — a 40x40 inline thumbnail for a single image — and the click
+  that opens the gallery both belong to the image-gallery issue (#1168), which
+  owns the authenticated blob fetch this endpoint deliberately does not do (it
+  returns image REFERENCES only). Until then the cell is not interactive:
+  a button that opens nothing is worse than a plain count.
+
+  NB for #1168: `imagesCount` includes images whose file name could not be
+  derived and which therefore cannot be fetched, so it is not a count of
+  RENDERABLE images.
+-->
+<ng-template #imagesTpl let-row>
+  <span *ngIf="!row.imagesCount" class="compliance-report__answer">{{ emptyCell }}</span>
+  <span
+    *ngIf="row.imagesCount"
+    class="compliance-report__images"
+    role="img"
+    [attr.aria-label]="imagesLabel(row.imagesCount)"
+  >
+    <mat-icon class="compliance-report__images-icon" aria-hidden="true">photo_library</mat-icon>
+    <span class="compliance-report__images-count" aria-hidden="true">{{ row.imagesCount }}</span>
+  </span>
+</ng-template>
+
+<!--
+  HANDLINGER. Both buttons on EVERY row — the divergence from Detaljer, which
+  renders delete for not-completed rows only (compliance.js:1246 vs :1652).
+
+  `Rediger` is disabled for a not-completed case, and the tooltip sits on the
+  WRAPPER: a disabled button fires no pointer events, so a matTooltip on the
+  button itself would never show the one message that explains why it is
+  disabled.
+-->
+<ng-template #actionsTpl let-row>
+  <div class="compliance-report__actions">
+    <span
+      [matTooltip]="
+        (canEdit(row) ? 'Edit' : 'Only completed tasks can be edited') | translate
+      "
+    >
+      <button
+        mat-icon-button
+        type="button"
+        class="compliance-report__edit"
+        [disabled]="!canEdit(row)"
+        [attr.aria-label]="'Edit' | translate"
+        (click)="onEdit(row)"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+    </span>
+    <button
+      mat-icon-button
+      type="button"
+      class="compliance-report__delete"
+      [attr.aria-label]="'Delete log' | translate"
+      [matTooltip]="'Delete log' | translate"
+      (click)="openDeleteConfirm(row)"
+    >
+      <mat-icon>delete_outline</mat-icon>
+    </button>
+  </div>
+</ng-template>
+
+<!--
+  Delete confirm. A modal rather than Detaljer's anchored popover: that popover
+  exists so a click on ANOTHER row's delete button can move it, which is a
+  property of a flat row list, not of six independently scrolling grids whose
+  buttons sit in a sticky-right column.
+
+  Cancel leads the row, the destructive action follows — the order the repo's
+  button gate enforces.
+-->
+<ng-template #deleteConfirmTpl>
+  <h3 mat-dialog-title>{{ 'Delete log' | translate }}</h3>
+  <div mat-dialog-content>
+    <p>{{ 'This action cannot be undone' | translate }}</p>
+  </div>
+  <div
+    mat-dialog-actions
+    class="d-flex flex-row justify-content-end align-items-center gap-24"
+  >
+    <button
+      type="button"
+      class="btn-cancel"
+      id="complianceReportDeleteCancelBtn"
+      (click)="cancelDelete()"
+    >
+      {{ 'Cancel' | translate }}
+    </button>
+    <button
+      type="button"
+      class="btn-delete"
+      id="complianceReportDeleteConfirmBtn"
+      (click)="confirmDelete()"
+    >
+      {{ 'Delete' | translate }}
+    </button>
+  </div>
+</ng-template>
