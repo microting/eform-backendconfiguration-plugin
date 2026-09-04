@@ -172,7 +172,7 @@ async function setupNonAdminUser(page: Page): Promise<string> {
   return userEmail;
 }
 
-test.describe.serial('Compliance page shell (#1163)', () => {
+test.describe('Compliance page shell (#1163)', () => {
   test('renders at its own URL with all ten filter controls', async ({ page }) => {
     await goToCompliancePage(page);
 
@@ -227,26 +227,33 @@ test.describe.serial('Compliance page shell (#1163)', () => {
     // and the pagination chrome is present to begin with.
     await expect(page.locator('#compliancePagination')).toBeVisible();
 
-    // Widened from `.../compliance-report/index` to the whole controller.
+    // Switch to Detaljer first: the status control is disabled in Oversigt.
+    // This is SETUP, not the thing under test — and it is deliberately done
+    // BEFORE the request counter is armed. A mode switch destroys the ngSwitch
+    // child and creates the next one, which subscribes to `fetchRequested$`
+    // and receives the REPLAYED trigger; that replay is the design, and the
+    // day #1165 wires the Detaljer query this click will legitimately issue
+    // exactly one request. Counting from here would make this test fail on
+    // correct behaviour.
+    await page.locator('#complianceMode-details').click();
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+
+    // Armed only now, so the assertion below covers exactly one gesture: the
+    // FILTER CHANGE. `setFilter` must blank the result and issue no request —
+    // only `Opdater tabel` fetches.
     //
-    // BE HONEST ABOUT WHAT THIS ASSERTS TODAY: nothing in `src/` calls
-    // `BackendConfigurationPnComplianceReportService.index()` yet — the shell
-    // draws no rows — so a counter over any compliance-report URL is 0 no
-    // matter what `setFilter` does. This assertion only becomes MEANINGFUL
-    // once #1164 (Oversigt) and #1165 (Detaljer) wire their queries; it is
-    // written against the whole controller prefix precisely so it starts
-    // catching regressions on the day they land, without needing to be
-    // rediscovered and rewritten then.
+    // The URL substring is the whole controller prefix (no trailing slash, so
+    // a POST to the bare controller root is counted too) rather than one
+    // endpoint, so it keeps holding as #1164/#1165/#1167 add their queries.
+    // Today, with no child wired, the counter is trivially 0 whatever
+    // `setFilter` does; it only becomes a real regression guard once a child
+    // actually queries — but it will not need rewriting then.
     let requests = 0;
     page.on('request', r => {
-      if (r.url().includes('/api/backend-configuration-pn/compliance-report/')) {
+      if (r.url().includes('/api/backend-configuration-pn/compliance-report')) {
         requests++;
       }
     });
-
-    // Switch to Detaljer first: the status control is disabled in Oversigt.
-    await page.locator('#complianceMode-details').click();
-    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
 
     await page.locator('#complianceFilterStatus').click();
     await page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Alle opgaver' }).first().click();

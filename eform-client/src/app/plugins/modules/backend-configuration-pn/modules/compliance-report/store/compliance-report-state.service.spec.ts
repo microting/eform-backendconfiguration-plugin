@@ -52,6 +52,20 @@ describe('ComplianceReportStateService', () => {
       expect(service.total).toBe(0);
     });
 
+    it('setFilter clears loading, so Opdater tabel cannot wedge', () => {
+      // setFilter drops reportVisible, which UNMOUNTS the child that owns the
+      // in-flight request; a child torn down mid-flight need never reach a
+      // finalize/complete path, so nothing else would ever call
+      // setLoading(false). `canFetch` is `isPeriodValid && !loading`, so a
+      // stuck `true` here kills the button until a page reload.
+      service.requestFetch();
+      service.setLoading(true);
+
+      service.setFilter({status: 'done'});
+
+      expect(service.loading).toBe(false);
+    });
+
     it('setFilter emits no fetch request', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
@@ -164,6 +178,129 @@ describe('ComplianceReportStateService', () => {
       expect(service.page).toBe(0);
       expect(service.showAll).toBe(false);
     });
+
+    it('clears the previous mode\'s total so the pagination is not stale', () => {
+      // Oversigt counts one row per property, Detaljer one per task. Carrying
+      // 100 across the switch draws `Viser 1-10 af 100` and a ten-page button
+      // window for a view that has not reported a single row yet.
+      service.requestFetch();
+      service.setTotalCount(100);
+
+      service.setMode('details');
+
+      expect(service.total).toBe(0);
+      // ...and the chrome derived from it reads "no rows" rather than a page
+      // window belonging to the mode we just left.
+      expect(service.totalPages).toBe(1);
+      expect(service.showingFrom).toBe(0);
+    });
+
+    it('clears loading, since the switch unmounts the in-flight child too', () => {
+      service.requestFetch();
+      service.setLoading(true);
+
+      service.setMode('report');
+
+      expect(service.loading).toBe(false);
+    });
+
+    it('still replays the trigger to the child the switch creates', () => {
+      // The counterpart to enterPage(): killing the CROSS-NAVIGATION replay
+      // must not kill the WITHIN-VISIT one. setMode keeps reportVisible true,
+      // so the recreated child's late subscription is still served.
+      service.requestFetch();
+
+      service.setMode('details');
+
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+    });
+  });
+
+  /**
+   * Page entry (#1163 §6). The service is provided by the LAZY module, whose
+   * NgModuleRef Angular caches for the lifetime of the app — so every one of
+   * these tests is the second visit to the page, modelled by driving the
+   * service through a first visit and then calling enterPage() again.
+   */
+  describe('page entry', () => {
+    it('auto-fetches exactly once when the preserved mode is Oversigt', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+
+      service.enterPage();
+
+      expect(service.mode).toBe('overview');
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+    });
+
+    it('does not auto-fetch when re-entered in Detaljer', () => {
+      // Visit 1: fetch, then switch to Detaljer and navigate away.
+      service.requestFetch();
+      service.setMode('details');
+      service.setTotalCount(240);
+
+      // Visit 2: new components, same service, same buffered trigger.
+      service.enterPage();
+
+      expect(service.mode).toBe('details');
+      // The placeholder shows...
+      expect(service.reportVisible).toBe(false);
+      // ...and the child that mounts next cannot be served the stale trigger,
+      // because reportVisible is what gates fetchRequested$.
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(0);
+    });
+
+    it('does not auto-fetch when re-entered in Rapport', () => {
+      service.requestFetch();
+      service.setMode('report');
+
+      service.enterPage();
+
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(service.reportVisible).toBe(false);
+      expect(fetches.length).toBe(0);
+    });
+
+    it('clears the previous visit\'s pagination and loading state', () => {
+      service.requestFetch();
+      service.setTotalCount(240);
+      service.setMode('details');
+      service.setTotalCount(240);
+      service.setPage(5);
+      service.setLoading(true);
+
+      service.enterPage();
+
+      // No `Viser 51-60 af 240` from the last visit while the placeholder is
+      // on screen.
+      expect(service.total).toBe(0);
+      expect(service.page).toBe(0);
+      expect(service.showAll).toBe(false);
+      expect(service.loading).toBe(false);
+    });
+
+    it('leaves Opdater tabel working after a suppressed entry', () => {
+      service.requestFetch();
+      service.setMode('details');
+      service.enterPage();
+
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(0);
+
+      service.requestFetch();
+
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+    });
   });
 
   describe('drill-down (the #1164 contract)', () => {
@@ -211,6 +348,23 @@ describe('ComplianceReportStateService', () => {
       service.setMode('overview');
 
       expect(service.filters.status).toBe('done');
+    });
+
+    it('keeps the ORIGINAL status when drilled twice without unwinding', () => {
+      // The second drill sees status already forced to 'all' by the first.
+      // Recording that would restore 'all' on the way back instead of the
+      // user's own choice. Not reachable through today's UI, but #1164 builds
+      // straight on this method.
+      service.requestFetch();
+      expect(service.filters.status).toBe('open');
+
+      service.drillIntoProperty(12);
+      service.drillIntoProperty(13);
+
+      service.setMode('overview');
+
+      expect(service.filters.status).toBe('open');
+      expect(service.filters.propertyId).toBeNull();
     });
 
     it('clears the drill-down bookkeeping after unwinding', () => {

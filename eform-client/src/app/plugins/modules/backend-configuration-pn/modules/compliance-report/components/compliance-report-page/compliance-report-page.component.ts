@@ -38,11 +38,17 @@ export class ComplianceReportPageComponent implements OnInit {
     // (#1162), and the prototype's own comment (compliance.js:2371-2372)
     // records the auto-fetch as a design choice. Exactly once, only in
     // Oversigt, and only here — filter datasets resolving asynchronously must
-    // not re-trigger it, and Detaljer/Rapport (unbounded row queries) never
-    // auto-fetch, so a deep link into either shows the placeholder.
-    if (this.state.mode === 'overview') {
-      this.state.requestFetch();
-    }
+    // not re-trigger it.
+    //
+    // The Detaljer/Rapport half is NOT just "skip the fetch". The state
+    // service lives on the lazy module, whose NgModuleRef Angular caches for
+    // the app's lifetime, so re-entering the page inherits the previous
+    // visit's `reportVisible`, `total` and the buffered `fetchRequested$`
+    // trigger. Skipping `requestFetch()` alone would still mount the child
+    // over a true `reportVisible` and let the replay fire an unbounded row
+    // query with no user gesture, which #1163 §6 forbids. `enterPage()` owns
+    // both branches; see its comment.
+    this.state.enterPage();
   }
 
   isActive(mode: ComplianceMode): boolean {

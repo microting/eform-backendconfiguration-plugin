@@ -299,6 +299,15 @@ export class ComplianceReportStateService {
     this.showAllSubject.next(false);
     this.totalSubject.next(0);
     this.reportVisibleSubject.next(false);
+    // `loading` belongs to the child that is about to be UNMOUNTED by
+    // `reportVisible` going false. A child torn down mid-flight cannot be
+    // relied on to run a `finalize`/complete path, so nothing would ever call
+    // `setLoading(false)` again — and `canFetch` is
+    // `isPeriodValid && !loading`, so `Opdater tabel` would be dead until a
+    // reload. The shell owns both this call and the unmounting, so the reset
+    // belongs here, next to the `total` reset it was already inconsistent
+    // with.
+    this.loadingSubject.next(false);
   }
 
   /**
@@ -321,6 +330,19 @@ export class ComplianceReportStateService {
     this.modeSubject.next(next);
     this.pageSubject.next(0);
     this.showAllSubject.next(false);
+    // `total` is per-VIEW, not per-filter: Oversigt counts one row per
+    // property, Detaljer one per task. Carrying it across a mode switch does
+    // not merely show a stale number, it shows one that is wrong by an order
+    // of magnitude — `Viser 1-10 af <previous mode's total>` plus the previous
+    // mode's page-button window, drawn the instant the toggle is clicked and
+    // left standing until the new child calls `setTotalCount`. Reset it so the
+    // chrome shows `Ingen resultater` until the new child reports in.
+    this.totalSubject.next(0);
+    // Same reasoning as `setFilter`: the ngSwitch destroys the outgoing child,
+    // whose in-flight request may never reach a `setLoading(false)`.
+    // `reportVisible` deliberately stays true here, so the incoming child
+    // mounts, receives the replayed trigger and sets `loading` itself.
+    this.loadingSubject.next(false);
 
     if (next === 'overview' && this.drilledPropertyId !== null) {
       const patch: Partial<ComplianceFilterState> = {};
@@ -346,7 +368,15 @@ export class ComplianceReportStateService {
    * Both writes are silent, so the result already on screen survives.
    */
   drillIntoProperty(propertyId: number): void {
-    this.preDrillStatus = this.filters.status;
+    // Capture the pre-drill status ONLY when no drill is already in effect.
+    // A second drill without an intervening Oversigt visit would otherwise
+    // record the 'all' that the FIRST drill forced, and the unwind would
+    // restore 'all' instead of the user's own choice. Not reachable through
+    // today's UI (drilling requires being in Oversigt, which unwinds on the
+    // way in), but #1164 builds directly on this method.
+    if (this.drilledPropertyId === null) {
+      this.preDrillStatus = this.filters.status;
+    }
     this.drilledPropertyId = propertyId;
     this.setFilterSilently({propertyId, status: 'all'});
     this.setMode('details');
@@ -360,6 +390,44 @@ export class ComplianceReportStateService {
   // -------------------------------------------------------------------
   // Fetching, paging, sorting
   // -------------------------------------------------------------------
+
+  /**
+   * Called once per VISIT, from the page component's `ngOnInit` (#1163 §6).
+   *
+   * The service is provided by the lazy `ComplianceReportModule`, and Angular
+   * caches a lazy `NgModuleRef` for the lifetime of the app — so navigating
+   * away from the page and back re-creates the components but reuses THIS
+   * instance, `ReplaySubject` buffer and all. Without this method, re-entering
+   * while the preserved mode is `details` or `report` would find
+   * `reportVisible` still true: the container renders, the child mounts, the
+   * buffered trigger replays past the `reportVisible` gate, and an unbounded
+   * row query fires with no user gesture at all.
+   *
+   * So entry has exactly two shapes:
+   *  - `overview`: auto-fetch once. One cheap server-side aggregation per
+   *    property (#1162), and the prototype records the auto-fetch as a design
+   *    choice (compliance.js:2371-2372).
+   *  - `details` / `report`: force the page back to its un-fetched state.
+   *    `reportVisible` false both shows the placeholder AND closes
+   *    `fetchRequested$`'s gate, which is what actually neutralises the
+   *    buffered trigger — the buffer itself cannot be erased. `total`/`page`
+   *    are cleared so the pagination chrome does not draw the previous visit's
+   *    `Viser 1-10 af N` before any new response lands.
+   *
+   * This is deliberately NOT wired into `setMode`: a mode switch WITHIN a
+   * visit must keep replaying, or the recreated child renders nothing.
+   */
+  enterPage(): void {
+    if (this.mode === 'overview') {
+      this.requestFetch();
+      return;
+    }
+    this.reportVisibleSubject.next(false);
+    this.pageSubject.next(0);
+    this.showAllSubject.next(false);
+    this.totalSubject.next(0);
+    this.loadingSubject.next(false);
+  }
 
   /** `Opdater tabel`. The only user gesture that fetches. */
   requestFetch(): void {
