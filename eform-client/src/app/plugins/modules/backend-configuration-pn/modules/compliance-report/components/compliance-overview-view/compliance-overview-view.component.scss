@@ -1,0 +1,297 @@
+// Theme custom properties only — no colour literal anywhere in this file.
+// Every token used here is defined in BOTH scss/themes/_eform.scss and
+// scss/themes/_workspace.scss, in both their light and dark colour maps.
+//
+// The mockup's literal palette (compliance.css:759-767 — #d93025 / #b06000 /
+// #188038 / neutral grey) is a reference for INTENT only. It maps onto the
+// three status pairs the app already ships, which are the only fills that come
+// with a matching foreground token:
+//
+//   band  fill / text                           the pill's INTERNAL text-on-fill
+//                                                ratio (computed from the token
+//                                                values, all four theme × mode
+//                                                combinations). How the pill
+//                                                separates from the CARD behind
+//                                                it is a separate question, and
+//                                                only `none` has an answer worth
+//                                                writing down — see `&.is-none`.
+//   ----  -----------------------------------   --------------------------
+//   high  --status-aktiv-bg / --status-aktiv-fg  #ffffff on #1b5e20 = 7.9:1 (light)
+//                                                #ffffff on #2e7d32 = 5.1:1 (dark)
+//   mid   --status-afventer-bg / -fg             #1f1f1f on #f9a825 = 8.4:1 (both modes)
+//   low   --status-inaktiv-bg / -fg              #ffffff on #c62828 = 5.6:1 (both modes)
+//   none  --md-surface-variant / --md-on-surface eform  L #0F1316 on #EBEFF2 = 16.1:1
+//                                                eform  D #F3F5F7 on #3A3C3E = 10.1:1
+//                                                works. L #1f1f1f on #e1e7ef = 13.3:1
+//                                                works. D #e3e3e3 on #444746 = 7.3:1
+//
+// The status-aktiv / afventer / inaktiv triples hold IDENTICAL values in
+// _eform.scss and _workspace.scss, so the first three rows are the same figure
+// under both themes; only the neutral pill differs per theme.
+//
+// NOT --status-success for the high band: it is #66BB6A in eform dark, where
+// white text on it is ~2.4:1 — a filled success surface nobody could read.
+// #1165 rejected it for the same reason.
+//
+// The overdue counter is text rather than a filled pill (the prototype styles
+// it as grey → dark → bold red, not as a chip), so it uses the body-text
+// tokens.
+//
+// THE SURFACE THE TABLE ACTUALLY SITS ON. The table is inside
+// `<mat-card id="complianceCasesRoot">` (compliance-report-page.component.html:30),
+// and `.mat-mdc-card` paints itself with `--mat-card-elevated-container-color`.
+// scss/themes/_theme-mixin.scss:266 redeclares that property `!important` as
+// `--md-surface-container`, at `body.theme-eform.theme-light` and its three
+// siblings — higher specificity than BOTH Material's own value from
+// `mat.all-component-themes` (surface-container-low → neutral 96 → #f1f4f3
+// light / #191c1c dark, emitted at `body.theme-light`) and the
+// `body, .theme-light` fallback at scss/styles.scss:80. So the real card is:
+//
+//     eform  L #F7F9FA   eform  D #2D2F31
+//     works. L #ffffff   works. D #1e1f20
+//
+// It is NOT `--content-card-bg`. That token has exactly ONE consumer in the
+// whole client — `.content-card` in
+// app/components/layouts/full-layout/full-layout.component.scss:44, the routed-
+// page wrapper OUTSIDE this card. An earlier revision of this comment measured
+// against it and reported eform-light figures that were never on screen.
+//
+// Every ratio below that names a card is measured against those four values.
+// The bracketed figure is the SAME pair recomputed against Material's
+// un-overridden surface-container-low (#f1f4f3 / #191c1c), so each choice
+// survives the day that `!important` override is dropped.
+//
+//   calm   --text-child-muted  eform  L #666666 on #F7F9FA = 5.44 [5.19]
+//                              eform  D #9CA3AF on #2D2F31 = 5.29 [6.76]
+//                              works. L #5f6368 on #ffffff = 6.05 [5.47]
+//                              works. D #c4c7c5 on #1e1f20 = 9.69 [10.07]
+//   mild   --text-primary      17.68 / 12.30 / 16.48 / 12.86 — never in question
+//   urgent --text-error        eform  L #DB0D0D on #F7F9FA = 4.88 [4.66]
+//                              eform  D #FF8282 on #2D2F31 = 5.61 [7.16]
+//                              works. L #b3261e on #ffffff = 6.54 [5.91]
+//                              works. D #f2b8b5 on #1e1f20 = 9.67 [10.05]
+// All of them clear WCAG AA for normal text; the urgent counter is bold as well.
+//
+// NOT --text-secondary, and NOT --text-tertiary either — not for `calm`, not
+// for the empty-state message, and not for the inactive column headers, even
+// though --text-secondary is the app's usual muted body token and the shell's
+// own placeholder uses it. On the REAL card, in eform light:
+//
+//   --text-secondary  #7F868D on #F7F9FA = 3.49 [3.33]  fails
+//   --text-tertiary   #6b7280 on #F7F9FA = 4.58 [4.37]  fails the bracket
+//
+// 4.5:1 is the floor that applies: the header cells are 12.8px/600 under eform
+// and 14px/500 under workspace, i.e. normal text, not large text. The other
+// three combinations pass for both tokens, which is exactly why the eform-light
+// failure hides. `--text-child-muted` clears 4.5:1 in all four combinations
+// under BOTH surfaces, so the empty state, the calm counter and the unsorted
+// column headers all use it.
+
+.compliance-overview {
+  display: flex;
+  flex-direction: column;
+
+  // --text-child-muted, not --text-secondary and not --text-tertiary: this is a
+  // real message, and on the eform-light card those two are 3.49:1 and 4.58:1
+  // [4.37:1 on Material's default surface]. See the header.
+  &__empty {
+    padding: var(--spacing-2xl);
+    text-align: center;
+    color: var(--text-child-muted);
+  }
+
+  // The table scrolls inside its own box on a narrow viewport rather than
+  // making the page scroll sideways (compliance.css:681).
+  &__scroll {
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    // compliance.css:683-688. Below this the three columns collapse into each
+    // other; the scroller above takes over instead.
+    min-width: 640px;
+    border-collapse: collapse;
+    color: var(--text-primary);
+  }
+
+  &__th {
+    text-align: left;
+    padding: 0;
+    border-bottom: 1px solid var(--border-primary);
+    font-size: var(--font-size-table-header);
+    font-weight: var(--font-weight-semibold);
+    // Header cells are normal text (12.8px/600 eform, 14px/500 workspace), so
+    // the 4.5:1 floor applies to all three of them, not just the sorted one.
+    // --text-secondary is 3.49:1 here in eform light. See the header comment.
+    color: var(--text-child-muted);
+    white-space: nowrap;
+
+    &.is-num {
+      text-align: right;
+    }
+
+    &.is-sorted {
+      color: var(--text-primary);
+    }
+  }
+
+  // A real <button> filling the header cell: keyboard-operable for free, and
+  // the whole header reads as the click target it is.
+  &__sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-sm);
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--table-row-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--md-primary);
+      outline-offset: -2px;
+    }
+  }
+
+  &__th.is-num &__sort-btn {
+    justify-content: flex-end;
+  }
+
+  // One triangle, rotated rather than swapped for a second glyph, so the
+  // ascending and descending states cannot drift apart (compliance.css:717).
+  &__sort-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+
+    &.is-desc {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__row,
+  &__totals {
+    td {
+      padding: var(--spacing-md) var(--spacing-sm);
+      border-bottom: 1px solid var(--border-primary);
+
+      &.is-num {
+        text-align: right;
+        // Without this the two numeric columns jitter between rows, because the
+        // theme's body font is proportional (compliance.css:764).
+        font-variant-numeric: tabular-nums lining-nums;
+      }
+    }
+  }
+
+  // Every body row drills into Detaljer, so it needs a visible affordance and a
+  // focus ring — a clickable <tr> with no cue is not discoverable.
+  &__row {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--table-row-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--md-primary);
+      outline-offset: -2px;
+    }
+  }
+
+  // The totals row is NOT drillable: no pointer, no hover, no focus ring.
+  &__totals {
+    font-weight: var(--font-weight-bold);
+
+    td {
+      border-bottom: 0;
+      border-top: 2px solid var(--border-primary);
+    }
+  }
+
+  &__property {
+    font-weight: var(--font-weight-bold);
+    white-space: nowrap;
+  }
+
+  &__pill {
+    display: inline-block;
+    min-width: 56px;
+    padding: 2px var(--spacing-sm);
+    // Transparent on the three filled bands, coloured on `is-none` below. It
+    // is declared on ALL FOUR so the boxes stay the same size: adding the
+    // border only to `is-none` would make that one pill 2px taller than its
+    // neighbours in the same column.
+    border: 1px solid transparent;
+    border-radius: var(--radius-tag);
+    text-align: center;
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums lining-nums;
+
+    &.is-high {
+      background: var(--status-aktiv-bg);
+      color: var(--status-aktiv-fg);
+    }
+
+    &.is-mid {
+      background: var(--status-afventer-bg);
+      color: var(--status-afventer-fg);
+    }
+
+    &.is-low {
+      background: var(--status-inaktiv-bg);
+      color: var(--status-inaktiv-fg);
+    }
+
+    // "Nothing has fallen due yet" — neutral on purpose. Rendering it in any of
+    // the three status colours would assert a judgement the data does not
+    // support.
+    // The fill alone is invisible in light mode: --md-surface-variant against
+    // the real card is 1.09:1 in eform light and 1.24:1 under workspace (1.04
+    // and 1.12 against Material's default surface) — a pill with no shape at
+    // all. --md-on-surface-variant gives it a boundary that clears the 3:1
+    // WCAG 1.4.11 floor for a non-text UI component in every combination:
+    //   eform  L #7F868D on #F7F9FA = 3.49 [3.33]
+    //   eform  D #C1C5C9 on #2D2F31 = 7.74 [9.88]
+    //   works. L #444746 on #ffffff = 9.39 [8.49]
+    //   works. D #c4c7c5 on #1e1f20 = 9.69 [10.07]
+    // and it also separates from the fill it encloses (3.19 / 6.38 / 7.55 /
+    // 5.51), so the outline reads as an outline rather than as a smudge. The
+    // fill and text tokens are unchanged — their internal pair is already
+    // 16.14 / 10.14 / 13.25 / 7.32.
+    &.is-none {
+      background: var(--md-surface-variant);
+      color: var(--md-on-surface);
+      border-color: var(--md-on-surface-variant);
+    }
+  }
+
+  &__overdue {
+    font-variant-numeric: tabular-nums lining-nums;
+
+    // Same swap as the empty state. `calm` is always the digit 0 today, but a
+    // rendered number is content, not decoration, and the muted-vs-emphatic
+    // gradation against `is-mild` survives the change intact.
+    &.is-calm {
+      color: var(--text-child-muted);
+    }
+
+    &.is-mild {
+      color: var(--text-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    &.is-urgent {
+      color: var(--text-error);
+      font-weight: var(--font-weight-bold);
+    }
+  }
+}

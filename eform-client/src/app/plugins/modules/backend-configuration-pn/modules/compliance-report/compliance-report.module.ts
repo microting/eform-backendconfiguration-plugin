@@ -22,6 +22,7 @@ import {CalendarModule} from '../calendar/calendar.module';
 import {ComplianceReportRouting} from './compliance-report.routing';
 import {
   ComplianceDetailsViewComponent,
+  ComplianceOverviewViewComponent,
   ComplianceReportFiltersComponent,
   ComplianceReportPageComponent,
 } from './components';
@@ -36,6 +37,7 @@ import {ComplianceReportStateService} from './store';
   declarations: [
     ComplianceReportPageComponent,
     ComplianceReportFiltersComponent,
+    ComplianceOverviewViewComponent,
     ComplianceDetailsViewComponent,
   ],
   imports: [

@@ -753,4 +753,8 @@ export const da = {
   'Task done': 'Udført',
   'Task not done': 'Ikke udført',
   'Could not load the data': 'Kunne ikke indlæse data',
+  'Compliance %': 'Compliance %',
+  'Compliance total': 'I alt',
+  'No properties match the selected filters.': 'Ingen ejendomme matcher de valgte filtre.',
+  'Sort by': 'Sortér efter',
 };

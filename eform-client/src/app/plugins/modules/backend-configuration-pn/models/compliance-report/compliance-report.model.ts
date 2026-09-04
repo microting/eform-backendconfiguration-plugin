@@ -91,3 +91,85 @@ export interface ComplianceReportPagedModel {
   total: number;
   entities: ComplianceReportRowModel[];
 }
+
+// ---------------------------------------------------------------------------
+// Oversigt — the per-property aggregation (#1162 endpoint, #1164 view)
+// ---------------------------------------------------------------------------
+
+/**
+ * Body of `POST api/backend-configuration-pn/compliance-report/overview`.
+ *
+ * This is `ComplianceReportRequestModel`'s filter set MINUS four properties,
+ * and every omission mirrors the C# `ComplianceReportOverviewRequestModel`
+ * exactly:
+ *
+ *  - **no `status`** — Oversigt counts done and not-done together, which is why
+ *    the shell disables the status control. The property is absent rather than
+ *    sent-and-ignored, so a caller cannot come to believe the filter works;
+ *  - **no `pageIndex`/`pageSize`** — one row per property, unpaged by decision;
+ *  - **no `sort`/`isSortDsc`** — #1164 sorts client-side over a handful of rows.
+ *
+ * `dateFrom`/`dateTo` are optional for the same reason as on the paged model:
+ * an incomplete `Sæt periode` range means "no period filter", the keys are
+ * omitted rather than filled with today, and the server's non-nullable
+ * `DateTime` lands on `default(DateTime)` so the result is visibly empty.
+ */
+export interface ComplianceReportOverviewRequestModel {
+  propertyId: number | null;
+  boardIds: number[];
+  tagIds: number[];
+  siteIds: number[];
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+/**
+ * One property's compliance summary — and, reusing the same shape, the
+ * weighted totals row.
+ *
+ * The server returns NUMBERS and `null` only. Formatting (`–`), banding
+ * (`is-low`/`is-mid`/`is-high`) and the thresholds live in
+ * `compliance-overview.helper.ts`: they are presentation, not wire contract.
+ * Nothing on this model is recomputed client-side.
+ */
+export interface ComplianceReportOverviewRowModel {
+  /** 0 on the totals row. */
+  propertyId: number;
+  /** `null` on the totals row — the view supplies the "I alt" label. */
+  propertyName: string | null;
+  /** Every matching row, due or not. Computed server-side, deliberately unrendered. */
+  total: number;
+  /** Completed rows, due or not. Deliberately unrendered. */
+  done: number;
+  /**
+   * Not completed AND dated STRICTLY BEFORE today. A task due *today* and not
+   * done raises `dueTotal` (so lowers the percentage) but is NOT overdue.
+   */
+  overdue: number;
+  /** Rows that have fallen due: `!(startOfDay(taskDate) > today)`. */
+  dueTotal: number;
+  /** Due rows that are also completed — the numerator of `compliancePct`. */
+  dueDone: number;
+  /**
+   * `round(dueDone / dueTotal * 100)`, away from zero. **`null`** — never `0`,
+   * never NaN — when `dueTotal` is 0: a property whose work is simply not due
+   * yet has no percentage. Rendered as the en dash `–`.
+   */
+  compliancePct: number | null;
+}
+
+export interface ComplianceReportOverviewModel {
+  /**
+   * One row per property that has at least one matching compliance row, ordered
+   * by `propertyName` ascending. That order is a stable server default, not a
+   * contract — #1164 re-sorts client-side (default `compliancePct` ascending,
+   * worst first).
+   */
+  rows: ComplianceReportOverviewRowModel[];
+  /**
+   * WEIGHTED totals — `totals.dueDone / totals.dueTotal`, never the average of
+   * `rows[].compliancePct`. Always present, including for an empty result
+   * (all-zero counters, `compliancePct: null`). NOT one of `rows`.
+   */
+  totals: ComplianceReportOverviewRowModel;
+}

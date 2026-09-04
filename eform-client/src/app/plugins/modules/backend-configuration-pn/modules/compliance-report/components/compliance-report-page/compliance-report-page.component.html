@@ -63,7 +63,7 @@
         fetchRequested$ and reports its total back through setTotalCount().
       -->
       <ng-container *ngSwitchCase="'overview'">
-        <!-- #1164 renders the per-property Oversigt table here. -->
+        <app-compliance-overview-view></app-compliance-overview-view>
       </ng-container>
       <ng-container *ngSwitchCase="'details'">
         <app-compliance-details-view></app-compliance-details-view>
@@ -85,9 +85,25 @@
     the plugin bundle (same blast radius, since plugin translations merge into
     the one dictionary). Neither is worth one word; the difference is recorded
     here so the next reader does not re-open it.
+
+    Rendered in Detaljer ONLY (#1164). The prototype has exactly one renderer
+    that fills this container, `renderCasesPage` (compliance.js:1841); the other
+    two empty it:
+
+      - `renderOverviewPage` (compliance.js:1448) at :1460 — Oversigt is one row
+        per property, it never pages, and the aggregation endpoint has no paging
+        parameters to honour. `Vis alle` is meaningless there too: everything is
+        already shown.
+      - `renderReportPage` (compliance.js:1815) at :1820-1821, with the reason
+        written out — "Rapport paginerer ikke - hver delrapport vises hel."
+
+    So the guard is an allow-list on `details` rather than a deny-list on
+    `overview`: a deny-list would leave a full Forrige / 1 / Næste / Vis alle /
+    Ingen resultater bar sitting over Rapport, which renders whole sub-reports
+    and pages no more than Oversigt does.
   -->
   <nav
-    *ngIf="state.reportVisible"
+    *ngIf="state.reportVisible && state.mode === 'details'"
     id="compliancePagination"
     class="compliance-pagination"
     [attr.aria-label]="'Pagination' | translate"
