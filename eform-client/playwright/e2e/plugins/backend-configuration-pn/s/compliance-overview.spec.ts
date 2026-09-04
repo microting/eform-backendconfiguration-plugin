@@ -53,8 +53,11 @@ import {
  * Local traps this file is written around, each already paid for in this repo:
  * dropdown options are picked BY LABEL and never by `nth()`; mtx-select text is
  * read from `.ng-value-label`, never `.ng-value` (whose innerText includes the ×
- * clear-icon glyph); and a regex `hasText` matches RAW text, so the en-dash cell
- * is matched with `/^\s*–\s*$/` rather than `/^–$/`.
+ * clear-icon glyph); a regex `hasText` matches RAW text, so the en-dash cell
+ * is matched with `/^\s*–\s*$/` rather than `/^–$/`; and the fixture property
+ * names are ordered by DANISH collation, not by ASCII — see the note on
+ * `propertyA`/`propertyB` below, which is what an earlier `AAA-`/`ZZZ-` pair got
+ * wrong.
  */
 
 const BASE_URL = 'http://localhost:4200';
@@ -62,18 +65,28 @@ const PAGE_URL = `${BASE_URL}/plugins/backend-configuration-pn/compliance-report
 const rand = generateRandmString(6).toLowerCase();
 
 // The two names must have a KNOWN Danish collation order, since the whole point
-// of the sort tests is that A and B swap places. `AAA-` and `ZZZ-` bracket every
-// random name any other suite in this shard might leave in the database, and the
-// assertions compare the two rows' RELATIVE positions rather than absolute ones,
-// so foreign rows in between are harmless.
+// of the sort tests is that A and B swap places. The component collates with
+// `localeCompare(…, 'da', {numeric: true})` (compliance-overview.helper.ts:95-97),
+// and DANISH IS NOT ASCII: the digraph `aa` is a tertiary variant of `å`, the
+// LAST letter of the Danish alphabet. A name starting `AAA-` therefore sorts
+// AFTER one starting `ZZZ-` — `'AAA-x'.localeCompare('ZZZ-x','da')` is `+1` —
+// which is exactly how an earlier version of this file failed CI against a
+// perfectly correct ascending sort. `BBB-` and `YYY-` carry no digraph, no
+// `æ`/`ø`/`å` equivalence and no `v`/`w` merge, so their order is the plain one;
+// the premise is asserted rather than assumed in the sorting test below.
+//
+// They no longer bracket every foreign name in the database, and do not need to:
+// the assertions compare the two rows' RELATIVE positions rather than absolute
+// ones, so rows left behind by other suites — before, between or after them —
+// are harmless.
 const propertyA: PropertyCreateUpdate = {
-  name: `AAA-ovw-${rand}`,
+  name: `BBB-ovw-${rand}`,
   chrNumber: generateRandmString(5),
   address: generateRandmString(5),
   cvrNumber: '1111111',
 };
 const propertyB: PropertyCreateUpdate = {
-  name: `ZZZ-ovw-${rand}`,
+  name: `YYY-ovw-${rand}`,
   chrNumber: generateRandmString(5),
   address: generateRandmString(5),
   cvrNumber: '1111111',
@@ -411,17 +424,45 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     test.setTimeout(180000);
     expect(complianceSeeded).toBe(true);
 
+    // The premise of every order assertion below, asserted instead of assumed:
+    // `propertyA` must genuinely precede `propertyB` in the collation the
+    // component sorts with. Node and Chromium share ICU here, so this is the
+    // same comparison `compareNames` makes. It is a real guard, not ceremony —
+    // the `AAA-`/`ZZZ-` pair this fixture used to carry fails it, because
+    // Danish collates `aa` as `å` and sorts it after `z`. A future rename that
+    // reintroduces such a pair fails HERE, by name, rather than surfacing as an
+    // unexplained row-order failure that reads like a product bug.
+    expect(propertyA.name!.localeCompare(propertyB.name!, 'da', { numeric: true }))
+      .toBeLessThan(0);
+
     await openSeededOverview(page);
 
     await page.locator('#complianceOverviewSort-propertyName').click();
+    // A key CHANGE onto the name column starts ASCENDING (nextOverviewSort).
+    // Asserted on aria-sort as well as on the rows, because both seeded rows
+    // tie on every numeric column and `sortSummaries` breaks ties on the name
+    // ascending — so the landing order already is A-then-B, and the row check
+    // alone would pass just as happily if this click had never registered.
+    expect(await ariaSortOf(page, 0)).toBe('ascending');
     const ascending = await seededOrder(page);
     expect(ascending.a).toBeGreaterThanOrEqual(0);
     expect(ascending.b).toBeGreaterThanOrEqual(0);
     expect(ascending.a).toBeLessThan(ascending.b);
 
+    // Clicking the ACTIVE column flips it — and this is the click that genuinely
+    // moves the rows, name-descending being the only sort these two rows have
+    // that the ascending tie-break cannot also produce.
     await page.locator('#complianceOverviewSort-propertyName').click();
+    expect(await ariaSortOf(page, 0)).toBe('descending');
     const descending = await seededOrder(page);
     expect(descending.b).toBeLessThan(descending.a);
+
+    // Two states, never three: a third click returns to ascending rather than
+    // to an unsorted column.
+    await page.locator('#complianceOverviewSort-propertyName').click();
+    expect(await ariaSortOf(page, 0)).toBe('ascending');
+    const reAscending = await seededOrder(page);
+    expect(reAscending.a).toBeLessThan(reAscending.b);
   });
 
   test('aria-sort lands on the clicked header and on no other', async ({ page }) => {
