@@ -610,4 +610,18 @@ export const huHU = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiválás / deaktiválás',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A deaktiválás visszavonja a nyitott előfordulásokat az alkalmazásból. A befejezett előfordulások és a már összegyűjtött adatok megmaradnak.',
+  'Update table': 'Táblázat frissítése',
+  'Select filters and click Update table': 'Válasszon szűrőket, majd kattintson a Táblázat frissítése gombra',
+  'Compliance overview': 'Áttekintés',
+  'Compliance details': 'Részletek',
+  'Compliance report': 'Jelentés',
+  'Overview shows both completed and not completed tasks': 'Az áttekintés a befejezett és a nem befejezett feladatokat is mutatja',
+  'Select a property to filter by calendar': 'Válasszon ki egy tulajdonságot a naptár szerinti szűréshez',
+  'Select both a start and an end date': 'Válasszon ki egy kezdő és egy befejező dátumot is',
+  'The end date must be on or after the start date': 'A befejezési dátumnak a kezdő dátummal egyezőnek vagy későbbinek kell lennie.',
+  'Showing all': 'Összes megjelenítése',
+  'No results': 'Nincs találat',
+  Filtering: 'Szűrő',
+  'View mode': 'Nézet mód',
+  Pagination: 'Lapszámozás',
 };

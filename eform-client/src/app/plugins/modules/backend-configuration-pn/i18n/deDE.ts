@@ -658,4 +658,18 @@ export const deDE = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivieren / deaktivieren',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Beim Deaktivieren werden die offenen Vorkommen aus der App zurückgezogen. Abgeschlossene Vorkommen und die bereits erfassten Daten bleiben erhalten.',
+  'Update table': 'Tabelle aktualisieren',
+  'Select filters and click Update table': 'Wählen Sie Filter aus und klicken Sie auf „Tabelle aktualisieren“.',
+  'Compliance overview': 'Überblick',
+  'Compliance details': 'Details',
+  'Compliance report': 'Bericht',
+  'Overview shows both completed and not completed tasks': 'Die Übersicht zeigt sowohl abgeschlossene als auch nicht abgeschlossene Aufgaben an.',
+  'Select a property to filter by calendar': 'Wählen Sie eine Eigenschaft aus, um nach Kalender zu filtern.',
+  'Select both a start and an end date': 'Wählen Sie sowohl ein Start- als auch ein Enddatum aus.',
+  'The end date must be on or after the start date': 'Das Enddatum muss am oder nach dem Startdatum liegen.',
+  'Showing all': 'Alle anzeigen',
+  'No results': 'Keine Ergebnisse',
+  Filtering: 'Filterung',
+  'View mode': 'Ansichtsmodus',
+  Pagination: 'Pagination',
 };

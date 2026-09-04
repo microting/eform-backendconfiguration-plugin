@@ -610,4 +610,18 @@ export const noNO = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiver / deaktiver',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivering trekker de åpne forekomstene tilbake fra appen. Fullførte forekomster og dataene som allerede er samlet inn, bevares.',
+  'Update table': 'Oppdater tabellen',
+  'Select filters and click Update table': 'Velg filtre og klikk på Oppdater tabell',
+  'Compliance overview': 'Oversikt',
+  'Compliance details': 'Detaljer',
+  'Compliance report': 'Rapportere',
+  'Overview shows both completed and not completed tasks': 'Oversikten viser både fullførte og ikke fullførte oppgaver',
+  'Select a property to filter by calendar': 'Velg en eiendom for å filtrere etter kalender',
+  'Select both a start and an end date': 'Velg både en start- og en sluttdato',
+  'The end date must be on or after the start date': 'Sluttdatoen må være på eller etter startdatoen',
+  'Showing all': 'Viser alle',
+  'No results': 'Ingen resultater',
+  Filtering: 'Filtrering',
+  'View mode': 'Visningsmodus',
+  Pagination: 'Paginering',
 };

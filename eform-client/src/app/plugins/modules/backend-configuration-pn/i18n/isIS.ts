@@ -610,4 +610,18 @@ export const isIS = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Virkja / afvirkja',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Afvirkjun dregur opnu tilvikin til baka úr forritinu. Lokin tilvik og þau gögn sem þegar hafa safnast varðveitast.',
+  'Update table': 'Uppfæra töflu',
+  'Select filters and click Update table': 'Veldu síur og smelltu á Uppfæra töflu',
+  'Compliance overview': 'Yfirlit',
+  'Compliance details': 'Nánari upplýsingar',
+  'Compliance report': 'Skýrsla',
+  'Overview shows both completed and not completed tasks': 'Yfirlit sýnir bæði lokið og ókláruð verkefni',
+  'Select a property to filter by calendar': 'Veldu eign til að sía eftir dagatali',
+  'Select both a start and an end date': 'Veldu bæði upphafs- og lokadagsetningu',
+  'The end date must be on or after the start date': 'Lokadagur verður að vera á eða eftir upphafsdagsetningu',
+  'Showing all': 'Sýnir allt',
+  'No results': 'Engar niðurstöður',
+  Filtering: 'Síun',
+  'View mode': 'Skoða stilling',
+  Pagination: 'Síðunúmeraskipti',
 };

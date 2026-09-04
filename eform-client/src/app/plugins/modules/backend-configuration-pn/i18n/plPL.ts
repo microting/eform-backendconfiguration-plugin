@@ -610,4 +610,18 @@ export const plPL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktywuj / dezaktywuj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezaktywacja wycofuje otwarte wystąpienia z aplikacji. Ukończone wystąpienia i już zebrane dane zostają zachowane.',
+  'Update table': 'Aktualizacja tabeli',
+  'Select filters and click Update table': 'Wybierz filtry i kliknij Aktualizuj tabelę',
+  'Compliance overview': 'Przegląd',
+  'Compliance details': 'Bliższe dane',
+  'Compliance report': 'Raport',
+  'Overview shows both completed and not completed tasks': 'Podsumowanie pokazuje zarówno zadania ukończone, jak i nieukończone',
+  'Select a property to filter by calendar': 'Wybierz nieruchomość, aby filtrować według kalendarza',
+  'Select both a start and an end date': 'Wybierz datę rozpoczęcia i zakończenia',
+  'The end date must be on or after the start date': 'Data zakończenia musi przypadać na datę rozpoczęcia lub późniejszą',
+  'Showing all': 'Pokazywanie wszystkiego',
+  'No results': 'Brak wyników',
+  Filtering: 'Filtracja',
+  'View mode': 'Tryb widoku',
+  Pagination: 'Paginacja',
 };

@@ -610,4 +610,18 @@ export const ptPT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Ativar / desativar',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A desativação retira da aplicação as ocorrências em aberto. As ocorrências concluídas e os dados já recolhidos são preservados.',
+  'Update table': 'Atualizar tabela',
+  'Select filters and click Update table': 'Selecione os filtros e clique em Atualizar tabela.',
+  'Compliance overview': 'Visão geral',
+  'Compliance details': 'Detalhes',
+  'Compliance report': 'Relatório',
+  'Overview shows both completed and not completed tasks': 'A visão geral mostra as tarefas concluídas e as não concluídas.',
+  'Select a property to filter by calendar': 'Selecione uma propriedade para filtrar por calendário.',
+  'Select both a start and an end date': 'Selecione uma data de início e uma data de término.',
+  'The end date must be on or after the start date': 'A data de término deve ser igual ou posterior à data de início.',
+  'Showing all': 'Exibindo tudo',
+  'No results': 'Nenhum resultado',
+  Filtering: 'Filtragem',
+  'View mode': 'Modo de visualização',
+  Pagination: 'Paginação',
 };

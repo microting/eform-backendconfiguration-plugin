@@ -610,4 +610,18 @@ export const elGR = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Ενεργοποίηση / απενεργοποίηση',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Η απενεργοποίηση ανακαλεί τις ανοιχτές εμφανίσεις από την εφαρμογή. Οι ολοκληρωμένες εμφανίσεις και τα ήδη συλλεγμένα δεδομένα διατηρούνται.',
+  'Update table': 'Ενημέρωση πίνακα',
+  'Select filters and click Update table': 'Επιλέξτε φίλτρα και κάντε κλικ στην επιλογή Ενημέρωση πίνακα',
+  'Compliance overview': 'Επισκόπηση',
+  'Compliance details': 'Καθέκαστα',
+  'Compliance report': 'Εκθεση',
+  'Overview shows both completed and not completed tasks': 'Η επισκόπηση εμφανίζει τόσο ολοκληρωμένες όσο και μη ολοκληρωμένες εργασίες.',
+  'Select a property to filter by calendar': 'Επιλέξτε μια ιδιότητα για φιλτράρισμα κατά ημερολόγιο',
+  'Select both a start and an end date': 'Επιλέξτε ημερομηνία έναρξης και ημερομηνία λήξης',
+  'The end date must be on or after the start date': 'Η ημερομηνία λήξης πρέπει να είναι ίση ή μεταγενέστερη της ημερομηνίας έναρξης',
+  'Showing all': 'Εμφάνιση όλων',
+  'No results': 'Δεν υπάρχουν αποτελέσματα',
+  Filtering: 'Φιλτράρισμα',
+  'View mode': 'Λειτουργία προβολής',
+  Pagination: 'Σελιδοποίηση',
 };

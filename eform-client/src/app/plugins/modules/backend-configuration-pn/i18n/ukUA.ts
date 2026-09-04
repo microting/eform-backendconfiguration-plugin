@@ -610,4 +610,18 @@ export const ukUA = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Активувати / деактивувати',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивація відкликає відкриті екземпляри з застосунку. Завершені екземпляри та вже зібрані дані зберігаються.',
+  'Update table': 'Оновити таблицю',
+  'Select filters and click Update table': 'Виберіть фільтри та натисніть «Оновити таблицю»',
+  'Compliance overview': 'Огляд',
+  'Compliance details': 'Деталі',
+  'Compliance report': 'Звіт',
+  'Overview shows both completed and not completed tasks': 'Огляд показує як виконані, так і невиконані завдання',
+  'Select a property to filter by calendar': 'Виберіть властивість для фільтрації за календарем',
+  'Select both a start and an end date': 'Виберіть дату початку та дату завершення',
+  'The end date must be on or after the start date': 'Дата завершення має бути не пізніше дати початку',
+  'Showing all': 'Показано всі',
+  'No results': 'Немає результатів',
+  Filtering: 'Фільтрація',
+  'View mode': 'Режим перегляду',
+  Pagination: 'Пагінація',
 };

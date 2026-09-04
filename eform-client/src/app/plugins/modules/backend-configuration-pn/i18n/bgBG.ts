@@ -610,4 +610,18 @@ export const bgBG = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Активиране / деактивиране',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивирането оттегля отворените събития от приложението. Завършените събития и вече събраните данни се запазват.',
+  'Update table': 'Актуализиране на таблицата',
+  'Select filters and click Update table': 'Изберете филтри и щракнете върху „Актуализиране на таблицата“',
+  'Compliance overview': 'Общ преглед',
+  'Compliance details': 'Детайли',
+  'Compliance report': 'Доклад',
+  'Overview shows both completed and not completed tasks': 'Прегледът показва както завършени, така и незавършени задачи',
+  'Select a property to filter by calendar': 'Изберете свойство за филтриране по календар',
+  'Select both a start and an end date': 'Изберете начална и крайна дата',
+  'The end date must be on or after the start date': 'Крайната дата трябва да е същата или по-късна от началната дата',
+  'Showing all': 'Показване на всички',
+  'No results': 'Няма резултати',
+  Filtering: 'Филтриране',
+  'View mode': 'Режим на преглед',
+  Pagination: 'Пагинация',
 };

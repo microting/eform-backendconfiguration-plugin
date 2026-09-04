@@ -610,4 +610,18 @@ export const svSE = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivera / inaktivera',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Inaktivering drar tillbaka de öppna förekomsterna från appen. Slutförda förekomster och de data som redan samlats in bevaras.',
+  'Update table': 'Uppdatera tabell',
+  'Select filters and click Update table': 'Välj filter och klicka på Uppdatera tabell',
+  'Compliance overview': 'Översikt',
+  'Compliance details': 'Detaljer',
+  'Compliance report': 'Rapportera',
+  'Overview shows both completed and not completed tasks': 'Översikten visar både slutförda och ej slutförda uppgifter',
+  'Select a property to filter by calendar': 'Välj en egendom att filtrera efter kalender',
+  'Select both a start and an end date': 'Välj både ett start- och ett slutdatum',
+  'The end date must be on or after the start date': 'Slutdatumet måste vara samma som eller efter startdatumet',
+  'Showing all': 'Visar alla',
+  'No results': 'Inga resultat',
+  Filtering: 'Filtrering',
+  'View mode': 'Visningsläge',
+  Pagination: 'Paginering',
 };

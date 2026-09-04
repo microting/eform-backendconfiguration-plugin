@@ -610,4 +610,18 @@ export const ltLT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktyvinti / deaktyvinti',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktyvinimas atšaukia atvirus įvykius iš programėlės. Užbaigti įvykiai ir jau surinkti duomenys išsaugomi.',
+  'Update table': 'Atnaujinti lentelę',
+  'Select filters and click Update table': 'Pasirinkite filtrus ir spustelėkite „Atnaujinti lentelę“',
+  'Compliance overview': 'Apžvalga',
+  'Compliance details': 'Išsami informacija',
+  'Compliance report': 'Pranešti',
+  'Overview shows both completed and not completed tasks': 'Apžvalgoje rodomos ir atliktos, ir neatliktos užduotys',
+  'Select a property to filter by calendar': 'Pasirinkite ypatybę, kurią norite filtruoti pagal kalendorių',
+  'Select both a start and an end date': 'Pasirinkite pradžios ir pabaigos datas',
+  'The end date must be on or after the start date': 'Pabaigos data turi būti pradžios data arba vėlesnė',
+  'Showing all': 'Rodomi visi',
+  'No results': 'Nėra rezultatų',
+  Filtering: 'Filtravimas',
+  'View mode': 'Peržiūros režimas',
+  Pagination: 'Puslapavimas',
 };

@@ -610,4 +610,18 @@ export const esES = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activar / desactivar',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La desactivación retira de la aplicación las repeticiones abiertas. Las repeticiones completadas y los datos ya recopilados se conservan.',
+  'Update table': 'Actualizar tabla',
+  'Select filters and click Update table': 'Seleccione los filtros y haga clic en Actualizar tabla.',
+  'Compliance overview': 'Descripción general',
+  'Compliance details': 'Detalles',
+  'Compliance report': 'Informe',
+  'Overview shows both completed and not completed tasks': 'La vista general muestra tanto las tareas completadas como las no completadas.',
+  'Select a property to filter by calendar': 'Seleccione una propiedad para filtrar por calendario',
+  'Select both a start and an end date': 'Seleccione una fecha de inicio y una fecha de finalización.',
+  'The end date must be on or after the start date': 'La fecha de finalización debe ser igual o posterior a la fecha de inicio.',
+  'Showing all': 'Mostrando todos',
+  'No results': 'No hay resultados',
+  Filtering: 'Filtración',
+  'View mode': 'Modo de visualización',
+  Pagination: 'Paginación',
 };

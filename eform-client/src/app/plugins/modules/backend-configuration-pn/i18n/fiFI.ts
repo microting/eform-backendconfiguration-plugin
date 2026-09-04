@@ -610,4 +610,18 @@ export const fiFI = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivoi / poista käytöstä',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Käytöstä poistaminen peruuttaa avoimet esiintymät sovelluksesta. Valmiit esiintymät ja jo kerätyt tiedot säilyvät.',
+  'Update table': 'Päivitä taulukko',
+  'Select filters and click Update table': 'Valitse suodattimet ja napsauta Päivitä taulukko',
+  'Compliance overview': 'Yleiskatsaus',
+  'Compliance details': 'Tiedot',
+  'Compliance report': 'Raportti',
+  'Overview shows both completed and not completed tasks': 'Yhteenveto näyttää sekä valmiit että keskeneräiset tehtävät',
+  'Select a property to filter by calendar': 'Valitse ominaisuus suodattaaksesi kalenterin mukaan',
+  'Select both a start and an end date': 'Valitse sekä aloitus- että lopetuspäivämäärä',
+  'The end date must be on or after the start date': 'Päättymispäivämäärän on oltava alkamispäivämäärän mukainen tai sen jälkeen.',
+  'Showing all': 'Näytetään kaikki',
+  'No results': 'Ei tuloksia',
+  Filtering: 'Suodatus',
+  'View mode': 'Katselutila',
+  Pagination: 'Sivunumerointi',
 };

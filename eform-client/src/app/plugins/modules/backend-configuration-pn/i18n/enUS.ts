@@ -753,4 +753,26 @@ export const enUS= {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activate / deactivate',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.',
+  // Standalone Compliance page (#1160/#1163). The nine filter-bar strings the
+  // page reuses already exist above ('All properties' .. 'Showing'); only the
+  // wording the prototype changed, and the shell's own chrome, are new.
+  // 'Show report'/'Select filters and click Show report' are deliberately left
+  // alone — the calendar view mode #1170 deletes still uses them.
+  'Update table': 'Update table',
+  'Select filters and click Update table': 'Select filters and click Update table',
+  // Mode-toggle labels. Deliberately NOT the existing 'Overview' key: its
+  // Danish is 'Overblik' and it is used on unrelated screens, so retranslating
+  // it to 'Oversigt' would silently change them.
+  'Compliance overview': 'Overview',
+  'Compliance details': 'Details',
+  'Compliance report': 'Report',
+  'Overview shows both completed and not completed tasks': 'Overview shows both completed and not completed tasks',
+  'Select a property to filter by calendar': 'Select a property to filter by calendar',
+  'Select both a start and an end date': 'Select both a start and an end date',
+  'The end date must be on or after the start date': 'The end date must be on or after the start date',
+  'Showing all': 'Showing all',
+  'No results': 'No results',
+  Filtering: 'Filtering',
+  'View mode': 'View mode',
+  Pagination: 'Pagination',
 };

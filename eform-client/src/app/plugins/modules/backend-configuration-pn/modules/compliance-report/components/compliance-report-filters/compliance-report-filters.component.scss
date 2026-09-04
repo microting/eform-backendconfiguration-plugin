@@ -1,0 +1,58 @@
+// Theme tokens only — no colour literals. Verified against both
+// scss/themes/_eform.scss and scss/themes/_workspace.scss, which define every
+// custom property used here in both light and dark mode.
+.compliance-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  &__tooltip-host {
+    // A disabled mtx-select swallows pointer events, so the explanatory
+    // tooltip has to live on a wrapper that still receives them.
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__period-display {
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  &__error {
+    color: var(--text-error);
+    white-space: nowrap;
+  }
+
+  &__action {
+    // Keep the two buttons on the same baseline as the 48px pill fields.
+    align-self: center;
+  }
+
+  &__custom-range {
+    width: 240px;
+  }
+}
+
+// The global theme rule `body.theme-eform .mat-mdc-form-field
+// .mat-mdc-form-field-type-mtx-select { width: 100%; max-width: 320px }`
+// (scss/styles.scss:1231, mirrored at
+// scss/components/_workspace-mat-overrides.scss:1783) stretches every select
+// to fill the row. Ten of them do not fit that way, so pin an explicit width.
+// `flex` alone loses to that rule — this selector needs four class-level
+// simple selectors to outrank `body.theme-eform` + two classes, which is what
+// :host + the two component classes + the two Material classes give it.
+:host ::ng-deep .compliance-filters .compliance-filters__field
+  .mat-mdc-form-field.mat-mdc-form-field-type-mtx-select {
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
+}
+
+// The tag control shows "{first} +{n-1}" and needs the extra room.
+:host ::ng-deep .compliance-filters .compliance-filters__field--tags
+  .mat-mdc-form-field.mat-mdc-form-field-type-mtx-select {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
