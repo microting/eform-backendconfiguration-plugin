@@ -744,4 +744,10 @@ export const slSL = {
   '1 image': '1 slika',
   '{{count}} images': '{{count}} slik',
   'Only completed tasks can be edited': 'Urejati je mogoče samo dokončane naloge',
+  'Images for case {{caseId}}': 'Slike · zadeva {{caseId}}',
+  '1 image for case {{caseId}}': '1 slika · zadeva {{caseId}}',
+  'Close gallery': 'Zapri galerijo',
+  'Image {{index}} of {{count}}': 'Slika {{index}} od {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Slika {{index}} od {{count}} za zadevo {{caseId}}',
+  'Image {{index}}': 'Slika {{index}}',
 };

@@ -744,4 +744,10 @@ export const hrHR = {
   '1 image': '1 slika',
   '{{count}} images': '{{count}} slika',
   'Only completed tasks can be edited': 'Mogu se uređivati samo dovršeni zadaci',
+  'Images for case {{caseId}}': 'Slike · predmet {{caseId}}',
+  '1 image for case {{caseId}}': '1 slika · predmet {{caseId}}',
+  'Close gallery': 'Zatvori galeriju',
+  'Image {{index}} of {{count}}': 'Slika {{index}} od {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Slika {{index}} od {{count}} za predmet {{caseId}}',
+  'Image {{index}}': 'Slika {{index}}',
 };

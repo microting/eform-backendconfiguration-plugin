@@ -744,4 +744,10 @@ export const skSK = {
   '1 image': '1 obrázok',
   '{{count}} images': '{{count}} obrázkov',
   'Only completed tasks can be edited': 'Upravovať je možné iba dokončené úlohy',
+  'Images for case {{caseId}}': 'Obrázky · prípad {{caseId}}',
+  '1 image for case {{caseId}}': '1 obrázok · prípad {{caseId}}',
+  'Close gallery': 'Zavrieť galériu',
+  'Image {{index}} of {{count}}': 'Obrázok {{index}} z {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Obrázok {{index}} z {{count}} pre prípad {{caseId}}',
+  'Image {{index}}': 'Obrázok {{index}}',
 };

@@ -744,4 +744,10 @@ export const lvLV = {
   '1 image': '1 attēls',
   '{{count}} images': '{{count}} attēli',
   'Only completed tasks can be edited': 'Rediģēt var tikai pabeigtus uzdevumus',
+  'Images for case {{caseId}}': 'Attēli · lieta {{caseId}}',
+  '1 image for case {{caseId}}': '1 attēls · lieta {{caseId}}',
+  'Close gallery': 'Aizvērt galeriju',
+  'Image {{index}} of {{count}}': 'Attēls {{index}} no {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Attēls {{index}} no {{count}} lietai {{caseId}}',
+  'Image {{index}}': 'Attēls {{index}}',
 };

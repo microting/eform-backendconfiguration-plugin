@@ -744,4 +744,10 @@ export const itIT = {
   '1 image': '1 immagine',
   '{{count}} images': '{{count}} immagini',
   'Only completed tasks can be edited': 'È possibile modificare solo le attività completate.',
+  'Images for case {{caseId}}': 'Immagini · caso {{caseId}}',
+  '1 image for case {{caseId}}': '1 immagine · caso {{caseId}}',
+  'Close gallery': 'Chiudi galleria',
+  'Image {{index}} of {{count}}': 'Immagine {{index}} di {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Immagine {{index}} di {{count}} per il caso {{caseId}}',
+  'Image {{index}}': 'Immagine {{index}}',
 };

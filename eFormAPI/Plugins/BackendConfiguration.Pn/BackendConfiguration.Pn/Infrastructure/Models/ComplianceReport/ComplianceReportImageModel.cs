@@ -22,6 +22,20 @@ public class ComplianceReportImageModel
     public string FileName { get; set; }
 
     /// <summary>
+    /// The 300px-wide derivative of <see cref="FileName"/>,
+    /// <c>$"{UploadedData.Id}_300_{Checksum}{Extension}"</c>. Same derivation,
+    /// same existence check, same <c>null</c> outcome as <see cref="FileName"/>:
+    /// the <c>_300_</c> object is written to S3 by the very same ImageMagick
+    /// resize+crop pass that writes the <c>_700_</c> one (see
+    /// <c>EventsGrpcService.cs:2861-2862</c> and
+    /// <c>BackendConfigurationTaskManagementService.cs:526-527</c>), so whenever
+    /// the <c>_700_</c> name is derivable the <c>_300_</c> one is too.
+    /// Consumers that only need a thumbnail should prefer this and fall back to
+    /// <see cref="FileName"/> when it is <c>null</c>.
+    /// </summary>
+    public string ThumbnailFileName { get; set; }
+
+    /// <summary>
     /// <c>https://www.google.com/maps/place/{Latitude},{Longitude}</c>, emitted
     /// only when both coordinates are present.
     /// </summary>

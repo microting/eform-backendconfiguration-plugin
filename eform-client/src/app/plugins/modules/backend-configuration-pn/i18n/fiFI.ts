@@ -744,4 +744,10 @@ export const fiFI = {
   '1 image': '1 kuva',
   '{{count}} images': '{{count}} kuvaa',
   'Only completed tasks can be edited': 'Vain suoritettuja tehtäviä voi muokata',
+  'Images for case {{caseId}}': 'Kuvat · tapaus {{caseId}}',
+  '1 image for case {{caseId}}': '1 kuva · tapaus {{caseId}}',
+  'Close gallery': 'Sulje galleria',
+  'Image {{index}} of {{count}}': 'Kuva {{index}} / {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Kuva {{index}} / {{count}} tapaukselle {{caseId}}',
+  'Image {{index}}': 'Kuva {{index}}',
 };

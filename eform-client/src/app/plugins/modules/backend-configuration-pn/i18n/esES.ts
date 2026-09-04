@@ -744,4 +744,10 @@ export const esES = {
   '1 image': '1 imagen',
   '{{count}} images': '{{count}} imágenes',
   'Only completed tasks can be edited': 'Solo se pueden editar las tareas completadas.',
+  'Images for case {{caseId}}': 'Imágenes · caso {{caseId}}',
+  '1 image for case {{caseId}}': '1 imagen · caso {{caseId}}',
+  'Close gallery': 'Cerrar galería',
+  'Image {{index}} of {{count}}': 'Imagen {{index}} de {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Imagen {{index}} de {{count}} del caso {{caseId}}',
+  'Image {{index}}': 'Imagen {{index}}',
 };

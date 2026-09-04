@@ -151,6 +151,12 @@ export {
     // Re-export the create/edit modal so a sibling module (the calendar
     // task-list page) can open it without re-declaring it.
     TaskCreateEditModalComponent,
+    // Re-export the image lightbox for the same reason (#1168). It is opened by
+    // TWO modules now: this one's historical task card and the standalone
+    // Compliance page's Rapport view, which already imports CalendarModule for
+    // the completion modal. It belongs to the TASK CARD, not to the calendar's
+    // compliance view mode — #1170 removes that view and must not delete it.
+    CalendarImageLightboxComponent,
   ],
   providers: [
     // Override MAT_DATE_FORMATS only inside this module so the event-modal

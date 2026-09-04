@@ -744,4 +744,10 @@ export const noNO = {
   '1 image': '1 bilde',
   '{{count}} images': '{{count}} bilder',
   'Only completed tasks can be edited': 'Bare fullførte oppgaver kan redigeres',
+  'Images for case {{caseId}}': 'Bilder · sak {{caseId}}',
+  '1 image for case {{caseId}}': '1 bilde · sak {{caseId}}',
+  'Close gallery': 'Lukk galleri',
+  'Image {{index}} of {{count}}': 'Bilde {{index}} av {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Bilde {{index}} av {{count}} for sak {{caseId}}',
+  'Image {{index}}': 'Bilde {{index}}',
 };

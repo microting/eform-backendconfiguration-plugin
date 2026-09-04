@@ -744,4 +744,10 @@ export const huHU = {
   '1 image': '1 kép',
   '{{count}} images': '{{count}} kép',
   'Only completed tasks can be edited': 'Csak a befejezett feladatok szerkeszthetők',
+  'Images for case {{caseId}}': 'Képek · ügy {{caseId}}',
+  '1 image for case {{caseId}}': '1 kép · ügy {{caseId}}',
+  'Close gallery': 'Galéria bezárása',
+  'Image {{index}} of {{count}}': 'Kép {{index}} / {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Kép {{index}} / {{count}} a {{caseId}} ügyhöz',
+  'Image {{index}}': 'Kép {{index}}',
 };

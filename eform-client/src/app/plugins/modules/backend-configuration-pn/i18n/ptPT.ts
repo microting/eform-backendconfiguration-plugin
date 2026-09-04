@@ -744,4 +744,10 @@ export const ptPT = {
   '1 image': '1 imagem',
   '{{count}} images': '{{count}} imagens',
   'Only completed tasks can be edited': 'Somente tarefas concluídas podem ser editadas.',
+  'Images for case {{caseId}}': 'Imagens · caso {{caseId}}',
+  '1 image for case {{caseId}}': '1 imagem · caso {{caseId}}',
+  'Close gallery': 'Fechar galeria',
+  'Image {{index}} of {{count}}': 'Imagem {{index}} de {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Imagem {{index}} de {{count}} do caso {{caseId}}',
+  'Image {{index}}': 'Imagem {{index}}',
 };

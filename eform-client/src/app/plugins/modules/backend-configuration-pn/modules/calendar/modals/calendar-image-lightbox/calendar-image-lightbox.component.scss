@@ -1,41 +1,147 @@
-// Dark centered lightbox. The component fills the MDC dialog surface, so a
-// dark background here (with the surface's border-radius) reads as a dark
-// modal without any global panel-class overrides.
-.lightbox {
+// Dark centered lightbox, shared by the calendar's historical task card and the
+// standalone Compliance page's Rapport view (#1168).
+//
+// GLOBAL SCOPE. The component runs with ViewEncapsulation.None because the
+// below-720px full-bleed layout has to reach the CDK overlay pane and the
+// dialog container, both of which sit outside its own DOM subtree. Every class
+// below is therefore `calendar-lightbox`-prefixed, and nothing else in the app
+// carries that prefix.
+//
+// NO COLOUR LITERAL. Every colour is a custom property defined in BOTH
+// scss/themes/_eform.scss and scss/themes/_workspace.scss, in both their light
+// and dark maps:
+//
+//   --black-800   the lightbox surface. Dark in all FOUR combinations —
+//                 eform #242729 (L and D), workspace #1f1f1f (L and D) — which
+//                 is what a photo viewer needs: the image, not the chrome, is
+//                 the subject, and a white lightbox in light mode would blow
+//                 out every photo on it.
+//   --text-white  #ffffff in all four. Title, icons, the active thumb outline
+//                 and the focus ring; `opacity` (not a second colour) mutes it
+//                 for the meta line, the caption and the counter.
+//
+// CONTRAST, measured for all four theme x mode combinations. Two surfaces only,
+// because --black-800 does not vary by mode:
+//
+//   #ffffff on #242729 (eform L+D)      = 15.03:1   title, icons, thumb outline
+//   #ffffff on #1f1f1f (workspace L+D)  = 16.48:1
+//   #ffffff @78% on #242729 (= #cfcfd0) =  9.65:1   meta, caption, counter
+//   #ffffff @78% on #1f1f1f (= #cecece) = 10.47:1
+//
+// NOT --md-primary for the active thumbnail outline, which would be the obvious
+// choice: --md-primary varies by theme AND mode, and on this dark surface its
+// theme-workspace LIGHT value is #0b57d0 on #1f1f1f = 2.58:1, below the 3:1
+// floor WCAG 1.4.11 sets for a non-text UI component. The other three pass
+// (eform L #289694 = 4.21:1, eform D #4FCAC8 = 7.60:1, workspace D #a8c7fa =
+// 9.59:1), which is exactly why that one failure would have hidden.
+// --text-white clears the floor by a factor of five everywhere.
+
+.calendar-lightbox {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  background: var(--black-800);
+  border-radius: inherit;
+  // Header-less (the calendar's task card): the old 48px top inset, which keeps
+  // the absolutely positioned close button clear of the image.
+  padding: 48px 72px var(--spacing-2xl);
+  min-width: 320px;
+  min-height: 240px;
+  color: var(--text-white);
+  font-family: var(--font-family);
+
+  // With a header the title occupies that band instead, so the inset shrinks.
+  &--with-header {
+    padding-top: var(--spacing-2xl);
+  }
+}
+
+.calendar-lightbox__header {
+  width: 100%;
+  // Clears the absolutely positioned close button (40px + its 12px inset).
+  padding-right: 56px;
+}
+
+.calendar-lightbox__title {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+  color: var(--text-white);
+}
+
+.calendar-lightbox__meta {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-base);
+  color: var(--text-white);
+  opacity: 0.78;
+}
+
+.calendar-lightbox__stage {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(20, 20, 20, 0.97);
-  border-radius: inherit;
-  padding: 48px 72px;
-  min-width: 320px;
-  min-height: 240px;
+  gap: var(--spacing-xl);
+  width: 100%;
+  min-width: 0;
 }
 
-.lightbox-image {
+.calendar-lightbox__figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  // Lets the image shrink inside the flex row instead of forcing the row wider
+  // than the dialog.
+  min-width: 0;
+}
+
+.calendar-lightbox__image {
+  display: block;
   max-width: min(80vw, 1200px);
-  max-height: 78vh;
+  max-height: 70vh;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
-.lightbox-btn {
-  background: rgba(255, 255, 255, 0.12);
+.calendar-lightbox__caption {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--text-white);
+  opacity: 0.78;
+}
+
+.calendar-lightbox__counter {
+  font-size: var(--font-size-base);
+  color: var(--text-white);
+  opacity: 0.78;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.calendar-lightbox__btn {
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--text-white) 14%, transparent);
   border: none;
-  outline: none;
   cursor: pointer;
-  color: #fff;
+  color: var(--text-white);
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   padding: 0;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.24);
+    background: color-mix(in srgb, var(--text-white) 26%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-white);
+    outline-offset: 2px;
   }
 
   mat-icon {
@@ -45,31 +151,165 @@
   }
 }
 
-.lightbox-close {
+.calendar-lightbox__close {
   position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 1;
 }
 
-.lightbox-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+.calendar-lightbox__thumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  // One horizontal strip that scrolls, never a wrapping block that pushes the
+  // image off screen when a case carries twenty attachments.
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: min(80vw, 1200px);
+  // Room for the focus ring's 2px offset without clipping it.
+  padding: var(--spacing-xs);
+}
 
-  &--prev {
-    left: 16px;
+.calendar-lightbox__thumb {
+  // border-box so the outer box is exactly 64x64 INCLUDING the 2px border.
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  background: none;
+  // The inactive thumb carries the SAME 2px border, transparent, so activating
+  // one changes a colour and never a size — no layout shift in the strip.
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
   }
 
-  &--next {
-    right: 16px;
+  &:focus-visible {
+    outline: 2px solid var(--text-white);
+    outline-offset: 2px;
+  }
+
+  &--active {
+    border-color: var(--text-white);
+    opacity: 1;
   }
 }
 
-.lightbox-counter {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 13px;
+.calendar-lightbox__thumb-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// ---------------------------------------------------------------------------
+// Below 720px (#1168 section 6, compliance.css:1525-1567)
+// ---------------------------------------------------------------------------
+// Full-bleed dialog, arrows lifted out of the flex row to overlay the image,
+// stage image capped at 52vh, and — because the dialog is a FIXED 100vh box
+// here rather than one sized by its content — a scroll guard so a short
+// viewport cannot put part of the lightbox out of reach. See `.calendar-lightbox`
+// below. The close button rides with the content when the guard engages: it
+// keeps its 12px inset from the top of the scrolled box, so it is where it
+// always was until the user scrolls past it, and Escape and the backdrop close
+// the dialog from anywhere regardless.
+//
+// `.calendar-lightbox-panel` is the MatDialogConfig.panelClass both openers
+// pass; it lands on the CDK overlay pane. `!important` on max-width is not
+// decoration: MatDialog writes the config's `maxWidth` as an INLINE style on
+// that element, and an inline style outranks any class rule.
+@media (max-width: 719.98px) {
+  .calendar-lightbox-panel {
+    max-width: 100vw !important;
+    width: 100vw;
+    height: 100vh;
+
+    .mat-mdc-dialog-container,
+    .mdc-dialog__surface {
+      border-radius: 0;
+      width: 100vw;
+      max-width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+    }
+  }
+
+  .calendar-lightbox {
+    width: 100vw;
+    height: 100vh;
+    min-width: 0;
+    border-radius: 0;
+    // `safe`, not a bare `center`. The box is a FIXED 100vh here, and on a short
+    // viewport (a phone held in landscape) header + 45vh stage + caption +
+    // counter + the 64px strip is taller than it. A plain `justify-content:
+    // center` then pushes the surplus out of BOTH ends of the column, and a
+    // scroll container cannot reach what overflows its START edge — the header
+    // and the top of the photo would be unreachable, with no way to get them
+    // back. `safe` degrades the alignment to flex-start the moment the content
+    // stops fitting, which is exactly when the scrolling below has to work.
+    // The plain declaration stays first as the fallback: a browser that does
+    // not know the keyword drops the second line and keeps today's behaviour.
+    justify-content: center;
+    justify-content: safe center;
+    // The scroll itself. The dialog surface is capped at 100vh and the page
+    // behind a modal does not scroll, so without this the surplus is simply
+    // lost.
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 44px var(--spacing-lg) var(--spacing-lg);
+
+    &--with-header {
+      padding-top: var(--spacing-lg);
+    }
+  }
+
+  .calendar-lightbox__stage {
+    position: relative;
+    min-height: 45vh;
+    padding: 0 40px;
+    // Now that the column can overflow, its items must not absorb the pressure
+    // by shrinking instead: a squeezed stage would slide the overlaid arrows
+    // off the photo rather than hand the surplus to the scrollbar above.
+    // `min-height` already floors this one; this makes the intent explicit.
+    flex-shrink: 0;
+  }
+
+  .calendar-lightbox__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    // A touch more backing than the desktop button: here it sits ON the
+    // photograph, whose brightness is unknown.
+    background: color-mix(in srgb, var(--text-white) 28%, transparent);
+
+    &--prev {
+      left: 0;
+    }
+
+    &--next {
+      right: 0;
+    }
+  }
+
+  .calendar-lightbox__image {
+    max-width: 100%;
+    max-height: 52vh;
+  }
+
+  .calendar-lightbox__thumbs {
+    max-width: 100%;
+    // Same reason as the stage: the strip is the last item in a column that may
+    // now overflow, and it is the one a default `flex-shrink: 1` would flatten
+    // to nothing. It stays 64px tall and the dialog scrolls to it instead.
+    flex-shrink: 0;
+  }
 }

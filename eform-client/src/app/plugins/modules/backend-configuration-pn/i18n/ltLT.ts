@@ -744,4 +744,10 @@ export const ltLT = {
   '1 image': '1 paveikslėlis',
   '{{count}} images': '{{count}} paveikslėlių',
   'Only completed tasks can be edited': 'Redaguoti galima tik atliktas užduotis',
+  'Images for case {{caseId}}': 'Paveikslėliai · byla {{caseId}}',
+  '1 image for case {{caseId}}': '1 paveikslėlis · byla {{caseId}}',
+  'Close gallery': 'Uždaryti galeriją',
+  'Image {{index}} of {{count}}': 'Paveikslėlis {{index}} iš {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Paveikslėlis {{index}} iš {{count}}, skirtas bylai {{caseId}}',
+  'Image {{index}}': 'Paveikslėlis {{index}}',
 };

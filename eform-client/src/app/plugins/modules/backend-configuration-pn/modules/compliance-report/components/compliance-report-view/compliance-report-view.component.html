@@ -148,32 +148,56 @@
 </ng-template>
 
 <!--
-  BILLEDER, two of the prototype's three states (renderReportImagesCell,
-  compliance.js:1617-1638): `0` renders the en dash, `>= 1` renders a
-  photo_library icon and the count with the `1 billede` / `{n} billeder`
-  accessible name.
+  BILLEDER (renderReportImagesCell, compliance.js:1617-1638). THREE states, and
+  which one renders turns on TWO different counts:
 
-  The third state — a 40x40 inline thumbnail for a single image — and the click
-  that opens the gallery both belong to the image-gallery issue (#1168), which
-  owns the authenticated blob fetch this endpoint deliberately does not do (it
-  returns image REFERENCES only). Until then the cell is not interactive:
-  a button that opens nothing is worse than a plain count.
+    imagesCount === 0                        the en dash;
+    imagesCount > 0, imageNames empty        the icon + count, NOT interactive;
+    imageNames non-empty                     the same thing as a BUTTON that
+                                             opens the gallery at index 0.
 
-  NB for #1168: `imagesCount` includes images whose file name could not be
-  derived and which therefore cannot be fetched, so it is not a count of
-  RENDERABLE images.
+  The two counts are not the same number. `imagesCount` is every attachment the
+  case has, INCLUDING ones whose `_700_` file name could not be derived and
+  which therefore cannot be fetched; `imageNames` is the renderable subset. The
+  visible number stays the honest attachment count in both cases — only the
+  interactivity differs, because a button that opens an empty gallery is worse
+  than a plain number.
+
+  The prototype's fourth state, a 40x40 inline thumbnail when there is exactly
+  one image, is deliberately NOT implemented: it would mean one authenticated
+  blob fetch PER ROW on a report the server caps at 5000 rows, and the
+  `authImage` pipe holds every fetched image as a base64 string for as long as
+  the cell lives. Nothing in #1168's acceptance criteria depends on it.
 -->
 <ng-template #imagesTpl let-row>
   <span *ngIf="!row.imagesCount" class="compliance-report__answer">{{ emptyCell }}</span>
   <span
-    *ngIf="row.imagesCount"
+    *ngIf="row.imagesCount && !canOpenGallery(row)"
     class="compliance-report__images"
     role="img"
-    [attr.aria-label]="imagesLabel(row.imagesCount)"
+    [attr.aria-label]="
+      imagesLabelKey(row.imagesCount) | translate: imagesLabelParams(row.imagesCount)
+    "
   >
     <mat-icon class="compliance-report__images-icon" aria-hidden="true">photo_library</mat-icon>
     <span class="compliance-report__images-count" aria-hidden="true">{{ row.imagesCount }}</span>
   </span>
+  <button
+    *ngIf="row.imagesCount && canOpenGallery(row)"
+    type="button"
+    class="compliance-report__images compliance-report__images-btn"
+    id="complianceReportImages-{{ row.complianceId }}"
+    [attr.aria-label]="
+      imagesLabelKey(row.imagesCount) | translate: imagesLabelParams(row.imagesCount)
+    "
+    [matTooltip]="
+      imagesLabelKey(row.imagesCount) | translate: imagesLabelParams(row.imagesCount)
+    "
+    (click)="openGallery(row)"
+  >
+    <mat-icon class="compliance-report__images-icon" aria-hidden="true">photo_library</mat-icon>
+    <span class="compliance-report__images-count" aria-hidden="true">{{ row.imagesCount }}</span>
+  </button>
 </ng-template>
 
 <!--

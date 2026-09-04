@@ -790,4 +790,10 @@ export const deDE = {
   '1 image': '1 Bild',
   '{{count}} images': '{{count}} Bilder',
   'Only completed tasks can be edited': 'Nur abgeschlossene Aufgaben können bearbeitet werden.',
+  'Images for case {{caseId}}': 'Bilder · Fall {{caseId}}',
+  '1 image for case {{caseId}}': '1 Bild · Fall {{caseId}}',
+  'Close gallery': 'Galerie schließen',
+  'Image {{index}} of {{count}}': 'Bild {{index}} von {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Bild {{index}} von {{count}} für Fall {{caseId}}',
+  'Image {{index}}': 'Bild {{index}}',
 };

@@ -744,4 +744,10 @@ export const roRO = {
   '1 image': '1 imagine',
   '{{count}} images': '{{count}} imagini',
   'Only completed tasks can be edited': 'Numai sarcinile finalizate pot fi editate',
+  'Images for case {{caseId}}': 'Imagini · caz {{caseId}}',
+  '1 image for case {{caseId}}': '1 imagine · caz {{caseId}}',
+  'Close gallery': 'Închide galeria',
+  'Image {{index}} of {{count}}': 'Imaginea {{index}} din {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Imaginea {{index}} din {{count}} pentru cazul {{caseId}}',
+  'Image {{index}}': 'Imaginea {{index}}',
 };
