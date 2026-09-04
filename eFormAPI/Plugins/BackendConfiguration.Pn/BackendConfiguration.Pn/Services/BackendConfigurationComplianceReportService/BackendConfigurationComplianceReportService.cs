@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
@@ -15,6 +16,7 @@ using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Sentry;
 using CalendarService =
     BackendConfiguration.Pn.Services.BackendConfigurationCalendarService.BackendConfigurationCalendarService;
+using SdkDbContext = Microting.eForm.Infrastructure.MicrotingDbContext;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceReportService;
 
@@ -72,260 +74,32 @@ public class BackendConfigurationComplianceReportService(
             var dateFrom = requestModel.DateFrom.Date;
             var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
 
-            // ==========================================================
-            // Phase A — one SQL query, BC context.
-            // ==========================================================
-            var complianceQuery = backendConfigurationPnDbContext.Compliances
-                .Where(x => x.Deadline >= dateFrom && x.Deadline <= dateTo)
-                // Keep soft-removed rows that ever deployed a case: completed
-                // occurrences are soft-removed but retain MicrotingSdkCaseId
-                // (same shape as GetTasksForWeek's default branch).
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                            || x.MicrotingSdkCaseId > 0);
-
-            if (requestModel.PropertyId.HasValue)
-            {
-                complianceQuery = complianceQuery.Where(x => x.PropertyId == requestModel.PropertyId.Value);
-            }
-
-            // TagIds / SiteIds push down as EXISTS, NOT as a join: a row that
-            // matches two of the requested tags (or two of the requested sites)
-            // must still come back exactly once, and a join would fan it out into
-            // one duplicate per match — inflating Total and the page alike.
-            // Both AreaRulePlanningTags and PlanningSites live in the SAME
-            // DbContext as Compliances, so this is a genuine single-query filter;
-            // only the tag NAMES come from the items-planning database, and names
-            // are display-only, so that hop moves to page-sized enrichment.
-            // Property patterns, so a body posting "tagIds": null (or a null
-            // siteIds/boardIds) means "no filtering" exactly as an absent or
-            // empty list does, instead of NRE-ing into the catch below.
-            if (requestModel.TagIds is { Count: > 0 } tagIds)
-            {
-                complianceQuery = complianceQuery.Where(c =>
-                    backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
-                        arp.ItemPlanningId == c.PlanningId
-                        && arp.WorkflowState != Constants.WorkflowStates.Removed
-                        && backendConfigurationPnDbContext.AreaRulePlanningTags.Any(t =>
-                            t.AreaRulePlanningId == arp.Id
-                            && t.WorkflowState != Constants.WorkflowStates.Removed
-                            && tagIds.Contains(t.ItemPlanningTagId))));
-            }
-
-            if (requestModel.SiteIds is { Count: > 0 } siteIds)
-            {
-                complianceQuery = complianceQuery.Where(c =>
-                    backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
-                        arp.ItemPlanningId == c.PlanningId
-                        && arp.WorkflowState != Constants.WorkflowStates.Removed
-                        && backendConfigurationPnDbContext.PlanningSites.Any(ps =>
-                            ps.AreaRulePlanningsId == arp.Id
-                            && ps.WorkflowState != Constants.WorkflowStates.Removed
-                            && siteIds.Contains(ps.SiteId))));
-            }
-
-            // Project rather than materialise entities: nothing downstream writes
-            // a Compliance, and the seven columns below are all that is read.
-            var candidates = await complianceQuery
-                .Select(x => new CandidateRow
-                {
-                    ComplianceId = x.Id,
-                    ItemName = x.ItemName,
-                    PlanningId = x.PlanningId,
-                    PropertyId = x.PropertyId,
-                    Deadline = x.Deadline,
-                    MicrotingSdkCaseId = x.MicrotingSdkCaseId,
-                    WorkflowState = x.WorkflowState
-                })
-                .ToListAsync();
-
-            // ==========================================================
-            // Phase B — one SQL query, SDK context (a DIFFERENT database).
-            // ==========================================================
-            var caseIds = candidates
-                .Select(c => c.MicrotingSdkCaseId)
-                .Where(id => id > 0)
-                .Distinct()
-                .ToList();
-
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
             // NOTE: this context stays alive for the whole method — phase E reads
-            // Sites from it. Disposing it after phase B would blow up only on the
-            // code path where a page actually has assigned workers.
+            // Sites from it. Disposing it right after BuildCandidateSet (which
+            // owns phase B) would blow up only on the code path where a page
+            // actually has assigned workers.
             await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
 
-            var casesById = caseIds.Count > 0
-                ? await sdkDbContext.Cases
-                    .Where(c => caseIds.Contains(c.Id))
-                    .Select(c => new SdkCaseInfo
-                    {
-                        Id = c.Id,
-                        Status = c.Status,
-                        DoneAt = c.DoneAt,
-                        DoneAtUserModifiable = c.DoneAtUserModifiable,
-                        CheckListId = c.CheckListId
-                    })
-                    .ToDictionaryAsync(c => c.Id)
-                : new Dictionary<int, SdkCaseInfo>();
-
-            bool IsDone(CandidateRow c) =>
-                c.MicrotingSdkCaseId > 0
-                && casesById.TryGetValue(c.MicrotingSdkCaseId, out var sdk)
-                && sdk.Status == 100;
-
             // ==========================================================
-            // Phase C — in-memory filters. Everything here is either
-            // cross-database or a coalesce over rows that must be in memory
-            // anyway; see the comments on each block.
+            // Phases A, B and C — SHARED with Overview (#1162).
             // ==========================================================
-
-            // AreaRulePlannings WITHOUT the display includes: phase C needs only
-            // the Id (to key exceptions and calendar configurations) and the two
-            // repeat columns ComputeIsAllDay reads. Translations and PlanningSites
-            // are loaded page-sized in phase E.
-            var planningIds = candidates.Select(x => x.PlanningId).Distinct().ToList();
-            var arps = await backendConfigurationPnDbContext.AreaRulePlannings
-                .Where(x => planningIds.Contains(x.ItemPlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            // Group, do NOT ToDictionary on ItemPlanningId: nothing in the schema
-            // makes (ItemPlanningId, non-removed) unique, so two live ARPs on one
-            // planning is a data anomaly rather than an impossibility — and this
-            // set is now the PRE-status candidate set, so such a planning reaches
-            // here even when all of its compliance rows would be filtered out
-            // later. Failing the whole report over one anomalous planning is worse
-            // than deterministically picking the lowest-Id ARP; the exception
-            // grouping below already resolves its duplicates the same way.
-            var arpByPlanningId = arps
-                .GroupBy(x => x.ItemPlanningId)
-                .ToDictionary(g => g.Key, g => g.OrderBy(a => a.Id).First());
-            var arpIds = arps.Select(x => x.Id).ToList();
-
-            // Same reasoning as arpByPlanningId above: IX_CalendarConfigurations_
-            // AreaRulePlanningId is a plain, non-unique index and the entity carries
-            // no uniqueness annotation, so two live configurations on one ARP is a
-            // data anomaly rather than an impossibility — and arpIds comes from the
-            // PRE-status candidate set, so it is strictly wider than the baseline's.
-            // Failing the whole report (both compliance-report/index and the legacy
-            // calendar/compliance-report, for the entire date window) over one
-            // anomalous ARP is worse than deterministically picking the lowest-Id
-            // configuration.
-            var calConfigList = await backendConfigurationPnDbContext.CalendarConfigurations
-                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            var calConfigs = calConfigList
-                .GroupBy(x => x.AreaRulePlanningId)
-                .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Id).First());
-
-            // "this"-scope occurrence exceptions: hide deleted occurrences, apply
-            // date/hour/title/board overrides. These rows CANNOT be pushed into
-            // SQL and dropped: they drive the IsDeleted skip and the NewDate move
-            // as well as the board, so they are loaded here regardless.
-            var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
-                .Where(x => arpIds.Contains(x.AreaRulePlanningId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            var exceptionsByArpAndDate = exceptions
-                .GroupBy(x => x.AreaRulePlanningId)
-                .ToDictionary(g => g.Key, g => g
-                    .GroupBy(x => x.OriginalDate.Date)
-                    .ToDictionary(gg => gg.Key, gg => gg.First()));
-
-            // Boards: one row per board, not per compliance row. Needed HERE
-            // because the BoardIds filter runs in phase C — the effective board is
-            // exception.BoardId ?? calConfig.BoardId ?? the property's lowest
-            // non-removed board id, and the first arm only exists in memory.
-            var propertyIds = candidates.Select(c => c.PropertyId).Distinct().ToList();
-            var boardsForProperties = await backendConfigurationPnDbContext.CalendarBoards
-                .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(b => propertyIds.Contains(b.PropertyId))
-                .ToListAsync();
-            var boardNamesById = boardsForProperties.ToDictionary(b => b.Id, b => b.Name);
-            var defaultBoardIdByProperty = boardsForProperties
-                .GroupBy(b => b.PropertyId)
-                .ToDictionary(g => g.Key, g => g.OrderBy(b => b.Id).First().Id);
-
-            var wantOpen = requestModel.Status is "open" or "all";
-            var wantDone = requestModel.Status is "done" or "all";
-
-            var matched = new List<MatchedRow>();
-            foreach (var candidate in candidates)
-            {
-                arpByPlanningId.TryGetValue(candidate.PlanningId, out var arp);
-                CalendarConfiguration calConfig = null;
-                if (arp != null) calConfigs.TryGetValue(arp.Id, out calConfig);
-
-                CalendarOccurrenceException exception = null;
-                if (arp != null && exceptionsByArpAndDate.TryGetValue(arp.Id, out var perDate))
+            var candidateSet = await BuildCandidateSet(
+                new CandidateFilter
                 {
-                    perDate.TryGetValue(candidate.Deadline.Date, out exception);
-                }
+                    PropertyId = requestModel.PropertyId,
+                    BoardIds = requestModel.BoardIds,
+                    TagIds = requestModel.TagIds,
+                    SiteIds = requestModel.SiteIds,
+                    DateFrom = dateFrom,
+                    DateTo = dateTo,
+                    Status = requestModel.Status,
+                    ComputeDisplayFields = true
+                },
+                sdkDbContext);
 
-                // A deleted occurrence is never returned, for ANY status.
-                if (exception?.IsDeleted == true) continue;
-
-                var effectiveTaskDate = exception?.NewDate?.Date ?? candidate.Deadline.Date;
-                // A moved occurrence can land outside the requested window.
-                if (effectiveTaskDate < dateFrom || effectiveTaskDate > dateTo) continue;
-
-                // BOARD FILTER — deliberately NOT pushed into SQL. The effective
-                // board is a three-arm coalesce whose first arm lives on the
-                // occurrence-exception rows, and those rows have to be in memory
-                // anyway (the IsDeleted skip and the NewDate move above). The SQL
-                // form would need a LEFT JOIN on DATE(OriginalDate) = DATE(Deadline)
-                // — non-sargable, so it defeats every index — plus a correlated
-                // MIN(Id) sub-select, in exchange for zero extra narrowing over a
-                // set already cut down by date, property, tags and sites.
-                var effectiveBoardId = exception?.BoardId
-                    ?? calConfig?.BoardId
-                    ?? defaultBoardIdByProperty.GetValueOrDefault(candidate.PropertyId, 0);
-                // A property with no non-removed board yields 0, and such rows are
-                // excluded whenever a board filter is set. Preserved deliberately.
-                if (requestModel.BoardIds is { Count: > 0 } boardIds
-                    && (effectiveBoardId == 0 || !boardIds.Contains(effectiveBoardId)))
-                {
-                    continue;
-                }
-
-                var done = IsDone(candidate);
-                // STATUS FILTER — structurally impossible in SQL. Done-ness is
-                // sdkCase.Status == 100 and Cases lives in the SDK database behind
-                // a different DbContext; EF cannot join across two contexts.
-                // Compliance carries no completion column, so there is no
-                // same-database proxy either. This is also why paging cannot be a
-                // plain SQL Skip/Take.
-                if (done)
-                {
-                    if (!wantDone) continue;
-                }
-                else
-                {
-                    // Not done + soft-removed = user-deleted occurrence: never shown.
-                    if (candidate.WorkflowState == Constants.WorkflowStates.Removed) continue;
-                    if (!wantOpen) continue;
-                }
-
-                var sdkCase = candidate.MicrotingSdkCaseId > 0
-                    ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
-                    : null;
-
-                var isAllDay = CalendarService.ComputeIsAllDay(arp, calConfig);
-
-                matched.Add(new MatchedRow
-                {
-                    Candidate = candidate,
-                    Arp = arp,
-                    Exception = exception,
-                    EffectiveTaskDate = effectiveTaskDate,
-                    EffectiveBoardId = effectiveBoardId,
-                    Completed = done,
-                    SdkCase = sdkCase,
-                    IsAllDay = isAllDay,
-                    StartHour = isAllDay ? 0 : exception?.StartHour ?? calConfig?.StartHour ?? 9.0,
-                    Duration = isAllDay ? 0 : exception?.Duration ?? calConfig?.Duration ?? 1.0,
-                    DoneAt = done ? sdkCase?.DoneAtUserModifiable ?? sdkCase?.DoneAt : null
-                });
-            }
+            var matched = candidateSet.MatchedRows;
+            var boardNamesById = candidateSet.BoardNamesById;
 
             // Total is the count AFTER the exception delete, the NewDate range
             // re-check, the board filter and the status filter — never a
@@ -521,6 +295,576 @@ public class BackendConfigurationComplianceReportService(
             return new OperationDataResult<ComplianceReportPagedModel>(false,
                 $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
         }
+    }
+
+    // ==================================================================
+    // Phases A, B and C — the SHARED candidate-set builder (#1162 §5).
+    //
+    // Everything here used to be inline in Index. It is EXTRACTED, not copied:
+    // Index and Overview run byte-identical filtering, so a percentage in
+    // Oversigt can never disagree with the row count in Detaljer for the same
+    // filters. The only knobs are on CandidateFilter — status behaviour and
+    // whether the occurrence display fields are computed.
+    // ==================================================================
+
+    /// <summary>
+    /// Runs phases A (BC-context SQL), B (SDK-context SQL for the backing cases)
+    /// and C (in-memory occurrence-exception delete/move, effective board and the
+    /// status filter) and returns the surviving rows.
+    /// </summary>
+    /// <param name="filter">
+    /// The filter set. <c>DateFrom</c> must already be a date and <c>DateTo</c> an
+    /// end-of-day boundary — the caller normalises them, exactly as Index always
+    /// did.
+    /// </param>
+    /// <param name="sdkDbContext">
+    /// The SDK DbContext, owned by the CALLER: Index's phase E reads Sites from it
+    /// long after this method returns, so it must outlive the builder.
+    /// </param>
+    private async Task<CandidateSet> BuildCandidateSet(
+        CandidateFilter filter, SdkDbContext sdkDbContext)
+    {
+        var dateFrom = filter.DateFrom;
+        var dateTo = filter.DateTo;
+
+        // ==========================================================
+        // Phase A — one SQL query, BC context.
+        // ==========================================================
+        var complianceQuery = backendConfigurationPnDbContext.Compliances
+            .Where(x => x.Deadline >= dateFrom && x.Deadline <= dateTo)
+            // Keep soft-removed rows that ever deployed a case: completed
+            // occurrences are soft-removed but retain MicrotingSdkCaseId
+            // (same shape as GetTasksForWeek's default branch).
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                        || x.MicrotingSdkCaseId > 0);
+
+        if (filter.PropertyId.HasValue)
+        {
+            complianceQuery = complianceQuery.Where(x => x.PropertyId == filter.PropertyId.Value);
+        }
+
+        // TagIds / SiteIds push down as EXISTS, NOT as a join: a row that
+        // matches two of the requested tags (or two of the requested sites)
+        // must still come back exactly once, and a join would fan it out into
+        // one duplicate per match — inflating Total and the page alike.
+        // Both AreaRulePlanningTags and PlanningSites live in the SAME
+        // DbContext as Compliances, so this is a genuine single-query filter;
+        // only the tag NAMES come from the items-planning database, and names
+        // are display-only, so that hop moves to page-sized enrichment.
+        // Property patterns, so a body posting "tagIds": null (or a null
+        // siteIds/boardIds) means "no filtering" exactly as an absent or
+        // empty list does, instead of NRE-ing into the catch below.
+        if (filter.TagIds is { Count: > 0 } tagIds)
+        {
+            complianceQuery = complianceQuery.Where(c =>
+                backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
+                    arp.ItemPlanningId == c.PlanningId
+                    && arp.WorkflowState != Constants.WorkflowStates.Removed
+                    && backendConfigurationPnDbContext.AreaRulePlanningTags.Any(t =>
+                        t.AreaRulePlanningId == arp.Id
+                        && t.WorkflowState != Constants.WorkflowStates.Removed
+                        && tagIds.Contains(t.ItemPlanningTagId))));
+        }
+
+        if (filter.SiteIds is { Count: > 0 } siteIds)
+        {
+            complianceQuery = complianceQuery.Where(c =>
+                backendConfigurationPnDbContext.AreaRulePlannings.Any(arp =>
+                    arp.ItemPlanningId == c.PlanningId
+                    && arp.WorkflowState != Constants.WorkflowStates.Removed
+                    && backendConfigurationPnDbContext.PlanningSites.Any(ps =>
+                        ps.AreaRulePlanningsId == arp.Id
+                        && ps.WorkflowState != Constants.WorkflowStates.Removed
+                        && siteIds.Contains(ps.SiteId))));
+        }
+
+        // Project rather than materialise entities: nothing downstream writes
+        // a Compliance, and the seven columns below are all that is read.
+        var candidates = await complianceQuery
+            .Select(x => new CandidateRow
+            {
+                ComplianceId = x.Id,
+                ItemName = x.ItemName,
+                PlanningId = x.PlanningId,
+                PropertyId = x.PropertyId,
+                Deadline = x.Deadline,
+                MicrotingSdkCaseId = x.MicrotingSdkCaseId,
+                WorkflowState = x.WorkflowState
+            })
+            .ToListAsync();
+
+        // ==========================================================
+        // Phase B — one SQL query, SDK context (a DIFFERENT database).
+        // ==========================================================
+        var caseIds = candidates
+            .Select(c => c.MicrotingSdkCaseId)
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        var casesById = caseIds.Count > 0
+            ? await sdkDbContext.Cases
+                .Where(c => caseIds.Contains(c.Id))
+                .Select(c => new SdkCaseInfo
+                {
+                    Id = c.Id,
+                    Status = c.Status,
+                    DoneAt = c.DoneAt,
+                    DoneAtUserModifiable = c.DoneAtUserModifiable,
+                    CheckListId = c.CheckListId
+                })
+                .ToDictionaryAsync(c => c.Id)
+            : new Dictionary<int, SdkCaseInfo>();
+
+        bool IsDone(CandidateRow c) =>
+            c.MicrotingSdkCaseId > 0
+            && casesById.TryGetValue(c.MicrotingSdkCaseId, out var sdk)
+            && sdk.Status == 100;
+
+        // ==========================================================
+        // Phase C — in-memory filters. Everything here is either
+        // cross-database or a coalesce over rows that must be in memory
+        // anyway; see the comments on each block.
+        // ==========================================================
+
+        // AreaRulePlannings WITHOUT the display includes: phase C needs only
+        // the Id (to key exceptions and calendar configurations) and the two
+        // repeat columns ComputeIsAllDay reads. Translations and PlanningSites
+        // are loaded page-sized in phase E.
+        var planningIds = candidates.Select(x => x.PlanningId).Distinct().ToList();
+        var arps = await backendConfigurationPnDbContext.AreaRulePlannings
+            .Where(x => planningIds.Contains(x.ItemPlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        // Group, do NOT ToDictionary on ItemPlanningId: nothing in the schema
+        // makes (ItemPlanningId, non-removed) unique, so two live ARPs on one
+        // planning is a data anomaly rather than an impossibility — and this
+        // set is now the PRE-status candidate set, so such a planning reaches
+        // here even when all of its compliance rows would be filtered out
+        // later. Failing the whole report over one anomalous planning is worse
+        // than deterministically picking the lowest-Id ARP; the exception
+        // grouping below already resolves its duplicates the same way.
+        var arpByPlanningId = arps
+            .GroupBy(x => x.ItemPlanningId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(a => a.Id).First());
+        var arpIds = arps.Select(x => x.Id).ToList();
+
+        // Same reasoning as arpByPlanningId above: IX_CalendarConfigurations_
+        // AreaRulePlanningId is a plain, non-unique index and the entity carries
+        // no uniqueness annotation, so two live configurations on one ARP is a
+        // data anomaly rather than an impossibility — and arpIds comes from the
+        // PRE-status candidate set, so it is strictly wider than the baseline's.
+        // Failing the whole report (both compliance-report/index and the legacy
+        // calendar/compliance-report, for the entire date window) over one
+        // anomalous ARP is worse than deterministically picking the lowest-Id
+        // configuration.
+        var calConfigList = await backendConfigurationPnDbContext.CalendarConfigurations
+            .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        var calConfigs = calConfigList
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Id).First());
+
+        // "this"-scope occurrence exceptions: hide deleted occurrences, apply
+        // date/hour/title/board overrides. These rows CANNOT be pushed into
+        // SQL and dropped: they drive the IsDeleted skip and the NewDate move
+        // as well as the board, so they are loaded here regardless.
+        var exceptions = await backendConfigurationPnDbContext.CalendarOccurrenceExceptions
+            .Where(x => arpIds.Contains(x.AreaRulePlanningId))
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .ToListAsync();
+        var exceptionsByArpAndDate = exceptions
+            .GroupBy(x => x.AreaRulePlanningId)
+            .ToDictionary(g => g.Key, g => g
+                .GroupBy(x => x.OriginalDate.Date)
+                .ToDictionary(gg => gg.Key, gg => gg.First()));
+
+        // Boards: one row per board, not per compliance row. Needed HERE
+        // because the BoardIds filter runs in phase C — the effective board is
+        // exception.BoardId ?? calConfig.BoardId ?? the property's lowest
+        // non-removed board id, and the first arm only exists in memory.
+        var propertyIds = candidates.Select(c => c.PropertyId).Distinct().ToList();
+        var boardsForProperties = await backendConfigurationPnDbContext.CalendarBoards
+            .Where(b => b.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(b => propertyIds.Contains(b.PropertyId))
+            .ToListAsync();
+        var boardNamesById = boardsForProperties.ToDictionary(b => b.Id, b => b.Name);
+        var defaultBoardIdByProperty = boardsForProperties
+            .GroupBy(b => b.PropertyId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(b => b.Id).First().Id);
+
+        var wantOpen = filter.Status is "open" or "all";
+        var wantDone = filter.Status is "done" or "all";
+
+        var matched = new List<MatchedRow>();
+        foreach (var candidate in candidates)
+        {
+            arpByPlanningId.TryGetValue(candidate.PlanningId, out var arp);
+            CalendarConfiguration calConfig = null;
+            if (arp != null) calConfigs.TryGetValue(arp.Id, out calConfig);
+
+            CalendarOccurrenceException exception = null;
+            if (arp != null && exceptionsByArpAndDate.TryGetValue(arp.Id, out var perDate))
+            {
+                perDate.TryGetValue(candidate.Deadline.Date, out exception);
+            }
+
+            // A deleted occurrence is never returned, for ANY status.
+            if (exception?.IsDeleted == true) continue;
+
+            var effectiveTaskDate = exception?.NewDate?.Date ?? candidate.Deadline.Date;
+            // A moved occurrence can land outside the requested window.
+            if (effectiveTaskDate < dateFrom || effectiveTaskDate > dateTo) continue;
+
+            // BOARD FILTER — deliberately NOT pushed into SQL. The effective
+            // board is a three-arm coalesce whose first arm lives on the
+            // occurrence-exception rows, and those rows have to be in memory
+            // anyway (the IsDeleted skip and the NewDate move above). The SQL
+            // form would need a LEFT JOIN on DATE(OriginalDate) = DATE(Deadline)
+            // — non-sargable, so it defeats every index — plus a correlated
+            // MIN(Id) sub-select, in exchange for zero extra narrowing over a
+            // set already cut down by date, property, tags and sites.
+            var effectiveBoardId = exception?.BoardId
+                ?? calConfig?.BoardId
+                ?? defaultBoardIdByProperty.GetValueOrDefault(candidate.PropertyId, 0);
+            // A property with no non-removed board yields 0, and such rows are
+            // excluded whenever a board filter is set. Preserved deliberately.
+            if (filter.BoardIds is { Count: > 0 } boardIds
+                && (effectiveBoardId == 0 || !boardIds.Contains(effectiveBoardId)))
+            {
+                continue;
+            }
+
+            var done = IsDone(candidate);
+            // STATUS FILTER — structurally impossible in SQL. Done-ness is
+            // sdkCase.Status == 100 and Cases lives in the SDK database behind
+            // a different DbContext; EF cannot join across two contexts.
+            // Compliance carries no completion column, so there is no
+            // same-database proxy either. This is also why paging cannot be a
+            // plain SQL Skip/Take.
+            if (done)
+            {
+                if (!wantDone) continue;
+            }
+            else
+            {
+                // Not done + soft-removed = user-deleted occurrence: never shown.
+                if (candidate.WorkflowState == Constants.WorkflowStates.Removed) continue;
+                if (!wantOpen) continue;
+            }
+
+            var sdkCase = candidate.MicrotingSdkCaseId > 0
+                ? casesById.GetValueOrDefault(candidate.MicrotingSdkCaseId)
+                : null;
+
+            // Occurrence DISPLAY fields. Overview (#1162) reads none of them
+            // — it aggregates over PropertyId / EffectiveTaskDate / Completed
+            // — so it opts out and the coalesce chain is skipped entirely.
+            // Index always opts in, which is why its rows are unchanged.
+            var isAllDay = filter.ComputeDisplayFields && CalendarService.ComputeIsAllDay(arp, calConfig);
+
+            matched.Add(new MatchedRow
+            {
+                Candidate = candidate,
+                Arp = arp,
+                Exception = exception,
+                EffectiveTaskDate = effectiveTaskDate,
+                EffectiveBoardId = effectiveBoardId,
+                Completed = done,
+                SdkCase = sdkCase,
+                IsAllDay = isAllDay,
+                StartHour = !filter.ComputeDisplayFields || isAllDay
+                    ? 0
+                    : exception?.StartHour ?? calConfig?.StartHour ?? 9.0,
+                Duration = !filter.ComputeDisplayFields || isAllDay
+                    ? 0
+                    : exception?.Duration ?? calConfig?.Duration ?? 1.0,
+                DoneAt = filter.ComputeDisplayFields && done
+                    ? sdkCase?.DoneAtUserModifiable ?? sdkCase?.DoneAt
+                    : null
+            });
+        }
+
+        return new CandidateSet
+        {
+            MatchedRows = matched,
+            BoardNamesById = boardNamesById
+        };
+    }
+
+    /// <summary>
+    /// Per-property compliance aggregation for the Oversigt view (#1162).
+    ///
+    /// <para>
+    /// A direct port of the prototype's <c>buildCompanySummaries</c>
+    /// (<c>lorem-ipsum/kalender/compliance-overview.js:27-82</c>). One row per
+    /// property that has at least one matching compliance row, plus a WEIGHTED
+    /// totals row — the summed numerators over the summed denominators, never an
+    /// average of the per-property percentages.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>"Today" is <c>DateTime.UtcNow.Date</c></b>, evaluated ONCE at the top of
+    /// this method and passed down, so that two rows can never be classified
+    /// against different "todays" across a midnight boundary. UTC — not local, not
+    /// user-local — because the whole compliance/calendar path already compares
+    /// against <c>DateTime.UtcNow</c> exclusively (there is not one
+    /// <c>DateTime.Now</c> in <c>BackendConfigurationCalendarService</c>), and
+    /// deviating would make this the single local-time comparison in the path.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Consequence, accepted deliberately:</b> for a user in UTC+2 between 00:00
+    /// and 02:00 local, the server's "today" is still yesterday — so a task dated
+    /// today is not yet due, and a task dated yesterday is not yet overdue. Every
+    /// threshold below hangs off this one value. If user-local boundaries are ever
+    /// wanted, the fix is an explicit offset on the request model; do not guess one.
+    /// </para>
+    /// </summary>
+    public async Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
+        ComplianceReportOverviewRequestModel requestModel)
+    {
+        try
+        {
+            // Hoisted: ONE read of the clock per request, before any I/O, so no
+            // two rows in one response can be classified against different
+            // "todays" across a midnight boundary. Passed down to Aggregate.
+            var today = DateTime.UtcNow.Date;
+
+            var dateFrom = requestModel.DateFrom.Date;
+            var dateTo = requestModel.DateTo.Date.AddDays(1).AddTicks(-1);
+
+            var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+
+            // The SAME builder Index runs — see BuildCandidateSet. Status is "all"
+            // because Oversigt aggregates done AND not-done rows together; that
+            // path still drops user-deleted occurrences (soft-removed and not
+            // done), which are never a compliance failure.
+            var candidateSet = await BuildCandidateSet(
+                new CandidateFilter
+                {
+                    PropertyId = requestModel.PropertyId,
+                    BoardIds = requestModel.BoardIds,
+                    TagIds = requestModel.TagIds,
+                    SiteIds = requestModel.SiteIds,
+                    DateFrom = dateFrom,
+                    DateTo = dateTo,
+                    Status = StatusAll,
+                    // No titles, no all-day/StartHour/Duration, no DoneAt, no tag,
+                    // worker or board NAMES, no CheckListId. Property names are the
+                    // only lookup the aggregation needs.
+                    ComputeDisplayFields = false
+                },
+                sdkDbContext);
+
+            var matched = candidateSet.MatchedRows;
+            var propertyNamesById = await LoadPropertyNames(matched);
+
+            var overviewCandidates = matched.Select(r => new OverviewCandidate
+            {
+                PropertyId = r.Candidate.PropertyId,
+                PropertyName = propertyNamesById.GetValueOrDefault(r.Candidate.PropertyId, string.Empty),
+                // InvariantCulture deliberately: this format and the TryParseExact
+                // in Aggregate use the same culture, so the round-trip holds
+                // whatever the server's CurrentCulture is (under a non-Gregorian
+                // calendar such as th-TH or ar-SA the year would differ).
+                // Index formats the same value with the current culture
+                // (ComplianceReportRowModel.TaskDate, :255). That inconsistency
+                // predates #1162 and is deliberately not changed here — Index's
+                // output is certified unchanged by this work.
+                TaskDate = r.EffectiveTaskDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Completed = r.Completed
+            });
+
+            return new OperationDataResult<ComplianceReportOverviewModel>(
+                true, Aggregate(overviewCandidates, today));
+        }
+        catch (Exception e)
+        {
+            SentrySdk.CaptureException(e);
+            logger.LogError(e, "BackendConfigurationComplianceReportService.Overview: {Message}", e.Message);
+            return new OperationDataResult<ComplianceReportOverviewModel>(false,
+                $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The pure aggregation half of <see cref="Overview"/>, split out so the
+    /// prototype's maths suite can be ported against it directly — including the
+    /// unparseable-date case, which the database cannot produce
+    /// (<c>Compliance.Deadline</c> is a non-null <c>DateTime</c>) but which the
+    /// prototype's NaN semantics still define.
+    ///
+    /// <para>
+    /// <paramref name="today"/> is passed in, never read from the clock here: the
+    /// caller hoists <c>DateTime.UtcNow.Date</c> so every row in one response is
+    /// classified against one value.
+    /// </para>
+    /// </summary>
+    internal static ComplianceReportOverviewModel Aggregate(
+        IEnumerable<OverviewCandidate> candidates, DateTime today)
+    {
+        var byProperty = new Dictionary<int, ComplianceReportOverviewRowModel>();
+
+        foreach (var candidate in candidates ?? [])
+        {
+            if (!byProperty.TryGetValue(candidate.PropertyId, out var row))
+            {
+                // Rows are created LAZILY, on first case — which is what makes
+                // "a property with no cases produces no row" true by construction.
+                row = new ComplianceReportOverviewRowModel
+                {
+                    PropertyId = candidate.PropertyId,
+                    PropertyName = candidate.PropertyName ?? string.Empty
+                };
+                byProperty[candidate.PropertyId] = row;
+            }
+
+            var parsed = DateTime.TryParseExact(
+                candidate.TaskDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var taskDate);
+            DateTime? taskDay = parsed ? taskDate.Date : null;
+
+            // NOTE THE NEGATION: !(taskDate > today), not (taskDate <= today).
+            // The two differ exactly on an unparseable date — the prototype's NaN
+            // (compliance-overview.js:15-20, :50) — where !(NaN > x) is TRUE. A row
+            // whose date cannot be read must NOT silently vanish out of the
+            // denominator, so it counts as DUE. It is deliberately NOT overdue
+            // below (NaN < x is false); keep the asymmetry.
+            var isDue = taskDay is null || !(taskDay.Value > today);
+
+            row.Total++;
+            if (isDue)
+            {
+                row.DueTotal++;
+                if (candidate.Completed) row.DueDone++;
+            }
+
+            if (candidate.Completed)
+            {
+                row.Done++;
+            }
+            // STRICTLY before today: a task due TODAY and not done raises DueTotal
+            // (so it lowers the percentage) but is not overdue.
+            else if (taskDay is not null && taskDay.Value < today)
+            {
+                row.Overdue++;
+            }
+        }
+
+        var totals = new ComplianceReportOverviewRowModel
+        {
+            PropertyId = 0,
+            // No "I alt" here — the label is #1164's; the API carries no Danish.
+            PropertyName = null
+        };
+
+        foreach (var row in byProperty.Values)
+        {
+            row.CompliancePct = Percent(row.DueDone, row.DueTotal);
+            totals.Total += row.Total;
+            totals.Done += row.Done;
+            totals.Overdue += row.Overdue;
+            totals.DueTotal += row.DueTotal;
+            totals.DueDone += row.DueDone;
+        }
+
+        // WEIGHTED: summed numerators over summed denominators, computed once at
+        // the end. Averaging Rows[].CompliancePct reads naturally and is wrong by
+        // a factor of 50 in the pinned 1/1 + 0/100 case (which must give 1).
+        totals.CompliancePct = Percent(totals.DueDone, totals.DueTotal);
+
+        return new ComplianceReportOverviewModel
+        {
+            // Documented stable default order — reproducible in CI, not a contract:
+            // #1164 sorts client-side. PropertyId breaks ties between same-named
+            // properties so the order is total.
+            Rows = byProperty.Values
+                .OrderBy(r => r.PropertyName ?? string.Empty, StringComparer.Ordinal)
+                .ThenBy(r => r.PropertyId)
+                .ToList(),
+            Totals = totals
+        };
+    }
+
+    /// <summary>
+    /// <c>round(done / total * 100)</c>, or <c>null</c> when <paramref name="total"/>
+    /// is 0 (the prototype's <c>percentOf</c>, <c>compliance-overview.js:22-25</c>:
+    /// <c>if (!total) return null</c>) — never 0, never NaN.
+    ///
+    /// <para>
+    /// <b><c>MidpointRounding.AwayFromZero</c> is load-bearing.</b> C#'s
+    /// <c>Math.Round(double)</c> defaults to BANKER'S rounding (ToEven); JS
+    /// <c>Math.round</c> rounds halves up. They disagree on every exact midpoint:
+    /// 1 of 8 due is 12.5, which is 12 under ToEven and 13 under AwayFromZero /
+    /// JS. Percentages here are never negative, so away-from-zero and half-up
+    /// coincide. The prototype's pinned 33/41 case (80.4878…) is NOT a midpoint
+    /// and does NOT discriminate between the two modes — which is exactly why
+    /// ComplianceReportOverviewTests carries the 1/8 case as well.
+    /// </para>
+    /// </summary>
+    private static int? Percent(int done, int total) =>
+        total == 0
+            ? null
+            : (int)Math.Round(done / (double)total * 100d, MidpointRounding.AwayFromZero);
+
+    // ------------------------------------------------------------------
+    // Shared-builder input / output shapes
+    // ------------------------------------------------------------------
+
+    /// <summary>"all": done AND open. The only status Overview ever asks for.</summary>
+    private const string StatusAll = "all";
+
+    /// <summary>
+    /// Everything <see cref="BuildCandidateSet"/> filters on. A type rather than a
+    /// parameter list so that Index and Overview cannot drift apart by one caller
+    /// quietly gaining an argument.
+    /// </summary>
+    private sealed class CandidateFilter
+    {
+        public int? PropertyId { get; init; }
+        public List<int> BoardIds { get; init; }
+        public List<int> TagIds { get; init; }
+        public List<int> SiteIds { get; init; }
+        /// <summary>Already normalised to a date by the caller.</summary>
+        public DateTime DateFrom { get; init; }
+        /// <summary>Already normalised to an end-of-day boundary by the caller.</summary>
+        public DateTime DateTo { get; init; }
+        /// <summary>"open" | "done" | "all"; anything else matches nothing, as before.</summary>
+        public string Status { get; init; }
+
+        /// <summary>
+        /// Whether to fill the occurrence display fields (IsAllDay, StartHour,
+        /// Duration, DoneAt). Index passes <c>true</c> — its rows carry them.
+        /// Overview passes <c>false</c>: it aggregates over PropertyId, task date
+        /// and completedness only, and must not pay for enrichment it discards.
+        /// This flag can change NOTHING that the filtering above reads.
+        /// </summary>
+        public bool ComputeDisplayFields { get; init; } = true;
+    }
+
+    /// <summary>What phases A-C produce.</summary>
+    private sealed class CandidateSet
+    {
+        public List<MatchedRow> MatchedRows { get; init; }
+        /// <summary>Board id → name, one entry per board (not per row). Index's phases D/E read it.</summary>
+        public Dictionary<int, string> BoardNamesById { get; init; }
+    }
+
+    /// <summary>
+    /// The four fields the Oversigt aggregation reads. <c>TaskDate</c> is the
+    /// yyyy-MM-dd STRING (as on <see cref="ComplianceReportRowModel.TaskDate"/>)
+    /// rather than a DateTime, so the prototype's unparseable-date branch is
+    /// expressible and testable.
+    /// </summary>
+    internal sealed class OverviewCandidate
+    {
+        public int PropertyId { get; init; }
+        public string PropertyName { get; init; }
+        public string TaskDate { get; init; }
+        public bool Completed { get; init; }
     }
 
     // ------------------------------------------------------------------
