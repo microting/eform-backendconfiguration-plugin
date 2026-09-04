@@ -324,17 +324,35 @@ public class BackendConfigurationAdhocService(
         // PhotoIds is deliberately not honoured either - ReconcilePhotosAsync
         // soft-deletes by omission, so a stale client's list would wipe the
         // creator's photos.
+        //
+        // One more consequence of adding this branch: RequireCreator's
+        // "pseudo-identity 0 owns nothing" guard below is now reached only
+        // for a task whose CreatedByWorkerId == 0 (web-created). For a task
+        // created by a real worker, a (workerId == 0, isAdmin == false)
+        // caller now enters THIS branch instead of falling through to
+        // RequireCreator - still safe (it still needs
+        // HasAccessAsync(0, ...) to pass CanSee, and even then only gets a
+        // read via MapToModelAsync, never a mutation), but the guard's
+        // coverage changed and is worth writing down.
         if (!isAdmin && task.CreatedByWorkerId != workerId)
         {
-            var callerAssignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
+            var taskAssignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
             var callerHasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
-            if (!CanSee(task, workerId, isAdmin, callerHasPropertyAccess, callerAssignedWorkerIds))
+            if (!CanSee(task, workerId, isAdmin, callerHasPropertyAccess, taskAssignedWorkerIds))
             {
                 throw new AdhocTaskUnauthorizedException(
                     $"Worker {workerId} may not update adhoc task {taskId}.");
             }
 
-            return await MapToModelAsync(task, callerAssignedWorkerIds);
+            // Make the accept-and-ignore outcome observable: without this, a
+            // caller sees the same 200/AdhocTaskModel as a real update, and
+            // the day the mobile UI widens what it lets an assignee edit,
+            // this branch will silently eat those writes with nothing to
+            // debug from.
+            Console.WriteLine(
+                $"BackendConfigurationAdhocService.UpdateTask: accepted-and-ignored a no-op update from non-creator worker {workerId} on adhoc task {taskId} (created by worker {task.CreatedByWorkerId}).");
+
+            return await MapToModelAsync(task, taskAssignedWorkerIds);
         }
 
         RequireCreator(task, workerId, isAdmin, "update");

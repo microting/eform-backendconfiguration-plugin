@@ -149,7 +149,18 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   // Refetch by id rather than reusing the table row: the row is a snapshot
   // from the last index call, and the drawer submits its photoIds back on
   // save, where ReconcilePhotosAsync soft-deletes by omission - so a stale
-  // row silently wipes any photo added on mobile since the list was loaded.
+  // row would silently wipe any photo added on mobile since that index load
+  // (potentially hours ago - Overblik does not poll).
+  //
+  // This only NARROWS the data-loss window, it does not close it:
+  // `task` is captured once, at drawer-open time, and visiblePhotos reads
+  // from that snapshot, not a live one - so a photo uploaded from a phone
+  // while the drawer sits open is still soft-deleted by omission when this
+  // drawer saves. Closing that window is a separate design decision (e.g.
+  // having the drawer send its already-tracked `removedPhotoIds` instead of
+  // a keep-set, so an omission is no longer read as "delete", or gating the
+  // save on a task version) and is not attempted here.
+  //
   // Mirrors AdhocHistoryComponent.onRowClick, including its silent no-open
   // on a failed fetch.
   onViewTask(task: AdhocTaskModel): void {
