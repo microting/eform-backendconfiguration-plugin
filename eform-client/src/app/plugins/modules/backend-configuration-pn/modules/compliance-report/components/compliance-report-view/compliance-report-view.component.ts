@@ -1,3 +1,4 @@
+import {Overlay} from '@angular/cdk/overlay';
 import {Component, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Router} from '@angular/router';
@@ -5,10 +6,16 @@ import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
 import {catchError, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
+import {
+  CalendarImageLightboxComponent,
+  CalendarImageLightboxData,
+} from '../../../calendar/modals';
 import {
   CalendarBoardModel,
   ComplianceReportCaseModel,
+  ComplianceReportImageModel,
   ComplianceReportTagGroupModel,
 } from '../../../../models';
 import {
@@ -28,6 +35,13 @@ import {
   formatComplianceReportDate,
 } from '../../helpers';
 import {ComplianceReportStateService} from '../../store';
+
+/**
+ * The Billeder cell's two i18n keys, held as constants because the plural one
+ * carries a `{{count}}` placeholder — see `imagesLabelKey`.
+ */
+const KEY_IMAGES_ONE = '1 image';
+const KEY_IMAGES_MANY = '{{count}} images';
 
 /**
  * One column of a sub-report's grid. `answerKey` is the ONLY way an answer cell
@@ -75,6 +89,28 @@ interface ComplianceReportRowVm {
   /** The task title — the prototype's `Område`. */
   title: string;
   imagesCount: number;
+  /**
+   * The RENDERABLE subset of the case's images: the server-emitted file names,
+   * with the nulls dropped.
+   *
+   * Deliberately NOT the same number as `imagesCount`, which counts every
+   * attachment including the ones whose `_700_` name could not be derived and
+   * which therefore cannot be fetched at all. The cell shows the honest
+   * attachment count; the gallery can only open what is fetchable.
+   *
+   * NEVER rebuilt on the client — `ComplianceReportImageModel.fileName` is
+   * composed server-side and is carried through verbatim.
+   */
+  imageNames: string[];
+  /**
+   * The `_300_` thumbnail names, INDEX-ALIGNED with `imageNames` (built from
+   * the same filtered pass, so the two arrays always have the same length).
+   * An entry is `null` when the server emitted no thumbnail name for that
+   * image; the lightbox then falls back to the full-size name.
+   *
+   * NEVER rebuilt on the client, exactly as `imageNames`.
+   */
+  imageThumbnailNames: (string | null)[];
   completed: boolean;
   /** The KEYED answer bag, read only through `complianceAnswerText`. */
   cells: {[key: string]: string};
@@ -153,6 +189,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     private calendarService: BackendConfigurationPnCalendarService,
     private translate: TranslateService,
     private dialog: MatDialog,
+    private overlay: Overlay,
     private router: Router,
   ) {}
 
@@ -275,6 +312,10 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     caseModel: ComplianceReportCaseModel,
     checkListId: number,
   ): ComplianceReportRowVm {
+    const renderableImages = (caseModel.images ?? []).filter(
+      (image): image is ComplianceReportImageModel & {fileName: string} =>
+        !!image?.fileName,
+    );
     return {
       complianceId: caseModel.complianceId,
       sdkCaseId: caseModel.sdkCaseId,
@@ -284,6 +325,13 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
       doneAt: caseModel.doneAt,
       title: caseModel.title,
       imagesCount: caseModel.imagesCount ?? 0,
+      // ONE filtered pass, so `imageNames` and `imageThumbnailNames` cannot
+      // drift out of alignment: an image without a usable full-size name is
+      // dropped from both.
+      imageNames: renderableImages.map((image) => image.fileName),
+      imageThumbnailNames: renderableImages.map(
+        (image) => image.thumbnailFileName || null,
+      ),
       completed: !!caseModel.completed,
       // Carried through untouched. It is read ONLY through
       // `complianceAnswerText(row, column.answerKey)`.
@@ -417,11 +465,92 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return complianceAnswerText(row, column?.answerKey);
   }
 
-  /** `1 billede` / `{n} billeder` (compliance.js:1621). */
-  imagesLabel(count: number): string {
-    return count === 1
-      ? this.translate.instant('1 image')
-      : this.translate.instant('{{count}} images', {count});
+  /**
+   * The i18n KEY for `1 billede` / `{n} billeder` (compliance.js:1621). The
+   * count is interpolated by the `translate` PIPE in the template, not resolved
+   * here.
+   *
+   * Deliberately not `translate.instant`. The Billeder cell's label is read by
+   * a screen reader and shown as a tooltip, and `instant` resolves against
+   * whatever language happened to be loaded at that change-detection pass; the
+   * pipe subscribes to `onLangChange` and re-renders itself, exactly like the
+   * four `| translate` bindings in the Handlinger cell next door and like the
+   * `translate.stream` this component uses for the column HEADERS. A cell whose
+   * header follows a live language switch while its own tooltip does not is the
+   * divergence this avoids.
+   *
+   * The key returned here carries a `{{count}}` placeholder, which is why it is
+   * produced in TypeScript rather than written inline: Angular terminates a
+   * `{{ … }}` interpolation at the first `}}`, so the literal is a template
+   * parse error anywhere an interpolation could see it.
+   */
+  imagesLabelKey(count: number): string {
+    return count === 1 ? KEY_IMAGES_ONE : KEY_IMAGES_MANY;
+  }
+
+  /**
+   * `{count}` for the key above. A FRESH object every call is fine and does not
+   * re-translate: `TranslatePipe.transform` short-circuits on a DEEP `equals`
+   * of both the key and the params, so an equal object hits the cached value.
+   */
+  imagesLabelParams(count: number): {count: number} {
+    return {count};
+  }
+
+  /**
+   * A case whose attachment count is > 0 but whose file names could not be
+   * derived has nothing to show, so the cell stays the plain non-interactive
+   * count it was before #1168. A button that opens an empty gallery is worse
+   * than a number.
+   */
+  canOpenGallery(row: ComplianceReportRowVm): boolean {
+    return row.imageNames.length > 0;
+  }
+
+  /**
+   * The Billeder cell's one job (#1168): open the shared lightbox on THIS
+   * case's images, at index 0.
+   *
+   * `CalendarImageLightboxComponent` is declared in CalendarModule and exported
+   * from it; this module already imports CalendarModule for the completion
+   * modal, so nothing had to be moved. The header fields it renders — case id,
+   * task title, property name — all come off the row that was clicked.
+   *
+   * `thumbnails` is what turns the 64x64 strip on: the lightbox renders it only
+   * for an opener that hands it real server-emitted `_300_` names, so that a
+   * caller without them (the calendar's task card) is not made to re-download
+   * full-resolution images to fill it. `imageThumbnailNames` is index-aligned
+   * with `imageNames` by construction — one filtered pass builds both.
+   *
+   * SECURITY, pre-existing and NOT widened here: the images are fetched from
+   * `GET api/template-files/get-image/{fileName}.{ext}`, which carries a bare
+   * [Authorize] and performs NO per-case authorization, so any authenticated
+   * user who holds a derived file name can fetch that image. Filed as
+   * microting/eform-angular-frontend#8035; it is a breaking change to that
+   * endpoint's signature across ~21 call sites plus the gRPC/mobile paths and
+   * does not belong to this issue.
+   */
+  openGallery(row: ComplianceReportRowVm): void {
+    if (!this.canOpenGallery(row)) {
+      return;
+    }
+    this.dialog.open(CalendarImageLightboxComponent, {
+      ...dialogConfigHelper(this.overlay, {
+        images: row.imageNames,
+        thumbnails: row.imageThumbnailNames,
+        startIndex: 0,
+        caseId: row.sdkCaseId,
+        caseTitle: row.title,
+        propertyName: row.propertyName,
+      } as CalendarImageLightboxData),
+      // Esc + backdrop click must close it (dialogConfigHelper defaults to
+      // disableClose: true).
+      disableClose: false,
+      maxWidth: '95vw',
+      // Reaches the CDK overlay pane so the lightbox can go full-bleed below
+      // 720px; styled by the lightbox's own stylesheet.
+      panelClass: 'calendar-lightbox-panel',
+    });
   }
 
   trackBySection(_: number, section: ComplianceReportRenderedSection): string {

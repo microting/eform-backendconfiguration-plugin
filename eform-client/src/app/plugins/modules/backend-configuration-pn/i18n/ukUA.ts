@@ -744,4 +744,10 @@ export const ukUA = {
   '1 image': '1 зображення',
   '{{count}} images': '{{count}} зображень',
   'Only completed tasks can be edited': 'Можна редагувати лише виконані завдання',
+  'Images for case {{caseId}}': 'Зображення · справа {{caseId}}',
+  '1 image for case {{caseId}}': '1 зображення · справа {{caseId}}',
+  'Close gallery': 'Закрити галерею',
+  'Image {{index}} of {{count}}': 'Зображення {{index}} з {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Зображення {{index}} з {{count}} для справи {{caseId}}',
+  'Image {{index}}': 'Зображення {{index}}',
 };

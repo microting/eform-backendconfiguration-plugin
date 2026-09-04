@@ -105,8 +105,9 @@ public interface IBackendConfigurationComplianceReportService
     ///
     /// <para>
     /// Images are REFERENCES only: ids, a derived
-    /// <c>{UploadedDataId}_700_{Checksum}{Extension}</c> display name and a geo
-    /// link. No image bytes are read or returned.
+    /// <c>{UploadedDataId}_700_{Checksum}{Extension}</c> display name, its
+    /// <c>_300_</c> thumbnail counterpart and a geo link. No image bytes are
+    /// read or returned.
     /// </para>
     /// </summary>
     Task<OperationDataResult<List<ComplianceReportTagGroupModel>>> EformColumns(

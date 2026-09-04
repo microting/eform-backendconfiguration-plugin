@@ -744,4 +744,10 @@ export const svSE = {
   '1 image': '1 bild',
   '{{count}} images': '{{count}} bilder',
   'Only completed tasks can be edited': 'Endast slutförda uppgifter kan redigeras',
+  'Images for case {{caseId}}': 'Bilder · ärende {{caseId}}',
+  '1 image for case {{caseId}}': '1 bild · ärende {{caseId}}',
+  'Close gallery': 'Stäng galleriet',
+  'Image {{index}} of {{count}}': 'Bild {{index}} av {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Bild {{index}} av {{count}} för ärende {{caseId}}',
+  'Image {{index}}': 'Bild {{index}}',
 };

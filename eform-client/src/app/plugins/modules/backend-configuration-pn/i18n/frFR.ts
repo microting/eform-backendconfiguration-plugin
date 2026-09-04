@@ -743,4 +743,10 @@ export const frFR = {
   '1 image': '1 image',
   '{{count}} images': '{{count}} images',
   'Only completed tasks can be edited': 'Seules les tâches terminées peuvent être modifiées.',
+  'Images for case {{caseId}}': 'Images · dossier {{caseId}}',
+  '1 image for case {{caseId}}': '1 image · dossier {{caseId}}',
+  'Close gallery': 'Fermer la galerie',
+  'Image {{index}} of {{count}}': 'Image {{index}} sur {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Image {{index}} sur {{count}} pour le dossier {{caseId}}',
+  'Image {{index}}': 'Image {{index}}',
 };

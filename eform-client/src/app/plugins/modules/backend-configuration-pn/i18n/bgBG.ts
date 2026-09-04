@@ -744,4 +744,10 @@ export const bgBG = {
   '1 image': '1 изображение',
   '{{count}} images': '{{count}} изображения',
   'Only completed tasks can be edited': 'Само завършени задачи могат да бъдат редактирани',
+  'Images for case {{caseId}}': 'Изображения · случай {{caseId}}',
+  '1 image for case {{caseId}}': '1 изображение · случай {{caseId}}',
+  'Close gallery': 'Затваряне на галерията',
+  'Image {{index}} of {{count}}': 'Изображение {{index}} от {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Изображение {{index}} от {{count}} за случай {{caseId}}',
+  'Image {{index}}': 'Изображение {{index}}',
 };

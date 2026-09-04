@@ -836,4 +836,29 @@ export const enUS= {
   '{{count}} images': '{{count}} images',
   // Tooltip on the disabled Rediger button (compliance.js:1648).
   'Only completed tasks can be edited': 'Only completed tasks can be edited',
+  // Image gallery for case attachments (#1168). Opened from the Rapport
+  // Billeder cell and from the calendar's historical task card; the header keys
+  // render only for the former, which is the one that supplies a case id.
+  //
+  // 'Previous', 'Next' and 'of' are NOT here: they live in the CORE frontend's
+  // i18n (assets/i18n/enUS.ts) and are already what the lightbox template uses.
+  // 'Pictures' above is reused as the thumbnail strip's tablist label.
+  //
+  // Two title keys rather than one plural string, so each language words its
+  // own singular. The Danish separator is the middle dot the prototype uses
+  // (Compliance.html:108, compliance.js:741-744).
+  'Images for case {{caseId}}': 'Images · case {{caseId}}',
+  '1 image for case {{caseId}}': '1 image · case {{caseId}}',
+  // The close button's accessible name (Compliance.html:110). NOT the core
+  // frontend's 'Close', whose Danish is the bare 'Luk' and which is used on
+  // every other dialog in the app.
+  'Close gallery': 'Close gallery',
+  // The caption under the stage image, and the same string as the counter's
+  // long form (compliance.js:754-755).
+  'Image {{index}} of {{count}}': 'Image {{index}} of {{count}}',
+  // The stage image's alt text (compliance.js:739). Falls back to the caption
+  // key above when the opener supplied no case id.
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Image {{index}} of {{count}} for case {{caseId}}',
+  // Accessible name of one thumbnail in the strip (compliance.js:704-724).
+  'Image {{index}}': 'Image {{index}}',
 };

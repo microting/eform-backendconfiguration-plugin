@@ -193,11 +193,37 @@ export class TaskPreviewModalComponent implements OnInit, OnDestroy {
       ...dialogConfigHelper(this.overlay, {
         images: this.caseImageFileNames,
         startIndex: index,
+        // caseId / caseTitle / propertyName deliberately omitted: this caller
+        // wants the header-LESS lightbox (#1168). The component renders the
+        // title and meta line only when a caseId is supplied.
+        //
+        // `thumbnails` omitted for a DIFFERENT and much harder reason, and it
+        // MATTERS: without it the component suppresses the 64x64 strip
+        // entirely rather than filling it with the full-size urls. These names
+        // come from the reply element's `uploadedDataObj.fileName` — the
+        // ORIGINAL upload, with no `_300_` (or even `_700_`) derivative to
+        // hand — so a strip here would mean re-downloading every
+        // full-resolution image a second time to display it at 64px.
+        //
+        // THE STRIP IS THE ONLY THING HELD BACK. This call does NOT reproduce
+        // the lightbox this caller had before #1168, and is not meant to: the
+        // component's other changes are shared improvements that land here too.
+        // A caption is now rendered under the image at every n (it is gated on
+        // `count > 0`, not on `hasMultiple`); the counter, which used to render
+        // unconditionally, is now absent at n = 1; the close button's
+        // accessible name changed from `Close` to `Close gallery`; the stage
+        // image carries a real `alt` instead of `""`; the classes were renamed
+        // and re-themed; its cap went 78vh → 70vh; and the `panelClass` below
+        // adds a full-bleed layout under 720px that this caller never had.
       }),
       // Lightbox must close on Esc + backdrop click (dialogConfigHelper
       // defaults to disableClose: true).
       disableClose: false,
       maxWidth: '95vw',
+      // Reaches the CDK overlay pane so the lightbox can go full-bleed below
+      // 720px. The class itself is styled by the lightbox's own stylesheet
+      // (ViewEncapsulation.None).
+      panelClass: 'calendar-lightbox-panel',
     });
   }
 

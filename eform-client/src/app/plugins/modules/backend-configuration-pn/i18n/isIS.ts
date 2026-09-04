@@ -744,4 +744,10 @@ export const isIS = {
   '1 image': '1 mynd',
   '{{count}} images': '{{count}} myndir',
   'Only completed tasks can be edited': 'Aðeins er hægt að breyta verkefnum sem lokið er',
+  'Images for case {{caseId}}': 'Myndir · mál {{caseId}}',
+  '1 image for case {{caseId}}': '1 mynd · mál {{caseId}}',
+  'Close gallery': 'Loka myndasafni',
+  'Image {{index}} of {{count}}': 'Mynd {{index}} af {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Mynd {{index}} af {{count}} fyrir mál {{caseId}}',
+  'Image {{index}}': 'Mynd {{index}}',
 };

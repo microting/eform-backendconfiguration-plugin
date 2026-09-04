@@ -744,4 +744,10 @@ export const plPL = {
   '1 image': '1 obraz',
   '{{count}} images': '{{count}} obrazów',
   'Only completed tasks can be edited': 'Można edytować tylko zadania ukończone',
+  'Images for case {{caseId}}': 'Obrazy · sprawa {{caseId}}',
+  '1 image for case {{caseId}}': '1 obraz · sprawa {{caseId}}',
+  'Close gallery': 'Zamknij galerię',
+  'Image {{index}} of {{count}}': 'Obraz {{index}} z {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Obraz {{index}} z {{count}} dla sprawy {{caseId}}',
+  'Image {{index}}': 'Obraz {{index}}',
 };

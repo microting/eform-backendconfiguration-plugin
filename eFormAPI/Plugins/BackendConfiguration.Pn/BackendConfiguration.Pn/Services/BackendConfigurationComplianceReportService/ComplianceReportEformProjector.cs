@@ -530,6 +530,13 @@ internal sealed class ComplianceReportEformProjector(
                 FileName = string.IsNullOrEmpty(image.StoredFileName)
                     ? null
                     : $"{image.UploadedDataId}_700_{image.Checksum}{image.Extension}",
+                // The 300px derivative, written to S3 by the same resize+crop
+                // pass as the 700px one (EventsGrpcService.cs:2861-2862,
+                // BackendConfigurationTaskManagementService.cs:526-527). Same
+                // existence check, so it is null exactly when FileName is.
+                ThumbnailFileName = string.IsNullOrEmpty(image.StoredFileName)
+                    ? null
+                    : $"{image.UploadedDataId}_300_{image.Checksum}{image.Extension}",
                 GeoLink = !string.IsNullOrEmpty(image.Latitude) && !string.IsNullOrEmpty(image.Longitude)
                     ? $"https://www.google.com/maps/place/{image.Latitude},{image.Longitude}"
                     : null

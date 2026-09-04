@@ -744,4 +744,10 @@ export const nlNL = {
   '1 image': '1 afbeelding',
   '{{count}} images': '{{count}} afbeeldingen',
   'Only completed tasks can be edited': 'Alleen voltooide taken kunnen worden bewerkt.',
+  'Images for case {{caseId}}': 'Afbeeldingen · zaak {{caseId}}',
+  '1 image for case {{caseId}}': '1 afbeelding · zaak {{caseId}}',
+  'Close gallery': 'Galerij sluiten',
+  'Image {{index}} of {{count}}': 'Afbeelding {{index}} van {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Afbeelding {{index}} van {{count}} voor zaak {{caseId}}',
+  'Image {{index}}': 'Afbeelding {{index}}',
 };

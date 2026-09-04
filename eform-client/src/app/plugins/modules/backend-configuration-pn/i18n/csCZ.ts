@@ -744,4 +744,10 @@ export const csCZ = {
   '1 image': '1 obrázek',
   '{{count}} images': '{{count}} obrázků',
   'Only completed tasks can be edited': 'Upravovat lze pouze dokončené úkoly',
+  'Images for case {{caseId}}': 'Obrázky · případ {{caseId}}',
+  '1 image for case {{caseId}}': '1 obrázek · případ {{caseId}}',
+  'Close gallery': 'Zavřít galerii',
+  'Image {{index}} of {{count}}': 'Obrázek {{index}} z {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Obrázek {{index}} z {{count}} pro případ {{caseId}}',
+  'Image {{index}}': 'Obrázek {{index}}',
 };

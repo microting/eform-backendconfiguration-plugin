@@ -744,4 +744,10 @@ export const etET = {
   '1 image': '1 pilt',
   '{{count}} images': '{{count}} pilti',
   'Only completed tasks can be edited': 'Ainult lõpetatud ülesandeid saab muuta',
+  'Images for case {{caseId}}': 'Pildid · juhtum {{caseId}}',
+  '1 image for case {{caseId}}': '1 pilt · juhtum {{caseId}}',
+  'Close gallery': 'Sulge galerii',
+  'Image {{index}} of {{count}}': 'Pilt {{index}} / {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Pilt {{index}} / {{count}} juhtumi {{caseId}} kohta',
+  'Image {{index}}': 'Pilt {{index}}',
 };

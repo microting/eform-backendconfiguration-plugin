@@ -205,6 +205,13 @@ export interface ComplianceReportImageModel {
    * fetched at all.
    */
   fileName: string | null;
+  /**
+   * `{UploadedData.Id}_300_{Checksum}{Extension}` — the 300px derivative of
+   * `fileName`, written to S3 by the same resize pass. DERIVED SERVER-SIDE and
+   * `null` under exactly the same condition as `fileName`; the client must
+   * never compose it. Use it for thumbnails, falling back to `fileName`.
+   */
+  thumbnailFileName: string | null;
   geoLink: string | null;
 }
 

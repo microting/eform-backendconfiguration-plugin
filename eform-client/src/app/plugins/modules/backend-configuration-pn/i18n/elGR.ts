@@ -744,4 +744,10 @@ export const elGR = {
   '1 image': '1 εικόνα',
   '{{count}} images': '{{count}} εικόνες',
   'Only completed tasks can be edited': 'Μόνο οι ολοκληρωμένες εργασίες μπορούν να επεξεργαστούν',
+  'Images for case {{caseId}}': 'Εικόνες · υπόθεση {{caseId}}',
+  '1 image for case {{caseId}}': '1 εικόνα · υπόθεση {{caseId}}',
+  'Close gallery': 'Κλείσιμο γκαλερί',
+  'Image {{index}} of {{count}}': 'Εικόνα {{index}} από {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Εικόνα {{index}} από {{count}} για την υπόθεση {{caseId}}',
+  'Image {{index}}': 'Εικόνα {{index}}',
 };

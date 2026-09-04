@@ -764,4 +764,11 @@ export const da = {
   '1 image': '1 billede',
   '{{count}} images': '{{count}} billeder',
   'Only completed tasks can be edited': 'Kun udførte opgaver kan redigeres',
+  // Image gallery for case attachments (#1168).
+  'Images for case {{caseId}}': 'Billeder · sag {{caseId}}',
+  '1 image for case {{caseId}}': '1 billede · sag {{caseId}}',
+  'Close gallery': 'Luk galleri',
+  'Image {{index}} of {{count}}': 'Billede {{index}} af {{count}}',
+  'Image {{index}} of {{count}} for case {{caseId}}': 'Billede {{index}} af {{count}} til sag {{caseId}}',
+  'Image {{index}}': 'Billede {{index}}',
 };
