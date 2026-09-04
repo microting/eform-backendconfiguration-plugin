@@ -66,6 +66,7 @@ using NSubstitute;
 public class ComplianceReportEformColumnsTests : TestBaseSetup
 {
     private int _uidCounter = 960_000;
+    private string _sdkConnectionString = null!;
 
     [SetUp]
     public async Task CleanTables()
@@ -114,7 +115,29 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         ItemsPlanningPnDbContext.PlanningTags.RemoveRange(ItemsPlanningPnDbContext.PlanningTags);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+        _sdkConnectionString = MicrotingDbContext!.Database.GetConnectionString()!;
+
+        // Pre-warm the SDK Core so its EF migrations apply (this brings the
+        // UploadedDatas table up to the column shape the entity expects, in
+        // particular OriginalFileLocation which the bootstrap SQL lacks).
+        // It has to happen before ANY read of the SDK tables below, because
+        // RemoveRange(DbSet) enumerates the set and therefore SELECTs every
+        // mapped column.
+        await GetCore();
+
+        // Refresh the test's MicrotingDbContext so it sees the post-migration
+        // schema. EF caches the model on first query, so a context that ran
+        // before the migration would still error on UploadedDatas reads.
+        await MicrotingDbContext.DisposeAsync();
+        MicrotingDbContext = new Microting.eForm.Infrastructure.MicrotingDbContext(
+            new DbContextOptionsBuilder<Microting.eForm.Infrastructure.MicrotingDbContext>()
+                .UseMySql(_sdkConnectionString,
+                    new MariaDbServerVersion(ServerVersion.AutoDetect(_sdkConnectionString)),
+                    o => o.EnableRetryOnFailure())
+                .Options);
+
         // SDK side: the answers and the cases they hang off, children first.
+        // FieldValues stays FIRST: it carries the FK to UploadedData.
         //
         // The TEMPLATE graph (CheckLists / Fields / their translations and options)
         // is deliberately LEFT IN PLACE. Groups are produced only from Compliance
@@ -122,7 +145,7 @@ public class ComplianceReportEformColumnsTests : TestBaseSetup
         // never leak into a result — while dropping the whole graph would have to
         // fight the SDK dump's own seeded checklists and everything referencing
         // them. Each test seeds its own template and asserts against its own ids.
-        MicrotingDbContext!.FieldValues.RemoveRange(MicrotingDbContext.FieldValues);
+        MicrotingDbContext.FieldValues.RemoveRange(MicrotingDbContext.FieldValues);
         await MicrotingDbContext.SaveChangesAsync();
 
         MicrotingDbContext.UploadedDatas.RemoveRange(MicrotingDbContext.UploadedDatas);
