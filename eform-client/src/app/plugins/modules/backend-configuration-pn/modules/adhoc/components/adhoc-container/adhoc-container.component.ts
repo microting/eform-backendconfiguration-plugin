@@ -10,6 +10,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AdhocTaskModel} from '../../../../models';
 import {selectAdhocFilters} from '../../../../state';
+import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult, AdhocTaskDrawerData} from '../adhoc-task-drawer/adhoc-task-drawer.component';
 import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
@@ -38,6 +39,7 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private adhocService = inject(BackendConfigurationPnAdhocService);
   public adhocStateService = inject(AdhocStateService);
 
   // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
@@ -55,6 +57,7 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   filtersSub$: Subscription;
   getTasksSub$: Subscription;
   loadReferenceDataSub$: Subscription;
+  getTaskSub$: Subscription;
 
   get status() {
     return this.adhocStateService.currentFilters?.status ?? 'open';
@@ -142,12 +145,26 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
     this.openDrawer({mode: 'create'});
   }
 
+  // Refetch by id rather than reusing the table row: the row is a snapshot
+  // from the last index call, and the drawer submits its photoIds back on
+  // save, where ReconcilePhotosAsync soft-deletes by omission - so a stale
+  // row silently wipes any photo added on mobile since the list was loaded.
+  // Mirrors AdhocHistoryComponent.onRowClick, including its silent no-open
+  // on a failed fetch.
   onViewTask(task: AdhocTaskModel): void {
-    this.openDrawer({mode: 'view', task});
+    this.getTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+      if (res && res.success && res.model) {
+        this.openDrawer({mode: 'view', task: res.model});
+      }
+    });
   }
 
   onEditTask(task: AdhocTaskModel): void {
-    this.openDrawer({mode: 'edit', task});
+    this.getTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+      if (res && res.success && res.model) {
+        this.openDrawer({mode: 'edit', task: res.model});
+      }
+    });
   }
 
   onCopyTask(task: AdhocTaskModel): void {
