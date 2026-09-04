@@ -44,4 +44,33 @@ public interface IBackendConfigurationComplianceReportService
     /// </param>
     Task<OperationDataResult<ComplianceReportPagedModel>> Index(
         ComplianceReportRequestModel requestModel, bool enforceRowCap = true);
+
+    /// <summary>
+    /// One compliance summary row per property, plus a WEIGHTED totals row, for
+    /// the Oversigt view (#1162). Unpaged and unsorted by decision: one row per
+    /// property, sorted client-side.
+    ///
+    /// <para>
+    /// Runs the SAME candidate-set builder as <see cref="Index"/> with the
+    /// <c>Status = "all"</c> behaviour — done and open together, still dropping
+    /// user-deleted occurrences (soft-removed and not done). That sharing is the
+    /// contract: if it were copied, an Oversigt percentage could disagree with the
+    /// Detaljer row count for the same filters, and it would be reported as a data
+    /// bug.
+    /// </para>
+    ///
+    /// <para>
+    /// Compliance is measured only over what has FALLEN DUE:
+    /// <c>DueTotal</c> counts every row NOT strictly after today
+    /// (<c>!(startOfDay(taskDate) &gt; today)</c> — a date that cannot be read counts as due),
+    /// <c>DueDone</c> those also completed, and <c>CompliancePct</c> is
+    /// <c>round(DueDone / DueTotal * 100)</c> — <c>null</c>, never 0, when
+    /// <c>DueTotal</c> is 0. Future tasks never drag the number down.
+    /// <c>Overdue</c> is not-completed AND STRICTLY before today.
+    /// "Today" is <c>DateTime.UtcNow.Date</c>; see the implementation's doc
+    /// comment for the timezone consequence.
+    /// </para>
+    /// </summary>
+    Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
+        ComplianceReportOverviewRequestModel requestModel);
 }

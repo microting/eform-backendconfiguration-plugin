@@ -33,4 +33,19 @@ public class ComplianceReportController : Controller
     {
         return await _complianceReportService.Index(requestModel);
     }
+
+    /// <summary>
+    /// The Oversigt view's aggregation (#1162): one compliance summary row per
+    /// property plus a weighted totals row.
+    ///
+    /// Unpaged and unsorted deliberately — one row per property, and #1164 sorts
+    /// client-side. The request model carries no <c>Status</c>: Oversigt counts
+    /// done and not-done together.
+    /// </summary>
+    [HttpPost("overview")]
+    public async Task<OperationDataResult<ComplianceReportOverviewModel>> Overview(
+        [FromBody] ComplianceReportOverviewRequestModel requestModel)
+    {
+        return await _complianceReportService.Overview(requestModel);
+    }
 }
