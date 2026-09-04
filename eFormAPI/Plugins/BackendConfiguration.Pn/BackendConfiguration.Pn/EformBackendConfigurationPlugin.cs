@@ -153,6 +153,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
         services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
         services.AddTransient<IBackendConfigurationComplianceReportService, BackendConfigurationComplianceReportService>();
+        services.AddTransient<Services.BackendConfigurationComplianceExportService.IBackendConfigurationComplianceExportService,
+            Services.BackendConfigurationComplianceExportService.BackendConfigurationComplianceExportService>();
         services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
         services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
         services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
