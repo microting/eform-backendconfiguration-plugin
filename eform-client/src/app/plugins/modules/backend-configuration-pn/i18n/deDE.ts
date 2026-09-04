@@ -672,4 +672,8 @@ export const deDE = {
   Filtering: 'Filterung',
   'View mode': 'Ansichtsmodus',
   Pagination: 'Pagination',
+  'No tasks match the selected filters.': 'Es wurden keine Aufgaben gefunden, die den ausgewählten Filtern entsprechen.',
+  'Task done': 'Aufgabe erledigt',
+  'Task not done': 'Aufgabe nicht erledigt',
+  'Could not load the data': 'Die Daten konnten nicht geladen werden',
 };

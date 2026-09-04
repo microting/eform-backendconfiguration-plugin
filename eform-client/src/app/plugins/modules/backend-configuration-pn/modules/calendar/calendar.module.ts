@@ -36,6 +36,7 @@ import {TeamDeleteDialogComponent} from './components/calendar-sidebar/team-dele
 import {TagCreateDialogComponent} from './components/calendar-sidebar/tag-create-dialog.component';
 import {TagDeleteDialogComponent} from './components/calendar-sidebar/tag-delete-dialog.component';
 
+import {CALENDAR_MAT_DATE_FORMATS} from './calendar-date-formats';
 import {CalendarRouting} from './calendar.routing';
 import {
   CalendarComplianceViewComponent,
@@ -156,18 +157,12 @@ export {
     // date input renders the long Danish form ("Mandag, 21. april") while
     // other plugins' datepickers keep the global short format. Parsing
     // stays on the 'P' token so users can still type a short date.
-    {
-      provide: MAT_DATE_FORMATS,
-      useValue: {
-        parse: {dateInput: 'P'},
-        display: {
-          dateInput: 'EEEE, d. MMMM',
-          monthYearLabel: 'LLLL y',
-          dateA11yLabel: 'PPP',
-          monthYearA11yLabel: 'LLLL y',
-        },
-      },
-    },
+    //
+    // The value lives in `calendar-date-formats.ts` because the completion
+    // modal carries it as a COMPONENT provider as well, so that it keeps this
+    // format when a sibling module opens it (#1165) without that module's own
+    // datepickers inheriting the override.
+    {provide: MAT_DATE_FORMATS, useValue: CALENDAR_MAT_DATE_FORMATS},
   ],
 })
 export class CalendarModule {}

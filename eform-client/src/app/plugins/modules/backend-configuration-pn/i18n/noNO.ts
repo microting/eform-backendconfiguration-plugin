@@ -624,4 +624,8 @@ export const noNO = {
   Filtering: 'Filtrering',
   'View mode': 'Visningsmodus',
   Pagination: 'Paginering',
+  'No tasks match the selected filters.': 'Ingen oppgaver samsvarer med de valgte filtrene.',
+  'Task done': 'Oppgaven er fullført',
+  'Task not done': 'Oppgaven er ikke utført',
+  'Could not load the data': 'Kunne ikke laste inn dataene',
 };

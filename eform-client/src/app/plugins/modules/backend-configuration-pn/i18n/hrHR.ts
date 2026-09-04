@@ -624,4 +624,8 @@ export const hrHR = {
   Filtering: 'Filtriranje',
   'View mode': 'Način prikaza',
   Pagination: 'Paginacija',
+  'No tasks match the selected filters.': 'Nijedan zadatak ne odgovara odabranim filterima.',
+  'Task done': 'Zadatak obavljen',
+  'Task not done': 'Zadatak nije dovršen',
+  'Could not load the data': 'Nije moguće učitati podatke',
 };

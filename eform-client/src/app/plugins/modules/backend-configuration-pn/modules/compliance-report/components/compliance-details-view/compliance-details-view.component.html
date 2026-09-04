@@ -1,0 +1,166 @@
+<div class="compliance-details">
+  <!--
+    Only after a response, and never while the shell's spinner is up: an empty
+    body during the first load would flash "no tasks match" before any query
+    had returned. The shell owns the separate not-yet-fetched placeholder.
+  -->
+  <div
+    *ngIf="hasFetched && !state.loading && rowCount === 0"
+    id="complianceDetailsEmpty"
+    class="compliance-details__empty"
+  >
+    {{ 'No tasks match the selected filters.' | translate }}
+  </div>
+
+  <!--
+    A failed FIRST fetch. Its own wording, deliberately NOT the empty-result
+    line above: a transport or server error is not the filters' fault. Mutually
+    exclusive with that line by construction — `loadFailed` is only ever set
+    while `hasFetched` is false (see the component) — and hidden while a retry
+    is in flight, so the shell's spinner is never captioned with a stale error.
+  -->
+  <div
+    *ngIf="loadFailed && !state.loading"
+    id="complianceDetailsError"
+    class="compliance-details__empty"
+    role="alert"
+  >
+    {{ 'Could not load the data' | translate }}
+  </div>
+
+  <div
+    *ngFor="let group of groups; trackBy: trackByGroup"
+    class="compliance-details__week"
+  >
+    <div class="compliance-details__week-title">{{ group.label }}</div>
+
+    <div
+      *ngFor="let row of group.rows; trackBy: trackByRow"
+      class="compliance-details__row"
+      [attr.data-compliance-id]="row.complianceId"
+      [class.is-done]="row.completed"
+      [class.is-clickable]="isRowCompletable(row)"
+      [class.is-highlighted]="highlightedId === row.complianceId"
+      [attr.role]="isRowCompletable(row) ? 'button' : null"
+      [attr.tabindex]="isRowCompletable(row) ? 0 : null"
+      (click)="onRowClicked(row, $event)"
+      (keydown.enter)="onRowClicked(row, $event)"
+      (keydown.space)="$event.preventDefault(); onRowClicked(row, $event)"
+    >
+      <span class="compliance-details__date">{{ formatDayLabel(row.taskDate) }}</span>
+      <span class="compliance-details__property">{{ row.propertyName || emptyCell }}</span>
+      <span class="compliance-details__board">{{ row.boardName || emptyCell }}</span>
+
+      <!--
+        A circle that fills with a check when done. `role="img"` plus the
+        aria-label is the accessible name the component being replaced never
+        had (it used two different mat-icons and no label at all).
+      -->
+      <span
+        class="compliance-details__circle"
+        role="img"
+        [attr.aria-label]="(row.completed ? 'Task done' : 'Task not done') | translate"
+      >
+        <mat-icon class="compliance-details__check" [class.is-visible]="row.completed"
+          >check</mat-icon
+        >
+      </span>
+
+      <span class="compliance-details__time" *ngIf="!row.isAllDay">
+        {{ 'At' | translate }} {{ formatTimeRange(row) }}
+      </span>
+
+      <span class="compliance-details__body">
+        <span class="compliance-details__title">{{ row.title }}</span>
+        <span
+          class="compliance-details__chip compliance-details__chip--worker"
+          *ngIf="row.workerNames && row.workerNames.length > 0"
+          >{{ row.workerNames[0]
+          }}<ng-container *ngIf="row.workerNames.length > 1">
+            +{{ row.workerNames.length - 1 }}</ng-container
+          ></span
+        >
+        <span class="compliance-details__chip" *ngFor="let tag of row.tags">{{ tag }}</span>
+      </span>
+
+      <!--
+        Completed rows carry no delete action at all. The container stops the
+        click AND the keyboard activation, so neither a miss between the icon
+        button and the edge of the actions cell nor an Enter/Space on the
+        button itself can open the eForm (compliance.js:1436-1446 guards the
+        same two targets; the third, the popover, cannot bubble here because
+        CDK attaches it to the overlay container, not inside this row).
+
+        The keydown guards are what make the button usable from the keyboard:
+        without them Enter on the delete button fires the row's keydown handler
+        (eForm modal) and then the browser's default activation of the button
+        (delete popover, anchored behind that modal). `onRowClicked` carries the
+        same guard on the event target, so the behaviour does not depend on
+        this element alone.
+
+        KNOWN, deliberately not fixed here: the row is role="button"
+        tabindex="0" and CONTAINS this <button>, which is invalid ARIA
+        (interactive content inside a role="button"). Making the activation
+        target and the actions siblings means re-cutting the row's CSS grid and
+        the highlight/hover rules that key off `.compliance-details__row`, which
+        is a bigger change than #1165's scope; the Enter/Space defect it caused
+        is fixed above. See the follow-up note in the component.
+      -->
+      <span
+        class="compliance-details__actions"
+        *ngIf="!row.completed"
+        (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
+      >
+        <button
+          mat-icon-button
+          type="button"
+          class="compliance-details__delete"
+          [attr.aria-label]="'Delete log' | translate"
+          [matTooltip]="'Delete log' | translate"
+          (click)="openDeleteConfirm(row, $event)"
+        >
+          <mat-icon>delete_outline</mat-icon>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!--
+  Anchored confirm popover, attached through the CDK overlay so it is a sibling
+  of the app root rather than a descendant of the row. Cancel leads the row,
+  the confirming action follows — the order the repo's button gate enforces.
+
+  `role="dialog"` WITHOUT `aria-modal`: this popover has no backdrop, makes
+  nothing outside inert and traps no focus (clicking another row's delete
+  button must move it, which a trap would prevent). Claiming aria-modal here
+  would tell a screen-reader user the rest of the page is hidden while their
+  focus is still outside the dialog. Focus is moved to Annuller on open,
+  Escape closes it, and focus returns to the trigger button on close —
+  see `openDeleteConfirm` / `closeDeletePopover`.
+-->
+<ng-template #deleteConfirmTpl>
+  <div
+    id="complianceDeletePopover"
+    class="compliance-delete-popover"
+    role="dialog"
+    [attr.aria-label]="'Delete log' | translate"
+  >
+    <h3 class="compliance-delete-popover__title">{{ 'Delete log' | translate }}</h3>
+    <p class="compliance-delete-popover__text">{{ 'This action cannot be undone' | translate }}</p>
+    <div class="compliance-delete-popover__footer">
+      <button
+        type="button"
+        class="btn-cancel compliance-delete-popover__cancel"
+        (click)="cancelDelete()"
+      >
+        {{ 'Cancel' | translate }}
+      </button>
+      <button type="button" class="btn-delete" (click)="confirmDelete()">
+        {{ 'Delete' | translate }}
+      </button>
+    </div>
+  </div>
+</ng-template>

@@ -624,4 +624,8 @@ export const slSL = {
   Filtering: 'Filtriranje',
   'View mode': 'Način ogleda',
   Pagination: 'Oštevilčenje strani',
+  'No tasks match the selected filters.': 'Nobena naloga se ne ujema z izbranimi filtri.',
+  'Task done': 'Naloga opravljena',
+  'Task not done': 'Naloga ni opravljena',
+  'Could not load the data': 'Podatkov ni bilo mogoče naložiti',
 };

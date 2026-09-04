@@ -624,4 +624,8 @@ export const fiFI = {
   Filtering: 'Suodatus',
   'View mode': 'Katselutila',
   Pagination: 'Sivunumerointi',
+  'No tasks match the selected filters.': 'Yksikään tehtävä ei vastaa valittuja suodattimia.',
+  'Task done': 'Tehtävä suoritettu',
+  'Task not done': 'Tehtävä ei ole suoritettu',
+  'Could not load the data': 'Tietojen lataaminen epäonnistui',
 };

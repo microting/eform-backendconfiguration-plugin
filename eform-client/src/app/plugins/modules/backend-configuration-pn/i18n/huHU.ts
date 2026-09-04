@@ -624,4 +624,8 @@ export const huHU = {
   Filtering: 'Szűrő',
   'View mode': 'Nézet mód',
   Pagination: 'Lapszámozás',
+  'No tasks match the selected filters.': 'Egyik feladat sem felel meg a kiválasztott szűrőknek.',
+  'Task done': 'Feladat elvégezve',
+  'Task not done': 'Feladat nincs elvégezve',
+  'Could not load the data': 'Nem sikerült betölteni az adatokat',
 };

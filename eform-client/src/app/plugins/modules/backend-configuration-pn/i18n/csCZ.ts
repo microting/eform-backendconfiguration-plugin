@@ -624,4 +624,8 @@ export const csCZ = {
   Filtering: 'Filtrování',
   'View mode': 'Režim zobrazení',
   Pagination: 'Stránkování',
+  'No tasks match the selected filters.': 'Vybraným filtrům neodpovídají žádné úkoly.',
+  'Task done': 'Úkol hotový',
+  'Task not done': 'Úkol nebyl dokončen',
+  'Could not load the data': 'Nepodařilo se načíst data',
 };

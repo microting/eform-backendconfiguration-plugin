@@ -624,4 +624,8 @@ export const etET = {
   Filtering: 'Filtreerimine',
   'View mode': 'Vaaterežiim',
   Pagination: 'Lehekülgede arv',
+  'No tasks match the selected filters.': 'Valitud filtritele ei vasta ükski ülesanne.',
+  'Task done': 'Ülesanne tehtud',
+  'Task not done': 'Ülesanne pole tehtud',
+  'Could not load the data': 'Andmeid ei õnnestunud laadida',
 };

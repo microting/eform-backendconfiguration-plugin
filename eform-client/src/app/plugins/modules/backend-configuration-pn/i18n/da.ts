@@ -749,4 +749,8 @@ export const da = {
   Filtering: 'Filtrering',
   'View mode': 'Visning',
   Pagination: 'Sideinddeling',
+  'No tasks match the selected filters.': 'Ingen opgaver matcher de valgte filtre.',
+  'Task done': 'Udført',
+  'Task not done': 'Ikke udført',
+  'Could not load the data': 'Kunne ikke indlæse data',
 };

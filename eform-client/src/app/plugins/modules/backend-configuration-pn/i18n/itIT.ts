@@ -624,4 +624,8 @@ export const itIT = {
   Filtering: 'Filtraggio',
   'View mode': 'Modalità di visualizzazione',
   Pagination: 'Paginazione',
+  'No tasks match the selected filters.': 'Nessuna attività corrisponde ai filtri selezionati.',
+  'Task done': 'Compito completato',
+  'Task not done': 'Compito non completato',
+  'Could not load the data': 'Impossibile caricare i dati',
 };

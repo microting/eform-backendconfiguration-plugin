@@ -624,4 +624,8 @@ export const ptBR = {
   Filtering: 'Filtragem',
   'View mode': 'Modo de visualização',
   Pagination: 'Paginação',
+  'No tasks match the selected filters.': 'Nenhuma tarefa corresponde aos filtros selecionados.',
+  'Task done': 'Tarefa concluída',
+  'Task not done': 'Tarefa não concluída',
+  'Could not load the data': 'Não foi possível carregar os dados',
 };

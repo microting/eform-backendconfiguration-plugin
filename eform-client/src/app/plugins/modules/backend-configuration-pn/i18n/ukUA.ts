@@ -624,4 +624,8 @@ export const ukUA = {
   Filtering: 'Фільтрація',
   'View mode': 'Режим перегляду',
   Pagination: 'Пагінація',
+  'No tasks match the selected filters.': 'Жодне завдання не відповідає вибраним фільтрам.',
+  'Task done': 'Завдання виконано',
+  'Task not done': 'Завдання не виконано',
+  'Could not load the data': 'Не вдалося завантажити дані',
 };
