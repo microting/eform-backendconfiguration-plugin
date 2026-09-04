@@ -57,7 +57,8 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   filtersSub$: Subscription;
   getTasksSub$: Subscription;
   loadReferenceDataSub$: Subscription;
-  getTaskSub$: Subscription;
+  viewTaskSub$: Subscription;
+  editTaskSub$: Subscription;
 
   get status() {
     return this.adhocStateService.currentFilters?.status ?? 'open';
@@ -152,7 +153,7 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   // Mirrors AdhocHistoryComponent.onRowClick, including its silent no-open
   // on a failed fetch.
   onViewTask(task: AdhocTaskModel): void {
-    this.getTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+    this.viewTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
       if (res && res.success && res.model) {
         this.openDrawer({mode: 'view', task: res.model});
       }
@@ -160,7 +161,7 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   }
 
   onEditTask(task: AdhocTaskModel): void {
-    this.getTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+    this.editTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
       if (res && res.success && res.model) {
         this.openDrawer({mode: 'edit', task: res.model});
       }
