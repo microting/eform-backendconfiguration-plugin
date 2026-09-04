@@ -300,6 +300,61 @@ public class BackendConfigurationAdhocService(
     public async Task<AdhocTaskModel> UpdateTask(int workerId, int taskId, AdhocTaskCreateModel model, bool isAdmin = false)
     {
         var task = await LoadTaskOrThrowAsync(taskId);
+
+        // An assigned-but-not-creating worker's mobile save arrives here as a
+        // no-op: the client re-reads the task and changes only photos, and the
+        // photo it just added is still pendingUpload, so it is filtered out of
+        // PhotoIds before the request is built. The bytes themselves arrive
+        // separately via SavePhoto, which is CanSee-gated and has always
+        // allowed this worker.
+        //
+        // Rejecting that no-op is what broke assignee photos entirely: the
+        // mobile outbox classifies PermissionDenied as permanent and parks the
+        // row, and its per-task head-of-line rule then blocks the photo upload
+        // queued behind it forever - taking that worker's later comments on
+        // the same task with it.
+        //
+        // So a CanSee-eligible non-creator is accepted and IGNORED: nothing on
+        // the model is applied. Deliberately not a field-by-field diff - the
+        // client builds its request from a local cache that may legitimately
+        // lag a concurrent creator or web edit, so a diff would reject exactly
+        // the offline saves this exists to accept. Ignoring is also strictly
+        // stronger: a non-creator provably mutates nothing, whatever they send.
+        //
+        // PhotoIds is deliberately not honoured either - ReconcilePhotosAsync
+        // soft-deletes by omission, so a stale client's list would wipe the
+        // creator's photos.
+        //
+        // One more consequence of adding this branch: RequireCreator's
+        // "pseudo-identity 0 owns nothing" guard below is now reached only
+        // for a task whose CreatedByWorkerId == 0 (web-created). For a task
+        // created by a real worker, a (workerId == 0, isAdmin == false)
+        // caller now enters THIS branch instead of falling through to
+        // RequireCreator - still safe (it still needs
+        // HasAccessAsync(0, ...) to pass CanSee, and even then only gets a
+        // read via MapToModelAsync, never a mutation), but the guard's
+        // coverage changed and is worth writing down.
+        if (!isAdmin && task.CreatedByWorkerId != workerId)
+        {
+            var taskAssignedWorkerIds = await LoadAssignedWorkerIdsAsync(taskId);
+            var callerHasPropertyAccess = await propertyAccess.HasAccessAsync(workerId, task.PropertyId);
+            if (!CanSee(task, workerId, isAdmin, callerHasPropertyAccess, taskAssignedWorkerIds))
+            {
+                throw new AdhocTaskUnauthorizedException(
+                    $"Worker {workerId} may not update adhoc task {taskId}.");
+            }
+
+            // Make the accept-and-ignore outcome observable: without this, a
+            // caller sees the same 200/AdhocTaskModel as a real update, and
+            // the day the mobile UI widens what it lets an assignee edit,
+            // this branch will silently eat those writes with nothing to
+            // debug from.
+            Console.WriteLine(
+                $"BackendConfigurationAdhocService.UpdateTask: accepted-and-ignored a no-op update from non-creator worker {workerId} on adhoc task {taskId} (created by worker {task.CreatedByWorkerId}).");
+
+            return await MapToModelAsync(task, taskAssignedWorkerIds);
+        }
+
         RequireCreator(task, workerId, isAdmin, "update");
 
         await ValidateAreaBelongsToPropertyAsync(model.AreaId, model.PropertyId);

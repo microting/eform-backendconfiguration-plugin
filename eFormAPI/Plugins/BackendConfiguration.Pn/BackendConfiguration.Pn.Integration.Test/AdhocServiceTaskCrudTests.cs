@@ -710,4 +710,155 @@ public class AdhocServiceTaskCrudTests : TestBaseSetup
         Assert.ThrowsAsync<AdhocTaskNotFoundException>(async () =>
             await sut.GetTask(1, 987654));
     }
+
+    // The gRPC client sends a full-replacement UpdateTaskRequest even when the
+    // worker only added a photo, and an assigned-but-not-creating worker is the
+    // only role that can reach that path. Rejecting it parked the mobile
+    // outbox row as a permanent failure, whose per-task head-of-line rule then
+    // blocked the photo upload queued behind it - and every later comment on
+    // that task. So the request is accepted and ignored rather than denied.
+    [Test]
+    public async Task UpdateTask_AllowedForAssignedWorker_ReturnsTaskUnchanged()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id, assignedWorkerIds: [7]));
+
+        var result = await sut.UpdateTask(7, created.Id, MakeCreateModel(property.Id, assignedWorkerIds: [7]));
+
+        Assert.That(result.Id, Is.EqualTo(created.Id));
+        Assert.That(result.Title, Is.EqualTo(created.Title));
+    }
+
+    // Ignore-semantics, not a field diff: whatever a stale (or hostile) client
+    // sends on the model, a non-creator mutates nothing.
+    [Test]
+    public async Task UpdateTask_ForAssignedWorker_IgnoresAttemptedTitleChange()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id, assignedWorkerIds: [7]));
+
+        var hostile = MakeCreateModel(property.Id, assignedWorkerIds: [7]);
+        hostile.Title = "hijacked";
+        var result = await sut.UpdateTask(7, created.Id, hostile);
+
+        Assert.That(result.Title, Is.EqualTo(created.Title));
+
+        var row = await BackendConfigurationPnDbContext!.AdhocTasks
+            .FirstAsync(t => t.Id == created.Id);
+        Assert.That(row.Title, Is.EqualTo(created.Title));
+    }
+
+    // ReconcilePhotosAsync soft-deletes by omission, so honouring a
+    // non-creator's PhotoIds would let a stale client wipe the creator's
+    // photos. The assignee's own photo arrives via SavePhoto instead.
+    [Test]
+    public async Task UpdateTask_ForAssignedWorker_DoesNotSoftDeleteOmittedPhotos()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id, assignedWorkerIds: [7]));
+
+        var creatorPhoto = new AdhocTaskPhoto { AdhocTaskId = created.Id, UploadedDataId = 1, ContentType = "image/jpeg" };
+        await creatorPhoto.Create(BackendConfigurationPnDbContext!);
+
+        var modelWithNoPhotos = MakeCreateModel(property.Id, assignedWorkerIds: [7]);
+        modelWithNoPhotos.PhotoIds = [];
+        var result = await sut.UpdateTask(7, created.Id, modelWithNoPhotos);
+
+        Assert.That(result.Photos.Select(p => p.Id), Is.EquivalentTo(new[] { creatorPhoto.Id }));
+
+        var photoRow = await BackendConfigurationPnDbContext!.AdhocTaskPhotos
+            .IgnoreQueryFilters()
+            .FirstAsync(p => p.Id == creatorPhoto.Id);
+        Assert.That(photoRow.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+    }
+
+    [Test]
+    public async Task UpdateTask_StillThrows_ForWorkerWithoutVisibility()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 3);
+        var sut = CreateSut();
+
+        // Worker 3 has property access but is neither creator nor assignee,
+        // and the task is AssignedOnly - so CanSee is false.
+        var created = await sut.CreateTask(1, MakeCreateModel(property.Id));
+
+        Assert.ThrowsAsync<AdhocTaskUnauthorizedException>(async () =>
+            await sut.UpdateTask(3, created.Id, MakeCreateModel(property.Id)));
+    }
+
+    // The actual reported production scenario: office creates the task on
+    // the web dashboard (CreatedByWorkerId == 0), assigns a real worker, and
+    // that worker's phone later sends the accept-and-ignore no-op UpdateTask
+    // over gRPC with its own real, positive site id. Pins that the fix
+    // covers the web-created case, not just a worker-created one, and that
+    // the persisted row - not just the returned model - is untouched.
+    [Test]
+    public async Task UpdateTask_AcceptsAndIgnoresUpdate_ForAssignedWorkerOnWebCreatedTask()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 7);
+        var sut = CreateSut();
+
+        var created = await sut.CreateTask(0, MakeCreateModel(property.Id, assignedWorkerIds: [7]), isAdmin: true);
+        Assert.That(created.CreatedByWorkerId, Is.EqualTo(0));
+
+        var hostile = MakeCreateModel(property.Id, assignedWorkerIds: [7]);
+        hostile.Title = "hijacked";
+        var result = await sut.UpdateTask(7, created.Id, hostile);
+
+        Assert.That(result.Id, Is.EqualTo(created.Id));
+        Assert.That(result.Title, Is.EqualTo(created.Title));
+
+        var row = await BackendConfigurationPnDbContext!.AdhocTasks
+            .FirstAsync(t => t.Id == created.Id);
+        Assert.That(row.Title, Is.EqualTo(created.Title));
+    }
+
+    // CanSee returns true for ANY worker with property access when the
+    // task's ExecutionRule is Everyone - a strictly larger acceptance
+    // surface than "assignee". Pins that such a worker (property access,
+    // NOT assigned) also lands in the accept-and-ignore branch rather than
+    // being rejected, and mutates nothing.
+    //
+    // AdhocExecutionRuleValue is a private enum on the service, so the
+    // literal 1 below is what AdhocExecutionRuleValue.Everyone maps onto
+    // AdhocTaskCreateModel.ExecutionRule (an int).
+    [Test]
+    public async Task UpdateTask_AcceptsAndIgnoresUpdate_ForNonAssignedWorkerWithAccess_WhenExecutionRuleIsEveryone()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+        await GrantPropertyAccessAsync(property.Id, 42);
+        var sut = CreateSut();
+
+        var createModel = MakeCreateModel(property.Id);
+        createModel.ExecutionRule = 1; // AdhocExecutionRuleValue.Everyone
+        var created = await sut.CreateTask(1, createModel);
+
+        // Worker 42 has property access but is neither creator nor assignee.
+        var hostile = MakeCreateModel(property.Id);
+        hostile.Title = "hijacked";
+        var result = await sut.UpdateTask(42, created.Id, hostile);
+
+        Assert.That(result.Id, Is.EqualTo(created.Id));
+        Assert.That(result.Title, Is.EqualTo(created.Title));
+
+        var row = await BackendConfigurationPnDbContext!.AdhocTasks
+            .FirstAsync(t => t.Id == created.Id);
+        Assert.That(row.Title, Is.EqualTo(created.Title));
+    }
 }

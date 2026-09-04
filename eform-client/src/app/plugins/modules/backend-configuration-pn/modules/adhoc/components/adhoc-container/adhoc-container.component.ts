@@ -10,6 +10,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AdhocTaskModel} from '../../../../models';
 import {selectAdhocFilters} from '../../../../state';
+import {BackendConfigurationPnAdhocService} from '../../../../services';
 import {AdhocStateService} from '../store';
 import {AdhocTaskDrawerComponent, AdhocTaskDrawerCloseResult, AdhocTaskDrawerData} from '../adhoc-task-drawer/adhoc-task-drawer.component';
 import {AdhocDeleteModalComponent} from '../adhoc-delete-modal/adhoc-delete-modal.component';
@@ -38,6 +39,7 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private dialog = inject(MatDialog);
   private overlay = inject(Overlay);
+  private adhocService = inject(BackendConfigurationPnAdhocService);
   public adhocStateService = inject(AdhocStateService);
 
   // Resolved once in ngOnInit — getTitleByUrl subscribes to the menu store
@@ -55,6 +57,8 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
   filtersSub$: Subscription;
   getTasksSub$: Subscription;
   loadReferenceDataSub$: Subscription;
+  viewTaskSub$: Subscription;
+  editTaskSub$: Subscription;
 
   get status() {
     return this.adhocStateService.currentFilters?.status ?? 'open';
@@ -142,12 +146,37 @@ export class AdhocContainerComponent implements OnInit, OnDestroy {
     this.openDrawer({mode: 'create'});
   }
 
+  // Refetch by id rather than reusing the table row: the row is a snapshot
+  // from the last index call, and the drawer submits its photoIds back on
+  // save, where ReconcilePhotosAsync soft-deletes by omission - so a stale
+  // row would silently wipe any photo added on mobile since that index load
+  // (potentially hours ago - Overblik does not poll).
+  //
+  // This only NARROWS the data-loss window, it does not close it:
+  // `task` is captured once, at drawer-open time, and visiblePhotos reads
+  // from that snapshot, not a live one - so a photo uploaded from a phone
+  // while the drawer sits open is still soft-deleted by omission when this
+  // drawer saves. Closing that window is a separate design decision (e.g.
+  // having the drawer send its already-tracked `removedPhotoIds` instead of
+  // a keep-set, so an omission is no longer read as "delete", or gating the
+  // save on a task version) and is not attempted here.
+  //
+  // Mirrors AdhocHistoryComponent.onRowClick, including its silent no-open
+  // on a failed fetch.
   onViewTask(task: AdhocTaskModel): void {
-    this.openDrawer({mode: 'view', task});
+    this.viewTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+      if (res && res.success && res.model) {
+        this.openDrawer({mode: 'view', task: res.model});
+      }
+    });
   }
 
   onEditTask(task: AdhocTaskModel): void {
-    this.openDrawer({mode: 'edit', task});
+    this.editTaskSub$ = this.adhocService.getTask(task.id).subscribe((res) => {
+      if (res && res.success && res.model) {
+        this.openDrawer({mode: 'edit', task: res.model});
+      }
+    });
   }
 
   onCopyTask(task: AdhocTaskModel): void {
