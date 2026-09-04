@@ -1,0 +1,143 @@
+<main class="compliance-page" [attr.aria-label]="'Compliance' | translate">
+  <app-compliance-report-filters
+    (downloadRequested)="onDownloadRequested($event)"
+  ></app-compliance-report-filters>
+
+  <!--
+    Mode toggle. Hand-rolled rather than mat-button-toggle-group so the three
+    buttons can carry aria-pressed (a non-multiple mat-button-toggle-group
+    renders radiogroup/aria-checked instead). Same segmented-toggle pattern the
+    ad-hoc dashboard's tag-logic switch already uses, so the styling is the
+    existing .btn-primary/.btn-secondary pair and needs no new colours.
+  -->
+  <div
+    class="compliance-mode-toggle btn-group d-flex gap-8"
+    role="group"
+    [attr.aria-label]="'View mode' | translate"
+  >
+    <button
+      *ngFor="let m of modes"
+      type="button"
+      id="complianceMode-{{ m.mode }}"
+      [attr.aria-pressed]="isActive(m.mode)"
+      [ngClass]="isActive(m.mode) ? 'btn-primary active' : 'btn-secondary'"
+      (click)="onModeChange(m.mode)"
+    >
+      <span>{{ m.label | translate }}</span>
+    </button>
+  </div>
+
+  <mat-card
+    id="complianceCasesRoot"
+    class="compliance-cases-root"
+    [attr.aria-label]="'Compliance' | translate"
+    [attr.aria-busy]="state.loading"
+  >
+    <div
+      *ngIf="!state.reportVisible"
+      id="complianceEmptyState"
+      class="compliance-cases-root__placeholder"
+    >
+      {{ 'Select filters and click Update table' | translate }}
+    </div>
+
+    <div
+      *ngIf="state.reportVisible && state.loading"
+      class="compliance-cases-root__loading"
+    >
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <!--
+      Deliberately gated on `reportVisible` ALONE, not on `!state.loading`.
+      `fetchRequested$` replays its last trigger to a late subscriber (see
+      ComplianceReportStateService.fetchRequestedSubject — that replay is what
+      makes a mode switch, which destroys and recreates the child, actually
+      query). Unmounting the child while it loads would therefore recreate it
+      the moment `loading` went false, replay the trigger, and fetch again in a
+      loop. A load overlays the spinner above the still-mounted view instead.
+    -->
+    <ng-container *ngIf="state.reportVisible" [ngSwitch]="state.mode">
+      <!--
+        One branch per view mode. Each child reads requestModel, subscribes to
+        fetchRequested$ and reports its total back through setTotalCount().
+      -->
+      <ng-container *ngSwitchCase="'overview'">
+        <!-- #1164 renders the per-property Oversigt table here. -->
+      </ng-container>
+      <ng-container *ngSwitchCase="'details'">
+        <!-- #1165 renders the week-grouped Detaljer log here. -->
+      </ng-container>
+      <ng-container *ngSwitchCase="'report'">
+        <!-- #1167 renders the per-template Rapport columns here. -->
+      </ng-container>
+    </ng-container>
+  </mat-card>
+
+  <!--
+    Pagination chrome. The buttons and the info line live here; which page is
+    requested, and the row count behind it, belong to the active view.
+    `Previous`/`Next`/`of` resolve from the CORE frontend i18n, not the
+    plugin's — the core Danish `Previous` is `Tidligere`, not the prototype's
+    `Forrige`. #1165 decides whether to shadow them with a plugin-local key;
+    do not add one here unilaterally.
+  -->
+  <nav
+    *ngIf="state.reportVisible"
+    id="compliancePagination"
+    class="compliance-pagination"
+    [attr.aria-label]="'Pagination' | translate"
+  >
+    <button
+      mat-stroked-button
+      id="compliancePagePrev"
+      [disabled]="state.showAll || state.page === 0"
+      (click)="onPrevPage()"
+    >
+      {{ 'Previous' | translate }}
+    </button>
+
+    <ng-container *ngFor="let p of state.pageNumbers">
+      <span *ngIf="p === 'gap'" class="compliance-pagination__gap">&hellip;</span>
+      <button
+        *ngIf="p !== 'gap'"
+        mat-stroked-button
+        class="compliance-pagination__page"
+        [class.is-active]="!state.showAll && p === state.page"
+        [color]="!state.showAll && p === state.page ? 'primary' : undefined"
+        (click)="onGoToPage(p)"
+      >
+        {{ +p + 1 }}
+      </button>
+    </ng-container>
+
+    <button
+      mat-stroked-button
+      id="compliancePageNext"
+      [disabled]="state.showAll || state.page >= state.totalPages - 1"
+      (click)="onNextPage()"
+    >
+      {{ 'Next' | translate }}
+    </button>
+    <button
+      mat-stroked-button
+      id="compliancePageShowAll"
+      [class.is-active]="state.showAll"
+      [disabled]="state.showAll"
+      (click)="onShowAll()"
+    >
+      {{ 'Show all' | translate }}
+    </button>
+
+    <span id="compliancePageInfo" class="compliance-pagination__info">
+      <ng-container *ngIf="state.total === 0">{{ 'No results' | translate }}</ng-container>
+      <ng-container *ngIf="state.total > 0 && state.showAll"
+        >{{ 'Showing all' | translate }} {{ state.total }}</ng-container
+      >
+      <ng-container *ngIf="state.total > 0 && !state.showAll"
+        >{{ 'Showing' | translate }} {{ state.showingFrom }}&#8211;{{ state.showingTo }}
+        {{ 'of' | translate }} {{ state.total }}</ng-container
+      >
+    </span>
+  </nav>
+</main>

@@ -610,4 +610,18 @@ export const slSL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiviraj / deaktiviraj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija umakne odprte pojavitve iz aplikacije. Dokončane pojavitve in že zbrani podatki se ohranijo.',
+  'Update table': 'Posodobi tabelo',
+  'Select filters and click Update table': 'Izberite filtre in kliknite Posodobi tabelo',
+  'Compliance overview': 'Pregled',
+  'Compliance details': 'Podrobnosti',
+  'Compliance report': 'Poročilo',
+  'Overview shows both completed and not completed tasks': 'Pregled prikazuje tako dokončana kot nedokončana opravila',
+  'Select a property to filter by calendar': 'Izberite nepremičnino za filtriranje po koledarju',
+  'Select both a start and an end date': 'Izberite začetni in končni datum',
+  'The end date must be on or after the start date': 'Končni datum mora biti enak datumu začetka ali po njem.',
+  'Showing all': 'Prikaz vseh',
+  'No results': 'Ni rezultatov',
+  Filtering: 'Filtriranje',
+  'View mode': 'Način ogleda',
+  Pagination: 'Oštevilčenje strani',
 };

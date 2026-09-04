@@ -610,4 +610,18 @@ export const hrHR = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiviraj / deaktiviraj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija povlači otvorena pojavljivanja iz aplikacije. Dovršena pojavljivanja i već prikupljeni podaci se čuvaju.',
+  'Update table': 'Ažuriraj tablicu',
+  'Select filters and click Update table': 'Odaberite filtere i kliknite Ažuriraj tablicu',
+  'Compliance overview': 'Pregled',
+  'Compliance details': 'Detalji',
+  'Compliance report': 'Izvješće',
+  'Overview shows both completed and not completed tasks': 'Pregled prikazuje i dovršene i nedovršene zadatke',
+  'Select a property to filter by calendar': 'Odaberite svojstvo za filtriranje po kalendaru',
+  'Select both a start and an end date': 'Odaberite i početni i završni datum',
+  'The end date must be on or after the start date': 'Datum završetka mora biti na ili nakon datuma početka',
+  'Showing all': 'Prikazuju se svi',
+  'No results': 'Nema rezultata',
+  Filtering: 'Filtriranje',
+  'View mode': 'Način prikaza',
+  Pagination: 'Paginacija',
 };

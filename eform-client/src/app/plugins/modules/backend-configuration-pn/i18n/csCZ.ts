@@ -610,4 +610,18 @@ export const csCZ = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivovat / deaktivovat',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivace stáhne otevřené výskyty z aplikace. Dokončené výskyty a již shromážděná data zůstávají zachovány.',
+  'Update table': 'Aktualizovat tabulku',
+  'Select filters and click Update table': 'Vyberte filtry a klikněte na Aktualizovat tabulku',
+  'Compliance overview': 'Přehled',
+  'Compliance details': 'Podrobnosti',
+  'Compliance report': 'Zpráva',
+  'Overview shows both completed and not completed tasks': 'Přehled zobrazuje dokončené i nedokončené úkoly',
+  'Select a property to filter by calendar': 'Vyberte nemovitost, kterou chcete filtrovat podle kalendáře',
+  'Select both a start and an end date': 'Vyberte datum zahájení i ukončení',
+  'The end date must be on or after the start date': 'Datum ukončení musí být stejné nebo po datu zahájení.',
+  'Showing all': 'Zobrazeno vše',
+  'No results': 'Žádné výsledky',
+  Filtering: 'Filtrování',
+  'View mode': 'Režim zobrazení',
+  Pagination: 'Stránkování',
 };

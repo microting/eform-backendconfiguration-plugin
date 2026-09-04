@@ -1950,6 +1950,94 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         Language = LanguageNames.Ukrainian
                     }
                 ]
+            },
+            new()
+            {
+                // Standalone Compliance page (#1163), Angular route
+                // /plugins/backend-configuration-pn/compliance-report.
+                // Permissions stays empty on purpose: #1160 decision 6 makes the
+                // page available to every authenticated plugin user, so there is
+                // no claim gating here - the parent route's plugin-access check
+                // is the whole boundary.
+                //
+                // KNOWN PLATFORM LIMITATION: the plugin's menu seeding only
+                // inserts MenuItem rows on FIRST install, so this entry does NOT
+                // appear on an already-installed database. It shows up only after
+                // the plugin is disabled and re-enabled (Admin -> Plugins) and the
+                // backend restarted. Pre-existing core bug, not fixed here -
+                // recorded so the next reader is not confused.
+                Name = "Compliance",
+                E2EId = "backend-configuration-pn-compliance-report",
+                Link = "/plugins/backend-configuration-pn/compliance-report",
+                Type = MenuItemTypeEnum.Link,
+                Position = 13,
+                MenuTemplate = new PluginMenuTemplateModel
+                {
+                    Name = "Compliance",
+                    E2EId = "backend-configuration-pn-compliance-report",
+                    DefaultLink = "/plugins/backend-configuration-pn/compliance-report",
+                    Permissions = [],
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Compliance",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Überwachung",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Compliance",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Відповідність",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                Translations =
+                [
+                    new()
+                    {
+                        LocaleName = LocaleNames.English,
+                        Name = "Compliance",
+                        Language = LanguageNames.English
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.German,
+                        Name = "Überwachung",
+                        Language = LanguageNames.German
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Danish,
+                        Name = "Compliance",
+                        Language = LanguageNames.Danish
+                    },
+
+                    new()
+                    {
+                        LocaleName = LocaleNames.Ukrainian,
+                        Name = "Відповідність",
+                        Language = LanguageNames.Ukrainian
+                    }
+                ]
             }
         };
 

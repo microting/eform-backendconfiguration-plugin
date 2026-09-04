@@ -610,4 +610,18 @@ export const lvLV = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivizēt / deaktivizēt',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivizēšana atsauc atvērtos gadījumus no lietotnes. Pabeigtie gadījumi un jau savāktie dati tiek saglabāti.',
+  'Update table': 'Atjaunināt tabulu',
+  'Select filters and click Update table': 'Atlasiet filtrus un noklikšķiniet uz Atjaunināt tabulu',
+  'Compliance overview': 'Pārskats',
+  'Compliance details': 'Sīkāka informācija',
+  'Compliance report': 'Ziņojums',
+  'Overview shows both completed and not completed tasks': 'Pārskatā ir redzami gan pabeigtie, gan nepabeigtie uzdevumi',
+  'Select a property to filter by calendar': 'Atlasiet rekvizītu, lai filtrētu pēc kalendāra',
+  'Select both a start and an end date': 'Atlasiet gan sākuma, gan beigu datumu',
+  'The end date must be on or after the start date': 'Beigu datumam ir jābūt sākuma datumā vai vēlāk.',
+  'Showing all': 'Rāda visus',
+  'No results': 'Nav rezultātu',
+  Filtering: 'Filtrēšana',
+  'View mode': 'Skata režīms',
+  Pagination: 'Lappušu numerācija',
 };

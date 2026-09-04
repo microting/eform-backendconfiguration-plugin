@@ -17,3 +17,4 @@ export * from './backend-configuration-pn-task-management.service';
 export * from './backend-configuration-pn-calendar.service';
 export * from './backend-configuration-pn-calendar-files.service';
 export * from './backend-configuration-pn-google-drive.service';
+export * from './backend-configuration-pn-compliance-report.service';

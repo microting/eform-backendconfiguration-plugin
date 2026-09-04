@@ -610,4 +610,18 @@ export const etET = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiveeri / deaktiveeri',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktiveerimine tühistab avatud esinemised rakendusest. Lõpetatud esinemised ja juba kogutud andmed säilivad.',
+  'Update table': 'Tabeli värskendamine',
+  'Select filters and click Update table': 'Valige filtrid ja klõpsake nuppu „Värskenda tabelit”',
+  'Compliance overview': 'Ülevaade',
+  'Compliance details': 'Detailid',
+  'Compliance report': 'Aruanne',
+  'Overview shows both completed and not completed tasks': 'Ülevaade näitab nii lõpetatud kui ka lõpetamata ülesandeid',
+  'Select a property to filter by calendar': 'Valige kalendri järgi filtreerimiseks omadus',
+  'Select both a start and an end date': 'Valige nii algus- kui ka lõppkuupäev',
+  'The end date must be on or after the start date': 'Lõppkuupäev peab olema alguskuupäeval või hiljem',
+  'Showing all': 'Kuvatakse kõik',
+  'No results': 'Tulemusi pole',
+  Filtering: 'Filtreerimine',
+  'View mode': 'Vaaterežiim',
+  Pagination: 'Lehekülgede arv',
 };

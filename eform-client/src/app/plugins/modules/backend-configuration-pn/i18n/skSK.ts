@@ -610,4 +610,18 @@ export const skSK = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivovať / deaktivovať',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivácia stiahne otvorené výskyty z aplikácie. Dokončené výskyty a už zozbierané údaje zostávajú zachované.',
+  'Update table': 'Aktualizovať tabuľku',
+  'Select filters and click Update table': 'Vyberte filtre a kliknite na Aktualizovať tabuľku',
+  'Compliance overview': 'Prehľad',
+  'Compliance details': 'Detaily',
+  'Compliance report': 'Správa',
+  'Overview shows both completed and not completed tasks': 'Prehľad zobrazuje dokončené aj nedokončené úlohy',
+  'Select a property to filter by calendar': 'Vyberte nehnuteľnosť, ktorú chcete filtrovať podľa kalendára',
+  'Select both a start and an end date': 'Vyberte dátum začiatku aj ukončenia',
+  'The end date must be on or after the start date': 'Dátum ukončenia musí byť rovnaký alebo neskorší ako dátum začiatku',
+  'Showing all': 'Zobrazujú sa všetky',
+  'No results': 'Žiadne výsledky',
+  Filtering: 'Filtrovanie',
+  'View mode': 'Režim zobrazenia',
+  Pagination: 'Stránkovanie',
 };

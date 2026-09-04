@@ -610,4 +610,18 @@ export const itIT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Attiva / disattiva',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La disattivazione ritira dall’app le occorrenze aperte. Le occorrenze completate e i dati già raccolti vengono conservati.',
+  'Update table': 'Aggiorna la tabella',
+  'Select filters and click Update table': 'Seleziona i filtri e fai clic su Aggiorna tabella',
+  'Compliance overview': 'Panoramica',
+  'Compliance details': 'Dettagli',
+  'Compliance report': 'Rapporto',
+  'Overview shows both completed and not completed tasks': 'La panoramica mostra sia le attività completate che quelle non completate.',
+  'Select a property to filter by calendar': 'Seleziona una proprietà da filtrare per calendario',
+  'Select both a start and an end date': 'Seleziona sia una data di inizio che una data di fine.',
+  'The end date must be on or after the start date': 'La data di fine deve essere uguale o successiva alla data di inizio.',
+  'Showing all': 'Mostra tutto',
+  'No results': 'Nessun risultato',
+  Filtering: 'Filtraggio',
+  'View mode': 'Modalità di visualizzazione',
+  Pagination: 'Paginazione',
 };

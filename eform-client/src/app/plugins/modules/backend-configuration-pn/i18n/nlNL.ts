@@ -610,4 +610,18 @@ export const nlNL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activeren / deactiveren',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Bij deactiveren worden de openstaande voorkomens uit de app teruggetrokken. Voltooide voorkomens en de al verzamelde gegevens blijven behouden.',
+  'Update table': 'Tabel bijwerken',
+  'Select filters and click Update table': 'Selecteer filters en klik op Tabel bijwerken.',
+  'Compliance overview': 'Overzicht',
+  'Compliance details': 'Details',
+  'Compliance report': 'Rapport',
+  'Overview shows both completed and not completed tasks': 'Het overzicht toont zowel voltooide als niet-voltooide taken.',
+  'Select a property to filter by calendar': 'Selecteer een eigenschap om te filteren op kalender',
+  'Select both a start and an end date': 'Selecteer zowel een begin- als een einddatum.',
+  'The end date must be on or after the start date': 'De einddatum moet op of na de startdatum liggen.',
+  'Showing all': 'Alles weergeven',
+  'No results': 'Geen resultaten',
+  Filtering: 'Filteren',
+  'View mode': 'Weergavemodus',
+  Pagination: 'Paginering',
 };

@@ -1,0 +1,231 @@
+<!--
+  The ten filter controls of the standalone Compliance page, in the
+  prototype's order (Compliance.html:13-54). Every (ngModelChange) here goes
+  through ComplianceReportStateService.setFilter(), i.e. the INVALIDATING
+  path: the result container blanks, pagination clears and NOTHING is
+  fetched. Only "Opdater tabel" fetches.
+
+  ACCESSIBILITY: every `mtx-select` below binds `[aria-label]`, NEVER
+  `[attr.aria-label]`. MtxSelect declares `@Input('aria-label') ariaLabel` plus
+  a host binding `"attr.aria-label": "ariaLabel || null"`. An attribute binding
+  never reaches that input, so `ariaLabel` stays '' and the host binding REMOVES
+  the attribute on the first change-detection pass — leaving an unlabelled
+  role="combobox". The property binding feeds the aliased input, which the
+  component then folds into its own labelling. The plain `role="group"`
+  wrapper below hosts no directive, so `[attr.aria-label]` is correct there.
+-->
+<div class="compliance-filters" role="group" [attr.aria-label]="'Filtering' | translate">
+  <!-- 1. Property -->
+  <div class="text-field--rounded compliance-filters__field">
+    <mat-form-field>
+      <mtx-select
+        id="complianceFilterProperty"
+        [aria-label]="'Property' | translate"
+        [items]="properties"
+        bindValue="id"
+        bindLabel="name"
+        [ngModel]="propertyId"
+        (ngModelChange)="onPropertyChange($event)"
+        [clearable]="true"
+        [placeholder]="'All properties' | translate"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+
+  <!--
+    2. Calendar. getBoards is property-scoped, so with "Alle ejendomme"
+    selected there is no list to offer: disabled, with the reason on a
+    wrapper that still receives pointer events (a disabled mtx-select does
+    not surface a tooltip of its own).
+  -->
+  <span
+    class="compliance-filters__tooltip-host"
+    [matTooltip]="boardDisabled ? ('Select a property to filter by calendar' | translate) : ''"
+    [matTooltipDisabled]="!boardDisabled"
+  >
+    <div class="text-field--rounded compliance-filters__field">
+      <mat-form-field>
+        <mtx-select
+          id="complianceFilterBoard"
+          [aria-label]="'Calendar' | translate"
+          [items]="boards"
+          bindValue="id"
+          bindLabel="name"
+          [ngModel]="boardId"
+          (ngModelChange)="onBoardChange($event)"
+          [disabled]="boardDisabled"
+          [clearable]="true"
+          [placeholder]="'All calendars' | translate"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </span>
+
+  <!--
+    3. Tags — MULTI-select with OR semantics (a task matches if it carries at
+    least one selected tag). The shipped calendar view's single-select
+    filterTagId is the regression this replaces. ng-select gives outside-click
+    and Escape dismissal natively; the custom multi-label template reproduces
+    the prototype's "{first} +{n-1}" in TAG-LIST order, not click order.
+  -->
+  <div class="text-field--rounded compliance-filters__field compliance-filters__field--tags">
+    <mat-form-field>
+      <mtx-select
+        id="complianceTagFilter"
+        [aria-label]="'Select tags' | translate"
+        [items]="tags"
+        bindValue="id"
+        bindLabel="name"
+        [multiple]="true"
+        [closeOnSelect]="false"
+        [ngModel]="tagIds"
+        (ngModelChange)="onTagsChange($event)"
+        [clearable]="true"
+        [placeholder]="'All tags' | translate"
+      >
+        <ng-template ng-multi-label-tmp>
+          <span class="ng-value-label compliance-tag-toggle-label">{{ tagToggleLabel }}</span>
+        </ng-template>
+      </mtx-select>
+    </mat-form-field>
+  </div>
+
+  <!--
+    4. Status. Disabled in Oversigt, which aggregates done and not-done
+    together and ignores the value; enabled in Rapport as well as Detaljer.
+  -->
+  <span
+    class="compliance-filters__tooltip-host"
+    [matTooltip]="statusDisabled ? ('Overview shows both completed and not completed tasks' | translate) : ''"
+    [matTooltipDisabled]="!statusDisabled"
+  >
+    <div class="text-field--rounded compliance-filters__field">
+      <mat-form-field>
+        <mtx-select
+          id="complianceFilterStatus"
+          [aria-label]="'Tasks' | translate"
+          [items]="statusOptions"
+          bindValue="value"
+          bindLabel="label"
+          [ngModel]="status"
+          (ngModelChange)="onStatusChange($event)"
+          [disabled]="statusDisabled"
+          [clearable]="false"
+        ></mtx-select>
+      </mat-form-field>
+    </div>
+  </span>
+
+  <!-- 5. Employee -->
+  <div class="text-field--rounded compliance-filters__field">
+    <mat-form-field>
+      <mtx-select
+        id="complianceFilterEmployee"
+        [aria-label]="'Employee' | translate"
+        [items]="employees"
+        bindValue="id"
+        bindLabel="name"
+        [ngModel]="siteId"
+        (ngModelChange)="onEmployeeChange($event)"
+        [clearable]="true"
+        [placeholder]="'All employees' | translate"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+
+  <!-- 6. Period + 7. the read-only period label -->
+  <div class="text-field--rounded compliance-filters__field">
+    <mat-form-field>
+      <mtx-select
+        id="complianceFilterPeriod"
+        [aria-label]="'Period' | translate"
+        [items]="periodOptions"
+        bindValue="value"
+        bindLabel="label"
+        [ngModel]="periodPreset"
+        (ngModelChange)="onPeriodChange($event)"
+        [clearable]="false"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+
+  <!--
+    Custom range, inline rather than the prototype's modal. The modal has three
+    defects the inline control sidesteps: OK silently returns on invalid input,
+    there is no Escape handler, and re-picking "Sæt periode" fires no change so
+    the editor cannot be reopened. Here the control is simply present for as
+    long as "Sæt periode" is selected.
+  -->
+  <mat-form-field
+    *ngIf="periodPreset === 'custom'"
+    class="compliance-filters__custom-range"
+  >
+    <mat-date-range-input [rangePicker]="rangePicker">
+      <input matStartDate id="complianceCustomFrom" [(ngModel)]="customFrom" />
+      <input matEndDate id="complianceCustomTo" [(ngModel)]="customTo" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="rangePicker"></mat-datepicker-toggle>
+    <mat-date-range-picker #rangePicker></mat-date-range-picker>
+  </mat-form-field>
+
+  <!--
+    An invalid custom range disables "Opdater tabel"; a dead button with no
+    stated reason is exactly the prototype's silent `return`. Say why.
+  -->
+  <span
+    *ngIf="periodPreset === 'custom' && !isPeriodValid"
+    id="compliancePeriodError"
+    class="compliance-filters__error"
+  >
+    {{
+      (!customFrom || !customTo
+        ? 'Select both a start and an end date'
+        : 'The end date must be on or after the start date'
+      ) | translate
+    }}
+  </span>
+
+  <span
+    *ngIf="periodDisplay"
+    id="compliancePeriodDisplay"
+    class="compliance-filters__period-display"
+    >{{ periodDisplay }}</span
+  >
+
+  <!-- 8. The only control that fetches. -->
+  <button
+    mat-flat-button
+    color="primary"
+    id="complianceShowReportBtn"
+    class="compliance-filters__action"
+    [disabled]="!canFetch"
+    (click)="onUpdateTable()"
+  >
+    {{ 'Update table' | translate }}
+  </button>
+
+  <!-- 9. + 10. Export controls. Placed here, wired by #1169. -->
+  <div class="text-field--rounded compliance-filters__field">
+    <mat-form-field>
+      <mtx-select
+        id="complianceExportFormat"
+        [aria-label]="'Download as' | translate"
+        [items]="exportOptions"
+        bindValue="value"
+        bindLabel="label"
+        [(ngModel)]="exportFormat"
+        [clearable]="true"
+        [placeholder]="'Download as' | translate"
+      ></mtx-select>
+    </mat-form-field>
+  </div>
+  <button
+    mat-stroked-button
+    id="complianceDownloadBtn"
+    class="compliance-filters__action"
+    [disabled]="!canDownload"
+    (click)="onDownload()"
+  >
+    {{ 'Download' | translate }}
+  </button>
+</div>

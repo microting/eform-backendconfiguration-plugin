@@ -610,4 +610,18 @@ export const roRO = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activare / dezactivare',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezactivarea retrage din aplicație aparițiile deschise. Aparițiile finalizate și datele deja colectate sunt păstrate.',
+  'Update table': 'Actualizați tabelul',
+  'Select filters and click Update table': 'Selectați filtrele și faceți clic pe Actualizare tabel',
+  'Compliance overview': 'Prezentare generală',
+  'Compliance details': 'Detalii',
+  'Compliance report': 'Raport',
+  'Overview shows both completed and not completed tasks': 'Prezentarea generală afișează atât sarcinile finalizate, cât și cele nefinalizate',
+  'Select a property to filter by calendar': 'Selectați o proprietate pentru a o filtra după calendar',
+  'Select both a start and an end date': 'Selectați atât o dată de început, cât și o dată de sfârșit',
+  'The end date must be on or after the start date': 'Data de încheiere trebuie să fie la data de început sau ulterioară acesteia',
+  'Showing all': 'Se afișează toate',
+  'No results': 'Niciun rezultat',
+  Filtering: 'Filtrare',
+  'View mode': 'Mod de vizualizare',
+  Pagination: 'Paginare',
 };
