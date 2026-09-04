@@ -66,7 +66,7 @@
         <!-- #1164 renders the per-property Oversigt table here. -->
       </ng-container>
       <ng-container *ngSwitchCase="'details'">
-        <!-- #1165 renders the week-grouped Detaljer log here. -->
+        <app-compliance-details-view></app-compliance-details-view>
       </ng-container>
       <ng-container *ngSwitchCase="'report'">
         <!-- #1167 renders the per-template Rapport columns here. -->
@@ -79,8 +79,12 @@
     requested, and the row count behind it, belong to the active view.
     `Previous`/`Next`/`of` resolve from the CORE frontend i18n, not the
     plugin's — the core Danish `Previous` is `Tidligere`, not the prototype's
-    `Forrige`. #1165 decides whether to shadow them with a plugin-local key;
-    do not add one here unilaterally.
+    `Forrige`. #1165's decision: KEEP the core keys. `Forrige` is the better
+    Danish for pagination, but the only ways to get it are to retranslate the
+    core key (which moves every other consumer in the app) or to shadow it from
+    the plugin bundle (same blast radius, since plugin translations merge into
+    the one dictionary). Neither is worth one word; the difference is recorded
+    here so the next reader does not re-open it.
   -->
   <nav
     *ngIf="state.reportVisible"

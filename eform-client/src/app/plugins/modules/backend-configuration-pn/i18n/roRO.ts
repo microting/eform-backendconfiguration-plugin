@@ -624,4 +624,8 @@ export const roRO = {
   Filtering: 'Filtrare',
   'View mode': 'Mod de vizualizare',
   Pagination: 'Paginare',
+  'No tasks match the selected filters.': 'Nicio sarcină nu corespunde filtrelor selectate.',
+  'Task done': 'Sarcină finalizată',
+  'Task not done': 'Sarcină neterminată',
+  'Could not load the data': 'Nu s-au putut încărca datele',
 };

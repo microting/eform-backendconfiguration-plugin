@@ -623,4 +623,8 @@ export const frFR = {
   Filtering: 'Filtration',
   'View mode': 'Mode d&#39;affichage',
   Pagination: 'Pagination',
+  'No tasks match the selected filters.': 'Aucune tâche ne correspond aux filtres sélectionnés.',
+  'Task done': 'Tâche accomplie',
+  'Task not done': 'Tâche non terminée',
+  'Could not load the data': 'Impossible de charger les données',
 };

@@ -624,4 +624,8 @@ export const lvLV = {
   Filtering: 'Filtrēšana',
   'View mode': 'Skata režīms',
   Pagination: 'Lappušu numerācija',
+  'No tasks match the selected filters.': 'Neviens uzdevums neatbilst atlasītajiem filtriem.',
+  'Task done': 'Uzdevums paveikts',
+  'Task not done': 'Uzdevums nav pabeigts',
+  'Could not load the data': 'Nevarēja ielādēt datus',
 };

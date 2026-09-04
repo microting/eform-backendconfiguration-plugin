@@ -624,4 +624,8 @@ export const isIS = {
   Filtering: 'Síun',
   'View mode': 'Skoða stilling',
   Pagination: 'Síðunúmeraskipti',
+  'No tasks match the selected filters.': 'Engin verkefni passa við valdar síur.',
+  'Task done': 'Verkefni lokið',
+  'Task not done': 'Verkefni ekki lokið',
+  'Could not load the data': 'Gat ekki hlaðið gögnunum',
 };

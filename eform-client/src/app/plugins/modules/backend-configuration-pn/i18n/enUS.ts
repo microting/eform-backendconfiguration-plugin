@@ -775,4 +775,17 @@ export const enUS= {
   Filtering: 'Filtering',
   'View mode': 'View mode',
   Pagination: 'Pagination',
+  // Detaljer view (#1165). The week header, the time prefix and the delete
+  // popover reuse existing keys ('Week' = Uge, 'At' = Kl., 'Delete log' =
+  // Slet log, 'This action cannot be undone'); 'Previous'/'Next'/'of' come
+  // from the CORE frontend and are deliberately NOT shadowed here.
+  'No tasks match the selected filters.': 'No tasks match the selected filters.',
+  // Accessible name of the row's completion circle. Not the existing 'Done'
+  // key: its Danish is 'Færdig' and it is used on unrelated screens.
+  'Task done': 'Task done',
+  'Task not done': 'Task not done',
+  // Shown in the result card when the FIRST fetch of a visit fails. Kept
+  // distinct from 'No tasks match the selected filters.' on purpose: a
+  // transport or server error is not the filters' fault.
+  'Could not load the data': 'Could not load the data',
 };

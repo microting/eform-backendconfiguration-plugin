@@ -624,4 +624,8 @@ export const skSK = {
   Filtering: 'Filtrovanie',
   'View mode': 'Režim zobrazenia',
   Pagination: 'Stránkovanie',
+  'No tasks match the selected filters.': 'Žiadne úlohy nezodpovedajú vybraným filtrom.',
+  'Task done': 'Úloha hotová',
+  'Task not done': 'Úloha nebola dokončená',
+  'Could not load the data': 'Nepodarilo sa načítať údaje',
 };

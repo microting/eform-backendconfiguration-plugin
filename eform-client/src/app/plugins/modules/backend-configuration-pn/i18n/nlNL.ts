@@ -624,4 +624,8 @@ export const nlNL = {
   Filtering: 'Filteren',
   'View mode': 'Weergavemodus',
   Pagination: 'Paginering',
+  'No tasks match the selected filters.': 'Er zijn geen taken die overeenkomen met de geselecteerde filters.',
+  'Task done': 'Taak voltooid',
+  'Task not done': 'Taak niet voltooid',
+  'Could not load the data': 'De gegevens konden niet worden geladen',
 };

@@ -624,4 +624,8 @@ export const elGR = {
   Filtering: 'Φιλτράρισμα',
   'View mode': 'Λειτουργία προβολής',
   Pagination: 'Σελιδοποίηση',
+  'No tasks match the selected filters.': 'Δεν υπάρχουν εργασίες που να αντιστοιχούν στα επιλεγμένα φίλτρα.',
+  'Task done': 'Η εργασία ολοκληρώθηκε',
+  'Task not done': 'Η εργασία δεν ολοκληρώθηκε',
+  'Could not load the data': 'Δεν ήταν δυνατή η φόρτωση των δεδομένων',
 };

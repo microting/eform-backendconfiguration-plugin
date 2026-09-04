@@ -624,4 +624,8 @@ export const ltLT = {
   Filtering: 'Filtravimas',
   'View mode': 'Peržiūros režimas',
   Pagination: 'Puslapavimas',
+  'No tasks match the selected filters.': 'Nėra pasirinktų filtrų atitinkančių užduočių.',
+  'Task done': 'Užduotis atlikta',
+  'Task not done': 'Užduotis neatlikta',
+  'Could not load the data': 'Nepavyko įkelti duomenų',
 };

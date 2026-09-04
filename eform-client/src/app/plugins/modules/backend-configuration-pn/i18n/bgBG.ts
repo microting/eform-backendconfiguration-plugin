@@ -624,4 +624,8 @@ export const bgBG = {
   Filtering: 'Филтриране',
   'View mode': 'Режим на преглед',
   Pagination: 'Пагинация',
+  'No tasks match the selected filters.': 'Няма задачи, които да отговарят на избраните филтри.',
+  'Task done': 'Задачата е изпълнена',
+  'Task not done': 'Задачата не е изпълнена',
+  'Could not load the data': 'Не можаха да се заредят данните',
 };

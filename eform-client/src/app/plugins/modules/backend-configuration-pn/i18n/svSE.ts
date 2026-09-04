@@ -624,4 +624,8 @@ export const svSE = {
   Filtering: 'Filtrering',
   'View mode': 'Visningsläge',
   Pagination: 'Paginering',
+  'No tasks match the selected filters.': 'Inga uppgifter matchar de valda filtren.',
+  'Task done': 'Uppgift klar',
+  'Task not done': 'Uppgiften är inte klar',
+  'Could not load the data': 'Kunde inte ladda data',
 };

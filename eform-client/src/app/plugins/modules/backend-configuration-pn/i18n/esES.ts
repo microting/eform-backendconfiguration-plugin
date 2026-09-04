@@ -624,4 +624,8 @@ export const esES = {
   Filtering: 'Filtración',
   'View mode': 'Modo de visualización',
   Pagination: 'Paginación',
+  'No tasks match the selected filters.': 'No se encontraron tareas que coincidan con los filtros seleccionados.',
+  'Task done': 'Tarea realizada',
+  'Task not done': 'Tarea no realizada',
+  'Could not load the data': 'No se pudieron cargar los datos',
 };

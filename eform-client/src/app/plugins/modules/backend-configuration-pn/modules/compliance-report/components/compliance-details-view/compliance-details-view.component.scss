@@ -1,0 +1,217 @@
+// Theme custom properties only — no colour literal anywhere in this file.
+// Every token used here is defined in BOTH scss/themes/_eform.scss and
+// scss/themes/_workspace.scss, in both their light and dark colour maps. The
+// calendar Compliance view this replaces hardcoded #fff / #e0e0e0 / #2e7d32 /
+// #1a73e8 and rendered wrong under theme-workspace and in dark mode.
+//
+// The two pairings that carry the "done" state were picked for contrast, not
+// for looks:
+//   --status-aktiv-bg / --status-aktiv-fg  is #1b5e20-on-white (light) and
+//     #2e7d32-on-white (dark) in BOTH themes — 7.9:1 and 5.1:1 (computed from
+//     the token values; both clear WCAG AA).
+//   --md-primary-container / --md-on-surface  is the Material container pair,
+//     which is legible in all four theme/mode combinations and keeps the chips
+//     readable when they sit on the green row.
+// Using --status-success for the fill instead would put white on #66BB6A in
+// eform dark (2.4:1) — a filled success surface nobody could read.
+
+.compliance-details {
+  display: flex;
+  flex-direction: column;
+
+  &__empty {
+    padding: var(--spacing-2xl);
+    text-align: center;
+    color: var(--text-secondary);
+  }
+
+  &__week {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__week-title {
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-lg) 0 var(--spacing-xs);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-xs);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+
+    &.is-clickable {
+      cursor: pointer;
+    }
+
+    &.is-clickable:hover {
+      background: var(--table-row-hover);
+    }
+
+    // The post-completion ring. Inset, so it does not shift the row.
+    &.is-highlighted {
+      box-shadow: inset 0 0 0 2px var(--md-primary);
+    }
+
+    &.is-done {
+      background: var(--status-aktiv-bg);
+      color: var(--status-aktiv-fg);
+      margin: var(--spacing-xs) 0;
+      // Not clickable: a completed row has nothing left to complete.
+      cursor: default;
+
+      .compliance-details__property,
+      .compliance-details__board,
+      .compliance-details__time,
+      .compliance-details__date,
+      .compliance-details__title {
+        color: var(--status-aktiv-fg);
+      }
+
+      .compliance-details__circle {
+        border-color: var(--status-aktiv-fg);
+      }
+
+      .compliance-details__check.is-visible {
+        color: var(--status-aktiv-fg);
+      }
+
+      // A blue ring would disappear into the green; the prototype switches to a
+      // light ring for the same reason (compliance.css:270-272).
+      &.is-highlighted {
+        box-shadow: inset 0 0 0 2px var(--status-aktiv-fg);
+      }
+    }
+  }
+
+  &__date {
+    min-width: 150px;
+    flex-shrink: 0;
+  }
+
+  &__property {
+    min-width: 96px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+
+  &__board {
+    min-width: 90px;
+    flex-shrink: 0;
+    font-weight: var(--font-weight-medium);
+  }
+
+  &__circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--md-outline);
+    border-radius: var(--radius-full);
+  }
+
+  &__check {
+    // The check is always in the DOM (the circle keeps one accessible name for
+    // both states); only its opacity changes.
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    opacity: 0;
+
+    &.is-visible {
+      opacity: 1;
+    }
+  }
+
+  &__time {
+    min-width: 120px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  &__title {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--spacing-sm);
+    border-radius: var(--radius-full);
+    background: var(--md-surface-variant);
+    color: var(--md-on-surface);
+    border: 1px solid var(--border-primary);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+
+    // The employee chip is the filled accent pill. It keeps its own fill on a
+    // completed row, which is what keeps it readable against the green.
+    &--worker {
+      background: var(--md-primary-container);
+      color: var(--md-on-surface);
+      border-color: transparent;
+    }
+  }
+
+  &__actions {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__delete {
+    color: var(--icon-secondary);
+
+    &:hover {
+      color: var(--error);
+    }
+  }
+}
+
+// Rendered into the CDK overlay container, so it is NOT scoped by the
+// component's :host — hence a plain class rather than a nested one. Width and
+// placement are set by the overlay config and the position strategy.
+.compliance-delete-popover {
+  background: var(--md-surface-container);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-panel);
+  padding: var(--spacing-lg);
+
+  &__title {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__text {
+    margin: 0 0 var(--spacing-lg);
+    color: var(--text-secondary);
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+  }
+}

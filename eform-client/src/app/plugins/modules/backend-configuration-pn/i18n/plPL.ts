@@ -624,4 +624,8 @@ export const plPL = {
   Filtering: 'Filtracja',
   'View mode': 'Tryb widoku',
   Pagination: 'Paginacja',
+  'No tasks match the selected filters.': 'Żadne zadanie nie pasuje do wybranych filtrów.',
+  'Task done': 'Zadanie wykonane',
+  'Task not done': 'Zadanie nie zostało wykonane',
+  'Could not load the data': 'Nie można załadować danych',
 };

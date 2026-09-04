@@ -1,7 +1,9 @@
 import {
   Component, Inject, OnInit, QueryList, ViewChildren, inject,
 } from '@angular/core';
+import {MAT_DATE_FORMATS} from '@angular/material/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {CALENDAR_MAT_DATE_FORMATS} from '../../calendar-date-formats';
 import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto, CaseEditRequest, ReplyElementDto, ReplyRequest,
@@ -30,6 +32,18 @@ export interface CalendarCompleteEventModalData {
   templateUrl: './calendar-complete-event-modal.component.html',
   styleUrls: ['./calendar-complete-event-modal.component.scss'],
   standalone: false,
+  // "Udført dato" renders the long Danish form. Declared HERE, not only on
+  // CalendarModule, because MatDialog creates this component under the injector
+  // of the module that opened it (`Dialog._createInjector` parents on
+  // `config.injector ?? config.viewContainerRef?.injector ?? MatDialog._injector`,
+  // and MatDialogModule provides MatDialog per-module). A sibling module that
+  // opens this modal — the standalone Compliance page, #1165 — therefore must
+  // NOT be forced to carry CalendarModule's MAT_DATE_FORMATS just to keep this
+  // input's format. A component provider is on the node-injector path of both
+  // the `matInput [matDatepicker]` and the popup calendar (MatDatepicker
+  // attaches MatDatepickerContent through its own ViewContainerRef), so both
+  // resolve it whatever the environment injector says.
+  providers: [{provide: MAT_DATE_FORMATS, useValue: CALENDAR_MAT_DATE_FORMATS}],
 })
 export class CalendarCompleteEventModalComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<CalendarCompleteEventModalComponent>);
