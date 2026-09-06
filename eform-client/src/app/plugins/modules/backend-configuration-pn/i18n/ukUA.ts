@@ -750,4 +750,6 @@ export const ukUA = {
   'Image {{index}} of {{count}}': 'Зображення {{index}} з {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Зображення {{index}} з {{count}} для справи {{caseId}}',
   'Image {{index}}': 'Зображення {{index}}',
+  'PDF preview': 'Попередній перегляд PDF',
+  'Export failed': 'Не вдалося експортувати',
 };

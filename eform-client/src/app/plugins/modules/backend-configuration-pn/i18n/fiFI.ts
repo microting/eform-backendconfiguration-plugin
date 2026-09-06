@@ -750,4 +750,6 @@ export const fiFI = {
   'Image {{index}} of {{count}}': 'Kuva {{index}} / {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Kuva {{index}} / {{count}} tapaukselle {{caseId}}',
   'Image {{index}}': 'Kuva {{index}}',
+  'PDF preview': 'PDF-esikatselu',
+  'Export failed': 'Vienti epäonnistui',
 };

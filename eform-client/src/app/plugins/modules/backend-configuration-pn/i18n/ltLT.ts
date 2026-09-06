@@ -750,4 +750,6 @@ export const ltLT = {
   'Image {{index}} of {{count}}': 'Paveikslėlis {{index}} iš {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Paveikslėlis {{index}} iš {{count}}, skirtas bylai {{caseId}}',
   'Image {{index}}': 'Paveikslėlis {{index}}',
+  'PDF preview': 'PDF peržiūra',
+  'Export failed': 'Eksportuoti nepavyko',
 };

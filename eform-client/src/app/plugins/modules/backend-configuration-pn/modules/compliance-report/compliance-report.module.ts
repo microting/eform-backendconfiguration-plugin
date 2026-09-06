@@ -17,6 +17,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {EFORM_MAT_DATEFNS_DATE_FORMATS} from 'src/app/common/modules/eform-date-adapter/eform-mat-datefns-date-formats';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {CalendarModule} from '../calendar/calendar.module';
@@ -24,6 +25,7 @@ import {ComplianceReportRouting} from './compliance-report.routing';
 import {
   ComplianceDetailsViewComponent,
   ComplianceOverviewViewComponent,
+  CompliancePdfPreviewDialogComponent,
   ComplianceReportFiltersComponent,
   ComplianceReportPageComponent,
   ComplianceReportViewComponent,
@@ -42,6 +44,7 @@ import {ComplianceReportStateService} from './store';
     ComplianceOverviewViewComponent,
     ComplianceDetailsViewComponent,
     ComplianceReportViewComponent,
+    CompliancePdfPreviewDialogComponent,
   ],
   imports: [
     CommonModule,
@@ -67,6 +70,11 @@ import {ComplianceReportStateService} from './store';
     // `applyFrozenColumnOffsets` measure-and-write loop (#1167 §5).
     MtxGridModule,
     MtxSelectModule,
+    // The PDF preview dialog (#1189) renders the server's bytes with
+    // ng2-pdf-viewer — the same renderer the Files module uses
+    // (files.module.ts). Display only: the PDF itself is generated
+    // server-side (#1160 decision 4).
+    PdfViewerModule,
     // Detaljer (#1165) opens the calendar's completion modal
     // (CalendarCompleteEventModalComponent) rather than re-declaring the whole
     // prepare-complete pipeline. The import is for the COMPONENT only — its

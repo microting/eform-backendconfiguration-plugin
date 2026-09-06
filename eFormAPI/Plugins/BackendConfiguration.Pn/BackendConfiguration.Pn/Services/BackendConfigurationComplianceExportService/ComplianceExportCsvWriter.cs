@@ -162,9 +162,7 @@ public static class ComplianceExportCsvWriter
     /// Rapport answer cell is worker-typed free text, and property, task and tag
     /// names are equally user-supplied. A worker who types
     /// <c>=cmd|'/c calc'!A0</c> would otherwise produce a file that a Danish Excel
-    /// executes on open, arriving from the company's own compliance endpoint. The
-    /// XLSX path is not affected — cells are written as <c>CellValues.String</c>,
-    /// never as an <c>&lt;f&gt;</c> element — so the exposure is CSV-only, and this
+    /// executes on open, arriving from the company's own compliance endpoint. This
     /// is the plugin's first user-facing CSV download.
     /// </para>
     ///
@@ -185,10 +183,7 @@ public static class ComplianceExportCsvWriter
     /// guarded, and in LibreOffice Calc the apostrophe is then VISIBLE (see
     /// <see cref="FormulaGuard"/>). That artifact is accepted: a visible apostrophe
     /// on a minority of cells is a smaller harm than a compliance file from the
-    /// company's own endpoint executing <c>=cmd|'/c calc'!A0</c> on open. The XLSX
-    /// path needs no guard — cells are written as <c>CellValues.String</c>, never
-    /// as an <c>&lt;f&gt;</c> element — so the exposure, and the artifact, are
-    /// CSV-only.
+    /// company's own endpoint executing <c>=cmd|'/c calc'!A0</c> on open.
     /// </para>
     /// </summary>
     public static string Escape(string value)

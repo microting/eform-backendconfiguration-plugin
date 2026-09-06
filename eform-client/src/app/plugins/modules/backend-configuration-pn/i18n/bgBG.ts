@@ -750,4 +750,6 @@ export const bgBG = {
   'Image {{index}} of {{count}}': 'Изображение {{index}} от {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Изображение {{index}} от {{count}} за случай {{caseId}}',
   'Image {{index}}': 'Изображение {{index}}',
+  'PDF preview': 'Преглед на PDF',
+  'Export failed': 'Експортирането е неуспешно',
 };

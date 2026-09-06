@@ -750,4 +750,6 @@ export const ptPT = {
   'Image {{index}} of {{count}}': 'Imagem {{index}} de {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Imagem {{index}} de {{count}} do caso {{caseId}}',
   'Image {{index}}': 'Imagem {{index}}',
+  'PDF preview': 'Pré-visualização do PDF',
+  'Export failed': 'Falha na exportação',
 };

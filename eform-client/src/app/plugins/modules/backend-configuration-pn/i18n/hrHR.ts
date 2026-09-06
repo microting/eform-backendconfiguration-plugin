@@ -750,4 +750,6 @@ export const hrHR = {
   'Image {{index}} of {{count}}': 'Slika {{index}} od {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Slika {{index}} od {{count}} za predmet {{caseId}}',
   'Image {{index}}': 'Slika {{index}}',
+  'PDF preview': 'Pregled PDF-a',
+  'Export failed': 'Izvoz nije uspio',
 };

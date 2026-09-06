@@ -750,4 +750,6 @@ export const huHU = {
   'Image {{index}} of {{count}}': 'Kép {{index}} / {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Kép {{index}} / {{count}} a {{caseId}} ügyhöz',
   'Image {{index}}': 'Kép {{index}}',
+  'PDF preview': 'PDF előnézet',
+  'Export failed': 'Az exportálás nem sikerült',
 };

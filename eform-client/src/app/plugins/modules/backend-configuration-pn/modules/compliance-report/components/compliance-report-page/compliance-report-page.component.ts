@@ -1,5 +1,16 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
+import {TranslateService} from '@ngx-translate/core';
+import {Subject} from 'rxjs';
+import {finalize, takeUntil} from 'rxjs/operators';
+import {saveAs} from 'file-saver';
+import {ComplianceReportExportRequestModel} from '../../../../models';
+import {BackendConfigurationPnComplianceReportService} from '../../../../services';
 import {ComplianceExportFormat} from '../compliance-report-filters/compliance-report-filters.component';
+import {
+  CompliancePdfPreviewDialogComponent,
+  CompliancePdfPreviewDialogData,
+} from '../compliance-pdf-preview-dialog/compliance-pdf-preview-dialog.component';
 import {ComplianceMode, ComplianceReportStateService} from '../../store';
 
 /**
@@ -20,7 +31,9 @@ import {ComplianceMode, ComplianceReportStateService} from '../../store';
   templateUrl: './compliance-report-page.component.html',
   styleUrls: ['./compliance-report-page.component.scss'],
 })
-export class ComplianceReportPageComponent implements OnInit {
+export class ComplianceReportPageComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   readonly modes: {mode: ComplianceMode; label: string}[] = [
     // Deliberately NOT the existing 'Overview' key: its Danish is 'Overblik'
     // and it is used on unrelated screens, so retranslating it to 'Oversigt'
@@ -30,7 +43,19 @@ export class ComplianceReportPageComponent implements OnInit {
     {mode: 'report', label: 'Compliance report'},
   ];
 
-  constructor(public state: ComplianceReportStateService) {}
+  /**
+   * True while an export request is in flight (#1189). Bound into the filter
+   * bar, which disables Download and shows a spinner; cleared by `finalize`
+   * on success AND on error, so a 400 never leaves the button dead.
+   */
+  exporting = false;
+
+  constructor(
+    public state: ComplianceReportStateService,
+    private complianceReportService: BackendConfigurationPnComplianceReportService,
+    private dialog: MatDialog,
+    private translate: TranslateService,
+  ) {}
 
   ngOnInit(): void {
     // Land on a populated Oversigt rather than "click this button to see
@@ -49,6 +74,11 @@ export class ComplianceReportPageComponent implements OnInit {
     // query with no user gesture, which #1163 §6 forbids. `enterPage()` owns
     // both branches; see its comment.
     this.state.enterPage();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   isActive(mode: ComplianceMode): boolean {
@@ -88,11 +118,84 @@ export class ComplianceReportPageComponent implements OnInit {
     this.state.setShowAll();
   }
 
-  /** #1169 replaces this stub with the server-side export call. */
+  /**
+   * "Hent som" → Download (#1189). Posts the server-side export (#1169 — the
+   * PDF/CSV is GENERATED on the server, #1160 decision 4; nothing here
+   * renders a document) for the CURRENT view and filters, then either saves
+   * the CSV straight away or opens the PDF preview dialog over the received
+   * bytes.
+   *
+   * The body is `state.requestModel` as-is plus `viewMode`/`format`/
+   * `includeImageAppendix`. `requestModel` also carries `pageIndex`,
+   * `pageSize`, `sort` and `isSortDsc`, which the C# request model does not
+   * declare; the model binder ignores them, so they are harmless on the wire.
+   * `dateFrom`/`dateTo` are omitted by the state service when the custom range
+   * is incomplete — the server then binds `default(DateTime)` and returns an
+   * empty file — but `canDownload` (`reportVisible && total > 0`) already
+   * keeps that path unreachable: nothing is visible without a valid period.
+   */
   onDownloadRequested(format: ComplianceExportFormat): void {
-    // Intentionally inert. The control is placed and correctly gated here so
-    // #1169 only has to wire the request; do not add a client-side export —
-    // decision 4 in #1160 puts PDF/Excel/CSV generation on the server.
-    void format;
+    if (this.exporting) {
+      return;
+    }
+    const body: ComplianceReportExportRequestModel = {
+      ...this.state.requestModel,
+      viewMode: this.state.mode,
+      format,
+      // Sent explicitly so the wire shape is complete. Whether the UI offers
+      // the image appendix — and what it sends — is the Rapport export
+      // issue's decision; until it lands this is `false`.
+      includeImageAppendix: false,
+    };
+
+    this.exporting = true;
+    this.complianceReportService
+      .export(body, this.buildFallbackFileName(body))
+      .pipe(
+        // Runs on success, on error AND on teardown, so the button re-enables
+        // whatever the outcome.
+        finalize(() => (this.exporting = false)),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: ({blob, fileName}) => {
+          if (format === 'csv') {
+            saveAs(blob, fileName);
+            return;
+          }
+          this.dialog.open(CompliancePdfPreviewDialogComponent, {
+            data: {blob, fileName} as CompliancePdfPreviewDialogData,
+            // Wide enough for an A4-landscape page to be readable without
+            // zooming; the dialog's own SCSS sizes the viewer height.
+            width: 'min(95vw, 1400px)',
+            maxWidth: '95vw',
+            autoFocus: false,
+          });
+        },
+        // The service has already toasted (`Export failed`); nothing else to
+        // do here — `finalize` above re-enables the button.
+        error: () => {},
+      });
+  }
+
+  /**
+   * Last-resort file name, used only when the response carried no readable
+   * `Content-Disposition` (the server always sends one; a proxy that strips
+   * it is the case this covers). Same `{view}-...-{from}-{to}.{ext}` skeleton
+   * as the server's, minus the property/board labels the page does not hold.
+   */
+  private buildFallbackFileName(body: ComplianceReportExportRequestModel): string {
+    const viewLabel = this.modes.find((m) => m.mode === body.viewMode)?.label ?? 'Compliance';
+    const toDanishDate = (iso: string | undefined): string => {
+      // yyyy-MM-dd → dd.MM.yyyy, matching `ComplianceExportFileNaming`.
+      const m = iso ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso) : null;
+      return m ? `${m[3]}.${m[2]}.${m[1]}` : '';
+    };
+    const parts = [
+      this.translate.instant(viewLabel),
+      toDanishDate(body.dateFrom),
+      toDanishDate(body.dateTo),
+    ].filter((part) => !!part);
+    return `${parts.join('-')}.${body.format}`;
   }
 }

@@ -300,3 +300,31 @@ export interface ComplianceReportTagGroupModel {
   tagName: string | null;
   templates: ComplianceReportTemplateGroupModel[];
 }
+
+// ---------------------------------------------------------------------------
+// Export — `POST api/backend-configuration-pn/compliance-report/export`
+// (#1169 endpoint, #1189 wiring)
+// ---------------------------------------------------------------------------
+
+/**
+ * Body of the export call. Mirrors the C# `ComplianceReportExportRequestModel`.
+ *
+ * Deliberately EXTENDS the paged request model rather than re-listing its
+ * filter fields: the page posts `state.requestModel` as-is plus the three
+ * export fields below, so the export always carries exactly the filter set
+ * the visible rows were fetched with. That spread also carries
+ * `pageIndex`/`pageSize`/`sort`/`isSortDsc`, which the C# model does not
+ * declare — the model binder ignores unknown members, so they are harmless
+ * on the wire, and an export is unpaged by definition.
+ */
+export interface ComplianceReportExportRequestModel extends ComplianceReportRequestModel {
+  /** Which of the three views to render — the page's current mode. */
+  viewMode: 'overview' | 'details' | 'report';
+  /** `pdf` | `csv`. Excel was removed by product request (#1189). */
+  format: 'pdf' | 'csv';
+  /**
+   * Whether the PDF appends the image answers. The Rapport export issue
+   * decides what the UI sends; until then the page sends `false`.
+   */
+  includeImageAppendix: boolean;
+}

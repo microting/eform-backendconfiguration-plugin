@@ -1,4 +1,4 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {Subject} from 'rxjs';
 import {distinctUntilChanged, map, takeUntil} from 'rxjs/operators';
 import {TranslateService} from '@ngx-translate/core';
@@ -15,7 +15,8 @@ import {
   ComplianceReportStateService,
 } from '../../store';
 
-export type ComplianceExportFormat = 'pdf' | 'csv' | 'excel';
+/** PDF or CSV only (#1189) — the format select offers exactly these two. */
+export type ComplianceExportFormat = 'pdf' | 'csv';
 
 /**
  * The shared ten-control filter bar of the standalone Compliance page
@@ -44,10 +45,18 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   /**
-   * #1169 wires the actual export here. Until then the button is a control
-   * only — it is placed, enabled/disabled correctly, and emits.
+   * Emits the chosen format when Download is clicked; the page owns the
+   * request (#1189) because the export body is the page's `requestModel` plus
+   * its current mode, and the PDF preview dialog is opened from there.
    */
   @Output() downloadRequested = new EventEmitter<ComplianceExportFormat>();
+
+  /**
+   * True while the page has an export request in flight. Rendering a PDF goes
+   * through soffice server-side and can take seconds to minutes, so the button
+   * shows a spinner and refuses a second click until the first answers.
+   */
+  @Input() exporting = false;
 
   properties: CommonDictionaryModel[] = [];
   boards: CalendarBoardModel[] = [];
@@ -86,7 +95,6 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
     this.exportOptions = [
       {value: 'pdf', label: 'PDF'},
       {value: 'csv', label: 'CSV'},
-      {value: 'excel', label: 'Excel'},
     ];
 
     this.loadProperties();
@@ -339,7 +347,7 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
   }
 
   onDownload(): void {
-    if (!this.canDownload) {
+    if (!this.canDownload || this.exporting) {
       return;
     }
     this.downloadRequested.emit(this.exportFormat);

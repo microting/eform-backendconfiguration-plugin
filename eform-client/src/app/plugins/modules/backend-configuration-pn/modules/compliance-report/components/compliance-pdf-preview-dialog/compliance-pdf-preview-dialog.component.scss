@@ -1,0 +1,35 @@
+// Theme tokens only — no colour literals (both themes define these).
+.compliance-pdf-preview {
+  &__subtitle {
+    // Sits directly under mat-dialog-title, which Material pads on its own.
+    margin: 0 24px 8px;
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+
+  &__content {
+    // ng2-pdf-viewer positions its scroll container absolutely inside the
+    // host, so the host — and therefore this content block — must carry an
+    // explicit height or nothing is visible.
+    // 65vh, not more: Material caps mat-dialog-content at max-height: 65vh.
+    height: 65vh;
+    min-height: 320px;
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  &__error {
+    color: var(--text-error);
+  }
+}
+
+pdf-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

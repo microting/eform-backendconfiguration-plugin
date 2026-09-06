@@ -204,7 +204,12 @@
     {{ 'Update table' | translate }}
   </button>
 
-  <!-- 9. + 10. Export controls. Placed here, wired by #1169. -->
+  <!--
+    9. + 10. Export controls (#1189). The select offers PDF and CSV only; the
+    button emits to the page, which posts the export and — for PDF — opens the
+    preview dialog. While the request is in flight the button is disabled and
+    carries a spinner: a PDF render can take a while server-side.
+  -->
   <div class="text-field--rounded compliance-filters__field">
     <mat-form-field>
       <mtx-select
@@ -223,9 +228,16 @@
     mat-stroked-button
     id="complianceDownloadBtn"
     class="compliance-filters__action"
-    [disabled]="!canDownload"
+    [class.is-busy]="exporting"
+    [disabled]="!canDownload || exporting"
+    [attr.aria-busy]="exporting"
     (click)="onDownload()"
   >
-    {{ 'Download' | translate }}
+    <mat-spinner
+      *ngIf="exporting"
+      diameter="16"
+      class="compliance-filters__download-spinner"
+    ></mat-spinner>
+    <span>{{ 'Download' | translate }}</span>
   </button>
 </div>

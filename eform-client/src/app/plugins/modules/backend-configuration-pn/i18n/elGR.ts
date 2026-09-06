@@ -750,4 +750,6 @@ export const elGR = {
   'Image {{index}} of {{count}}': 'Εικόνα {{index}} από {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Εικόνα {{index}} από {{count}} για την υπόθεση {{caseId}}',
   'Image {{index}}': 'Εικόνα {{index}}',
+  'PDF preview': 'Προεπισκόπηση PDF',
+  'Export failed': 'Η εξαγωγή απέτυχε',
 };

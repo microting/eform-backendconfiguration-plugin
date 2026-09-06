@@ -750,4 +750,6 @@ export const itIT = {
   'Image {{index}} of {{count}}': 'Immagine {{index}} di {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Immagine {{index}} di {{count}} per il caso {{caseId}}',
   'Image {{index}}': 'Immagine {{index}}',
+  'PDF preview': 'Anteprima PDF',
+  'Export failed': 'Esportazione non riuscita',
 };

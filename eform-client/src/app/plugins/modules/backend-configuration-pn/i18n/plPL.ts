@@ -750,4 +750,6 @@ export const plPL = {
   'Image {{index}} of {{count}}': 'Obraz {{index}} z {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Obraz {{index}} z {{count}} dla sprawy {{caseId}}',
   'Image {{index}}': 'Obraz {{index}}',
+  'PDF preview': 'Podgląd PDF',
+  'Export failed': 'Eksport nie powiódł się',
 };

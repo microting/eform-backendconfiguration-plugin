@@ -750,4 +750,6 @@ export const skSK = {
   'Image {{index}} of {{count}}': 'Obrázok {{index}} z {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Obrázok {{index}} z {{count}} pre prípad {{caseId}}',
   'Image {{index}}': 'Obrázok {{index}}',
+  'PDF preview': 'Náhľad PDF',
+  'Export failed': 'Export zlyhal',
 };

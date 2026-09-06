@@ -750,4 +750,6 @@ export const roRO = {
   'Image {{index}} of {{count}}': 'Imaginea {{index}} din {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Imaginea {{index}} din {{count}} pentru cazul {{caseId}}',
   'Image {{index}}': 'Imaginea {{index}}',
+  'PDF preview': 'Previzualizare PDF',
+  'Export failed': 'Exportul a eșuat',
 };

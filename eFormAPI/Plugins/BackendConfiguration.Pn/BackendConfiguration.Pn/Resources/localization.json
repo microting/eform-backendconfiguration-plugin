@@ -6222,5 +6222,36 @@
       "el-GR": "Σφάλμα κατά τη δημιουργία του αρχείου αναφοράς",
       "is-IS": "Villa við gerð skýrsluskrár"
     }
+  },
+  {
+    "Key": "Period",
+    "LocalizedValue": {
+      "da": "Periode",
+      "de": "Zeitraum",
+      "en-US": "Period",
+      "uk-UA": "Період",
+      "pl-PL": "Okres",
+      "no-NO": "Periode",
+      "sv-SE": "Period",
+      "es-ES": "Período",
+      "fr-FR": "Période",
+      "it-IT": "Periodo",
+      "nl-NL": "Periode",
+      "pt-BR": "Período",
+      "pt-PT": "Período",
+      "fi-FI": "Ajanjakso",
+      "et-ET": "Periood",
+      "lv-LV": "Periods",
+      "lt-LT": "Laikotarpis",
+      "ro-RO": "Perioadă",
+      "hr-HR": "Razdoblje",
+      "sl-SL": "Obdobje",
+      "cs-CZ": "Období",
+      "sk-SK": "Obdobie",
+      "hu-HU": "Időszak",
+      "bg-BG": "Период",
+      "el-GR": "Περίοδος",
+      "is-IS": "Tímabil"
+    }
   }
 ]

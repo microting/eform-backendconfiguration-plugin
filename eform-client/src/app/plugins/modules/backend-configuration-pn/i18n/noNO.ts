@@ -750,4 +750,6 @@ export const noNO = {
   'Image {{index}} of {{count}}': 'Bilde {{index}} av {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Bilde {{index}} av {{count}} for sak {{caseId}}',
   'Image {{index}}': 'Bilde {{index}}',
+  'PDF preview': 'PDF-forhåndsvisning',
+  'Export failed': 'Eksporten mislyktes',
 };

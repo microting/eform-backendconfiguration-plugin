@@ -750,4 +750,6 @@ export const slSL = {
   'Image {{index}} of {{count}}': 'Slika {{index}} od {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Slika {{index}} od {{count}} za zadevo {{caseId}}',
   'Image {{index}}': 'Slika {{index}}',
+  'PDF preview': 'Predogled PDF',
+  'Export failed': 'Izvoz ni uspel',
 };

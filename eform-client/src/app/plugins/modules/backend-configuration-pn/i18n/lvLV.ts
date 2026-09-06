@@ -750,4 +750,6 @@ export const lvLV = {
   'Image {{index}} of {{count}}': 'Attēls {{index}} no {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Attēls {{index}} no {{count}} lietai {{caseId}}',
   'Image {{index}}': 'Attēls {{index}}',
+  'PDF preview': 'PDF priekšskatījums',
+  'Export failed': 'Eksports neizdevās',
 };

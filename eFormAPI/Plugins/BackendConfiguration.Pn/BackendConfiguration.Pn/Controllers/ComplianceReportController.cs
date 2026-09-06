@@ -72,11 +72,12 @@ public class ComplianceReportController : Controller
     }
 
     /// <summary>
-    /// Server-side CSV / Excel / PDF export for all three view modes (#1169).
+    /// Server-side CSV / PDF export for all three view modes (#1169; the xlsx
+    /// format was removed by #1189 and is rejected with InvalidExportRequest).
     ///
     /// <para>
-    /// ONE endpoint, nine combinations: <c>viewMode</c> ∈ {overview, details,
-    /// report} × <c>format</c> ∈ {csv, xlsx, pdf}. The body carries the CURRENT
+    /// ONE endpoint, six combinations: <c>viewMode</c> ∈ {overview, details,
+    /// report} × <c>format</c> ∈ {csv, pdf}. The body carries the CURRENT
     /// FILTER SET, so the file always matches the filter bar — including while the
     /// screen still shows the pre-fetch placeholder, which is why no download
     /// control has to be disabled (#1169 §3).

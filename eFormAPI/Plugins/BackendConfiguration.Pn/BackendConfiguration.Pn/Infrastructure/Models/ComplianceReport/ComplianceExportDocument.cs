@@ -19,22 +19,23 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 /// <c>ReportEformItemModel</c> has a fixed field for each of them.
 /// #1169's acceptance criteria require Oversigt to be exactly three columns
 /// (Virksomhed / Overskredet / Compliance %) and Detaljer exactly eight
-/// (Dato … Status), neither of which contains that preamble. Excel additionally
-/// dereferences <c>MicrotingSdkCaseDoneAt!.Value</c> unconditionally
+/// (Dato … Status), neither of which contains that preamble. The Excel one
+/// additionally dereferences <c>MicrotingSdkCaseDoneAt!.Value</c> unconditionally
 /// (<c>ExcelService.cs:417</c>), which NULL-refs on every not-yet-completed row —
-/// and Detaljer is dominated by open tasks.
+/// and Detaljer is dominated by open tasks. (The compliance export's own Excel
+/// renderer was removed by product request in #1189; the reasoning above still
+/// explains why Word/PDF is not <c>GenerateWordDashboard</c>.)
 /// </para>
 ///
 /// <para>
 /// Extending those two methods was rejected because both are live on
 /// <c>GET report/reports/file</c> and #1169 forbids regressing them. So the
-/// MECHANISMS are reused verbatim — <c>OpenXMLHelper</c> for the workbook, styles
-/// and theme parts, <c>WordProcessor</c> over the same two embedded resources
-/// (<c>Resources/Templates/WordExport/page.html</c> and <c>file.docx</c>), the
-/// same <c>MagickImage</c> + <c>Core.GetFileFromS3Storage</c>/local-disk image
-/// embedding, and the same docx → <c>soffice</c> route to PDF — while the model
-/// they consume is replaced by this one, which can express an arbitrary column
-/// set.
+/// MECHANISMS are reused verbatim — <c>WordProcessor</c> over the same two
+/// embedded resources (<c>Resources/Templates/WordExport/page.html</c> and
+/// <c>file.docx</c>), the same <c>MagickImage</c> +
+/// <c>Core.GetFileFromS3Storage</c>/local-disk image embedding, and the same
+/// docx → <c>soffice</c> route to PDF — while the model they consume is replaced
+/// by this one, which can express an arbitrary column set.
 /// </para>
 ///
 /// <para>
@@ -56,12 +57,29 @@ public class ComplianceExportDocument
     public string Title { get; set; }
 
     /// <summary>
-    /// Localised "period" line, <c>dd.MM.yyyy - dd.MM.yyyy</c>. Rendered on the
-    /// Word/PDF title page ONLY. The CSV writes no preamble at all — its first line
-    /// is the header row, see <c>ComplianceExportCsvWriter</c> — and Excel carries
-    /// the period in no cell either; in both cases the file NAME already carries it.
+    /// "Period" line, <c>dd.MM.yyyy – dd.MM.yyyy</c> (en dash, the mock-ups'
+    /// separator; the file NAME keeps hyphen-separated date parts). Rendered in the
+    /// Word/PDF page header ONLY (#1189). The CSV writes no preamble at all — its
+    /// first line is the header row, see <c>ComplianceExportCsvWriter</c> — and the
+    /// file name already carries the period.
     /// </summary>
     public string Period { get; set; }
+
+    /// <summary>
+    /// Display label of the property the filter names, or the localised "All"
+    /// when it names none (#1189). Resolved ONCE by the export service and reused
+    /// for both the Word/PDF page header and the file name, so the two can never
+    /// disagree. Ignored by CSV.
+    /// </summary>
+    public string PropertyLabel { get; set; }
+
+    /// <summary>
+    /// Display label of the single board the filter names, or the localised
+    /// "All" for no board or a multi-board selection (#1189). Same
+    /// resolve-once-reuse-twice rule as <see cref="PropertyLabel"/>. Ignored by
+    /// CSV.
+    /// </summary>
+    public string BoardLabel { get; set; }
 
     /// <summary>
     /// One table per rendered section. Oversigt and Detaljer produce exactly one;
@@ -84,8 +102,8 @@ public class ComplianceExportDocument
     /// <para>
     /// Greater than <see cref="AppendixImagesEmbedded"/> means the ceiling bit.
     /// Word/PDF then state it as an <c>(embedded/requested)</c> line, the same
-    /// idiom the per-case cap already uses on a block caption; CSV and Excel carry
-    /// no appendix and ignore both counters.
+    /// idiom the per-case cap already uses on a block caption; CSV carries no
+    /// appendix and ignores both counters.
     /// </para>
     /// </summary>
     public int AppendixImagesRequested { get; set; }
@@ -109,8 +127,7 @@ public class ComplianceExportTable
 
     /// <summary>
     /// Per-case image blocks, populated ONLY for Rapport when the request opted
-    /// into the appendix. CSV and Excel ignore it; Word/PDF render it after the
-    /// table.
+    /// into the appendix. CSV ignores it; Word/PDF render it after the table.
     /// </summary>
     public List<ComplianceExportImageBlock> ImageBlocks { get; set; } = [];
 }
@@ -121,15 +138,14 @@ public enum ComplianceExportCellType
     Text = 0,
 
     /// <summary>
-    /// Excel writes a numeric cell; CSV writes the invariant decimal form so the
-    /// value stays machine-readable.
+    /// CSV writes the invariant decimal form so the value stays machine-readable;
+    /// Word/PDF write the cell's display text.
     /// </summary>
     Number = 1,
 
     /// <summary>
-    /// Excel writes an OADate cell under the date style, CSV writes ISO
-    /// <c>yyyy-MM-dd</c> (#1169 §2: the CSV date must be unambiguous), Word/PDF
-    /// write <c>dd.MM.yyyy</c>.
+    /// CSV writes ISO <c>yyyy-MM-dd</c> (#1169 §2: the CSV date must be
+    /// unambiguous), Word/PDF write <c>dd.MM.yyyy</c>.
     /// </summary>
     Date = 2
 }
@@ -148,9 +164,9 @@ public class ComplianceExportRow
     /// <summary>
     /// True on the Oversigt "I alt" row. It is a DATA row, not a footer object —
     /// the prototype appends it to the rows (<c>compliance-overview.js:222-241</c>)
-    /// — but renderers mark it so a reader can tell it apart: bold in Excel and in
-    /// Word/PDF, and prefixed in CSV by nothing at all (its first cell already
-    /// reads "I alt").
+    /// — but renderers mark it so a reader can tell it apart: bold in Word/PDF,
+    /// and prefixed in CSV by nothing at all (its first cell already reads
+    /// "I alt").
     /// </summary>
     public bool IsTotal { get; set; }
 }

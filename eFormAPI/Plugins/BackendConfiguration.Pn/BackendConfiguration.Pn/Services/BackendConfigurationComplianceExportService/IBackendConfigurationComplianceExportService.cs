@@ -6,10 +6,10 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 
 /// <summary>
-/// Server-side CSV / Excel / PDF export for all three Compliance view modes
-/// (#1169). ONE entry point: the view mode and the output format are both fields
-/// on the request, so the three views × three formats are nine combinations of one
-/// endpoint rather than nine endpoints.
+/// Server-side CSV / PDF export for all three Compliance view modes (#1169; Excel
+/// removed by product request, #1189). ONE entry point: the view mode and the
+/// output format are both fields on the request, so the three views × two formats
+/// are six combinations of one endpoint rather than six endpoints.
 /// </summary>
 public interface IBackendConfigurationComplianceExportService
 {

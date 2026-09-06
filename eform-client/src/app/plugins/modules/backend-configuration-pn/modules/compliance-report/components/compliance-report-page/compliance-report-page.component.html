@@ -1,5 +1,6 @@
 <main class="compliance-page" [attr.aria-label]="'Compliance' | translate">
   <app-compliance-report-filters
+    [exporting]="exporting"
     (downloadRequested)="onDownloadRequested($event)"
   ></app-compliance-report-filters>
 
