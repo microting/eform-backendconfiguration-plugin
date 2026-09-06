@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString } from '../../../helper-functions';
+import { waitForApiResponse, API_TIMEOUT } from '../wait-helpers';
 
 /**
  * Standalone Compliance page — SHELL suite (#1160 / #1163).
@@ -562,25 +563,43 @@ test.describe('Compliance page shell (#1163)', () => {
 
   test('a failed export toasts and re-enables Download (#1189)', async ({ page }) => {
     await routeOverviewWithOneRow(page);
-    await page.route(EXPORT_ROUTE, route => route.fulfill({
-      status: 400,
-      contentType: 'text/plain',
-      body: 'InvalidExportRequest',
-    }));
+    // A REAL server 400, not a fulfilled one: the request is let through with
+    // its `format` rewritten to `xlsx`, which `ComplianceExportService.Export`
+    // rejects as `InvalidExportRequest` (400, text/plain) before it touches
+    // any data or renders anything — deterministic on shard `s`'s empty
+    // database. Counting the requests is the point: the global interceptor
+    // chain carries TWO `HttpErrorInterceptor`s, and a 400 that reaches it is
+    // re-issued immediately and then every 15 s before completing silently
+    // ~75 s later with no error and no toast. `export()` bypasses that chain;
+    // exactly one POST, and a toast within the timeout, is what proves it.
+    let exportRequests = 0;
+    await page.route(EXPORT_ROUTE, route => {
+      exportRequests++;
+      return route.continue({
+        postData: JSON.stringify({ ...route.request().postDataJSON(), format: 'xlsx' }),
+      });
+    });
 
     await goToCompliancePage(page);
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     await selectExportFormat(page, 'CSV');
     await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
 
+    const exportResponsePromise = waitForApiResponse(
+      page,
+      'compliance export',
+      (r) => r.url().includes('/compliance-report/export'),
+      API_TIMEOUT,
+    );
     await page.locator('#complianceDownloadBtn').click();
+    expect((await exportResponsePromise).status()).toBe(400);
 
-    // The core HttpErrorInterceptor cannot toast a blob 400 (it rethrows ''),
-    // so the plugin service toasts itself — nothing is silently swallowed.
-    await expect(page.locator('.toast-error').first()).toBeVisible({ timeout: 30000 });
-    await expect(page.locator('.toast-error .toast-message').first()).toHaveText(/Eksporten mislykkedes/);
+    // The plugin service toasts itself — nothing is silently swallowed.
+    await expect(page.locator('#toast-container .toast-error', { hasText: /Eksporten mislykkedes/ })).toBeVisible({ timeout: API_TIMEOUT });
     await expect(page.locator('#compliancePdfPreviewTitle')).toHaveCount(0);
     await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+    // One POST: the failure surfaced on the first answer, no retry storm.
+    expect(exportRequests).toBe(1);
   });
 });
 

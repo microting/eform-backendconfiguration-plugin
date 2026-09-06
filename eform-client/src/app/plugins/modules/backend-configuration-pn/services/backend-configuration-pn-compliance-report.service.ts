@@ -1,11 +1,13 @@
 import {Injectable} from '@angular/core';
-import {HttpClient, HttpResponse} from '@angular/common/http';
+import {HttpBackend, HttpClient, HttpResponse} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
-import {catchError, map, tap} from 'rxjs/operators';
+import {catchError, map, switchMap, take, tap} from 'rxjs/operators';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
+import {Store} from '@ngrx/store';
 import {ApiBaseService} from 'src/app/common/services';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
+import {selectBearerToken} from 'src/app/state/auth/auth.selector';
 import {
   ComplianceReportExportRequestModel,
   ComplianceReportOverviewModel,
@@ -90,12 +92,22 @@ export function parseContentDispositionFileName(header: string | null, fallback:
  */
 @Injectable({providedIn: 'root'})
 export class BackendConfigurationPnComplianceReportService {
+  /**
+   * An `HttpClient` wired straight to the backend, so `export()` runs with NO
+   * interceptors — see the ERROR PATH note on `export()` for why the global
+   * chain cannot be used for a blob download that may fail.
+   */
+  private readonly rawHttp: HttpClient;
+
   constructor(
     private apiBaseService: ApiBaseService,
-    private http: HttpClient,
     private toastr: ToastrService,
     private translate: TranslateService,
-  ) {}
+    private store: Store,
+    httpBackend: HttpBackend,
+  ) {
+    this.rawHttp = new HttpClient(httpBackend);
+  }
 
   private notifyError(res: OperationResult): void {
     if (!res || !res.success) {
@@ -155,43 +167,58 @@ export class BackendConfigurationPnComplianceReportService {
   /**
    * The server-side export (#1169 / #1189): the current view as PDF or CSV.
    *
-   * Calls `HttpClient` DIRECTLY rather than `ApiBaseService.postBlobData`:
-   * that helper returns the response BODY only, so the `Content-Disposition`
-   * header — the one place the server-built file name lives — would be
-   * unreadable through it. `observe: 'response'` keeps the headers. The
-   * relative `api/...` path resolves against `<base href="/">` exactly as
-   * `ApiBaseService`'s own calls do, and `JwtInterceptor` adds the bearer
-   * token to every `HttpClient` request, so no auth plumbing is needed here.
+   * Uses a bare `HttpClient` over `HttpBackend` (`rawHttp`) rather than the
+   * injected `HttpClient` or `ApiBaseService.postBlobData`, for two reasons:
    *
-   * ERROR PATH. `HttpErrorInterceptor` cannot toast a blob 400: with
-   * `responseType: 'blob'` the error body is a `Blob`, its `.length` is
-   * undefined, nothing is shown, and the interceptor rethrows `''` — the
-   * `HttpErrorResponse` never reaches this service. So the toast is raised
-   * HERE, generically (#1189 decision 8a; the server's own message stays in
-   * the server log), and the error is rethrown so the caller's `finalize`
-   * can re-enable the Download button.
+   *  - `postBlobData` returns the response BODY only, so the
+   *    `Content-Disposition` header — the one place the server-built file
+   *    name lives — would be unreadable through it. `observe: 'response'`
+   *    keeps the headers.
+   *  - ERROR PATH. The core registers `HttpErrorInterceptor` twice
+   *    (`app.declarations.ts` + `SharedPnModule`). On a 400 the inner copy
+   *    rethrows `''`; the outer copy sees no `status`, re-issues the POST
+   *    immediately and then every 15 s up to 5 times, then completes with
+   *    `EMPTY` — so the subscriber never errors and `catchError` never runs.
+   *
+   * What the bypass gives up: no global loader overlay for this call (the
+   * page drives its own busy state), no 401 → logout / 403 → token-refresh
+   * handling, and no Sentry capture — a stale token yields "Export failed"
+   * here, and the next interceptor-path call still signs the user out or
+   * refreshes the token.
+   *
+   * Skipping the chain means skipping `JwtInterceptor` too, so the bearer
+   * token is attached explicitly, read from the same store selector that
+   * interceptor uses. The relative `api/...` path resolves against
+   * `<base href="/">` exactly as `ApiBaseService`'s own calls do.
+   *
+   * On failure the toast is raised HERE, generically (#1189 decision 8a; the
+   * server's own message stays in the server log), and the error is rethrown
+   * so the caller's `finalize` can re-enable the Download button.
    */
   export(
     model: ComplianceReportExportRequestModel,
     fallbackFileName: string
   ): Observable<ComplianceExportResult> {
-    return this.http
-      .post(BackendConfigurationPnComplianceReportMethods.Export, model, {
-        observe: 'response',
-        responseType: 'blob',
-      })
-      .pipe(
-        map((res: HttpResponse<Blob>) => ({
-          blob: res.body ?? new Blob(),
-          fileName: parseContentDispositionFileName(
-            res.headers.get('Content-Disposition'),
-            fallbackFileName
-          ),
-        })),
-        catchError((err: unknown) => {
-          this.toastr.error(this.translate.instant('Export failed'));
-          return throwError(() => err);
+    return this.store.select(selectBearerToken).pipe(
+      take(1),
+      switchMap((token) =>
+        this.rawHttp.post(BackendConfigurationPnComplianceReportMethods.Export, model, {
+          observe: 'response',
+          responseType: 'blob',
+          headers: token ? {Authorization: `Bearer ${token}`} : {},
         })
-      );
+      ),
+      map((res: HttpResponse<Blob>) => ({
+        blob: res.body ?? new Blob(),
+        fileName: parseContentDispositionFileName(
+          res.headers.get('Content-Disposition'),
+          fallbackFileName
+        ),
+      })),
+      catchError((err: unknown) => {
+        this.toastr.error(this.translate.instant('Export failed'));
+        return throwError(() => err);
+      })
+    );
   }
 }
