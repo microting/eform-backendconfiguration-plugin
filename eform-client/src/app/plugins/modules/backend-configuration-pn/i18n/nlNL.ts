@@ -750,4 +750,6 @@ export const nlNL = {
   'Image {{index}} of {{count}}': 'Afbeelding {{index}} van {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Afbeelding {{index}} van {{count}} voor zaak {{caseId}}',
   'Image {{index}}': 'Afbeelding {{index}}',
+  'PDF preview': 'PDF-voorbeeld',
+  'Export failed': 'Exporteren mislukt',
 };

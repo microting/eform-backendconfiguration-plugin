@@ -42,8 +42,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// or wedged past the timeout — this returns <c>null</c> after logging. The
 /// calling service turns that into a failed <c>OperationDataResult</c> carrying
 /// the existing <c>ErrorWhileGeneratingReportFile</c> message, so the user gets a
-/// 400 with an explanation rather than a truncated or empty download. CSV and
-/// XLSX are unaffected: neither shells out.
+/// 400 with an explanation rather than a truncated or empty download. CSV is
+/// unaffected: it does not shell out.
 /// </para>
 ///
 /// <para>
@@ -178,7 +178,7 @@ public static class ComplianceExportPdfConverter
             // environment failure, and the one CI hits.
             logger.LogError(e,
                 "ComplianceExportPdfConverter: could not start 'soffice'. LibreOffice is required for "
-                + "server-side PDF export; CSV and Excel export are unaffected.");
+                + "server-side PDF export; CSV export is unaffected.");
             return false;
         }
 

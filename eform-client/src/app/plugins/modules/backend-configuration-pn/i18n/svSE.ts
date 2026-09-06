@@ -750,4 +750,6 @@ export const svSE = {
   'Image {{index}} of {{count}}': 'Bild {{index}} av {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Bild {{index}} av {{count}} för ärende {{caseId}}',
   'Image {{index}}': 'Bild {{index}}',
+  'PDF preview': 'PDF-förhandsgranskning',
+  'Export failed': 'Exporten misslyckades',
 };

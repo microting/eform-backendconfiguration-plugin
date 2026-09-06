@@ -5,7 +5,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
 /// <summary>
 /// Request contract for <c>POST api/backend-configuration-pn/compliance-report/export</c>
-/// — one endpoint serving all three view modes × three output formats (#1169).
+/// — one endpoint serving all three view modes × two output formats (#1169;
+/// Excel removed by product request, #1189).
 ///
 /// <para>
 /// <b>The filter set travels WITH the export request</b> (#1169 §3, variant 2 of the
@@ -70,13 +71,14 @@ public class ComplianceReportExportRequestModel
     public string ViewMode { get; set; }
 
     /// <summary>
-    /// <c>csv</c> | <c>xlsx</c> | <c>pdf</c>. Matched case-insensitively; anything
-    /// else is rejected, never defaulted.
+    /// <c>csv</c> | <c>pdf</c>. Matched case-insensitively; anything else —
+    /// including the <c>xlsx</c> #1169 once offered and #1189 removed — is
+    /// rejected, never defaulted.
     ///
     /// <para>
     /// There is no <c>docx</c> arm even though PDF is produced by converting one:
-    /// the docx is an implementation detail of the PDF path, and #1169's
-    /// acceptance criteria name exactly three formats.
+    /// the docx is an implementation detail of the PDF path, and the "Hent som"
+    /// select offers exactly two formats.
     /// </para>
     /// </summary>
     public string Format { get; set; }
@@ -85,8 +87,8 @@ public class ComplianceReportExportRequestModel
     /// Image appendix — #1169 §6, decided and stated: <b>opt-in, default off</b>.
     ///
     /// <para>
-    /// Meaningless for <c>csv</c> and <c>xlsx</c> (a spreadsheet cell cannot hold a
-    /// photograph) and IGNORED there. Meaningless for <c>overview</c> and
+    /// Meaningless for <c>csv</c> (a CSV cell cannot hold a photograph) and
+    /// IGNORED there. Meaningless for <c>overview</c> and
     /// <c>details</c>, which carry no case images, and ignored there too. It has an
     /// effect only for <c>report</c> + <c>pdf</c>.
     /// </para>

@@ -2,17 +2,24 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.WordService;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using eFormCore;
 using ImageMagick;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Dto;
 using Sentry;
+// Aliased, not imported: the Wordprocessing namespace defines Settings, Text,
+// Header and Footer, which collide with Microting.eForm.Dto.Settings (used below
+// for the SDK picture settings) and read ambiguously next to the HTML body.
+using W = DocumentFormat.OpenXml.Wordprocessing;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 
@@ -41,6 +48,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// </para>
 ///
 /// <para>
+/// <b>The page shell — A4 landscape, a repeated filter header and a branded
+/// footer (#1189)</b> — is applied to the IN-MEMORY copy of <c>file.docx</c>
+/// before the HTML is converted, by <see cref="ApplyPageShell"/>. The embedded
+/// template itself is untouched: it is shared by five <c>WordService</c>
+/// generators behind <c>GET report/reports/file</c>, whose output must not
+/// change. Doing it before <c>AddHtml</c> is what makes <c>width="100%"</c>
+/// tables and the appendix images compute against the landscape width —
+/// HtmlToOpenXml reads the orientation from the document it is handed.
+/// </para>
+///
+/// <para>
 /// <b>Images never travel over HTTP.</b> <see cref="InsertImage"/> takes a
 /// <c>Stream</c> from either S3 (<c>Core.GetFileFromS3Storage</c>) or the local
 /// picture directory (the <c>fileLocationPicture</c> SDK setting) and base64-encodes
@@ -56,6 +74,36 @@ public class ComplianceExportWordWriter(
 {
     private const string PageResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
     private const string DocxResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
+
+    /// <summary>A4 landscape, in twips — the template's own A4 portrait values swapped.</summary>
+    public const uint PageWidthTwips = 16834;
+
+    public const uint PageHeightTwips = 11909;
+
+    /// <summary>
+    /// The template's left and right margins (<c>w:pgMar w:left="1440" w:right="1440"</c>),
+    /// kept; they are what the footer's right tab stop is computed from.
+    /// </summary>
+    private const uint SideMarginTwips = 1440;
+
+    /// <summary>
+    /// Distance from the paper edge to the header. The template ships with
+    /// <c>w:header="0"</c> because it has no header part; left at 0, the header
+    /// line would sit on the paper's top edge.
+    /// </summary>
+    public const uint HeaderDistanceTwips = 720;
+
+    /// <summary>Right tab stop for the footer's <c>p. n/N</c>: the text width, 16834 − 2 × 1440.</summary>
+    public const int FooterRightTabTwips = (int)(PageWidthTwips - 2 * SideMarginTwips);
+
+    /// <summary>Header and footer run size in half-points (9 pt).</summary>
+    private const string ShellFontSizeHalfPoints = "18";
+
+    /// <summary>The footer's left-hand brand. A literal, not a localisation key (#1189).</summary>
+    private const string FooterBrand = "Microting";
+
+    /// <summary>The footer's page-number prefix, <c>p. n/N</c>. A literal, not a key (#1189).</summary>
+    private const string FooterPagePrefix = "p. ";
 
     /// <summary>
     /// Renders the document. <paramref name="core"/> is used only to resolve image
@@ -83,6 +131,9 @@ public class ComplianceExportWordWriter(
         var docxStream = new MemoryStream();
         await docxResourceStream.CopyToAsync(docxStream);
 
+        // Landscape, header, footer — on the in-memory copy, before any HTML goes in.
+        ApplyPageShell(docxStream, document);
+
         var s3Enabled = false;
         var basePicturePath = string.Empty;
         var needsImages = DocumentHasImages(document);
@@ -95,12 +146,13 @@ public class ComplianceExportWordWriter(
 
         var body = new StringBuilder();
         body.Append("<body>");
-        body.Append(
-            $@"<p style='font-size:20px;text-align:center;font-weight:700;'>{Esc(document.Title)}</p>");
-        if (!string.IsNullOrEmpty(document.Period))
+        // The period, property and board are in the page header on every page
+        // (#1189), so the body opens with the document title alone — left-aligned,
+        // and only when there is one (the format issues set it; Rapport has none).
+        if (!string.IsNullOrEmpty(document.Title))
         {
             body.Append(
-                $@"<p style='font-size:12px;text-align:center;'>{Esc(document.Period)}</p>");
+                $@"<p style='font-size:16px;text-align:left;font-weight:700;'>{Esc(document.Title)}</p>");
         }
 
         foreach (var table in document.Tables)
@@ -185,6 +237,158 @@ public class ComplianceExportWordWriter(
         word.Dispose();
         docxStream.Position = 0;
         return docxStream;
+    }
+
+    /// <summary>
+    /// Turns the template's A4-portrait, footer-only shell into the mock-ups' A4
+    /// landscape page with a repeated filter header and a <c>Microting … p. n/N</c>
+    /// footer (#1189). Opens and saves the package on <paramref name="docxStream"/>
+    /// without closing it, and rewinds it, so <see cref="WordProcessor"/> can open
+    /// it again afterwards.
+    ///
+    /// <para>
+    /// The order inside <c>sectPr</c> matters: <c>headerReference</c> and
+    /// <c>footerReference</c> must precede <c>pgSz</c>/<c>pgMar</c>, so the new
+    /// header reference goes in at index 0 rather than being appended.
+    /// </para>
+    /// </summary>
+    private void ApplyPageShell(MemoryStream docxStream, ComplianceExportDocument document)
+    {
+        using (var word = WordprocessingDocument.Open(docxStream, true))
+        {
+            var mainPart = word.MainDocumentPart
+                           ?? throw new InvalidOperationException($"{DocxResource} has no main document part");
+            var docBody = mainPart.Document?.Body
+                          ?? throw new InvalidOperationException($"{DocxResource} has no body");
+
+            var sectPr = docBody.GetFirstChild<W.SectionProperties>();
+            if (sectPr == null)
+            {
+                sectPr = new W.SectionProperties();
+                docBody.Append(sectPr);
+            }
+
+            // --- A4 landscape ---
+            var pageSize = sectPr.GetFirstChild<W.PageSize>();
+            if (pageSize == null)
+            {
+                pageSize = new W.PageSize();
+                sectPr.Append(pageSize);
+            }
+
+            pageSize.Width = PageWidthTwips;
+            pageSize.Height = PageHeightTwips;
+            pageSize.Orient = W.PageOrientationValues.Landscape;
+
+            // --- header: Ejendom / Kalender / Periode on every page ---
+            var headerPart = mainPart.AddNewPart<HeaderPart>();
+            headerPart.Header = BuildHeader(document);
+            headerPart.Header.Save();
+            sectPr.InsertAt(new W.HeaderReference
+            {
+                Type = W.HeaderFooterValues.Default,
+                Id = mainPart.GetIdOfPart(headerPart)
+            }, 0);
+
+            var pageMargin = sectPr.GetFirstChild<W.PageMargin>();
+            if (pageMargin == null)
+            {
+                pageMargin = new W.PageMargin
+                {
+                    Left = SideMarginTwips, Right = SideMarginTwips, Top = 1440, Bottom = 1440,
+                    Footer = 720U, Gutter = 0U
+                };
+                sectPr.Append(pageMargin);
+            }
+
+            pageMargin.Header = HeaderDistanceTwips;
+
+            // --- footer: Microting … p. n/N ---
+            // The template already carries one default footer part (PAGE / NUMPAGES,
+            // no brand); its content is replaced wholesale rather than edited.
+            var footerPart = mainPart.FooterParts.FirstOrDefault();
+            if (footerPart == null)
+            {
+                footerPart = mainPart.AddNewPart<FooterPart>();
+                sectPr.InsertAt(new W.FooterReference
+                {
+                    Type = W.HeaderFooterValues.Default,
+                    Id = mainPart.GetIdOfPart(footerPart)
+                }, 1);
+            }
+
+            footerPart.Footer = BuildFooter();
+            footerPart.Footer.Save();
+
+            mainPart.Document.Save();
+        }
+
+        docxStream.Position = 0;
+    }
+
+    /// <summary>
+    /// One paragraph: <c>**Ejendom:** {property}   **Kalender:** {board}   **Periode:** {period}</c>.
+    /// Labels are the existing <c>Property</c>, <c>CalendarBoard</c> keys and the
+    /// new <c>Period</c> one; a missing property/board label falls back to
+    /// <c>All</c>, the same word the file name uses.
+    /// </summary>
+    private W.Header BuildHeader(ComplianceExportDocument document)
+    {
+        var allLabel = localizationService.GetString("All");
+        var propertyLabel = string.IsNullOrWhiteSpace(document.PropertyLabel) ? allLabel : document.PropertyLabel;
+        var boardLabel = string.IsNullOrWhiteSpace(document.BoardLabel) ? allLabel : document.BoardLabel;
+
+        var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.SpacingBetweenLines { After = "0" }));
+        paragraph.Append(ShellRun($"{localizationService.GetString("Property")}:", bold: true));
+        paragraph.Append(ShellRun($" {propertyLabel}   "));
+        paragraph.Append(ShellRun($"{localizationService.GetString("CalendarBoard")}:", bold: true));
+        paragraph.Append(ShellRun($" {boardLabel}   "));
+        paragraph.Append(ShellRun($"{localizationService.GetString("Period")}:", bold: true));
+        paragraph.Append(ShellRun($" {document.Period ?? string.Empty}"));
+
+        return new W.Header(paragraph);
+    }
+
+    /// <summary>
+    /// One paragraph: <c>Microting</c> at the left margin, then a right tab stop at
+    /// the text width carrying <c>p. </c> + <c>PAGE</c> + <c>/</c> + <c>NUMPAGES</c>.
+    /// The page numbers are <c>fldSimple</c> fields — HtmlToOpenXml has no HTML
+    /// syntax for a field, so this part is SDK objects regardless of how the header
+    /// is built. The cached results (<c>1</c>) are placeholders the renderer
+    /// recomputes.
+    /// </summary>
+    private static W.Footer BuildFooter()
+    {
+        var paragraph = new W.Paragraph(new W.ParagraphProperties(
+            new W.Tabs(new W.TabStop { Val = W.TabStopValues.Right, Position = FooterRightTabTwips }),
+            new W.SpacingBetweenLines { Before = "0", After = "0" }));
+
+        paragraph.Append(ShellRun(FooterBrand));
+        paragraph.Append(new W.Run(ShellRunProperties(bold: false), new W.TabChar()));
+        paragraph.Append(ShellRun(FooterPagePrefix));
+        paragraph.Append(PageField("PAGE"));
+        paragraph.Append(ShellRun("/"));
+        paragraph.Append(PageField("NUMPAGES"));
+
+        return new W.Footer(paragraph);
+    }
+
+    private static W.SimpleField PageField(string instruction) =>
+        new(new W.Run(ShellRunProperties(bold: false), new W.Text("1")))
+        {
+            Instruction = $" {instruction} "
+        };
+
+    private static W.Run ShellRun(string text, bool bold = false) =>
+        new(ShellRunProperties(bold), new W.Text(text) { Space = SpaceProcessingModeValues.Preserve });
+
+    private static W.RunProperties ShellRunProperties(bool bold)
+    {
+        var properties = new W.RunProperties();
+        if (bold) properties.Append(new W.Bold());
+        properties.Append(new W.FontSize { Val = ShellFontSizeHalfPoints });
+        properties.Append(new W.FontSizeComplexScript { Val = ShellFontSizeHalfPoints });
+        return properties;
     }
 
     private static bool DocumentHasImages(ComplianceExportDocument document)

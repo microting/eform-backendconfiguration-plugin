@@ -750,4 +750,6 @@ export const esES = {
   'Image {{index}} of {{count}}': 'Imagen {{index}} de {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Imagen {{index}} de {{count}} del caso {{caseId}}',
   'Image {{index}}': 'Imagen {{index}}',
+  'PDF preview': 'Vista previa del PDF',
+  'Export failed': 'La exportación ha fallado',
 };

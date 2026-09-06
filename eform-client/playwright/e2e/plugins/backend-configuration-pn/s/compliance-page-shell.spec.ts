@@ -179,6 +179,71 @@ async function setupNonAdminUser(page: Page): Promise<string> {
   return userEmail;
 }
 
+// ---------------------------------------------------------------------------
+// Export helpers (#1189). Shard `s` seeds no SQL and CI has no soffice, so
+// BOTH halves of the export path are intercepted: the Oversigt aggregation is
+// answered with one row (that is what makes `canDownload` — `reportVisible &&
+// total > 0` — true on an empty installation), and the export endpoint is
+// answered with a small file. What is under test is the CLIENT wiring: the
+// request body, the file name taken from `Content-Disposition`, the preview
+// dialog and the busy/error handling of the Download button.
+// ---------------------------------------------------------------------------
+const EXPORT_ROUTE = '**/api/backend-configuration-pn/compliance-report/export';
+const OVERVIEW_ROUTE = '**/api/backend-configuration-pn/compliance-report/overview';
+// A property AND a board name with `ø` — the ascii `filename=` fallback would
+// mangle the board to `Milj_tilsyn`, which is exactly what must NOT be saved.
+const CSV_FILE_NAME = 'Oversigt-Alle-Miljøtilsyn-01.01.2026-05.09.2026.csv';
+const PDF_FILE_NAME = 'Oversigt-Alle-Miljøtilsyn-01.01.2026-05.09.2026.pdf';
+
+/** Mirrors `ComplianceExportFileNaming.BuildContentDisposition`: lossy ascii first, RFC 5987 second. */
+function contentDisposition(fileName: string): string {
+  // eslint-disable-next-line no-control-regex
+  const ascii = fileName.replace(/[^\x20-\x7e]/g, '_');
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+}
+
+async function routeOverviewWithOneRow(page: Page): Promise<void> {
+  const row = {
+    propertyId: 9, propertyName: 'Ejendom 9',
+    total: 1, done: 1, overdue: 0, dueTotal: 1, dueDone: 1, compliancePct: 100,
+  };
+  const totals = { ...row, propertyId: 0, propertyName: null };
+  await page.route(OVERVIEW_ROUTE, route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, message: '', model: { rows: [row], totals } }),
+  }));
+}
+
+async function selectExportFormat(page: Page, label: 'PDF' | 'CSV'): Promise<void> {
+  await page.locator('#complianceExportFormat').click();
+  // By label, never nth(); regex `hasText` matches the RAW text, hence `\s*`.
+  await page.locator('.ng-dropdown-panel .ng-option', { hasText: new RegExp(`^\\s*${label}\\s*$`) }).first().click();
+  await expect(page.locator('#complianceExportFormat .ng-value-label')).toHaveText(label);
+}
+
+/** The smallest PDF pdf.js will open: one empty A4-landscape page, correct xref. */
+function minimalPdf(): string {
+  const objects = [
+    '<</Type/Catalog/Pages 2 0 R>>',
+    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 842 595]>>',
+  ];
+  let out = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  objects.forEach((body, i) => {
+    offsets.push(out.length);
+    out += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xref = out.length;
+  out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const o of offsets) {
+    out += `${String(o).padStart(10, '0')} 00000 n \n`;
+  }
+  out += `trailer\n<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`;
+  return out;
+}
+
 test.describe('Compliance page shell (#1163)', () => {
   test('renders at its own URL with all ten filter controls', async ({ page }) => {
     await goToCompliancePage(page);
@@ -376,6 +441,146 @@ test.describe('Compliance page shell (#1163)', () => {
 
     // No export format selected yet.
     await expect(page.locator('#complianceDownloadBtn')).toBeDisabled();
+  });
+
+  test('"Hent som" offers exactly PDF and CSV, nothing else (#1189)', async ({ page }) => {
+    await goToCompliancePage(page);
+
+    await page.locator('#complianceExportFormat').click();
+    const options = page.locator('.ng-dropdown-panel .ng-option');
+    await expect(options).toHaveCount(2);
+    const labels = (await options.allInnerTexts()).map(t => t.trim());
+    expect(labels).toEqual(['PDF', 'CSV']);
+    await page.keyboard.press('Escape');
+  });
+
+  test('selecting CSV enables Download after a fetch, and the download carries the server file name (#1189)', async ({ page }) => {
+    await routeOverviewWithOneRow(page);
+    let exportRequests = 0;
+    let exportBody: any = null;
+    await page.route(EXPORT_ROUTE, route => {
+      exportRequests++;
+      exportBody = route.request().postDataJSON();
+      return route.fulfill({
+        status: 200,
+        headers: {
+          'content-type': 'text/csv; charset=utf-8',
+          // Exactly the shape `ComplianceExportFileNaming.BuildContentDisposition`
+          // emits: a LOSSY ascii `filename=` first, then the RFC 5987 form. The
+          // client must prefer the latter, or the user gets `Milj_tilsyn`.
+          'content-disposition': contentDisposition(CSV_FILE_NAME),
+        },
+        body: 'Ejendom;Compliance\nEjendom 9;100\n',
+      });
+    });
+
+    await goToCompliancePage(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await expect(page.locator('#complianceDownloadBtn')).toBeDisabled();
+
+    await selectExportFormat(page, 'CSV');
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    await page.locator('#complianceDownloadBtn').click();
+    const download = await downloadPromise;
+
+    // `ø` survived: the name came from `filename*=`, not the ascii fallback.
+    expect(download.suggestedFilename()).toBe(CSV_FILE_NAME);
+    expect(exportRequests).toBe(1);
+    // The body is the page's request model plus the three export fields.
+    expect(exportBody.format).toBe('csv');
+    expect(exportBody.viewMode).toBe('overview');
+    expect(exportBody.includeImageAppendix).toBe(false);
+    expect(exportBody.propertyId).toBeNull();
+    expect(typeof exportBody.dateFrom).toBe('string');
+    expect(typeof exportBody.dateTo).toBe('string');
+    // CSV never opens the preview, and the button is live again afterwards.
+    await expect(page.locator('#compliancePdfPreviewTitle')).toHaveCount(0);
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+  });
+
+  test('selecting PDF opens the PDF-forhåndsvisning dialog; Annuller closes, Gem saves without a second request (#1189)', async ({ page }) => {
+    await routeOverviewWithOneRow(page);
+    let exportRequests = 0;
+    await page.route(EXPORT_ROUTE, route => {
+      exportRequests++;
+      return route.fulfill({
+        status: 200,
+        headers: {
+          'content-type': 'application/pdf',
+          'content-disposition': contentDisposition(PDF_FILE_NAME),
+        },
+        body: Buffer.from(minimalPdf(), 'latin1'),
+      });
+    });
+
+    await goToCompliancePage(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await selectExportFormat(page, 'PDF');
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+
+    // --- Annuller: dialog closes, nothing downloads --------------------
+    await page.locator('#complianceDownloadBtn').click();
+    const title = page.locator('#compliancePdfPreviewTitle');
+    await expect(title).toBeVisible({ timeout: 30000 });
+    await expect(title).toHaveText(/^\s*PDF-forhåndsvisning\s*$/);
+    await expect(page.locator('#compliancePdfPreviewFileName')).toHaveText(/^\s*Oversigt-Alle-Miljøtilsyn-01\.01\.2026-05\.09\.2026\.pdf\s*$/);
+
+    const cancelBtn = page.locator('#compliancePdfPreviewCancelBtn');
+    const saveBtn = page.locator('#compliancePdfPreviewSaveBtn');
+    await expect(cancelBtn).toHaveText(/^\s*Annuller\s*$/);
+    await expect(saveBtn).toHaveText(/^\s*Gem\s*$/);
+    // Cancel first, the confirming action rightmost (check-button-conventions).
+    const actionTexts = (await page.locator('mat-dialog-actions button, [mat-dialog-actions] button').allInnerTexts())
+      .map(t => t.trim());
+    expect(actionTexts).toEqual(['Annuller', 'Gem']);
+
+    let downloads = 0;
+    page.on('download', () => downloads++);
+    await cancelBtn.click();
+    await expect(title).toHaveCount(0);
+    expect(downloads).toBe(0);
+    expect(exportRequests).toBe(1);
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+
+    // --- Gem: saves the bytes already received, no second POST ----------
+    await page.locator('#complianceDownloadBtn').click();
+    await expect(title).toBeVisible({ timeout: 30000 });
+    expect(exportRequests).toBe(2);
+
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    await saveBtn.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe(PDF_FILE_NAME);
+    await expect(title).toHaveCount(0);
+    // Exactly one download across the whole test: none from Annuller, one from Gem.
+    expect(downloads).toBe(1);
+    // Still 2: `Gem` reused the preview's bytes rather than re-exporting.
+    expect(exportRequests).toBe(2);
+  });
+
+  test('a failed export toasts and re-enables Download (#1189)', async ({ page }) => {
+    await routeOverviewWithOneRow(page);
+    await page.route(EXPORT_ROUTE, route => route.fulfill({
+      status: 400,
+      contentType: 'text/plain',
+      body: 'InvalidExportRequest',
+    }));
+
+    await goToCompliancePage(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await selectExportFormat(page, 'CSV');
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+
+    await page.locator('#complianceDownloadBtn').click();
+
+    // The core HttpErrorInterceptor cannot toast a blob 400 (it rethrows ''),
+    // so the plugin service toasts itself — nothing is silently swallowed.
+    await expect(page.locator('.toast-error').first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('.toast-error .toast-message').first()).toHaveText(/Eksporten mislykkedes/);
+    await expect(page.locator('#compliancePdfPreviewTitle')).toHaveCount(0);
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
   });
 });
 

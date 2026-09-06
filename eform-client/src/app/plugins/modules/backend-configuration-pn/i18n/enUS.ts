@@ -861,4 +861,9 @@ export const enUS= {
   'Image {{index}} of {{count}} for case {{caseId}}': 'Image {{index}} of {{count}} for case {{caseId}}',
   // Accessible name of one thumbnail in the strip (compliance.js:704-724).
   'Image {{index}}': 'Image {{index}}',
+  // Title of the export preview dialog (#1189); the file name is its subtitle.
+  'PDF preview': 'PDF preview',
+  // Generic toast for a failed export call. The interceptor cannot surface a
+  // blob 400, so the plugin service toasts this itself (#1189 decision 8a).
+  'Export failed': 'Export failed',
 };

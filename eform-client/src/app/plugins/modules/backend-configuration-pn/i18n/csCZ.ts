@@ -750,4 +750,6 @@ export const csCZ = {
   'Image {{index}} of {{count}}': 'Obrázek {{index}} z {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Obrázek {{index}} z {{count}} pro případ {{caseId}}',
   'Image {{index}}': 'Obrázek {{index}}',
+  'PDF preview': 'Náhled PDF',
+  'Export failed': 'Export se nezdařil',
 };

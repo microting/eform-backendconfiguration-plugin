@@ -1,0 +1,33 @@
+<!--
+  PDF preview (#1189). Title, the file name as subtitle, the rendered PDF,
+  and Annuller / Gem — cancel first, the confirming action rightmost, as
+  check-button-conventions.js enforces.
+-->
+<h3 mat-dialog-title id="compliancePdfPreviewTitle">{{ 'PDF preview' | translate }}</h3>
+<p id="compliancePdfPreviewFileName" class="compliance-pdf-preview__subtitle">{{ data.fileName }}</p>
+
+<div mat-dialog-content class="compliance-pdf-preview__content">
+  <div *ngIf="!bytes && !loadFailed" class="compliance-pdf-preview__loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+  <p *ngIf="loadFailed" class="compliance-pdf-preview__error">
+    {{ 'Export failed' | translate }}
+  </p>
+  <pdf-viewer
+    *ngIf="bytes"
+    id="compliancePdfPreviewViewer"
+    [src]="bytes"
+    [show-all]="true"
+    [original-size]="false"
+    [render-text]="true"
+  ></pdf-viewer>
+</div>
+
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button class="btn-cancel" id="compliancePdfPreviewCancelBtn" (click)="cancel()">
+    {{ 'Cancel' | translate }}
+  </button>
+  <button class="btn-primary" id="compliancePdfPreviewSaveBtn" (click)="save()">
+    {{ 'Save' | translate }}
+  </button>
+</div>

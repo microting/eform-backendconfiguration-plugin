@@ -8,10 +8,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// Download file names and the RFC 6266 <c>Content-Disposition</c> value (#1169 §4).
 ///
 /// <para>
-/// ONE scheme for all three formats —
+/// ONE scheme for both formats —
 /// <c>{Oversigt|Detaljer|Rapport}-{property}-{board}-{from}-{to}.{ext}</c> — rather
 /// than the prototype's two (a descriptive name for PDF, a
-/// <c>compliance-oversigt-{date}</c> one for CSV/Excel). Non-ASCII is PRESERVED,
+/// <c>compliance-oversigt-{date}</c> one for CSV). Non-ASCII is PRESERVED,
 /// so a property named <c>Miljøtilsyn</c> keeps its <c>ø</c>.
 /// </para>
 ///

@@ -16,17 +16,19 @@ copies or substantial portions of the Software.
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-using System.Globalization;
 using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
-/// Coverage for the three compliance-export renderers and for the download naming
-/// (#1169 §4, §5, §7).
+/// Coverage for the two compliance-export renderers (CSV and Word/PDF — Excel was
+/// removed by product request in #1189) and for the download naming (#1169 §4,
+/// §5, §7), plus the Word page shell #1189 added: A4 landscape, a repeated filter
+/// header and a branded footer.
 ///
 /// <para>
 /// <b>No database, no container, and no <c>soffice</c>.</b> The PDF path is
@@ -35,9 +37,18 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// a test that ran the converter would be asserting the environment rather than the
 /// code. What IS asserted here is everything up to that boundary — that the PDF
 /// path renders a real docx (an OpenXml <c>WordprocessingDocument</c> with the
-/// report's text in it), that the converter's timeout constant is finite, and that
+/// report's text in it, landscape, with the header and footer parts wired into its
+/// section properties), that the converter's timeout constant is finite, and that
 /// on a machine with no LibreOffice the converter returns <c>null</c> and leaves no
 /// temp directory behind.
+/// </para>
+///
+/// <para>
+/// The Word tests use <see cref="DanishShellLocalizer"/>, not the key-returning
+/// <c>BackendConfigurationLocalizationService</c> double the other export fixtures
+/// use: the page-header assertions are the mock-ups' literal <c>Ejendom:</c> /
+/// <c>Kalender:</c> / <c>Periode:</c>, and pinning those (rather than the keys)
+/// is the point — the header is the one place the user reads them.
 /// </para>
 ///
 /// <para>
@@ -53,10 +64,14 @@ public class ComplianceExportWriterTests
 {
     private const string Dash = "–";
 
+    private const string SamplePeriod = "01.01.2026 – 31.03.2026";
+
     private static ComplianceExportDocument SampleDocument() => new()
     {
         Title = "Detaljer",
-        Period = "01.01.2026 - 31.03.2026",
+        Period = SamplePeriod,
+        PropertyLabel = "Ejendom 9",
+        BoardLabel = "Miljøtilsyn",
         Tables =
         [
             new ComplianceExportTable
@@ -199,11 +214,6 @@ public class ComplianceExportWriterTests
     /// file is opened — a file arriving from the company's own compliance endpoint.
     /// The writer prefixes those with an apostrophe, the spreadsheet convention for
     /// "literal text".
-    ///
-    /// <para>
-    /// The XLSX path needs no equivalent: its cells are written as
-    /// <c>CellValues.String</c> and it never emits an <c>&lt;f&gt;</c> element.
-    /// </para>
     /// </summary>
     [Test]
     [TestCase("=cmd|'/c calc'!A0", "'=cmd|'/c calc'!A0")]
@@ -310,185 +320,6 @@ public class ComplianceExportWriterTests
     }
 
     // ==================================================================
-    // XLSX
-    // ==================================================================
-
-    /// <summary>
-    /// A REAL OpenXml workbook — it re-opens through the OpenXml SDK, which the
-    /// prototype's SpreadsheetML-2003-under-an-<c>.xls</c>-extension would not.
-    /// One worksheet per table.
-    /// </summary>
-    [Test]
-    public void Xlsx_IsARealOpenXmlWorkbookWithOneSheetPerTable()
-    {
-        var document = SampleDocument();
-        document.Tables.Add(new ComplianceExportTable
-        {
-            Title = "Drift – Aflæsning el",
-            Columns = [new ComplianceExportColumn { Header = "Kolonne" }]
-        });
-
-        using var stream = ComplianceExportExcelWriter.Write(document);
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var sheets = spreadsheet.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().ToList();
-        Assert.That(sheets, Has.Count.EqualTo(2));
-        Assert.That(sheets[0].Name!.Value, Is.EqualTo("Miljøtilsyn – Aflæsning vand"));
-        Assert.That(sheets[1].Name!.Value, Is.EqualTo("Drift – Aflæsning el"));
-    }
-
-    /// <summary>
-    /// The date column is a TYPED date cell — a numeric OADate under the shared
-    /// stylesheet's date style (index 2, <c>NumberFormatId 14</c>) — so sorting and
-    /// filtering on it work in Excel. A string date would sort lexically.
-    /// </summary>
-    [Test]
-    public void Xlsx_DateColumnIsANumericOaDateUnderTheDateStyle()
-    {
-        using var stream = ComplianceExportExcelWriter.Write(SampleDocument());
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var worksheetPart = spreadsheet.WorkbookPart!.WorksheetParts.First();
-        var rows = worksheetPart.Worksheet.Descendants<Row>().ToList();
-        var dateCell = rows[1].Elements<Cell>().First();
-
-        Assert.That(dateCell.DataType!.Value, Is.EqualTo(CellValues.Number));
-        Assert.That(dateCell.StyleIndex!.Value, Is.EqualTo(2U));
-        Assert.That(double.Parse(dateCell.CellValue!.Text, CultureInfo.InvariantCulture),
-            Is.EqualTo(new DateTime(2026, 3, 9).ToOADate()));
-    }
-
-    /// <summary>
-    /// The header row and the totals row are BOLD (style index 1), which is how a
-    /// reader tells the appended "I alt" row from the data rows above it — the
-    /// acceptance criterion the screen meets with an <c>is-total</c> class.
-    /// </summary>
-    [Test]
-    public void Xlsx_HeaderAndTotalsRowsAreBold()
-    {
-        using var stream = ComplianceExportExcelWriter.Write(SampleDocument());
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var rows = spreadsheet.WorkbookPart!.WorksheetParts.First()
-            .Worksheet.Descendants<Row>().ToList();
-
-        Assert.That(rows[0].Elements<Cell>().All(c => c.StyleIndex?.Value == 1U), Is.True);
-
-        var totalsRow = rows[2];
-        Assert.That(totalsRow.Elements<Cell>().First().StyleIndex!.Value, Is.EqualTo(1U));
-        Assert.That(totalsRow.Elements<Cell>().Last().StyleIndex!.Value, Is.EqualTo(1U));
-    }
-
-    /// <summary>
-    /// Duplicate sheet names make a workbook unopenable, and Rapport can produce two
-    /// sections whose names collide after Excel's 31-character truncation. The
-    /// writer de-duplicates and truncates, so the file still opens.
-    /// </summary>
-    [Test]
-    public void Xlsx_DeduplicatesAndTruncatesSheetNames()
-    {
-        var longTitle = new string('x', 40);
-        var document = new ComplianceExportDocument
-        {
-            Title = "T",
-            Tables =
-            [
-                new ComplianceExportTable { Title = longTitle },
-                new ComplianceExportTable { Title = longTitle }
-            ]
-        };
-
-        using var stream = ComplianceExportExcelWriter.Write(document);
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var names = spreadsheet.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
-            .Select(s => s.Name!.Value!).ToList();
-
-        Assert.That(names, Has.Count.EqualTo(2));
-        Assert.That(names.Distinct().Count(), Is.EqualTo(2));
-        Assert.That(names.All(n => n.Length <= 31), Is.True);
-    }
-
-    /// <summary>
-    /// Excel refuses to open a workbook containing a sheet whose name begins or
-    /// ends with an apostrophe. A sheet name here is <c>{tag} – {template}</c>, so
-    /// a tag named <c>'Miljø'</c> reaches it directly.
-    /// </summary>
-    [Test]
-    public void Xlsx_SheetNameLeadingAndTrailingApostrophesAreStripped()
-    {
-        var document = new ComplianceExportDocument
-        {
-            Title = "T",
-            Tables =
-            [
-                new ComplianceExportTable { Title = "'Miljø – Aflæsning'" },
-                new ComplianceExportTable { Title = "'''" }
-            ]
-        };
-
-        using var stream = ComplianceExportExcelWriter.Write(document);
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var names = spreadsheet.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
-            .Select(s => s.Name!.Value!).ToList();
-
-        Assert.That(names, Has.Count.EqualTo(2));
-        Assert.That(names.Any(n => n.StartsWith('\'') || n.EndsWith('\'')), Is.False);
-        Assert.That(names[0], Is.EqualTo("Miljø – Aflæsning"));
-        // A title that is nothing BUT apostrophes leaves an empty name, which falls
-        // back to the positional sheet name rather than to an invalid one.
-        Assert.That(names[1], Is.EqualTo("Sheet2"));
-    }
-
-    /// <summary>
-    /// <c>History</c> is reserved by Excel and a workbook containing a sheet with
-    /// that name will not open. A template legitimately named "History" must not be
-    /// able to produce one.
-    /// </summary>
-    [Test]
-    public void Xlsx_ReservedHistorySheetNameIsRenamed()
-    {
-        var document = new ComplianceExportDocument
-        {
-            Title = "T",
-            Tables =
-            [
-                new ComplianceExportTable { Title = "History" },
-                new ComplianceExportTable { Title = "history" }
-            ]
-        };
-
-        using var stream = ComplianceExportExcelWriter.Write(document);
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        var names = spreadsheet.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>()
-            .Select(s => s.Name!.Value!).ToList();
-
-        Assert.That(names, Has.Count.EqualTo(2));
-        Assert.That(
-            names.Any(n => string.Equals(n, "History", StringComparison.OrdinalIgnoreCase)),
-            Is.False);
-        Assert.That(names[0], Is.EqualTo("History_"));
-        // The lower-case spelling is reserved too, and de-duplicates as usual.
-        Assert.That(names.Distinct(StringComparer.OrdinalIgnoreCase).Count(), Is.EqualTo(2));
-    }
-
-    /// <summary>
-    /// An empty Rapport (no tag groups matched) still has to produce an openable
-    /// workbook. A package with no sheet is invalid, so one empty sheet is written.
-    /// </summary>
-    [Test]
-    public void Xlsx_EmptyDocumentStillOpens()
-    {
-        using var stream = ComplianceExportExcelWriter.Write(
-            new ComplianceExportDocument { Title = "Rapport" });
-        using var spreadsheet = SpreadsheetDocument.Open(stream, false);
-
-        Assert.That(spreadsheet.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().Count(), Is.EqualTo(1));
-    }
-
-    // ==================================================================
     // Word / PDF boundary
     // ==================================================================
 
@@ -508,18 +339,254 @@ public class ComplianceExportWriterTests
     [Test]
     public async Task Word_RendersARealDocxCarryingTheReportText()
     {
-        var writer = new ComplianceExportWordWriter(
-            new BackendConfigurationLocalizationService(), NullLogger.Instance);
-
-        await using var stream = await writer.WriteAsync(SampleDocument(), null);
+        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
         using var word = WordprocessingDocument.Open(stream, false);
 
-        var text = word.MainDocumentPart!.Document.InnerText;
+        var text = word.MainDocumentPart!.Document!.InnerText;
         Assert.That(text, Does.Contain("Detaljer"));
         Assert.That(text, Does.Contain("Miljøtilsyn – Aflæsning vand"));
         Assert.That(text, Does.Contain("Gården"));
         // Dates render dd.MM.yyyy in the document, not ISO.
         Assert.That(text, Does.Contain("09.03.2026"));
+    }
+
+    // ------------------------------------------------------------------
+    // The page shell (#1189): landscape, header, footer
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// The mock-ups are "A4-liggende". The embedded template is A4 PORTRAIT
+    /// (<c>w:w="11909" w:h="16834"</c>); the writer swaps the two on its in-memory
+    /// copy and states the orientation explicitly, which is what HtmlToOpenXml and
+    /// LibreOffice both read.
+    /// </summary>
+    [Test]
+    public async Task Word_PageIsA4Landscape()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var pageSize = SectionProperties(word).GetFirstChild<PageSize>();
+
+        Assert.That(pageSize, Is.Not.Null);
+        Assert.That(pageSize!.Orient!.Value, Is.EqualTo(PageOrientationValues.Landscape));
+        Assert.That(pageSize.Width!.Value, Is.EqualTo(16834U));
+        Assert.That(pageSize.Height!.Value, Is.EqualTo(11909U));
+    }
+
+    /// <summary>
+    /// A default-type header part is REFERENCED from <c>sectPr</c> — the template
+    /// has none, so an unreferenced part would be silently ignored — and its text
+    /// is the mock-ups' one line: the bold <c>Ejendom:</c> / <c>Kalender:</c> /
+    /// <c>Periode:</c> labels, the resolved property and board labels (the same
+    /// strings the file name uses) and the period joined with an en dash. The
+    /// header distance is raised from the template's <c>w:header="0"</c>, which
+    /// would otherwise print the line on the paper's edge.
+    /// </summary>
+    [Test]
+    public async Task Word_HeaderIsReferencedAndCarriesTheFilterLine()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var sectPr = SectionProperties(word);
+        var reference = sectPr.GetFirstChild<HeaderReference>();
+        Assert.That(reference, Is.Not.Null, "sectPr has no headerReference");
+        Assert.That(reference!.Type!.Value, Is.EqualTo(HeaderFooterValues.Default));
+        // Header/footer references must precede pgSz/pgMar in sectPr.
+        Assert.That(sectPr.Elements().First(), Is.InstanceOf<HeaderReference>());
+
+        var headerPart = (HeaderPart)word.MainDocumentPart!.GetPartById(reference.Id!.Value!);
+        var text = headerPart.Header!.InnerText;
+
+        Assert.That(text, Does.Contain("Ejendom:"));
+        Assert.That(text, Does.Contain("Kalender:"));
+        Assert.That(text, Does.Contain("Periode:"));
+        Assert.That(text, Does.Contain("Ejendom 9"));
+        Assert.That(text, Does.Contain("Miljøtilsyn"));
+        Assert.That(text, Does.Contain(SamplePeriod));
+        Assert.That(text, Does.Contain($"01.01.2026 {Dash} 31.03.2026"));
+        Assert.That(text, Does.Not.Contain("01.01.2026 - 31.03.2026"));
+
+        // The labels are bold runs, the values are not.
+        var boldRunTexts = headerPart.Header!.Descendants<Run>()
+            .Where(r => r.RunProperties?.Bold != null)
+            .Select(r => r.InnerText)
+            .ToList();
+        Assert.That(boldRunTexts, Is.EquivalentTo(new[] { "Ejendom:", "Kalender:", "Periode:" }));
+
+        var pageMargin = sectPr.GetFirstChild<PageMargin>();
+        Assert.That(pageMargin, Is.Not.Null);
+        Assert.That(pageMargin!.Header!.Value, Is.GreaterThan(0U));
+    }
+
+    /// <summary>
+    /// With no property filter and a multi-board selection the service resolves
+    /// both labels to "Alle" — but a document can also reach the writer with the
+    /// labels unset (older callers, the builder tests). Either way the header says
+    /// <c>Alle</c>, never an empty value after a colon.
+    /// </summary>
+    [Test]
+    public async Task Word_HeaderFallsBackToAlleWhenNoPropertyOrBoardLabelIsSet()
+    {
+        var document = SampleDocument();
+        document.PropertyLabel = null;
+        document.BoardLabel = string.Empty;
+
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var text = word.MainDocumentPart!.HeaderParts.Single().Header!.InnerText;
+
+        Assert.That(text, Does.Contain("Ejendom: Alle"));
+        Assert.That(text, Does.Contain("Kalender: Alle"));
+        Assert.That(text, Does.Not.Contain("Ejendom 9"));
+    }
+
+    /// <summary>
+    /// The footer is <c>Microting</c> left and <c>p. n/N</c> right, on every page.
+    /// The numbers are FIELDS (<c>PAGE</c> and <c>NUMPAGES</c>), not literals —
+    /// only a field can differ per page — and the two literals are exactly that,
+    /// not localisation keys. The template's original footer (a bare
+    /// <c>1 / 1</c>, no brand) is replaced, not appended to.
+    /// </summary>
+    [Test]
+    public async Task Word_FooterCarriesTheBrandAndPageOfTotalFields()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var sectPr = SectionProperties(word);
+        var reference = sectPr.GetFirstChild<FooterReference>();
+        Assert.That(reference, Is.Not.Null, "sectPr has no footerReference");
+        Assert.That(reference!.Type!.Value, Is.EqualTo(HeaderFooterValues.Default));
+
+        var footerPart = (FooterPart)word.MainDocumentPart!.GetPartById(reference.Id!.Value!);
+        var footer = footerPart.Footer!;
+        var text = footer.InnerText;
+
+        Assert.That(text, Does.StartWith("Microting"));
+        Assert.That(text, Does.Contain("p. "));
+
+        var instructions = footer.Descendants<SimpleField>()
+            .Select(f => f.Instruction!.Value!.Trim())
+            .Concat(footer.Descendants<FieldCode>().Select(f => f.Text.Trim()))
+            .ToList();
+        Assert.That(instructions, Does.Contain("PAGE"));
+        Assert.That(instructions, Does.Contain("NUMPAGES"));
+
+        // p. PAGE / NUMPAGES, in that order, after a tab to the right-hand stop.
+        var pageIndex = text.IndexOf("p. ", StringComparison.Ordinal);
+        var slashIndex = text.IndexOf('/', pageIndex);
+        Assert.That(slashIndex, Is.GreaterThan(pageIndex));
+        var tabStop = footer.Descendants<TabStop>().Single();
+        Assert.That(tabStop.Val!.Value, Is.EqualTo(TabStopValues.Right));
+        Assert.That(tabStop.Position!.Value, Is.EqualTo(16834 - 2 * 1440));
+        Assert.That(footer.Descendants<TabChar>().Count(), Is.EqualTo(1));
+    }
+
+    /// <summary>
+    /// The body no longer opens with a centred title and a centred period line:
+    /// the period, property and board are in the page header on every page, and
+    /// the title is one LEFT-aligned bold paragraph. Nothing in the body is
+    /// centred, and the period appears in the body nowhere.
+    /// </summary>
+    [Test]
+    public async Task Word_BodyHasNoCentredTitleOrPeriodParagraph()
+    {
+        var document = SampleDocument();
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        var paragraphs = body.Descendants<Paragraph>().ToList();
+
+        Assert.That(paragraphs.Any(p =>
+                p.ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Center),
+            Is.False, "a centred paragraph survived");
+        Assert.That(body.InnerText, Does.Not.Contain(document.Period!));
+
+        // The title is still there — the first paragraph with text, bold (wherever
+        // HtmlToOpenXml chose to put the <w:b/>: run or paragraph mark), not centred.
+        Assert.That(paragraphs.First(p => !string.IsNullOrWhiteSpace(p.InnerText)).InnerText.Trim(),
+            Is.EqualTo("Detaljer"));
+        var title = paragraphs.First(p => p.InnerText.Trim() == "Detaljer");
+        Assert.That(title.Descendants<Bold>().Any(), Is.True);
+        Assert.That(title.ParagraphProperties?.Justification?.Val?.Value ?? JustificationValues.Left,
+            Is.Not.EqualTo(JustificationValues.Center));
+    }
+
+    /// <summary>
+    /// A document with no title (Rapport, per the format issues) gets no title
+    /// paragraph at all — not an empty bold line ahead of the first table.
+    /// </summary>
+    [Test]
+    public async Task Word_OmitsTheTitleParagraphWhenTheDocumentHasNone()
+    {
+        var document = SampleDocument();
+        document.Title = string.Empty;
+
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var firstParagraph = word.MainDocumentPart!.Document!.Body!.Descendants<Paragraph>()
+            .First(p => !string.IsNullOrWhiteSpace(p.InnerText));
+        Assert.That(firstParagraph.InnerText.Trim(), Is.EqualTo("Miljøtilsyn – Aflæsning vand"));
+    }
+
+    /// <summary>
+    /// The page shell must not cost the shared template anything: the five
+    /// <c>WordService</c> generators behind <c>GET report/reports/file</c> read the
+    /// same <c>file.docx</c>, and it is asserted here to still be A4 portrait with
+    /// no header part — i.e. the writer mutates its in-memory copy only.
+    /// </summary>
+    [Test]
+    public void Word_SharedTemplateResourceIsUntouched()
+    {
+        using var resource = typeof(ComplianceExportWordWriter).Assembly.GetManifestResourceStream(
+            "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx");
+        Assert.That(resource, Is.Not.Null);
+        using var copy = new MemoryStream();
+        resource!.CopyTo(copy);
+        copy.Position = 0;
+        using var word = WordprocessingDocument.Open(copy, false);
+
+        var pageSize = SectionProperties(word).GetFirstChild<PageSize>()!;
+        Assert.That(pageSize.Width!.Value, Is.EqualTo(11909U));
+        Assert.That(pageSize.Height!.Value, Is.EqualTo(16834U));
+        Assert.That(word.MainDocumentPart!.HeaderParts, Is.Empty);
+    }
+
+    private static ComplianceExportWordWriter NewWordWriter() =>
+        new(new DanishShellLocalizer(), NullLogger.Instance);
+
+    private static SectionProperties SectionProperties(WordprocessingDocument word)
+    {
+        var sectPr = word.MainDocumentPart!.Document!.Body!.GetFirstChild<SectionProperties>();
+        Assert.That(sectPr, Is.Not.Null, "the body has no sectPr");
+        return sectPr!;
+    }
+
+    /// <summary>
+    /// Danish for the four keys the page header uses (the values in
+    /// <c>Resources/localization.json</c>); every other key comes back as itself,
+    /// like the shared key-returning double.
+    /// </summary>
+    private sealed class DanishShellLocalizer : IBackendConfigurationLocalizationService
+    {
+        private static readonly Dictionary<string, string> Danish = new()
+        {
+            ["Property"] = "Ejendom",
+            ["CalendarBoard"] = "Kalender",
+            ["Period"] = "Periode",
+            ["All"] = "Alle"
+        };
+
+        public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;
+
+        public string GetString(string format, params object[] args) => GetString(format);
+
+        public string GetStringWithFormat(string format, params object[] args) => GetString(format);
     }
 
     /// <summary>
@@ -591,9 +658,7 @@ public class ComplianceExportWriterTests
             Assert.Ignore("LibreOffice is installed here; this test asserts the missing-soffice path.");
         }
 
-        var writer = new ComplianceExportWordWriter(
-            new BackendConfigurationLocalizationService(), NullLogger.Instance);
-        await using var docx = await writer.WriteAsync(SampleDocument(), null);
+        await using var docx = await NewWordWriter().WriteAsync(SampleDocument(), null);
 
         var before = ExportTempDirectories();
 

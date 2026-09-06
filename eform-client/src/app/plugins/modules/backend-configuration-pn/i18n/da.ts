@@ -771,4 +771,6 @@ export const da = {
   'Image {{index}} of {{count}}': 'Billede {{index}} af {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Billede {{index}} af {{count}} til sag {{caseId}}',
   'Image {{index}}': 'Billede {{index}}',
+  'PDF preview': 'PDF-forhåndsvisning',
+  'Export failed': 'Eksporten mislykkedes',
 };

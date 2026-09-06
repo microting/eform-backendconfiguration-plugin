@@ -750,4 +750,6 @@ export const isIS = {
   'Image {{index}} of {{count}}': 'Mynd {{index}} af {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Mynd {{index}} af {{count}} fyrir mál {{caseId}}',
   'Image {{index}}': 'Mynd {{index}}',
+  'PDF preview': 'PDF-forskoðun',
+  'Export failed': 'Útflutningur mistókst',
 };

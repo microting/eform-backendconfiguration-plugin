@@ -32,6 +32,15 @@
   &__custom-range {
     width: 240px;
   }
+
+  // The busy state of Download (#1189): a 16px spinner in front of the label
+  // while the export request is in flight. Material's stroked button already
+  // lays its label out as an inline flex row, so the spinner only needs a gap.
+  &__download-spinner {
+    display: inline-block;
+    margin-right: var(--spacing-xs);
+    vertical-align: middle;
+  }
 }
 
 // The global theme rule `body.theme-eform .mat-mdc-form-field

@@ -750,4 +750,6 @@ export const etET = {
   'Image {{index}} of {{count}}': 'Pilt {{index}} / {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Pilt {{index}} / {{count}} juhtumi {{caseId}} kohta',
   'Image {{index}}': 'Pilt {{index}}',
+  'PDF preview': 'PDF-i eelvaade',
+  'Export failed': 'Eksport ebaõnnestus',
 };

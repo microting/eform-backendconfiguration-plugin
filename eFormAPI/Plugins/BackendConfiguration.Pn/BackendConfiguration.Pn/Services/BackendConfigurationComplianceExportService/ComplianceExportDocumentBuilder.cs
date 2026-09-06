@@ -115,9 +115,8 @@ public static class ComplianceExportDocumentBuilder
     ///
     /// <para>
     /// The date column is TYPED (<see cref="ComplianceExportCellType.Date"/>), which
-    /// is what gives the prototype's three renderings from one source: Excel writes
-    /// a real date cell, CSV writes ISO <c>yyyy-MM-dd</c> and Word/PDF write
-    /// <c>dd.MM.yyyy</c>. The row model carries <c>TaskDate</c> as a STRING
+    /// is what gives the two renderings from one source: CSV writes ISO
+    /// <c>yyyy-MM-dd</c> and Word/PDF write <c>dd.MM.yyyy</c>. The row model carries <c>TaskDate</c> as a STRING
     /// formatted by <c>Index</c> with the CURRENT culture, so it is parsed back with
     /// <c>yyyy-MM-dd</c> + InvariantCulture; a value that will not parse (possible
     /// only under a non-Gregorian server culture) degrades to a text cell carrying
@@ -190,10 +189,10 @@ public static class ComplianceExportDocumentBuilder
     ///
     /// <para>
     /// <b>The "Delrapport" question, decided:</b> ONE COMPOSITE column,
-    /// <c>{tag} – {template}</c>, not two. The same string is the table title and
-    /// the Excel sheet name, so the section survives every flattening — a CSV
-    /// reader who concatenates the sheets still sees which sub-report each row came
-    /// from, and a pivot over the column reproduces the sections exactly. Two
+    /// <c>{tag} – {template}</c>, not two. The same string is the section title
+    /// (the table caption in PDF), so the section survives every flattening — a CSV
+    /// reader who concatenates the sections still sees which sub-report each row
+    /// came from, and a pivot over the column reproduces the sections exactly. Two
     /// columns would carry the same information at the cost of a wider table and a
     /// second header to translate.
     /// </para>
@@ -382,8 +381,8 @@ public static class ComplianceExportDocumentBuilder
     /// that the service sorts last precisely to keep the two apart. That would
     /// silently merge two different sections under one <c>Delrapport</c> value
     /// (whose whole justification is that a pivot over it reproduces the sections
-    /// exactly), collide two Excel sheet names, and make the export disagree with
-    /// the screen.
+    /// exactly), give two sections the same title, and make the export disagree
+    /// with the screen.
     /// </para>
     ///
     /// <para>

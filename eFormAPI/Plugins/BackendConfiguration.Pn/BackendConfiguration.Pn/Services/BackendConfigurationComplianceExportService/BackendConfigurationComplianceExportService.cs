@@ -19,7 +19,8 @@ using Sentry;
 namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 
 /// <summary>
-/// Server-side CSV / Excel / PDF export for the standalone Compliance page (#1169).
+/// Server-side CSV / PDF export for the standalone Compliance page (#1169; Excel
+/// removed by product request, #1189).
 ///
 /// <para>
 /// <b>This service owns no data access for the report itself.</b> It calls
@@ -33,15 +34,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// <para>
 /// The pipeline is: <c>view model</c> →
 /// <see cref="ComplianceExportDocumentBuilder"/> → <see cref="ComplianceExportDocument"/>
-/// → one of three renderers. PDF is the docx renderer plus
+/// → one of two renderers. PDF is the docx renderer plus
 /// <see cref="ComplianceExportPdfConverter"/>; there is no second document builder
 /// for it and no client-side <c>html2pdf</c> anywhere in the diff.
 /// </para>
 ///
 /// <para>
-/// <b>The only database reads here are two name lookups for the FILE NAME</b> —
-/// the property's name when the filter names one property, and the board's name
-/// when it names exactly one board. Both are display-only.
+/// <b>The only database reads here are two name lookups</b> — the property's
+/// name when the filter names one property, and the board's name when it names
+/// exactly one board. Both are display-only; each is resolved ONCE and reused for
+/// the file name and for the Word/PDF page header (#1189).
 /// </para>
 /// </summary>
 public class BackendConfigurationComplianceExportService(
@@ -57,12 +59,17 @@ public class BackendConfigurationComplianceExportService(
     public const string ViewModeReport = "report";
 
     public const string FormatCsv = "csv";
-    public const string FormatXlsx = "xlsx";
     public const string FormatPdf = "pdf";
 
     private const string MimeCsv = "text/csv";
-    private const string MimeXlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private const string MimePdf = "application/pdf";
+
+    /// <summary>
+    /// The separator inside the document's period line (U+2013, the mock-ups'
+    /// <c>01.01.2026 – 05.09.2026</c>). The FILE NAME keeps hyphen-separated date
+    /// parts — see <see cref="ComplianceExportFileNaming.BuildFileName"/>.
+    /// </summary>
+    private const string PeriodSeparator = " – ";
 
     /// <inheritdoc />
     public async Task<OperationDataResult<ComplianceExportFileModel>> Export(
@@ -85,13 +92,21 @@ public class BackendConfigurationComplianceExportService(
                 return Fail("InvalidExportRequest");
             }
 
-            if (format is not (FormatCsv or FormatXlsx or FormatPdf))
+            if (format is not (FormatCsv or FormatPdf))
             {
                 return Fail("InvalidExportRequest");
             }
 
-            var period = $"{requestModel.DateFrom.Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)} - "
-                         + $"{requestModel.DateTo.Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)}";
+            var period = requestModel.DateFrom.Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                         + PeriodSeparator
+                         + requestModel.DateTo.Date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+
+            // Resolved once, here, and reused twice: for the page header the Word
+            // writer puts on every page, and for the file name. Neither the
+            // builders nor the file naming look anything up themselves.
+            // Both label lookups run BEFORE the report call and are display-only reads,
+            // so their ordering relative to the report query is harmless.
+            var (propertyLabel, boardLabel) = await ResolveLabels(requestModel);
 
             ComplianceExportDocument document;
             switch (viewMode)
@@ -158,15 +173,15 @@ public class BackendConfigurationComplianceExportService(
                 }
             }
 
-            var fileName = await BuildFileName(requestModel, viewMode, format);
+            document.PropertyLabel = propertyLabel;
+            document.BoardLabel = boardLabel;
+
+            var fileName = BuildFileName(requestModel, viewMode, format, propertyLabel, boardLabel);
 
             switch (format)
             {
                 case FormatCsv:
                     return Ok(ComplianceExportCsvWriter.Write(document), fileName, MimeCsv);
-
-                case FormatXlsx:
-                    return Ok(ComplianceExportExcelWriter.Write(document), fileName, MimeXlsx);
 
                 default:
                 {
@@ -209,17 +224,15 @@ public class BackendConfigurationComplianceExportService(
 
     /// <summary>
     /// The image appendix gate, as its own predicate so it can be pinned for all
-    /// nine (view mode × format) combinations without rendering a document — the
-    /// appendix is invisible in CSV and XLSX output, so an inline
-    /// <c>&amp;&amp;</c> here could be flipped to <c>||</c> without any renderer
-    /// test noticing.
+    /// six (view mode × format) combinations without rendering a document — the
+    /// appendix is invisible in CSV output, so an inline <c>&amp;&amp;</c> here
+    /// could be flipped to <c>||</c> without any renderer test noticing.
     ///
     /// <para>
     /// True for EXACTLY ONE combination: <c>report</c> + <c>pdf</c>, and only when
-    /// the caller asked for it (#1169 §6 — opt-in, default off). A spreadsheet cell
-    /// cannot hold a photograph, so the flag is ignored for csv/xlsx rather than
-    /// silently producing nothing, and Oversigt and Detaljer carry no case images at
-    /// all.
+    /// the caller asked for it (#1169 §6 — opt-in, default off). A CSV cell cannot
+    /// hold a photograph, so the flag is ignored for csv rather than silently
+    /// producing nothing, and Oversigt and Detaljer carry no case images at all.
     /// </para>
     /// </summary>
     public static bool ShouldIncludeImageAppendix(string viewMode, string format, bool requested) =>
@@ -246,22 +259,15 @@ public class BackendConfigurationComplianceExportService(
     };
 
     /// <summary>
-    /// <c>{view}-{property}-{board}-{from}-{to}.{ext}</c> (#1169 §4). The property
-    /// and board parts are resolved server-side from the ids on the request — the
-    /// client sends no display strings, so a hand-edited request cannot inject a
-    /// file name. "Alle" stands in for "no property filter" and for a multi-board
-    /// selection, where no single board names the file.
+    /// The property and board display labels, resolved server-side from the ids on
+    /// the request — the client sends no display strings, so a hand-edited request
+    /// cannot inject a file name or a page header. "Alle" stands in for "no
+    /// property filter" and for a multi-board selection, where no single board
+    /// names the export.
     /// </summary>
-    private async Task<string> BuildFileName(
-        ComplianceReportExportRequestModel requestModel, string viewMode, string format)
+    private async Task<(string PropertyLabel, string BoardLabel)> ResolveLabels(
+        ComplianceReportExportRequestModel requestModel)
     {
-        var viewLabel = viewMode switch
-        {
-            ViewModeOverview => localizationService.GetString("ComplianceOverview"),
-            ViewModeDetails => localizationService.GetString("ComplianceDetails"),
-            _ => localizationService.GetString("ComplianceReport")
-        };
-
         var allLabel = localizationService.GetString("All");
 
         var propertyLabel = allLabel;
@@ -270,7 +276,7 @@ public class BackendConfigurationComplianceExportService(
             var name = await backendConfigurationPnDbContext.Properties
                 .Where(p => p.Id == requestModel.PropertyId.Value)
                 // Same guard as the board lookup below: a soft-deleted property must
-                // not name the file.
+                // not name the export.
                 .Where(p => p.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(p => p.Name)
                 .FirstOrDefaultAsync();
@@ -288,6 +294,24 @@ public class BackendConfigurationComplianceExportService(
                 .FirstOrDefaultAsync();
             if (!string.IsNullOrWhiteSpace(name)) boardLabel = name;
         }
+
+        return (propertyLabel, boardLabel);
+    }
+
+    /// <summary>
+    /// <c>{view}-{property}-{board}-{from}-{to}.{ext}</c> (#1169 §4), from the
+    /// labels <see cref="ResolveLabels"/> already produced — no lookup happens here.
+    /// </summary>
+    private string BuildFileName(
+        ComplianceReportExportRequestModel requestModel, string viewMode, string format,
+        string propertyLabel, string boardLabel)
+    {
+        var viewLabel = viewMode switch
+        {
+            ViewModeOverview => localizationService.GetString("ComplianceOverview"),
+            ViewModeDetails => localizationService.GetString("ComplianceDetails"),
+            _ => localizationService.GetString("ComplianceReport")
+        };
 
         return ComplianceExportFileNaming.BuildFileName(
             viewLabel, propertyLabel, boardLabel,

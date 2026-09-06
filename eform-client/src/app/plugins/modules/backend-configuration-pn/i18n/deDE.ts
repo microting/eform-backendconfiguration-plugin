@@ -796,4 +796,6 @@ export const deDE = {
   'Image {{index}} of {{count}}': 'Bild {{index}} von {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Bild {{index}} von {{count}} für Fall {{caseId}}',
   'Image {{index}}': 'Bild {{index}}',
+  'PDF preview': 'PDF-Vorschau',
+  'Export failed': 'Export fehlgeschlagen',
 };

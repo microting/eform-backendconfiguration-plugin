@@ -26,16 +26,16 @@ using NSubstitute;
 
 /// <summary>
 /// Coverage for <see cref="BackendConfigurationComplianceExportService"/> itself —
-/// the ORCHESTRATION between the request model, the report service and the three
-/// renderers (#1169). The document builder and the renderers have their own
-/// fixtures; this one is about what the service decides.
+/// the ORCHESTRATION between the request model, the report service and the two
+/// renderers (#1169; Excel removed in #1189). The document builder and the
+/// renderers have their own fixtures; this one is about what the service decides.
 ///
 /// <para>
 /// <b>No database and no container.</b> The report service is an NSubstitute
 /// stub — the whole point of the design is that the export owns no data access for
 /// the report, so there is nothing to seed for it. The <c>BackendConfigurationPnDbContext</c>
-/// is only ever touched by the two FILE-NAME lookups, and only when the request
-/// names a property or names exactly one board; every request built here does
+/// is only ever touched by the two label lookups (file name and page header), and
+/// only when the request names a property or names exactly one board; every request built here does
 /// neither, so the context is passed as <c>null</c> and demonstrably never
 /// dereferenced. The SDK core is likewise only reached on the PDF path, which none
 /// of these tests take.
@@ -47,8 +47,8 @@ using NSubstitute;
 /// a seeded database). The appendix gate that only the PDF arm can observe is
 /// pinned through <see cref="BackendConfigurationComplianceExportService.ShouldIncludeImageAppendix"/>
 /// instead, which is why that predicate is named and public rather than an inline
-/// <c>&amp;&amp;</c>: the appendix is invisible in CSV and XLSX output, so no
-/// renderer assertion could tell a <c>&amp;&amp;</c> from a <c>||</c> there.
+/// <c>&amp;&amp;</c>: the appendix is invisible in CSV output, so no renderer
+/// assertion could tell a <c>&amp;&amp;</c> from a <c>||</c> there.
 /// </para>
 ///
 /// <para>
@@ -67,22 +67,22 @@ public class ComplianceExportServiceTests
     // ==================================================================
 
     /// <summary>
-    /// The appendix is on for EXACTLY ONE of the nine (view mode × format)
+    /// The appendix is on for EXACTLY ONE of the six (view mode × format)
     /// combinations — <c>report</c> + <c>pdf</c> — and only when the caller asked
-    /// for it (#1169 §6: opt-in, default off). A spreadsheet cell cannot hold a
-    /// photograph, and Oversigt and Detaljer carry no case images at all.
+    /// for it (#1169 §6: opt-in, default off). A CSV cell cannot hold a
+    /// photograph, and Oversigt and Detaljer carry no case images at all. The
+    /// removed <c>xlsx</c> spelling is not a row here: the service rejects it
+    /// before the predicate is ever reached (#1189), which
+    /// <see cref="Export_RejectsAnUnknownFormat"/> covers.
     /// </summary>
     [Test]
     [TestCase("report", "pdf", true, ExpectedResult = true)]
     [TestCase("report", "pdf", false, ExpectedResult = false)]
     [TestCase("report", "csv", true, ExpectedResult = false)]
-    [TestCase("report", "xlsx", true, ExpectedResult = false)]
     [TestCase("details", "pdf", true, ExpectedResult = false)]
     [TestCase("details", "csv", true, ExpectedResult = false)]
-    [TestCase("details", "xlsx", true, ExpectedResult = false)]
     [TestCase("overview", "pdf", true, ExpectedResult = false)]
     [TestCase("overview", "csv", true, ExpectedResult = false)]
-    [TestCase("overview", "xlsx", true, ExpectedResult = false)]
     public bool AppendixGate_IsOnOnlyForReportPlusPdfAndOnlyWhenAskedFor(
         string viewMode, string format, bool requested) =>
         BackendConfigurationComplianceExportService.ShouldIncludeImageAppendix(
@@ -120,13 +120,19 @@ public class ComplianceExportServiceTests
     /// <summary>
     /// An unknown format is rejected on the same terms — including <c>docx</c>,
     /// which the PDF arm produces internally but which is deliberately not an
-    /// offered format (#1169 names exactly three).
+    /// offered format, and <c>xlsx</c>/<c>excel</c>, which #1169 offered and
+    /// #1189 removed by product request ("Fjern Excel"): a client still sending
+    /// it gets <c>InvalidExportRequest</c>, not a silent fallback to another
+    /// format.
     /// </summary>
     [Test]
     [TestCase(null)]
     [TestCase("")]
     [TestCase("docx")]
     [TestCase("xls")]
+    [TestCase("xlsx")]
+    [TestCase("XLSX")]
+    [TestCase("excel")]
     [TestCase("json")]
     public async Task Export_RejectsAnUnknownFormat(string? format)
     {
@@ -307,7 +313,7 @@ public class ComplianceExportServiceTests
     /// </summary>
     [Test]
     [TestCase("overview", "csv", "ComplianceOverview-All-All-01.01.2026-31.03.2026.csv")]
-    [TestCase("details", "xlsx", "ComplianceDetails-All-All-01.01.2026-31.03.2026.xlsx")]
+    [TestCase("details", "csv", "ComplianceDetails-All-All-01.01.2026-31.03.2026.csv")]
     [TestCase("report", "csv", "ComplianceReport-All-All-01.01.2026-31.03.2026.csv")]
     public async Task Export_FileNameUsesTheViewLabelAndTheAllFallbacks(
         string viewMode, string format, string expected)
@@ -340,11 +346,12 @@ public class ComplianceExportServiceTests
     /// <summary>
     /// The MIME type follows the format, and the stream is rewound and non-empty —
     /// the controller copies it straight to the response body, so a stream left at
-    /// its end would download as a 0-byte file.
+    /// its end would download as a 0-byte file. Only the CSV arm can be driven
+    /// here: the PDF arm needs the SDK core and <c>soffice</c>, neither of which
+    /// this fixture has (see the class summary).
     /// </summary>
     [Test]
     [TestCase("csv", "text/csv")]
-    [TestCase("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     public async Task Export_ReturnsARewoundStreamWithTheMatchingMimeType(string format, string mime)
     {
         var result = await BuildService(StubReportService()).Export(Request("details", format));

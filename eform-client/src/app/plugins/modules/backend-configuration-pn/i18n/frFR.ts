@@ -749,4 +749,6 @@ export const frFR = {
   'Image {{index}} of {{count}}': 'Image {{index}} sur {{count}}',
   'Image {{index}} of {{count}} for case {{caseId}}': 'Image {{index}} sur {{count}} pour le dossier {{caseId}}',
   'Image {{index}}': 'Image {{index}}',
+  'PDF preview': 'Aperçu PDF',
+  'Export failed': 'L\'exportation a échoué',
 };
