@@ -72,6 +72,8 @@ export interface ComplianceReportRowModel {
   boardName: string;
   tags: string[];
   workerNames: string[];
+  /** Site ids behind `workerNames` — the ARP's non-removed PlanningSites, as a set (not index-aligned with the names). */
+  workerSiteIds: number[];
   completed: boolean;
   doneAt: string | null;
   sdkCaseId: number;

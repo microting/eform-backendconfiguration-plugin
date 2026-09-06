@@ -32,6 +32,7 @@ function row(taskDate: string, over: Partial<ComplianceReportRowModel> = {}): Co
     boardName: 'Board',
     tags: [],
     workerNames: [],
+    workerSiteIds: [],
     completed: false,
     doneAt: null,
     sdkCaseId: 1,

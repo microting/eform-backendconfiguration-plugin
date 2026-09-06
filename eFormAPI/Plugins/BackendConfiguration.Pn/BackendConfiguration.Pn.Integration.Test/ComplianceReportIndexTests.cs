@@ -1282,6 +1282,14 @@ public class ComplianceReportIndexTests : TestBaseSetup
                 "a row assigned to BOTH requested sites must be returned exactly once");
             Assert.That(result.Model!.Total, Is.EqualTo(3));
             Assert.That(result.Model.Entities, Has.Count.EqualTo(3));
+            // #1187: the row carries the ARP's non-removed PlanningSites ids so the
+            // complete modal can group assigned vs other workers. Set equality only —
+            // WorkerNames drops ids with no Sites row, so index alignment is not a contract.
+            Assert.That(result.Model.Entities.Single(r => r.ComplianceId == rowBothSites).WorkerSiteIds,
+                Is.EquivalentTo(new[] { site1, site2 }),
+                "WorkerSiteIds must be exactly the seeded PlanningSites ids of the row's ARP");
+            Assert.That(result.Model.Entities.Single(r => r.ComplianceId == rowFirstSiteOnly).WorkerSiteIds,
+                Is.EquivalentTo(new[] { site1 }));
         });
     }
 
@@ -1340,6 +1348,11 @@ public class ComplianceReportIndexTests : TestBaseSetup
             Assert.That(Ids(result.Model), Is.EquivalentTo(new[] { rowTagged, rowAssigned, rowBare }));
             Assert.That(result.Model.Entities.Single(r => r.ComplianceId == rowBare).BoardId, Is.Null,
                 "a property with no board yields no BoardId, and is still returned when BoardIds is empty");
+            // #1187: no PlanningSites → empty WorkerSiteIds (never null); one assignee → that id.
+            Assert.That(result.Model.Entities.Single(r => r.ComplianceId == rowBare).WorkerSiteIds, Is.Empty,
+                "a row whose ARP has no PlanningSites carries an empty WorkerSiteIds list");
+            Assert.That(result.Model.Entities.Single(r => r.ComplianceId == rowAssigned).WorkerSiteIds,
+                Is.EquivalentTo(new[] { siteId }));
         });
     }
 
