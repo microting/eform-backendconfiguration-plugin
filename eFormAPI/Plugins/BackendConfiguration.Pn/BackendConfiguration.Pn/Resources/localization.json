@@ -6254,5 +6254,67 @@
       "el-GR": "Περίοδος",
       "is-IS": "Tímabil"
     }
+  },
+  {
+    "Key": "Company",
+    "LocalizedValue": {
+      "da": "Virksomhed",
+      "de": "Unternehmen",
+      "en-US": "Company",
+      "uk-UA": "Компанія",
+      "pl-PL": "Firma",
+      "no-NO": "Virksomhet",
+      "sv-SE": "Företag",
+      "es-ES": "Empresa",
+      "fr-FR": "Entreprise",
+      "it-IT": "Azienda",
+      "nl-NL": "Bedrijf",
+      "pt-BR": "Empresa",
+      "pt-PT": "Empresa",
+      "fi-FI": "Yritys",
+      "et-ET": "Ettevõte",
+      "lv-LV": "Uzņēmums",
+      "lt-LT": "Įmonė",
+      "ro-RO": "Companie",
+      "hr-HR": "Tvrtka",
+      "sl-SL": "Podjetje",
+      "cs-CZ": "Společnost",
+      "sk-SK": "Spoločnosť",
+      "hu-HU": "Vállalat",
+      "bg-BG": "Компания",
+      "el-GR": "Εταιρεία",
+      "is-IS": "Fyrirtæki"
+    }
+  },
+  {
+    "Key": "ComplianceOverviewTitle",
+    "LocalizedValue": {
+      "da": "Compliance oversigt",
+      "de": "Compliance-Übersicht",
+      "en-US": "Compliance overview",
+      "uk-UA": "Огляд відповідності",
+      "pl-PL": "Przegląd zgodności",
+      "no-NO": "Compliance-oversikt",
+      "sv-SE": "Compliance-översikt",
+      "es-ES": "Resumen de cumplimiento",
+      "fr-FR": "Aperçu de la conformité",
+      "it-IT": "Panoramica della conformità",
+      "nl-NL": "Compliance-overzicht",
+      "pt-BR": "Visão geral de conformidade",
+      "pt-PT": "Visão geral de conformidade",
+      "fi-FI": "Vaatimustenmukaisuuden yleiskatsaus",
+      "et-ET": "Vastavuse ülevaade",
+      "lv-LV": "Atbilstības pārskats",
+      "lt-LT": "Atitikties apžvalga",
+      "ro-RO": "Prezentare generală a conformității",
+      "hr-HR": "Pregled usklađenosti",
+      "sl-SL": "Pregled skladnosti",
+      "cs-CZ": "Přehled souladu",
+      "sk-SK": "Prehľad súladu",
+      "hu-HU": "Megfelelőségi áttekintés",
+      "bg-BG": "Преглед на съответствието",
+      "el-GR": "Επισκόπηση συμμόρφωσης",
+      "is-IS": "Yfirlit yfir reglufylgni"
+    }
   }
 ]

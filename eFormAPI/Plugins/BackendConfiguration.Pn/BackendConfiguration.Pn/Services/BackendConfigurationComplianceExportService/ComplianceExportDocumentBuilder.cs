@@ -41,10 +41,26 @@ public static class ComplianceExportDocumentBuilder
     /// </para>
     ///
     /// <para>
-    /// The first column's header comes from the existing <c>Property</c> key
-    /// ("Ejendom"), not from a new "Virksomhed" one: the prototype's two views
-    /// label the same PropertyId differently, and one term across the whole
-    /// document is less confusing than two.
+    /// <b>The first column's header is "Virksomhed" (key <c>Company</c>), per the
+    /// #1190 mock-up, deliberately reversing the #1164 header wording for the
+    /// EXPORT ONLY — the screen's Oversigt table and the page-header line above
+    /// this table keep "Ejendom".</b> The <c>Property</c> key itself is untouched
+    /// because Detaljer and the page header use it.
+    /// </para>
+    ///
+    /// <para>
+    /// The document title is "Compliance oversigt" (key
+    /// <c>ComplianceOverviewTitle</c>), not the bare view label "Oversigt" (key
+    /// <c>ComplianceOverview</c>). The view label is what <c>BuildFileName</c>
+    /// prefixes the download with (<c>Oversigt-…</c>), so it stays as it is.
+    /// </para>
+    ///
+    /// <para>
+    /// <c>Compliance %</c> is a TEXT column carrying <c>"{pct}%"</c> (#1190), for
+    /// the data rows and the totals row alike, so every renderer prints the sign
+    /// — a typed Number cell is decorated by no renderer. The value is still taken
+    /// verbatim from the read model; only the suffix is added. <c>Overskredet</c>
+    /// stays a Number column.
     /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildOverview(
@@ -54,7 +70,7 @@ public static class ComplianceExportDocumentBuilder
     {
         var document = new ComplianceExportDocument
         {
-            Title = localizationService.GetString("ComplianceOverview"),
+            Title = localizationService.GetString("ComplianceOverviewTitle"),
             Period = period
         };
 
@@ -62,17 +78,16 @@ public static class ComplianceExportDocumentBuilder
         {
             Columns =
             [
-                new ComplianceExportColumn { Header = localizationService.GetString("Property") },
+                // "Virksomhed" — see the type comment: export-only wording, the
+                // screen keeps "Ejendom".
+                new ComplianceExportColumn { Header = localizationService.GetString("Company") },
                 new ComplianceExportColumn
                 {
                     Header = localizationService.GetString("Overdue"),
                     Type = ComplianceExportCellType.Number
                 },
-                new ComplianceExportColumn
-                {
-                    Header = localizationService.GetString("CompliancePercentage"),
-                    Type = ComplianceExportCellType.Number
-                }
+                // Text, not Number: the cell carries its own "%" suffix.
+                new ComplianceExportColumn { Header = localizationService.GetString("CompliancePercentage") }
             ]
         };
 
@@ -84,7 +99,7 @@ public static class ComplianceExportDocumentBuilder
                 [
                     ComplianceExportCell.FromText(row.PropertyName),
                     ComplianceExportCell.FromNumber(row.Overdue),
-                    ComplianceExportCell.FromNumber(row.CompliancePct)
+                    PercentCell(row.CompliancePct)
                 ]
             });
         }
@@ -101,13 +116,31 @@ public static class ComplianceExportDocumentBuilder
             [
                 ComplianceExportCell.FromText(localizationService.GetString("Total")),
                 ComplianceExportCell.FromNumber(totals.Overdue),
-                ComplianceExportCell.FromNumber(totals.CompliancePct)
+                PercentCell(totals.CompliancePct)
             ]
         });
 
         document.Tables.Add(table);
         return document;
     }
+
+    /// <summary>
+    /// The Oversigt percentage as a text cell with the <c>%</c> sign attached
+    /// (#1190): <c>25</c> → <c>25%</c>. Invariant formatting — the value is an
+    /// integer, but the intent is stated.
+    ///
+    /// <para>
+    /// <c>null</c> — a property whose work has not fallen due — stays the shared
+    /// empty glyph (the en dash), never <c>0%</c> and never <c>%</c> alone. The
+    /// CSV rendering of an absent value (the en dash today; "a blank field" under
+    /// the #1191 Detaljer rule) is owned by the CSV writer / #1191; this builder
+    /// only emits the empty cell and does not change for it.
+    /// </para>
+    /// </summary>
+    private static ComplianceExportCell PercentCell(int? pct) =>
+        pct.HasValue
+            ? ComplianceExportCell.FromText(pct.Value.ToString(CultureInfo.InvariantCulture) + "%")
+            : new ComplianceExportCell();
 
     /// <summary>
     /// Detaljer (#1169 §2): Dato / Ejendom / Kalender / Kl. / Opgave / Medarbejder
