@@ -28,7 +28,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// <para>
 /// Dates are written ISO <c>yyyy-MM-dd</c> and numbers with the invariant decimal
 /// point, so the file stays machine-readable regardless of who opens it. The
-/// display strings on the cells are used for everything else.
+/// display strings on the cells are used for everything else — except an EMPTY
+/// cell, which is a blank field (<c>;;</c>), not the en dash Word/PDF print
+/// (#1191, the mock-ups' CSVs; the rule holds for all three views). A cell's
+/// Word/PDF-only <c>DisplayText</c> is never read here: the CSV date stays ISO
+/// while the page shows <c>Tirsdag 21. juli</c>.
 /// </para>
 ///
 /// <para>
@@ -118,12 +122,19 @@ public static class ComplianceExportCsvWriter
     }
 
     /// <summary>
-    /// ISO for dates, invariant decimal for numbers, the cell's display text
-    /// otherwise (which is already the en dash when the value is absent).
+    /// A blank field for an empty cell (#1191), ISO for dates, invariant decimal
+    /// for numbers, the cell's display text otherwise.
+    ///
+    /// <para>
+    /// Emptiness is read from <see cref="ComplianceExportCell.IsEmpty"/>, never
+    /// inferred from the text: the factories bake the en dash into <c>Text</c> for
+    /// Word/PDF, so a <c>null</c> check would still write the glyph for every
+    /// empty text cell, and a glyph check would blank a genuine <c>–</c> answer.
+    /// </para>
     /// </summary>
     private static string Render(ComplianceExportCell cell, ComplianceExportCellType type)
     {
-        if (cell == null) return ComplianceExportCell.EmptyGlyph;
+        if (cell == null || cell.IsEmpty) return string.Empty;
 
         return type switch
         {
@@ -131,7 +142,7 @@ public static class ComplianceExportCsvWriter
                 cell.Date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             ComplianceExportCellType.Number when cell.Number.HasValue =>
                 cell.Number.Value.ToString(CultureInfo.InvariantCulture),
-            _ => cell.Text ?? ComplianceExportCell.EmptyGlyph
+            _ => cell.Text ?? string.Empty
         };
     }
 
@@ -176,8 +187,9 @@ public static class ComplianceExportCsvWriter
     /// <para>
     /// <b>What the guard costs, precisely.</b> The NUMBER-typed cells cannot be
     /// affected: overdue counts, compliance percentages and image counts are all
-    /// non-negative, and the absent-value glyph is the en dash U+2013 rather than
-    /// the hyphen-minus. But those are the minority of guarded strings — most are
+    /// non-negative, an absent value is a blank field, and Detaljer's <c>Kl.</c>
+    /// range (<c>13:00 - 14:00</c>) starts with a digit, never with its
+    /// hyphen-minus. But those are the minority of guarded strings — most are
     /// Rapport answer cells, where a leading <c>-</c> or <c>+</c> is ordinary
     /// Danish free text (<c>-5 grader</c>, <c>+ tjek pumpe</c>). Such a value is
     /// guarded, and in LibreOffice Calc the apostrophe is then VISIBLE (see

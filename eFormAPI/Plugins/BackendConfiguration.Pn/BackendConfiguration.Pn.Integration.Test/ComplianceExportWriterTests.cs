@@ -147,6 +147,33 @@ public class ComplianceExportWriterTests
             SamplePeriod,
             new DanishShellLocalizer());
 
+    /// <summary>
+    /// The #1191 Detaljer mock-up (p8), built through the REAL
+    /// <see cref="ComplianceExportDocumentBuilder.BuildDetails"/> with the Danish
+    /// localizer: a completed, timed, tagged row on Tuesday 21 July 2026 and an
+    /// open all-day row with no worker and no tag the day before. Build it INSIDE
+    /// a test carrying <c>[SetCulture("da-DK")]</c> — the weekday text is
+    /// formatted with <c>CurrentCulture</c> at build time, before any <c>await</c>.
+    /// </summary>
+    private static ComplianceExportDocument DetailsDocument() =>
+        ComplianceExportDocumentBuilder.BuildDetails(
+            [
+                new ComplianceReportRowModel
+                {
+                    TaskDate = "2026-07-21", StartHour = 13.0, Duration = 1.0, IsAllDay = false,
+                    PropertyName = "Ejendom 9", BoardName = "Miljøtilsyn", Title = "Aflæsning vand",
+                    WorkerNames = ["Ann Andersen"], Tags = ["Miljø"], Completed = true
+                },
+                new ComplianceReportRowModel
+                {
+                    TaskDate = "2026-07-20", IsAllDay = true,
+                    PropertyName = "Ejendom 9", BoardName = "Miljøtilsyn", Title = "Rundering",
+                    WorkerNames = [], Tags = [], Completed = false
+                }
+            ],
+            SamplePeriod,
+            new DanishShellLocalizer());
+
     // ==================================================================
     // CSV
     // ==================================================================
@@ -159,10 +186,10 @@ public class ComplianceExportWriterTests
     /// deliberately a text cell in a spreadsheet; that is what the mock-up shows.
     ///
     /// <para>
-    /// The null percentage on the middle row is the en dash here, NOT a blank
-    /// field: the CSV rendering of an absent value is owned by the CSV writer /
-    /// #1191 (Detaljer), and this line is the one that pins whatever glyph the
-    /// writer emits.
+    /// The null percentage on the middle row is a BLANK field, not the en dash:
+    /// #1191 owns the CSV rendering of an absent value for all three views, and
+    /// the mock-ups' CSVs leave empty cells empty. Word/PDF keep the glyph — see
+    /// <see cref="Word_OverviewHasTitleVirksomhedHeaderPercentCellsAndBoldTotalsRow"/>.
     /// </para>
     /// </summary>
     [Test]
@@ -177,9 +204,10 @@ public class ComplianceExportWriterTests
         Assert.That(text, Is.EqualTo(
             "Virksomhed;Overskredet;Compliance %\r\n" +
             "Ejendom 9;6;25%\r\n" +
-            $"Ejendom 10;0;{Dash}\r\n" +
+            "Ejendom 10;0;\r\n" +
             "Ejendom 11;64;83%\r\n" +
             "I alt;70;78%\r\n"));
+        Assert.That(text, Does.Not.Contain(Dash));
 
         var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
         Assert.That(lines[0], Is.EqualTo("Virksomhed;Overskredet;Compliance %"));
@@ -254,15 +282,97 @@ public class ComplianceExportWriterTests
     }
 
     /// <summary>
-    /// The empty-cell glyph reaches the file as the en dash, not as an empty field.
+    /// An empty cell is a BLANK field (<c>;;</c>) in the CSV, not the en dash the
+    /// Word/PDF renderer prints (#1191). The writer reads the cell's
+    /// <c>IsEmpty</c> flag, not its text — the text IS the en dash, baked in by the
+    /// factories for Word/PDF — so every empty path is covered here: a bare
+    /// <c>new ComplianceExportCell()</c>, <c>FromText(null)</c>,
+    /// <c>FromText("  ")</c>, <c>FromNumber(null)</c> and <c>FromDate(null)</c>,
+    /// while a genuine en-dash VALUE is still written out.
     /// </summary>
     [Test]
-    public void Csv_EmptyCellIsTheEnDash()
+    public void Csv_EmptyCellIsABlankFieldNotTheEnDash()
     {
         using var stream = ComplianceExportCsvWriter.Write(SampleDocument());
         var text = Encoding.UTF8.GetString(ReadAll(stream));
 
-        Assert.That(text, Does.Contain($"I alt;{Dash};4\r\n"));
+        Assert.That(text, Does.Contain("I alt;;4\r\n"));
+        Assert.That(text, Does.Not.Contain(Dash));
+
+        var document = new ComplianceExportDocument
+        {
+            Tables =
+            [
+                new ComplianceExportTable
+                {
+                    Columns =
+                    [
+                        new ComplianceExportColumn { Header = "a" },
+                        new ComplianceExportColumn { Header = "b" },
+                        new ComplianceExportColumn { Header = "c" },
+                        new ComplianceExportColumn { Header = "d", Type = ComplianceExportCellType.Number },
+                        new ComplianceExportColumn { Header = "e", Type = ComplianceExportCellType.Date },
+                        new ComplianceExportColumn { Header = "f" }
+                    ],
+                    Rows =
+                    [
+                        new ComplianceExportRow
+                        {
+                            Cells =
+                            [
+                                new ComplianceExportCell(),
+                                ComplianceExportCell.FromText(null),
+                                ComplianceExportCell.FromText("   "),
+                                ComplianceExportCell.FromNumber(null),
+                                ComplianceExportCell.FromDate(null),
+                                ComplianceExportCell.FromText(Dash)
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        using var stream2 = ComplianceExportCsvWriter.Write(document);
+        var bytes = ReadAll(stream2);
+        var text2 = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text2, Is.EqualTo($"a;b;c;d;e;f\r\n;;;;;{Dash}\r\n"));
+    }
+
+    /// <summary>
+    /// The #1191 Detaljer CSV, line for line (mock-up p8): line 1 is exactly
+    /// <c>Dato;Ejendom;Kalender;Kl.;Opgave;Medarbejder;Tags;Status</c> —
+    /// <c>Tags</c>, not <c>Etiketter</c> — the date is ISO (never the weekday
+    /// text the docx shows), <c>Kl.</c> is the range, and the all-day row's empty
+    /// time, worker and tag cells are blank fields (<c>;;</c>), not en dashes.
+    /// No totals row.
+    /// </summary>
+    [Test]
+    [SetCulture("da-DK")]
+    public void Csv_DetailsSnapshot_HeaderIsoDateRangeAndBlankEmptyCells()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(DetailsDocument());
+        var bytes = ReadAll(stream);
+
+        Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }));
+        var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text, Is.EqualTo(
+            "Dato;Ejendom;Kalender;Kl.;Opgave;Medarbejder;Tags;Status\r\n" +
+            "2026-07-21;Ejendom 9;Miljøtilsyn;13:00 - 14:00;Aflæsning vand;Ann Andersen;Miljø;Udført\r\n" +
+            "2026-07-20;Ejendom 9;Miljøtilsyn;;Rundering;;;Ikke udført\r\n"));
+
+        var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.That(lines[0], Is.EqualTo("Dato;Ejendom;Kalender;Kl.;Opgave;Medarbejder;Tags;Status"));
+        Assert.That(lines, Has.Length.EqualTo(3));
+        Assert.That(text, Does.Not.Contain(Dash));
+        Assert.That(text, Does.Not.Contain("Tirsdag"));
+        Assert.That(text, Does.Not.Contain("Etiketter"));
+        Assert.That(text, Does.Not.Contain("I alt"));
+        // The range's hyphen is never in first position, so the formula guard
+        // leaves it alone.
+        Assert.That(text, Does.Not.Contain("'13:00"));
     }
 
     /// <summary>
@@ -469,6 +579,84 @@ public class ComplianceExportWriterTests
         var percentCells = rows.Skip(1).Select(r => CellTexts(r)[2]).ToList();
         Assert.That(percentCells.Where(t => t != Dash), Is.All.EndsWith("%"));
         Assert.That(percentCells, Does.Not.Contain("0%"));
+
+        // No Oversigt row is tinted: the done tint is Detaljer's (#1191). The
+        // header row's own grey shading is the only shading in the table.
+        Assert.That(rows.Skip(1).SelectMany(r => r.Descendants<Shading>()), Is.Empty);
+    }
+
+    /// <summary>
+    /// The #1191 Detaljer docx — what <c>soffice</c> turns into mock-up p8: the
+    /// title paragraph is <c>Compliance</c> (not the view label <c>Detaljer</c>),
+    /// the header cells are exactly <c>Dato | Ejendom | Kalender | Kl. | Opgave |
+    /// Medarbejder | Tags | Status</c>, the <c>Dato</c> cell is the long Danish
+    /// weekday form <c>Tirsdag 21. juli</c> (never <c>21.07.2026</c>), <c>Kl.</c>
+    /// is the range, the empty cells are the en dash (Word/PDF keep it; only CSV
+    /// blanks), <c>Status</c> is <c>Udført</c> / <c>Ikke udført</c>, and there is
+    /// no totals row.
+    ///
+    /// <para>
+    /// The done tint: HtmlToOpenXml 3.5.0 turns the writer's
+    /// <c>&lt;tr style='background-color:#e8f5e9'&gt;</c> into a
+    /// <c>TableCellProperties/Shading</c> with fill <c>E8F5E9</c> on EVERY cell of
+    /// that row, and emits no <c>Shading</c> at all for an unstyled row — so the
+    /// assertion is "every cell of the done row is shaded pale green, no cell of
+    /// the open row is shaded".
+    /// </para>
+    /// </summary>
+    [Test]
+    [SetCulture("da-DK")]
+    public async Task Word_DetailsHasTitleComplianceWeekdayDateRangeAndTintsDoneRowsOnly()
+    {
+        var document = DetailsDocument();
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+
+        var title = body.Descendants<Paragraph>().First(p => !string.IsNullOrWhiteSpace(p.InnerText));
+        Assert.That(title.InnerText.Trim(), Is.EqualTo("Compliance"));
+        Assert.That(body.InnerText, Does.Not.Contain("Detaljer"));
+
+        var table = body.Descendants<Table>().Single();
+        var rows = table.Elements<TableRow>().ToList();
+        static string[] CellTexts(TableRow row) =>
+            row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        Assert.That(rows, Has.Count.EqualTo(3), "header + two data rows, no totals row");
+        Assert.That(CellTexts(rows[0]), Is.EqualTo(new[]
+        {
+            "Dato", "Ejendom", "Kalender", "Kl.", "Opgave", "Medarbejder", "Tags", "Status"
+        }));
+        Assert.That(CellTexts(rows[1]), Is.EqualTo(new[]
+        {
+            "Tirsdag 21. juli", "Ejendom 9", "Miljøtilsyn", "13:00 - 14:00",
+            "Aflæsning vand", "Ann Andersen", "Miljø", "Udført"
+        }));
+        Assert.That(CellTexts(rows[2]), Is.EqualTo(new[]
+        {
+            "Mandag 20. juli", "Ejendom 9", "Miljøtilsyn", Dash,
+            "Rundering", Dash, Dash, "Ikke udført"
+        }));
+        Assert.That(body.InnerText, Does.Not.Contain("21.07.2026"));
+        Assert.That(body.InnerText, Does.Not.Contain("2026-07-21"));
+        Assert.That(body.InnerText, Does.Not.Contain("I alt"));
+
+        // Only the header row is bold — there is no totals row to set apart.
+        Assert.That(rows[0].Descendants<Bold>().Any(), Is.True, "header row is not bold");
+        Assert.That(rows[1].Descendants<Bold>().Any(), Is.False, "done row is bold");
+        Assert.That(rows[2].Descendants<Bold>().Any(), Is.False, "open row is bold");
+
+        // The done row is tinted on every cell; the open row on none.
+        static string?[] CellFills(TableRow row) =>
+            row.Elements<TableCell>()
+                .Select(c => c.TableCellProperties?.GetFirstChild<Shading>()?.Fill?.Value?.ToUpperInvariant())
+                .ToArray();
+
+        Assert.That(CellFills(rows[1]), Is.All.EqualTo("E8F5E9"), "done row is not tinted on every cell");
+        Assert.That(rows[2].Descendants<Shading>(), Is.Empty, "open row is tinted");
+        Assert.That(CellFills(rows[2]), Is.All.Null);
+        Assert.That(ComplianceExportWordWriter.DoneRowFill, Is.EqualTo("#e8f5e9"));
     }
 
     // ------------------------------------------------------------------
@@ -690,11 +878,15 @@ public class ComplianceExportWriterTests
 
     /// <summary>
     /// Danish for the four keys the page header uses plus the five Oversigt keys
-    /// (#1190) — the values in <c>Resources/localization.json</c>; every other key
-    /// comes back as itself, like the shared key-returning double. Note that
-    /// <c>Property</c> ("Ejendom") and <c>Company</c> ("Virksomhed") are BOTH
-    /// here: the page header line reads the former, the Oversigt column header the
-    /// latter, and the docx test pins that they land in those two places.
+    /// (#1190) and the Detaljer keys (#1191) — the values in
+    /// <c>Resources/localization.json</c>; every other key comes back as itself,
+    /// like the shared key-returning double. Note that <c>Property</c> ("Ejendom")
+    /// and <c>Company</c> ("Virksomhed") are BOTH here: the page header line reads
+    /// the former, the Oversigt column header the latter, and the docx test pins
+    /// that they land in those two places. Likewise <c>Tags</c> ("Etiketter") and
+    /// <c>TagsPlain</c> ("Tags"), and <c>ComplianceDetails</c> ("Detaljer") and
+    /// <c>ComplianceDetailsTitle</c> ("Compliance"): the Detaljer tests pin which
+    /// of each pair reaches the file.
     /// </summary>
     private sealed class DanishShellLocalizer : IBackendConfigurationLocalizationService
     {
@@ -708,7 +900,18 @@ public class ComplianceExportWriterTests
             ["Overdue"] = "Overskredet",
             ["CompliancePercentage"] = "Compliance %",
             ["ComplianceOverviewTitle"] = "Compliance oversigt",
-            ["Total"] = "I alt"
+            ["Total"] = "I alt",
+            ["ComplianceDetails"] = "Detaljer",
+            ["ComplianceDetailsTitle"] = "Compliance",
+            ["Date"] = "Dato",
+            ["StartTime"] = "Kl.",
+            ["Task"] = "Opgave",
+            ["Worker"] = "Medarbejder",
+            ["Tags"] = "Etiketter",
+            ["TagsPlain"] = "Tags",
+            ["Status"] = "Status",
+            ["Done"] = "Udført",
+            ["NotDone"] = "Ikke udført"
         };
 
         public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;

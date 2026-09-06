@@ -145,7 +145,9 @@ public enum ComplianceExportCellType
 
     /// <summary>
     /// CSV writes ISO <c>yyyy-MM-dd</c> (#1169 §2: the CSV date must be
-    /// unambiguous), Word/PDF write <c>dd.MM.yyyy</c>.
+    /// unambiguous), Word/PDF write <c>dd.MM.yyyy</c> — unless the cell carries a
+    /// <see cref="ComplianceExportCell.DisplayText"/>, which Word/PDF then print
+    /// instead (Detaljer's <c>Tirsdag 21. juli</c>, #1191). CSV never reads it.
     /// </summary>
     Date = 2
 }
@@ -169,37 +171,84 @@ public class ComplianceExportRow
     /// "I alt").
     /// </summary>
     public bool IsTotal { get; set; }
+
+    /// <summary>
+    /// True on a Detaljer row whose occurrence is completed (#1191). Word/PDF tint
+    /// the row pale green (<c>ComplianceExportWordWriter.DoneRowFill</c>) so a
+    /// reader can scan for open work; CSV carries no styling and reads only the
+    /// <c>Status</c> cell. Never set on Oversigt or Rapport rows.
+    /// </summary>
+    public bool IsDone { get; set; }
 }
 
 /// <summary>
 /// One cell. At most one of <see cref="Number"/> / <see cref="Date"/> is set;
 /// <see cref="Text"/> is ALWAYS set and is what a renderer without types writes.
+///
+/// <para>
+/// <b>Emptiness is a FLAG, not a value of <see cref="Text"/>.</b> The factories
+/// bake the en dash into <see cref="Text"/> for an absent value, so that Word/PDF
+/// print it without a lookup — but a renderer cannot recover "absent" from the
+/// glyph alone, because a text value that happens to BE an en dash is data.
+/// <see cref="IsEmpty"/> is what the CSV writer reads to emit a blank field
+/// (#1191, which owns that rule for all three views); Word/PDF ignore it and
+/// print <see cref="Text"/>, keeping the glyph. Adding the flag rather than
+/// making <see cref="Text"/> nullable keeps every existing <c>Text == "–"</c>
+/// assertion and every Word/PDF rendering exactly as it was.
+/// </para>
 /// </summary>
 public class ComplianceExportCell
 {
     /// <summary>
     /// Display text. Never null — an absent value is the en dash
     /// <c>–</c> (U+2013), normalised across all three views by #1160's
-    /// post-filing correction.
+    /// post-filing correction. In CSV an absent value is a blank field instead
+    /// (#1191); see <see cref="IsEmpty"/>.
     /// </summary>
     public string Text { get; set; } = ComplianceExportCell.EmptyGlyph;
+
+    /// <summary>
+    /// Optional Word/PDF-only rendering that overrides the typed default — used
+    /// for Detaljer's <c>Dato</c>, where the page shows <c>Tirsdag 21. juli</c>
+    /// (#1191) while the CSV keeps the ISO date from <see cref="Date"/>. Null for
+    /// every other cell; CSV never reads it.
+    /// </summary>
+    public string DisplayText { get; set; }
 
     public double? Number { get; set; }
 
     public DateTime? Date { get; set; }
 
-    /// <summary>The en dash U+2013 — the single empty-cell glyph for all three views.</summary>
+    /// <summary>
+    /// True when the cell carries NO value. The parameterless constructor is the
+    /// empty cell (so <c>new ComplianceExportCell()</c> is empty by construction,
+    /// which is how the builders spell an absent value), and every factory clears
+    /// the flag when it is handed a real value. Word/PDF print the en dash for it;
+    /// CSV prints a blank field (#1191).
+    /// </summary>
+    /// <remarks>
+    /// Init-only: only the factories (<see cref="FromText"/> / <see cref="FromNumber"/>
+    /// / <see cref="FromDate"/>) and the parameterless constructor may build cells, so
+    /// a caller cannot later flip the flag and produce a cell that is blank in CSV
+    /// but printed in Word.
+    /// </remarks>
+    public bool IsEmpty { get; init; } = true;
+
+    /// <summary>The en dash U+2013 — the empty-cell glyph for Word/PDF in all three views.</summary>
     public const string EmptyGlyph = "–";
 
     public static ComplianceExportCell FromText(string value) =>
-        new() { Text = string.IsNullOrWhiteSpace(value) ? EmptyGlyph : value };
+        string.IsNullOrWhiteSpace(value)
+            ? new ComplianceExportCell()
+            : new ComplianceExportCell { Text = value, IsEmpty = false };
 
     public static ComplianceExportCell FromNumber(double? value) =>
         value.HasValue
             ? new ComplianceExportCell
             {
                 Number = value,
-                Text = value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                Text = value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                IsEmpty = false
             }
             : new ComplianceExportCell();
 
@@ -208,7 +257,8 @@ public class ComplianceExportCell
             ? new ComplianceExportCell
             {
                 Date = value,
-                Text = value.Value.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture)
+                Text = value.Value.ToString("dd.MM.yyyy", System.Globalization.CultureInfo.InvariantCulture),
+                IsEmpty = false
             }
             : new ComplianceExportCell();
 }
