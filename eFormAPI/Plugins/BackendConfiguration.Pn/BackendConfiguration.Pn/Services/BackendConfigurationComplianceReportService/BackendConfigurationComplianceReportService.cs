@@ -269,6 +269,7 @@ public class BackendConfigurationComplianceReportService(
                         .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
                         .Where(n => !string.IsNullOrEmpty(n))
                         .ToList(),
+                    WorkerSiteIds = rowSiteIds.ToList(),
                     Completed = row.Completed,
                     DoneAt = row.DoneAt,
                     SdkCaseId = row.Candidate.MicrotingSdkCaseId,

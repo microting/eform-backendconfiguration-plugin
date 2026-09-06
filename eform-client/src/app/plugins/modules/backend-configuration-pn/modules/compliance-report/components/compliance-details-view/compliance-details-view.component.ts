@@ -318,10 +318,12 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * `prepare-complete` → the case editor), byte for byte as
    * `calendar-container.component.ts:778-787` and `:796+` do it.
    *
-   * `assigneeIds: []` is deliberate and is the current behaviour: a compliance
-   * row carries `workerNames`, not ids, so the modal cannot pre-select the
-   * worker the way the calendar grid can. Adding `workerSiteIds` to the row DTO
-   * is the clean fix and belongs on the backend paging issue, not here.
+   * `assigneeIds` comes from the row's `workerSiteIds` (#1187): "assigned" is
+   * the ARP's non-removed PlanningSites, the same set the calendar grid passes,
+   * so the modal groups the dropdown into assigned / other workers and
+   * pre-selects a single assignee exactly as it does from the calendar. The
+   * modal's own empty-group fallback still applies: a row with no assignee, or
+   * whose property has no worker left over, gets the flat list.
    */
   onRowClicked(row: ComplianceReportRowModel, event?: Event): void {
     if (!this.isRowCompletable(row)) {
@@ -345,7 +347,7 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         complianceId: row.complianceId,
         occurrenceDate: row.taskDate,
         propertyId: row.propertyId,
-        assigneeIds: [],
+        assigneeIds: row.workerSiteIds ?? [],
       } as CalendarCompleteEventModalData,
       // Sized for a single-section eForm; the modal widens itself when the form
       // turns out to have more than one section.
