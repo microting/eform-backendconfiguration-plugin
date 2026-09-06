@@ -109,9 +109,86 @@ public class ComplianceExportWriterTests
         ]
     };
 
+    /// <summary>
+    /// The #1190 Oversigt mock-up, built through the REAL
+    /// <see cref="ComplianceExportDocumentBuilder.BuildOverview"/> with the Danish
+    /// localizer, so the CSV and docx assertions below cover the builder-to-bytes
+    /// pipe and not a hand-made document that happens to match. The numbers are
+    /// the mock-up's: <c>Ejendom 9 | 6 | 25%</c>, totals <c>I alt | 70 | 78%</c>;
+    /// the middle row has no due work and therefore a null percentage.
+    /// </summary>
+    private static ComplianceExportDocument OverviewDocument() =>
+        ComplianceExportDocumentBuilder.BuildOverview(
+            new ComplianceReportOverviewModel
+            {
+                Rows =
+                [
+                    new ComplianceReportOverviewRowModel
+                    {
+                        PropertyId = 9, PropertyName = "Ejendom 9", Overdue = 6,
+                        DueTotal = 8, DueDone = 2, CompliancePct = 25
+                    },
+                    new ComplianceReportOverviewRowModel
+                    {
+                        PropertyId = 10, PropertyName = "Ejendom 10", Overdue = 0,
+                        DueTotal = 0, DueDone = 0, CompliancePct = null
+                    },
+                    new ComplianceReportOverviewRowModel
+                    {
+                        PropertyId = 11, PropertyName = "Ejendom 11", Overdue = 64,
+                        DueTotal = 92, DueDone = 76, CompliancePct = 83
+                    }
+                ],
+                Totals = new ComplianceReportOverviewRowModel
+                {
+                    Overdue = 70, DueTotal = 100, DueDone = 78, CompliancePct = 78
+                }
+            },
+            SamplePeriod,
+            new DanishShellLocalizer());
+
     // ==================================================================
     // CSV
     // ==================================================================
+
+    /// <summary>
+    /// The #1190 Oversigt CSV, line for line (mock-up p7): the header is line 1
+    /// and reads <c>Virksomhed;Overskredet;Compliance %</c>, each data row carries
+    /// the sign on its percentage, and the last line is the totals row. UTF-8 BOM,
+    /// <c>;</c>, CRLF — the same invariants as every other CSV. <c>78%</c> is
+    /// deliberately a text cell in a spreadsheet; that is what the mock-up shows.
+    ///
+    /// <para>
+    /// The null percentage on the middle row is the en dash here, NOT a blank
+    /// field: the CSV rendering of an absent value is owned by the CSV writer /
+    /// #1191 (Detaljer), and this line is the one that pins whatever glyph the
+    /// writer emits.
+    /// </para>
+    /// </summary>
+    [Test]
+    public void Csv_OverviewSnapshot_VirksomhedHeaderPercentCellsAndTotalsLast()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(OverviewDocument());
+        var bytes = ReadAll(stream);
+
+        Assert.That(bytes.Take(3), Is.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }));
+        var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text, Is.EqualTo(
+            "Virksomhed;Overskredet;Compliance %\r\n" +
+            "Ejendom 9;6;25%\r\n" +
+            $"Ejendom 10;0;{Dash}\r\n" +
+            "Ejendom 11;64;83%\r\n" +
+            "I alt;70;78%\r\n"));
+
+        var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.That(lines[0], Is.EqualTo("Virksomhed;Overskredet;Compliance %"));
+        Assert.That(lines[^1], Is.EqualTo("I alt;70;78%"));
+        // The screen's header wording does not leak into the export, and the
+        // document title stays out of the CSV (it is in the file name).
+        Assert.That(text, Does.Not.Contain("Ejendom;"));
+        Assert.That(text, Does.Not.Contain("Compliance oversigt"));
+    }
 
     /// <summary>
     /// The four format invariants that make a Danish Excel open the file with its
@@ -350,6 +427,50 @@ public class ComplianceExportWriterTests
         Assert.That(text, Does.Contain("09.03.2026"));
     }
 
+    /// <summary>
+    /// The #1190 Oversigt docx — what <c>soffice</c> turns into mock-up p6: the
+    /// title paragraph is <c>Compliance oversigt</c>, the table's header cells are
+    /// <c>Virksomhed | Overskredet | Compliance %</c>, a data row reads
+    /// <c>Ejendom 9 | 6 | 25%</c> with the sign in the cell, the null percentage
+    /// is the en dash and not <c>0%</c>, and the LAST row is the bold totals row
+    /// <c>I alt | 70 | 78%</c> while the data rows are not bold.
+    /// </summary>
+    [Test]
+    public async Task Word_OverviewHasTitleVirksomhedHeaderPercentCellsAndBoldTotalsRow()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(OverviewDocument(), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+
+        var title = body.Descendants<Paragraph>().First(p => !string.IsNullOrWhiteSpace(p.InnerText));
+        Assert.That(title.InnerText.Trim(), Is.EqualTo("Compliance oversigt"));
+        Assert.That(title.Descendants<Bold>().Any(), Is.True, "title is not bold");
+
+        var table = body.Descendants<Table>().Single();
+        var rows = table.Elements<TableRow>().ToList();
+        static string[] CellTexts(TableRow row) =>
+            row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        Assert.That(CellTexts(rows[0]), Is.EqualTo(new[] { "Virksomhed", "Overskredet", "Compliance %" }));
+        Assert.That(CellTexts(rows[1]), Is.EqualTo(new[] { "Ejendom 9", "6", "25%" }));
+        Assert.That(CellTexts(rows[2]), Is.EqualTo(new[] { "Ejendom 10", "0", Dash }));
+        Assert.That(CellTexts(rows[^1]), Is.EqualTo(new[] { "I alt", "70", "78%" }));
+        Assert.That(rows, Has.Count.EqualTo(5));
+
+        // The totals row is bold (wherever HtmlToOpenXml put the <w:b/>); the data
+        // rows are not — that is what sets "I alt" apart on the page.
+        Assert.That(rows[^1].Descendants<Bold>().Any(), Is.True, "totals row is not bold");
+        Assert.That(rows[1].Descendants<Bold>().Any(), Is.False, "a data row is bold");
+        Assert.That(rows[0].Descendants<Bold>().Any(), Is.True, "header row is not bold");
+
+        // Never a bare percentage: every rendered percent cell ends with the sign,
+        // and the null one is the glyph alone.
+        var percentCells = rows.Skip(1).Select(r => CellTexts(r)[2]).ToList();
+        Assert.That(percentCells.Where(t => t != Dash), Is.All.EndsWith("%"));
+        Assert.That(percentCells, Does.Not.Contain("0%"));
+    }
+
     // ------------------------------------------------------------------
     // The page shell (#1189): landscape, header, footer
     // ------------------------------------------------------------------
@@ -568,9 +689,12 @@ public class ComplianceExportWriterTests
     }
 
     /// <summary>
-    /// Danish for the four keys the page header uses (the values in
-    /// <c>Resources/localization.json</c>); every other key comes back as itself,
-    /// like the shared key-returning double.
+    /// Danish for the four keys the page header uses plus the five Oversigt keys
+    /// (#1190) — the values in <c>Resources/localization.json</c>; every other key
+    /// comes back as itself, like the shared key-returning double. Note that
+    /// <c>Property</c> ("Ejendom") and <c>Company</c> ("Virksomhed") are BOTH
+    /// here: the page header line reads the former, the Oversigt column header the
+    /// latter, and the docx test pins that they land in those two places.
     /// </summary>
     private sealed class DanishShellLocalizer : IBackendConfigurationLocalizationService
     {
@@ -579,7 +703,12 @@ public class ComplianceExportWriterTests
             ["Property"] = "Ejendom",
             ["CalendarBoard"] = "Kalender",
             ["Period"] = "Periode",
-            ["All"] = "Alle"
+            ["All"] = "Alle",
+            ["Company"] = "Virksomhed",
+            ["Overdue"] = "Overskredet",
+            ["CompliancePercentage"] = "Compliance %",
+            ["ComplianceOverviewTitle"] = "Compliance oversigt",
+            ["Total"] = "I alt"
         };
 
         public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;

@@ -18,6 +18,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 
 /// <summary>
 /// Coverage for <see cref="ComplianceExportDocumentBuilder"/> — the mapping from
@@ -36,7 +37,11 @@ using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportServi
 /// <c>BackendConfigurationLocalizationService</c> here is the test double declared
 /// in <c>BackendConfigurationAssignmentWorkerServiceHelperTest.cs</c>: it returns
 /// the KEY for every lookup, so a header assertion below pins the key the builder
-/// asks for rather than one locale's translation of it.
+/// asks for rather than one locale's translation of it. The Oversigt cases that
+/// #1190 pins by their DANISH text (the mock-up's literal
+/// <c>Virksomhed | Overskredet | Compliance %</c> and <c>Compliance oversigt</c>)
+/// use <see cref="DanishOverviewLocalizer"/> instead, which answers the five
+/// Oversigt keys with the values in <c>Resources/localization.json</c>.
 /// </para>
 /// </summary>
 [Parallelizable(ParallelScope.All)]
@@ -44,6 +49,8 @@ using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportServi
 public class ComplianceExportDocumentBuilderTests
 {
     private readonly BackendConfigurationLocalizationService _localization = new();
+
+    private readonly DanishOverviewLocalizer _danish = new();
 
     private const string Dash = "–"; // U+2013, the single empty-cell glyph
 
@@ -56,6 +63,13 @@ public class ComplianceExportDocumentBuilderTests
     /// "Udført" are computed by the service and deliberately NOT rendered, and a
     /// prototype test pins their absence — so the export must not leak them in
     /// either.
+    ///
+    /// <para>
+    /// The first header is the NEW <c>Company</c> key (#1190), not <c>Property</c>:
+    /// the export says "Virksomhed" while the screen keeps "Ejendom". The
+    /// <c>Property</c> key is untouched because Detaljer, Rapport and the page
+    /// header still read it.
+    /// </para>
     /// </summary>
     [Test]
     public void Overview_HasExactlyThreeColumns_AndNoTotalOrDoneColumn()
@@ -65,7 +79,102 @@ public class ComplianceExportDocumentBuilderTests
 
         Assert.That(document.Tables, Has.Count.EqualTo(1));
         var headers = document.Tables[0].Columns.Select(c => c.Header).ToList();
-        Assert.That(headers, Is.EqualTo(new[] { "Property", "Overdue", "CompliancePercentage" }));
+        Assert.That(headers, Is.EqualTo(new[] { "Company", "Overdue", "CompliancePercentage" }));
+    }
+
+    /// <summary>
+    /// The mock-up's literal header row and title (#1190): <c>Virksomhed |
+    /// Overskredet | Compliance %</c> under <c>Compliance oversigt</c>. Pinned by
+    /// the Danish TEXT rather than the keys, because the header wording is the
+    /// whole point of the issue — and because it must be "Virksomhed" even though
+    /// the on-screen table says "Ejendom".
+    /// </summary>
+    [Test]
+    public void Overview_DanishHeaderIsVirksomhedOverskredetCompliancePercent_AndTitleIsComplianceOversigt()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildOverview(
+            new ComplianceReportOverviewModel(), "p", _danish);
+
+        Assert.That(document.Title, Is.EqualTo("Compliance oversigt"));
+        var headers = document.Tables[0].Columns.Select(c => c.Header).ToList();
+        Assert.That(headers, Is.EqualTo(new[] { "Virksomhed", "Overskredet", "Compliance %" }));
+        Assert.That(headers, Does.Not.Contain("Ejendom"));
+    }
+
+    /// <summary>
+    /// The title uses the NEW <c>ComplianceOverviewTitle</c> key, not the view
+    /// label <c>ComplianceOverview</c> ("Oversigt") — that one is what
+    /// <c>BuildFileName</c> prefixes the download with and it must stay as it is.
+    /// </summary>
+    [Test]
+    public void Overview_TitleComesFromTheTitleKeyNotTheViewLabelKey()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildOverview(
+            new ComplianceReportOverviewModel(), "p", _localization);
+
+        Assert.That(document.Title, Is.EqualTo("ComplianceOverviewTitle"));
+    }
+
+    /// <summary>
+    /// <c>Compliance %</c> is a TEXT column whose cells carry the sign — <c>25</c>
+    /// renders as <c>25%</c> — so CSV and PDF both print it. A typed Number cell
+    /// would be printed bare by every renderer. <c>Overskredet</c> stays a Number
+    /// column, and the value itself is the read model's, not recomputed.
+    /// </summary>
+    [Test]
+    public void Overview_CompliancePercentIsATextCellCarryingThePercentSign()
+    {
+        var model = new ComplianceReportOverviewModel
+        {
+            Rows =
+            [
+                new ComplianceReportOverviewRowModel
+                {
+                    PropertyId = 9, PropertyName = "Ejendom 9", Overdue = 6,
+                    DueTotal = 8, DueDone = 2, CompliancePct = 25
+                }
+            ],
+            Totals = new ComplianceReportOverviewRowModel
+            {
+                Overdue = 70, DueTotal = 100, DueDone = 78, CompliancePct = 78
+            }
+        };
+
+        var table = ComplianceExportDocumentBuilder.BuildOverview(model, "p", _danish).Tables[0];
+
+        Assert.That(table.Columns[1].Type, Is.EqualTo(ComplianceExportCellType.Number));
+        Assert.That(table.Columns[2].Type, Is.EqualTo(ComplianceExportCellType.Text));
+
+        var row = table.Rows[0];
+        Assert.That(row.Cells.Select(c => c.Text), Is.EqualTo(new[] { "Ejendom 9", "6", "25%" }));
+        Assert.That(row.Cells[1].Number, Is.EqualTo(6));
+        Assert.That(row.Cells[2].Number, Is.Null, "the percent cell is text, not a typed number");
+
+        var totals = table.Rows[1];
+        Assert.That(totals.IsTotal, Is.True);
+        Assert.That(totals.Cells.Select(c => c.Text), Is.EqualTo(new[] { "I alt", "70", "78%" }));
+    }
+
+    /// <summary>
+    /// The sign is attached to the exact integer the service produced — no
+    /// rounding, no padding, no decimals — including at both ends of the range.
+    /// </summary>
+    [Test]
+    [TestCase(0, "0%")]
+    [TestCase(7, "7%")]
+    [TestCase(100, "100%")]
+    public void Overview_PercentSuffixWrapsTheServiceValueVerbatim(int pct, string expected)
+    {
+        var model = new ComplianceReportOverviewModel
+        {
+            Rows = [new ComplianceReportOverviewRowModel { PropertyName = "A", CompliancePct = pct }],
+            Totals = new ComplianceReportOverviewRowModel { CompliancePct = pct }
+        };
+
+        var table = ComplianceExportDocumentBuilder.BuildOverview(model, "p", _localization).Tables[0];
+
+        Assert.That(table.Rows[0].Cells[2].Text, Is.EqualTo(expected));
+        Assert.That(table.Rows[1].Cells[2].Text, Is.EqualTo(expected));
     }
 
     /// <summary>
@@ -110,14 +219,19 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(totals.IsTotal, Is.True);
         Assert.That(totals.Cells[0].Text, Is.EqualTo("Total"));
         Assert.That(totals.Cells[1].Number, Is.EqualTo(100));
-        // 1, not 50: weighted, taken verbatim from the service's Totals.
-        Assert.That(totals.Cells[2].Number, Is.EqualTo(1));
+        // 1%, not 50%: weighted, taken verbatim from the service's Totals (the
+        // percent cell is text since #1190, so the value is read off its Text).
+        Assert.That(totals.Cells[2].Text, Is.EqualTo("1%"));
     }
 
     /// <summary>
     /// A property whose work has not fallen due has a NULL percentage, never 0.
     /// It renders as the en dash — rendering it as a red 0 % would be a lie, and
-    /// rendering it as an empty string would be indistinguishable from a bug.
+    /// rendering it as an empty string would be indistinguishable from a bug. With
+    /// the sign attached to the text cell (#1190) that also means never <c>0%</c>
+    /// and never a bare <c>%</c>: the glyph is the whole cell, on the data row and
+    /// on the totals row alike. (Whether CSV then blanks the glyph is #1191's
+    /// rule, in the CSV writer — the builder always emits the glyph.)
     /// </summary>
     [Test]
     public void Overview_NullCompliancePercentRendersAsEnDashNotZero()
@@ -141,6 +255,8 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(table.Rows[0].Cells[2].Number, Is.Null);
         Assert.That(table.Rows[0].Cells[2].Text, Is.EqualTo(Dash));
         Assert.That(table.Rows[1].Cells[2].Text, Is.EqualTo(Dash));
+        Assert.That(table.Rows[0].Cells[2].Text, Does.Not.Contain("%"));
+        Assert.That(table.Rows[1].Cells[2].Text, Does.Not.Contain("%"));
     }
 
     /// <summary>
@@ -686,4 +802,28 @@ public class ComplianceExportDocumentBuilderTests
         CheckListName = name,
         MergedCheckListIds = [checkListId]
     };
+
+    /// <summary>
+    /// Danish for the five keys Oversigt reads — the values in
+    /// <c>Resources/localization.json</c>, including the two #1190 added
+    /// (<c>Company</c>, <c>ComplianceOverviewTitle</c>). Every other key comes
+    /// back as itself, like the shared key-returning double.
+    /// </summary>
+    private sealed class DanishOverviewLocalizer : IBackendConfigurationLocalizationService
+    {
+        private static readonly Dictionary<string, string> Danish = new()
+        {
+            ["Company"] = "Virksomhed",
+            ["Overdue"] = "Overskredet",
+            ["CompliancePercentage"] = "Compliance %",
+            ["ComplianceOverviewTitle"] = "Compliance oversigt",
+            ["Total"] = "I alt"
+        };
+
+        public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;
+
+        public string GetString(string format, params object[] args) => GetString(format);
+
+        public string GetStringWithFormat(string format, params object[] args) => GetString(format);
+    }
 }
