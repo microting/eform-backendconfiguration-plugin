@@ -731,9 +731,14 @@ public class BackendConfigurationPropertiesService(
                 siteIds.Add(site.Id);
             }
 
+            // #1184: "resigned" lives on the SDK Worker (Sites has no such column and
+            // resigning never removes the PropertyWorker row), so drop every site whose
+            // worker is resigned via SiteWorkers -> Workers. Every assignee picker in the
+            // plugin is fed by this method, so this is the one place to filter.
             var sites = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => siteIds.Contains(x.Id))
+                .Where(x => !sdkDbContext.SiteWorkers.Any(sw => sw.SiteId == x.Id && sw.Worker.Resigned))
                 .Select(x => new SiteLanguageDictionaryModel
                 {
                     Name = x.Name,
@@ -779,9 +784,11 @@ public class BackendConfigurationPropertiesService(
             var siteIds = await query.Select(x => x.WorkerId)
                 .ToListAsync();
 
+            // #1184: same resigned-worker exclusion as the int overload above.
             var sites = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => siteIds.Contains(x.Id))
+                .Where(x => !sdkDbContext.SiteWorkers.Any(sw => sw.SiteId == x.Id && sw.Worker.Resigned))
                 .Select(x => new CommonDictionaryModel
                 {
                     Name = x.Name,

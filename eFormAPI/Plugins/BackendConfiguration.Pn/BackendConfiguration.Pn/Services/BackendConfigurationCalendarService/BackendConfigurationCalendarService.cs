@@ -3401,13 +3401,18 @@ public class BackendConfigurationCalendarService(
             }
 
             // The calendar's worker picker lists GetLinkedSites(propertyId, false):
-            // exactly the active PropertyWorkers of the event's property. Accept
-            // only that set — and reject anything else up front, so a stray id
-            // can never attribute a completion to an unrelated site on either the
-            // on-demand-materialise path or the pre-existing-compliance path
-            // below. (This also matches EventDeployService's leak guard, which
-            // refuses to deploy an on-demand case to a non-property-worker site —
-            // #932/#1377.)
+            // the NON-RESIGNED active PropertyWorkers of the event's property
+            // (#1184 dropped resigned SDK workers from that list). This guard is
+            // deliberately wider: it accepts ANY active PropertyWorker, resigned or
+            // not, so completing on behalf of a since-resigned worker via the API
+            // (e.g. a past occurrence from the compliance page) stays possible.
+            // Picker and guard are asymmetric by decision (#1184, decision 2).
+            // Anything outside the property's workers is still rejected up front,
+            // so a stray id can never attribute a completion to an unrelated site
+            // on either the on-demand-materialise path or the pre-existing-
+            // compliance path below. (This also matches EventDeployService's leak
+            // guard, which refuses to deploy an on-demand case to a
+            // non-property-worker site — #932/#1377.)
             if (workerId.HasValue)
             {
                 var workerAllowed = await backendConfigurationPnDbContext.PropertyWorkers

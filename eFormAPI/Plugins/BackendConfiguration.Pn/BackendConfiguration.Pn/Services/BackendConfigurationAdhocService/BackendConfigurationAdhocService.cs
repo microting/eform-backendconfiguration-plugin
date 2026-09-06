@@ -638,6 +638,20 @@ public class BackendConfigurationAdhocService(
 
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        // #1184: the "resigned" flag lives on the SDK Worker, not on PropertyWorker
+        // (resigning never removes that row), so drop resigned workers here too —
+        // the adhoc pickers must not list them any more than the calendar ones do.
+        var resignedSiteIds = await sdkDbContext.SiteWorkers
+            .Where(sw => sw.SiteId != null && siteIds.Contains(sw.SiteId.Value) && sw.Worker.Resigned)
+            .Select(sw => sw.SiteId!.Value)
+            .ToListAsync();
+        siteIds = siteIds.Except(resignedSiteIds).ToList();
+        if (siteIds.Count == 0)
+        {
+            return [];
+        }
+
         var siteNames = await sdkDbContext.Sites
             .Where(s => siteIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Name })

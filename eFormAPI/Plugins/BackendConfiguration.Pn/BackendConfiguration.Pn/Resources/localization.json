@@ -4670,7 +4670,8 @@
   {
     "Key": "WorkerStillAssignedToEventsCannotResign",
     "LocalizedValue": {
-      "en-US": "Worker is still assigned to one or more events and cannot be resigned. Remove them from those events (or the tags) first."
+      "en-US": "Worker is still assigned to one or more events and cannot be resigned. Remove them from those events (or the tags) first.",
+      "da": "Medarbejderen er stadig tildelt en eller flere opgaver og kan ikke fratræde. Fjern medarbejderen fra opgaverne (eller tags) først."
     }
   },
   {

@@ -118,7 +118,13 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
   isLoadingTemplate = false;
   showEformDetails = false;
   showMiniPicker = false;
-  filteredEmployees: LinkedSiteModel[] = [];
+  // `resigned` marks the synthetic resigned-assignee entries that
+  // `withResignedAssignees` appends in edit/copy mode. Deliberately NOT ng-select's
+  // `disabled` flag: the bundled theme hides the chip's × for disabled values
+  // (`.ng-value-disabled .ng-value-icon{display:none}`) and clear-all keeps
+  // disabled items (`clearSelected(true)`), so a disabled entry could never be
+  // un-assigned from the modal.
+  filteredEmployees: Array<LinkedSiteModel & {resigned?: boolean}> = [];
 
   // ---- Per-language Title & Description state ----
   // Active languages from the app-settings store (filtered to isActive).
@@ -516,6 +522,17 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     // changes — adding/removing a worker can add/remove a language field.
     this.assigneeControl.valueChanges.subscribe(() => this.recomputeTargetLanguages());
 
+    // Once a synthetic resigned entry (see `withResignedAssignees`) is removed
+    // from the selection — chip × or clear-all — drop it from the item list so
+    // it cannot be re-selected from the dropdown. Reassign (not mutate) the
+    // array so ng-select re-reads `[items]`.
+    this.assigneeControl.valueChanges.subscribe(selectedIds => {
+      const selected = new Set(selectedIds ?? []);
+      if (this.filteredEmployees.some(e => e.resigned && !selected.has(e.id))) {
+        this.filteredEmployees = this.filteredEmployees.filter(e => !e.resigned || selected.has(e.id));
+      }
+    });
+
     // Load eForm template details when selection changes
     // Use switchMap so rapid eForm switches cancel any in-flight getSingle()
     // and we never overwrite the current selection with a stale response.
@@ -585,12 +602,63 @@ export class TaskCreateEditModalComponent implements OnInit, AfterViewInit, OnDe
     }
     this.propertiesService.getLinkedSites(propertyId, false).subscribe(res => {
       if (res && res.success && res.model) {
-        this.filteredEmployees = res.model;
+        this.filteredEmployees = this.withResignedAssignees(res.model);
         // Sites (and their languages) are now known — re-resolve the target set
         // so a pre-seeded (edit/copy mode) assignee selection lights up.
         this.recomputeTargetLanguages();
       }
     });
+  }
+
+  /**
+   * Edit and copy mode: `get-linked-sites` omits resigned workers (#1184), but
+   * the task being edited (`data.task`) or copied (`data.sourceTask`) may
+   * still carry one in `assigneeIds`. Without an item for that id the
+   * `[multiple]` mtx-select (ng-select 20) renders an EMPTY chip
+   * (`{name: null, id}`), yet the id is still posted back on save — a hidden
+   * resigned assignment. Append every still-selected assignee that is missing
+   * from the linked-sites list as a "<name> (Fratrådt)" entry flagged
+   * `resigned: true`. Any selected id absent from the list gets that label,
+   * even when the worker was merely unassigned from the property rather than
+   * resigned — an accepted cosmetic imprecision. Semantics:
+   *  - while selected it is visible as a chip and is posted back on save, so
+   *    saving without touching it preserves the assignment;
+   *  - it can be removed like any other value (its chip's × or clear-all);
+   *  - once removed, the `assigneeControl.valueChanges` hook in `ngOnInit`
+   *    drops it from `filteredEmployees`, so it disappears from the dropdown
+   *    and cannot be re-selected (re-open the modal to get it back).
+   * It is intentionally not `disabled`: ng-select hides the × on disabled
+   * chips and clear-all skips disabled items, which would make the resigned
+   * assignment impossible to remove from the modal.
+   *
+   * Names come from the task payload — `workerNames` is parallel to
+   * `assigneeIds` in both backend mappers (week + tasks/index). Falls back to
+   * the raw id when the name is missing. Only ids still present in
+   * `assigneeControl` are appended, so a property switch (which clears the
+   * selection) does not drag a resigned worker into another property's list.
+   * `languageId: 0` keeps it out of `recomputeTargetLanguages` (0 is falsy).
+   */
+  private withResignedAssignees(
+    sites: LinkedSiteModel[]
+  ): Array<LinkedSiteModel & {resigned?: boolean}> {
+    const task = this.data.task ?? this.data.sourceTask;
+    if (!task) {
+      return sites;
+    }
+    const known = new Set(sites.map(s => s.id));
+    const selected = new Set(this.assigneeControl.value ?? []);
+    const resignedLabel = this.translate.instant('Resigned');
+    const missing = (task.assigneeIds ?? [])
+      .map((id, index) => ({id, name: task.workerNames?.[index]}))
+      .filter(a => selected.has(a.id) && !known.has(a.id))
+      .map(a => ({
+        id: a.id,
+        name: `${a.name || a.id} (${resignedLabel})`,
+        description: '',
+        languageId: 0,
+        resigned: true,
+      }));
+    return missing.length > 0 ? [...sites, ...missing] : sites;
   }
 
   // ---- Per-language Title & Description -----------------------------------
