@@ -3,6 +3,7 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {TranslateService} from '@ngx-translate/core';
 import {of} from 'rxjs';
+import {finalize} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService, EformTagService} from 'src/app/common/services';
@@ -205,20 +206,82 @@ export class TaskListPageComponent implements OnInit {
     }
   }
 
+  /**
+   * #1194 — true while a `tasks/index` request is in flight. Bound to the
+   * grid's `[loading]` (progress bar) and to `[disabled]` on
+   * `#taskListRefreshBtn`, so the button cannot start a second refresh while
+   * one is in flight. Other reload paths are unguarded by design — this is
+   * deliberately NOT a guard inside `loadTasks()` itself: a filter change
+   * while a load is in flight must still fire its own request, or the grid
+   * would show stale-filter rows.
+   */
+  loading = false;
+
   loadTasks() {
+    this.loading = true;
+    // Clear the selection at REQUEST start, not on response: flipping
+    // `[loading]` above is an input change on mtx-grid, whose `ngOnChanges`
+    // recreates its SelectionModel EMPTY (without emitting) on any input
+    // change — so the grid's checkboxes are already gone here. Clearing the
+    // Set alongside keeps the batch dropdown/counter in sync with them, and
+    // covers the HTTP-error path too (previously the Set was only emptied in
+    // `next`). The rows referenced by the old ids are being re-fetched anyway.
+    this.selection = new Set<number>();
     this.calendarService.getTasksIndex({
       filters: this.currentFilters,
       pagination: {sort: 'Id', isSortDsc: false},
-    }).subscribe(res => {
-      if (res && res.success) {
-        // The index endpoint returns the raw AreaRulePlanning projection (repeat
-        // integers, no `repeatRule`). Map each row exactly as the calendar week
-        // grid does so the humanized Gentagelse + modal `data.task` are identical.
-        this.tasks = (res.model ?? []).map(mapResponseToCalendarTask);
-        // Selection references rows from the previous load; clear it on refresh.
-        this.selection = new Set<number>();
-      }
+    }).pipe(
+      // Release the flag on EVERY terminal path. `postNoToast` does not surface
+      // errors: the core `HttpErrorInterceptor` re-issues a failed request and
+      // finally returns `EMPTY`, so an HTTP failure makes the observable
+      // COMPLETE without a value — `next` never runs and `error` never fires.
+      // Only `finalize` covers that shape; without it the refresh button stayed
+      // disabled for good after a 500.
+      finalize(() => (this.loading = false)),
+    ).subscribe({
+      next: res => {
+        if (res && res.success) {
+          // The index endpoint returns the raw AreaRulePlanning projection (repeat
+          // integers, no `repeatRule`). Map each row exactly as the calendar week
+          // grid does so the humanized Gentagelse + modal `data.task` are identical.
+          this.tasks = (res.model ?? []).map(mapResponseToCalendarTask);
+        }
+      },
+      // Kept for the rare error that bypasses the interceptor's `EMPTY` (e.g. a
+      // thrown mapping error). `finalize` above releases the flag; the previous
+      // rows stay on screen.
+      error: () => {},
     });
+  }
+
+  /**
+   * #1194 — the toolbar refresh button. Re-fetches from the database while
+   * keeping the UI state exactly as it is:
+   *  - filters: `currentFilters` and the filter component's own state are not
+   *    touched by `loadTasks()`, so the same filters go into the request;
+   *  - sort + page: the grid sorts client-side and mtx-grid re-attaches the
+   *    SAME `MatSort`/`MatPaginator` instances when it rebuilds its data source,
+   *    so the active column/direction and the page index survive by
+   *    construction (page index clamps if the row count shrinks). This holds
+   *    only while sorting stays client-side — do not move it to the server.
+   *  - selection: CLEARED, like every other reload path (`loadTasks()` empties
+   *    the Set at request start, in step with mtx-grid rebuilding its
+   *    SelectionModel empty when `[loading]` flips). Preserving it would keep
+   *    ids of rows another user may just have deleted — the very situation a
+   *    refresh exists for.
+   * Tags are reloaded too (cheap; `onUpdateTags` already pairs them) because
+   * the Report headline cells resolve client-side from `tags`, so a tag renamed
+   * elsewhere would otherwise stay stale. `eforms` (a 1000-row template
+   * request) and `properties` are deliberately NOT reloaded.
+   * Never implement this by re-emitting from the filters component or by
+   * navigating to self — both re-instantiate the grid and lose sort/page.
+   */
+  refresh() {
+    if (this.loading) {
+      return;
+    }
+    this.loadTasks();
+    this.loadTags();
   }
 
   onEditTask(task: CalendarTaskModel) {
