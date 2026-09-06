@@ -4,14 +4,22 @@
 // calendar Compliance view this replaces hardcoded #fff / #e0e0e0 / #2e7d32 /
 // #1a73e8 and rendered wrong under theme-workspace and in dark mode.
 //
-// The two pairings that carry the "done" state were picked for contrast, not
-// for looks:
+// The pairings that carry the "done" state were picked for contrast; the
+// worker chip pairing follows the design reference (#1186):
 //   --status-aktiv-bg / --status-aktiv-fg  is #1b5e20-on-white (light) and
 //     #2e7d32-on-white (dark) in BOTH themes — 7.9:1 and 5.1:1 (computed from
 //     the token values; both clear WCAG AA).
-//   --md-primary-container / --md-on-surface  is the Material container pair,
-//     which is legible in all four theme/mode combinations and keeps the chips
-//     readable when they sit on the green row.
+//   --md-primary / --md-on-primary  is the Material primary pairing. Measured
+//     ratios: white on #289694 (eform light) ≈ 3.6:1 — the platform's own
+//     primary-button pairing, but below AA for 12 px text; eform dark ≈ 9.4:1;
+//     workspace light ≈ 6.4:1; workspace dark ≈ 7.5:1. #1165 originally
+//     used the pale --md-primary-container / --md-on-surface pair for the
+//     worker chip; #1186 reverses that per the design reference (a saturated
+//     primary pill with on-primary text, exactly like the row highlight ring
+//     at .is-highlighted). Tag chips on the green done row switch to a
+//     translucent white fill/border so they read against --status-aktiv-bg:
+//     white on the 16%-white-over-green blend is ≈ 5.3:1 (light) / ≈ 3.8:1
+//     (dark) — values taken from the prototype, documented rather than changed.
 // Using --status-success for the fill instead would put white on #66BB6A in
 // eform dark (2.4:1) — a filled success surface nobody could read.
 
@@ -78,6 +86,26 @@
 
       .compliance-details__check.is-visible {
         color: var(--status-aktiv-fg);
+      }
+
+      // Tag chips on the green row: translucent white fill and border, white
+      // text. --status-aktiv-fg is white in every theme map, so the color-mix
+      // is white at 16% / 35% alpha over the green row — theme-independent by
+      // construction (prototype compliance.css:471-481). The :not() keeps the
+      // worker chip out of this rule regardless of rule order.
+      .compliance-details__chip:not(.compliance-details__chip--worker) {
+        background: color-mix(in srgb, var(--status-aktiv-fg) 16%, transparent);
+        border-color: color-mix(in srgb, var(--status-aktiv-fg) 35%, transparent);
+        color: var(--status-aktiv-fg);
+      }
+
+      // The worker chip keeps its primary fill on the done row too (excluded
+      // from the translucent rule above by the :not(), so this does not depend
+      // on ordering).
+      .compliance-details__chip--worker {
+        background: var(--md-primary);
+        border-color: transparent;
+        color: var(--md-on-primary);
       }
 
       // A blue ring would disappear into the green; the prototype switches to a
@@ -154,7 +182,9 @@
     display: inline-flex;
     align-items: center;
     padding: 2px var(--spacing-sm);
-    border-radius: var(--radius-full);
+    // --radius-rounded-full (9999px in both themes) gives a true pill;
+    // --radius-full is 50% and belongs to the circle above.
+    border-radius: var(--radius-rounded-full);
     background: var(--md-surface-variant);
     color: var(--md-on-surface);
     border: 1px solid var(--border-primary);
@@ -162,11 +192,12 @@
     line-height: 16px;
     white-space: nowrap;
 
-    // The employee chip is the filled accent pill. It keeps its own fill on a
-    // completed row, which is what keeps it readable against the green.
+    // The employee chip is the filled accent pill (#1186: saturated primary
+    // with on-primary text). It keeps its own fill on a completed row, which
+    // is what keeps it readable against the green.
     &--worker {
-      background: var(--md-primary-container);
-      color: var(--md-on-surface);
+      background: var(--md-primary);
+      color: var(--md-on-primary);
       border-color: transparent;
     }
   }
