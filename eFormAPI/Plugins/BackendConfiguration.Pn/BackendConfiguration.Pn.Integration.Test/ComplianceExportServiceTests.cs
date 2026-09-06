@@ -382,7 +382,7 @@ public class ComplianceExportServiceTests
 
         var firstLine = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3).Split("\r\n")[0];
         Assert.That(firstLine, Is.EqualTo(
-            "Date;Property;CalendarBoard;StartTime;Task;Worker;Tags;Status"));
+            "Date;Property;CalendarBoard;StartTime;Task;Worker;TagsPlain;Status"));
     }
 
     // ==================================================================

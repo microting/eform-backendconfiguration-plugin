@@ -40,8 +40,10 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 /// asks for rather than one locale's translation of it. The Oversigt cases that
 /// #1190 pins by their DANISH text (the mock-up's literal
 /// <c>Virksomhed | Overskredet | Compliance %</c> and <c>Compliance oversigt</c>)
-/// use <see cref="DanishOverviewLocalizer"/> instead, which answers the five
-/// Oversigt keys with the values in <c>Resources/localization.json</c>.
+/// and the Detaljer cases #1191 pins the same way (<c>Compliance</c>,
+/// <c>… | Tags | Status</c>) use <see cref="DanishExportLocalizer"/> instead,
+/// which answers the Oversigt and Detaljer keys with the values in
+/// <c>Resources/localization.json</c>.
 /// </para>
 /// </summary>
 [Parallelizable(ParallelScope.All)]
@@ -50,7 +52,7 @@ public class ComplianceExportDocumentBuilderTests
 {
     private readonly BackendConfigurationLocalizationService _localization = new();
 
-    private readonly DanishOverviewLocalizer _danish = new();
+    private readonly DanishExportLocalizer _danish = new();
 
     private const string Dash = "–"; // U+2013, the single empty-cell glyph
 
@@ -230,8 +232,8 @@ public class ComplianceExportDocumentBuilderTests
     /// rendering it as an empty string would be indistinguishable from a bug. With
     /// the sign attached to the text cell (#1190) that also means never <c>0%</c>
     /// and never a bare <c>%</c>: the glyph is the whole cell, on the data row and
-    /// on the totals row alike. (Whether CSV then blanks the glyph is #1191's
-    /// rule, in the CSV writer — the builder always emits the glyph.)
+    /// on the totals row alike. The cell is also FLAGGED empty, which is what lets
+    /// the CSV writer blank it under #1191's rule while Word/PDF keep the glyph.
     /// </summary>
     [Test]
     public void Overview_NullCompliancePercentRendersAsEnDashNotZero()
@@ -257,6 +259,11 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(table.Rows[1].Cells[2].Text, Is.EqualTo(Dash));
         Assert.That(table.Rows[0].Cells[2].Text, Does.Not.Contain("%"));
         Assert.That(table.Rows[1].Cells[2].Text, Does.Not.Contain("%"));
+        Assert.That(table.Rows[0].Cells[2].IsEmpty, Is.True);
+        Assert.That(table.Rows[1].Cells[2].IsEmpty, Is.True);
+        // The valued cells on the same rows are NOT flagged.
+        Assert.That(table.Rows[0].Cells[0].IsEmpty, Is.False);
+        Assert.That(table.Rows[0].Cells[1].IsEmpty, Is.False);
     }
 
     /// <summary>
@@ -280,7 +287,9 @@ public class ComplianceExportDocumentBuilderTests
 
     /// <summary>
     /// The eight Detaljer columns, in order. <c>Handlinger</c> is absent — buttons
-    /// are not data.
+    /// are not data. The seventh header reads the NEW <c>TagsPlain</c> key (#1191),
+    /// not <c>Tags</c>: the export says "Tags" while the <c>Tags</c> key keeps
+    /// "Etiketter" for the screens that read it.
     /// </summary>
     [Test]
     public void Details_HasTheEightPrototypeColumnsInOrder()
@@ -290,8 +299,29 @@ public class ComplianceExportDocumentBuilderTests
 
         Assert.That(headers, Is.EqualTo(new[]
         {
-            "Date", "Property", "CalendarBoard", "StartTime", "Task", "Worker", "Tags", "Status"
+            "Date", "Property", "CalendarBoard", "StartTime", "Task", "Worker", "TagsPlain", "Status"
         }));
+    }
+
+    /// <summary>
+    /// Mock-up p8, by its Danish text: the title is <c>Compliance</c> — the new
+    /// <c>ComplianceDetailsTitle</c> key, NOT the view label <c>Detaljer</c>
+    /// (<c>ComplianceDetails</c>), which stays the file-name prefix — and the
+    /// header row is exactly <c>Dato | Ejendom | Kalender | Kl. | Opgave |
+    /// Medarbejder | Tags | Status</c>.
+    /// </summary>
+    [Test]
+    public void Details_DanishTitleIsComplianceAndHeaderRowMatchesTheMockUp()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildDetails([], "p", _danish);
+
+        Assert.That(document.Title, Is.EqualTo("Compliance"));
+        Assert.That(document.Title, Is.Not.EqualTo("Detaljer"));
+        Assert.That(document.Tables[0].Columns.Select(c => c.Header), Is.EqualTo(new[]
+        {
+            "Dato", "Ejendom", "Kalender", "Kl.", "Opgave", "Medarbejder", "Tags", "Status"
+        }));
+        Assert.That(document.Tables[0].Columns.Select(c => c.Header), Does.Not.Contain("Etiketter"));
     }
 
     /// <summary>
@@ -343,29 +373,117 @@ public class ComplianceExportDocumentBuilderTests
         var cell = document.Tables[0].Rows[0].Cells[0];
         Assert.That(cell.Date, Is.Null);
         Assert.That(cell.Text, Is.EqualTo("9. marts 2026"));
+        // No date, so no weekday text to derive: Word/PDF print the original string.
+        Assert.That(cell.DisplayText, Is.Null);
+        Assert.That(cell.IsEmpty, Is.False);
     }
 
     /// <summary>
-    /// An all-day occurrence has no clock time, so "Kl." is the en dash rather than
-    /// a fabricated 00:00. A timed occurrence renders its fractional start hour as
-    /// HH:mm.
+    /// The <c>Dato</c> cell carries the screen's long weekday form as its Word/PDF
+    /// display text (#1191): <c>Tirsdag 21. juli</c> for 2026-07-21 under a Danish
+    /// request culture — weekday capitalised, month lower-case, no year. The typed
+    /// date and the <c>dd.MM.yyyy</c> text underneath it are unchanged, which is
+    /// what keeps the CSV ISO. The culture is <c>CurrentCulture</c>, the one the
+    /// JSON localizer resolves the headers through, so weekday and headers agree.
     /// </summary>
     [Test]
-    public void Details_AllDayHasNoClockTimeAndATimedRowRendersHhMm()
+    [SetCulture("da-DK")]
+    public void Details_DateCarriesTheDanishWeekdayDisplayTextForWordAndPdf()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildDetails(
+            [new ComplianceReportRowModel { TaskDate = "2026-07-21" }], "p", _danish);
+
+        var cell = document.Tables[0].Rows[0].Cells[0];
+        Assert.That(cell.DisplayText, Is.EqualTo("Tirsdag 21. juli"));
+        Assert.That(cell.Date, Is.EqualTo(new DateTime(2026, 7, 21)));
+        Assert.That(cell.Text, Is.EqualTo("21.07.2026"));
+        Assert.That(cell.IsEmpty, Is.False);
+    }
+
+    /// <summary>
+    /// The weekday text follows the request culture (<c>CurrentCulture</c>, the
+    /// one the JSON localizer reads) — a non-Danish user gets their own language,
+    /// exactly as the screen does — and the capitalisation rule is applied
+    /// regardless of what the culture's own casing is.
+    /// </summary>
+    [Test]
+    [SetCulture("en-US")]
+    public void Details_WeekdayDisplayTextFollowsTheRequestCulture()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildDetails(
+            [new ComplianceReportRowModel { TaskDate = "2026-07-21" }], "p", _localization);
+
+        Assert.That(document.Tables[0].Rows[0].Cells[0].DisplayText, Is.EqualTo("Tuesday 21. July"));
+    }
+
+    /// <summary>
+    /// <see cref="ComplianceExportDocumentBuilder.FormatWeekdayDate"/> on its own:
+    /// first letter upper-cased, the rest as the culture gives it. Danish month
+    /// and weekday names are lower-case in ICU, which is why the capitalisation
+    /// is explicit.
+    /// </summary>
+    [Test]
+    [SetCulture("da-DK")]
+    [TestCase(2026, 7, 21, "Tirsdag 21. juli")]
+    [TestCase(2026, 3, 9, "Mandag 9. marts")]
+    [TestCase(2026, 1, 1, "Torsdag 1. januar")]
+    public void FormatWeekdayDate_IsCapitalisedWeekdayDayDotMonth(int y, int m, int d, string expected)
+    {
+        Assert.That(ComplianceExportDocumentBuilder.FormatWeekdayDate(new DateTime(y, m, d)),
+            Is.EqualTo(expected));
+    }
+
+    /// <summary>
+    /// An all-day occurrence has no clock time, so "Kl." is the empty cell (the en
+    /// dash in Word/PDF, blank in CSV) rather than a fabricated 00:00. A timed
+    /// occurrence renders the RANGE <c>start - end</c> from its start hour and
+    /// duration (#1191), as the screen does.
+    /// </summary>
+    [Test]
+    public void Details_AllDayHasNoClockTimeAndATimedRowRendersTheRange()
     {
         var document = ComplianceExportDocumentBuilder.BuildDetails(
         [
-            new ComplianceReportRowModel { TaskDate = "2026-03-09", IsAllDay = true, StartHour = 9.0 },
-            new ComplianceReportRowModel { TaskDate = "2026-03-09", IsAllDay = false, StartHour = 9.5 }
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", IsAllDay = true, StartHour = 9.0, Duration = 1.0 },
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", IsAllDay = false, StartHour = 9.5, Duration = 1.0 },
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", IsAllDay = false, StartHour = 13.0, Duration = 1.0 }
         ], "p", _localization);
 
-        Assert.That(document.Tables[0].Rows[0].Cells[3].Text, Is.EqualTo(Dash));
-        Assert.That(document.Tables[0].Rows[1].Cells[3].Text, Is.EqualTo("09:30"));
+        var allDay = document.Tables[0].Rows[0].Cells[3];
+        Assert.That(allDay.Text, Is.EqualTo(Dash));
+        Assert.That(allDay.IsEmpty, Is.True);
+
+        Assert.That(document.Tables[0].Rows[1].Cells[3].Text, Is.EqualTo("09:30 - 10:30"));
+        Assert.That(document.Tables[0].Rows[2].Cells[3].Text, Is.EqualTo("13:00 - 14:00"));
+        Assert.That(document.Tables[0].Rows[2].Cells[3].IsEmpty, Is.False);
+    }
+
+    /// <summary>
+    /// <see cref="ComplianceExportDocumentBuilder.FormatTimeRange"/>: hyphen-minus
+    /// with spaces (the mock-up's separator, not the en dash), both ends through
+    /// the same HH:mm rule, so the end is clamped to 23:59 like the start is and a
+    /// zero duration gives a zero-width range rather than an invented end.
+    /// </summary>
+    [Test]
+    [TestCase(13.0, 1.0, "13:00 - 14:00")]
+    [TestCase(9.5, 0.5, "09:30 - 10:00")]
+    [TestCase(23.5, 1.0, "23:30 - 23:59")]
+    [TestCase(23.0, 2.0, "23:00 - 23:59")]
+    [TestCase(8.0, 0.0, "08:00 - 08:00")]
+    [TestCase(0.0, 24.0, "00:00 - 23:59")]
+    public void FormatTimeRange_RendersStartHyphenEndAndClampsTheEnd(double start, double duration, string expected)
+    {
+        var range = ComplianceExportDocumentBuilder.FormatTimeRange(start, duration);
+
+        Assert.That(range, Is.EqualTo(expected));
+        Assert.That(range, Does.Contain(" - "));
+        Assert.That(range, Does.Not.Contain(Dash));
     }
 
     /// <summary>
     /// Status is the localised done / not-done pair, and empty worker and tag lists
-    /// collapse to the en dash rather than to an empty cell.
+    /// collapse to the empty cell — the en dash as text, and FLAGGED so CSV can
+    /// blank it — rather than to an empty string.
     /// </summary>
     [Test]
     public void Details_StatusLabelsAndEmptyListsUseTheSharedGlyph()
@@ -384,11 +502,53 @@ public class ComplianceExportDocumentBuilderTests
         Assert.That(done.Cells[5].Text, Is.EqualTo("Ann, Bo"));
         Assert.That(done.Cells[6].Text, Is.EqualTo("Miljø"));
         Assert.That(done.Cells[7].Text, Is.EqualTo("Done"));
+        Assert.That(done.Cells[5].IsEmpty, Is.False);
+        Assert.That(done.Cells[6].IsEmpty, Is.False);
 
         var open = document.Tables[0].Rows[1];
         Assert.That(open.Cells[5].Text, Is.EqualTo(Dash));
         Assert.That(open.Cells[6].Text, Is.EqualTo(Dash));
         Assert.That(open.Cells[7].Text, Is.EqualTo("NotDone"));
+        Assert.That(open.Cells[5].IsEmpty, Is.True);
+        Assert.That(open.Cells[6].IsEmpty, Is.True);
+    }
+
+    /// <summary>
+    /// A completed row is marked <see cref="ComplianceExportRow.IsDone"/> (#1191)
+    /// so Word/PDF can tint it; an open row is not. The mark is a row property
+    /// next to <c>IsTotal</c>, and a Detaljer row is never a totals row.
+    /// </summary>
+    [Test]
+    public void Details_CompletedRowsAreMarkedDoneAndOpenRowsAreNot()
+    {
+        var document = ComplianceExportDocumentBuilder.BuildDetails(
+        [
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", Completed = true },
+            new ComplianceReportRowModel { TaskDate = "2026-03-09", Completed = false },
+            new ComplianceReportRowModel { TaskDate = "2026-03-10", Completed = true }
+        ], "p", _localization);
+
+        var rows = document.Tables[0].Rows;
+        Assert.That(rows.Select(r => r.IsDone), Is.EqualTo(new[] { true, false, true }));
+        Assert.That(rows.Select(r => r.IsTotal), Is.All.False);
+    }
+
+    /// <summary>
+    /// The done mark is Detaljer's alone: Oversigt rows (including the totals row)
+    /// never carry it, so the tint cannot leak into the other view.
+    /// </summary>
+    [Test]
+    public void Overview_RowsAreNeverMarkedDone()
+    {
+        var model = new ComplianceReportOverviewModel
+        {
+            Rows = [new ComplianceReportOverviewRowModel { PropertyId = 1, PropertyName = "A", CompliancePct = 100 }],
+            Totals = new ComplianceReportOverviewRowModel { CompliancePct = 100 }
+        };
+
+        var table = ComplianceExportDocumentBuilder.BuildOverview(model, "p", _localization).Tables[0];
+
+        Assert.That(table.Rows.Select(r => r.IsDone), Is.All.False);
     }
 
     /// <summary>
@@ -804,12 +964,17 @@ public class ComplianceExportDocumentBuilderTests
     };
 
     /// <summary>
-    /// Danish for the five keys Oversigt reads — the values in
+    /// Danish for the keys Oversigt and Detaljer read — the values in
     /// <c>Resources/localization.json</c>, including the two #1190 added
-    /// (<c>Company</c>, <c>ComplianceOverviewTitle</c>). Every other key comes
-    /// back as itself, like the shared key-returning double.
+    /// (<c>Company</c>, <c>ComplianceOverviewTitle</c>) and the two #1191 added
+    /// (<c>TagsPlain</c>, <c>ComplianceDetailsTitle</c>). Both <c>Tags</c>
+    /// ("Etiketter") and <c>TagsPlain</c> ("Tags") are here, and both
+    /// <c>ComplianceDetails</c> ("Detaljer") and <c>ComplianceDetailsTitle</c>
+    /// ("Compliance"), so a Detaljer assertion pins WHICH of each pair the builder
+    /// reads. Every other key comes back as itself, like the shared key-returning
+    /// double.
     /// </summary>
-    private sealed class DanishOverviewLocalizer : IBackendConfigurationLocalizationService
+    private sealed class DanishExportLocalizer : IBackendConfigurationLocalizationService
     {
         private static readonly Dictionary<string, string> Danish = new()
         {
@@ -817,7 +982,20 @@ public class ComplianceExportDocumentBuilderTests
             ["Overdue"] = "Overskredet",
             ["CompliancePercentage"] = "Compliance %",
             ["ComplianceOverviewTitle"] = "Compliance oversigt",
-            ["Total"] = "I alt"
+            ["Total"] = "I alt",
+            ["ComplianceDetails"] = "Detaljer",
+            ["ComplianceDetailsTitle"] = "Compliance",
+            ["Date"] = "Dato",
+            ["Property"] = "Ejendom",
+            ["CalendarBoard"] = "Kalender",
+            ["StartTime"] = "Kl.",
+            ["Task"] = "Opgave",
+            ["Worker"] = "Medarbejder",
+            ["Tags"] = "Etiketter",
+            ["TagsPlain"] = "Tags",
+            ["Status"] = "Status",
+            ["Done"] = "Udført",
+            ["NotDone"] = "Ikke udført"
         };
 
         public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;

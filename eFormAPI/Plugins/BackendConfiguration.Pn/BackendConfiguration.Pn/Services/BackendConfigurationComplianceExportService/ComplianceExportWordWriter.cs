@@ -106,6 +106,22 @@ public class ComplianceExportWordWriter(
     private const string FooterPagePrefix = "p. ";
 
     /// <summary>
+    /// The pale, print-safe green a completed Detaljer row is tinted with (#1191).
+    /// Deliberately NOT the theme's <c>--status-aktiv-bg</c> (<c>#1b5e20</c> /
+    /// <c>#2e7d32</c>), which is a dark fill behind white text on screen and would
+    /// swallow 7 pt black text on paper.
+    ///
+    /// <para>
+    /// Emitted on the <c>&lt;tr&gt;</c> only. HtmlToOpenXml 3.5.0 turns a row's
+    /// <c>background-color</c> into a <c>w:shd</c> on EVERY cell of that row
+    /// (<c>TableCellProperties/Shading</c>, fill <c>E8F5E9</c>) — the same
+    /// mechanism the header row above already relies on — and leaves an untinted
+    /// row with no shading element at all, which is what the writer tests pin.
+    /// </para>
+    /// </summary>
+    public const string DoneRowFill = "#e8f5e9";
+
+    /// <summary>
     /// Renders the document. <paramref name="core"/> is used only to resolve image
     /// bytes; when the document carries no image blocks it is never touched.
     /// </summary>
@@ -175,10 +191,13 @@ public class ComplianceExportWordWriter(
             foreach (var row in table.Rows)
             {
                 // The totals row is bold, so a reader can tell it from the data
-                // rows it is appended to.
+                // rows it is appended to; a completed Detaljer row is tinted
+                // (#1191) so open work stands out. The two never coincide.
                 body.Append(row.IsTotal
                     ? @"<tr style='font-size:7pt;font-weight:bold;'>"
-                    : @"<tr style='font-size:7pt;'>");
+                    : row.IsDone
+                        ? $@"<tr style='font-size:7pt;background-color:{DoneRowFill};'>"
+                        : @"<tr style='font-size:7pt;'>");
                 for (var i = 0; i < row.Cells.Count; i++)
                 {
                     var type = i < table.Columns.Count ? table.Columns[i].Type : ComplianceExportCellType.Text;
@@ -451,9 +470,17 @@ public class ComplianceExportWordWriter(
         }
     }
 
+    /// <summary>
+    /// The cell's Word/PDF text: an explicit
+    /// <see cref="ComplianceExportCell.DisplayText"/> wins (Detaljer's weekday
+    /// date, #1191), then a typed date renders <c>dd.MM.yyyy</c>, otherwise the
+    /// display text — which is the en dash for an empty cell. Word/PDF keep the
+    /// glyph; only CSV blanks it.
+    /// </summary>
     private static string Render(ComplianceExportCell cell, ComplianceExportCellType type)
     {
         if (cell == null) return ComplianceExportCell.EmptyGlyph;
+        if (!string.IsNullOrEmpty(cell.DisplayText)) return cell.DisplayText;
 
         return type switch
         {

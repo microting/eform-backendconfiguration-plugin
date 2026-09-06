@@ -6316,5 +6316,67 @@
       "el-GR": "Επισκόπηση συμμόρφωσης",
       "is-IS": "Yfirlit yfir reglufylgni"
     }
+  },
+  {
+    "Key": "TagsPlain",
+    "LocalizedValue": {
+      "da": "Tags",
+      "de": "Tags",
+      "en-US": "Tags",
+      "uk-UA": "Теги",
+      "pl-PL": "Tagi",
+      "no-NO": "Merker",
+      "sv-SE": "Taggar",
+      "es-ES": "Etiquetas",
+      "fr-FR": "Étiquettes",
+      "it-IT": "Tag",
+      "nl-NL": "Labels",
+      "pt-BR": "Tags",
+      "pt-PT": "Tags",
+      "fi-FI": "Tunnisteet",
+      "et-ET": "Sildid",
+      "lv-LV": "Tagi",
+      "lt-LT": "Žymės",
+      "ro-RO": "Etichete",
+      "hr-HR": "Oznake",
+      "sl-SL": "Oznake",
+      "cs-CZ": "Štítky",
+      "sk-SK": "Štítky",
+      "hu-HU": "Címkék",
+      "bg-BG": "Етикети",
+      "el-GR": "Ετικέτες",
+      "is-IS": "Merki"
+    }
+  },
+  {
+    "Key": "ComplianceDetailsTitle",
+    "LocalizedValue": {
+      "da": "Compliance",
+      "de": "Compliance",
+      "en-US": "Compliance",
+      "uk-UA": "Відповідність",
+      "pl-PL": "Zgodność",
+      "no-NO": "Compliance",
+      "sv-SE": "Compliance",
+      "es-ES": "Cumplimiento",
+      "fr-FR": "Conformité",
+      "it-IT": "Conformità",
+      "nl-NL": "Compliance",
+      "pt-BR": "Conformidade",
+      "pt-PT": "Conformidade",
+      "fi-FI": "Vaatimustenmukaisuus",
+      "et-ET": "Vastavus",
+      "lv-LV": "Atbilstība",
+      "lt-LT": "Atitiktis",
+      "ro-RO": "Conformitate",
+      "hr-HR": "Usklađenost",
+      "sl-SL": "Skladnost",
+      "cs-CZ": "Soulad",
+      "sk-SK": "Súlad",
+      "hu-HU": "Megfelelőség",
+      "bg-BG": "Съответствие",
+      "el-GR": "Συμμόρφωση",
+      "is-IS": "Reglufylgni"
+    }
   }
 ]

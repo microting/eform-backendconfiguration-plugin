@@ -22,8 +22,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// </para>
 ///
 /// <para>
-/// Being pure is also what makes the column sets, the empty-cell glyph, the
-/// totals-row marking and the date typing testable without a container.
+/// Being pure is also what makes the column sets, the empty-cell marking, the
+/// totals-row and done-row marking and the date typing testable without a
+/// container.
 /// </para>
 /// </summary>
 public static class ComplianceExportDocumentBuilder
@@ -131,10 +132,10 @@ public static class ComplianceExportDocumentBuilder
     ///
     /// <para>
     /// <c>null</c> — a property whose work has not fallen due — stays the shared
-    /// empty glyph (the en dash), never <c>0%</c> and never <c>%</c> alone. The
-    /// CSV rendering of an absent value (the en dash today; "a blank field" under
-    /// the #1191 Detaljer rule) is owned by the CSV writer / #1191; this builder
-    /// only emits the empty cell and does not change for it.
+    /// empty cell: the en dash in Word/PDF, a blank field in CSV (#1191's rule,
+    /// applied by the CSV writer through <see cref="ComplianceExportCell.IsEmpty"/>),
+    /// never <c>0%</c> and never <c>%</c> alone. This builder only emits the
+    /// empty cell and does not decide its rendering.
     /// </para>
     /// </summary>
     private static ComplianceExportCell PercentCell(int? pct) =>
@@ -143,17 +144,45 @@ public static class ComplianceExportDocumentBuilder
             : new ComplianceExportCell();
 
     /// <summary>
-    /// Detaljer (#1169 §2): Dato / Ejendom / Kalender / Kl. / Opgave / Medarbejder
-    /// / Tags / Status, over the FULL filtered set.
+    /// Detaljer (#1169 §2, mock-up p8 via #1191): Dato / Ejendom / Kalender / Kl.
+    /// / Opgave / Medarbejder / Tags / Status, over the FULL filtered set.
     ///
     /// <para>
     /// The date column is TYPED (<see cref="ComplianceExportCellType.Date"/>), which
     /// is what gives the two renderings from one source: CSV writes ISO
-    /// <c>yyyy-MM-dd</c> and Word/PDF write <c>dd.MM.yyyy</c>. The row model carries <c>TaskDate</c> as a STRING
+    /// <c>yyyy-MM-dd</c>, while Word/PDF print the cell's
+    /// <see cref="ComplianceExportCell.DisplayText"/> — the screen's long weekday
+    /// form, <c>Tirsdag 21. juli</c> (#1191, see <see cref="FormatWeekdayDate"/>).
+    /// The row model carries <c>TaskDate</c> as a STRING
     /// formatted by <c>Index</c> with the CURRENT culture, so it is parsed back with
     /// <c>yyyy-MM-dd</c> + InvariantCulture; a value that will not parse (possible
     /// only under a non-Gregorian server culture) degrades to a text cell carrying
-    /// the original string rather than being dropped.
+    /// the original string rather than being dropped — and then has no weekday
+    /// text either, because there is no date to derive one from.
+    /// </para>
+    ///
+    /// <para>
+    /// <c>Kl.</c> is the RANGE <c>13:00 - 14:00</c> (hyphen-minus with spaces, as
+    /// the mock-up; not the en dash used elsewhere), computed from
+    /// <c>StartHour</c> + <c>Duration</c> exactly as the screen's
+    /// <c>formatComplianceTimeRange</c> does (#1191). An all-day row has no clock
+    /// time and gets the empty cell.
+    /// </para>
+    ///
+    /// <para>
+    /// The document title is "Compliance" (key <c>ComplianceDetailsTitle</c>),
+    /// not the view label "Detaljer" (key <c>ComplianceDetails</c>), which
+    /// <c>BuildFileName</c> still prefixes the download with — the same
+    /// title-vs-view-label split Oversigt uses. The <c>Tags</c> header reads the
+    /// NEW <c>TagsPlain</c> key ("Tags"), not <c>Tags</c> ("Etiketter"): the
+    /// export says what the mock-up says, and the <c>Tags</c> key is untouched
+    /// because other screens read it.
+    /// </para>
+    ///
+    /// <para>
+    /// A completed row is marked <see cref="ComplianceExportRow.IsDone"/> so
+    /// Word/PDF can tint it; the <c>Status</c> cell still carries the label, which
+    /// is what CSV readers get.
     /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildDetails(
@@ -163,7 +192,7 @@ public static class ComplianceExportDocumentBuilder
     {
         var document = new ComplianceExportDocument
         {
-            Title = localizationService.GetString("ComplianceDetails"),
+            Title = localizationService.GetString("ComplianceDetailsTitle"),
             Period = period
         };
 
@@ -181,7 +210,8 @@ public static class ComplianceExportDocumentBuilder
                 new ComplianceExportColumn { Header = localizationService.GetString("StartTime") },
                 new ComplianceExportColumn { Header = localizationService.GetString("Task") },
                 new ComplianceExportColumn { Header = localizationService.GetString("Worker") },
-                new ComplianceExportColumn { Header = localizationService.GetString("Tags") },
+                // "Tags", not "Etiketter" — see the method comment.
+                new ComplianceExportColumn { Header = localizationService.GetString("TagsPlain") },
                 new ComplianceExportColumn { Header = localizationService.GetString("Status") }
             ]
         };
@@ -191,18 +221,26 @@ public static class ComplianceExportDocumentBuilder
 
         foreach (var row in rows ?? [])
         {
+            var dateCell = DateCellFromIsoString(row.TaskDate);
+            if (dateCell.Date.HasValue)
+            {
+                dateCell.DisplayText = FormatWeekdayDate(dateCell.Date.Value);
+            }
+
             table.Rows.Add(new ComplianceExportRow
             {
+                IsDone = row.Completed,
                 Cells =
                 [
-                    DateCellFromIsoString(row.TaskDate),
+                    dateCell,
                     ComplianceExportCell.FromText(row.PropertyName),
                     ComplianceExportCell.FromText(row.BoardName),
                     // An all-day occurrence has no clock time; the prototype shows
-                    // nothing there, which normalises to the en dash.
+                    // nothing there, which is the empty cell (en dash in Word/PDF,
+                    // blank in CSV).
                     row.IsAllDay
                         ? new ComplianceExportCell()
-                        : ComplianceExportCell.FromText(FormatStartHour(row.StartHour)),
+                        : ComplianceExportCell.FromText(FormatTimeRange(row.StartHour, row.Duration)),
                     ComplianceExportCell.FromText(row.Title),
                     ComplianceExportCell.FromText(JoinNames(row.WorkerNames)),
                     ComplianceExportCell.FromText(JoinNames(row.Tags)),
@@ -548,6 +586,56 @@ public static class ComplianceExportDocumentBuilder
         var totalMinutes = (int)Math.Round(startHour * 60d, MidpointRounding.AwayFromZero);
         totalMinutes = Math.Clamp(totalMinutes, 0, 24 * 60 - 1);
         return $"{totalMinutes / 60:00}:{totalMinutes % 60:00}";
+    }
+
+    /// <summary>
+    /// Detaljer's <c>Kl.</c> range, <c>13:00 - 14:00</c> for start 13.0 and
+    /// duration 1.0 — the screen's formula (<c>formatComplianceTimeRange</c> in
+    /// <c>compliance-week-grouping.ts</c>), plus <see cref="FormatStartHour"/>'s
+    /// 23:59 clamp required by #1191. The separator is a hyphen-minus with a
+    /// space either side, verbatim from the mock-up; it is NOT the en dash the
+    /// period line and the empty cell use.
+    ///
+    /// <para>
+    /// Both ends go through <see cref="FormatStartHour"/>, so the end is clamped
+    /// the same way the start is: 23.5 + 1.0 renders <c>23:30 - 23:59</c> here,
+    /// where the screen (which has no clamp and rounds each part on its own)
+    /// shows <c>23:30 - 24:30</c>; likewise the export rounds TOTAL minutes
+    /// (<c>10:00</c>) whereas the screen rounds hours and minutes separately and
+    /// can yield <c>09:60</c>. <c>Duration</c> is a non-nullable <c>double</c>
+    /// on the row model, so a row with no duration carries 0 and renders a
+    /// zero-width range (<c>13:00 - 13:00</c>) — the screen does the same for a 0
+    /// duration, and a fabricated end would be a guess.
+    /// </para>
+    /// </summary>
+    public static string FormatTimeRange(double startHour, double duration) =>
+        $"{FormatStartHour(startHour)} - {FormatStartHour(startHour + duration)}";
+
+    /// <summary>
+    /// Detaljer's <c>Dato</c> as the screen shows it: <c>dddd d. MMMM</c> with the
+    /// first letter upper-cased — <c>Tirsdag 21. juli</c> under a Danish culture
+    /// (#1191; the screen's <c>formatComplianceDayLabel</c>). No year: the period
+    /// in the page header carries it.
+    ///
+    /// <para>
+    /// Formatted with <see cref="CultureInfo.CurrentCulture"/> — the culture the
+    /// JSON <c>IStringLocalizer</c> (<c>JsonStringLocalizer</c>) resolves the column
+    /// headers through (it reads <c>CurrentCulture</c>, not <c>CurrentUICulture</c>),
+    /// so the weekday and the headers around it are always in the same language.
+    /// Under a non-Danish request culture the LANGUAGE of the weekday and month
+    /// follows the culture, but the <c>dddd d. MMMM</c> day-dot-month shape is
+    /// fixed — unlike the screen, whose <c>toLocaleDateString</c> would give
+    /// <c>Tuesday, July 21</c> for en-US. The DATE was parsed with the invariant culture
+    /// (<see cref="DateCellFromIsoString"/>); only the rendering is
+    /// culture-dependent.
+    /// </para>
+    /// </summary>
+    public static string FormatWeekdayDate(DateTime date)
+    {
+        var text = date.ToString("dddd d. MMMM", CultureInfo.CurrentCulture);
+        return text.Length == 0
+            ? text
+            : char.ToUpper(text[0], CultureInfo.CurrentCulture) + text[1..];
     }
 
     private static string JoinNames(List<string> values) =>
