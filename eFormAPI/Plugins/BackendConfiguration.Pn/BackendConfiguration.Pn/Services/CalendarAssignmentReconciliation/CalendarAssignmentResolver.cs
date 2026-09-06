@@ -15,6 +15,9 @@ namespace BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 /// live members of every worker tag assigned to the event. Worker-tag
 /// membership is read from the SDK <c>SiteTags</c> table, so the set is always
 /// current (members added/removed from a tag immediately change the result).
+/// Tag members whose SDK <c>Worker</c> is resigned are excluded (#1184) — a
+/// resigned worker keeps their SiteTags rows, but must not receive new
+/// occurrences of tag-assigned events.
 /// </summary>
 public class CalendarAssignmentResolver(
     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
@@ -39,7 +42,8 @@ public class CalendarAssignmentResolver(
             .Select(x => x.TagId)
             .ToListAsync(ct).ConfigureAwait(false);
 
-        // 3. Live members of those tags, read from the SDK SiteTags table.
+        // 3. Live members of those tags, read from the SDK SiteTags table,
+        //    minus members whose SDK Worker is resigned (#1184).
         if (tagIds.Count > 0)
         {
             var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
@@ -49,6 +53,7 @@ public class CalendarAssignmentResolver(
                 .Where(x => x.TagId != null && tagIds.Contains(x.TagId.Value)
                             && x.SiteId != null
                             && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => !sdkDbContext.SiteWorkers.Any(sw => sw.SiteId == x.SiteId && sw.Worker.Resigned))
                 .Select(x => x.SiteId.Value)
                 .ToListAsync(ct).ConfigureAwait(false);
 

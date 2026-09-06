@@ -920,8 +920,11 @@ public class EventDeployServiceTest : TestBaseSetup
     // Positive counterpart to the pin test above, locking in the #932/#1377
     // guard RELAXATION. The on-demand calendar materialisation now lets a user
     // complete a future/on-demand occurrence on behalf of ANY active worker of
-    // the event's PROPERTY (the worker pickers list every property worker, same
-    // source as GetLinkedSites). Such a worker is legitimately tied to the event
+    // the event's PROPERTY. Note the picker (GetLinkedSites) lists only the
+    // NON-RESIGNED property workers since #1184, while this guard deliberately
+    // still accepts any active PropertyWorker, resigned or not, so completing on
+    // behalf of a since-resigned worker via the API stays possible (asymmetric
+    // by decision — #1184, decision 2). Such a worker is legitimately tied to the event
     // even though it is NOT in the planning's PlanningSites, so the guard's
     // second branch (PropertyWorkers probe) must accept it and DEPLOY rather
     // than throw. Setup mirrors the pin test (target site absent from
