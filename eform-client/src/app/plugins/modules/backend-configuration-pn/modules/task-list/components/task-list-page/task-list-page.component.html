@@ -37,6 +37,19 @@
       <span id="taskListSelectionCount" *ngIf="selection.size > 0">
         {{ selection.size }} {{ 'tasks selected' | translate }}
       </span>
+      <!-- #1194 — FIRST element of the right-aligned group (its SCSS carries
+           the `margin-left: auto`). Re-fetches tasks + tags from the database
+           keeping filters and the column sort; disabled while a tasks/index
+           request is in flight so a double-click cannot issue two overlapping
+           requests. Refresh CLEARS any batch selection (the batch dropdown
+           returns to disabled) — every reload path does. -->
+      <button mat-icon-button color="primary" id="taskListRefreshBtn"
+              [matTooltip]="'Refresh table' | translate"
+              [attr.aria-label]="'Refresh table' | translate"
+              [disabled]="loading"
+              (click)="refresh()">
+        <mat-icon>refresh</mat-icon>
+      </button>
       <button mat-raised-button color="accent" id="taskListManageTagsBtn" (click)="openTagsModal()">
         <mat-icon>label</mat-icon>{{ 'Manage tags' | translate }}
       </button>
@@ -47,7 +60,7 @@
     <app-task-list-table
       #taskListTable
       [tasks]="tasks" [properties]="properties" [boards]="boards"
-      [eforms]="eforms" [planningTags]="tags"
+      [eforms]="eforms" [planningTags]="tags" [loading]="loading"
       (editTask)="onEditTask($event)"
       (renameTask)="onRenameTask($event)"
       (selectionChanged)="onSelectionChanged($event)">

@@ -48,6 +48,12 @@ import {
  *      unmounted from the DOM).
  * PP8: the CSV export button triggers a `download` event named
  *      `opgaveliste.csv`.
+ * PP10: (#1193) sorting by the Property column orders by property NAME —
+ *      run with NO property filter (a single-property filter makes every row
+ *      equal on this column), narrowed by search to the suite's own rows.
+ * PP11: (#1193) sorting by the Compliance column groups Nej before Ja
+ *      ascending; the two seeded tasks are made to differ via the batch
+ *      "Set compliance" action first.
  */
 
 const property: PropertyCreateUpdate = {
@@ -64,17 +70,31 @@ const emptyProperty: PropertyCreateUpdate = {
   cvrNumber: '1111111',
 };
 
+// Assigned to BOTH properties: the calendar create modal needs an assignee
+// (`fillAndSaveEvent` picks the first), and PP10 creates a task under the
+// "empty" property. A worker assignment adds no task rows, so PP3's "empty
+// property shows 0 rows" still holds until PP10 runs (describe.serial).
 const worker: PropertyWorker = {
   name: generateRandmString(5),
   surname: generateRandmString(5),
   language: 'Dansk',
-  properties: [property.name],
+  properties: [property.name, emptyProperty.name],
   workerEmail: generateRandmString(5) + '@test.com',
 };
 
 const rand = generateRandmString(6);
 const taskZ = `zz-task-${rand}`; // created first (seed test) — sorts LAST ascending
 const taskA = `aa-task-${rand}`; // created second (PP5) — sorts FIRST ascending
+// Created third (PP10) under the "empty" property, so the Property column has
+// two distinct values among the suite's rows. Shares `rand` so `search(rand)`
+// narrows the grid to exactly these three tasks without a property filter.
+const taskOther = `mm-task-${rand}`;
+
+// Danish label of the batch-action entry used by PP11 (BackendConfiguration
+// da.ts: `'Set compliance': 'Sæt compliance'`) — the dropdown is the one
+// place these suites match on translated text, since ng-select options carry
+// no stable per-option id. Same constant as `e/task-list-batch-compliance.spec.ts`.
+const LABEL_SET_COMPLIANCE = 'Sæt compliance';
 
 let seeded = false;
 
@@ -334,5 +354,132 @@ test.describe.serial('Task list page', () => {
     await expect(taskListPage.batchActionOptions()).toHaveCount(11);
     expect(await countDisabled()).toBe(0);
     await page.keyboard.press('Escape');
+  });
+
+  // =======================================================================
+  // PP10 — (#1193) sort by Property orders by the displayed property NAME.
+  // Deliberately NO `selectProperty()`: a single-property filter would make
+  // every row equal on this column. The grid is narrowed by free-text search
+  // on the shared `rand` token instead, so rows from other suites in the
+  // shared CI DB cannot interleave. The third task is created here, under
+  // the "empty" property (`tlp-empty-*` < `tlp-full-*` in code-point AND
+  // lower-cased order), which is fine because PP3 — the only test that
+  // needs that property empty — has already run (describe.serial).
+  // =======================================================================
+  test('PP10: sort by Property orders rows by property name', async ({ page }) => {
+    test.setTimeout(180000);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    await calendarPage.goToCalendar();
+    await calendarPage.ensureSidebarOpen();
+    await calendarPage.selectProperty(emptyProperty.name);
+    await page.waitForTimeout(1000);
+    await calendarPage.openCreateModalAtSlot(1, 10);
+    await calendarPage.fillAndSaveEvent(taskOther);
+
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.search(rand);
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+    await expect(taskListPage.row(taskA)).toBeVisible();
+    await expect(taskListPage.row(taskOther)).toBeVisible();
+    // Sanity: the column really shows two different names for these rows.
+    await expect(taskListPage.columnCell(taskOther, 'property')).toHaveText(emptyProperty.name);
+    await expect(taskListPage.columnCell(taskZ, 'property')).toHaveText(property.name);
+
+    const header = taskListPage.columnHeader('property');
+    const sortHeader = taskListPage.sortHeader('property');
+    // Sortable now: Material stamps `aria-sort` on the inner `.mat-sort-header`
+    // (mtx-grid renders it inside the <th>, not on the <th> itself).
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'none');
+
+    const rowsText = async () => (await taskListPage.getGrid().locator('.mat-mdc-row').allInnerTexts());
+    const indexOf = (texts: string[], name: string) => {
+      const i = texts.findIndex(t => t.includes(name));
+      expect(i).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+
+    // First click: ascending — the `tlp-empty-*` row before both `tlp-full-*` rows.
+    await header.click();
+    await page.waitForTimeout(500);
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'ascending');
+    let texts = await rowsText();
+    expect(indexOf(texts, taskOther)).toBeLessThan(indexOf(texts, taskZ));
+    expect(indexOf(texts, taskOther)).toBeLessThan(indexOf(texts, taskA));
+
+    // Second click: descending — order flips.
+    await header.click();
+    await page.waitForTimeout(500);
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'descending');
+    texts = await rowsText();
+    expect(indexOf(texts, taskZ)).toBeLessThan(indexOf(texts, taskOther));
+    expect(indexOf(texts, taskA)).toBeLessThan(indexOf(texts, taskOther));
+
+    // Id / Task name are untouched by the new sort keys: the title header is
+    // still sortable and, once clicked, takes the active sort over.
+    await taskListPage.columnHeader('title').click();
+    await page.waitForTimeout(500);
+    await expect(taskListPage.sortHeader('title')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'none');
+  });
+
+  // =======================================================================
+  // PP11 — (#1193) sort by Compliance: `--` (inactive) < Nej < Ja ascending.
+  // Freshly created tasks are active with compliance Ja, so taskA is first
+  // flipped to Nej through the batch "Sæt compliance" action (not
+  // property-scoped, so search alone is enough to enable the dropdown). The
+  // search filter survives the reload the batch submit triggers.
+  // =======================================================================
+  test('PP11: sort by Compliance groups Nej before Ja ascending', async ({ page }) => {
+    test.setTimeout(180000);
+    const taskListPage = new TaskListPage(page);
+    await taskListPage.goto();
+    await taskListPage.search(rand);
+    await expect(taskListPage.row(taskA)).toBeVisible();
+    await expect(taskListPage.row(taskZ)).toBeVisible();
+    await expect(taskListPage.columnCell(taskA, 'compliance').locator('.badge.ja')).toHaveCount(1);
+    await expect(taskListPage.columnCell(taskZ, 'compliance').locator('.badge.ja')).toHaveCount(1);
+
+    await taskListPage.selectRow(taskA);
+    await taskListPage.pickBatchAction(new RegExp(LABEL_SET_COMPLIANCE));
+    await taskListPage.pickComplianceOption(false);
+    await expect(taskListPage.batchModalSubmitButton()).toBeEnabled();
+    await taskListPage.submitModal();
+    await taskListPage.waitForModalClosed();
+    await expect(taskListPage.columnCell(taskA, 'compliance').locator('.badge.nej')).toHaveCount(1);
+    await expect(taskListPage.columnCell(taskZ, 'compliance').locator('.badge.ja')).toHaveCount(1);
+    // The reload cleared the selection (documented reload behaviour).
+    await expect(page.locator('#taskListSelectionCount')).toHaveCount(0);
+
+    const header = taskListPage.columnHeader('compliance');
+    const sortHeader = taskListPage.sortHeader('compliance');
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'none');
+
+    const rowsText = async () => (await taskListPage.getGrid().locator('.mat-mdc-row').allInnerTexts());
+    const indexOf = (texts: string[], name: string) => {
+      const i = texts.findIndex(t => t.includes(name));
+      expect(i).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+
+    // Ascending: Nej (taskA) before Ja (taskZ).
+    await header.click();
+    await page.waitForTimeout(500);
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'ascending');
+    let texts = await rowsText();
+    expect(indexOf(texts, taskA)).toBeLessThan(indexOf(texts, taskZ));
+
+    // Descending: Ja before Nej.
+    await header.click();
+    await page.waitForTimeout(500);
+    await expect(sortHeader).toHaveAttribute('aria-sort', 'descending');
+    texts = await rowsText();
+    expect(indexOf(texts, taskZ)).toBeLessThan(indexOf(texts, taskA));
+
+    // Batch selection still works on a sorted grid and the counter only shows
+    // once a row is actually checked.
+    await taskListPage.selectRow(taskZ);
+    await expect(page.locator('#taskListSelectionCount')).toBeVisible();
+    await expect(page.locator('#taskListBatchAction .ng-select-disabled')).toHaveCount(0);
   });
 });
