@@ -1,13 +1,23 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
-import { generateRandmString } from '../../../helper-functions';
+import { generateRandmString, selectDateRangeOnNewDatePicker } from '../../../helper-functions';
 import { waitForApiResponse, API_TIMEOUT } from '../wait-helpers';
 
 /**
  * Standalone Compliance page — SHELL suite (#1160 / #1163).
  *
- * Covers only what the shell owns: the route, the ten filter controls, the
- * mode toggle, the blank-on-change state machine and the pagination chrome.
+ * Covers only what the shell owns: the route, the nine always-present filter
+ * controls (plus `Opdater periode`, which exists ONLY while "Sæt periode" is
+ * selected — #1185), the mode toggle, the auto-fetch-on-change state machine,
+ * the Oversigt reset and the pagination chrome.
+ *
+ * #1185 rewrote the fetch contract. Every filter change now re-queries the
+ * ACTIVE mode after a ~300 ms debounce and never blanks the result; the one
+ * exception is "Sæt periode", whose range is staged until `Opdater periode`
+ * commits it. Clicking `#complianceMode-overview` — from anywhere, including
+ * while it is already active — resets all six filters to their defaults and
+ * renders Oversigt. Request COUNTS are never asserted across a filter change:
+ * `=== 1` races the debounce, so the specs wait for the response instead.
  * The rows themselves belong to #1164 (Oversigt), #1165 (Detaljer) and #1167
  * (Rapport) and are asserted by their own suites — Oversigt's is
  * `compliance-overview.spec.ts`, in this same shard. Where a child has not
@@ -54,6 +64,70 @@ async function goToCompliancePage(page: Page): Promise<void> {
   await page.waitForTimeout(2000);
   await page.goto(PAGE_URL);
   await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
+}
+
+/**
+ * Picks an mtx-select option BY LABEL, never by nth(). Regex `hasText` matches
+ * the RAW option text, hence the tolerated padding.
+ */
+async function selectOptionByLabel(page: Page, selectId: string, label: string): Promise<void> {
+  await page.locator(`#${selectId}`).click();
+  await page
+    .locator('.ng-dropdown-panel .ng-option', { hasText: new RegExp(`^\\s*${escapeRegExp(label)}\\s*$`) })
+    .first()
+    .click();
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * The auto-fetch of one mode, awaited by RESPONSE rather than counted: a
+ * filter change fetches after a debounce, and `requests === 1` taken at any
+ * fixed moment races it (#1185 pitfall 6). `endpoint` is the controller
+ * action — `overview` for Oversigt, `index` for Detaljer, `eform-columns`
+ * for Rapport.
+ */
+function complianceResponse(page: Page, endpoint: 'overview' | 'index' | 'eform-columns') {
+  return waitForApiResponse(
+    page,
+    `compliance ${endpoint}`,
+    (r) => r.url().includes(`/api/backend-configuration-pn/compliance-report/${endpoint}`)
+      && r.request().method() === 'POST',
+    API_TIMEOUT,
+  );
+}
+
+function addDays(d: Date, n: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+/**
+ * Asserts the six filters read their defaults — the PDF's list, verbatim:
+ * Alle ejendomme / Alle kalendere / Alle tags / Ikke udførte opgaver /
+ * Alle medarbejdere / År til dato. The four CLEARABLE selects have NO value
+ * when reset (their default is `null` / `[]`), so what shows is ng-select's
+ * `.ng-placeholder`, and `.ng-value-label` must be ABSENT; status and period
+ * are non-clearable and carry a real selected label.
+ */
+async function expectDefaultFilters(page: Page): Promise<void> {
+  for (const [id, placeholder] of [
+    ['complianceFilterProperty', 'Alle ejendomme'],
+    ['complianceFilterBoard', 'Alle kalendere'],
+    ['complianceTagFilter', 'Alle tags'],
+    ['complianceFilterEmployee', 'Alle medarbejdere'],
+  ] as const) {
+    await expect(page.locator(`#${id} .ng-value-label`)).toHaveCount(0);
+    await expect(page.locator(`#${id} .ng-placeholder`)).toHaveText(new RegExp(`^\\s*${placeholder}\\s*$`));
+  }
+  await expect(page.locator('#complianceFilterStatus .ng-value-label')).toHaveText(/^\s*Ikke udførte opgaver\s*$/);
+  await expect(page.locator('#complianceFilterPeriod .ng-value-label')).toHaveText(/^\s*År til dato\s*$/);
+  // No custom range survives a reset — and with it goes the commit button.
+  await expect(page.locator('.compliance-filters__custom-range')).toHaveCount(0);
+  await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
 }
 
 async function loginViaApi(page: Page, email: string, password: string): Promise<string> {
@@ -246,7 +320,7 @@ function minimalPdf(): string {
 }
 
 test.describe('Compliance page shell (#1163)', () => {
-  test('renders at its own URL with all ten filter controls', async ({ page }) => {
+  test('renders at its own URL with all nine filter controls, and no Opdater periode outside custom mode', async ({ page }) => {
     await goToCompliancePage(page);
 
     // The route resolved rather than being swallowed by compliances/:propertyId.
@@ -259,9 +333,13 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceFilterEmployee')).toBeVisible();
     await expect(page.locator('#complianceFilterPeriod')).toBeVisible();
     await expect(page.locator('#compliancePeriodDisplay')).toBeVisible();
-    await expect(page.locator('#complianceShowReportBtn')).toBeVisible();
     await expect(page.locator('#complianceExportFormat')).toBeVisible();
     await expect(page.locator('#complianceDownloadBtn')).toBeVisible();
+    // #1185: the fetch button exists ONLY while "Sæt periode" is selected. On a
+    // fresh load the preset is "År til dato", every change auto-fetches, and a
+    // permanently-disabled button would only invite clicks — so it is NOT in
+    // the DOM (`toHaveCount(0)`, not `toBeHidden()`).
+    await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
   });
 
   test('opens in Oversigt with the three mode buttons and their pressed state', async ({ page }) => {
@@ -293,8 +371,18 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceFilterStatus .ng-select-disabled')).toHaveCount(0);
   });
 
-  test('a filter change blanks the result and clears the pagination, and fetches nothing', async ({ page }) => {
-    await goToCompliancePage(page);
+  test('a filter change auto-fetches the active mode and never blanks the result (#1185)', async ({ page }) => {
+    // The entry auto-fetch is armed BEFORE navigation and awaited first:
+    // `goToCompliancePage` only waits for a filter control, so a waiter armed
+    // after it could be satisfied by the entry response still in flight and
+    // the preset change below would then go unobserved.
+    await page.goto(BASE_URL);
+    await new LoginPage(page).login();
+    await page.waitForTimeout(2000);
+    const entry = complianceResponse(page, 'overview');
+    await page.goto(PAGE_URL);
+    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
+    expect((await entry).ok()).toBeTruthy();
 
     // The page auto-fetches Oversigt once on load, so `reportVisible` is true
     // and the placeholder is gone to begin with. The pagination chrome is NOT:
@@ -304,82 +392,121 @@ test.describe('Compliance page shell (#1163)', () => {
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     await expect(page.locator('#compliancePagination')).toHaveCount(0);
 
-    // Switch to Detaljer first: the status control is disabled in Oversigt.
-    // This is SETUP, not the thing under test — and it is deliberately done
-    // BEFORE the request counter is armed. A mode switch destroys the ngSwitch
-    // child and creates the next one, which subscribes to `fetchRequested$`
-    // and receives the REPLAYED trigger; that replay is the design, and both
-    // children now query (#1165 Detaljer, #1164 Oversigt), so this click
-    // legitimately issues exactly one request. Counting from here would make
-    // this test fail on correct behaviour.
-    await page.locator('#complianceMode-details').click();
+    // --- Oversigt: a fixed-preset change re-queries the aggregation ---------
+    // Awaited by RESPONSE, armed BEFORE the gesture and AFTER the entry
+    // response above, so it can only be met by the refetch. The request
+    // itself fires only after the ~300 ms debounce, so a counter read at any
+    // fixed moment would race it; the response is the one signal that cannot.
+    const overviewRefetch = complianceResponse(page, 'overview');
+    await selectOptionByLabel(page, 'complianceFilterPeriod', '3 mdr.');
+    expect((await overviewRefetch).ok()).toBeTruthy();
+    await expect(page.locator('#complianceFilterPeriod .ng-value-label')).toHaveText(/^\s*3 mdr\.\s*$/);
+    // The result was REPLACED, never blanked: the placeholder that the old
+    // invalidate-on-change contract showed here must not appear.
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
-    // Only HERE does the pagination chrome exist — the mode switch preserves
-    // `reportVisible`, and Detaljer is the ONE mode that pages. This is the
-    // premise the `toHaveCount(0)` at the end of the test measures the change
-    // against; taking it in Oversigt would have asserted the pre-#1164
-    // behaviour.
+    await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
+
+    // --- Detaljer: the same rule, for the one control Oversigt disables ---
+    // The mode switch itself replays the trigger to the recreated child (one
+    // `/index` request — the design, not a defect); wait it out so the status
+    // change below is the only thing in flight.
+    const detailsEntry = complianceResponse(page, 'index');
+    await page.locator('#complianceMode-details').click();
+    await detailsEntry;
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    // Detaljer is the ONE mode that pages, so only here does the nav exist.
     await expect(page.locator('#compliancePagination')).toBeVisible();
 
-    // Armed only now, so the assertion below covers exactly one gesture: the
-    // FILTER CHANGE. `setFilter` must blank the result and issue no request —
-    // only `Opdater tabel` fetches.
-    //
-    // The URL substring is the whole controller prefix (no trailing slash, so
-    // a POST to the bare controller root is counted too) rather than one
-    // endpoint, so it keeps holding as #1167 adds its query.
-    // Both children wired here DO query — #1165's Detaljer index and #1164's
-    // Oversigt aggregation — so this is a real regression guard now, not a
-    // trivially-zero one: a `setFilter` that fetched would be caught.
-    let requests = 0;
-    page.on('request', r => {
-      if (r.url().includes('/api/backend-configuration-pn/compliance-report')) {
-        requests++;
-      }
-    });
+    const detailsRefetch = complianceResponse(page, 'index');
+    await selectOptionByLabel(page, 'complianceFilterStatus', 'Alle opgaver');
+    expect((await detailsRefetch).ok()).toBeTruthy();
+    await expect(page.locator('#complianceFilterStatus .ng-value-label')).toHaveText(/^\s*Alle opgaver\s*$/);
 
-    await page.locator('#complianceFilterStatus').click();
-    await page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Alle opgaver' }).first().click();
-
-    await expect(page.locator('#complianceEmptyState')).toBeVisible();
-    await expect(page.locator('#compliancePagination')).toHaveCount(0);
-    expect(requests).toBe(0);
+    // Still rendered, still paged: nothing was torn down between the change
+    // and the re-render.
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await expect(page.locator('#compliancePagination')).toBeVisible();
+    await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
   });
 
-  test('only "Opdater tabel" fetches, and the result survives a mode switch', async ({ page }) => {
+  test('the result survives a mode switch, and the pagination chrome is Detaljer-only', async ({ page }) => {
     await goToCompliancePage(page);
 
+    // Oversigt already fetched on entry — no button to press (#1185): the
+    // mode switch replays that trigger to each recreated child.
+    const detailsEntry = complianceResponse(page, 'index');
     await page.locator('#complianceMode-details').click();
-    await page.locator('#complianceFilterStatus').click();
-    await page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Alle opgaver' }).first().click();
-    await expect(page.locator('#complianceEmptyState')).toBeVisible();
-
-    await page.locator('#complianceShowReportBtn').click();
-
+    await detailsEntry;
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     await expect(page.locator('#compliancePagination')).toBeVisible();
 
-    // A mode switch never re-blanks: one fetch serves all three modes.
+    // A mode switch never re-blanks.
+    const reportEntry = complianceResponse(page, 'eform-columns');
     await page.locator('#complianceMode-report').click();
+    await reportEntry;
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     // ...but the pagination chrome is Detaljer-only, so leaving Detaljer takes
     // it away again — in Rapport as well as in Oversigt. The prototype empties
     // this container in both (compliance.js:1820-1821 and :1460).
     await expect(page.locator('#compliancePagination')).toHaveCount(0);
+
+    // Back to Oversigt. Under #1185 this click is the RESET path (defaults +
+    // one overview fetch, asserted in its own test below); what is asserted
+    // here is only that the container is never blanked on the way.
+    const overviewEntry = complianceResponse(page, 'overview');
     await page.locator('#complianceMode-overview').click();
+    await overviewEntry;
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
     await expect(page.locator('#compliancePagination')).toHaveCount(0);
   });
 
-  test('an invalid custom period disables the button and says why', async ({ page }) => {
-    await goToCompliancePage(page);
+  test('"Sæt periode" stages the range behind Opdater periode: placeholder, disabled-with-reason, then one fetch (#1185)', async ({ page }) => {
+    // The entry auto-fetch is armed BEFORE navigation and awaited, so the
+    // request counter attached afterwards can never see it — attaching the
+    // counter after `goToCompliancePage` alone leaves that to event timing.
+    await page.goto(BASE_URL);
+    await new LoginPage(page).login();
+    await page.waitForTimeout(2000);
+    const entry = complianceResponse(page, 'overview');
+    await page.goto(PAGE_URL);
+    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
+    expect((await entry).ok()).toBeTruthy();
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
 
-    await page.locator('#complianceFilterPeriod').click();
-    await page.locator('.ng-dropdown-panel .ng-option', { hasText: 'Sæt periode' }).first().click();
+    // Custom mode is the ONE filter change that does not auto-fetch, and the
+    // ONE state in which the fetch button exists at all. Before it: no button.
+    await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
 
-    // Both bounds still empty: the button is dead, and the reason is on screen
-    // rather than being a silent no-op the way the prototype's modal is.
-    await expect(page.locator('#complianceShowReportBtn')).toBeDisabled();
+    // Every Oversigt POST from here on is counted: selecting "Sæt periode"
+    // and picking the dates must issue NONE — the range is staged until the
+    // button commits it. Counting is safe on THIS side of the contract (zero
+    // is zero however long the debounce), and the count is read after the
+    // button click's response, i.e. well past any debounce.
+    let requests = 0;
+    page.on('request', r => {
+      if (r.method() === 'POST'
+        && r.url().includes('/api/backend-configuration-pn/compliance-report/overview')) {
+        requests++;
+      }
+    });
+
+    await selectOptionByLabel(page, 'complianceFilterPeriod', 'Sæt periode');
+
+    // The uncommitted state is the placeholder, in its #1185 CUSTOM-mode
+    // wording (it points at the button that exists only here) — not the
+    // previous result and not a spinner.
+    const placeholder = page.locator('#complianceEmptyState');
+    await expect(placeholder).toBeVisible();
+    await expect(placeholder).toHaveText(/^\s*Vælg en periode og klik Opdater periode\.\s*$/);
+
+    // Both bounds still empty: the button exists now, reads "Opdater periode"
+    // (renamed from "Opdater tabel" — it commits a PERIOD, nothing else
+    // waits for it), is dead, and the reason is on screen rather than being
+    // a silent no-op the way the prototype's modal is.
+    const button = page.locator('#complianceShowReportBtn');
+    await expect(button).toBeVisible();
+    await expect(button).toHaveText(/^\s*Opdater periode\s*$/);
+    await expect(button).toBeDisabled();
     await expect(page.locator('#compliancePeriodError')).toBeVisible();
 
     // The range control stays present and editable for as long as "Sæt
@@ -389,6 +516,118 @@ test.describe('Compliance page shell (#1163)', () => {
     // format (the app uses a date-fns adapter), which the shard cannot pin.
     await expect(page.locator('#complianceCustomFrom')).toBeVisible();
     await expect(page.locator('#complianceCustomTo')).toBeVisible();
+
+    // A valid range, picked through the calendar popup (locale-independent):
+    // the button comes alive, the reason goes away — and STILL nothing fetched.
+    const from = addDays(new Date(), -10);
+    const to = addDays(new Date(), -1);
+    await page.locator('.compliance-filters__custom-range mat-datepicker-toggle button').click();
+    await selectDateRangeOnNewDatePicker(
+      page,
+      from.getFullYear(), from.getMonth() + 1, from.getDate(),
+      to.getFullYear(), to.getMonth() + 1, to.getDate(),
+    );
+    await expect(button).toBeEnabled();
+    await expect(page.locator('#compliancePeriodError')).toHaveCount(0);
+    await expect(placeholder).toBeVisible();
+    expect(requests).toBe(0);
+
+    // The commit: exactly one Oversigt fetch, and the placeholder is gone.
+    const committed = complianceResponse(page, 'overview');
+    await button.click();
+    expect((await committed).ok()).toBeTruthy();
+    await expect(placeholder).toHaveCount(0);
+    await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
+    expect(requests).toBe(1);
+    // The button stays for as long as "Sæt periode" is selected — a committed
+    // range can be re-edited and re-committed.
+    await expect(button).toBeVisible();
+    await expect(button).toBeEnabled();
+  });
+
+  test('clicking Oversigt resets all six filters to their defaults and renders the overview (#1185)', async ({ page }) => {
+    // A tag to select, created up front through the admin API: shard `s`
+    // seeds no SQL, and a reset that has nothing to undo proves nothing.
+    await page.goto(BASE_URL);
+    const token = await loginViaApi(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    expect(token).not.toBe('');
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const tagName = `zz-compl-reset-${rand}`;
+    const tagRes = await page.request.post(`${BASE_URL}/api/items-planning-pn/tags`, {
+      headers, data: { name: tagName },
+    });
+    expect(tagRes.ok()).toBeTruthy();
+
+    await goToCompliancePage(page);
+    await expectDefaultFilters(page);
+
+    // --- Into Detaljer, and away from every default the shard can reach ----
+    // Property/calendar/employee need seeded rows this shard does not have;
+    // tag, status (enabled only outside Oversigt) and period are the three
+    // that can be moved deterministically. Each change auto-fetches — waited
+    // for by response, so nothing is still debouncing when Oversigt is
+    // clicked and the request count below is not racing anything.
+    const detailsEntry = complianceResponse(page, 'index');
+    await page.locator('#complianceMode-details').click();
+    await detailsEntry;
+
+    const tagRefetch = complianceResponse(page, 'index');
+    await selectOptionByLabel(page, 'complianceTagFilter', tagName);
+    await page.keyboard.press('Escape');
+    await tagRefetch;
+    await expect(page.locator('#complianceTagFilter .ng-value-label')).toHaveText(new RegExp(`^\\s*${escapeRegExp(tagName)}\\s*$`));
+
+    const statusRefetch = complianceResponse(page, 'index');
+    await selectOptionByLabel(page, 'complianceFilterStatus', 'Alle opgaver');
+    await statusRefetch;
+    await expect(page.locator('#complianceFilterStatus .ng-value-label')).toHaveText(/^\s*Alle opgaver\s*$/);
+
+    // "Sæt periode" last: it does NOT fetch (the range is staged), it swaps
+    // the result for the placeholder, and it is the one state with a custom
+    // range and a fetch button for the reset to clear.
+    await selectOptionByLabel(page, 'complianceFilterPeriod', 'Sæt periode');
+    await expect(page.locator('#complianceEmptyState')).toBeVisible();
+    await expect(page.locator('.compliance-filters__custom-range')).toBeVisible();
+    await expect(page.locator('#complianceShowReportBtn')).toBeVisible();
+
+    // --- The reset -------------------------------------------------------
+    // ONE `/overview` POST. Scoped to the aggregation endpoint on purpose: the
+    // Detaljer child may fire (and cancel) a last `/index` while the ngSwitch
+    // swaps it out (#1185 pitfall 3), and the reset also reloads the
+    // property-scoped reference lists — neither is what is being counted.
+    let overviewRequests = 0;
+    page.on('request', r => {
+      if (r.url().includes('/api/backend-configuration-pn/compliance-report/overview')
+        && r.method() === 'POST') {
+        overviewRequests++;
+      }
+    });
+    const reset = complianceResponse(page, 'overview');
+    await page.locator('#complianceMode-overview').click();
+    expect((await reset).ok()).toBeTruthy();
+
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'false');
+    await expectDefaultFilters(page);
+    // The overview rendered automatically — no placeholder, no second gesture.
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
+    await expect(page.locator('#compliancePagination')).toHaveCount(0);
+    expect(overviewRequests).toBe(1);
+
+    // --- Pressing Oversigt while ALREADY in Oversigt resets too -----------
+    // "Uanset hvor der trykkes på Oversigt": the active button is not inert.
+    const presetRefetch = complianceResponse(page, 'overview');
+    await selectOptionByLabel(page, 'complianceFilterPeriod', '3 mdr.');
+    await presetRefetch;
+    await expect(page.locator('#complianceFilterPeriod .ng-value-label')).toHaveText(/^\s*3 mdr\.\s*$/);
+
+    const resetAgain = complianceResponse(page, 'overview');
+    await page.locator('#complianceMode-overview').click();
+    expect((await resetAgain).ok()).toBeTruthy();
+    await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');
+    await expectDefaultFilters(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
   });
 
   test('the tag filter is multi-select and labels the selection "{first} +{n-1}"', async ({ page }) => {
@@ -654,7 +893,10 @@ test.describe.serial('Compliance page shell — non-admin access (#1160 decision
       .waitFor({ state: 'visible', timeout: 60000 });
     await expect(page.locator('#complianceFilterStatus')).toBeVisible();
     await expect(page.locator('#complianceFilterPeriod')).toBeVisible();
-    await expect(page.locator('#complianceShowReportBtn')).toBeVisible();
+    await expect(page.locator('#complianceDownloadBtn')).toBeVisible();
+    // #1185: no fetch button outside "Sæt periode" — for a non-admin exactly
+    // as for the admin (the button is a period commit, not a permission).
+    await expect(page.locator('#complianceShowReportBtn')).toHaveCount(0);
 
     // ...and so did the mode toggle, in Oversigt, with no admin-only branch.
     await expect(page.locator('#complianceMode-overview')).toHaveAttribute('aria-pressed', 'true');

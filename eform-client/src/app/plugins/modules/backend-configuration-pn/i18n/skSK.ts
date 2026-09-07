@@ -610,8 +610,6 @@ export const skSK = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivovať / deaktivovať',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivácia stiahne otvorené výskyty z aplikácie. Dokončené výskyty a už zozbierané údaje zostávajú zachované.',
-  'Update table': 'Aktualizovať tabuľku',
-  'Select filters and click Update table': 'Vyberte filtre a kliknite na Aktualizovať tabuľku',
   'Compliance overview': 'Prehľad',
   'Compliance details': 'Detaily',
   'Compliance report': 'Správa',
@@ -752,4 +750,7 @@ export const skSK = {
   'Image {{index}}': 'Obrázok {{index}}',
   'PDF preview': 'Náhľad PDF',
   'Export failed': 'Export zlyhal',
+  'Update period': 'Aktualizovať obdobie',
+  'Select a period and click Update period': 'Vyberte obdobie a kliknite na Aktualizovať obdobie.',
+  'Change a filter or click Overview to load the table': 'Zmeňte filter alebo kliknite na Prehľad pre načítanie tabuľky.',
 };

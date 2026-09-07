@@ -36,24 +36,30 @@ import { LoginPage } from '../../../Page objects/Login.page';
 const BASE_URL = 'http://localhost:4200';
 const PAGE_URL = `${BASE_URL}/plugins/backend-configuration-pn/compliance-report`;
 
+/**
+ * Lands in Rapport with the report ALREADY fetched. The default preset is
+ * "År til dato", and under #1185 there is no fetch button outside "Sæt
+ * periode": the page fetched Oversigt on entry, and the switch to Rapport
+ * replays that trigger to the recreated child, which queries
+ * `eform-columns` on its own. The response is awaited on the mode click.
+ */
 async function goToRapport(page: Page): Promise<void> {
   await page.goto(BASE_URL);
   await new LoginPage(page).login();
   await page.waitForTimeout(2000);
   await page.goto(PAGE_URL);
   await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-  await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
-}
-
-async function fetchReport(page: Page): Promise<void> {
   const response = page.waitForResponse(
     (r) => r.url().includes('/compliance-report/eform-columns'),
     { timeout: 60000 },
   );
-  await page.locator('#complianceShowReportBtn').click();
+  await page.locator('#complianceMode-report').click();
+  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
   await response;
-  // The shell's spinner replaces the view while `loading` is true.
+}
+
+/** The report has rendered: the shell's spinner replaces the view while `loading` is true. */
+async function awaitRapportRendered(page: Page): Promise<void> {
   await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', {
     timeout: 60000,
   });
@@ -69,12 +75,13 @@ test.describe('Compliance — Rapport view', () => {
     // and the placeholder is gone to begin with. `setMode('report')`
     // deliberately PRESERVES `reportVisible` (a mode switch must keep replaying
     // or the recreated child renders nothing), so by the time Rapport is on
-    // screen the un-fetched state is already unreachable — and the mounted
-    // child has received the replayed trigger and queried on its own. Asserting
-    // an empty pre-fetch state here would fail deterministically.
+    // screen the un-fetched state is already unreachable — the mounted child
+    // has received the replayed trigger and queried on its own (#1185: there
+    // is no button to press outside "Sæt periode"). Asserting an empty
+    // pre-fetch state here would fail deterministically.
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
 
-    await fetchReport(page);
+    await awaitRapportRendered(page);
 
     const meta = page.locator('#complianceReportMeta');
     await expect(meta).toBeVisible();
@@ -93,7 +100,7 @@ test.describe('Compliance — Rapport view', () => {
     page,
   }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
 
     // Guarded rather than asserted outright: shard `s` seeds no SQL, but other
     // suites in it create properties and tasks, so this installation MAY hold
@@ -113,7 +120,7 @@ test.describe('Compliance — Rapport view', () => {
 
   test('never renders the prototype placeholder heading', async ({ page }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
 
     // The prototype emitted the literal `Rapportoverskrift` on every
     // sub-report (compliance.js:1805). The heading is the template name.

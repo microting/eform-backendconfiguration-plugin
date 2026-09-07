@@ -610,8 +610,6 @@ export const slSL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiviraj / deaktiviraj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija umakne odprte pojavitve iz aplikacije. Dokončane pojavitve in že zbrani podatki se ohranijo.',
-  'Update table': 'Posodobi tabelo',
-  'Select filters and click Update table': 'Izberite filtre in kliknite Posodobi tabelo',
   'Compliance overview': 'Pregled',
   'Compliance details': 'Podrobnosti',
   'Compliance report': 'Poročilo',
@@ -752,4 +750,7 @@ export const slSL = {
   'Image {{index}}': 'Slika {{index}}',
   'PDF preview': 'Predogled PDF',
   'Export failed': 'Izvoz ni uspel',
+  'Update period': 'Posodobi obdobje',
+  'Select a period and click Update period': 'Izberite obdobje in kliknite Posodobi obdobje.',
+  'Change a filter or click Overview to load the table': 'Spremenite filter ali kliknite Pregled za nalaganje tabele.',
 };

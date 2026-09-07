@@ -16,6 +16,15 @@ export const COMPLIANCE_MODES: ComplianceMode[] = ['overview', 'details', 'repor
 /** Rows per page. Matches the prototype's PAGE_SIZE (compliance.js:3). */
 export const COMPLIANCE_PAGE_SIZE = 10;
 
+/**
+ * How long a filter change waits before it re-queries (#1185 decision D).
+ * The tag control is a `closeOnSelect=false` multi-select where every click is
+ * one `ngModelChange`; without this, ticking three tags is three requests.
+ * Only the FILTER path waits — `Opdater periode`, the mode toggle, paging and
+ * sorting fetch immediately.
+ */
+export const COMPLIANCE_FILTER_DEBOUNCE_MS = 300;
+
 export interface ComplianceFilterState {
   /** null = Alle ejendomme. */
   propertyId: number | null;
@@ -27,6 +36,12 @@ export interface ComplianceFilterState {
   siteIds: number[];
   status: ComplianceReportStatus;
   periodPreset: CompliancePeriodPreset;
+  /**
+   * The COMMITTED custom range — what `periodBounds` and the request use.
+   * The date pickers edit a separate draft (`customDraftFrom`/`customDraftTo`)
+   * that only becomes this on `commitCustomPeriod()` (#1185 decision C).
+   * Both null until a range has been committed.
+   */
   customFrom: Date | null;
   customTo: Date | null;
 }
@@ -35,6 +50,7 @@ export interface ComplianceFilterState {
  * Prototype defaults (Compliance.html:13-54): everything "all", status
  * `Ikke udførte opgaver`, period `År til dato`. Note the calendar view mode
  * being replaced defaults its period to '1' — the prototype wins (#1163 §6).
+ * These are also what `resetToOverview()` restores (#1185).
  */
 export function complianceInitialFilters(): ComplianceFilterState {
   return {
@@ -83,6 +99,10 @@ function toIsoDate(d: Date): string {
     .padStart(2, '0')}`;
 }
 
+function isOrderedRange(from: Date | null, to: Date | null): boolean {
+  return !!from && !!to && startOfDay(from) <= startOfDay(to);
+}
+
 /**
  * The whole state surface of the standalone Compliance page (#1163 §11).
  *
@@ -92,12 +112,24 @@ function toIsoDate(d: Date): string {
  * that both the displayed range and the query use (the prototype's own comment
  * at compliance.js:438-442 records what happens when there are two).
  *
- * The central contract is the blank-on-change state machine:
- *   - `setFilter()`   invalidates: page 1, showAll off, reportVisible false.
- *   - `setFilterSilently()` does NOT invalidate — it is the Angular stand-in
- *     for the prototype's "assign `.value` without dispatching `change`"
- *     bypass, used by the mode toggle and by #1164's drill-down. Getting this
- *     wrong makes the drill-down blank the page it just navigated to.
+ * The central contract is the auto-fetch state machine (#1185, which reversed
+ * #1163 §5's blank-on-change rule at the customer's request):
+ *   - `setFilter()`   re-queries the ACTIVE mode after a short debounce,
+ *     WITHOUT blanking first — the result on screen stays until the new one
+ *     lands. The one exception is `Sæt periode`: choosing it, and editing its
+ *     dates, only STAGES; the container shows the placeholder until
+ *     `commitCustomPeriod()` (the `Opdater periode` button) fetches.
+ *   - `setFilterSilently()` neither blanks nor fetches — it is the Angular
+ *     stand-in for the prototype's "assign `.value` without dispatching
+ *     `change`" bypass, used by #1164's drill-down. Getting this wrong makes
+ *     the drill-down re-query the page it just navigated to.
+ *   - `resetToOverview()` is what pressing `Oversigt` does, from anywhere:
+ *     every filter back to its default, then one Oversigt fetch.
+ *
+ * Known limitation (#1185 decision E): clicking the sidebar entry while
+ * already on the page is a router no-op (`onSameUrlNavigation: 'ignore'` in
+ * the core `app.routing.ts`), so it neither resets nor re-fetches; only the
+ * `Oversigt` mode button does.
  *
  * Provided by `ComplianceReportModule`, not in root: the page's state is per
  * lazy-module instance, and nothing outside the module has any business
@@ -126,7 +158,7 @@ export class ComplianceReportStateService {
    * shared trigger usable by #1164/#1165/#1167 without each of them
    * re-implementing it.
    *
-   * It cannot double-fetch on the ordinary `Opdater tabel` path: a child that
+   * It cannot double-fetch on the ordinary filter-change path: a child that
    * is already subscribed gets the live emission only (a ReplaySubject replays
    * to NEW subscribers at subscribe time, not to existing ones), and
    * `requestFetch()` never re-creates the children because `reportVisible`
@@ -138,14 +170,15 @@ export class ComplianceReportStateService {
   private sortDsc = true;
 
   /**
-   * The property the Oversigt drill-down forced, and the status value that was
-   * in place before it did. Both are restored on the way back to Oversigt, and
-   * both only when they still hold the value the drill-down wrote (#1163 §10.1)
-   * — a user who deliberately changed either while drilled in keeps their
-   * choice.
+   * The STAGED custom range (#1185 decision C). The date pickers write here;
+   * nothing reads it for a query. `commitCustomPeriod()` copies it into
+   * `filters.customFrom/customTo`, which is what `periodBounds` derives from.
    */
-  private drilledPropertyId: number | null = null;
-  private preDrillStatus: ComplianceReportStatus | null = null;
+  private draftCustomFrom: Date | null = null;
+  private draftCustomTo: Date | null = null;
+
+  /** The pending debounced filter fetch, if any. See `scheduleFetch()`. */
+  private pendingFilterFetch: ReturnType<typeof setTimeout> | null = null;
 
   readonly filters$: Observable<ComplianceFilterState> = this.filtersSubject.asObservable();
   readonly mode$: Observable<ComplianceMode> = this.modeSubject.asObservable();
@@ -155,14 +188,16 @@ export class ComplianceReportStateService {
   readonly total$: Observable<number> = this.totalSubject.asObservable();
   readonly loading$: Observable<boolean> = this.loadingSubject.asObservable();
   /**
-   * Fires when `Opdater tabel` is pressed (or a page/sort change re-queries),
-   * and replays the last such trigger to a subscriber that arrives late — see
+   * Fires whenever the active view must (re-)query: a debounced filter change,
+   * `Opdater periode`, the `Oversigt` reset, page entry, or a page/sort change.
+   * It replays the last such trigger to a subscriber that arrives late — see
    * `fetchRequestedSubject`.
    *
-   * The `reportVisible` gate is what keeps the replay honest: `setFilter()`
-   * invalidates by setting `reportVisible` false but cannot erase the buffered
-   * value, so without this filter a child created while the report is hidden
-   * would replay a stale trigger and fetch for a result the user just blanked.
+   * The `reportVisible` gate is what keeps the replay honest: staging a
+   * `Sæt periode` range (and `enterPage()` in Detaljer/Rapport) hides the
+   * report but cannot erase the buffered value, so without this filter a child
+   * created while the report is hidden would replay a stale trigger and fetch
+   * for a result the user cannot see yet.
    */
   readonly fetchRequested$: Observable<void> = this.fetchRequestedSubject
     .asObservable()
@@ -195,8 +230,10 @@ export class ComplianceReportStateService {
   // -------------------------------------------------------------------
 
   /**
-   * `null` only for an incomplete custom range, which means "no period filter"
-   * and renders the period label empty (compliance.js:464-479, :481-490).
+   * `null` only for an incomplete COMMITTED custom range — i.e. `Sæt periode`
+   * chosen but `Opdater periode` not yet pressed — which means "no period
+   * filter" and renders the period label empty (compliance.js:464-479,
+   * :481-490). The draft the pickers are editing never shows here.
    *
    * Fixed presets and YTD are bounded ABOVE by today. This is a deliberate
    * change from the calendar view mode, which extends `dateTo` into the future
@@ -228,17 +265,41 @@ export class ComplianceReportStateService {
     return this.periodBounds?.to ?? null;
   }
 
+  /** What the `Sæt periode` date pickers show and edit. Staged, not queried. */
+  get customDraftFrom(): Date | null {
+    return this.draftCustomFrom;
+  }
+
+  get customDraftTo(): Date | null {
+    return this.draftCustomTo;
+  }
+
   /**
-   * False while a `Sæt periode` range is missing a bound or runs backwards.
-   * Gates `Opdater tabel` (the prototype's modal silently `return`s instead —
-   * compliance.js:2012-2027, defect 1 in #1163 §9).
+   * Validity of the range the user is EDITING: false while a `Sæt periode`
+   * draft is missing a bound or runs backwards. Gates `Opdater periode` and
+   * drives `#compliancePeriodError` (the prototype's modal silently `return`s
+   * instead — compliance.js:2012-2027, defect 1 in #1163 §9). Always true for
+   * a fixed preset.
    */
   get isPeriodValid(): boolean {
+    if (this.filters.periodPreset !== 'custom') {
+      return true;
+    }
+    return isOrderedRange(this.draftCustomFrom, this.draftCustomTo);
+  }
+
+  /**
+   * Validity of the range a query would USE: the committed one. False only in
+   * custom mode before a range has been committed (or with a committed range
+   * that is incomplete/backwards, reachable through `setFilter` only). This is
+   * what gates every fetch; `isPeriodValid` gates the commit.
+   */
+  get isCommittedPeriodValid(): boolean {
     const {periodPreset, customFrom, customTo} = this.filters;
     if (periodPreset !== 'custom') {
       return true;
     }
-    return !!customFrom && !!customTo && startOfDay(customFrom) <= startOfDay(customTo);
+    return isOrderedRange(customFrom, customTo);
   }
 
   // -------------------------------------------------------------------
@@ -264,13 +325,13 @@ export class ComplianceReportStateService {
       sort: this.sortKey,
       isSortDsc: this.sortDsc,
     };
-    // `periodBounds` is null for exactly one input: an INCOMPLETE `Sæt periode`
-    // range, which #1163 defines as "no period filter". The keys are OMITTED
-    // rather than filled with today — substituting today fabricated a one-day
-    // window that looks like a legitimate result. `requestFetch()` still
-    // refuses to fire in this state, but `requestModel` is a public getter the
-    // children read directly and #1169's export path reads it outside that
-    // gate, so the shape has to be honest on its own.
+    // `periodBounds` is null for exactly one input: an INCOMPLETE committed
+    // `Sæt periode` range, which #1163 defines as "no period filter". The keys
+    // are OMITTED rather than filled with today — substituting today
+    // fabricated a one-day window that looks like a legitimate result.
+    // `requestFetch()` still refuses to fire in this state, but `requestModel`
+    // is a public getter the children read directly and #1169's export path
+    // reads it outside that gate, so the shape has to be honest on its own.
     //
     // Omitting is what the server's `DateTime` (non-nullable) can represent:
     // an absent key deserialises to `default(DateTime)`, so the query bounds
@@ -284,48 +345,119 @@ export class ComplianceReportStateService {
   }
 
   // -------------------------------------------------------------------
-  // The blank-on-change state machine (#1163 §5)
+  // The auto-fetch state machine (#1185)
   // -------------------------------------------------------------------
 
   /**
-   * The invalidating path. Every one of the seven filter controls goes through
-   * here: reset to page 1, drop "show all", hide the report (which blanks the
-   * container back to `Vælg filtre og klik Opdater tabel.` and clears the
-   * pagination) — and issue NO request. Only `requestFetch()` fetches.
+   * The user-driven path. Every one of the filter controls goes through here:
+   * apply the patch, reset to page 1, drop "show all" — and then either
+   *
+   *  - re-query the active mode after `COMPLIANCE_FILTER_DEBOUNCE_MS`, leaving
+   *    `reportVisible` TRUE so the mounted child (whose `switchMap` cancels
+   *    any in-flight request) keeps the old rows on screen until the new ones
+   *    land. `total` and `loading` are left alone for the same reason: the
+   *    pagination chrome and the spinner belong to the child that is still
+   *    mounted, and it re-reports both; or
+   *  - when the committed period cannot be queried — i.e. `Sæt periode` is
+   *    selected and no range has been committed yet — blank to the placeholder
+   *    and fetch NOTHING until `commitCustomPeriod()`. That is the one gesture
+   *    that still waits for a button (#1185 decision C).
+   *
+   * Switching the preset TO `custom` deliberately clears the committed range:
+   * the previously committed dates would otherwise be queried by the next
+   * filter change while the user is still typing new ones. The draft keeps
+   * whatever it held, so re-picking `Sæt periode` offers the last range again.
+   * A patch that carries `customFrom`/`customTo` writes them as COMMITTED (and
+   * mirrors them into the draft) — that is the programmatic shape the specs
+   * use; the filter bar itself goes through `stageCustomPeriod()`.
    */
   setFilter(patch: Partial<ComplianceFilterState>): void {
-    this.filtersSubject.next({...this.filters, ...patch});
+    const prev = this.filters;
+    const next: ComplianceFilterState = {...prev, ...patch};
+    const patchHasDates = 'customFrom' in patch || 'customTo' in patch;
+    if (next.periodPreset === 'custom' && prev.periodPreset !== 'custom' && !patchHasDates) {
+      next.customFrom = null;
+      next.customTo = null;
+    }
+    if (patchHasDates) {
+      this.draftCustomFrom = next.customFrom;
+      this.draftCustomTo = next.customTo;
+    }
+    this.filtersSubject.next(next);
     this.pageSubject.next(0);
     this.showAllSubject.next(false);
-    this.totalSubject.next(0);
-    this.reportVisibleSubject.next(false);
-    // `loading` belongs to the child that is about to be UNMOUNTED by
-    // `reportVisible` going false. A child torn down mid-flight cannot be
-    // relied on to run a `finalize`/complete path, so nothing would ever call
-    // `setLoading(false)` again — and `canFetch` is
-    // `isPeriodValid && !loading`, so `Opdater tabel` would be dead until a
-    // reload. The shell owns both this call and the unmounting, so the reset
-    // belongs here, next to the `total` reset it was already inconsistent
-    // with.
-    this.loadingSubject.next(false);
+
+    if (!this.isCommittedPeriodValid) {
+      this.blankUntilCommit();
+      return;
+    }
+    this.scheduleFetch();
   }
 
   /**
-   * The bypass path. Updates filter values WITHOUT invalidating, so an already
-   * fetched result survives. Used by the mode toggle's drill-down unwind and by
-   * #1164's `drillIntoProperty`. Never call it from a template's
-   * `(ngModelChange)` — a user-driven change must invalidate.
+   * The bypass path. Updates filter values WITHOUT fetching or blanking, so an
+   * already fetched result survives. Used by #1164's `drillIntoProperty`,
+   * whose mode switch then re-queries through the replay. Never call it from
+   * a template's `(ngModelChange)` — a user-driven change must re-query.
    */
   setFilterSilently(patch: Partial<ComplianceFilterState>): void {
     this.filtersSubject.next({...this.filters, ...patch});
   }
 
   /**
-   * Mode switches deliberately preserve `reportVisible` (compliance.js:1516-1545
-   * never calls onFilterChange), so a user fetches once and then flips between
-   * Oversigt / Detaljer / Rapport freely.
+   * `Sæt periode` date-picker writes. Staged only: no query, no blank, no
+   * change to what `periodBounds` reports. `undefined` leaves a bound as it
+   * was; `null` clears it.
+   */
+  stageCustomPeriod(draft: {from?: Date | null; to?: Date | null}): void {
+    if (draft.from !== undefined) {
+      this.draftCustomFrom = draft.from;
+    }
+    if (draft.to !== undefined) {
+      this.draftCustomTo = draft.to;
+    }
+  }
+
+  /**
+   * `Opdater periode`. Copies the staged range into the committed one and
+   * fetches — immediately, no debounce; a button click is one gesture. A no-op
+   * outside custom mode or while the draft is invalid (the button is disabled
+   * in both states, this is the belt to that brace).
+   */
+  commitCustomPeriod(): void {
+    if (this.filters.periodPreset !== 'custom' || !this.isPeriodValid) {
+      return;
+    }
+    this.filtersSubject.next({
+      ...this.filters,
+      customFrom: this.draftCustomFrom,
+      customTo: this.draftCustomTo,
+    });
+    this.requestFetch();
+  }
+
+  /**
+   * A plain view-mode switch: Oversigt ↔ Detaljer ↔ Rapport with the filters
+   * and `reportVisible` untouched (compliance.js:1516-1545 never calls
+   * onFilterChange), so the child the `ngSwitch` creates re-queries the SAME
+   * filters through the replay. Pressing the `Oversigt` button is NOT this —
+   * it is `resetToOverview()`.
    */
   setMode(mode: ComplianceMode): void {
+    // A filter change followed within the debounce by a mode switch is ONE
+    // gesture's worth of requests, not two — but only while the report is
+    // VISIBLE: then the switch recreates the child, whose late subscription
+    // replays the last trigger against `requestModel` as it stands at fetch
+    // time, the new filters included, so the pending filter fetch would only
+    // issue the same query twice. While the report is HIDDEN (the B1 re-entry
+    // state: `enterPage()` in Detaljer/Rapport, no child mounted, the gate on
+    // `fetchRequested$` closed) nothing replays, and the pending timer's
+    // `requestFetch()` is the one thing that will un-hide the report. It must
+    // survive the mode switch, or a filter change made from the placeholder
+    // and followed by a mode click is swallowed outright.
+    if (this.reportVisible) {
+      this.cancelScheduledFetch();
+    }
     const next = COMPLIANCE_MODES.indexOf(mode) !== -1 ? mode : 'overview';
     this.modeSubject.next(next);
     this.pageSubject.next(0);
@@ -338,53 +470,52 @@ export class ComplianceReportStateService {
     // left standing until the new child calls `setTotalCount`. Reset it so the
     // chrome shows `Ingen resultater` until the new child reports in.
     this.totalSubject.next(0);
-    // Same reasoning as `setFilter`: the ngSwitch destroys the outgoing child,
-    // whose in-flight request may never reach a `setLoading(false)`.
-    // `reportVisible` deliberately stays true here, so the incoming child
-    // mounts, receives the replayed trigger and sets `loading` itself.
+    // The ngSwitch destroys the outgoing child, whose in-flight request may
+    // never reach a `setLoading(false)`. `reportVisible` deliberately stays
+    // true here, so the incoming child mounts, receives the replayed trigger
+    // and sets `loading` itself.
     this.loadingSubject.next(false);
-
-    if (next === 'overview' && this.drilledPropertyId !== null) {
-      const patch: Partial<ComplianceFilterState> = {};
-      if (this.filters.propertyId === this.drilledPropertyId) {
-        patch.propertyId = null;
-      }
-      // The drill-down forces 'all'; restore only if it is still 'all'.
-      if (this.filters.status === 'all' && this.preDrillStatus !== null) {
-        patch.status = this.preDrillStatus;
-      }
-      if (Object.keys(patch).length > 0) {
-        this.setFilterSilently(patch);
-      }
-      this.drilledPropertyId = null;
-      this.preDrillStatus = null;
-    }
   }
 
   /**
-   * Oversigt → Detaljer for one property (#1164). Forces status to `all`
-   * because Oversigt counts done and not-done together, and a drill-down that
-   * showed only the open subset would not add up to the number just clicked.
-   * Both writes are silent, so the result already on screen survives.
+   * Oversigt → Detaljer for one property (#1164). The property is written
+   * silently, so the result already on screen survives until the Detaljer
+   * child re-queries through the replay; the status is NOT touched (#1185):
+   * Oversigt's percentage is built on `Ikke udførte opgaver`, and the customer
+   * wants the drill-down to list exactly those, not `Alle opgaver`. The rows
+   * will therefore not add up to the row's `dueTotal` — that is intended, do
+   * not re-add `status: 'all'` to make the numbers match.
+   *
+   * There is no bookkeeping to unwind on the way back: pressing `Oversigt` is
+   * `resetToOverview()`, which restores every filter regardless of who wrote
+   * it.
    */
   drillIntoProperty(propertyId: number): void {
-    // Capture the pre-drill status ONLY when no drill is already in effect.
-    // A second drill without an intervening Oversigt visit would otherwise
-    // record the 'all' that the FIRST drill forced, and the unwind would
-    // restore 'all' instead of the user's own choice. Not reachable through
-    // today's UI (drilling requires being in Oversigt, which unwinds on the
-    // way in), but #1164 builds directly on this method.
-    if (this.drilledPropertyId === null) {
-      this.preDrillStatus = this.filters.status;
-    }
-    this.drilledPropertyId = propertyId;
-    this.setFilterSilently({propertyId, status: 'all'});
+    this.setFilterSilently({propertyId});
     this.setMode('details');
   }
 
-  /** Test/diagnostic accessor — the drill-down is otherwise opaque. */
-  get drilledProperty(): number | null {
-    return this.drilledPropertyId;
+  /**
+   * What pressing `Oversigt` does, from Detaljer, from Rapport, or while
+   * already in Oversigt (#1185): every filter back to `complianceInitialFilters()`
+   * — Alle ejendomme / Alle kalendere / Alle tags / Ikke udførte opgaver /
+   * Alle medarbejdere / År til dato — any staged or committed custom range and
+   * the sort dropped, mode `overview`, then ONE Oversigt fetch.
+   *
+   * The fetch fires while the outgoing Detaljer/Rapport child is still
+   * subscribed (the `ngSwitch` swap happens on the next change-detection
+   * pass); each child guards its pipeline on `state.mode === <own>`, so that
+   * child drops the trigger and only the incoming Oversigt child queries.
+   */
+  resetToOverview(): void {
+    this.cancelScheduledFetch();
+    this.filtersSubject.next(complianceInitialFilters());
+    this.draftCustomFrom = null;
+    this.draftCustomTo = null;
+    this.sortKey = null;
+    this.sortDsc = true;
+    this.setMode('overview');
+    this.requestFetch();
   }
 
   // -------------------------------------------------------------------
@@ -392,7 +523,8 @@ export class ComplianceReportStateService {
   // -------------------------------------------------------------------
 
   /**
-   * Called once per VISIT, from the page component's `ngOnInit` (#1163 §6).
+   * Called once per VISIT, from the page component's `ngOnInit` (#1163 §6,
+   * kept by #1185 decision B1: entering the page is not "pressing Oversigt").
    *
    * The service is provided by the lazy `ComplianceReportModule`, and Angular
    * caches a lazy `NgModuleRef` for the lifetime of the app — so navigating
@@ -407,12 +539,14 @@ export class ComplianceReportStateService {
    *  - `overview`: auto-fetch once. One cheap server-side aggregation per
    *    property (#1162), and the prototype records the auto-fetch as a design
    *    choice (compliance.js:2371-2372).
-   *  - `details` / `report`: force the page back to its un-fetched state.
-   *    `reportVisible` false both shows the placeholder AND closes
-   *    `fetchRequested$`'s gate, which is what actually neutralises the
-   *    buffered trigger — the buffer itself cannot be erased. `total`/`page`
-   *    are cleared so the pagination chrome does not draw the previous visit's
-   *    `Viser 1-10 af N` before any new response lands.
+   *  - `details` / `report`: force the page back to its un-fetched state with
+   *    the previous visit's filters and mode preserved. `reportVisible` false
+   *    both shows the placeholder AND closes `fetchRequested$`'s gate, which
+   *    is what actually neutralises the buffered trigger — the buffer itself
+   *    cannot be erased. `total`/`page` are cleared so the pagination chrome
+   *    does not draw the previous visit's `Viser 1-10 af N` before any new
+   *    response lands. From there, any filter change re-queries (it goes
+   *    through `setFilter`, which fetches), and `Oversigt` resets.
    *
    * This is deliberately NOT wired into `setMode`: a mode switch WITHIN a
    * visit must keep replaying, or the recreated child renders nothing.
@@ -429,9 +563,15 @@ export class ComplianceReportStateService {
     this.loadingSubject.next(false);
   }
 
-  /** `Opdater tabel`. The only user gesture that fetches. */
+  /**
+   * Fetch NOW for the current filters: `Opdater periode`, the `Oversigt`
+   * reset, page entry, and the tail of a debounced filter change all end here.
+   * Supersedes any filter fetch still waiting on its debounce — one gesture,
+   * one request. Refuses while the committed period cannot be queried.
+   */
   requestFetch(): void {
-    if (!this.isPeriodValid) {
+    this.cancelScheduledFetch();
+    if (!this.isCommittedPeriodValid) {
       return;
     }
     this.pageSubject.next(0);
@@ -446,6 +586,11 @@ export class ComplianceReportStateService {
     if (!this.reportVisible) {
       return;
     }
+    // The immediate fetch below already reads the new filters; a filter fetch
+    // still waiting on its debounce would only issue the same query again.
+    // Cancelled AFTER the gate: while hidden nothing fetches here, so the
+    // pending filter fetch stays the one thing that un-hides the report.
+    this.cancelScheduledFetch();
     this.showAllSubject.next(false);
     this.pageSubject.next(Math.max(0, pageIndex));
     this.fetchRequestedSubject.next();
@@ -455,18 +600,22 @@ export class ComplianceReportStateService {
     if (!this.reportVisible) {
       return;
     }
+    // Same as setPage: the immediate fetch supersedes a pending filter fetch.
+    this.cancelScheduledFetch();
     this.showAllSubject.next(true);
     this.pageSubject.next(0);
     this.fetchRequestedSubject.next();
   }
 
-  /** Sorting does not invalidate — it re-queries the same filtered set. */
+  /** Sorting re-queries the same filtered set, immediately. */
   setSort(sort: ComplianceReportSortKey | null, isSortDsc: boolean): void {
     this.sortKey = sort;
     this.sortDsc = isSortDsc;
     if (!this.reportVisible) {
       return;
     }
+    // Same as setPage: the immediate fetch supersedes a pending filter fetch.
+    this.cancelScheduledFetch();
     this.pageSubject.next(0);
     this.fetchRequestedSubject.next();
   }
@@ -484,9 +633,52 @@ export class ComplianceReportStateService {
     this.totalSubject.next(Math.max(0, total ?? 0));
   }
 
-  /** Children report in-flight state so the shell can disable `Opdater tabel`. */
+  /**
+   * Children report in-flight state so the shell can show the spinner and
+   * disable `Opdater periode`.
+   */
   setLoading(loading: boolean): void {
     this.loadingSubject.next(loading);
+  }
+
+  // -------------------------------------------------------------------
+  // Debounced filter fetch
+  // -------------------------------------------------------------------
+
+  /**
+   * A `setTimeout` rather than `debounceTime` so that it can be CANCELLED by
+   * whatever fetches or blanks in the meantime: a tag click followed within
+   * 300 ms by `Oversigt` must produce the reset's one request, not two, and
+   * a tag click followed by `Sæt periode` must not un-blank the placeholder
+   * 300 ms later.
+   */
+  private scheduleFetch(): void {
+    this.cancelScheduledFetch();
+    this.pendingFilterFetch = setTimeout(() => {
+      this.pendingFilterFetch = null;
+      this.requestFetch();
+    }, COMPLIANCE_FILTER_DEBOUNCE_MS);
+  }
+
+  private cancelScheduledFetch(): void {
+    if (this.pendingFilterFetch !== null) {
+      clearTimeout(this.pendingFilterFetch);
+      this.pendingFilterFetch = null;
+    }
+  }
+
+  /**
+   * The placeholder state: `Sæt periode` is selected and nothing is committed.
+   * `reportVisible` false unmounts the child, which owns `loading` and may be
+   * torn down mid-flight without ever reaching `setLoading(false)` — and
+   * `canFetch` is `isPeriodValid && !loading`, so a stuck `true` would leave
+   * `Opdater periode` dead. The shell owns both the unmount and this reset.
+   */
+  private blankUntilCommit(): void {
+    this.cancelScheduledFetch();
+    this.reportVisibleSubject.next(false);
+    this.totalSubject.next(0);
+    this.loadingSubject.next(false);
   }
 
   // -------------------------------------------------------------------

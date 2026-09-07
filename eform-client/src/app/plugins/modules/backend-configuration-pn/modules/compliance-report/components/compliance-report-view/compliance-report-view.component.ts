@@ -5,7 +5,7 @@ import {Router} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {Subject, merge, of} from 'rxjs';
-import {catchError, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {
@@ -129,7 +129,7 @@ interface ComplianceReportRowVm {
  *  - read `requestModel` AT FETCH TIME, never cached;
  *  - report `setTotalCount()` back — it is load-bearing here, the filter bar's
  *    `canDownload` gates the Download button on `state.total > 0` — and
- *    `setLoading()` so the shell can disable `Opdater tabel`.
+ *    `setLoading()` so the shell can show the spinner and disable `Opdater periode`.
  *
  * THE RULE OF THIS VIEW: a cell is looked up by its column's KEY
  * (`complianceAnswerText`), never by position and never by zipping headers
@@ -198,6 +198,11 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
 
     merge(this.state.fetchRequested$, this.refresh$)
       .pipe(
+        // Drop triggers meant for another view (#1185). `resetToOverview()`
+        // emits while THIS child is still subscribed — the ngSwitch only swaps
+        // it out on the next change-detection pass — so without this guard the
+        // outgoing child would issue a request that is cancelled on destroy.
+        rxFilter(() => this.state.mode === 'report'),
         tap(() => {
           // A re-render detaches the row the confirm dialog was opened from.
           this.closeDeleteDialog();
@@ -217,7 +222,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
         ),
         // Runs on unsubscribe too — i.e. when takeUntil completes the stream on
         // destroy — so a request still in flight when the ngSwitch tears this
-        // component down cannot leave `loading` stuck true and `Opdater tabel`
+        // component down cannot leave `loading` stuck true and `Opdater periode`
         // permanently disabled.
         finalize(() => this.state.setLoading(false)),
         takeUntil(this.destroy$),
@@ -238,8 +243,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.closeDeleteDialog();
     // No `setLoading(false)` here on purpose. `loading` is the SHELL's flag: it
-    // resets it in `setMode()`, `setFilter()` and `enterPage()`, which covers
-    // every transition that unmounts this component, and for the ordinary
+    // resets it in `setMode()`, `enterPage()` and `blankUntilCommit()` (the one
+    // filter branch that unmounts — `setFilter()` itself never does), which
+    // covers every transition that unmounts this component, and for the ordinary
     // teardown the `finalize` above already clears it (it sits UPSTREAM of
     // `takeUntil`, so completing the stream here unsubscribes through it and
     // fires the callback). Both siblings omit it for the same reason.
@@ -673,9 +679,10 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    *
    * The cost, accepted: a full navigation discards the fetched result. The
    * filters survive (the state service lives on the cached lazy module ref),
-   * but `enterPage()` forces Rapport back to its un-fetched state, so returning
-   * costs one `Opdater tabel`. Restoring the modal is a one-line change once the
-   * row DTO carries a site id.
+   * but `enterPage()` forces Rapport back to its un-fetched state, so the
+   * return lands on the placeholder until a filter change re-queries it (or
+   * `Oversigt` resets). Restoring the modal is a one-line change once the row
+   * DTO carries a site id.
    */
   onEdit(row: ComplianceReportRowVm): void {
     if (!this.canEdit(row)) {

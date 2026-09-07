@@ -610,8 +610,6 @@ export const svSE = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivera / inaktivera',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Inaktivering drar tillbaka de öppna förekomsterna från appen. Slutförda förekomster och de data som redan samlats in bevaras.',
-  'Update table': 'Uppdatera tabell',
-  'Select filters and click Update table': 'Välj filter och klicka på Uppdatera tabell',
   'Compliance overview': 'Översikt',
   'Compliance details': 'Detaljer',
   'Compliance report': 'Rapportera',
@@ -752,4 +750,7 @@ export const svSE = {
   'Image {{index}}': 'Bild {{index}}',
   'PDF preview': 'PDF-förhandsgranskning',
   'Export failed': 'Exporten misslyckades',
+  'Update period': 'Uppdatera period',
+  'Select a period and click Update period': 'Välj en period och klicka på Uppdatera period.',
+  'Change a filter or click Overview to load the table': 'Ändra ett filter eller klicka på Översikt för att hämta tabellen.',
 };

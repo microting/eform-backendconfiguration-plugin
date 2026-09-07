@@ -58,12 +58,11 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Land on a populated Oversigt rather than "click this button to see
-    // anything": Oversigt is one cheap server-side aggregation per property
-    // (#1162), and the prototype's own comment (compliance.js:2371-2372)
-    // records the auto-fetch as a design choice. Exactly once, only in
-    // Oversigt, and only here — filter datasets resolving asynchronously must
-    // not re-trigger it.
+    // Land on a populated Oversigt rather than a placeholder: Oversigt is one
+    // cheap server-side aggregation per property (#1162), and the prototype's
+    // own comment (compliance.js:2371-2372) records the auto-fetch as a design
+    // choice. Exactly once, only in Oversigt, and only here — filter datasets
+    // resolving asynchronously must not re-trigger it.
     //
     // The Detaljer/Rapport half is NOT just "skip the fetch". The state
     // service lives on the lazy module, whose NgModuleRef Angular caches for
@@ -72,7 +71,9 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
     // trigger. Skipping `requestFetch()` alone would still mount the child
     // over a true `reportVisible` and let the replay fire an unbounded row
     // query with no user gesture, which #1163 §6 forbids. `enterPage()` owns
-    // both branches; see its comment.
+    // both branches; see its comment. Entering the page is deliberately NOT
+    // the `Oversigt` reset (#1185 decision B1) — the previous visit's filters
+    // and mode survive re-entry.
     this.state.enterPage();
   }
 
@@ -86,8 +87,15 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
   }
 
   onModeChange(mode: ComplianceMode): void {
-    // Never routes through setFilter: a mode switch preserves reportVisible, so
-    // one fetch serves all three modes.
+    // Pressing `Oversigt` — from Detaljer, from Rapport, or while already in
+    // Oversigt — is a RESET (#1185): every filter back to its default and one
+    // Oversigt fetch. The other two buttons are plain mode switches that keep
+    // the filters and `reportVisible`, so the child the ngSwitch creates
+    // re-queries the same filters through the replay.
+    if (mode === 'overview') {
+      this.state.resetToOverview();
+      return;
+    }
     this.state.setMode(mode);
   }
 

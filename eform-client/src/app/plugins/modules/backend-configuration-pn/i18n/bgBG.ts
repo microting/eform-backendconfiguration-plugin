@@ -610,8 +610,6 @@ export const bgBG = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Активиране / деактивиране',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивирането оттегля отворените събития от приложението. Завършените събития и вече събраните данни се запазват.',
-  'Update table': 'Актуализиране на таблицата',
-  'Select filters and click Update table': 'Изберете филтри и щракнете върху „Актуализиране на таблицата“',
   'Compliance overview': 'Общ преглед',
   'Compliance details': 'Детайли',
   'Compliance report': 'Доклад',
@@ -752,4 +750,7 @@ export const bgBG = {
   'Image {{index}}': 'Изображение {{index}}',
   'PDF preview': 'Преглед на PDF',
   'Export failed': 'Експортирането е неуспешно',
+  'Update period': 'Актуализиране на периода',
+  'Select a period and click Update period': 'Изберете период и щракнете върху „Актуализиране на периода“.',
+  'Change a filter or click Overview to load the table': 'Променете филтър или щракнете върху „Общ преглед“, за да заредите таблицата.',
 };

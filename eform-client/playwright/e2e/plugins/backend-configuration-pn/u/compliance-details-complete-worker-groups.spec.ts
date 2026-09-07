@@ -162,14 +162,21 @@ async function selectPeriodCoveringSeed(page: Page): Promise<void> {
   await page.waitForTimeout(300);
 }
 
-/** `Opdater tabel` — the ONLY control that fetches; in Detaljer it hits `/index`. */
+/**
+ * `Opdater periode` — commits the staged custom range (#1185). Every other
+ * filter change auto-fetches the active mode; "Sæt periode" is the one
+ * exception, and the button exists ONLY while it is selected (which
+ * `selectPeriodCoveringSeed` guarantees). In Detaljer the commit hits `/index`.
+ */
 async function showDetails(page: Page): Promise<void> {
+  const button = page.locator('#complianceShowReportBtn');
+  await expect(button).toHaveText(/^\s*Opdater periode\s*$/);
   const response = page.waitForResponse(
     r => r.url().includes('/api/backend-configuration-pn/compliance-report/index')
       && r.request().method() === 'POST',
     { timeout: 60000 },
   );
-  await page.locator('#complianceShowReportBtn').click();
+  await button.click();
   await response;
   await page.waitForTimeout(500);
 }
@@ -181,13 +188,14 @@ async function showDetails(page: Page): Promise<void> {
  */
 async function openSeededDetails(page: Page): Promise<void> {
   await goToCompliancePage(page);
+  // The property change auto-fetches Oversigt (#1185) — harmless here, it is
+  // superseded by the custom period staged next, which fetches NOTHING until
+  // the button commits it.
   await selectSeededProperty(page);
   await selectPeriodCoveringSeed(page);
-  // Switch mode BEFORE fetching: the status control is disabled in Oversigt.
-  // The page auto-fetches on entry and a mode switch replays that trigger, so
-  // there are two identical `/index` requests either way; the assertions
-  // below tolerate that (`showDetails` waits for its own request, then the
-  // row assertions retry until the last response has rendered).
+  // Switch mode BEFORE committing: the status control is disabled in Oversigt,
+  // and the commit fetches whichever mode is active. `showDetails` waits for
+  // its own `/index` response, then the row assertions retry until it rendered.
   await page.locator('#complianceMode-details').click();
   await expect(page.locator('#complianceMode-details')).toHaveAttribute('aria-pressed', 'true');
   await showDetails(page);

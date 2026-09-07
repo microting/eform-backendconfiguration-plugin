@@ -34,12 +34,26 @@
     [attr.aria-label]="'Compliance' | translate"
     [attr.aria-busy]="state.loading"
   >
+    <!--
+      Reachable in two states only (#1185), and the wording follows which:
+        - "Sæt periode" selected with no range committed yet — the Opdater
+          periode button exists, so the text points at it.
+        - a re-entry in Detaljer/Rapport (enterPage()) with a FIXED preset —
+          there is no button at all; the ways out are a filter change (which
+          re-queries) or the Oversigt reset, so the text names those instead.
+      Every other filter change re-queries without blanking.
+    -->
     <div
       *ngIf="!state.reportVisible"
       id="complianceEmptyState"
       class="compliance-cases-root__placeholder"
     >
-      {{ 'Select filters and click Update table' | translate }}
+      {{
+        (state.filters.periodPreset === 'custom'
+          ? 'Select a period and click Update period'
+          : 'Change a filter or click Overview to load the table'
+        ) | translate
+      }}
     </div>
 
     <div

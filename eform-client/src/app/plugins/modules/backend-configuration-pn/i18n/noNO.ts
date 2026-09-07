@@ -610,8 +610,6 @@ export const noNO = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiver / deaktiver',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivering trekker de åpne forekomstene tilbake fra appen. Fullførte forekomster og dataene som allerede er samlet inn, bevares.',
-  'Update table': 'Oppdater tabellen',
-  'Select filters and click Update table': 'Velg filtre og klikk på Oppdater tabell',
   'Compliance overview': 'Oversikt',
   'Compliance details': 'Detaljer',
   'Compliance report': 'Rapportere',
@@ -752,4 +750,7 @@ export const noNO = {
   'Image {{index}}': 'Bilde {{index}}',
   'PDF preview': 'PDF-forhåndsvisning',
   'Export failed': 'Eksporten mislyktes',
+  'Update period': 'Oppdater periode',
+  'Select a period and click Update period': 'Velg en periode og klikk på Oppdater periode.',
+  'Change a filter or click Overview to load the table': 'Endre et filter, eller klikk på Oversikt for å hente tabellen.',
 };

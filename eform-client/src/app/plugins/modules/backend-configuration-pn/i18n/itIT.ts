@@ -610,8 +610,6 @@ export const itIT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Attiva / disattiva',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La disattivazione ritira dall’app le occorrenze aperte. Le occorrenze completate e i dati già raccolti vengono conservati.',
-  'Update table': 'Aggiorna la tabella',
-  'Select filters and click Update table': 'Seleziona i filtri e fai clic su Aggiorna tabella',
   'Compliance overview': 'Panoramica',
   'Compliance details': 'Dettagli',
   'Compliance report': 'Rapporto',
@@ -752,4 +750,7 @@ export const itIT = {
   'Image {{index}}': 'Immagine {{index}}',
   'PDF preview': 'Anteprima PDF',
   'Export failed': 'Esportazione non riuscita',
+  'Update period': 'Aggiorna periodo',
+  'Select a period and click Update period': 'Seleziona un periodo e fai clic su Aggiorna periodo.',
+  'Change a filter or click Overview to load the table': 'Modifica un filtro o fai clic su Panoramica per caricare la tabella.',
 };

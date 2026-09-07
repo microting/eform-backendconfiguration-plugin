@@ -610,8 +610,6 @@ export const isIS = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Virkja / afvirkja',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Afvirkjun dregur opnu tilvikin til baka úr forritinu. Lokin tilvik og þau gögn sem þegar hafa safnast varðveitast.',
-  'Update table': 'Uppfæra töflu',
-  'Select filters and click Update table': 'Veldu síur og smelltu á Uppfæra töflu',
   'Compliance overview': 'Yfirlit',
   'Compliance details': 'Nánari upplýsingar',
   'Compliance report': 'Skýrsla',
@@ -752,4 +750,7 @@ export const isIS = {
   'Image {{index}}': 'Mynd {{index}}',
   'PDF preview': 'PDF-forskoðun',
   'Export failed': 'Útflutningur mistókst',
+  'Update period': 'Uppfæra tímabil',
+  'Select a period and click Update period': 'Veldu tímabil og smelltu á Uppfæra tímabil.',
+  'Change a filter or click Overview to load the table': 'Breyttu síu eða smelltu á Yfirlit til að hlaða töflunni.',
 };

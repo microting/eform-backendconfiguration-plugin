@@ -610,8 +610,6 @@ export const roRO = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activare / dezactivare',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezactivarea retrage din aplicație aparițiile deschise. Aparițiile finalizate și datele deja colectate sunt păstrate.',
-  'Update table': 'Actualizați tabelul',
-  'Select filters and click Update table': 'Selectați filtrele și faceți clic pe Actualizare tabel',
   'Compliance overview': 'Prezentare generală',
   'Compliance details': 'Detalii',
   'Compliance report': 'Raport',
@@ -752,4 +750,7 @@ export const roRO = {
   'Image {{index}}': 'Imaginea {{index}}',
   'PDF preview': 'Previzualizare PDF',
   'Export failed': 'Exportul a eșuat',
+  'Update period': 'Actualizați perioada',
+  'Select a period and click Update period': 'Selectați o perioadă și faceți clic pe Actualizați perioada.',
+  'Change a filter or click Overview to load the table': 'Modificați un filtru sau faceți clic pe Prezentare generală pentru a încărca tabelul.',
 };

@@ -610,8 +610,6 @@ export const esES = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activar / desactivar',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La desactivación retira de la aplicación las repeticiones abiertas. Las repeticiones completadas y los datos ya recopilados se conservan.',
-  'Update table': 'Actualizar tabla',
-  'Select filters and click Update table': 'Seleccione los filtros y haga clic en Actualizar tabla.',
   'Compliance overview': 'Descripción general',
   'Compliance details': 'Detalles',
   'Compliance report': 'Informe',
@@ -752,4 +750,7 @@ export const esES = {
   'Image {{index}}': 'Imagen {{index}}',
   'PDF preview': 'Vista previa del PDF',
   'Export failed': 'La exportación ha fallado',
+  'Update period': 'Actualizar período',
+  'Select a period and click Update period': 'Seleccione un período y haga clic en Actualizar período.',
+  'Change a filter or click Overview to load the table': 'Cambie un filtro o haga clic en Descripción general para cargar la tabla.',
 };

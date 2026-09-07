@@ -55,23 +55,30 @@ import { LoginPage } from '../../../Page objects/Login.page';
 const BASE_URL = 'http://localhost:4200';
 const PAGE_URL = `${BASE_URL}/plugins/backend-configuration-pn/compliance-report`;
 
+/**
+ * Lands in Rapport with the report ALREADY fetched. The default preset is
+ * "År til dato", and under #1185 there is no fetch button outside "Sæt
+ * periode": the page fetched Oversigt on entry, and the switch to Rapport
+ * replays that trigger to the recreated child, which queries
+ * `eform-columns` on its own. The response is awaited on the mode click.
+ */
 async function goToRapport(page: Page): Promise<void> {
   await page.goto(BASE_URL);
   await new LoginPage(page).login();
   await page.waitForTimeout(2000);
   await page.goto(PAGE_URL);
   await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
-  await page.locator('#complianceMode-report').click();
-  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
-}
-
-async function fetchReport(page: Page): Promise<void> {
   const response = page.waitForResponse(
     (r) => r.url().includes('/compliance-report/eform-columns'),
     { timeout: 60000 },
   );
-  await page.locator('#complianceShowReportBtn').click();
+  await page.locator('#complianceMode-report').click();
+  await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
   await response;
+}
+
+/** The report has rendered: the shell's spinner replaces the view while `loading` is true. */
+async function awaitRapportRendered(page: Page): Promise<void> {
   await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', {
     timeout: 60000,
   });
@@ -134,7 +141,7 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Compliance — image gallery', () => {
   test('the Billeder cell is never both a static count and a button', async ({ page }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
 
     // Nothing has been clicked, so no dialog may exist. This is the assertion
     // that would catch a gallery accidentally opened on render.
@@ -179,7 +186,7 @@ test.describe('Compliance — image gallery', () => {
 
   test('opens with a header, a caption and an alt text tied to the case', async ({ page }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
     const lightbox = await openFirstGallery(page);
 
     // `Billeder · sag {n}`, or `1 billede · sag {n}` for a single image.
@@ -218,7 +225,7 @@ test.describe('Compliance — image gallery', () => {
 
   test('one image hides prev, next, the counter and the thumb strip', async ({ page }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
     const lightbox = await openFirstGallery(page);
 
     // From the caption, NOT from the strip — see imageCount().
@@ -267,7 +274,7 @@ test.describe('Compliance — image gallery', () => {
 
   test('navigation wraps, the keyboard drives it, and Escape closes', async ({ page }) => {
     await goToRapport(page);
-    await fetchReport(page);
+    await awaitRapportRendered(page);
     const lightbox = await openFirstGallery(page);
 
     // The count comes from the CAPTION, which renders unconditionally. Reading

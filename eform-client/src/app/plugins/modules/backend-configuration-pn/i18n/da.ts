@@ -735,8 +735,6 @@ export const da = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivér / deaktivér',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivering tilbagekalder de åbne forekomster fra appen. Gennemførte forekomster og de allerede indsamlede data bevares.',
-  'Update table': 'Opdater tabel',
-  'Select filters and click Update table': 'Vælg filtre og klik Opdater tabel.',
   'Compliance overview': 'Oversigt',
   'Compliance details': 'Detaljer',
   'Compliance report': 'Rapport',
@@ -773,4 +771,7 @@ export const da = {
   'Image {{index}}': 'Billede {{index}}',
   'PDF preview': 'PDF-forhåndsvisning',
   'Export failed': 'Eksporten mislykkedes',
+  'Update period': 'Opdater periode',
+  'Select a period and click Update period': 'Vælg en periode og klik Opdater periode.',
+  'Change a filter or click Overview to load the table': 'Skift et filter, eller klik Oversigt for at hente tabellen.',
 };

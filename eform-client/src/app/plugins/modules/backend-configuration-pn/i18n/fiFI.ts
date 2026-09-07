@@ -610,8 +610,6 @@ export const fiFI = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivoi / poista käytöstä',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Käytöstä poistaminen peruuttaa avoimet esiintymät sovelluksesta. Valmiit esiintymät ja jo kerätyt tiedot säilyvät.',
-  'Update table': 'Päivitä taulukko',
-  'Select filters and click Update table': 'Valitse suodattimet ja napsauta Päivitä taulukko',
   'Compliance overview': 'Yleiskatsaus',
   'Compliance details': 'Tiedot',
   'Compliance report': 'Raportti',
@@ -752,4 +750,7 @@ export const fiFI = {
   'Image {{index}}': 'Kuva {{index}}',
   'PDF preview': 'PDF-esikatselu',
   'Export failed': 'Vienti epäonnistui',
+  'Update period': 'Päivitä ajanjakso',
+  'Select a period and click Update period': 'Valitse ajanjakso ja napsauta Päivitä ajanjakso.',
+  'Change a filter or click Overview to load the table': 'Muuta suodatinta tai napsauta Yleiskatsaus ladataksesi taulukon.',
 };

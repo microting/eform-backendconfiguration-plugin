@@ -610,8 +610,6 @@ export const nlNL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activeren / deactiveren',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Bij deactiveren worden de openstaande voorkomens uit de app teruggetrokken. Voltooide voorkomens en de al verzamelde gegevens blijven behouden.',
-  'Update table': 'Tabel bijwerken',
-  'Select filters and click Update table': 'Selecteer filters en klik op Tabel bijwerken.',
   'Compliance overview': 'Overzicht',
   'Compliance details': 'Details',
   'Compliance report': 'Rapport',
@@ -752,4 +750,7 @@ export const nlNL = {
   'Image {{index}}': 'Afbeelding {{index}}',
   'PDF preview': 'PDF-voorbeeld',
   'Export failed': 'Exporteren mislukt',
+  'Update period': 'Periode bijwerken',
+  'Select a period and click Update period': 'Selecteer een periode en klik op Periode bijwerken.',
+  'Change a filter or click Overview to load the table': 'Wijzig een filter of klik op Overzicht om de tabel te laden.',
 };
