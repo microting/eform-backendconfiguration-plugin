@@ -53,30 +53,38 @@
   </div>
 
   <!--
-    One section per TAG GROUP per TEMPLATE (#1160 decision 5). A tag group whose
-    tasks were answered on two templates therefore produces two tables, each
-    with its own column set — the prototype's tag-set-only grouping had nowhere
-    to put the second template's answers.
+    One section per REPORT HEADLINE (#1188, "Tabel_Rapport": one table per
+    Rapportoverskrift, NOT one per tag). The headline is the calendar modal's
+    `Rapportoverskrift` select (`AreaRulePlanning.ItemPlanningTagId`); the
+    task's other tags are the small caption above it, joined ` - `. A headline
+    whose tasks were answered on two templates is still ONE table — its columns
+    are the server-built union of both schemas, and a case answered on one
+    template renders the en dash under the other's fields, in place. Every case
+    is in exactly one section. The headline-less fallback section renders LAST.
   -->
   <section
     *ngFor="let section of sections; trackBy: trackBySection"
     class="compliance-report__section"
     [attr.data-section-key]="section.key"
   >
-    <p class="compliance-report__tag">{{ section.tagLabel }}</p>
+    <p class="compliance-report__tag">{{ section.captionLabel }}</p>
     <!--
-      The heading is the TEMPLATE NAME. The prototype emitted the literal
-      placeholder `Rapportoverskrift` on every sub-report (compliance.js:1805);
-      it appears nowhere here.
+      The heading is the REPORT HEADLINE — the prototype's `Rapportoverskrift`
+      was a real field all along, not a placeholder (#1188 reverses #1167's
+      "use the template name"). `Uden rapportoverskrift` for tasks without one,
+      `#{id}` for a headline whose tag name could not be resolved.
     -->
-    <h3 class="compliance-report__heading">{{ section.templateLabel }}</h3>
+    <h3 class="compliance-report__heading">{{ section.headlineLabel }}</h3>
 
     <!--
-      The schema could not be derived (#1166: the SDK's TemplateFieldReadAll
-      throws for a language with a translation gap), so this template has ZERO
+      Schema notices (#1166: the SDK's TemplateFieldReadAll throws for a
+      language with a translation gap). A template without a schema has ZERO
       answer columns for a reason that is neither "it has no answerable fields"
-      nor "nobody answered". Say so rather than rendering a metadata-only table
-      that looks complete.
+      nor "nobody answered". Since a section spans templates (#1188) there are
+      two shapes: EVERY template in the section lacks a schema — say so once for
+      the whole table rather than rendering a metadata-only table that looks
+      complete — or only SOME do, in which case the other templates' columns are
+      still there and the notice names each affected template instead.
     -->
     <p
       *ngIf="section.schemaUnavailable"
@@ -85,6 +93,15 @@
     >
       {{ 'Columns unavailable' | translate }}
     </p>
+    <ng-container *ngIf="!section.schemaUnavailable">
+      <p
+        *ngFor="let checkListId of section.schemaUnavailableCheckListIds"
+        class="compliance-report__notice"
+        role="note"
+      >
+        {{ columnsUnavailableForTemplateKey | translate: templateNoticeParams(checkListId) }}
+      </p>
+    </ng-container>
 
     <!--
       Omitted entirely for a sub-report the page budget collapsed to zero rows:

@@ -737,7 +737,6 @@ export const svSE = {
   'No properties match the selected filters.': 'Inga egenskaper matchar de valda filtren.',
   'Sort by': 'Sortera efter',
   'Completion date': 'Slutförandedatum',
-  'Without tag': 'Utan etikett',
   'Columns unavailable': 'Kolumner är inte tillgängliga',
   '1 image': '1 bild',
   '{{count}} images': '{{count}} bilder',
@@ -753,4 +752,6 @@ export const svSE = {
   'Update period': 'Uppdatera period',
   'Select a period and click Update period': 'Välj en period och klicka på Uppdatera period.',
   'Change a filter or click Overview to load the table': 'Ändra ett filter eller klicka på Översikt för att hämta tabellen.',
+  'Without report headline': 'Utan rapportrubrik',
+  'Columns unavailable for template #{{id}}': 'Kolumner är inte tillgängliga för mall #{{id}}',
 };

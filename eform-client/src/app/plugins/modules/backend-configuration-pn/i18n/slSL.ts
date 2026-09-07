@@ -737,7 +737,6 @@ export const slSL = {
   'No properties match the selected filters.': 'Nobena nepremičnina ne ustreza izbranim filtrom.',
   'Sort by': 'Razvrsti po',
   'Completion date': 'Datum zaključka',
-  'Without tag': 'Brez oznake',
   'Columns unavailable': 'Stolpci niso na voljo',
   '1 image': '1 slika',
   '{{count}} images': '{{count}} slik',
@@ -753,4 +752,6 @@ export const slSL = {
   'Update period': 'Posodobi obdobje',
   'Select a period and click Update period': 'Izberite obdobje in kliknite Posodobi obdobje.',
   'Change a filter or click Overview to load the table': 'Spremenite filter ali kliknite Pregled za nalaganje tabele.',
+  'Without report headline': 'Brez naslova poročila',
+  'Columns unavailable for template #{{id}}': 'Stolpci niso na voljo za predlogo #{{id}}',
 };

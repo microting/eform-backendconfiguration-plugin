@@ -1,18 +1,17 @@
 import {
   ComplianceReportCaseModel,
   ComplianceReportColumnModel,
-  ComplianceReportTagGroupModel,
-  ComplianceReportTemplateGroupModel,
+  ComplianceReportHeadlineGroupModel,
 } from '../../../models';
 import {COMPLIANCE_EMPTY_CELL} from './compliance-week-grouping';
 
 /**
- * Pure section maths for the Rapport view (#1167).
+ * Pure section maths for the Rapport view (#1167, regrouped by #1188).
  *
- * No Angular dependency: the two translated labels the flattener needs are
- * passed in, so every rule below is unit-testable without a TestBed (see the
- * sibling `.spec.ts`, which is where the "a missing cell key renders the dash
- * IN PLACE" property is pinned).
+ * No Angular dependency: the one translated label the mapper needs is passed
+ * in, so every rule below is unit-testable without a TestBed (see the sibling
+ * `.spec.ts`, which is where the "a missing cell key renders the dash IN
+ * PLACE" property is pinned).
  */
 
 /**
@@ -33,14 +32,14 @@ export const COMPLIANCE_REPORT_SECTION_ROW_CAP = 100;
  * Rows revealed across the WHOLE page before further sub-reports render
  * collapsed.
  *
- * The per-section cap alone does not bound the page. A section is one
- * (tag group × TEMPLATE) pair, not one tag — a tag whose tasks were answered on
- * four templates is four sections — so a realistic filter set yields dozens of
- * sections, most of them far below `COMPLIANCE_REPORT_SECTION_ROW_CAP`. In that
- * shape no section ever caps and the server's whole 5000-row allowance lands in
- * one DOM: the exact outcome the per-section cap was written to prevent. (The
- * prototype's 315 rows / 6 sections is one point, not the worst case; it
- * predates the per-template split, which can only ever raise the section count.)
+ * The per-section cap alone does not bound the page. A section is one REPORT
+ * HEADLINE (#1188), and an installation can run many of them — one per
+ * distinct `Rapportoverskrift` in the filtered set, plus the headline-less
+ * fallback — most of them far below `COMPLIANCE_REPORT_SECTION_ROW_CAP`. In
+ * that shape no section ever caps and the server's whole 5000-row allowance
+ * lands in one DOM: the exact outcome the per-section cap was written to
+ * prevent. (The prototype's 315 rows / 6 sections is one point, not the worst
+ * case.)
  *
  * So the page keeps a cumulative budget as well. Sections render in server
  * order until it is exhausted; the ones after that render with NO rows but with
@@ -51,107 +50,121 @@ export const COMPLIANCE_REPORT_SECTION_ROW_CAP = 100;
  */
 export const COMPLIANCE_REPORT_PAGE_ROW_BUDGET = 500;
 
-/** One tag-group × template-group sub-report. */
+/**
+ * One sub-report: one REPORT HEADLINE (#1188). A 1:1 image of
+ * `ComplianceReportHeadlineGroupModel` with its two labels resolved.
+ */
 export interface ComplianceReportSection {
   /**
    * Stable trackBy identity, and the suffix of the section's DOM ids.
-   * `t{tagId|none}-c{checkListId}` — the `t`/`c` prefixes are what keep
-   * (tag 75, template 11) from colliding with (tag 7, template 511).
+   * `h{headlineTagId|none}` — `hnone` is the fallback section, which the
+   * server orders last.
    */
   key: string;
-  /** The tag line above the heading. */
-  tagLabel: string;
-  /** The heading — the TEMPLATE name. The prototype's `Rapportoverskrift` placeholder is gone. */
-  templateLabel: string;
-  checkListId: number;
   /**
-   * The schema could not be derived, so `columns` is empty for a reason that is
-   * not "this template has no answerable fields" and not "nobody answered".
-   * The view says so instead of rendering a bare table.
+   * The small line ABOVE the heading: the group's tags joined `" - "`
+   * (`Miljøtilsyn - Brand`). May be empty — a headline whose tasks carry no
+   * other tags has nothing to say there, and an empty `<p>` costs nothing.
+   */
+  captionLabel: string;
+  /**
+   * The bold heading — the REPORT HEADLINE (the calendar modal's
+   * `Rapportoverskrift`), `#{id}` for an unresolvable one, the translated
+   * fallback label for the headline-less section. NEVER the template name:
+   * a section spans templates.
+   */
+  headlineLabel: string;
+  /** Every template answered inside the section, distinct. */
+  checkListIds: number[];
+  /**
+   * The templates whose schema could not be derived. Their fields are missing
+   * from `columns` for a reason that is neither "no answerable fields" nor
+   * "nobody answered", so the view says so — per template when only some are
+   * listed here, for the whole section when all are (`schemaUnavailable`).
+   */
+  schemaUnavailableCheckListIds: number[];
+  /**
+   * EVERY template in the section lacks a schema, so `columns` is empty for
+   * a reason the view has to state instead of rendering a bare table. False
+   * when only some templates are affected — those get a per-template notice
+   * and the section still has the other templates' columns.
    */
   schemaUnavailable: boolean;
+  /** The server-built UNION of the section's template schemas. */
   columns: ComplianceReportColumnModel[];
   cases: ComplianceReportCaseModel[];
 }
 
 /**
- * The label for a tag group, discriminating on the tag ID and NEVER on the
- * name — the same rule #1169's export applies
- * (`ComplianceExportDocumentBuilder.TagGroupLabel`).
+ * The heading of a headline group, discriminating on the tag ID and NEVER on
+ * the name — the same rule the export applies to the same group.
  *
- * `tagId != null` with `tagName == null` is a NAMED group whose name could not
- * be resolved: tag ids live in the BC database and tag names in the
- * items-planning one, with no foreign key between them, and #1166 deliberately
- * keeps the row's real tag rather than dropping it. Filing such a group under
- * "Uden tag" would make it indistinguishable from the genuinely untagged group
- * — two different sections merged under one label, and the screen disagreeing
- * with the file downloaded from it. It gets `#{tagId}` instead: visibly not a
- * tag name, distinct from every other group, and it names the id the tag can be
- * looked up by.
+ * `headlineTagId == null` is the genuinely headline-less fallback group and
+ * the ONLY one that gets `fallbackLabel` ("Uden rapportoverskrift").
  *
- * The DISCRIMINATION is identical to the export's: the untagged label ONLY for
- * `tagId == null`, `#{tagId}` for a named group whose name is missing or blank
- * (`ComplianceExportDocumentBuilder.TagGroupLabel:398-404` branches on
- * `IsNullOrWhiteSpace`, so a whitespace-only name lands on `#{tagId}` there
- * too). The rendered STRING is not identical: this returns the name TRIMMED,
- * the C# returns `TagGroup.TagName` as stored — so a name saved with
+ * `headlineTagId != null` with `headlineName == null` (or blank) is a NAMED
+ * group whose name could not be resolved: headline ids live in the BC database
+ * (`AreaRulePlanning.ItemPlanningTagId`) and tag names in the items-planning
+ * one, with no foreign key between them. Filing such a group under the
+ * fallback label would make it indistinguishable from the genuinely
+ * headline-less group — two different sections merged under one label, and
+ * the screen disagreeing with the file downloaded from it. It gets
+ * `#{headlineTagId}` instead: visibly not a headline, distinct from every
+ * other group, and it names the id the tag can be looked up by.
+ *
+ * The name is returned TRIMMED, which the C# does not do — a name saved with
  * surrounding whitespace reads tight on screen and padded in the file.
  * Cosmetic, and the screen has the better of the two.
  */
-export function complianceTagGroupLabel(
-  group: ComplianceReportTagGroupModel,
-  untaggedLabel: string
+export function complianceHeadlineLabel(
+  group: Pick<ComplianceReportHeadlineGroupModel, 'headlineTagId' | 'headlineName'>,
+  fallbackLabel: string
 ): string {
-  if (group.tagId == null) {
-    return untaggedLabel;
+  if (group.headlineTagId == null) {
+    return fallbackLabel;
   }
-  const name = (group.tagName ?? '').trim();
-  return name.length > 0 ? name : `#${group.tagId}`;
+  const name = (group.headlineName ?? '').trim();
+  return name.length > 0 ? name : `#${group.headlineTagId}`;
 }
 
 /**
- * The sub-report heading. `#{checkListId}` for a template with no name — the
- * same neutral form, and the same discrimination, as the export
- * (`ComplianceExportDocumentBuilder:266-268`, `IsNullOrWhiteSpace` over
- * `CheckListName`). As with the tag label, this one additionally TRIMS the name
- * it returns and the C# does not.
- */
-export function complianceTemplateLabel(group: ComplianceReportTemplateGroupModel): string {
-  const name = (group.checkListName ?? '').trim();
-  return name.length > 0 ? name : `#${group.checkListId}`;
-}
-
-/**
- * Flatten the response into the rendering order: tag group, then template
- * sub-group, in the order the server sent them (it sorts the untagged group
- * last on purpose; nothing here re-orders).
+ * Map the response 1:1 onto sections, in the order the server sent them (it
+ * sorts by caption, then headline, then id, with the headline-less group last
+ * on purpose — #1188 decision 5; nothing here re-orders).
  *
- * Template groups with no cases are dropped — an empty table under a heading
- * says nothing. A `schemaUnavailable` group with cases is KEPT: its cases are
- * real, only its answer columns are missing, and the view has to say so.
+ * Groups with no cases are dropped — an empty table under a heading says
+ * nothing. A group with cases whose templates all lack a schema is KEPT: its
+ * cases are real, only its answer columns are missing, and the view has to
+ * say so.
  */
 export function buildComplianceReportSections(
-  groups: ComplianceReportTagGroupModel[] | null | undefined,
-  untaggedLabel: string
+  groups: ComplianceReportHeadlineGroupModel[] | null | undefined,
+  withoutHeadlineLabel: string
 ): ComplianceReportSection[] {
   const sections: ComplianceReportSection[] = [];
-  for (const tagGroup of groups ?? []) {
-    const tagLabel = complianceTagGroupLabel(tagGroup, untaggedLabel);
-    for (const templateGroup of tagGroup.templates ?? []) {
-      const cases = templateGroup.cases ?? [];
-      if (cases.length === 0) {
-        continue;
-      }
-      sections.push({
-        key: `t${tagGroup.tagId ?? 'none'}-c${templateGroup.checkListId}`,
-        tagLabel,
-        templateLabel: complianceTemplateLabel(templateGroup),
-        checkListId: templateGroup.checkListId,
-        schemaUnavailable: !!templateGroup.schemaUnavailable,
-        columns: templateGroup.columns ?? [],
-        cases,
-      });
+  for (const group of groups ?? []) {
+    const cases = group.cases ?? [];
+    if (cases.length === 0) {
+      continue;
     }
+    const checkListIds = group.checkListIds ?? [];
+    const schemaUnavailableCheckListIds = group.schemaUnavailableCheckListIds ?? [];
+    sections.push({
+      key: `h${group.headlineTagId ?? 'none'}`,
+      captionLabel: (group.tagsCaption ?? '').trim(),
+      headlineLabel: complianceHeadlineLabel(group, withoutHeadlineLabel),
+      checkListIds,
+      schemaUnavailableCheckListIds,
+      // "Every template lacks a schema" — including the degenerate shape where
+      // the server listed unavailable templates but no `checkListIds` at all
+      // (`every` over an empty list is true, and there is nothing to render
+      // columns for either way). No unavailable templates → false.
+      schemaUnavailable:
+        schemaUnavailableCheckListIds.length > 0 &&
+        checkListIds.every((id) => schemaUnavailableCheckListIds.includes(id)),
+      columns: group.columns ?? [],
+      cases,
+    });
   }
   return sections;
 }

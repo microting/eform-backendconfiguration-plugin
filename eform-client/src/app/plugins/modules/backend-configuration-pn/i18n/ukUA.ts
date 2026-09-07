@@ -737,7 +737,6 @@ export const ukUA = {
   'No properties match the selected filters.': 'Жодна нерухомість не відповідає вибраним фільтрам.',
   'Sort by': 'Сортувати за',
   'Completion date': 'Дата завершення',
-  'Without tag': 'Без бирки',
   'Columns unavailable': 'Стовпці недоступні',
   '1 image': '1 зображення',
   '{{count}} images': '{{count}} зображень',
@@ -753,4 +752,6 @@ export const ukUA = {
   'Update period': 'Оновити період',
   'Select a period and click Update period': 'Виберіть період і натисніть «Оновити період».',
   'Change a filter or click Overview to load the table': 'Змініть фільтр або натисніть «Огляд», щоб завантажити таблицю.',
+  'Without report headline': 'Без заголовка звіту',
+  'Columns unavailable for template #{{id}}': 'Стовпці недоступні для шаблону #{{id}}',
 };

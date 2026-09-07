@@ -824,15 +824,21 @@ export const enUS= {
   // and retranslating 'Completed date' would silently move its one other
   // consumer (adhoc-history).
   'Completion date': 'Completion date',
-  // The label of the tag group that carries NO tag at all. A group whose tag id
-  // could not be resolved to a name is rendered as #{tagId} instead — it is a
-  // named group, and filing it here would merge two different sub-reports.
-  // Matches the backend's WithoutTag entry, which #1169's export uses.
-  'Without tag': 'Without tag',
+  // The heading of the Rapport section for tasks that carry NO report headline
+  // (#1188). A headline whose tag id could not be resolved to a name is
+  // rendered as #{id} instead — it is a named group, and filing it here would
+  // merge two different sub-reports. Matches the backend's
+  // WithoutReportHeadline entry, which the export uses.
+  'Without report headline': 'Without report headline',
   // A template whose column schema could not be derived: zero answer columns
   // for a reason that is neither "no answerable fields" nor "nobody answered".
-  // Matches the backend's ColumnsUnavailable entry.
+  // Matches the backend's ColumnsUnavailable entry. Rendered for a section
+  // whose EVERY template lacks a schema.
   'Columns unavailable': 'Columns unavailable',
+  // The per-template form of the notice above (#1188): a headline section
+  // spans templates, and when only some lack a schema the others' columns are
+  // still shown, so the notice names the affected template by id.
+  'Columns unavailable for template #{{id}}': 'Columns unavailable for template #{{id}}',
   // Accessible name of the Billeder cell. Two keys rather than one plural
   // string so each language can word the singular its own way.
   '1 image': '1 image',

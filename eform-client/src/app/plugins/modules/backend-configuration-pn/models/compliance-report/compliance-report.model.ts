@@ -177,11 +177,12 @@ export interface ComplianceReportOverviewModel {
 }
 
 // ---------------------------------------------------------------------------
-// Rapport — the per-template answer columns (#1166 endpoint, #1167 view)
+// Rapport — one table per REPORT HEADLINE (#1166 endpoint, #1167 view,
+// regrouped by #1188)
 // ---------------------------------------------------------------------------
 
 /**
- * One answer column of a template group. Mirrors the C#
+ * One answer column of a headline group. Mirrors the C#
  * `ComplianceReportColumnModel`.
  *
  * `key` — NOT `label`, NOT an array position — is how a cell is addressed. It
@@ -217,11 +218,27 @@ export interface ComplianceReportImageModel {
   geoLink: string | null;
 }
 
-/** One answered occurrence inside a template group. */
+/** One answered occurrence inside a headline group. Appears in EXACTLY ONE group (#1188). */
 export interface ComplianceReportCaseModel {
   complianceId: number;
   /** The backing SDK case. Always > 0. */
   sdkCaseId: number;
+  /**
+   * SDK `Case.CheckListId` — the template THIS row was answered against. A
+   * headline group spans templates (its `columns` are a union), so the row is
+   * the only place `Rediger` can read the template for the case route from.
+   * `null` never reaches the view in practice — rows without an answered
+   * template are dropped server-side — but the wire type is nullable.
+   */
+  checkListId: number | null;
+  /**
+   * The row's OWN tag names, sorted, EXCLUDING the headline tag (a legacy
+   * area-rule path pairs the headline into `AreaRulePlanningTags` too, and
+   * `Flydelag - Flydelag` is what excluding it prevents). Rendered nowhere on
+   * screen — the section's `tagsCaption` is the on-screen line — but carried
+   * so the export's `Delrapport` cell and the screen come off one DTO.
+   */
+  tags: string[];
   propertyId: number;
   propertyName: string;
   /** The task title — the prototype's `Område` column. */
@@ -265,42 +282,60 @@ export interface ComplianceReportCaseModel {
   images: ComplianceReportImageModel[];
 }
 
-/** One eForm template inside a tag group: its column schema and its cases. */
-export interface ComplianceReportTemplateGroupModel {
-  /** SDK `Case.CheckListId` — the template ACTUALLY answered (#1160 finding 1). */
-  checkListId: number;
-  checkListName: string | null;
-  /**
-   * Every `checkListId` merged into this group. The cloned-template merge is
-   * deliberately NOT implemented (#1166 §8), so today this always holds exactly
-   * one id — `checkListId` itself — and structurally identical clones render as
-   * two adjacent groups.
-   */
-  mergedCheckListIds: number[];
-  columns: ComplianceReportColumnModel[];
-  /**
-   * True when deriving the schema FAILED, so `columns` is empty because it
-   * could not be read — not because the template has no answerable fields and
-   * not because nobody answered. The three are indistinguishable without it.
-   */
-  schemaUnavailable: boolean;
-  cases: ComplianceReportCaseModel[];
-}
-
 /**
- * One tag group of the Rapport view.
+ * One section of the Rapport view — one table per REPORT HEADLINE (#1188,
+ * "Tabel_Rapport": *der skal være en tabel for hver Rapportoverskrift og ikke
+ * for hvert tag*). Mirrors the C# `ComplianceReportHeadlineGroupModel`.
  *
- * `tagId == null` is the genuinely untagged group, and the ONLY one that gets
- * the "Uden tag" label. A group with `tagId != null` and `tagName == null` is a
- * NAMED group whose name could not be resolved — tag ids live in the BC
- * database and tag names in the items-planning one with no foreign key between
- * them — and is labelled `#{tagId}`, exactly as #1169's export labels it.
- * Discriminating on the NAME would merge two different sections.
+ * The headline is `AreaRulePlanning.ItemPlanningTagId` — the calendar modal's
+ * `Rapportoverskrift` select — and it is an ordinary `PlanningTag`
+ * distinguished only by which column references it. The task's OTHER tags do
+ * not group anything any more; they become the small caption above the
+ * heading.
+ *
+ * Discriminate on the ID, never on the name:
+ *
+ *  - `headlineTagId == null` is the fallback group — tasks with NO headline —
+ *    and the ONLY one that gets the "Uden rapportoverskrift" label. The
+ *    server always orders it LAST;
+ *  - `headlineTagId != null` with `headlineName == null` is a NAMED group whose
+ *    name could not be resolved (tag ids live in the BC database and tag names
+ *    in the items-planning one, with no foreign key between them). It is
+ *    labelled `#{headlineTagId}` and is never merged into the fallback group.
+ *
+ * Groups arrive ordered by `tagsCaption`, then `headlineName`, then
+ * `headlineTagId`, fallback last (#1188 decision 5). Nothing client-side
+ * re-orders.
  */
-export interface ComplianceReportTagGroupModel {
-  tagId: number | null;
-  tagName: string | null;
-  templates: ComplianceReportTemplateGroupModel[];
+export interface ComplianceReportHeadlineGroupModel {
+  headlineTagId: number | null;
+  headlineName: string | null;
+  /**
+   * The distinct tag names across the group's cases, alphabetical, joined
+   * `" - "` (hyphen-minus with spaces — the PDF's separator). May be `""` for a
+   * group whose tasks carry no tags besides the headline.
+   */
+  tagsCaption: string;
+  /** Every template (SDK `Case.CheckListId`) answered inside the group, distinct. */
+  checkListIds: number[];
+  /**
+   * The subset of `checkListIds` whose schema could NOT be derived, so their
+   * fields are missing from `columns` for a reason that is neither "no
+   * answerable fields" nor "nobody answered". The view renders a per-template
+   * notice when only some templates are listed here and a whole-section notice
+   * when all of them are.
+   */
+  schemaUnavailableCheckListIds: number[];
+  /**
+   * The ordered UNION of the per-template schemas of every template in
+   * `checkListIds` — templates by name then id, fields in template order — keyed
+   * `f{fieldId}`, which is collision-free across templates by construction.
+   * Already de-duplicated server-side. A case answered on template A renders
+   * the en dash under template B's columns, in place.
+   */
+  columns: ComplianceReportColumnModel[];
+  /** The group's cases, each exactly once. */
+  cases: ComplianceReportCaseModel[];
 }
 
 // ---------------------------------------------------------------------------

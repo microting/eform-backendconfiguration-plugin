@@ -737,7 +737,6 @@ export const elGR = {
   'No properties match the selected filters.': 'Δεν υπάρχουν ιδιότητες που να αντιστοιχούν στα επιλεγμένα φίλτρα.',
   'Sort by': 'Ταξινόμηση κατά',
   'Completion date': 'Ημερομηνία ολοκλήρωσης',
-  'Without tag': 'Χωρίς ετικέτα',
   'Columns unavailable': 'Οι στήλες δεν είναι διαθέσιμες',
   '1 image': '1 εικόνα',
   '{{count}} images': '{{count}} εικόνες',
@@ -753,4 +752,6 @@ export const elGR = {
   'Update period': 'Ενημέρωση περιόδου',
   'Select a period and click Update period': 'Επιλέξτε περίοδο και κάντε κλικ στην επιλογή Ενημέρωση περιόδου.',
   'Change a filter or click Overview to load the table': 'Αλλάξτε ένα φίλτρο ή κάντε κλικ στην Επισκόπηση για να φορτώσετε τον πίνακα.',
+  'Without report headline': 'Χωρίς επικεφαλίδα αναφοράς',
+  'Columns unavailable for template #{{id}}': 'Οι στήλες δεν είναι διαθέσιμες για το πρότυπο #{{id}}',
 };

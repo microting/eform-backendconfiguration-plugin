@@ -737,7 +737,6 @@ export const etET = {
   'No properties match the selected filters.': 'Valitud filtritele ei vasta ükski omadus.',
   'Sort by': 'Sorteeri',
   'Completion date': 'Valmimiskuupäev',
-  'Without tag': 'Ilma sildita',
   'Columns unavailable': 'Veerud pole saadaval',
   '1 image': '1 pilt',
   '{{count}} images': '{{count}} pilti',
@@ -753,4 +752,6 @@ export const etET = {
   'Update period': 'Uuenda perioodi',
   'Select a period and click Update period': 'Valige periood ja klõpsake nuppu „Uuenda perioodi”.',
   'Change a filter or click Overview to load the table': 'Muutke filtrit või klõpsake nuppu „Ülevaade”, et tabel laadida.',
+  'Without report headline': 'Ilma aruande pealkirjata',
+  'Columns unavailable for template #{{id}}': 'Veerud pole malli #{{id}} jaoks saadaval',
 };

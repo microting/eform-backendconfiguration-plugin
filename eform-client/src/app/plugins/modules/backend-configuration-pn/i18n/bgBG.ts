@@ -737,7 +737,6 @@ export const bgBG = {
   'No properties match the selected filters.': 'Няма имоти, които да отговарят на избраните филтри.',
   'Sort by': 'Сортиране по',
   'Completion date': 'Дата на завършване',
-  'Without tag': 'Без етикет',
   'Columns unavailable': 'Колоните не са налични',
   '1 image': '1 изображение',
   '{{count}} images': '{{count}} изображения',
@@ -753,4 +752,6 @@ export const bgBG = {
   'Update period': 'Актуализиране на периода',
   'Select a period and click Update period': 'Изберете период и щракнете върху „Актуализиране на периода“.',
   'Change a filter or click Overview to load the table': 'Променете филтър или щракнете върху „Общ преглед“, за да заредите таблицата.',
+  'Without report headline': 'Без заглавие на отчета',
+  'Columns unavailable for template #{{id}}': 'Колоните не са налични за шаблон #{{id}}',
 };

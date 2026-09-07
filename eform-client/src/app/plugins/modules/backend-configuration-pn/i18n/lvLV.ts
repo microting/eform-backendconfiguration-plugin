@@ -737,7 +737,6 @@ export const lvLV = {
   'No properties match the selected filters.': 'Neviens īpašums neatbilst atlasītajiem filtriem.',
   'Sort by': 'Kārtot pēc',
   'Completion date': 'Pabeigšanas datums',
-  'Without tag': 'Bez birkas',
   'Columns unavailable': 'Kolonnas nav pieejamas',
   '1 image': '1 attēls',
   '{{count}} images': '{{count}} attēli',
@@ -753,4 +752,6 @@ export const lvLV = {
   'Update period': 'Atjaunināt periodu',
   'Select a period and click Update period': 'Atlasiet periodu un noklikšķiniet uz Atjaunināt periodu.',
   'Change a filter or click Overview to load the table': 'Mainiet filtru vai noklikšķiniet uz Pārskats, lai ielādētu tabulu.',
+  'Without report headline': 'Bez atskaites virsraksta',
+  'Columns unavailable for template #{{id}}': 'Kolonnas nav pieejamas veidnei #{{id}}',
 };

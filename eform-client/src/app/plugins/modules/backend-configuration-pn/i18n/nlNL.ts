@@ -737,7 +737,6 @@ export const nlNL = {
   'No properties match the selected filters.': 'Geen enkele eigenschap voldoet aan de geselecteerde filters.',
   'Sort by': 'Sorteren op',
   'Completion date': 'Voltooiingsdatum',
-  'Without tag': 'Zonder label',
   'Columns unavailable': 'Kolommen niet beschikbaar',
   '1 image': '1 afbeelding',
   '{{count}} images': '{{count}} afbeeldingen',
@@ -753,4 +752,6 @@ export const nlNL = {
   'Update period': 'Periode bijwerken',
   'Select a period and click Update period': 'Selecteer een periode en klik op Periode bijwerken.',
   'Change a filter or click Overview to load the table': 'Wijzig een filter of klik op Overzicht om de tabel te laden.',
+  'Without report headline': 'Zonder rapportkop',
+  'Columns unavailable for template #{{id}}': 'Kolommen niet beschikbaar voor sjabloon #{{id}}',
 };

@@ -737,7 +737,6 @@ export const hrHR = {
   'No properties match the selected filters.': 'Niti jedan objekt ne odgovara odabranim filterima.',
   'Sort by': 'Poredaj po',
   'Completion date': 'Datum završetka',
-  'Without tag': 'Bez oznake',
   'Columns unavailable': 'Kolumne nisu dostupne',
   '1 image': '1 slika',
   '{{count}} images': '{{count}} slika',
@@ -753,4 +752,6 @@ export const hrHR = {
   'Update period': 'Ažuriraj razdoblje',
   'Select a period and click Update period': 'Odaberite razdoblje i kliknite Ažuriraj razdoblje.',
   'Change a filter or click Overview to load the table': 'Promijenite filtar ili kliknite Pregled za učitavanje tablice.',
+  'Without report headline': 'Bez naslova izvještaja',
+  'Columns unavailable for template #{{id}}': 'Kolumne nisu dostupne za predložak #{{id}}',
 };

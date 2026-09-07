@@ -3,14 +3,35 @@ using System.Collections.Generic;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 
-/// <summary>One answered occurrence inside a template group.</summary>
+/// <summary>One answered occurrence inside a headline group (#1188).</summary>
 public class ComplianceReportCaseModel
 {
     public int ComplianceId { get; set; }
 
     /// <summary>The backing SDK case. Always &gt; 0 — a row without one carries no
-    /// answers and never reaches a template group.</summary>
+    /// answers and never reaches a headline group.</summary>
     public int SdkCaseId { get; set; }
+
+    /// <summary>
+    /// The template THIS row was answered on — the SDK <c>Case.CheckListId</c>.
+    /// Required since #1188 because a section spans templates: the consumer's
+    /// <c>Rediger</c> route and its <c>canEdit</c> gate need the row's OWN
+    /// template, which the section no longer identifies. Always set (a row
+    /// without one forms no group); nullable only so the JSON shape states it.
+    /// </summary>
+    public int? CheckListId { get; set; }
+
+    /// <summary>
+    /// The row's tag names — every live <c>AreaRulePlanningTag</c> on the row's
+    /// planning, resolved to <c>PlanningTag.Name</c> (an id with no
+    /// <c>PlanningTags</c> row is kept as <c>#{id}</c> rather than dropped),
+    /// sorted ordinal-case-insensitively, and EXCLUDING the group's headline id.
+    /// The exclusion is required, not defensive: the legacy area-rule path
+    /// (<c>BackendConfigurationTaskWizardService.UpdateTags</c>) also stores the
+    /// headline as an ARP tag, which would otherwise render "Flydelag - Flydelag".
+    /// The export's <c>Delrapport</c> cell is this list joined <c>" - "</c>.
+    /// </summary>
+    public List<string> Tags { get; set; } = [];
 
     public int PropertyId { get; set; }
     public string PropertyName { get; set; }

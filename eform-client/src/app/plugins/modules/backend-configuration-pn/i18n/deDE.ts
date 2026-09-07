@@ -783,7 +783,6 @@ export const deDE = {
   'No properties match the selected filters.': 'Keine der Eigenschaften entspricht den ausgewählten Filtern.',
   'Sort by': 'Sortieren nach',
   'Completion date': 'Fertigstellungsdatum',
-  'Without tag': 'Ohne Etikett',
   'Columns unavailable': 'Spalten nicht verfügbar',
   '1 image': '1 Bild',
   '{{count}} images': '{{count}} Bilder',
@@ -799,4 +798,6 @@ export const deDE = {
   'Update period': 'Zeitraum aktualisieren',
   'Select a period and click Update period': 'Wählen Sie einen Zeitraum aus und klicken Sie auf „Zeitraum aktualisieren“.',
   'Change a filter or click Overview to load the table': 'Ändern Sie einen Filter oder klicken Sie auf „Überblick“, um die Tabelle zu laden.',
+  'Without report headline': 'Ohne Berichtsüberschrift',
+  'Columns unavailable for template #{{id}}': 'Spalten nicht verfügbar für Vorlage #{{id}}',
 };

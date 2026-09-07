@@ -737,7 +737,6 @@ export const csCZ = {
   'No properties match the selected filters.': 'Vybraným filtrům neodpovídají žádné nemovitosti.',
   'Sort by': 'Seřadit podle',
   'Completion date': 'Datum dokončení',
-  'Without tag': 'Bez štítku',
   'Columns unavailable': 'Sloupce nejsou k dispozici',
   '1 image': '1 obrázek',
   '{{count}} images': '{{count}} obrázků',
@@ -753,4 +752,6 @@ export const csCZ = {
   'Update period': 'Aktualizovat období',
   'Select a period and click Update period': 'Vyberte období a klikněte na Aktualizovat období.',
   'Change a filter or click Overview to load the table': 'Změňte filtr nebo klikněte na Přehled pro načtení tabulky.',
+  'Without report headline': 'Bez nadpisu zprávy',
+  'Columns unavailable for template #{{id}}': 'Sloupce nejsou k dispozici pro šablonu #{{id}}',
 };

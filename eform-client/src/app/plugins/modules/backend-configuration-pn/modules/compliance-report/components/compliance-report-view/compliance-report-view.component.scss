@@ -133,17 +133,18 @@
     }
   }
 
-  // The tag group. An eyebrow above the heading, not a heading itself: the tag
-  // repeats across every template sub-group under it, so promoting it to a
-  // second <h*> would put the same text in the document outline once per
-  // template.
+  // The section caption: the section's tags joined with " - " (#1188). An
+  // eyebrow above the heading, not a heading itself, so it stays out of the
+  // document outline.
   &__tag {
     margin: 0;
     font-size: var(--font-size-table-header);
     color: var(--text-child-muted);
   }
 
-  // The TEMPLATE name. Never the prototype's `Rapportoverskrift`.
+  // The report headline: the name of the tag `AreaRulePlanning.ItemPlanningTagId`
+  // points at (the `Rapportoverskrift`), or `#{id}` / "Uden rapportoverskrift"
+  // when that tag is missing or unset.
   &__heading {
     margin: 0 0 var(--spacing-xs);
     font-size: var(--font-size-body);

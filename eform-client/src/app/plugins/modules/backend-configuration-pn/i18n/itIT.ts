@@ -737,7 +737,6 @@ export const itIT = {
   'No properties match the selected filters.': 'Nessuna proprietà corrisponde ai filtri selezionati.',
   'Sort by': 'Ordina per',
   'Completion date': 'Data di completamento',
-  'Without tag': 'Senza etichetta',
   'Columns unavailable': 'Colonne non disponibili',
   '1 image': '1 immagine',
   '{{count}} images': '{{count}} immagini',
@@ -753,4 +752,6 @@ export const itIT = {
   'Update period': 'Aggiorna periodo',
   'Select a period and click Update period': 'Seleziona un periodo e fai clic su Aggiorna periodo.',
   'Change a filter or click Overview to load the table': 'Modifica un filtro o fai clic su Panoramica per caricare la tabella.',
+  'Without report headline': 'Senza intestazione del rapporto',
+  'Columns unavailable for template #{{id}}': 'Colonne non disponibili per il modello #{{id}}',
 };

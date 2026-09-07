@@ -6378,5 +6378,67 @@
       "el-GR": "Συμμόρφωση",
       "is-IS": "Reglufylgni"
     }
+  },
+  {
+    "Key": "WithoutReportHeadline",
+    "LocalizedValue": {
+      "da": "Uden rapportoverskrift",
+      "de": "Ohne Berichtsüberschrift",
+      "en-US": "Without report headline",
+      "uk-UA": "Без заголовка звіту",
+      "pl-PL": "Bez nagłówka raportu",
+      "no-NO": "Uten rapportoverskrift",
+      "sv-SE": "Utan rapportrubrik",
+      "es-ES": "Sin encabezado de informe",
+      "fr-FR": "Sans en-tête de rapport",
+      "it-IT": "Senza intestazione del rapporto",
+      "nl-NL": "Zonder rapportkop",
+      "pt-BR": "Sem título de relatório",
+      "pt-PT": "Sem título de relatório",
+      "fi-FI": "Ilman raportin otsikkoa",
+      "et-ET": "Ilma aruande pealkirjata",
+      "lv-LV": "Bez atskaites virsraksta",
+      "lt-LT": "Be ataskaitos antraštės",
+      "ro-RO": "Fără titlu de raport",
+      "hr-HR": "Bez naslova izvještaja",
+      "sl-SL": "Brez naslova poročila",
+      "cs-CZ": "Bez nadpisu zprávy",
+      "sk-SK": "Bez nadpisu správy",
+      "hu-HU": "Jelentéscím nélkül",
+      "bg-BG": "Без заглавие на отчета",
+      "el-GR": "Χωρίς επικεφαλίδα αναφοράς",
+      "is-IS": "Án skýrslufyrirsagnar"
+    }
+  },
+  {
+    "Key": "ReportHeadline",
+    "LocalizedValue": {
+      "da": "Rapportoverskrift",
+      "de": "Berichtsüberschrift",
+      "en-US": "Report headline",
+      "uk-UA": "Заголовок звіту",
+      "pl-PL": "Nagłówek raportu",
+      "no-NO": "Rapportoverskrift",
+      "sv-SE": "Rapportrubrik",
+      "es-ES": "Encabezado del informe",
+      "fr-FR": "En-tête du rapport",
+      "it-IT": "Intestazione del rapporto",
+      "nl-NL": "Rapportkop",
+      "pt-BR": "Título do relatório",
+      "pt-PT": "Título do relatório",
+      "fi-FI": "Raportin otsikko",
+      "et-ET": "Aruande pealkiri",
+      "lv-LV": "Atskaites virsraksts",
+      "lt-LT": "Ataskaitos antraštė",
+      "ro-RO": "Titlul raportului",
+      "hr-HR": "Naslov izvještaja",
+      "sl-SL": "Naslov poročila",
+      "cs-CZ": "Nadpis zprávy",
+      "sk-SK": "Nadpis správy",
+      "hu-HU": "Jelentés címe",
+      "bg-BG": "Заглавие на отчета",
+      "el-GR": "Επικεφαλίδα αναφοράς",
+      "is-IS": "Skýrslufyrirsögn"
+    }
   }
 ]

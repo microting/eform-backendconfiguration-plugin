@@ -737,7 +737,6 @@ export const skSK = {
   'No properties match the selected filters.': 'Žiadne nehnuteľnosti nezodpovedajú vybraným filtrom.',
   'Sort by': 'Zoradiť podľa',
   'Completion date': 'Dátum dokončenia',
-  'Without tag': 'Bez štítku',
   'Columns unavailable': 'Stĺpce nie sú k dispozícii',
   '1 image': '1 obrázok',
   '{{count}} images': '{{count}} obrázkov',
@@ -753,4 +752,6 @@ export const skSK = {
   'Update period': 'Aktualizovať obdobie',
   'Select a period and click Update period': 'Vyberte obdobie a kliknite na Aktualizovať obdobie.',
   'Change a filter or click Overview to load the table': 'Zmeňte filter alebo kliknite na Prehľad pre načítanie tabuľky.',
+  'Without report headline': 'Bez nadpisu správy',
+  'Columns unavailable for template #{{id}}': 'Stĺpce nie sú k dispozícii pre šablónu #{{id}}',
 };
