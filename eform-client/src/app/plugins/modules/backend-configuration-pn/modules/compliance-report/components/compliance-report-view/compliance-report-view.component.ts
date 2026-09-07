@@ -16,7 +16,7 @@ import {
   CalendarBoardModel,
   ComplianceReportCaseModel,
   ComplianceReportImageModel,
-  ComplianceReportTagGroupModel,
+  ComplianceReportHeadlineGroupModel,
 } from '../../../../models';
 import {
   BackendConfigurationPnCalendarService,
@@ -42,6 +42,18 @@ import {ComplianceReportStateService} from '../../store';
  */
 const KEY_IMAGES_ONE = '1 image';
 const KEY_IMAGES_MANY = '{{count}} images';
+
+/**
+ * The PER-TEMPLATE schema notice (#1188). A section spans templates, and when
+ * only some of them lack a schema the others' columns are still there, so the
+ * notice names the affected template rather than disowning the whole table.
+ * Held here for the same `{{ }}`-in-a-template reason as the two keys above.
+ *
+ * The DTO carries template IDS, not names (`schemaUnavailableCheckListIds`),
+ * so the notice reads `#{id}` — the same neutral form the headline uses for an
+ * unresolvable tag.
+ */
+const KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE = 'Columns unavailable for template #{{id}}';
 
 /**
  * One column of a sub-report's grid. `answerKey` is the ONLY way an answer cell
@@ -80,7 +92,12 @@ interface ComplianceReportRenderedSection extends ComplianceReportSection {
 interface ComplianceReportRowVm {
   complianceId: number;
   sdkCaseId: number;
-  /** The template this row was answered against — the `Rediger` route needs it. */
+  /**
+   * The template THIS row was answered against — the `Rediger` route needs
+   * it, and since #1188 a section spans templates, so it comes off the CASE
+   * (`ComplianceReportCaseModel.checkListId`), never off the section. `0` for
+   * a case the server sent without one, which `canEdit` rejects.
+   */
   checkListId: number;
   propertyName: string;
   doneBy: string;
@@ -117,9 +134,10 @@ interface ComplianceReportRowVm {
 }
 
 /**
- * The Rapport view of the standalone Compliance page (#1167): per tag group,
- * per eForm template, a sub-report whose columns are that template's answer
- * fields.
+ * The Rapport view of the standalone Compliance page (#1167, regrouped by
+ * #1188): one sub-report per REPORT HEADLINE (`Rapportoverskrift`), captioned
+ * with the tasks' tags, whose columns are the union of the answer fields of
+ * every template answered under that headline.
  *
  * Its contract with the shell (#1163) is the same as Oversigt's and Detaljer's:
  *
@@ -142,8 +160,8 @@ interface ComplianceReportRowVm {
  * outside Detaljer, so nothing there needed changing. The unbounded-DOM problem
  * that creates is answered by two ceilings instead, both of them reversible by
  * one click on the sub-report the user wants: a per-section cap
- * (`COMPLIANCE_REPORT_SECTION_ROW_CAP`) and, because sections are tag ×
- * template and a page can hold dozens of small ones, a cumulative page budget
+ * (`COMPLIANCE_REPORT_SECTION_ROW_CAP`) and, because a page can hold dozens
+ * of small headline sections, a cumulative page budget
  * (`COMPLIANCE_REPORT_PAGE_ROW_BUDGET`).
  */
 @Component({
@@ -162,6 +180,8 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   @ViewChild('deleteConfirmTpl', {static: true}) deleteConfirmTpl!: TemplateRef<unknown>;
 
   readonly emptyCell = COMPLIANCE_EMPTY_CELL;
+  /** See `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. */
+  readonly columnsUnavailableForTemplateKey = KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE;
 
   sections: ComplianceReportRenderedSection[] = [];
   hasFetched = false;
@@ -257,25 +277,24 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   // Response → sections
   // -------------------------------------------------------------------
 
-  private applyResponse(groups: ComplianceReportTagGroupModel[]): void {
-    const untagged = this.translate.instant('Without tag');
-    // The PAGE budget, spent in server order. Sections are (tag × template)
-    // pairs, so the per-section cap on its own bounds nothing: dozens of small
-    // sections each stay under it and the whole 5000-row server allowance
+  private applyResponse(groups: ComplianceReportHeadlineGroupModel[]): void {
+    const withoutHeadline = this.translate.instant('Without report headline');
+    // The PAGE budget, spent in server order. A section is one report
+    // headline, and a result can hold dozens of small ones that each stay
+    // under the per-section cap while the whole 5000-row server allowance
     // reaches the DOM. Once this is spent the remaining sections render
     // collapsed — heading, true row count, `Vis alle` — rather than not at all.
     let revealed = 0;
-    this.sections = buildComplianceReportSections(groups, untagged).map((section) => {
+    this.sections = buildComplianceReportSections(groups, withoutHeadline).map((section) => {
       const rendered = this.renderSection(section, revealed);
       revealed += rendered.rows.length;
       return rendered;
     });
     this.hasFetched = true;
 
-    // The row count of THIS view. A case carrying three tags is three rows —
-    // it belongs in three sub-reports — and #1169's Rapport export duplicates
-    // it the same way, so the number on screen and the number in the file
-    // agree.
+    // The row count of THIS view. Every case is in exactly ONE headline
+    // section (#1188), so the sum over sections is the number of answered
+    // cases — the same number the Rapport export writes.
     //
     // The call is load-bearing rather than contract parity:
     // `ComplianceReportFiltersComponent.canDownload` is
@@ -302,7 +321,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     section: ComplianceReportSection,
     revealedBefore: number,
   ): ComplianceReportRenderedSection {
-    const allRows = section.cases.map((c) => this.toRowVm(c, section.checkListId));
+    const allRows = section.cases.map((c) => this.toRowVm(c));
     const budgetLeft = Math.max(0, COMPLIANCE_REPORT_PAGE_ROW_BUDGET - revealedBefore);
     const visible = Math.min(allRows.length, COMPLIANCE_REPORT_SECTION_ROW_CAP, budgetLeft);
     return {
@@ -314,10 +333,7 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     };
   }
 
-  private toRowVm(
-    caseModel: ComplianceReportCaseModel,
-    checkListId: number,
-  ): ComplianceReportRowVm {
+  private toRowVm(caseModel: ComplianceReportCaseModel): ComplianceReportRowVm {
     const renderableImages = (caseModel.images ?? []).filter(
       (image): image is ComplianceReportImageModel & {fileName: string} =>
         !!image?.fileName,
@@ -325,7 +341,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     return {
       complianceId: caseModel.complianceId,
       sdkCaseId: caseModel.sdkCaseId,
-      checkListId,
+      // The CASE's own template — a section spans templates (#1188), so the
+      // section has no single one to hand down.
+      checkListId: caseModel.checkListId ?? 0,
       propertyName: caseModel.propertyName,
       doneBy: complianceWorkerNames(caseModel.workerNames),
       doneAt: caseModel.doneAt,
@@ -420,8 +438,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
     // and renders NOTHING for the whole grid if two entries of
     // `displayedColumns` match, so a projection that ever emitted one field
     // twice would take the entire sub-report down rather than showing one
-    // column twice. #1166 derives columns from a template's distinct fields, so
-    // this should not fire; it costs one Set and removes a whole failure mode.
+    // column twice. The server builds each section's columns as a
+    // de-duplicated union of its templates' distinct fields (#1188), so this
+    // should not fire; it costs one Set and removes a whole failure mode.
     const seenKeys = new Set<string>();
     for (const column of section.columns) {
       if (!column?.key || seenKeys.has(column.key)) {
@@ -501,6 +520,15 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    */
   imagesLabelParams(count: number): {count: number} {
     return {count};
+  }
+
+  /**
+   * `{id}` for `KEY_COLUMNS_UNAVAILABLE_FOR_TEMPLATE`. Same caching argument as
+   * `imagesLabelParams`, and a method rather than an inline object literal
+   * because `{id: x} }}` puts a `}}` inside an interpolation.
+   */
+  templateNoticeParams(checkListId: number): {id: number} {
+    return {id: checkListId};
   }
 
   /**
@@ -653,7 +681,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   // -------------------------------------------------------------------
 
   /**
-   * `Rediger`. Only completed cases have anything to edit (compliance.js:1645).
+   * `Rediger`. Only completed cases have anything to edit (compliance.js:1645),
+   * and only a row that knows its OWN template can be routed to the editor —
+   * `checkListId` is per case since #1188, not per section.
    */
   canEdit(row: ComplianceReportRowVm): boolean {
     return row.completed && row.sdkCaseId > 0 && row.checkListId > 0;
@@ -675,7 +705,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * `areaRulePlanningId` this DTO does not carry either. The case route takes
    * `sdkCaseId / templateId / planningId`, writes no site id, and its third
    * segment is read into a field the page never uses — so the compliance id is
-   * passed there, giving the URL a meaningful value rather than a filler.
+   * passed there, giving the URL a meaningful value rather than a filler. The
+   * template segment is the ROW's own `checkListId`: a headline section mixes
+   * templates, so the section cannot supply it.
    *
    * The cost, accepted: a full navigation discards the fetched result. The
    * filters survive (the state service lives on the cached lazy module ref),

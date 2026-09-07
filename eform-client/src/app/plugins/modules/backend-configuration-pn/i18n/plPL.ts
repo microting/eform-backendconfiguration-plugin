@@ -737,7 +737,6 @@ export const plPL = {
   'No properties match the selected filters.': 'Brak właściwości odpowiadających wybranym filtrom.',
   'Sort by': 'Sortuj według',
   'Completion date': 'Data zakończenia',
-  'Without tag': 'Bez tagu',
   'Columns unavailable': 'Kolumny niedostępne',
   '1 image': '1 obraz',
   '{{count}} images': '{{count}} obrazów',
@@ -753,4 +752,6 @@ export const plPL = {
   'Update period': 'Aktualizuj okres',
   'Select a period and click Update period': 'Wybierz okres i kliknij Aktualizuj okres.',
   'Change a filter or click Overview to load the table': 'Zmień filtr lub kliknij Przegląd, aby załadować tabelę.',
+  'Without report headline': 'Bez nagłówka raportu',
+  'Columns unavailable for template #{{id}}': 'Kolumny niedostępne dla szablonu #{{id}}',
 };

@@ -737,7 +737,6 @@ export const esES = {
   'No properties match the selected filters.': 'Ninguna propiedad coincide con los filtros seleccionados.',
   'Sort by': 'Ordenar por',
   'Completion date': 'Fecha de finalización',
-  'Without tag': 'Sin etiqueta',
   'Columns unavailable': 'Columnas no disponibles',
   '1 image': '1 imagen',
   '{{count}} images': '{{count}} imágenes',
@@ -753,4 +752,6 @@ export const esES = {
   'Update period': 'Actualizar período',
   'Select a period and click Update period': 'Seleccione un período y haga clic en Actualizar período.',
   'Change a filter or click Overview to load the table': 'Cambie un filtro o haga clic en Descripción general para cargar la tabla.',
+  'Without report headline': 'Sin encabezado de informe',
+  'Columns unavailable for template #{{id}}': 'Columnas no disponibles para la plantilla #{{id}}',
 };

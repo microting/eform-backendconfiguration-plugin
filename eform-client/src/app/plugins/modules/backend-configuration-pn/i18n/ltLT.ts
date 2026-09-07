@@ -737,7 +737,6 @@ export const ltLT = {
   'No properties match the selected filters.': 'Nėra pasirinktų filtrų neatitinkančių savybių.',
   'Sort by': 'Rūšiuoti pagal',
   'Completion date': 'Užbaigimo data',
-  'Without tag': 'Be žymos',
   'Columns unavailable': 'Stulpeliai nepasiekiami',
   '1 image': '1 paveikslėlis',
   '{{count}} images': '{{count}} paveikslėlių',
@@ -753,4 +752,6 @@ export const ltLT = {
   'Update period': 'Atnaujinti laikotarpį',
   'Select a period and click Update period': 'Pasirinkite laikotarpį ir spustelėkite „Atnaujinti laikotarpį“.',
   'Change a filter or click Overview to load the table': 'Pakeiskite filtrą arba spustelėkite „Apžvalga“, kad įkeltumėte lentelę.',
+  'Without report headline': 'Be ataskaitos antraštės',
+  'Columns unavailable for template #{{id}}': 'Stulpeliai nepasiekiami šablonui #{{id}}',
 };

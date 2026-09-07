@@ -737,7 +737,6 @@ export const fiFI = {
   'No properties match the selected filters.': 'Yksikään ominaisuus ei vastaa valittuja suodattimia.',
   'Sort by': 'Lajittele',
   'Completion date': 'Valmistumispäivämäärä',
-  'Without tag': 'Ilman tunnistetta',
   'Columns unavailable': 'Sarakkeet eivät ole käytettävissä',
   '1 image': '1 kuva',
   '{{count}} images': '{{count}} kuvaa',
@@ -753,4 +752,6 @@ export const fiFI = {
   'Update period': 'Päivitä ajanjakso',
   'Select a period and click Update period': 'Valitse ajanjakso ja napsauta Päivitä ajanjakso.',
   'Change a filter or click Overview to load the table': 'Muuta suodatinta tai napsauta Yleiskatsaus ladataksesi taulukon.',
+  'Without report headline': 'Ilman raportin otsikkoa',
+  'Columns unavailable for template #{{id}}': 'Sarakkeet eivät ole käytettävissä mallille #{{id}}',
 };

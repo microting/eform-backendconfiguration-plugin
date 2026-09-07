@@ -737,7 +737,6 @@ export const noNO = {
   'No properties match the selected filters.': 'Ingen egenskaper samsvarer med de valgte filtrene.',
   'Sort by': 'Sorter etter',
   'Completion date': 'Ferdigstillelsesdato',
-  'Without tag': 'Uten merkelapp',
   'Columns unavailable': 'Kolonner er ikke tilgjengelige',
   '1 image': '1 bilde',
   '{{count}} images': '{{count}} bilder',
@@ -753,4 +752,6 @@ export const noNO = {
   'Update period': 'Oppdater periode',
   'Select a period and click Update period': 'Velg en periode og klikk på Oppdater periode.',
   'Change a filter or click Overview to load the table': 'Endre et filter, eller klikk på Oversikt for å hente tabellen.',
+  'Without report headline': 'Uten rapportoverskrift',
+  'Columns unavailable for template #{{id}}': 'Kolonner er ikke tilgjengelige for mal #{{id}}',
 };

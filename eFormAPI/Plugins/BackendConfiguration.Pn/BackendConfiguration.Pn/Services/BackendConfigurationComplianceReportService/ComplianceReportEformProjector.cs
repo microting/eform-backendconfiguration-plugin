@@ -139,9 +139,10 @@ internal sealed class ComplianceReportEformProjector(
     /// <para>
     /// The swallow is NOT silent to the caller: <see cref="TemplateSchema.SchemaUnavailable"/>
     /// is set, and travels on to
-    /// <c>ComplianceReportTemplateGroupModel.SchemaUnavailable</c>, so #1167 can
-    /// distinguish "derivation failed" from "nobody answered anything" — both of
-    /// which otherwise render as a template group with zero columns and no cells.
+    /// <c>ComplianceReportHeadlineGroupModel.SchemaUnavailableCheckListIds</c>, so
+    /// the consumer can distinguish "derivation failed" from "nobody answered
+    /// anything" — both of which otherwise render as a template block with zero
+    /// columns and no cells.
     /// Logged at WARNING, not Error: a translation gap is an expected data
     /// condition, not a bug in this code.
     /// </para>
@@ -678,7 +679,7 @@ internal sealed class ComplianceReportEformProjector(
         /// True when <c>Advanced_TemplateFieldReadAll</c> THREW and the column set is
         /// empty because derivation failed — not because the template has no
         /// answerable fields. Surfaced on
-        /// <c>ComplianceReportTemplateGroupModel.SchemaUnavailable</c>.
+        /// <c>ComplianceReportHeadlineGroupModel.SchemaUnavailableCheckListIds</c>.
         /// </summary>
         public bool SchemaUnavailable { get; set; }
 

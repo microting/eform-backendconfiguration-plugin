@@ -737,7 +737,6 @@ export const roRO = {
   'No properties match the selected filters.': 'Nicio proprietate nu corespunde filtrelor selectate.',
   'Sort by': 'Filtrează după',
   'Completion date': 'Data finalizării',
-  'Without tag': 'Fără etichetă',
   'Columns unavailable': 'Coloane indisponibile',
   '1 image': '1 imagine',
   '{{count}} images': '{{count}} imagini',
@@ -753,4 +752,6 @@ export const roRO = {
   'Update period': 'Actualizați perioada',
   'Select a period and click Update period': 'Selectați o perioadă și faceți clic pe Actualizați perioada.',
   'Change a filter or click Overview to load the table': 'Modificați un filtru sau faceți clic pe Prezentare generală pentru a încărca tabelul.',
+  'Without report headline': 'Fără titlu de raport',
+  'Columns unavailable for template #{{id}}': 'Coloane indisponibile pentru șablonul #{{id}}',
 };

@@ -7,7 +7,7 @@ import {
   ComplianceReportCaseModel,
   ComplianceReportColumnModel,
   ComplianceReportImageModel,
-  ComplianceReportTagGroupModel,
+  ComplianceReportHeadlineGroupModel,
 } from '../../../../models';
 import {
   BackendConfigurationPnCalendarService,
@@ -22,7 +22,9 @@ import {ComplianceReportViewComponent} from './compliance-report-view.component'
 /**
  * The three grid rules of the Rapport view, none of which the helper spec can
  * reach: `buildGridColumns` lives on the component because it needs the
- * translate stream and the cell TemplateRefs.
+ * translate stream and the cell TemplateRefs. (The section is one REPORT
+ * HEADLINE since #1188 and its columns are a server-built union across
+ * templates; the rules below did not change, the fixtures did.)
  *
  * Each of them blanks a whole sub-report when it regresses, and none of them
  * fails loudly in a way a reviewer would spot:
@@ -76,19 +78,19 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
     completed: true,
     doneAt: '2026-08-11T09:00:00Z',
     workerNames: ['Anna'],
+    checkListId: 509,
+    tags: ['Miljøtilsyn'],
     cells: {},
     imagesCount: 0,
     images: [],
   });
 
-  const section = (
-    columns: ComplianceReportColumnModel[],
-    checkListId = 509,
-  ): ComplianceReportSection => ({
-    key: `t7-c${checkListId}`,
-    tagLabel: 'Miljøtilsyn',
-    templateLabel: 'Brandtjek',
-    checkListId,
+  const section = (columns: ComplianceReportColumnModel[]): ComplianceReportSection => ({
+    key: 'h7',
+    captionLabel: 'Miljøtilsyn - Brand',
+    headlineLabel: 'Brandsikkerhed og beredskab',
+    checkListIds: [509],
+    schemaUnavailableCheckListIds: [],
     schemaUnavailable: false,
     columns,
     cases: [caseModel(1)],
@@ -192,28 +194,24 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
   it('gives every section its OWN column array and its OWN column objects', () => {
     // Through the real response path, because that is where the sharing bug
     // would be introduced.
-    const groups: ComplianceReportTagGroupModel[] = [
+    const groups: ComplianceReportHeadlineGroupModel[] = [
       {
-        tagId: 7,
-        tagName: 'Miljøtilsyn',
-        templates: [
-          {
-            checkListId: 509,
-            checkListName: 'Brandtjek',
-            mergedCheckListIds: [509],
-            columns: [column('f1')],
-            schemaUnavailable: false,
-            cases: [caseModel(1)],
-          },
-          {
-            checkListId: 511,
-            checkListName: 'Eltjek',
-            mergedCheckListIds: [511],
-            columns: [column('f1')],
-            schemaUnavailable: false,
-            cases: [caseModel(2)],
-          },
-        ],
+        headlineTagId: 7,
+        headlineName: 'Brandsikkerhed og beredskab',
+        tagsCaption: 'Miljøtilsyn - Brand',
+        checkListIds: [509],
+        schemaUnavailableCheckListIds: [],
+        columns: [column('f1')],
+        cases: [caseModel(1)],
+      },
+      {
+        headlineTagId: 8,
+        headlineName: 'Elinstallationer og eftersyn',
+        tagsCaption: 'Miljøtilsyn - EL',
+        checkListIds: [511],
+        schemaUnavailableCheckListIds: [],
+        columns: [column('f1')],
+        cases: [caseModel(2)],
       },
     ];
 
@@ -237,8 +235,8 @@ describe('ComplianceReportViewComponent — buildGridColumns', () => {
 
 /**
  * The two ceilings on the initial DOM. The per-section cap alone bounds
- * nothing: a section is one (tag × TEMPLATE) pair, so a realistic filter set
- * yields dozens of small sections, none of which reaches the cap, and the
+ * nothing: a section is one REPORT HEADLINE, so a realistic filter set can
+ * yield dozens of small sections, none of which reaches the cap, and the
  * server's whole 5000-row allowance lands on the page at once.
  *
  * Both ceilings must leave the section REVEALABLE — heading, true row count and
@@ -257,28 +255,25 @@ describe('ComplianceReportViewComponent — the row ceilings', () => {
     completed: true,
     doneAt: null,
     workerNames: [],
+    checkListId: 509,
+    tags: [],
     cells: {},
     imagesCount: 0,
     images: [],
   });
 
-  /** `n` template groups of `rows` cases each, all under one tag. */
-  const groups = (n: number, rows: number): ComplianceReportTagGroupModel[] => {
+  /** `n` headline groups of `rows` cases each. */
+  const groups = (n: number, rows: number): ComplianceReportHeadlineGroupModel[] => {
     let complianceId = 0;
-    return [
-      {
-        tagId: 7,
-        tagName: 'Miljøtilsyn',
-        templates: Array.from({length: n}, (_, i) => ({
-          checkListId: 500 + i,
-          checkListName: `Skema ${i}`,
-          mergedCheckListIds: [500 + i],
-          columns: [],
-          schemaUnavailable: false,
-          cases: Array.from({length: rows}, () => caseModel(++complianceId)),
-        })),
-      },
-    ];
+    return Array.from({length: n}, (_, i) => ({
+      headlineTagId: 100 + i,
+      headlineName: `Overskrift ${i}`,
+      tagsCaption: 'Miljøtilsyn',
+      checkListIds: [509],
+      schemaUnavailableCheckListIds: [],
+      columns: [],
+      cases: Array.from({length: rows}, () => caseModel(++complianceId)),
+    }));
   };
 
   beforeEach(async () => {
@@ -407,6 +402,8 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
     completed: true,
     doneAt: '2026-08-11T09:00:00Z',
     workerNames: ['Anna'],
+    checkListId: 509,
+    tags: ['Miljøtilsyn'],
     cells: {},
     imagesCount,
     images,
@@ -414,7 +411,7 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
 
   /** `toRowVm` is private; the alignment invariant it owns is not. */
   const rowVm = (caseModel_: ComplianceReportCaseModel) =>
-    (component as any).toRowVm(caseModel_, 509) as {
+    (component as any).toRowVm(caseModel_) as {
       imagesCount: number;
       imageNames: string[];
       imageThumbnailNames: (string | null)[];
@@ -598,5 +595,134 @@ describe('ComplianceReportViewComponent — the Billeder cell', () => {
     const row = rowVm(caseModel([image(1)]));
 
     expect(component.imagesLabelKey(row.imagesCount)).toBe('1 image');
+  });
+});
+
+/**
+ * The row's OWN template (#1188). A headline section spans templates — its
+ * columns are a union — so `Rediger` can no longer take `checkListId` from
+ * the section: it comes off the CASE, and the case route is built from it.
+ * Also the total the filter bar's Download gate reads: every case is in
+ * exactly one section, so it is the plain sum of cases.
+ */
+describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
+  let component: ComplianceReportViewComponent;
+  let router: {navigate: jest.Mock; url: string};
+  let state: ComplianceReportStateService;
+
+  const caseModel = (
+    complianceId: number,
+    checkListId: number | null,
+    completed = true,
+  ): ComplianceReportCaseModel => ({
+    complianceId,
+    sdkCaseId: 100 + complianceId,
+    propertyId: 5,
+    propertyName: 'Ejendom A',
+    title: 'Område 1',
+    taskDate: '2026-08-11',
+    completed,
+    doneAt: completed ? '2026-08-11T09:00:00Z' : null,
+    workerNames: ['Anna'],
+    checkListId,
+    tags: [],
+    cells: {},
+    imagesCount: 0,
+    images: [],
+  });
+
+  /** ONE headline section holding cases answered on TWO templates. */
+  const mixedGroup = (): ComplianceReportHeadlineGroupModel[] => [
+    {
+      headlineTagId: 8,
+      headlineName: 'Lovpligtig dokumentation',
+      tagsCaption: 'Miljøtilsyn - Dokumentation',
+      checkListIds: [509, 511],
+      schemaUnavailableCheckListIds: [],
+      columns: [],
+      cases: [caseModel(1, 509), caseModel(2, 511), caseModel(3, null), caseModel(4, 511, false)],
+    },
+  ];
+
+  beforeEach(async () => {
+    router = {navigate: jest.fn().mockResolvedValue(true), url: '/plugins/backend-configuration-pn/compliance-report'};
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns: jest.fn()}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: Router, useValue: router},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    component = fixture.componentInstance;
+    state = TestBed.inject(ComplianceReportStateService);
+    fixture.detectChanges();
+  });
+
+  it('takes checkListId from the CASE, so two rows of one section can differ', () => {
+    (component as any).applyResponse(mixedGroup());
+    const [only] = component.sections;
+
+    expect(component.sections.length).toBe(1);
+    expect(only.allRows.map((r) => r.checkListId)).toEqual([509, 511, 0, 511]);
+  });
+
+  it('routes Rediger to the ROW\'s own template, not a section-wide one', () => {
+    (component as any).applyResponse(mixedGroup());
+    const [first, second] = component.sections[0].allRows;
+
+    component.onEdit(second as any);
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/plugins/backend-configuration-pn/case', 102, 511, 2],
+      {queryParams: {reverseRoute: router.url}},
+    );
+
+    component.onEdit(first as any);
+    expect(router.navigate).toHaveBeenLastCalledWith(
+      ['/plugins/backend-configuration-pn/case', 101, 509, 1],
+      {queryParams: {reverseRoute: router.url}},
+    );
+  });
+
+  it('gates Rediger on completed AND a real checkListId, per row', () => {
+    (component as any).applyResponse(mixedGroup());
+    const [answered509, answered511, noTemplate, notCompleted] = component.sections[0].allRows;
+
+    expect(component.canEdit(answered509 as any)).toBe(true);
+    expect(component.canEdit(answered511 as any)).toBe(true);
+    // A case the server sent without a template cannot be routed anywhere.
+    expect(component.canEdit(noTemplate as any)).toBe(false);
+    expect(component.canEdit(notCompleted as any)).toBe(false);
+
+    component.onEdit(noTemplate as any);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('reports the plain sum of cases as the total — each case is in exactly one section', () => {
+    const groups = [
+      ...mixedGroup(),
+      {
+        headlineTagId: null,
+        headlineName: null,
+        tagsCaption: '',
+        checkListIds: [509],
+        schemaUnavailableCheckListIds: [],
+        columns: [],
+        cases: [caseModel(5, 509)],
+      },
+    ];
+
+    (component as any).applyResponse(groups);
+
+    expect(state.total).toBe(5);
+    expect(component.sections.map((s) => s.headlineLabel)[1]).toBe('Without report headline');
   });
 });

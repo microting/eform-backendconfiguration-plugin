@@ -429,7 +429,7 @@ public class ComplianceExportServiceTests
         reportService.EformColumns(Arg.Any<ComplianceReportRequestModel>()).Returns(call =>
         {
             onEformColumns?.Invoke(call.Arg<ComplianceReportRequestModel>());
-            return Task.FromResult(new OperationDataResult<List<ComplianceReportTagGroupModel>>(
+            return Task.FromResult(new OperationDataResult<List<ComplianceReportHeadlineGroupModel>>(
                 true, []));
         });
 
@@ -450,7 +450,7 @@ public class ComplianceExportServiceTests
         reportService.Index(Arg.Any<ComplianceReportRequestModel>()).Returns(
             Task.FromResult(new OperationDataResult<ComplianceReportPagedModel>(false, message)));
         reportService.EformColumns(Arg.Any<ComplianceReportRequestModel>()).Returns(
-            Task.FromResult(new OperationDataResult<List<ComplianceReportTagGroupModel>>(false, message)));
+            Task.FromResult(new OperationDataResult<List<ComplianceReportHeadlineGroupModel>>(false, message)));
         reportService.Overview(Arg.Any<ComplianceReportOverviewRequestModel>()).Returns(
             Task.FromResult(new OperationDataResult<ComplianceReportOverviewModel>(false, message)));
 

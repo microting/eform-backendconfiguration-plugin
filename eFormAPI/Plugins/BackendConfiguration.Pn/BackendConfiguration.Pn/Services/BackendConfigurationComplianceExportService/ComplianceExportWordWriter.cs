@@ -173,6 +173,16 @@ public class ComplianceExportWordWriter(
 
         foreach (var table in document.Tables)
         {
+            // Rapport's tags caption sits ABOVE the bold headline (#1188, PDF page
+            // 5): a plain small paragraph. Only emitted when there is one — Oversigt
+            // and Detaljer carry none, and a Rapport group whose cases have no tags
+            // gets no empty line ahead of its heading. #1192 restyles it.
+            if (!string.IsNullOrEmpty(table.Caption))
+            {
+                body.Append(
+                    $@"<p style='font-size:9pt;text-align:left;'>{Esc(table.Caption)}</p>");
+            }
+
             if (!string.IsNullOrEmpty(table.Title))
             {
                 body.Append(

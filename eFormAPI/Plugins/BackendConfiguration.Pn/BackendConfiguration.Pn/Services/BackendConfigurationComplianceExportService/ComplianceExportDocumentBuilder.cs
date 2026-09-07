@@ -254,61 +254,67 @@ public static class ComplianceExportDocumentBuilder
     }
 
     /// <summary>
-    /// Rapport (#1169 §2): ONE TABLE PER TAG GROUP PER TEMPLATE, mirroring
-    /// <c>ReportEformModel.GroupTagName</c> → <c>ReportEformGroupModel.CheckListName</c>
-    /// (#1160 decision 5).
+    /// Rapport (#1169 §2, regrouped by #1188): ONE TABLE PER REPORT HEADLINE —
+    /// the PDF's "Tabel_Rapport" rule ("one table per Rapportoverskrift, not per
+    /// tag"), which is also how <c>ReportEformModel</c>'s old Rapport grouped.
     ///
     /// <para>
-    /// <b>The "Delrapport" question, decided:</b> ONE COMPOSITE column,
-    /// <c>{tag} – {template}</c>, not two. The same string is the section title
-    /// (the table caption in PDF), so the section survives every flattening — a CSV
-    /// reader who concatenates the sections still sees which sub-report each row
-    /// came from, and a pivot over the column reproduces the sections exactly. Two
-    /// columns would carry the same information at the cost of a wider table and a
-    /// second header to translate.
+    /// <b>Reversed decisions.</b> Until #1188 this method produced one table per
+    /// tag group per template (#1160 decision 5 / #1167), titled and keyed by the
+    /// composite <c>{tag} – {template}</c> label that PR #1178 decided the
+    /// <c>Delrapport</c> column would carry ("ONE COMPOSITE column, not two"). All
+    /// of that read the prototype's literal <c>Rapportoverskrift</c> heading as a
+    /// placeholder. The customer's PDF (pages 4–5, 9–10) shows the actual model:
+    /// a small caption of the tags joined <c>" - "</c>, a bold heading that IS
+    /// the report headline, and a <c>Delrapport</c> cell carrying the ROW's own
+    /// tags — no headline column anywhere. Hence, per table:
+    /// <see cref="ComplianceExportTable.Caption"/> = the group's
+    /// <c>TagsCaption</c>, <see cref="ComplianceExportTable.Title"/> = the
+    /// headline label, and the <c>Delrapport</c> cell = the row's
+    /// <c>Tags</c> joined <c>" - "</c> (an untagged row gets the empty cell).
+    /// There is deliberately NO "Rapportoverskrift" column (#1188 decision 4: the
+    /// mock-up has none; the <c>ReportHeadline</c> localisation key exists for
+    /// #1192 should that be revisited).
     /// </para>
     ///
     /// <para>
-    /// Fixed columns, then the template's REAL answer columns:
+    /// Fixed columns, then the group's REAL answer columns:
     /// Delrapport / ID / Ejendom / Udført af / Udført dato / Område / Billeder,
-    /// then one column per <c>ComplianceReportColumnModel</c>. <c>Handlinger</c> is
-    /// absent (buttons are not data) and the placeholders <c>Note</c>,
-    /// <c>Option 1</c> and <c>Option 2</c> appear nowhere — the answer headers come
-    /// from the template schema.
+    /// then one column per <c>ComplianceReportColumnModel</c> — the service's
+    /// UNION over every template answered in the group, keyed <c>f{fieldId}</c>.
+    /// <c>Handlinger</c> is absent (buttons are not data) and the placeholders
+    /// <c>Note</c>, <c>Option 1</c> and <c>Option 2</c> appear nowhere — the
+    /// answer headers come from the template schemas.
     /// </para>
     ///
     /// <para>
     /// Cells are addressed by <c>ComplianceReportColumnModel.Key</c> against
     /// <c>ComplianceReportCaseModel.Cells</c>. A missing key means UNANSWERED and
-    /// renders as the en dash. Because the loop walks the COLUMN list and looks up
-    /// by key — rather than zipping a header list against a value list — the
-    /// #1160-finding-3 desync cannot occur here.
+    /// renders as the en dash — which, with union columns, is also how a case
+    /// answered on template A renders under template B's columns, in place.
+    /// Because the loop walks the COLUMN list and looks up by key — rather than
+    /// zipping a header list against a value list — the #1160-finding-3 desync
+    /// cannot occur here.
     /// </para>
     ///
     /// <para>
     /// <c>Billeder</c> is the image COUNT, not the images
     /// (<c>compliance.js:1773-1790</c>). The images themselves only ever reach the
-    /// optional Word/PDF appendix.
+    /// optional Word/PDF appendix, whose block caption leads with the section's
+    /// tags caption (<c>Bilag – Miljøtilsyn - Brand …</c>, PDF page 9) — or the
+    /// headline label when the group has no tags.
     /// </para>
     ///
     /// <para>
-    /// <b>The appendix is emitted once per CASE, not once per tag group.</b> The
-    /// report service shares ONE <c>ComplianceReportCaseModel</c> BY REFERENCE
-    /// across every tag group a row belongs to
-    /// (<c>BackendConfigurationComplianceReportService.cs:1150-1152</c>): the ROW
-    /// duplication is deliberate — a case carrying three tags belongs in three
-    /// sections — but its photographs are the same photographs. Without the
-    /// <c>SdkCaseId</c> de-duplication below, a three-tag case contributes three
-    /// identical appendix blocks, and <see cref="MaxAppendixImagesPerCase"/> bounds
-    /// a BLOCK rather than the document. The images are also the only unbounded
-    /// thing in the pipeline — <c>ComplianceExportWordWriter</c> accumulates every
-    /// base64 payload into one string and then copies it twice more — so the
-    /// document-wide <see cref="MaxAppendixImages"/> ceiling below is what actually
-    /// bounds it, and the document states it wherever it bit.
+    /// The appendix is emitted once per <c>SdkCaseId</c>. Since #1188 a case is in
+    /// exactly one group, so the de-duplication is redundant — but it is kept:
+    /// it is the invariant the document-wide <see cref="MaxAppendixImages"/>
+    /// ceiling (the only thing bounding the Word writer's base64 accumulation)
+    /// was reasoned about with, and it costs a hash set.
     /// </para>
     /// </summary>
     public static ComplianceExportDocument BuildReport(
-        List<ComplianceReportTagGroupModel> tagGroups,
+        List<ComplianceReportHeadlineGroupModel> groups,
         string period,
         bool includeImageAppendix,
         IBackendConfigurationLocalizationService localizationService)
@@ -319,160 +325,186 @@ public static class ComplianceExportDocumentBuilder
             Period = period
         };
 
-        var untaggedLabel = localizationService.GetString("WithoutTag");
+        var withoutHeadlineLabel = localizationService.GetString("WithoutReportHeadline");
         var columnsUnavailableLabel = localizationService.GetString("ColumnsUnavailable");
 
-        // De-duplication of the image appendix across tag groups, and the
-        // document-wide image budget. Both are per-DOCUMENT, so they live outside
-        // the tag-group loop.
+        // De-duplication of the image appendix, and the document-wide image
+        // budget. Both are per-DOCUMENT, so they live outside the group loop.
         var casesWithAnAppendixBlock = new HashSet<int>();
 
-        foreach (var tagGroup in tagGroups ?? [])
+        foreach (var group in groups ?? [])
         {
-            var tagName = TagGroupLabel(tagGroup, untaggedLabel);
+            var headlineLabel = HeadlineLabel(group, withoutHeadlineLabel);
+            var caption = group.TagsCaption ?? string.Empty;
 
-            foreach (var templateGroup in tagGroup.Templates ?? [])
+            var table = new ComplianceExportTable
             {
-                var templateName = string.IsNullOrWhiteSpace(templateGroup.CheckListName)
-                    ? $"#{templateGroup.CheckListId}"
-                    : templateGroup.CheckListName;
+                Caption = caption,
+                // A template whose schema could not be derived says so in the
+                // heading — an empty column block otherwise looks like "this
+                // template has no answerable fields", which is a different fact.
+                // With union columns the notice is per template: it names the ids
+                // when only some of the group's templates are affected, and is
+                // the bare label when every one of them is.
+                Title = SchemaUnavailableSuffix(group, columnsUnavailableLabel) is { } suffix
+                    ? $"{headlineLabel} ({suffix})"
+                    : headlineLabel,
+                Columns =
+                [
+                    new ComplianceExportColumn { Header = localizationService.GetString("SubReport") },
+                    new ComplianceExportColumn
+                    {
+                        Header = localizationService.GetString("CaseId"),
+                        Type = ComplianceExportCellType.Number
+                    },
+                    new ComplianceExportColumn { Header = localizationService.GetString("Property") },
+                    new ComplianceExportColumn { Header = localizationService.GetString("DoneBy") },
+                    new ComplianceExportColumn
+                    {
+                        Header = localizationService.GetString("CompletedDate"),
+                        Type = ComplianceExportCellType.Date
+                    },
+                    new ComplianceExportColumn { Header = localizationService.GetString("Area") },
+                    new ComplianceExportColumn
+                    {
+                        Header = localizationService.GetString("Images"),
+                        Type = ComplianceExportCellType.Number
+                    }
+                ]
+            };
 
-                var sectionLabel = $"{tagName} – {templateName}";
-
-                var table = new ComplianceExportTable
+            var answerColumns = group.Columns ?? [];
+            foreach (var column in answerColumns)
+            {
+                table.Columns.Add(new ComplianceExportColumn
                 {
-                    // A template whose schema could not be derived says so in its
-                    // own heading — an empty column set otherwise looks like "this
-                    // template has no answerable fields", which is a different fact.
-                    Title = templateGroup.SchemaUnavailable
-                        ? $"{sectionLabel} ({columnsUnavailableLabel})"
-                        : sectionLabel,
-                    Columns =
+                    Header = string.IsNullOrWhiteSpace(column.Label) ? column.Key : column.Label
+                });
+            }
+
+            // The appendix caption leads with the tags caption (PDF page 9), and
+            // falls back to the headline label so an untagged group's blocks are
+            // still attributable to their section.
+            var appendixLabel = string.IsNullOrEmpty(caption) ? headlineLabel : caption;
+
+            foreach (var caseModel in group.Cases ?? [])
+            {
+                var row = new ComplianceExportRow
+                {
+                    Cells =
                     [
-                        new ComplianceExportColumn { Header = localizationService.GetString("SubReport") },
-                        new ComplianceExportColumn
-                        {
-                            Header = localizationService.GetString("CaseId"),
-                            Type = ComplianceExportCellType.Number
-                        },
-                        new ComplianceExportColumn { Header = localizationService.GetString("Property") },
-                        new ComplianceExportColumn { Header = localizationService.GetString("DoneBy") },
-                        new ComplianceExportColumn
-                        {
-                            Header = localizationService.GetString("CompletedDate"),
-                            Type = ComplianceExportCellType.Date
-                        },
-                        new ComplianceExportColumn { Header = localizationService.GetString("Area") },
-                        new ComplianceExportColumn
-                        {
-                            Header = localizationService.GetString("Images"),
-                            Type = ComplianceExportCellType.Number
-                        }
+                        // The ROW's own tags, " - "-joined (PDF page 10); an
+                        // untagged row gets the empty cell, not the headline.
+                        ComplianceExportCell.FromText(JoinTags(caseModel.Tags)),
+                        ComplianceExportCell.FromNumber(caseModel.SdkCaseId),
+                        ComplianceExportCell.FromText(caseModel.PropertyName),
+                        ComplianceExportCell.FromText(JoinNames(caseModel.WorkerNames)),
+                        // Case METADATA, never an answer field (#1160 finding 7).
+                        ComplianceExportCell.FromDate(caseModel.DoneAt),
+                        ComplianceExportCell.FromText(caseModel.Title),
+                        ComplianceExportCell.FromNumber(caseModel.ImagesCount)
                     ]
                 };
 
-                var answerColumns = templateGroup.Columns ?? [];
                 foreach (var column in answerColumns)
                 {
-                    table.Columns.Add(new ComplianceExportColumn
-                    {
-                        Header = string.IsNullOrWhiteSpace(column.Label) ? column.Key : column.Label
-                    });
+                    // Keyed lookup, never positional: a column with no matching
+                    // key is UNANSWERED (or belongs to another template in the
+                    // union) and gets the en dash, and no later column shifts.
+                    var answered = caseModel.Cells != null
+                                   && caseModel.Cells.TryGetValue(column.Key, out var value)
+                        ? value
+                        : null;
+                    row.Cells.Add(ComplianceExportCell.FromText(answered));
                 }
 
-                foreach (var caseModel in templateGroup.Cases ?? [])
-                {
-                    var row = new ComplianceExportRow
-                    {
-                        Cells =
-                        [
-                            ComplianceExportCell.FromText(sectionLabel),
-                            ComplianceExportCell.FromNumber(caseModel.SdkCaseId),
-                            ComplianceExportCell.FromText(caseModel.PropertyName),
-                            ComplianceExportCell.FromText(JoinNames(caseModel.WorkerNames)),
-                            // Case METADATA, never an answer field (#1160 finding 7).
-                            ComplianceExportCell.FromDate(caseModel.DoneAt),
-                            ComplianceExportCell.FromText(caseModel.Title),
-                            ComplianceExportCell.FromNumber(caseModel.ImagesCount)
-                        ]
-                    };
+                table.Rows.Add(row);
 
-                    foreach (var column in answerColumns)
-                    {
-                        // Keyed lookup, never positional: a column with no matching
-                        // key is UNANSWERED and gets the en dash, and no later
-                        // column shifts.
-                        var answered = caseModel.Cells != null
-                                       && caseModel.Cells.TryGetValue(column.Key, out var value)
-                            ? value
-                            : null;
-                        row.Cells.Add(ComplianceExportCell.FromText(answered));
-                    }
+                if (!includeImageAppendix) continue;
 
-                    table.Rows.Add(row);
+                // ONE block per case — see the method comment on why the guard is
+                // kept although a case is now in exactly one group.
+                if (!casesWithAnAppendixBlock.Add(caseModel.SdkCaseId)) continue;
 
-                    if (!includeImageAppendix) continue;
+                var (block, wanted) = BuildImageBlock(
+                    caseModel, appendixLabel,
+                    MaxAppendixImages - document.AppendixImagesEmbedded);
 
-                    // ONE block per case, no matter how many tag groups the case
-                    // appears in — the row above is duplicated per section on
-                    // purpose, the photographs are not. The block lands under the
-                    // FIRST section the case appears in, and its caption names that
-                    // section.
-                    if (!casesWithAnAppendixBlock.Add(caseModel.SdkCaseId)) continue;
+                document.AppendixImagesRequested += wanted;
+                if (block == null) continue;
 
-                    var (block, wanted) = BuildImageBlock(
-                        caseModel, sectionLabel,
-                        MaxAppendixImages - document.AppendixImagesEmbedded);
-
-                    document.AppendixImagesRequested += wanted;
-                    if (block == null) continue;
-
-                    document.AppendixImagesEmbedded += block.ImageNames.Count;
-                    table.ImageBlocks.Add(block);
-                }
-
-                document.Tables.Add(table);
+                document.AppendixImagesEmbedded += block.ImageNames.Count;
+                table.ImageBlocks.Add(block);
             }
+
+            document.Tables.Add(table);
         }
 
         return document;
     }
 
     /// <summary>
-    /// The label for a tag group, discriminating on the TAG ID and never on the
-    /// name.
+    /// The heading for a headline group, discriminating on the HEADLINE ID and
+    /// never on the name.
     ///
     /// <para>
-    /// <c>BackendConfigurationComplianceReportService.cs:1061-1073</c> deliberately
-    /// does NOT drop a tag id whose NAME could not be resolved: tag ids live in the
-    /// BC database and tag names in the items-planning one with no foreign key
-    /// between them, so a row keeps the tag it actually carries and the group's
-    /// <c>TagName</c> is simply null. Discriminating on the name would file such a
-    /// group under "Uden tag" — indistinguishable from the genuinely untagged group
-    /// that the service sorts last precisely to keep the two apart. That would
-    /// silently merge two different sections under one <c>Delrapport</c> value
-    /// (whose whole justification is that a pivot over it reproduces the sections
-    /// exactly), give two sections the same title, and make the export disagree
-    /// with the screen.
+    /// The report service deliberately does NOT drop a headline id whose NAME
+    /// could not be resolved: tag ids live in the BC database and tag names in the
+    /// items-planning one with no foreign key between them, so a row keeps the
+    /// headline it actually carries and the group's <c>HeadlineName</c> is simply
+    /// null. Discriminating on the name would file such a group under "Uden
+    /// rapportoverskrift" — indistinguishable from the genuinely headline-less
+    /// fallback group the service sorts last precisely to keep the two apart —
+    /// giving two sections the same title and making the export disagree with the
+    /// screen, which renders <c>#{id}</c>.
     /// </para>
     ///
     /// <para>
-    /// A named group with no resolvable name is therefore labelled <c>#{TagId}</c>
-    /// — the same neutral form this method already uses for a template with no
-    /// name (<c>#{CheckListId}</c>). It is visibly not a tag NAME, so it cannot be
-    /// mistaken for one, it stays distinct from every other group, and it names the
-    /// id a reader can look the tag up by. Only a group with NO tag id at all gets
-    /// the localised "Uden tag".
+    /// A named group with no resolvable name is therefore labelled
+    /// <c>#{HeadlineTagId}</c> — visibly not a NAME, so it cannot be mistaken for
+    /// one, distinct from every other group, and naming the id a reader can look
+    /// the tag up by. Only the group with NO headline id at all gets the localised
+    /// "Uden rapportoverskrift".
     /// </para>
     /// </summary>
-    private static string TagGroupLabel(ComplianceReportTagGroupModel tagGroup, string untaggedLabel)
+    private static string HeadlineLabel(ComplianceReportHeadlineGroupModel group, string withoutHeadlineLabel)
     {
-        if (!tagGroup.TagId.HasValue) return untaggedLabel;
+        if (!group.HeadlineTagId.HasValue) return withoutHeadlineLabel;
 
-        return string.IsNullOrWhiteSpace(tagGroup.TagName)
-            ? $"#{tagGroup.TagId.Value}"
-            : tagGroup.TagName;
+        return string.IsNullOrWhiteSpace(group.HeadlineName)
+            ? $"#{group.HeadlineTagId.Value}"
+            : group.HeadlineName;
     }
+
+    /// <summary>
+    /// The "(Kolonner utilgængelige)" heading suffix, or <c>null</c> when every
+    /// template in the group has a schema. When only SOME of them lack one the
+    /// label names the affected template ids (<c>Kolonner utilgængelige: #509,
+    /// #511</c>), because the rest of the table still carries real columns and a
+    /// reader must be able to tell which template's answers are missing.
+    /// </summary>
+    private static string SchemaUnavailableSuffix(
+        ComplianceReportHeadlineGroupModel group, string columnsUnavailableLabel)
+    {
+        var unavailable = group.SchemaUnavailableCheckListIds ?? [];
+        if (unavailable.Count == 0) return null;
+
+        var all = group.CheckListIds ?? [];
+        var everyTemplateAffected = all.Count == 0 || all.All(unavailable.Contains);
+        return everyTemplateAffected
+            ? columnsUnavailableLabel
+            : $"{columnsUnavailableLabel}: {string.Join(", ", unavailable.Select(id => $"#{id}"))}";
+    }
+
+    /// <summary>
+    /// The row's tags for the <c>Delrapport</c> cell — hyphen-minus with a space
+    /// either side, verbatim from the PDF (page 10), NOT the en dash the empty
+    /// cell and the period line use. Null (→ the empty cell) for an untagged row.
+    /// </summary>
+    private static string JoinTags(List<string> tags) =>
+        tags == null || tags.Count == 0
+            ? null
+            : string.Join(" - ", tags.Where(t => !string.IsNullOrWhiteSpace(t)));
 
     /// <summary>
     /// Per-case appendix block, capped at <see cref="MaxAppendixImagesPerCase"/>

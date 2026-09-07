@@ -737,7 +737,6 @@ export const isIS = {
   'No properties match the selected filters.': 'Engar eiginleikar passa við valdar síur.',
   'Sort by': 'Raða eftir',
   'Completion date': 'Lokadagur',
-  'Without tag': 'Án merkis',
   'Columns unavailable': 'Dálkar ekki tiltækir',
   '1 image': '1 mynd',
   '{{count}} images': '{{count}} myndir',
@@ -753,4 +752,6 @@ export const isIS = {
   'Update period': 'Uppfæra tímabil',
   'Select a period and click Update period': 'Veldu tímabil og smelltu á Uppfæra tímabil.',
   'Change a filter or click Overview to load the table': 'Breyttu síu eða smelltu á Yfirlit til að hlaða töflunni.',
+  'Without report headline': 'Án skýrslufyrirsagnar',
+  'Columns unavailable for template #{{id}}': 'Dálkar ekki tiltækir fyrir sniðmát #{{id}}',
 };

@@ -14,7 +14,7 @@ import {
   ComplianceReportOverviewRequestModel,
   ComplianceReportPagedModel,
   ComplianceReportRequestModel,
-  ComplianceReportTagGroupModel,
+  ComplianceReportHeadlineGroupModel,
 } from '../models';
 
 export let BackendConfigurationPnComplianceReportMethods = {
@@ -144,8 +144,10 @@ export class BackendConfigurationPnComplianceReportService {
   }
 
   /**
-   * The Rapport projection (#1166): tag groups → template groups → an ordered
-   * column schema plus one KEYED cell bag per case.
+   * The Rapport projection (#1166, regrouped by #1188): one group per REPORT
+   * HEADLINE, each carrying the tags caption, the ordered UNION of its
+   * templates' column schemas and one KEYED cell bag per case — every case in
+   * exactly one group, the headline-less fallback group last.
    *
    * Takes the same request model as `index()` — the shared filter set — and
    * ignores its paging and sorting fields server-side. `postNoToast` + the
@@ -155,9 +157,9 @@ export class BackendConfigurationPnComplianceReportService {
    */
   eformColumns(
     model: ComplianceReportRequestModel
-  ): Observable<OperationDataResult<ComplianceReportTagGroupModel[]>> {
+  ): Observable<OperationDataResult<ComplianceReportHeadlineGroupModel[]>> {
     return this.apiBaseService
-      .postNoToast<ComplianceReportTagGroupModel[]>(
+      .postNoToast<ComplianceReportHeadlineGroupModel[]>(
         BackendConfigurationPnComplianceReportMethods.EformColumns,
         model
       )

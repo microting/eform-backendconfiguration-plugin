@@ -76,7 +76,9 @@ public class ComplianceExportWriterTests
         [
             new ComplianceExportTable
             {
-                Title = "Miljøtilsyn – Aflæsning vand",
+                // Rapport's shape since #1188: the tags caption above the headline.
+                Caption = "Miljøtilsyn - Brand",
+                Title = "Brandsikkerhed og beredskab",
                 Columns =
                 [
                     new ComplianceExportColumn { Header = "Dato", Type = ComplianceExportCellType.Date },
@@ -489,7 +491,8 @@ public class ComplianceExportWriterTests
         var document = SampleDocument();
         document.Tables.Add(new ComplianceExportTable
         {
-            Title = "Drift – Aflæsning el",
+            Caption = "Miljøtilsyn - EL",
+            Title = "Elinstallationer og eftersyn",
             Columns = [new ComplianceExportColumn { Header = "Kolonne" }],
             Rows = [new ComplianceExportRow { Cells = [ComplianceExportCell.FromText("v")] }]
         });
@@ -500,10 +503,26 @@ public class ComplianceExportWriterTests
 
         // Table one: header first, no title line ahead of it.
         Assert.That(text, Does.StartWith("Dato;Ejendom;Overskredet\r\n"));
-        Assert.That(text, Does.Not.Contain("Miljøtilsyn – Aflæsning vand"));
+        Assert.That(text, Does.Not.Contain("Brandsikkerhed og beredskab"));
 
-        // Table two: blank line, its title, its header, its rows.
-        Assert.That(text, Does.Contain("\r\n\r\nDrift – Aflæsning el\r\nKolonne\r\nv\r\n"));
+        // Table two: blank line, its title, its header, its rows — and NO caption
+        // line: the CSV's per-table shape is unchanged by #1188.
+        Assert.That(text, Does.Contain("\r\n\r\nElinstallationer og eftersyn\r\nKolonne\r\nv\r\n"));
+        Assert.That(text, Does.Not.Contain("Miljøtilsyn - EL"));
+    }
+
+    /// <summary>
+    /// The table <c>Caption</c> (#1188, Rapport's tags line) is a Word/PDF-only
+    /// element. CSV never writes it — not as a line, not as a column.
+    /// </summary>
+    [Test]
+    public void Csv_IgnoresTheTableCaption()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(SampleDocument());
+        var bytes = ReadAll(stream);
+        var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text, Does.Not.Contain("Miljøtilsyn - Brand"));
     }
 
     // ==================================================================
@@ -531,7 +550,8 @@ public class ComplianceExportWriterTests
 
         var text = word.MainDocumentPart!.Document!.InnerText;
         Assert.That(text, Does.Contain("Detaljer"));
-        Assert.That(text, Does.Contain("Miljøtilsyn – Aflæsning vand"));
+        Assert.That(text, Does.Contain("Miljøtilsyn - Brand"));
+        Assert.That(text, Does.Contain("Brandsikkerhed og beredskab"));
         Assert.That(text, Does.Contain("Gården"));
         // Dates render dd.MM.yyyy in the document, not ISO.
         Assert.That(text, Does.Contain("09.03.2026"));
@@ -838,9 +858,55 @@ public class ComplianceExportWriterTests
         await using var stream = await NewWordWriter().WriteAsync(document, null);
         using var word = WordprocessingDocument.Open(stream, false);
 
+        var paragraphs = word.MainDocumentPart!.Document!.Body!.Descendants<Paragraph>()
+            .Where(p => !string.IsNullOrWhiteSpace(p.InnerText))
+            .Select(p => p.InnerText.Trim())
+            .ToList();
+        // The first table's caption, then its title — nothing ahead of them.
+        Assert.That(paragraphs.Take(2), Is.EqualTo(new[] { "Miljøtilsyn - Brand", "Brandsikkerhed og beredskab" }));
+    }
+
+    /// <summary>
+    /// Rapport's tags caption (#1188, PDF page 5) is a plain, small paragraph
+    /// directly ABOVE the bold headline — not bold itself, and not part of the
+    /// heading text. #1192 restyles it; this pins the order and the plainness.
+    /// </summary>
+    [Test]
+    public async Task Word_RapportTableCaptionIsAPlainParagraphAboveTheBoldTitle()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var paragraphs = word.MainDocumentPart!.Document!.Body!.Descendants<Paragraph>()
+            .Where(p => !string.IsNullOrWhiteSpace(p.InnerText))
+            .ToList();
+
+        var caption = paragraphs.Single(p => p.InnerText.Trim() == "Miljøtilsyn - Brand");
+        var title = paragraphs.Single(p => p.InnerText.Trim() == "Brandsikkerhed og beredskab");
+
+        Assert.That(paragraphs.IndexOf(caption), Is.EqualTo(paragraphs.IndexOf(title) - 1),
+            "the caption is the paragraph immediately above the title");
+        Assert.That(caption.Descendants<Bold>().Any(), Is.False, "the caption is plain");
+        Assert.That(title.Descendants<Bold>().Any(), Is.True, "the headline is bold");
+    }
+
+    /// <summary>
+    /// A table without a caption — Oversigt, Detaljer, or a Rapport group whose
+    /// cases carry no tags — gets no empty paragraph ahead of its title.
+    /// </summary>
+    [Test]
+    public async Task Word_OmitsTheCaptionParagraphWhenTheTableHasNone()
+    {
+        var document = SampleDocument();
+        document.Title = string.Empty;
+        document.Tables[0].Caption = string.Empty;
+
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
         var firstParagraph = word.MainDocumentPart!.Document!.Body!.Descendants<Paragraph>()
             .First(p => !string.IsNullOrWhiteSpace(p.InnerText));
-        Assert.That(firstParagraph.InnerText.Trim(), Is.EqualTo("Miljøtilsyn – Aflæsning vand"));
+        Assert.That(firstParagraph.InnerText.Trim(), Is.EqualTo("Brandsikkerhed og beredskab"));
     }
 
     /// <summary>

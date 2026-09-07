@@ -737,7 +737,6 @@ export const ptBR = {
   'No properties match the selected filters.': 'Nenhuma propriedade corresponde aos filtros selecionados.',
   'Sort by': 'Ordenar por',
   'Completion date': 'Data de conclusão',
-  'Without tag': 'Sem etiqueta',
   'Columns unavailable': 'Colunas indisponíveis',
   '1 image': '1 imagem',
   '{{count}} images': '{{count}} imagens',
@@ -753,4 +752,6 @@ export const ptBR = {
   'Update period': 'Atualizar período',
   'Select a period and click Update period': 'Selecione um período e clique em Atualizar período.',
   'Change a filter or click Overview to load the table': 'Altere um filtro ou clique em Visão geral para carregar a tabela.',
+  'Without report headline': 'Sem título de relatório',
+  'Columns unavailable for template #{{id}}': 'Colunas indisponíveis para o modelo #{{id}}',
 };

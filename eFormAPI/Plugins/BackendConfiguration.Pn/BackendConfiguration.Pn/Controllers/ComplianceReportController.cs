@@ -58,14 +58,15 @@ public class ComplianceReportController : Controller
     }
 
     /// <summary>
-    /// The Rapport view's per-template answer columns (#1166): tag groups →
-    /// template groups → an ordered column schema plus one keyed cell bag per case.
+    /// The Rapport view's answer columns (#1166, regrouped by #1188): one group
+    /// per REPORT HEADLINE, each with the union column schema of every template
+    /// answered in it, a tags caption, and one keyed cell bag per case.
     ///
     /// Unpaged — Rapport groups the whole filtered set, so the request's paging and
     /// sorting fields are ignored and the service's row cap applies instead.
     /// </summary>
     [HttpPost("eform-columns")]
-    public async Task<OperationDataResult<List<ComplianceReportTagGroupModel>>> EformColumns(
+    public async Task<OperationDataResult<List<ComplianceReportHeadlineGroupModel>>> EformColumns(
         [FromBody] ComplianceReportRequestModel requestModel)
     {
         return await _complianceReportService.EformColumns(requestModel);

@@ -737,7 +737,6 @@ export const huHU = {
   'No properties match the selected filters.': 'Egyik tulajdonság sem felel meg a kiválasztott szűrőknek.',
   'Sort by': 'Rendezés',
   'Completion date': 'Befejezési dátum',
-  'Without tag': 'Címke nélkül',
   'Columns unavailable': 'Oszlopok nem érhetők el',
   '1 image': '1 kép',
   '{{count}} images': '{{count}} kép',
@@ -753,4 +752,6 @@ export const huHU = {
   'Update period': 'Időszak frissítése',
   'Select a period and click Update period': 'Válasszon időszakot, majd kattintson az Időszak frissítése gombra.',
   'Change a filter or click Overview to load the table': 'Módosítson egy szűrőt, vagy kattintson az Áttekintés gombra a táblázat betöltéséhez.',
+  'Without report headline': 'Jelentéscím nélkül',
+  'Columns unavailable for template #{{id}}': 'Oszlopok nem érhetők el a(z) #{{id}} sablonhoz',
 };

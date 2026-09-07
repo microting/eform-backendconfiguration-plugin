@@ -736,7 +736,6 @@ export const frFR = {
   'No properties match the selected filters.': 'Aucune propriété ne correspond aux filtres sélectionnés.',
   'Sort by': 'Trier par',
   'Completion date': 'Date d\'achèvement',
-  'Without tag': 'Sans étiquette',
   'Columns unavailable': 'Colonnes indisponibles',
   '1 image': '1 image',
   '{{count}} images': '{{count}} images',
@@ -752,4 +751,6 @@ export const frFR = {
   'Update period': 'Mettre à jour la période',
   'Select a period and click Update period': 'Sélectionnez une période et cliquez sur Mettre à jour la période.',
   'Change a filter or click Overview to load the table': 'Modifiez un filtre ou cliquez sur Aperçu pour charger le tableau.',
+  'Without report headline': 'Sans en-tête de rapport',
+  'Columns unavailable for template #{{id}}': 'Colonnes indisponibles pour le modèle #{{id}}',
 };

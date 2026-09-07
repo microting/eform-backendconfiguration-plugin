@@ -39,10 +39,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 /// </para>
 ///
 /// <para>
-/// The one thing carried forward from <c>ReportEformModel</c> is its GROUPING:
-/// Rapport still produces one table per tag group per template
-/// (<c>GroupTagName</c> → <c>CheckListName</c>, #1160 decision 5). What is NOT
-/// carried forward is positional cell addressing —
+/// The GROUPING is <c>ReportEformModel</c>'s original one, restored by #1188:
+/// Rapport produces one table per REPORT HEADLINE
+/// (<c>Planning.ReportGroupPlanningTagId</c> there,
+/// <c>AreaRulePlanning.ItemPlanningTagId</c> here), not the tag-per-template
+/// split of #1160 decision 5 that sat in between. What is NOT carried forward is
+/// positional cell addressing —
 /// <c>ReportEformItemModel.CaseFields</c> is a
 /// <c>List&lt;KeyValuePair&lt;string,string&gt;&gt;</c> keyed on the field TYPE
 /// tag, which is the root of the column-desync of #1160 finding 3. Cells here are
@@ -83,7 +85,7 @@ public class ComplianceExportDocument
 
     /// <summary>
     /// One table per rendered section. Oversigt and Detaljer produce exactly one;
-    /// Rapport produces one per (tag group × template group).
+    /// Rapport produces one per report headline (#1188).
     /// </summary>
     public List<ComplianceExportTable> Tables { get; set; } = [];
 
@@ -113,11 +115,20 @@ public class ComplianceExportDocument
 public class ComplianceExportTable
 {
     /// <summary>
+    /// Small caption line rendered ABOVE <see cref="Title"/> when non-empty
+    /// (#1188): for Rapport it is the group's tag names joined <c>" - "</c>
+    /// (<c>ComplianceReportHeadlineGroupModel.TagsCaption</c>). Word/PDF print it
+    /// as a plain small paragraph (#1192 restyles it); CSV ignores it — its
+    /// per-table shape is unchanged. Empty for Oversigt and Detaljer.
+    /// </summary>
+    public string Caption { get; set; } = string.Empty;
+
+    /// <summary>
     /// Section heading. Empty for the single-table view modes (the document title
-    /// already names them); for Rapport it is the composite
-    /// <c>{tag} – {template}</c> label — see
-    /// <c>ComplianceExportDocumentBuilder</c> for why that is one column and one
-    /// title rather than two.
+    /// already names them); for Rapport it is the REPORT HEADLINE's name (#1188)
+    /// — or <c>#{id}</c> for a headline with no <c>PlanningTags</c> row, or the
+    /// localised "Uden rapportoverskrift" for the fallback group — suffixed with
+    /// "(Kolonner utilgængelige)" when a template's schema could not be derived.
     /// </summary>
     public string Title { get; set; } = string.Empty;
 

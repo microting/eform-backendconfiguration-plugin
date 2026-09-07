@@ -813,9 +813,12 @@ public class BackendConfigurationComplianceReportService(
 
 
     /// <summary>
-    /// The Rapport view's read model (#1166): the filtered compliance set grouped
-    /// by TAG, then by the eForm TEMPLATE that was actually answered, each template
-    /// group carrying its own column schema and one keyed cell bag per case.
+    /// The Rapport view's read model (#1166, regrouped by #1188): the filtered
+    /// compliance set grouped by REPORT HEADLINE
+    /// (<c>AreaRulePlanning.ItemPlanningTagId</c>), each group carrying the UNION
+    /// of the column schemas of every eForm template answered in it, one keyed
+    /// cell bag per case, and the group's tag names as a caption. Rows whose
+    /// planning has no headline form one fallback group, sorted last.
     ///
     /// <para>
     /// Runs the SAME <see cref="BuildCandidateSet"/> as <see cref="Index"/> and
@@ -839,7 +842,7 @@ public class BackendConfigurationComplianceReportService(
     /// still shows them.
     /// </para>
     /// </summary>
-    public async Task<OperationDataResult<List<ComplianceReportTagGroupModel>>> EformColumns(
+    public async Task<OperationDataResult<List<ComplianceReportHeadlineGroupModel>>> EformColumns(
         ComplianceReportRequestModel requestModel)
     {
         try
@@ -890,7 +893,7 @@ public class BackendConfigurationComplianceReportService(
             }
 
             // One deterministic order for the whole response: cases appear inside
-            // every template group in occurrence-date order, oldest first, with the
+            // every headline group in occurrence-date order, oldest first, with the
             // compliance id as the total tiebreak. The cap is applied to that
             // order, so it truncates the tail rather than an arbitrary slice.
             var answered = answerable
@@ -911,8 +914,8 @@ public class BackendConfigurationComplianceReportService(
 
             if (answered.Count == 0)
             {
-                return new OperationDataResult<List<ComplianceReportTagGroupModel>>(
-                    true, new List<ComplianceReportTagGroupModel>());
+                return new OperationDataResult<List<ComplianceReportHeadlineGroupModel>>(
+                    true, new List<ComplianceReportHeadlineGroupModel>());
             }
 
             // ==========================================================
@@ -934,9 +937,10 @@ public class BackendConfigurationComplianceReportService(
             // ARP (a deliberate, documented choice for the two-live-ARPs-on-one-
             // planning data anomaly), while its tag filter is an EXISTS over ANY
             // live ARP of the planning. Reading tags off row.Arp only would let a
-            // row whose tag sits on a higher-Id ARP pass the filter and then fall
-            // into the untagged bucket — a "Uden tag" section inside a report the
-            // user filtered TO a named tag. One join, no per-row query.
+            // row whose tag sits on a higher-Id ARP pass the filter and then show
+            // an empty caption inside a report the user filtered TO a named tag.
+            // One join, no per-row query. (The HEADLINE, by contrast, IS read off
+            // row.Arp alone — see the grouping below.)
             var planningIdsForTags = answered
                 .Select(r => r.Candidate.PlanningId)
                 .Distinct()
@@ -961,7 +965,13 @@ public class BackendConfigurationComplianceReportService(
                 .ToDictionary(g => g.Key, g => g.Select(x => x.ItemPlanningTagId).Distinct().ToList());
 
             // Tag ids live in the BC database, tag NAMES in the items-planning one.
-            var tagItemIds = arpTags.Select(x => x.ItemPlanningTagId).Distinct().ToList();
+            // The HEADLINE ids (AreaRulePlanning.ItemPlanningTagId, #1188) are
+            // ordinary PlanningTag ids too, so they join the SAME single lookup —
+            // one query resolves both the captions and the section headings.
+            var tagItemIds = arpTags.Select(x => x.ItemPlanningTagId)
+                .Concat(answered.Select(r => HeadlineTagIdOf(r.Arp)).Where(id => id.HasValue).Select(id => id.Value))
+                .Distinct()
+                .ToList();
             var planningTagNames = tagItemIds.Count > 0
                 ? await itemsPlanningPnDbContext.PlanningTags
                     .Where(x => tagItemIds.Contains(x.Id))
@@ -1004,28 +1014,44 @@ public class BackendConfigurationComplianceReportService(
             }
 
             // ==========================================================
-            // Tag -> template grouping (#1160 decision 5).
+            // Headline grouping (#1188): ONE section per report headline.
             // ==========================================================
+            // The section key is the task's REPORT HEADLINE —
+            // AreaRulePlanning.ItemPlanningTagId, the calendar modal's
+            // "Rapportoverskrift" select, which the wizard labels "the report
+            // table header tag" and which the old Rapport
+            // (BackendConfigurationReportService.GenerateReportV2) always grouped
+            // on. It is read off row.Arp, which BuildCandidateSet pins to the
+            // LOWEST-Id live ARP of the planning (a deliberate, documented choice
+            // for the two-live-ARPs-on-one-planning data anomaly — do not "fix" it
+            // here); a planning with no live ARP has a null row.Arp and lands in
+            // the fallback group. The ARP column is used rather than the mirrored
+            // Planning.ReportGroupPlanningTagId because it is already in memory
+            // and the wizard writes both from one value.
+            //
+            // This REVERSES #1160 decision 5 / #1166 / #1167 (tag → template
+            // grouping, template name as heading): see the header comment on
+            // ComplianceReportHeadlineGroupModel for the four reversed decisions
+            // and the PDF evidence behind them.
+            //
             // NEVER key a Dictionary on a NULLABLE VALUE TYPE here. Dictionary<TKey,
             // TValue> null-checks its key in both FindValue and TryInsert, and
             // boxing an EMPTY Nullable<int> produces a null reference — so
             // Dictionary<int?, …> throws ArgumentNullException the moment the
-            // untagged group is looked up or inserted, which is the NORMAL path,
+            // fallback group is looked up or inserted, which is the NORMAL path,
             // not an edge case. (The compiler would normally warn CS8714, but this
             // csproj sets no <Nullable>, so nothing warns.) Hence: a plain int-keyed
-            // dictionary for the named tags plus a dedicated holder for the untagged
-            // group.
-            var tagGroupsByTagId = new Dictionary<int, ComplianceReportTagGroupModel>();
-            ComplianceReportTagGroupModel untaggedGroup = null;
-            // templateGroups is keyed on a ValueTuple, which is a struct and is
-            // never a null reference when boxed — a null TagId inside it is safe.
-            var templateGroups = new Dictionary<(int? TagId, int CheckListId), ComplianceReportTemplateGroupModel>();
+            // dictionary for the named headlines plus a dedicated holder for the
+            // fallback group.
+            var groupsByHeadlineId = new Dictionary<int, HeadlineGroupBuilder>();
+            HeadlineGroupBuilder withoutHeadline = null;
 
             foreach (var row in answered)
             {
                 var checkListId = row.SdkCase.CheckListId.Value;
                 var projection = projections[checkListId];
                 var sdkCaseId = row.Candidate.MicrotingSdkCaseId;
+                var headlineTagId = HeadlineTagIdOf(row.Arp);
 
                 var rowSiteIds = row.Arp != null
                     ? siteIdsByArpId.GetValueOrDefault(row.Arp.Id, new List<int>())
@@ -1033,12 +1059,42 @@ public class BackendConfigurationComplianceReportService(
 
                 var images = projection.ImagesByCaseId.GetValueOrDefault(sdkCaseId, []);
 
-                // ONE model per compliance row, shared by reference when the row
-                // carries several tags — it is never mutated after construction.
+                // The row's tags, read per PLANNING over every live ARP (see the
+                // tag lookup above), EXCLUDING the headline id. The exclusion is
+                // required, not defensive: the legacy area-rule path
+                // (BackendConfigurationTaskWizardService.UpdateTags) pairs the
+                // headline into AreaRulePlanningTags as well, so without it a
+                // legacy task captions as "Flydelag - Flydelag".
+                //
+                // A tag id whose NAME cannot be resolved is kept as "#{id}", never
+                // dropped: tag ids live in the BC database and names in the
+                // items-planning one with no foreign key between them, and a
+                // silently vanishing tag would make the caption disagree with the
+                // Detaljer row. Same neutral form the export uses for a nameless
+                // headline.
+                //
+                // The request's TAG FILTER is deliberately NOT applied here (the
+                // pre-#1188 "selected tags only" predicate is gone): tags no longer
+                // key anything, so the caption shows the row's FULL membership.
+                // Filter semantics themselves are unchanged (#1188 decision 6):
+                // TagIds still matches AreaRulePlanningTags only, so filtering by a
+                // tag that is used solely as a headline returns nothing.
+                var rowTagNames = tagIdsByPlanningId
+                    .GetValueOrDefault(row.Candidate.PlanningId, [])
+                    .Where(id => id != headlineTagId)
+                    .Select(id => TagLabel(id, planningTagNames))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                // ONE model per compliance row, in exactly ONE group. It carries its
+                // own CheckListId because the section now spans templates and the
+                // consumer's edit route needs the row's own.
                 var caseModel = new ComplianceReportCaseModel
                 {
                     ComplianceId = row.Candidate.ComplianceId,
                     SdkCaseId = sdkCaseId,
+                    CheckListId = checkListId,
                     PropertyId = row.Candidate.PropertyId,
                     PropertyName = row.PropertyName ?? string.Empty,
                     Title = row.Title,
@@ -1051,123 +1107,152 @@ public class BackendConfigurationComplianceReportService(
                         .Select(id => siteNamesById.GetValueOrDefault(id, string.Empty))
                         .Where(n => !string.IsNullOrEmpty(n))
                         .ToList(),
+                    Tags = rowTagNames,
                     Cells = projection.CellsByCaseId.GetValueOrDefault(sdkCaseId, new Dictionary<string, string>()),
                     ImagesCount = images.Count,
                     Images = images
                 };
 
-                // Only a row carrying NO live AreaRulePlanningTag at all lands in
-                // the single untagged group, whose label ("Uden tag") is #1167's,
-                // not this API's.
-                //
-                // A tag id is deliberately NOT dropped when its NAME cannot be
-                // resolved. Tag ids live in the BC database and names in the
-                // items-planning one, with no foreign key between them, so an
-                // AreaRulePlanningTag whose ItemPlanningTagId has no PlanningTags
-                // row is possible — and filtering those out would empty rowTagIds,
-                // trip the null sentinel below, and render a "Uden tag" section
-                // inside a report the user had filtered TO a named tag, which is
-                // precisely the failure this grouping exists to avoid. The row
-                // therefore lands in the NAMED group for the tag it actually
-                // carries; that group's TagName is simply null (#1167 renders it
-                // without a name — the residual, cosmetic gap).
-                //
-                // When the request carries a TAG FILTER, only the SELECTED tags form
-                // groups. Otherwise a row tagged {A, B} filtered to {A} would render
-                // a "B" section too, and the report would look as if the filter had
-                // leaked. No row can be lost this way: BuildCandidateSet's EXISTS
-                // push-down guarantees every matched row's planning carries at least
-                // one of the requested tags on SOME live ARP, and the tag lookup
-                // above spans exactly those same ARPs — so a filtered row always
-                // finds its tag and can never fall through to the untagged group.
-                // #1166 does not settle this either way — it is one predicate to
-                // remove if #1167 wants the row's full tag membership instead.
-                var rowTagIds = tagIdsByPlanningId
-                    .GetValueOrDefault(row.Candidate.PlanningId, [])
-                    .Where(id => requestModel.TagIds is not { Count: > 0 } || requestModel.TagIds.Contains(id))
-                    .Select(id => (int?)id)
-                    .ToList();
-
-                if (rowTagIds.Count == 0) rowTagIds.Add(null);
-
-                foreach (var tagId in rowTagIds)
+                HeadlineGroupBuilder group;
+                if (headlineTagId.HasValue)
                 {
-                    ComplianceReportTagGroupModel tagGroup;
-                    if (tagId.HasValue)
+                    if (!groupsByHeadlineId.TryGetValue(headlineTagId.Value, out group))
                     {
-                        if (!tagGroupsByTagId.TryGetValue(tagId.Value, out tagGroup))
-                        {
-                            tagGroup = new ComplianceReportTagGroupModel
-                            {
-                                TagId = tagId,
-                                TagName = planningTagNames.GetValueOrDefault(tagId.Value)
-                            };
-                            tagGroupsByTagId[tagId.Value] = tagGroup;
-                        }
+                        // A headline id with no PlanningTags row keeps its OWN
+                        // group with a null name (the consumer renders "#{id}"); it
+                        // is never merged into the fallback group, which is for
+                        // rows with NO headline at all.
+                        group = new HeadlineGroupBuilder(
+                            headlineTagId, planningTagNames.GetValueOrDefault(headlineTagId.Value));
+                        groupsByHeadlineId[headlineTagId.Value] = group;
                     }
-                    else
-                    {
-                        tagGroup = untaggedGroup ??= new ComplianceReportTagGroupModel
-                        {
-                            TagId = null,
-                            TagName = null
-                        };
-                    }
-
-                    if (!templateGroups.TryGetValue((tagId, checkListId), out var templateGroup))
-                    {
-                        templateGroup = new ComplianceReportTemplateGroupModel
-                        {
-                            CheckListId = checkListId,
-                            CheckListName = projection.Schema.CheckListName,
-                            // Single-valued today: merging structurally-identical
-                            // cloned templates is filed, not built (#1166 §8). Two
-                            // clones therefore render as two adjacent groups.
-                            MergedCheckListIds = [checkListId],
-                            Columns = projection.Schema.Columns,
-                            // Zero columns because DERIVATION FAILED, not because
-                            // the template has no answerable fields — #1167 renders
-                            // "columns unavailable" rather than an empty table.
-                            SchemaUnavailable = projection.Schema.SchemaUnavailable
-                        };
-                        templateGroups[(tagId, checkListId)] = templateGroup;
-                        tagGroup.Templates.Add(templateGroup);
-                    }
-
-                    templateGroup.Cases.Add(caseModel);
                 }
+                else
+                {
+                    group = withoutHeadline ??= new HeadlineGroupBuilder(null, null);
+                }
+
+                group.Add(caseModel, checkListId, rowTagNames);
             }
 
-            // Stable output order. The untagged group sorts LAST in every locale
-            // because it is keyed on the null tag id, not on a translated label.
-            // The ordering expression is unchanged by the untagged group living in
-            // its own variable rather than in the dictionary: it is simply appended
-            // to the same sequence before the sort runs.
-            var allTagGroups = tagGroupsByTagId.Values.ToList();
-            if (untaggedGroup != null) allTagGroups.Add(untaggedGroup);
+            var allGroups = groupsByHeadlineId.Values.ToList();
+            if (withoutHeadline != null) allGroups.Add(withoutHeadline);
 
-            var result = allTagGroups
-                .OrderBy(g => g.TagId.HasValue ? 0 : 1)
-                .ThenBy(g => g.TagName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(g => g.TagId ?? int.MaxValue)
+            var built = allGroups.Select(g => g.Build(projections)).ToList();
+
+            // Stable output order (#1188 decision 5): by CAPTION — the PDF's
+            // sections are ordered "Miljøtilsyn - Brand", "… - Dokumentation",
+            // "… - EL", "… - Kontrol", i.e. by the tag line, not the headline —
+            // then by headline name, then by headline id. The fallback group sorts
+            // LAST in every locale because it is keyed on the null id, not on a
+            // translated label.
+            var result = built
+                .OrderBy(g => g.HeadlineTagId.HasValue ? 0 : 1)
+                .ThenBy(g => g.TagsCaption ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(g => g.HeadlineName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(g => g.HeadlineTagId ?? int.MaxValue)
                 .ToList();
 
-            foreach (var tagGroup in result)
-            {
-                tagGroup.Templates = tagGroup.Templates
-                    .OrderBy(t => t.CheckListName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.CheckListId)
-                    .ToList();
-            }
-
-            return new OperationDataResult<List<ComplianceReportTagGroupModel>>(true, result);
+            return new OperationDataResult<List<ComplianceReportHeadlineGroupModel>>(true, result);
         }
         catch (Exception e)
         {
             SentrySdk.CaptureException(e);
             logger.LogError(e, "BackendConfigurationComplianceReportService.EformColumns: {Message}", e.Message);
-            return new OperationDataResult<List<ComplianceReportTagGroupModel>>(false,
+            return new OperationDataResult<List<ComplianceReportHeadlineGroupModel>>(false,
                 $"{localizationService.GetString("ErrorWhileGettingCalendarTasks")}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The report headline of a row: <c>AreaRulePlanning.ItemPlanningTagId</c> of
+    /// its (lowest-Id live) ARP, normalised so that <c>null</c>, a null ARP and a
+    /// non-positive id all mean "no headline". A <c>PlanningTag</c> with id 0
+    /// cannot exist, so 0 is a cleared select, not a headline.
+    /// </summary>
+    private static int? HeadlineTagIdOf(AreaRulePlanning arp) =>
+        arp?.ItemPlanningTagId is > 0 ? arp.ItemPlanningTagId : null;
+
+    /// <summary>
+    /// A tag's display name, or the neutral <c>#{id}</c> when the id has no
+    /// <c>PlanningTags</c> row — visibly not a name, never dropped.
+    /// </summary>
+    private static string TagLabel(int tagId, Dictionary<int, string> planningTagNames)
+    {
+        var name = planningTagNames.GetValueOrDefault(tagId);
+        return string.IsNullOrWhiteSpace(name) ? $"#{tagId}" : name;
+    }
+
+    /// <summary>
+    /// Accumulates one headline group's rows, templates and tag names while
+    /// <see cref="EformColumns"/> walks the answered rows, and materialises the
+    /// DTO — union columns included — once every row is in.
+    /// </summary>
+    private sealed class HeadlineGroupBuilder(int? headlineTagId, string headlineName)
+    {
+        private readonly List<ComplianceReportCaseModel> _cases = [];
+        private readonly HashSet<int> _checkListIds = [];
+        private readonly HashSet<string> _tagNames = new(StringComparer.OrdinalIgnoreCase);
+
+        public void Add(ComplianceReportCaseModel caseModel, int checkListId, List<string> tagNames)
+        {
+            _cases.Add(caseModel);
+            _checkListIds.Add(checkListId);
+            _tagNames.UnionWith(tagNames);
+        }
+
+        public ComplianceReportHeadlineGroupModel Build(
+            Dictionary<int, ComplianceReportEformProjector.TemplateProjection> projections)
+        {
+            // Templates by translated name, then id — the order their column
+            // blocks take inside the union.
+            var checkListIds = _checkListIds
+                .OrderBy(id => projections[id].Schema.CheckListName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(id => id)
+                .ToList();
+
+            // The UNION of the per-template schemas, as a FRESH list of FRESH
+            // column objects. projections[id].Schema.Columns is the projector's
+            // cached list, shared by every group answered on that template —
+            // appending another template's fields to it would corrupt every other
+            // section. Keys are f{fieldId} and a field belongs to one template, so
+            // they cannot collide; the guard is there so a duplicate can never
+            // reach the consumer's table, where a repeated column key throws.
+            var columns = new List<ComplianceReportColumnModel>();
+            var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var id in checkListIds)
+            {
+                foreach (var column in projections[id].Schema.Columns)
+                {
+                    if (!seenKeys.Add(column.Key)) continue;
+                    columns.Add(new ComplianceReportColumnModel
+                    {
+                        Key = column.Key,
+                        FieldId = column.FieldId,
+                        Label = column.Label,
+                        FieldType = column.FieldType
+                    });
+                }
+            }
+
+            return new ComplianceReportHeadlineGroupModel
+            {
+                HeadlineTagId = headlineTagId,
+                HeadlineName = headlineName,
+                // Distinct union of the group's tag names, alphabetical, joined
+                // " - " (hyphen-minus with spaces — the PDF's separator, NOT the
+                // en dash the export uses for empty cells).
+                TagsCaption = string.Join(" - ", _tagNames.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)),
+                CheckListIds = checkListIds,
+                // Zero columns from a template because DERIVATION FAILED, not
+                // because it has no answerable fields — the consumer renders
+                // "columns unavailable" per template rather than an empty block.
+                SchemaUnavailableCheckListIds = checkListIds
+                    .Where(id => projections[id].Schema.SchemaUnavailable)
+                    .ToList(),
+                Columns = columns,
+                Cases = _cases
+            };
         }
     }
 

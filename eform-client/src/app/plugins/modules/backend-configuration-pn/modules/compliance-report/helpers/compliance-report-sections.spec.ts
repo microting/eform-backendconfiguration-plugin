@@ -1,19 +1,19 @@
 import {
   ComplianceReportCaseModel,
-  ComplianceReportTagGroupModel,
+  ComplianceReportHeadlineGroupModel,
 } from '../../../models';
 import {
   buildComplianceReportSections,
   complianceAnswerText,
-  complianceTagGroupLabel,
-  complianceTemplateLabel,
+  complianceHeadlineLabel,
   complianceWorkerNames,
   formatComplianceReportDate,
 } from './compliance-report-sections';
 import {COMPLIANCE_EMPTY_CELL} from './compliance-week-grouping';
 
 /**
- * The rules of the Rapport view that must not be re-derived wrong (#1167).
+ * The rules of the Rapport view that must not be re-derived wrong (#1167,
+ * regrouped by headline in #1188).
  *
  * The headline one is `complianceAnswerText`: a cell is looked up BY COLUMN
  * KEY, an absent key renders the en dash IN PLACE, and therefore no later
@@ -23,13 +23,14 @@ import {COMPLIANCE_EMPTY_CELL} from './compliance-week-grouping';
  * the exact shape that shifts every subsequent column under positional
  * addressing.
  *
- * 23 cases in six describes: 9 on `complianceAnswerText` (the keyed lookup, and
- * the two on the `Date` values the global DateInterceptor leaves in a bag it
- * has no business walking), 3 + 2 on the two label rules, 5 on the flattener,
- * 2 on the worker join and 2 on the date format. The GRID rules — the `answer_`
- * prefix, the duplicate-key dedupe and the per-section column-array identity —
- * live on the component and are pinned in
- * `compliance-report-view.component.spec.ts`.
+ * Six describes: 9 on `complianceAnswerText` (the keyed lookup, and the two on
+ * the `Date` values the global DateInterceptor leaves in a bag it has no
+ * business walking), 4 on the headline label rule, 8 on the mapper (one
+ * section per headline, caption/heading, the union of columns, the two schema
+ * notices), 2 on the worker join and 4 on the date format. The GRID rules —
+ * the `answer_` prefix, the duplicate-key dedupe, the per-section column-array
+ * identity and the row's OWN `checkListId` — live on the component and are
+ * pinned in `compliance-report-view.component.spec.ts`.
  */
 
 function caseModel(overrides: Partial<ComplianceReportCaseModel> = {}): ComplianceReportCaseModel {
@@ -43,6 +44,8 @@ function caseModel(overrides: Partial<ComplianceReportCaseModel> = {}): Complian
     completed: true,
     doneAt: '2026-08-11T09:00:00Z',
     workerNames: ['Anna'],
+    checkListId: 509,
+    tags: ['Miljøtilsyn'],
     cells: {},
     imagesCount: 0,
     images: [],
@@ -131,144 +134,188 @@ describe('complianceAnswerText', () => {
   });
 });
 
-describe('complianceTagGroupLabel', () => {
-  it('labels the genuinely untagged group with the untagged label', () => {
+describe('complianceHeadlineLabel', () => {
+  it('labels the genuinely headline-less group with the fallback label', () => {
     expect(
-      complianceTagGroupLabel({tagId: null, tagName: null, templates: []}, 'Uden tag')
-    ).toBe('Uden tag');
+      complianceHeadlineLabel({headlineTagId: null, headlineName: null}, 'Uden rapportoverskrift')
+    ).toBe('Uden rapportoverskrift');
   });
 
-  it('labels a NAMED group whose name could not be resolved as #{tagId}, not as untagged', () => {
+  it('labels a NAMED group whose name could not be resolved as #{id}, never as the fallback', () => {
     expect(
-      complianceTagGroupLabel({tagId: 42, tagName: null, templates: []}, 'Uden tag')
+      complianceHeadlineLabel({headlineTagId: 42, headlineName: null}, 'Uden rapportoverskrift')
     ).toBe('#42');
     expect(
-      complianceTagGroupLabel({tagId: 42, tagName: '   ', templates: []}, 'Uden tag')
+      complianceHeadlineLabel({headlineTagId: 42, headlineName: '   '}, 'Uden rapportoverskrift')
     ).toBe('#42');
   });
 
-  it('uses the tag name when there is one', () => {
+  it('uses the headline name when there is one, trimmed', () => {
     expect(
-      complianceTagGroupLabel({tagId: 7, tagName: 'Miljøtilsyn', templates: []}, 'Uden tag')
-    ).toBe('Miljøtilsyn');
-  });
-});
-
-describe('complianceTemplateLabel', () => {
-  it('uses the template name', () => {
-    expect(
-      complianceTemplateLabel({
-        checkListId: 509,
-        checkListName: 'Brandtjek',
-        mergedCheckListIds: [509],
-        columns: [],
-        schemaUnavailable: false,
-        cases: [],
-      })
-    ).toBe('Brandtjek');
+      complianceHeadlineLabel(
+        {headlineTagId: 7, headlineName: ' Brandsikkerhed og beredskab '},
+        'Uden rapportoverskrift'
+      )
+    ).toBe('Brandsikkerhed og beredskab');
   });
 
-  it('falls back to #{checkListId} for an unnamed template', () => {
+  it('ignores the name of the headline-less group — the ID is the discriminator', () => {
+    // A server that ever sent a name on the null group must not turn it into
+    // a named section; the fallback group is the null ID, full stop.
     expect(
-      complianceTemplateLabel({
-        checkListId: 509,
-        checkListName: null,
-        mergedCheckListIds: [509],
-        columns: [],
-        schemaUnavailable: false,
-        cases: [],
-      })
-    ).toBe('#509');
+      complianceHeadlineLabel({headlineTagId: null, headlineName: 'Stray'}, 'Uden rapportoverskrift')
+    ).toBe('Uden rapportoverskrift');
   });
 });
 
 describe('buildComplianceReportSections', () => {
-  const groups: ComplianceReportTagGroupModel[] = [
-    {
-      tagId: 7,
-      tagName: 'Miljøtilsyn',
-      templates: [
-        {
-          checkListId: 509,
-          checkListName: 'Brandtjek',
-          mergedCheckListIds: [509],
-          columns: [{key: 'f1', fieldId: 1, label: 'Note', fieldType: 'Text'}],
-          schemaUnavailable: false,
-          cases: [caseModel()],
-        },
-        {
-          // Same tag, a SECOND template — the divergence from the prototype's
-          // tag-set-only grouping: two tables, each with its own column set.
-          checkListId: 511,
-          checkListName: 'Eltjek',
-          mergedCheckListIds: [511],
-          columns: [],
-          schemaUnavailable: true,
-          cases: [caseModel({complianceId: 2})],
-        },
-        {
-          checkListId: 555,
-          checkListName: 'Ingen svar',
-          mergedCheckListIds: [555],
-          columns: [],
-          schemaUnavailable: false,
-          cases: [],
-        },
+  const FALLBACK = 'Uden rapportoverskrift';
+
+  const group = (
+    overrides: Partial<ComplianceReportHeadlineGroupModel> = {}
+  ): ComplianceReportHeadlineGroupModel => ({
+    headlineTagId: 7,
+    headlineName: 'Brandsikkerhed og beredskab',
+    tagsCaption: 'Miljøtilsyn - Brand',
+    checkListIds: [509],
+    schemaUnavailableCheckListIds: [],
+    columns: [{key: 'f1', fieldId: 1, label: 'Note', fieldType: 'Text'}],
+    cases: [caseModel()],
+    ...overrides,
+  });
+
+  /** Server order: by caption, then headline, then id; the fallback group LAST. */
+  const groups: ComplianceReportHeadlineGroupModel[] = [
+    group(),
+    group({
+      headlineTagId: 8,
+      headlineName: 'Lovpligtig dokumentation',
+      tagsCaption: 'Miljøtilsyn - Dokumentation',
+      // ONE headline answered on TWO templates: one section, union columns.
+      checkListIds: [509, 511],
+      schemaUnavailableCheckListIds: [511],
+      columns: [
+        {key: 'f1', fieldId: 1, label: 'Note', fieldType: 'Text'},
+        {key: 'f20', fieldId: 20, label: 'Temperatur', fieldType: 'Number'},
       ],
-    },
-    {
-      tagId: null,
-      tagName: null,
-      templates: [
-        {
-          checkListId: 509,
-          checkListName: 'Brandtjek',
-          mergedCheckListIds: [509],
-          columns: [],
-          schemaUnavailable: false,
-          cases: [caseModel({complianceId: 3})],
-        },
+      cases: [
+        caseModel({complianceId: 2, checkListId: 509, cells: {f1: 'Ja'}}),
+        caseModel({complianceId: 3, checkListId: 511, cells: {f20: '21'}}),
       ],
-    },
+    }),
+    group({
+      headlineTagId: 9,
+      headlineName: 'Tom',
+      tagsCaption: '',
+      checkListIds: [],
+      columns: [],
+      cases: [],
+    }),
+    group({
+      headlineTagId: null,
+      headlineName: null,
+      tagsCaption: '',
+      checkListIds: [509],
+      cases: [caseModel({complianceId: 4, tags: []})],
+    }),
   ];
 
-  it('emits one section per tag group PER template, in server order', () => {
-    const sections = buildComplianceReportSections(groups, 'Uden tag');
+  it('emits ONE section per headline group, in server order, fallback last', () => {
+    const sections = buildComplianceReportSections(groups, FALLBACK);
 
-    expect(sections.map((s) => [s.tagLabel, s.templateLabel])).toEqual([
-      ['Miljøtilsyn', 'Brandtjek'],
-      ['Miljøtilsyn', 'Eltjek'],
-      ['Uden tag', 'Brandtjek'],
+    expect(sections.map((s) => [s.captionLabel, s.headlineLabel])).toEqual([
+      ['Miljøtilsyn - Brand', 'Brandsikkerhed og beredskab'],
+      ['Miljøtilsyn - Dokumentation', 'Lovpligtig dokumentation'],
+      ['', FALLBACK],
     ]);
   });
 
-  it('drops a template group with no cases', () => {
-    const sections = buildComplianceReportSections(groups, 'Uden tag');
+  it('keeps a headline answered on two templates as ONE section with the union of columns', () => {
+    // Not two tables under one heading (#1188 decision 1): the section spans
+    // both templates and its columns are the server-built union.
+    const [, mixed] = buildComplianceReportSections(groups, FALLBACK);
 
-    expect(sections.some((s) => s.templateLabel === 'Ingen svar')).toBe(false);
+    expect(mixed.checkListIds).toEqual([509, 511]);
+    expect(mixed.columns.map((c) => c.key)).toEqual(['f1', 'f20']);
+    expect(mixed.cases.map((c) => c.complianceId)).toEqual([2, 3]);
   });
 
-  it('keeps a schemaUnavailable group that HAS cases, and flags it', () => {
-    const sections = buildComplianceReportSections(groups, 'Uden tag');
+  it('renders the dash IN PLACE under the foreign template\'s fields', () => {
+    // The case answered on 509 has no `f20`; the case answered on 511 has no
+    // `f1`. Each renders the dash under the other template's column, aligned.
+    const [, mixed] = buildComplianceReportSections(groups, FALLBACK);
+    const keys = mixed.columns.map((c) => c.key);
 
-    expect(sections[1].schemaUnavailable).toBe(true);
-    expect(sections[1].columns).toEqual([]);
-    expect(sections[1].cases.length).toBe(1);
+    expect(keys.map((k) => complianceAnswerText(mixed.cases[0], k))).toEqual(['Ja', COMPLIANCE_EMPTY_CELL]);
+    expect(keys.map((k) => complianceAnswerText(mixed.cases[1], k))).toEqual([COMPLIANCE_EMPTY_CELL, '21']);
   });
 
-  it('gives the same template under two tag groups two DISTINCT keys', () => {
-    // `t`/`c` prefixes, so (tag 75, template 11) cannot collide with
-    // (tag 7, template 511).
-    const sections = buildComplianceReportSections(groups, 'Uden tag');
+  it('flags a PARTIAL schema gap per template, not for the whole section', () => {
+    const [, mixed] = buildComplianceReportSections(groups, FALLBACK);
+
+    expect(mixed.schemaUnavailable).toBe(false);
+    expect(mixed.schemaUnavailableCheckListIds).toEqual([511]);
+  });
+
+  it('flags the WHOLE section only when every template in it lacks a schema', () => {
+    const [only] = buildComplianceReportSections(
+      [group({checkListIds: [509, 511], schemaUnavailableCheckListIds: [511, 509], columns: []})],
+      FALLBACK
+    );
+    expect(only.schemaUnavailable).toBe(true);
+    expect(only.columns).toEqual([]);
+    expect(only.cases.length).toBe(1);
+
+    // No gap at all → no notice of either kind.
+    const [clean] = buildComplianceReportSections([group()], FALLBACK);
+    expect(clean.schemaUnavailable).toBe(false);
+    expect(clean.schemaUnavailableCheckListIds).toEqual([]);
+  });
+
+  it('drops a group with no cases', () => {
+    const sections = buildComplianceReportSections(groups, FALLBACK);
+
+    expect(sections.length).toBe(3);
+    expect(sections.some((s) => s.headlineLabel === 'Tom')).toBe(false);
+  });
+
+  it('keys sections h{id} and hnone, distinct, and labels an unresolvable headline #{id}', () => {
+    const sections = buildComplianceReportSections(
+      [...groups, group({headlineTagId: 42, headlineName: null, tagsCaption: 'Zzz'})],
+      FALLBACK
+    );
     const keys = sections.map((s) => s.key);
 
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(['t7-c509', 't7-c511', 'tnone-c509']);
+    expect(keys).toEqual(['h7', 'h8', 'hnone', 'h42']);
+    // `#42`, NOT merged into the fallback section.
+    expect(sections[3].headlineLabel).toBe('#42');
+    expect(sections[3].key).not.toBe('hnone');
   });
 
-  it('is safe for a null response', () => {
-    expect(buildComplianceReportSections(null, 'Uden tag')).toEqual([]);
-    expect(buildComplianceReportSections(undefined, 'Uden tag')).toEqual([]);
+  it('is safe for a null response and for a group missing its optional lists', () => {
+    expect(buildComplianceReportSections(null, FALLBACK)).toEqual([]);
+    expect(buildComplianceReportSections(undefined, FALLBACK)).toEqual([]);
+
+    const [bare] = buildComplianceReportSections(
+      [
+        {
+          headlineTagId: 7,
+          headlineName: 'X',
+          tagsCaption: null as any,
+          checkListIds: null as any,
+          schemaUnavailableCheckListIds: null as any,
+          columns: null as any,
+          cases: [caseModel()],
+        },
+      ],
+      FALLBACK
+    );
+    expect(bare.captionLabel).toBe('');
+    expect(bare.checkListIds).toEqual([]);
+    expect(bare.schemaUnavailableCheckListIds).toEqual([]);
+    expect(bare.schemaUnavailable).toBe(false);
+    expect(bare.columns).toEqual([]);
   });
 });
 
