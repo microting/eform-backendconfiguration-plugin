@@ -265,10 +265,12 @@ async function setupNonAdminUser(page: Page): Promise<string> {
 // ---------------------------------------------------------------------------
 const EXPORT_ROUTE = '**/api/backend-configuration-pn/compliance-report/export';
 const OVERVIEW_ROUTE = '**/api/backend-configuration-pn/compliance-report/overview';
+const EFORM_COLUMNS_ROUTE = '**/api/backend-configuration-pn/compliance-report/eform-columns';
 // A property AND a board name with `ø` — the ascii `filename=` fallback would
 // mangle the board to `Milj_tilsyn`, which is exactly what must NOT be saved.
 const CSV_FILE_NAME = 'Oversigt-Alle-Miljøtilsyn-01.01.2026-05.09.2026.csv';
 const PDF_FILE_NAME = 'Oversigt-Alle-Miljøtilsyn-01.01.2026-05.09.2026.pdf';
+const REPORT_PDF_FILE_NAME = 'Rapport-Alle-Miljøtilsyn-01.01.2026-05.09.2026.pdf';
 
 /** Mirrors `ComplianceExportFileNaming.BuildContentDisposition`: lossy ascii first, RFC 5987 second. */
 function contentDisposition(fileName: string): string {
@@ -287,6 +289,40 @@ async function routeOverviewWithOneRow(page: Page): Promise<void> {
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ success: true, message: '', model: { rows: [row], totals } }),
+  }));
+}
+
+/**
+ * Rapport with ONE answered case. Shard `s` seeds no SQL and an answered case
+ * needs a property, an area rule, a planning, a deployment and a submitted
+ * eForm behind it, so the section is mocked — and it has to be, not merely for
+ * speed: Rapport's `setTotalCount` is the sole feeder of the filter bar's
+ * `canDownload` (`!!exportFormat && reportVisible && total > 0`), so on an
+ * empty installation `#complianceDownloadBtn` never enables in this mode and
+ * there is nothing to click.
+ */
+async function routeReportWithOneCase(page: Page): Promise<void> {
+  const group = {
+    headlineTagId: 7,
+    headlineName: 'Brandsikkerhed og beredskab',
+    tagsCaption: 'Miljøtilsyn - Brand',
+    checkListIds: [509],
+    schemaUnavailableCheckListIds: [],
+    columns: [{key: 'f10', fieldId: 10, label: 'Målerstand', fieldType: 'Number'}],
+    cases: [
+      {
+        complianceId: 1, sdkCaseId: 2183, checkListId: 509,
+        tags: ['Brand'], propertyId: 9, propertyName: 'Ejendom 9',
+        title: 'Kontrol af arbejdsmiljø', taskDate: '2026-05-13', completed: true,
+        doneAt: '2026-05-13T10:00:00', workerNames: ['Ann Andersen'],
+        cells: {f10: '12'}, imagesCount: 0, images: [],
+      },
+    ],
+  };
+  await page.route(EFORM_COLUMNS_ROUTE, route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({success: true, message: '', model: [group]}),
   }));
 }
 
@@ -798,6 +834,61 @@ test.describe('Compliance page shell (#1163)', () => {
     expect(downloads).toBe(1);
     // Still 2: `Gem` reused the preview's bytes rather than re-exporting.
     expect(exportRequests).toBe(2);
+  });
+
+  /**
+   * #1192: the image appendix is the UI's choice, not the server's default —
+   * `ComplianceReportExportRequestModel.IncludeImageAppendix` stays `false` for
+   * API callers, and the page sends `true` for exactly one combination. The
+   * CSV test above pins the negative half (Oversigt + CSV → `false`); this pins
+   * the positive one, which is the only way a Rapport PDF ever gets its "Bilag"
+   * pages.
+   */
+  test('a Rapport PDF asks for the image appendix; Oversigt and CSV do not (#1192)', async ({ page }) => {
+    await routeOverviewWithOneRow(page);
+    await routeReportWithOneCase(page);
+    let exportBody: any = null;
+    await page.route(EXPORT_ROUTE, route => {
+      exportBody = route.request().postDataJSON();
+      return route.fulfill({
+        status: 200,
+        headers: {
+          'content-type': 'application/pdf',
+          'content-disposition': contentDisposition(REPORT_PDF_FILE_NAME),
+        },
+        body: Buffer.from(minimalPdf(), 'latin1'),
+      });
+    });
+
+    await goToCompliancePage(page);
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+
+    // The mode switch replays the shell's fetch trigger to the recreated child,
+    // which queries `eform-columns` on its own (#1185 — there is no button to
+    // press outside "Sæt periode"). Armed BEFORE the click, awaited after it.
+    const columns = complianceResponse(page, 'eform-columns');
+    await page.locator('#complianceMode-report').click();
+    expect((await columns).ok()).toBeTruthy();
+    await expect(page.locator('#complianceMode-report')).toHaveAttribute('aria-pressed', 'true');
+    // `setTotalCount` runs when the response is APPLIED, not when it lands, so
+    // the enabled Download button is what says the row reached the view.
+    await expect(page.locator('#complianceCasesRoot')).toHaveAttribute('aria-busy', 'false', { timeout: API_TIMEOUT });
+
+    await selectExportFormat(page, 'PDF');
+    await expect(page.locator('#complianceDownloadBtn')).toBeEnabled();
+
+    await page.locator('#complianceDownloadBtn').click();
+    // A PDF opens the preview rather than downloading, so the dialog is the
+    // signal that the export round-trip completed and the body was posted.
+    const title = page.locator('#compliancePdfPreviewTitle');
+    await expect(title).toBeVisible({ timeout: 30000 });
+
+    expect(exportBody.viewMode).toBe('report');
+    expect(exportBody.format).toBe('pdf');
+    expect(exportBody.includeImageAppendix).toBe(true);
+
+    await page.locator('#compliancePdfPreviewCancelBtn').click();
+    await expect(title).toHaveCount(0);
   });
 
   test('a failed export toasts and re-enables Download (#1189)', async ({ page }) => {

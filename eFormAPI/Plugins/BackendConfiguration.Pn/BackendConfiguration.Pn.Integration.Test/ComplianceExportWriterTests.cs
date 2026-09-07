@@ -20,6 +20,7 @@ using System.Text;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -175,6 +176,77 @@ public class ComplianceExportWriterTests
             ],
             SamplePeriod,
             new DanishShellLocalizer());
+
+    /// <summary>
+    /// The #1192 Rapport mock-up (p9 PDF, p10 CSV), built through the REAL
+    /// <see cref="ComplianceExportDocumentBuilder.BuildReport"/> with the Danish
+    /// localizer: two headline sections. "Brandsikkerhed og beredskab" (tags
+    /// <c>Miljøtilsyn - Brand</c>) answers <c>f10 Målerstand</c> and
+    /// <c>f11 Bemærkning</c> and holds the mock-up's case 2183 (three images,
+    /// completed 13.05.2026) plus an open, workerless, imageless case 2184.
+    /// "Elinstallationer og eftersyn" (tags <c>Miljøtilsyn - EL</c>) answers the
+    /// SAME <c>f11</c> and a DIFFERENT field <c>f20</c> that merely shares the
+    /// label "Bemærkning", and holds case 2185 with one image — so the flat CSV
+    /// has to merge one column and keep the other apart.
+    /// </summary>
+    private static ComplianceExportDocument ReportDocument(bool includeImageAppendix)
+    {
+        static ComplianceReportImageModel Image(int id) => new() { FileName = $"{id}_700_a.jpg" };
+
+        var brand = new ComplianceReportHeadlineGroupModel
+        {
+            HeadlineTagId = 7, HeadlineName = "Brandsikkerhed og beredskab", TagsCaption = "Miljøtilsyn - Brand",
+            CheckListIds = [509],
+            Columns =
+            [
+                new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
+                new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
+            ],
+            Cases =
+            [
+                new ComplianceReportCaseModel
+                {
+                    SdkCaseId = 2183, PropertyName = "Ejendom 9", Title = "Kontrol af arbejdsmiljø",
+                    Tags = ["Miljøtilsyn", "Brand"], WorkerNames = ["Ann Andersen"],
+                    DoneAt = new DateTime(2026, 5, 13, 10, 0, 0), TaskDate = "2026-05-13",
+                    ImagesCount = 3, Images = [Image(1), Image(2), Image(3)],
+                    Cells = new Dictionary<string, string> { ["f10"] = "12", ["f11"] = "Alt ok" }
+                },
+                new ComplianceReportCaseModel
+                {
+                    SdkCaseId = 2184, PropertyName = "Ejendom 9", Title = "Rundering",
+                    Tags = ["Miljøtilsyn", "Brand"], WorkerNames = [], TaskDate = "2026-05-14",
+                    ImagesCount = 0, Images = [],
+                    Cells = new Dictionary<string, string> { ["f11"] = "Ok" }
+                }
+            ]
+        };
+
+        var el = new ComplianceReportHeadlineGroupModel
+        {
+            HeadlineTagId = 8, HeadlineName = "Elinstallationer og eftersyn", TagsCaption = "Miljøtilsyn - EL",
+            CheckListIds = [511],
+            Columns =
+            [
+                new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" },
+                new ComplianceReportColumnModel { Key = "f20", Label = "Bemærkning" }
+            ],
+            Cases =
+            [
+                new ComplianceReportCaseModel
+                {
+                    SdkCaseId = 2185, PropertyName = "Ejendom 9", Title = "El-tavle",
+                    Tags = ["Miljøtilsyn", "EL"], WorkerNames = ["Bo"],
+                    DoneAt = new DateTime(2026, 5, 20, 8, 0, 0), TaskDate = "2026-05-20",
+                    ImagesCount = 1, Images = [Image(4)],
+                    Cells = new Dictionary<string, string> { ["f11"] = "Fint", ["f20"] = "Tavle ok" }
+                }
+            ]
+        };
+
+        return ComplianceExportDocumentBuilder.BuildReport(
+            [brand, el], SamplePeriod, includeImageAppendix, new DanishShellLocalizer());
+    }
 
     // ==================================================================
     // CSV
@@ -479,36 +551,80 @@ public class ComplianceExportWriterTests
     }
 
     /// <summary>
-    /// Rapport is several tables and CSV is one stream. Tables after the FIRST are
-    /// separated by a blank line and then their own title line; the first table has
-    /// none, which is what keeps the header on line 1. A reader that ignores the
-    /// titles entirely still has the section in the first column of every Rapport
-    /// row, so the first table's identity is not lost with its title line.
+    /// Rapport is several tables and CSV is one stream, so the file is ONE flat
+    /// table (#1192, mock-up p10): line 1 is the only header and carries the
+    /// union of every table's columns in first-seen order, every table's rows
+    /// follow in document order, and there is no blank separator line, no title
+    /// line and no repeated header anywhere. A row is blank under a column its
+    /// own table lacks. Neither table title nor caption reaches the file.
     /// </summary>
     [Test]
-    public void Csv_SeparatesLaterTablesWithABlankLineAndTheirTitle()
+    public void Csv_FlattensSeveralTablesIntoOneHeaderAndAUnionOfColumns()
     {
         var document = SampleDocument();
         document.Tables.Add(new ComplianceExportTable
         {
             Caption = "Miljøtilsyn - EL",
             Title = "Elinstallationer og eftersyn",
-            Columns = [new ComplianceExportColumn { Header = "Kolonne" }],
-            Rows = [new ComplianceExportRow { Cells = [ComplianceExportCell.FromText("v")] }]
+            // Shares "Ejendom" with the first table; adds "Kolonne".
+            Columns = [new ComplianceExportColumn { Header = "Ejendom" }, new ComplianceExportColumn { Header = "Kolonne" }],
+            Rows =
+            [
+                new ComplianceExportRow
+                {
+                    Cells = [ComplianceExportCell.FromText("Huset"), ComplianceExportCell.FromText("v")]
+                }
+            ]
         });
 
         using var stream = ComplianceExportCsvWriter.Write(document);
         var bytes = ReadAll(stream);
         var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
 
-        // Table one: header first, no title line ahead of it.
-        Assert.That(text, Does.StartWith("Dato;Ejendom;Overskredet\r\n"));
+        Assert.That(text, Is.EqualTo(
+            "Dato;Ejendom;Overskredet;Kolonne\r\n" +
+            "2026-03-09;Gården;4;\r\n" +
+            "I alt;;4;\r\n" +
+            ";Huset;;v\r\n"));
+        Assert.That(text, Does.Not.Contain("\r\n\r\n"), "no blank separator line");
         Assert.That(text, Does.Not.Contain("Brandsikkerhed og beredskab"));
-
-        // Table two: blank line, its title, its header, its rows — and NO caption
-        // line: the CSV's per-table shape is unchanged by #1188.
-        Assert.That(text, Does.Contain("\r\n\r\nElinstallationer og eftersyn\r\nKolonne\r\nv\r\n"));
+        Assert.That(text, Does.Not.Contain("Elinstallationer og eftersyn"));
         Assert.That(text, Does.Not.Contain("Miljøtilsyn - EL"));
+    }
+
+    /// <summary>
+    /// The #1192 Rapport CSV, line for line (mock-up p10), through the real
+    /// builder: the header is <c>Delrapport;ID;Ejendom;Udført af;Udført dato;
+    /// Område;Billeder;</c> + the union of the two sections' answer columns —
+    /// keyed on the FIELD, so the shared <c>f11</c> is one column while
+    /// <c>f20</c>, which only shares the label "Bemærkning", stays a second one.
+    /// <c>Delrapport</c> IS here (the CsvOnly flag is the Word writer's), there
+    /// is no <c>Rapportoverskrift</c> column and no headline anywhere (#1188
+    /// decision 4), <c>Udført dato</c> is ISO (the Detaljer CSV's rule; p10's
+    /// <c>13.05.2026</c> is a mock-up slip), <c>Billeder</c> is the bare count
+    /// and BLANK for none, and every other absent value is blank too.
+    /// </summary>
+    [Test]
+    public void Csv_RapportSnapshot_OneHeaderUnionColumnsIsoDateAndBlanks()
+    {
+        using var stream = ComplianceExportCsvWriter.Write(ReportDocument(includeImageAppendix: false));
+        var bytes = ReadAll(stream);
+        var text = Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+
+        Assert.That(text, Is.EqualTo(
+            "Delrapport;ID;Ejendom;Udført af;Udført dato;Område;Billeder;Målerstand;Bemærkning;Bemærkning\r\n" +
+            "Miljøtilsyn - Brand;2183;Ejendom 9;Ann Andersen;2026-05-13;Kontrol af arbejdsmiljø;3;12;Alt ok;\r\n" +
+            "Miljøtilsyn - Brand;2184;Ejendom 9;;;Rundering;;;Ok;\r\n" +
+            "Miljøtilsyn - EL;2185;Ejendom 9;Bo;2026-05-20;El-tavle;1;;Fint;Tavle ok\r\n"));
+
+        var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.That(lines, Has.Length.EqualTo(4), "one header line and one line per case");
+        Assert.That(lines.Skip(1), Has.None.StartsWith("Delrapport"), "the header is not repeated");
+        Assert.That(text, Does.Not.Contain("Rapportoverskrift"));
+        Assert.That(text, Does.Not.Contain("Brandsikkerhed og beredskab"));
+        Assert.That(text, Does.Not.Contain("billeder"), "the CSV carries the count, not the PDF's text");
+        Assert.That(text, Does.Not.Contain("13.05.2026"));
+        Assert.That(text, Does.Not.Contain(Dash));
     }
 
     /// <summary>
@@ -867,12 +983,14 @@ public class ComplianceExportWriterTests
     }
 
     /// <summary>
-    /// Rapport's tags caption (#1188, PDF page 5) is a plain, small paragraph
-    /// directly ABOVE the bold headline — not bold itself, and not part of the
-    /// heading text. #1192 restyles it; this pins the order and the plainness.
+    /// Rapport's tags caption (#1188, PDF page 5; restyled by #1192, page 9) is a
+    /// small GREY paragraph — 9 pt (<c>w:sz 18</c>), <c>#666666</c> — directly
+    /// ABOVE the bold headline: not bold itself, and not part of the heading
+    /// text. HtmlToOpenXml turns the writer's <c>color:#666666</c> into a
+    /// <c>w:color</c> run property, which is what is pinned here.
     /// </summary>
     [Test]
-    public async Task Word_RapportTableCaptionIsAPlainParagraphAboveTheBoldTitle()
+    public async Task Word_RapportTableCaptionIsASmallGreyParagraphAboveTheBoldTitle()
     {
         await using var stream = await NewWordWriter().WriteAsync(SampleDocument(), null);
         using var word = WordprocessingDocument.Open(stream, false);
@@ -887,7 +1005,208 @@ public class ComplianceExportWriterTests
         Assert.That(paragraphs.IndexOf(caption), Is.EqualTo(paragraphs.IndexOf(title) - 1),
             "the caption is the paragraph immediately above the title");
         Assert.That(caption.Descendants<Bold>().Any(), Is.False, "the caption is plain");
+        Assert.That(caption.Descendants<FontSize>().Select(f => f.Val?.Value), Does.Contain("18"),
+            "the caption is 9 pt");
+        Assert.That(caption.Descendants<Color>().Select(c => c.Val?.Value?.ToUpperInvariant()),
+            Does.Contain("666666"), "the caption is grey");
+
         Assert.That(title.Descendants<Bold>().Any(), Is.True, "the headline is bold");
+        Assert.That(title.Descendants<Color>().Select(c => c.Val?.Value?.ToUpperInvariant()),
+            Does.Not.Contain("666666"), "the headline is not grey");
+    }
+
+    /// <summary>
+    /// The Word/PDF Rapport table starts at <c>ID</c> (#1192, PDF page 9): the
+    /// <c>Delrapport</c> column — marked <c>CsvOnly</c> by the builder — has no
+    /// header cell and no data cell in the docx, and the remaining cells keep
+    /// their alignment with their headers. <c>Billeder</c> reads <c>3 billeder</c>
+    /// and, for a case without images, the en dash; <c>Udført dato</c> is
+    /// <c>dd.MM.yyyy</c>. The section's caption and headline sit above the
+    /// table, which is why the column is redundant there and not in the CSV.
+    /// </summary>
+    [Test]
+    public async Task Word_RapportTableStartsAtIdWithoutTheCsvOnlyDelrapportColumn()
+    {
+        await using var stream = await NewWordWriter().WriteAsync(ReportDocument(includeImageAppendix: false), null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        Assert.That(body.InnerText, Does.Not.Contain("Delrapport"));
+        Assert.That(body.InnerText, Does.Not.Contain("Rapportoverskrift"));
+
+        var tables = body.Descendants<Table>().ToList();
+        Assert.That(tables, Has.Count.EqualTo(2), "one table per section, no appendix grid");
+
+        static string[] CellTexts(TableRow row) =>
+            row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToArray();
+
+        var brand = tables[0].Elements<TableRow>().ToList();
+        Assert.That(CellTexts(brand[0]), Is.EqualTo(new[]
+        {
+            "ID", "Ejendom", "Udført af", "Udført dato", "Område", "Billeder", "Målerstand", "Bemærkning"
+        }));
+        Assert.That(CellTexts(brand[1]), Is.EqualTo(new[]
+        {
+            "2183", "Ejendom 9", "Ann Andersen", "13.05.2026", "Kontrol af arbejdsmiljø", "3 billeder", "12", "Alt ok"
+        }));
+        Assert.That(CellTexts(brand[2]), Is.EqualTo(new[]
+        {
+            "2184", "Ejendom 9", Dash, Dash, "Rundering", Dash, Dash, "Ok"
+        }));
+        Assert.That(brand[1].Elements<TableCell>().Count(), Is.EqualTo(brand[0].Elements<TableCell>().Count()),
+            "the data row drops exactly the cell whose header was dropped");
+
+        var el = tables[1].Elements<TableRow>().ToList();
+        Assert.That(CellTexts(el[0])[0], Is.EqualTo("ID"));
+        Assert.That(CellTexts(el[1])[0], Is.EqualTo("2185"));
+        Assert.That(CellTexts(el[1])[5], Is.EqualTo("1 billede"), "one image reads the singular");
+    }
+
+    /// <summary>
+    /// The appendix layout (#1192, PDF page 9): after ALL the tables, exactly one
+    /// page-break paragraph per section that has images, headed
+    /// <c>Bilag – {tags caption}</c> (en dash); under it, per case, the caption
+    /// <c>Sag {id} · {Område} · {dd.MM.yyyy}</c> and the images in a two-column
+    /// grid — a table with two cells per row, an odd count ending on an empty
+    /// cell. A section without images gets no page.
+    ///
+    /// <para>
+    /// <c>core</c> is null, so no image BYTES are embedded — the writer needs the
+    /// SDK for those, which is why the acceptance criterion for the rendered
+    /// photographs is the once-only manual check in the PR. What the docx pins
+    /// is the structure the bytes go into: the grid cells exist, two per row,
+    /// whether or not a photograph could be resolved for them. HtmlToOpenXml may
+    /// express a <c>page-break-before</c> either as a paragraph property or as a
+    /// page <c>w:br</c> run; both count.
+    /// </para>
+    ///
+    /// <para>
+    /// The grid is BORDERLESS — a photo layout, not a data table. HtmlToOpenXml
+    /// 3.5.0 gives every table the <c>TableGrid</c> style (visible borders) and
+    /// ignores <c>border="0"</c>; only <c>style="border:none"</c> is honoured,
+    /// as <c>w:tblBorders</c> on the table and <c>w:tcBorders</c> on each cell,
+    /// every edge <c>w:val="none"</c>. The test pins exactly that, on both grids
+    /// and on every grid cell, and pins that the SECTION tables do NOT carry it
+    /// — they keep their <c>border="1"</c> lines.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task Word_AppendixHasOnePageBreakPerSectionWithImagesCaseCaptionsAndATwoColumnGrid()
+    {
+        var document = ReportDocument(includeImageAppendix: true);
+        Assert.That(document.Tables.Select(t => t.ImageBlocks.Count), Is.EqualTo(new[] { 1, 1 }),
+            "premise: both sections carry a block");
+
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var body = word.MainDocumentPart!.Document!.Body!;
+        var elements = body.Descendants().ToList();
+        var paragraphs = body.Descendants<Paragraph>().ToList();
+
+        static bool IsPageBreak(Paragraph p) =>
+            p.ParagraphProperties?.PageBreakBefore != null
+            || p.Descendants<Break>().Any(b => b.Type != null && b.Type.Value == BreakValues.Page);
+
+        var breaks = paragraphs.Where(IsPageBreak).ToList();
+        Assert.That(breaks, Has.Count.EqualTo(2), "one page break per section with images");
+
+        // The heading is the break paragraph's own text, or — should the
+        // converter have put the break in a paragraph of its own — the next
+        // paragraph's.
+        string HeadingOf(Paragraph breakParagraph) => paragraphs
+            .Skip(paragraphs.IndexOf(breakParagraph))
+            .Select(p => p.InnerText.Trim())
+            .First(t => t.Length > 0);
+
+        Assert.That(breaks.Select(HeadingOf),
+            Is.EqualTo(new[] { "Bilag – Miljøtilsyn - Brand", "Bilag – Miljøtilsyn - EL" }));
+
+        var tables = body.Descendants<Table>().ToList();
+        Assert.That(tables, Has.Count.EqualTo(4), "two section tables, then two image grids");
+        Assert.That(elements.IndexOf(breaks[0]), Is.GreaterThan(elements.IndexOf(tables[1])),
+            "the appendix starts after the last section table");
+
+        // Case captions, in order, each after its section heading.
+        var captionParagraphs = paragraphs.Where(p => p.InnerText.Trim().StartsWith("Sag ")).ToList();
+        var captions = captionParagraphs.Select(p => p.InnerText.Trim()).ToList();
+        Assert.That(captions, Is.EqualTo(new[]
+        {
+            "Sag 2183 · Kontrol af arbejdsmiljø · 13.05.2026",
+            "Sag 2185 · El-tavle · 20.05.2026"
+        }));
+
+        // ...and each is PINNED to the grid under it. A caption that ends a page
+        // while its photographs open the next one leaves those photographs with
+        // no case identity at all — the one thing an image appendix cannot do.
+        // The CSS for it (`page-break-after:avoid` in `AppendixCaseStyle`) is
+        // silently dropped by HtmlToOpenXml 3.5.0, so what the writer actually
+        // emits — and what this pins — is `w:keepNext`, on the caption
+        // paragraph, with the grid table as its next sibling.
+        foreach (var caption in captionParagraphs)
+        {
+            var keepNext = caption.ParagraphProperties?.KeepNext;
+            Assert.That(keepNext, Is.Not.Null,
+                $"'{caption.InnerText.Trim()}' must carry w:keepNext");
+            // `<w:keepNext/>` with no `w:val` is ON; an explicit `w:val="0"` is OFF.
+            Assert.That(keepNext!.Val == null || keepNext.Val.Value, Is.True,
+                $"'{caption.InnerText.Trim()}' carries w:keepNext w:val=\"0\"");
+            Assert.That(caption.NextSibling(), Is.InstanceOf<Table>(),
+                "the caption is immediately followed by its image grid, which is what keepNext binds it to");
+        }
+        Assert.That(body.InnerText, Does.Not.Contain("Bilag:"), "no per-block 'Bilag:' prefix, no truncation note");
+
+        // Three images → two rows of two cells; one image → one row of two cells.
+        static int[] CellsPerRow(Table grid) =>
+            grid.Elements<TableRow>().Select(r => r.Elements<TableCell>().Count()).ToArray();
+        Assert.That(CellsPerRow(tables[2]), Is.EqualTo(new[] { 2, 2 }));
+        Assert.That(CellsPerRow(tables[3]), Is.EqualTo(new[] { 2 }));
+        Assert.That(elements.IndexOf(tables[2]), Is.GreaterThan(elements.IndexOf(breaks[0])));
+        Assert.That(elements.IndexOf(tables[3]), Is.GreaterThan(elements.IndexOf(breaks[1])));
+
+        // Borderless: w:tblBorders on the grid and w:tcBorders on every cell,
+        // each edge val="none" (border="0" would have emitted neither).
+        static bool AllEdgesNone(OpenXmlCompositeElement? borders) =>
+            borders != null
+            && borders.Elements<BorderType>().Any()
+            && borders.Elements<BorderType>().All(b => b.Val != null && b.Val.Value == BorderValues.None);
+
+        foreach (var grid in new[] { tables[2], tables[3] })
+        {
+            Assert.That(AllEdgesNone(grid.GetFirstChild<TableProperties>()?.TableBorders), Is.True,
+                "the image grid's table borders are all 'none'");
+            Assert.That(grid.Descendants<TableCell>()
+                    .All(c => AllEdgesNone(c.TableCellProperties?.TableCellBorders)), Is.True,
+                "every grid cell's borders are all 'none'");
+        }
+
+        foreach (var section in new[] { tables[0], tables[1] })
+        {
+            Assert.That(AllEdgesNone(section.GetFirstChild<TableProperties>()?.TableBorders), Is.False,
+                "the section tables keep their visible borders");
+        }
+    }
+
+    /// <summary>
+    /// The per-case cap still states itself on the case caption, in the same
+    /// <c>(embedded/total)</c> idiom as before (#1169 §6), and the document-wide
+    /// ceiling's note is still written once at the end — the layout change did
+    /// not silence either.
+    /// </summary>
+    [Test]
+    public async Task Word_AppendixStillStatesThePerCaseCapAndTheDocumentCeiling()
+    {
+        var document = ReportDocument(includeImageAppendix: true);
+        var block = document.Tables[0].ImageBlocks[0];
+        block.TotalImages = 9; // as if the case had nine and the per-case cap kept three
+        document.AppendixImagesRequested = document.AppendixImagesEmbedded + 5;
+
+        await using var stream = await NewWordWriter().WriteAsync(document, null);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var text = word.MainDocumentPart!.Document!.Body!.InnerText;
+        Assert.That(text, Does.Contain("Sag 2183 · Kontrol af arbejdsmiljø · 13.05.2026 (3/9)"));
+        Assert.That(text, Does.Contain($"Bilag: ImageAppendixDocumentLimit ({document.AppendixImagesEmbedded}/{document.AppendixImagesRequested})"));
     }
 
     /// <summary>
@@ -977,14 +1296,43 @@ public class ComplianceExportWriterTests
             ["TagsPlain"] = "Tags",
             ["Status"] = "Status",
             ["Done"] = "Udført",
-            ["NotDone"] = "Ikke udført"
+            ["NotDone"] = "Ikke udført",
+            // Rapport (#1188 / #1192): the fixed columns, the formatted image
+            // count, the appendix heading and the case label.
+            ["ComplianceReport"] = "Rapport",
+            ["SubReport"] = "Delrapport",
+            ["CaseId"] = "ID",
+            ["DoneBy"] = "Udført af",
+            ["CompletedDate"] = "Udført dato",
+            ["Area"] = "Område",
+            ["Images"] = "Billeder",
+            ["ImagesCount"] = "{0} billeder",
+            ["ImagesCountOne"] = "1 billede",
+            ["Appendix"] = "Bilag",
+            ["Case"] = "Sag"
         };
 
         public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;
 
-        public string GetString(string format, params object[] args) => GetString(format);
+        /// <summary>
+        /// The real service's <c>string.Format</c> over the localised value — what
+        /// turns <c>{0} billeder</c> into <c>3 billeder</c>.
+        /// </summary>
+        public string GetString(string format, params object[] args) => string.Format(GetString(format), args);
 
-        public string GetStringWithFormat(string format, params object[] args) => GetString(format);
+        /// <summary>
+        /// The real <c>BackendConfigurationLocalizationService.GetStringWithFormat</c>:
+        /// it formats ONLY when there are arguments and returns the localised
+        /// value untouched otherwise. Delegating to <c>GetString(format, args)</c>
+        /// instead would run <c>string.Format</c> over an empty argument list and
+        /// throw <c>FormatException</c> for any value containing a <c>{0}</c> —
+        /// a failure mode the real service does not have.
+        /// </summary>
+        public string GetStringWithFormat(string format, params object[] args)
+        {
+            var value = GetString(format);
+            return args?.Length > 0 ? string.Format(value, args) : value;
+        }
     }
 
     /// <summary>

@@ -118,10 +118,23 @@ public class ComplianceExportTable
     /// Small caption line rendered ABOVE <see cref="Title"/> when non-empty
     /// (#1188): for Rapport it is the group's tag names joined <c>" - "</c>
     /// (<c>ComplianceReportHeadlineGroupModel.TagsCaption</c>). Word/PDF print it
-    /// as a plain small paragraph (#1192 restyles it); CSV ignores it — its
-    /// per-table shape is unchanged. Empty for Oversigt and Detaljer.
+    /// as a small grey paragraph (9 pt, <c>#666666</c> — #1192's restyle of
+    /// #1188's plain line); CSV ignores it. Empty for Oversigt and Detaljer.
     /// </summary>
     public string Caption { get; set; } = string.Empty;
+
+    /// <summary>
+    /// What the section's appendix page is headed with (#1192): Word/PDF print
+    /// <c>Bilag – {AppendixLabel}</c> once, on a new page, ahead of the section's
+    /// <see cref="ImageBlocks"/>. For Rapport it is <see cref="Caption"/>, falling
+    /// back to the bare headline label when the group carries no tags (#1188's
+    /// rule) — the HEADLINE label, not <see cref="Title"/>, so the
+    /// "(Kolonner utilgængelige)" suffix never reaches the appendix. Empty on
+    /// Oversigt and Detaljer, which have no appendix; a renderer falls back to
+    /// <see cref="Caption"/>, then <see cref="Title"/>, should it be empty on a
+    /// table that does carry blocks.
+    /// </summary>
+    public string AppendixLabel { get; set; } = string.Empty;
 
     /// <summary>
     /// Section heading. Empty for the single-table view modes (the document title
@@ -138,7 +151,9 @@ public class ComplianceExportTable
 
     /// <summary>
     /// Per-case image blocks, populated ONLY for Rapport when the request opted
-    /// into the appendix. CSV ignores it; Word/PDF render it after the table.
+    /// into the appendix. CSV ignores it; Word/PDF render it after ALL the tables,
+    /// one page per section that has any (#1192), headed by
+    /// <see cref="AppendixLabel"/>.
     /// </summary>
     public List<ComplianceExportImageBlock> ImageBlocks { get; set; } = [];
 }
@@ -166,6 +181,25 @@ public enum ComplianceExportCellType
 public class ComplianceExportColumn
 {
     public string Header { get; set; }
+
+    /// <summary>
+    /// Stable identity of the column ACROSS tables, for the CSV writer's flat
+    /// union (#1192): Rapport's fixed columns carry their localisation key
+    /// (<c>CaseId</c>, <c>Images</c>, …) and each answer column carries the
+    /// service's <c>f{fieldId}</c>, so two sections that answered the same field
+    /// share one CSV column while two fields that merely share a LABEL stay two.
+    /// Null falls back to <see cref="Header"/> — the single-table views never set
+    /// it, and there is nothing for them to union with.
+    /// </summary>
+    public string Key { get; set; }
+
+    /// <summary>
+    /// True for a column the CSV carries but the Word/PDF table does not (#1192):
+    /// Rapport's <c>Delrapport</c>, whose value is the section caption already
+    /// printed above the table. The Word writer skips the column's header cell AND
+    /// its cells; the CSV writer, which has no section captions, keeps it.
+    /// </summary>
+    public bool CsvOnly { get; set; }
 
     public ComplianceExportCellType Type { get; set; } = ComplianceExportCellType.Text;
 }
@@ -259,6 +293,27 @@ public class ComplianceExportCell
             {
                 Number = value,
                 Text = value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                IsEmpty = false
+            }
+            : new ComplianceExportCell();
+
+    /// <summary>
+    /// A number cell whose Word/PDF text is <paramref name="displayText"/> rather
+    /// than the bare figure — Rapport's <c>Billeder</c> (#1192): the PDF prints
+    /// <c>3 billeder</c> while the CSV, which writes <see cref="Number"/> for a
+    /// <see cref="ComplianceExportCellType.Number"/> column, keeps the
+    /// machine-readable <c>3</c> the mock-up's CSV shows. That split is exactly
+    /// the <c>Number</c> type's stated contract, so no new cell type is needed.
+    /// A null value is the empty cell, whatever the text.
+    /// </summary>
+    public static ComplianceExportCell FromNumber(double? value, string displayText) =>
+        value.HasValue
+            ? new ComplianceExportCell
+            {
+                Number = value,
+                Text = string.IsNullOrWhiteSpace(displayText)
+                    ? value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    : displayText,
                 IsEmpty = false
             }
             : new ComplianceExportCell();

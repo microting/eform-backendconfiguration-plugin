@@ -122,8 +122,59 @@ public class ComplianceExportWordWriter(
     public const string DoneRowFill = "#e8f5e9";
 
     /// <summary>
+    /// Rapport's tags caption above a section title (#1192, PDF page 9): small
+    /// and grey. The colour is a literal in the emitted HTML — there is no theme
+    /// on paper — and HtmlToOpenXml turns it into a <c>w:color 666666</c> run
+    /// property, which the writer tests pin.
+    /// </summary>
+    public const string CaptionStyle = "font-size:9pt;color:#666666;text-align:left;";
+
+    /// <summary>The bold section headline under the caption (#1192).</summary>
+    public const string SectionTitleStyle = "font-size:14px;font-weight:700;text-align:left;";
+
+    /// <summary>
+    /// The appendix page heading, <c>Bilag – {section}</c>: the section title's
+    /// weight, on a new page. <c>page-break-before</c> is a paragraph-level break
+    /// HtmlToOpenXml honours on a <c>&lt;p&gt;</c>; the #1189 page shell repeats
+    /// its header and footer across it because they are section properties, and
+    /// the #1191 row tint is a table-cell shading that the break never touches.
+    /// </summary>
+    public const string AppendixHeadingStyle =
+        "font-size:14px;font-weight:700;text-align:left;page-break-before:always;";
+
+    /// <summary>
+    /// The per-case caption on an appendix page, <c>Sag … · … · …</c>.
+    ///
+    /// <para>
+    /// <c>page-break-after:avoid</c> is the INTENT — the caption must never end a
+    /// page while its image grid starts the next one, which leaves photographs
+    /// with no case identity. HtmlToOpenXml 3.5.0 does NOT honour it (it maps
+    /// only the <c>always</c> value of <c>page-break-before</c>/<c>-after</c>),
+    /// so the declaration is documentation and <see cref="KeepCaptionsWithTheirGrid"/>
+    /// sets the <c>w:keepNext</c> it should have produced. Kept in the style so
+    /// the two cannot drift apart silently.
+    /// </para>
+    /// </summary>
+    public const string AppendixCaseStyle =
+        "font-size:9pt;font-weight:700;text-align:left;page-break-after:avoid;";
+
+    /// <summary>Appendix grid: two images side by side (#1192, PDF page 9).</summary>
+    public const int AppendixImagesPerRow = 2;
+
+    /// <summary>
+    /// Each appendix image is resized to and laid out at ~300 px, so two fit the
+    /// landscape text width with a margin. Down from the 600/650 stack of #1169.
+    /// </summary>
+    public const int AppendixImageWidthPx = 300;
+
+    /// <summary>
     /// Renders the document. <paramref name="core"/> is used only to resolve image
-    /// bytes; when the document carries no image blocks it is never touched.
+    /// bytes; when the document carries no image blocks it is never touched. With
+    /// a null <paramref name="core"/> the appendix STRUCTURE — section headings,
+    /// case captions and the image grid's cells — is still written, with every
+    /// cell empty: that is what lets the docx-level tests pin the layout without
+    /// an SDK, and it is not a production path (the export service always passes
+    /// a <c>Core</c>).
     /// </summary>
     public async Task<Stream> WriteAsync(ComplianceExportDocument document, Core core)
     {
@@ -174,25 +225,28 @@ public class ComplianceExportWordWriter(
         foreach (var table in document.Tables)
         {
             // Rapport's tags caption sits ABOVE the bold headline (#1188, PDF page
-            // 5): a plain small paragraph. Only emitted when there is one — Oversigt
-            // and Detaljer carry none, and a Rapport group whose cases have no tags
-            // gets no empty line ahead of its heading. #1192 restyles it.
+            // 5): a small grey line, 9 pt #666666 (#1192). Only emitted when there
+            // is one — Oversigt and Detaljer carry none, and a Rapport group whose
+            // cases have no tags gets no empty line ahead of its heading.
             if (!string.IsNullOrEmpty(table.Caption))
             {
                 body.Append(
-                    $@"<p style='font-size:9pt;text-align:left;'>{Esc(table.Caption)}</p>");
+                    $@"<p style='{CaptionStyle}'>{Esc(table.Caption)}</p>");
             }
 
             if (!string.IsNullOrEmpty(table.Title))
             {
                 body.Append(
-                    $@"<p style='font-size:14px;text-align:left;font-weight:700;'>{Esc(table.Title)}</p>");
+                    $@"<p style='{SectionTitleStyle}'>{Esc(table.Title)}</p>");
             }
 
+            // A CsvOnly column (Rapport's Delrapport, #1192) is skipped by INDEX
+            // for both the header and the cells, so the two cannot drift apart.
             body.Append(@"<table width=""100%"" border=""1"">");
             body.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size:7pt;'>");
             foreach (var column in table.Columns)
             {
+                if (column.CsvOnly) continue;
                 body.Append($@"<td>{Esc(column.Header)}</td>");
             }
 
@@ -210,7 +264,9 @@ public class ComplianceExportWordWriter(
                         : @"<tr style='font-size:7pt;'>");
                 for (var i = 0; i < row.Cells.Count; i++)
                 {
-                    var type = i < table.Columns.Count ? table.Columns[i].Type : ComplianceExportCellType.Text;
+                    var column = i < table.Columns.Count ? table.Columns[i] : null;
+                    if (column is { CsvOnly: true }) continue;
+                    var type = column?.Type ?? ComplianceExportCellType.Text;
                     body.Append($@"<td>{Esc(Render(row.Cells[i], type))}</td>");
                 }
 
@@ -219,30 +275,88 @@ public class ComplianceExportWordWriter(
 
             body.Append(@"</table>");
             body.Append(@"<br/>");
+        }
 
-            if (table.ImageBlocks.Count == 0 || core == null) continue;
+        // The image appendix (#1192, PDF page 9): AFTER every table, one page per
+        // section that has any blocks — "Bilag – {section}" on a page break —
+        // then per case its "Sag … · … · …" caption and the images in a
+        // two-column grid. The page header and footer repeat on these pages by
+        // themselves: they are section properties (#1189), not body content.
+        // The exact caption texts written below, for the post-pass that pins each
+        // of them to its grid (see KeepCaptionsWithTheirGrid).
+        var appendixCaptions = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var table in document.Tables)
+        {
+            if (table.ImageBlocks.Count == 0) continue;
+
+            AppendAppendixSection(body, table);
 
             foreach (var block in table.ImageBlocks)
             {
                 var caption = block.TotalImages > block.ImageNames.Count
-                    ? $"{localizationService.GetString("Appendix")}: {block.Caption} " +
-                      $"({block.ImageNames.Count}/{block.TotalImages})"
-                    : $"{localizationService.GetString("Appendix")}: {block.Caption}";
+                    ? $"{block.Caption} ({block.ImageNames.Count}/{block.TotalImages})"
+                    : block.Caption;
 
-                body.Append(
-                    $@"<p style='font-size:7pt;page-break-before:always'>{Esc(caption)}</p>");
+                appendixCaptions.Add(caption);
+                body.Append($@"<p style='{AppendixCaseStyle}'>{Esc(caption)}</p>");
 
-                for (var i = 0; i < block.ImageNames.Count; i++)
+                // Two images per row (~300 px each, side by side on the landscape
+                // page) instead of a vertical stack. Every cell is opened, given
+                // content and closed regardless of whether InsertImage managed to
+                // embed anything — a cell left literally empty is at the
+                // converter's mercy — so a missing photograph leaves a blank cell
+                // rather than a broken grid; an odd count ends on a blank cell.
+                //
+                // Borderless through CSS on the table AND every cell: HtmlToOpenXml
+                // 3.5.0 ignores border="0" (every table gets the TableGrid style's
+                // borders), whereas style="border:none" emits w:tblBorders /
+                // w:tcBorders with val="none" — and the table-level ones carry no
+                // insideH/insideV, so the cells need their own.
+                body.Append(@"<table width=""100%"" style=""border:none;"">");
+                for (var i = 0; i < block.ImageNames.Count; i += AppendixImagesPerRow)
                 {
-                    await InsertImage(block.ImageNames[i], body, 600, 650, core, basePicturePath, s3Enabled);
-
-                    var geoLink = i < block.GeoLinks.Count ? block.GeoLinks[i] : null;
-                    if (!string.IsNullOrEmpty(geoLink))
+                    body.Append(@"<tr>");
+                    for (var j = 0; j < AppendixImagesPerRow; j++)
                     {
-                        body.Append(
-                            $@"<p style='font-size:7pt;'><a href=""{Esc(geoLink)}"">{Esc(geoLink)}</a></p>");
+                        body.Append(@"<td style='vertical-align:top;border:none;'>");
+                        var index = i + j;
+                        var cellStart = body.Length;
+                        if (index < block.ImageNames.Count)
+                        {
+                            // Its own marker rather than cellStart: the two are
+                            // equal today, and the guard below must go on meaning
+                            // "the image went in" if anything is ever emitted
+                            // between the <td> and InsertImage.
+                            var imageStart = body.Length;
+                            await InsertImage(block.ImageNames[index], body,
+                                AppendixImageWidthPx, AppendixImageWidthPx, core, basePicturePath, s3Enabled);
+
+                            // The geo link CAPTIONS a photograph; it is not a
+                            // datum of its own. InsertImage appends nothing when
+                            // the bytes could not be resolved (S3 miss, unreadable
+                            // file, an ImageMagick throw), and a cell holding a
+                            // bare Google Maps URL and no picture reads as a
+                            // defect rather than as a missing image — so the link
+                            // is emitted only if the image actually went in.
+                            var geoLink = body.Length > imageStart && index < block.GeoLinks.Count
+                                ? block.GeoLinks[index]
+                                : null;
+                            if (!string.IsNullOrEmpty(geoLink))
+                            {
+                                body.Append(
+                                    $@"<p style='font-size:7pt;'><a href=""{Esc(geoLink)}"">{Esc(geoLink)}</a></p>");
+                            }
+                        }
+
+                        if (body.Length == cellStart) body.Append(@"<p>&nbsp;</p>");
+                        body.Append(@"</td>");
                     }
+
+                    body.Append(@"</tr>");
                 }
+
+                body.Append(@"</table>");
             }
         }
 
@@ -264,8 +378,77 @@ public class ComplianceExportWordWriter(
         var word = new WordProcessor(docxStream);
         word.AddHtml(shell.Replace("{%Content%}", body.ToString()));
         word.Dispose();
+
+        // AFTER the conversion, because the thing being fixed is what the
+        // converter produced.
+        KeepCaptionsWithTheirGrid(docxStream, appendixCaptions);
+
         docxStream.Position = 0;
         return docxStream;
+    }
+
+    /// <summary>
+    /// Pins every appendix case caption to the image grid under it, by setting
+    /// <c>w:keepNext</c> on the caption paragraph.
+    ///
+    /// <para>
+    /// WHY A POST-PASS. <see cref="AppendixCaseStyle"/> declares
+    /// <c>page-break-after:avoid</c>, which is the correct CSS for this, and
+    /// HtmlToOpenXml 3.5.0 SILENTLY DROPS it: the converter recognises
+    /// <c>page-break-before</c>/<c>page-break-after</c> only with the value
+    /// <c>always</c> (which is what the appendix heading's own break relies on)
+    /// and emits nothing at all for <c>avoid</c> — verified on the rendered
+    /// package, where every <c>Sag …</c> paragraph came out with a
+    /// <c>w:pPr</c> holding <c>w:pStyle</c> and <c>w:jc</c> and no
+    /// <c>w:keepNext</c>. Left unfixed, a caption can be the last line of a page
+    /// while its photographs open the next one, and those photographs then
+    /// carry no case identity at all.
+    /// </para>
+    ///
+    /// <para>
+    /// The paragraphs are found by their own text, and only where the NEXT
+    /// sibling is the grid table — the pairing that has to survive, not a
+    /// substring search — reusing the same open-the-saved-package pattern as
+    /// <see cref="ApplyPageShell"/>. <c>w:keepNext</c> keeps a paragraph with
+    /// what follows it, table included; both Word and LibreOffice honour it,
+    /// and the appendix grid's first row is what it binds to.
+    /// </para>
+    /// </summary>
+    private static void KeepCaptionsWithTheirGrid(MemoryStream docxStream, ICollection<string> captions)
+    {
+        if (captions.Count == 0) return;
+
+        using (var word = WordprocessingDocument.Open(docxStream, true))
+        {
+            var mainPart = word.MainDocumentPart;
+            var docBody = mainPart?.Document?.Body;
+            if (docBody == null) return;
+
+            foreach (var paragraph in docBody.Elements<W.Paragraph>())
+            {
+                if (paragraph.NextSibling() is not W.Table) continue;
+                if (!captions.Contains(paragraph.InnerText.Trim())) continue;
+
+                var properties = paragraph.ParagraphProperties;
+                if (properties == null)
+                {
+                    properties = new W.ParagraphProperties();
+                    paragraph.InsertAt(properties, 0);
+                }
+
+                if (properties.KeepNext != null) continue;
+
+                // w:pPr is an ORDERED sequence: only w:pStyle may precede
+                // w:keepNext, so this is an insert, never an append.
+                var styleId = properties.GetFirstChild<W.ParagraphStyleId>();
+                if (styleId != null) properties.InsertAfter(new W.KeepNext(), styleId);
+                else properties.InsertAt(new W.KeepNext(), 0);
+            }
+
+            mainPart.Document.Save();
+        }
+
+        docxStream.Position = 0;
     }
 
     /// <summary>
@@ -431,11 +614,35 @@ public class ComplianceExportWordWriter(
     }
 
     /// <summary>
+    /// The one page break per section with images (#1192): a bold
+    /// <c>Bilag – {AppendixLabel}</c> heading — en dash, the mock-up's separator
+    /// — falling back to the table's caption and then its title should the
+    /// builder have left the label empty, so the page is never headed by a bare
+    /// "Bilag".
+    /// </summary>
+    private void AppendAppendixSection(StringBuilder body, ComplianceExportTable table)
+    {
+        var label = !string.IsNullOrWhiteSpace(table.AppendixLabel) ? table.AppendixLabel
+            : !string.IsNullOrWhiteSpace(table.Caption) ? table.Caption
+            : table.Title ?? string.Empty;
+
+        var heading = string.IsNullOrWhiteSpace(label)
+            ? localizationService.GetString("Appendix")
+            : $"{localizationService.GetString("Appendix")} – {label}";
+
+        body.Append($@"<p style='{AppendixHeadingStyle}'>{Esc(heading)}</p>");
+    }
+
+    /// <summary>
     /// <c>WordService.InsertImage</c>'s logic (<c>WordService.cs:956-1007</c>),
     /// with two behavioural differences and no third: the S3/local decision is
     /// passed in rather than read from a mutable field, and a failure is LOGGED
     /// rather than written to <c>Console</c>. A missing or unreadable image is
-    /// skipped — one broken photograph must not fail a 200-page report.
+    /// skipped — one broken photograph must not fail a 200-page report. With no
+    /// <paramref name="core"/> and no picture directory there is nowhere to read
+    /// from, and the method returns without touching the file system: a relative
+    /// <c>File.Exists</c> against the process's working directory is not a
+    /// picture store.
     /// </summary>
     private async Task InsertImage(
         string imageName, StringBuilder html, int imageSize, int imageWidth,
@@ -446,12 +653,14 @@ public class ComplianceExportWordWriter(
         {
             if (s3Enabled)
             {
+                if (core == null) return;
                 var storageResult = await core.GetFileFromS3Storage(imageName);
                 stream = storageResult?.ResponseStream;
             }
             else
             {
-                var filePath = Path.Combine(basePicturePath ?? string.Empty, imageName);
+                if (string.IsNullOrWhiteSpace(basePicturePath)) return;
+                var filePath = Path.Combine(basePicturePath, imageName);
                 if (!File.Exists(filePath)) return;
                 stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             }

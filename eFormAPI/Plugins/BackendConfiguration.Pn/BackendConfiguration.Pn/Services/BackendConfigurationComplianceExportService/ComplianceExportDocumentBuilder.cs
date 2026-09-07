@@ -298,11 +298,27 @@ public static class ComplianceExportDocumentBuilder
     /// </para>
     ///
     /// <para>
+    /// <b>Word/PDF vs CSV shape (#1192).</b> <c>Delrapport</c> is marked
+    /// <see cref="ComplianceExportColumn.CsvOnly"/>: the PDF table starts at
+    /// <c>ID</c> (page 9 — the section caption above the table already says what
+    /// <c>Delrapport</c> would), while the flat CSV (page 10) keeps it as its
+    /// first column. Every column carries a <see cref="ComplianceExportColumn.Key"/>
+    /// so the CSV writer can union the sections' columns: the fixed ones by
+    /// localisation key, the answer ones by the service's <c>f{fieldId}</c>.
+    /// </para>
+    ///
+    /// <para>
     /// <c>Billeder</c> is the image COUNT, not the images
-    /// (<c>compliance.js:1773-1790</c>). The images themselves only ever reach the
-    /// optional Word/PDF appendix, whose block caption leads with the section's
-    /// tags caption (<c>Bilag – Miljøtilsyn - Brand …</c>, PDF page 9) — or the
-    /// headline label when the group has no tags.
+    /// (<c>compliance.js:1773-1790</c>) — a <c>Number</c> cell whose Word/PDF text
+    /// is the localised <c>{0} billeder</c> (<c>ImagesCount</c>; no emoji, the
+    /// container's LibreOffice has no colour-emoji font) and whose CSV value is
+    /// the bare count, both as the mock-ups show; a case with no images gets the
+    /// EMPTY cell, so the PDF prints the en dash and the CSV a blank. The images
+    /// themselves only ever reach the optional Word/PDF appendix: one page per
+    /// section, headed by <see cref="ComplianceExportTable.AppendixLabel"/> —
+    /// the tags caption (<c>Bilag – Miljøtilsyn - Brand</c>, PDF page 9) or the
+    /// headline label when the group has no tags — and under it one block per
+    /// case captioned <c>Sag {SdkCaseId} · {Område} · {dd.MM.yyyy}</c>.
     /// </para>
     ///
     /// <para>
@@ -327,6 +343,7 @@ public static class ComplianceExportDocumentBuilder
 
         var withoutHeadlineLabel = localizationService.GetString("WithoutReportHeadline");
         var columnsUnavailableLabel = localizationService.GetString("ColumnsUnavailable");
+        var caseLabel = localizationService.GetString("Case");
 
         // De-duplication of the image appendix, and the document-wide image
         // budget. Both are per-DOCUMENT, so they live outside the group loop.
@@ -349,24 +366,50 @@ public static class ComplianceExportDocumentBuilder
                 Title = SchemaUnavailableSuffix(group, columnsUnavailableLabel) is { } suffix
                     ? $"{headlineLabel} ({suffix})"
                     : headlineLabel,
+                // The appendix page's heading leads with the tags caption (PDF
+                // page 9) and falls back to the headline label — WITHOUT the
+                // schema suffix — so an untagged group's blocks are still
+                // attributable to their section.
+                AppendixLabel = string.IsNullOrEmpty(caption) ? headlineLabel : caption,
                 Columns =
                 [
-                    new ComplianceExportColumn { Header = localizationService.GetString("SubReport") },
+                    // CSV only (#1192): the PDF table starts at ID, page 9.
                     new ComplianceExportColumn
                     {
+                        Key = "SubReport",
+                        Header = localizationService.GetString("SubReport"),
+                        CsvOnly = true
+                    },
+                    new ComplianceExportColumn
+                    {
+                        Key = "CaseId",
                         Header = localizationService.GetString("CaseId"),
                         Type = ComplianceExportCellType.Number
                     },
-                    new ComplianceExportColumn { Header = localizationService.GetString("Property") },
-                    new ComplianceExportColumn { Header = localizationService.GetString("DoneBy") },
                     new ComplianceExportColumn
                     {
+                        Key = "Property",
+                        Header = localizationService.GetString("Property")
+                    },
+                    new ComplianceExportColumn
+                    {
+                        Key = "DoneBy",
+                        Header = localizationService.GetString("DoneBy")
+                    },
+                    new ComplianceExportColumn
+                    {
+                        Key = "CompletedDate",
                         Header = localizationService.GetString("CompletedDate"),
                         Type = ComplianceExportCellType.Date
                     },
-                    new ComplianceExportColumn { Header = localizationService.GetString("Area") },
                     new ComplianceExportColumn
                     {
+                        Key = "Area",
+                        Header = localizationService.GetString("Area")
+                    },
+                    new ComplianceExportColumn
+                    {
+                        Key = "Images",
                         Header = localizationService.GetString("Images"),
                         Type = ComplianceExportCellType.Number
                     }
@@ -378,14 +421,14 @@ public static class ComplianceExportDocumentBuilder
             {
                 table.Columns.Add(new ComplianceExportColumn
                 {
+                    // The service's f{fieldId}: what the CSV writer unions the
+                    // sections' answer columns on. Two templates' fields that
+                    // share a LABEL keep separate columns; the same field
+                    // answered in two sections shares one.
+                    Key = column.Key,
                     Header = string.IsNullOrWhiteSpace(column.Label) ? column.Key : column.Label
                 });
             }
-
-            // The appendix caption leads with the tags caption (PDF page 9), and
-            // falls back to the headline label so an untagged group's blocks are
-            // still attributable to their section.
-            var appendixLabel = string.IsNullOrEmpty(caption) ? headlineLabel : caption;
 
             foreach (var caseModel in group.Cases ?? [])
             {
@@ -402,7 +445,7 @@ public static class ComplianceExportDocumentBuilder
                         // Case METADATA, never an answer field (#1160 finding 7).
                         ComplianceExportCell.FromDate(caseModel.DoneAt),
                         ComplianceExportCell.FromText(caseModel.Title),
-                        ComplianceExportCell.FromNumber(caseModel.ImagesCount)
+                        ImagesCell(caseModel.ImagesCount, localizationService)
                     ]
                 };
 
@@ -427,7 +470,7 @@ public static class ComplianceExportDocumentBuilder
                 if (!casesWithAnAppendixBlock.Add(caseModel.SdkCaseId)) continue;
 
                 var (block, wanted) = BuildImageBlock(
-                    caseModel, appendixLabel,
+                    caseModel, caseLabel,
                     MaxAppendixImages - document.AppendixImagesEmbedded);
 
                 document.AppendixImagesRequested += wanted;
@@ -507,11 +550,62 @@ public static class ComplianceExportDocumentBuilder
             : string.Join(" - ", tags.Where(t => !string.IsNullOrWhiteSpace(t)));
 
     /// <summary>
+    /// The <c>Billeder</c> cell (#1192): a <c>Number</c> cell carrying the count
+    /// for CSV and the localised <c>{0} billeder</c> for Word/PDF — or the EMPTY
+    /// cell for a case with no images, which is what puts the en dash in the PDF
+    /// and a blank in the CSV. <c>ImagesCount</c> is formatted through the
+    /// localizer's <c>string.Format</c> overload, so every locale's value must
+    /// carry the <c>{0}</c> placeholder. Exactly one image reads the singular
+    /// <c>ImagesCountOne</c> (<c>1 billede</c>, no placeholder) rather than
+    /// <c>1 billeder</c>; the plural key serves every count from two up.
+    /// </summary>
+    private static ComplianceExportCell ImagesCell(
+        int imagesCount, IBackendConfigurationLocalizationService localizationService) =>
+        imagesCount switch
+        {
+            <= 0 => new ComplianceExportCell(),
+            1 => ComplianceExportCell.FromNumber(1, localizationService.GetString("ImagesCountOne")),
+            _ => ComplianceExportCell.FromNumber(imagesCount, localizationService.GetString("ImagesCount", imagesCount))
+        };
+
+    /// <summary>
+    /// The appendix block's date, <c>dd.MM.yyyy</c>: the case's <c>DoneAt</c> —
+    /// the mock-up's date equals the <c>Udført dato</c> column — falling back to
+    /// the ISO <c>TaskDate</c> when the case is not completed. An unparseable
+    /// <c>TaskDate</c> is passed through as it is rather than dropped or guessed
+    /// at; no date at all yields <c>null</c>, and the caption then ends at the
+    /// area.
+    /// </summary>
+    private static string AppendixDate(ComplianceReportCaseModel caseModel)
+    {
+        if (caseModel.DoneAt.HasValue)
+        {
+            return caseModel.DoneAt.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+        }
+
+        if (string.IsNullOrWhiteSpace(caseModel.TaskDate)) return null;
+
+        return DateTime.TryParseExact(caseModel.TaskDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var parsed)
+            ? parsed.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+            : caseModel.TaskDate;
+    }
+
+    /// <summary>
     /// Per-case appendix block, capped at <see cref="MaxAppendixImagesPerCase"/>
     /// and further clipped to what is left of the document-wide
     /// <see cref="MaxAppendixImages"/> budget. Images whose display name the
     /// projector could not derive (the <c>UploadedData.FileName</c> existence check
     /// failed) are dropped: there is no file to read for them.
+    ///
+    /// <para>
+    /// The caption is the mock-up's (PDF page 9):
+    /// <c>Sag {SdkCaseId} · {Område} · {dd.MM.yyyy}</c> — <paramref name="caseLabel"/>
+    /// is the localised <c>Case</c> key, the area is the case's title, and the
+    /// date is <see cref="AppendixDate"/>. The SECTION is no longer in the
+    /// caption: since #1192 the blocks sit under a per-section
+    /// <c>Bilag – {AppendixLabel}</c> page heading, which carries it once.
+    /// </para>
     ///
     /// <para>
     /// Returns the block (<c>null</c> when nothing can be embedded for this case)
@@ -522,7 +616,7 @@ public static class ComplianceExportDocumentBuilder
     /// </para>
     /// </summary>
     private static (ComplianceExportImageBlock Block, int Wanted) BuildImageBlock(
-        ComplianceReportCaseModel caseModel, string sectionLabel, int documentBudget)
+        ComplianceReportCaseModel caseModel, string caseLabel, int documentBudget)
     {
         var usable = (caseModel.Images ?? [])
             .Where(i => !string.IsNullOrWhiteSpace(i.FileName))
@@ -538,9 +632,12 @@ public static class ComplianceExportDocumentBuilder
         // break carrying nothing.
         if (allowed == 0) return (null, wanted);
 
+        var date = AppendixDate(caseModel);
         var block = new ComplianceExportImageBlock
         {
-            Caption = $"{sectionLabel} · {caseModel.SdkCaseId} · {caseModel.Title} · {caseModel.TaskDate}",
+            Caption = string.IsNullOrEmpty(date)
+                ? $"{caseLabel} {caseModel.SdkCaseId} · {caseModel.Title}"
+                : $"{caseLabel} {caseModel.SdkCaseId} · {caseModel.Title} · {date}",
             // The case's OWN image count, NOT the post-drop count. An image whose
             // name could not be derived is dropped above, and the Billeder COLUMN
             // still prints caseModel.ImagesCount — so taking the total from the
@@ -575,10 +672,15 @@ public static class ComplianceExportDocumentBuilder
     /// <c>data:image/png;base64,…</c> payload into one <see cref="System.Text.StringBuilder"/>,
     /// then materialises it with <c>ToString()</c> and again with the
     /// <c>{%Content%}</c> replace — three live copies of the same string before
-    /// HtmlToOpenXml sees it. At the ~230 KB a 600px-wide resized photograph
-    /// base64-encodes to, 200 images is ~46 MB of UTF-16 per copy, so a worst-case
-    /// export peaks at roughly 140 MB of large-object-heap string rather than the
-    /// effectively unbounded figure the 5000-row ceiling would otherwise permit.
+    /// HtmlToOpenXml sees it. The cap was sized at #1169's 600px-wide resized
+    /// photograph, which base64-encodes to ~230 KB: 200 images is ~46 MB of
+    /// UTF-16 per copy, so a worst-case export peaks at roughly 140 MB of
+    /// large-object-heap string rather than the effectively unbounded figure the
+    /// 5000-row ceiling would otherwise permit. Since #1192 the appendix embeds
+    /// at <c>ComplianceExportWordWriter.AppendixImageWidthPx</c> = 300 px, a
+    /// quarter of the pixels (~60 KB base64 each), so the same 200 now bounds the
+    /// peak at roughly 35 MB — about 4× less; the number was kept rather than
+    /// re-derived because the ceiling exists to bound memory, not to fill it.
     /// </para>
     ///
     /// <para>
