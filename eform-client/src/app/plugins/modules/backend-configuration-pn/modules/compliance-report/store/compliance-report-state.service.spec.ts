@@ -1,25 +1,40 @@
 import {
   addClampedMonths,
+  COMPLIANCE_FILTER_DEBOUNCE_MS,
   COMPLIANCE_PAGE_SIZE,
   CompliancePeriodPreset,
   ComplianceReportStateService,
 } from './compliance-report-state.service';
 
 /**
- * Unit spec for the page shell's state machine (#1163 §13). This is where the
- * blank-on-change contract is genuinely testable without a browser, and where
- * the single most likely way to break #1164 — a drill-down that blanks the page
- * it just navigated to — is pinned.
+ * Unit spec for the page shell's state machine (#1163 §13, rewritten for
+ * #1185's auto-fetch contract). This is where the fetch-on-change contract is
+ * genuinely testable without a browser, and where the single most likely way
+ * to break #1164 — a drill-down that re-queries or blanks the page it just
+ * navigated to — is pinned.
  *
  * Constructed directly rather than through a TestBed: the service has no
  * dependencies, matching adhoc-state.service.spec.ts's own pattern of avoiding
  * a module bootstrap for a plain class.
+ *
+ * The filter path is debounced with a real `setTimeout`, so every
+ * "setFilter → fetch" assertion runs under fake timers and advances them past
+ * `COMPLIANCE_FILTER_DEBOUNCE_MS`; `settle()` below is that one line.
  */
 describe('ComplianceReportStateService', () => {
   let service: ComplianceReportStateService;
 
+  function settle(): void {
+    jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS);
+  }
+
   beforeEach(() => {
+    jest.useFakeTimers();
     service = new ComplianceReportStateService();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('defaults', () => {
@@ -36,8 +51,8 @@ describe('ComplianceReportStateService', () => {
     });
   });
 
-  describe('the blank-on-change state machine', () => {
-    it('setFilter invalidates: page 1, no show-all, report hidden', () => {
+  describe('the auto-fetch state machine', () => {
+    it('setFilter resets paging but keeps the report visible', () => {
       service.requestFetch();
       service.setTotalCount(42);
       service.setShowAll();
@@ -46,49 +61,94 @@ describe('ComplianceReportStateService', () => {
       service.setFilter({status: 'done'});
 
       expect(service.filters.status).toBe('done');
-      expect(service.reportVisible).toBe(false);
+      // NOT blanked: the mounted child keeps its rows until the new ones land.
+      expect(service.reportVisible).toBe(true);
       expect(service.page).toBe(0);
       expect(service.showAll).toBe(false);
-      expect(service.total).toBe(0);
     });
 
-    it('setFilter clears loading, so Opdater tabel cannot wedge', () => {
-      // setFilter drops reportVisible, which UNMOUNTS the child that owns the
-      // in-flight request; a child torn down mid-flight need never reach a
-      // finalize/complete path, so nothing else would ever call
-      // setLoading(false). `canFetch` is `isPeriodValid && !loading`, so a
-      // stuck `true` here kills the button until a page reload.
+    it('setFilter leaves loading and total to the child that is still mounted', () => {
+      // Under blank-on-change the shell reset both because it was about to
+      // UNMOUNT the child. Under auto-fetch the child stays, its switchMap
+      // cancels the in-flight request, and it re-reports both itself.
       service.requestFetch();
       service.setLoading(true);
+      service.setTotalCount(42);
 
       service.setFilter({status: 'done'});
 
-      expect(service.loading).toBe(false);
+      expect(service.loading).toBe(true);
+      expect(service.total).toBe(42);
     });
 
-    it('setFilter emits no fetch request', () => {
+    it('setFilter emits exactly one fetch after the debounce', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
 
       service.setFilter({propertyId: 7});
-      service.setFilter({tagIds: [1, 2]});
-
       expect(fetches.length).toBe(0);
+
+      settle();
+
+      expect(fetches.length).toBe(1);
+      expect(service.reportVisible).toBe(true);
     });
 
-    it('setFilterSilently does NOT invalidate', () => {
+    it('coalesces rapid filter changes into one fetch', () => {
+      // Every tag click in the closeOnSelect=false multi-select is one
+      // ngModelChange; three ticks must be one request.
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+
+      service.setFilter({tagIds: [1]});
+      jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
+      service.setFilter({tagIds: [1, 2]});
+      jest.advanceTimersByTime(COMPLIANCE_FILTER_DEBOUNCE_MS - 50);
+      service.setFilter({tagIds: [1, 2, 3]});
+      expect(fetches.length).toBe(0);
+
+      settle();
+
+      expect(fetches.length).toBe(1);
+      expect(service.filters.tagIds).toEqual([1, 2, 3]);
+    });
+
+    it('fetches from the hidden state too, so a suppressed entry recovers on the first change', () => {
+      // enterPage() in Detaljer leaves the placeholder up; the customer's
+      // rule is that the table always reflects the filters, so a change from
+      // there must populate it.
+      service.requestFetch();
+      service.setMode('details');
+      service.enterPage();
+      expect(service.reportVisible).toBe(false);
+
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({tagIds: [4]});
+      settle();
+
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+    });
+
+    it('setFilterSilently neither fetches nor blanks', () => {
       service.requestFetch();
       service.setTotalCount(42);
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(1); // the replay
 
       service.setFilterSilently({propertyId: 9, status: 'all'});
+      settle();
 
       expect(service.filters.propertyId).toBe(9);
       expect(service.filters.status).toBe('all');
       expect(service.reportVisible).toBe(true);
       expect(service.total).toBe(42);
+      expect(fetches.length).toBe(1);
     });
 
-    it('requestFetch is the only thing that fires fetchRequested$', () => {
+    it('requestFetch fires fetchRequested$ immediately', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
 
@@ -96,6 +156,21 @@ describe('ComplianceReportStateService', () => {
 
       expect(fetches.length).toBe(1);
       expect(service.reportVisible).toBe(true);
+    });
+
+    it('a direct fetch supersedes a filter fetch still waiting on its debounce', () => {
+      // One gesture, one request: a tag click followed within the debounce by
+      // anything that fetches immediately must not fetch twice.
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+
+      service.setFilter({tagIds: [1]});
+      service.requestFetch();
+      expect(fetches.length).toBe(1);
+
+      settle();
+
+      expect(fetches.length).toBe(1);
     });
 
     it('replays the pending trigger to a subscriber that arrives late', () => {
@@ -122,14 +197,39 @@ describe('ComplianceReportStateService', () => {
       service.fetchRequested$.subscribe(() => second.push(1));
 
       // The late subscriber gets the replay; the existing one is NOT re-served,
-      // which is what keeps the ordinary `Opdater tabel` path single-fetch.
+      // which is what keeps the ordinary filter-change path single-fetch.
       expect(second.length).toBe(1);
       expect(first.length).toBe(1);
     });
+  });
 
-    it('does not replay a stale trigger once a filter change has invalidated', () => {
+  describe('custom period (Sæt periode) staging', () => {
+    const jan2 = new Date(2026, 0, 2);
+    const mar4 = new Date(2026, 2, 4);
+
+    it('choosing Sæt periode blanks to the placeholder and does not fetch', () => {
       service.requestFetch();
-      service.setFilter({status: 'done'});
+      service.setTotalCount(42);
+      service.setLoading(true);
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(1); // the replay
+
+      service.setFilter({periodPreset: 'custom'});
+      settle();
+
+      expect(service.reportVisible).toBe(false);
+      expect(service.total).toBe(0);
+      // The child this unmounted may never reach setLoading(false); the shell
+      // resets it so Opdater periode cannot wedge.
+      expect(service.loading).toBe(false);
+      expect(fetches.length).toBe(1);
+      expect(service.periodBounds).toBeNull();
+    });
+
+    it('does not replay a stale trigger to a child mounted while staging', () => {
+      service.requestFetch();
+      service.setFilter({periodPreset: 'custom'});
 
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
@@ -138,12 +238,117 @@ describe('ComplianceReportStateService', () => {
       expect(fetches.length).toBe(0);
     });
 
-    it('requestFetch is a no-op while a custom range is invalid', () => {
+    it('staging dates does not fetch and does not change the committed bounds', () => {
       const fetches: number[] = [];
       service.fetchRequested$.subscribe(() => fetches.push(1));
       service.setFilter({periodPreset: 'custom'});
 
+      service.stageCustomPeriod({from: jan2});
+      service.stageCustomPeriod({to: mar4});
+      settle();
+
+      expect(service.customDraftFrom).toBe(jan2);
+      expect(service.customDraftTo).toBe(mar4);
+      expect(service.isPeriodValid).toBe(true);
+      expect(service.filters.customFrom).toBeNull();
+      expect(service.periodBounds).toBeNull();
+      expect(service.reportVisible).toBe(false);
+      expect(fetches.length).toBe(0);
+    });
+
+    it('requestFetch is a no-op while no custom range is committed', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: jan2, to: mar4});
+
       service.requestFetch();
+
+      expect(fetches.length).toBe(0);
+      expect(service.reportVisible).toBe(false);
+    });
+
+    it('commitCustomPeriod is a no-op while the draft is invalid', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: mar4, to: jan2});
+      expect(service.isPeriodValid).toBe(false);
+
+      service.commitCustomPeriod();
+
+      expect(fetches.length).toBe(0);
+      expect(service.filters.customFrom).toBeNull();
+      expect(service.reportVisible).toBe(false);
+    });
+
+    it('commitCustomPeriod fetches once, immediately, when the draft is valid', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: jan2, to: mar4});
+
+      service.commitCustomPeriod();
+
+      expect(fetches.length).toBe(1);
+      expect(service.reportVisible).toBe(true);
+      expect(service.filters.customFrom).toBe(jan2);
+      expect(service.filters.customTo).toBe(mar4);
+      expect(service.requestModel.dateFrom).toBe('2026-01-02');
+      expect(service.requestModel.dateTo).toBe('2026-03-04');
+      settle();
+      expect(fetches.length).toBe(1);
+    });
+
+    it('a non-period change in custom mode fetches with the committed range', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: jan2, to: mar4});
+      service.commitCustomPeriod();
+      expect(fetches.length).toBe(1);
+      // The user has started editing the range again; the draft is not what
+      // the query uses.
+      service.stageCustomPeriod({to: null});
+
+      service.setFilter({propertyId: 7});
+      settle();
+
+      expect(fetches.length).toBe(2);
+      expect(service.reportVisible).toBe(true);
+      expect(service.requestModel.dateFrom).toBe('2026-01-02');
+      expect(service.requestModel.dateTo).toBe('2026-03-04');
+    });
+
+    it('re-choosing Sæt periode after a fixed preset stages again', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: jan2, to: mar4});
+      service.commitCustomPeriod();
+      service.setFilter({periodPreset: '3'});
+      settle();
+      expect(fetches.length).toBe(2);
+
+      service.setFilter({periodPreset: 'custom'});
+      settle();
+
+      // The previously committed dates must not be queried by the next filter
+      // change while the user is typing new ones — but the draft still offers
+      // them.
+      expect(fetches.length).toBe(2);
+      expect(service.reportVisible).toBe(false);
+      expect(service.filters.customFrom).toBeNull();
+      expect(service.customDraftFrom).toBe(jan2);
+    });
+
+    it('a filter fetch still waiting on its debounce is dropped by staging', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+
+      service.setFilter({tagIds: [1]});
+      service.setFilter({periodPreset: 'custom'});
+      settle();
 
       expect(fetches.length).toBe(0);
       expect(service.reportVisible).toBe(false);
@@ -218,13 +423,174 @@ describe('ComplianceReportStateService', () => {
       expect(service.reportVisible).toBe(true);
       expect(fetches.length).toBe(1);
     });
+
+    it('drops a filter fetch still waiting on its debounce: the replay already carries the new filters', () => {
+      // Preset change, then a mode switch inside the 300 ms. The switch
+      // recreates the child, whose late subscription replays the pending
+      // trigger and reads `requestModel` at fetch time — so the debounced
+      // filter fetch would only issue the same query a second time.
+      service.requestFetch();
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(1);
+
+      service.setFilter({periodPreset: '3'});
+      service.setMode('details');
+      settle();
+
+      // The existing subscriber saw nothing new...
+      expect(fetches.length).toBe(1);
+      // ...and the child the switch creates gets exactly one replay, with
+      // the changed preset already in place.
+      const late: number[] = [];
+      service.fetchRequested$.subscribe(() => late.push(1));
+      expect(late.length).toBe(1);
+      expect(service.filters.periodPreset).toBe('3');
+    });
+
+    it('a plain setMode keeps the filters — the reset is resetToOverview', () => {
+      service.setFilter({propertyId: 7, tagIds: [1]});
+      settle();
+
+      service.setMode('overview');
+
+      expect(service.filters.propertyId).toBe(7);
+      expect(service.filters.tagIds).toEqual([1]);
+    });
+
+    it('keeps a pending filter fetch when the switch happens from the hidden re-entry state', () => {
+      // B1 re-entry: back in Detaljer, so enterPage() hides the report and no
+      // child is mounted. A filter change is then the ONLY thing that will
+      // un-hide it — and a mode click inside the 300 ms must not swallow it:
+      // there is no child to replay to while hidden, so the debounced
+      // requestFetch() is the one request that brings the report back.
+      service.requestFetch();
+      service.setMode('details');
+      service.enterPage();
+      expect(service.reportVisible).toBe(false);
+
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(0);
+
+      service.setFilter({status: 'done'});
+      service.setMode('report');
+      settle();
+
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+      expect(service.mode).toBe('report');
+      expect(service.filters.status).toBe('done');
+    });
+  });
+
+  describe('the Oversigt reset (resetToOverview)', () => {
+    it('restores every default and fetches Oversigt once, immediately', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({
+        propertyId: 7,
+        boardIds: [3],
+        tagIds: [1, 2],
+        siteIds: [9],
+        status: 'done',
+        periodPreset: '3',
+      });
+      settle();
+      service.setMode('details');
+      service.setTotalCount(240);
+      service.setPage(5);
+      service.setSort('title', false);
+      service.setLoading(true);
+      const before = fetches.length;
+
+      service.resetToOverview();
+
+      expect(service.filters).toEqual({
+        propertyId: null,
+        boardIds: [],
+        tagIds: [],
+        siteIds: [],
+        status: 'open',
+        periodPreset: 'ytd',
+        customFrom: null,
+        customTo: null,
+      });
+      expect(service.mode).toBe('overview');
+      expect(service.page).toBe(0);
+      expect(service.showAll).toBe(false);
+      expect(service.total).toBe(0);
+      expect(service.loading).toBe(false);
+      expect(service.sort).toBeNull();
+      expect(service.isSortDsc).toBe(true);
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(before + 1);
+      settle();
+      expect(fetches.length).toBe(before + 1);
+    });
+
+    it('resets while already in Oversigt too', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({tagIds: [1]});
+      settle();
+      expect(fetches.length).toBe(1);
+
+      service.resetToOverview();
+
+      expect(service.mode).toBe('overview');
+      expect(service.filters.tagIds).toEqual([]);
+      expect(fetches.length).toBe(2);
+    });
+
+    it('clears a committed custom range and its draft', () => {
+      service.setFilter({periodPreset: 'custom'});
+      service.stageCustomPeriod({from: new Date(2026, 0, 2), to: new Date(2026, 2, 4)});
+      service.commitCustomPeriod();
+
+      service.resetToOverview();
+
+      expect(service.filters.periodPreset).toBe('ytd');
+      expect(service.filters.customFrom).toBeNull();
+      expect(service.customDraftFrom).toBeNull();
+      expect(service.customDraftTo).toBeNull();
+      expect(service.isPeriodValid).toBe(true);
+    });
+
+    it('recovers from the staged (placeholder) state', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.setFilter({periodPreset: 'custom'});
+      expect(service.reportVisible).toBe(false);
+
+      service.resetToOverview();
+
+      expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
+    });
+
+    it('supersedes a filter fetch still waiting on its debounce', () => {
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.requestFetch();
+      service.setMode('details');
+      service.setFilter({tagIds: [1]});
+
+      service.resetToOverview();
+      expect(fetches.length).toBe(2);
+
+      settle();
+
+      expect(fetches.length).toBe(2);
+    });
   });
 
   /**
-   * Page entry (#1163 §6). The service is provided by the LAZY module, whose
-   * NgModuleRef Angular caches for the lifetime of the app — so every one of
-   * these tests is the second visit to the page, modelled by driving the
-   * service through a first visit and then calling enterPage() again.
+   * Page entry (#1163 §6, kept by #1185 decision B1). The service is provided
+   * by the LAZY module, whose NgModuleRef Angular caches for the lifetime of
+   * the app — so every one of these tests is the second visit to the page,
+   * modelled by driving the service through a first visit and then calling
+   * enterPage() again. Entering is NOT pressing Oversigt: nothing resets.
    */
   describe('page entry', () => {
     it('auto-fetches exactly once when the preserved mode is Oversigt', () => {
@@ -269,6 +635,17 @@ describe('ComplianceReportStateService', () => {
       expect(fetches.length).toBe(0);
     });
 
+    it('preserves the previous visit\'s filters', () => {
+      service.setFilter({propertyId: 7, tagIds: [1]});
+      settle();
+      service.setMode('details');
+
+      service.enterPage();
+
+      expect(service.filters.propertyId).toBe(7);
+      expect(service.filters.tagIds).toEqual([1]);
+    });
+
     it('clears the previous visit\'s pagination and loading state', () => {
       service.requestFetch();
       service.setTotalCount(240);
@@ -287,7 +664,7 @@ describe('ComplianceReportStateService', () => {
       expect(service.loading).toBe(false);
     });
 
-    it('leaves Opdater tabel working after a suppressed entry', () => {
+    it('leaves fetching working after a suppressed entry', () => {
       service.requestFetch();
       service.setMode('details');
       service.enterPage();
@@ -303,75 +680,52 @@ describe('ComplianceReportStateService', () => {
     });
   });
 
-  describe('drill-down (the #1164 contract)', () => {
-    it('sets property and status silently and switches to Detaljer', () => {
+  describe('drill-down (the #1164 contract, status per #1185)', () => {
+    it('sets the property silently, keeps the status and switches to Detaljer', () => {
       service.requestFetch();
       service.setTotalCount(5);
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      expect(fetches.length).toBe(1); // the replay
 
       service.drillIntoProperty(12);
+      settle();
 
       expect(service.filters.propertyId).toBe(12);
-      // Oversigt counts done and not-done together, so the drill-down must
-      // show both or the numbers do not add up.
-      expect(service.filters.status).toBe('all');
+      // Oversigt's percentage is built on `Ikke udførte opgaver`; the
+      // drill-down lists exactly those, never `Alle opgaver`.
+      expect(service.filters.status).toBe('open');
       expect(service.mode).toBe('details');
-      // The whole point: the already-fetched result survives.
+      // The whole point: the already-fetched result survives, and nothing
+      // fetches until the Detaljer child mounts and takes the replay.
       expect(service.reportVisible).toBe(true);
+      expect(fetches.length).toBe(1);
     });
 
-    it('restores property AND status on the way back to Oversigt', () => {
+    it('the Oversigt reset restores the defaults after a drill, regardless of user changes', () => {
       service.requestFetch();
       service.drillIntoProperty(12);
+      service.setFilter({propertyId: 34, status: 'done', tagIds: [2]});
+      settle();
 
-      service.setMode('overview');
+      service.resetToOverview();
 
       expect(service.filters.propertyId).toBeNull();
       expect(service.filters.status).toBe('open');
+      expect(service.filters.tagIds).toEqual([]);
+      expect(service.mode).toBe('overview');
       expect(service.reportVisible).toBe(true);
     });
 
-    it('leaves a property the user changed while drilled in alone', () => {
+    it('carries no drill bookkeeping: a second drill is just another drill', () => {
       service.requestFetch();
-      service.drillIntoProperty(12);
-      service.setFilter({propertyId: 34});
-
-      service.setMode('overview');
-
-      expect(service.filters.propertyId).toBe(34);
-    });
-
-    it('leaves a status the user changed while drilled in alone', () => {
-      service.requestFetch();
-      service.drillIntoProperty(12);
-      service.setFilter({status: 'done'});
-
-      service.setMode('overview');
-
-      expect(service.filters.status).toBe('done');
-    });
-
-    it('keeps the ORIGINAL status when drilled twice without unwinding', () => {
-      // The second drill sees status already forced to 'all' by the first.
-      // Recording that would restore 'all' on the way back instead of the
-      // user's own choice. Not reachable through today's UI, but #1164 builds
-      // straight on this method.
-      service.requestFetch();
-      expect(service.filters.status).toBe('open');
 
       service.drillIntoProperty(12);
       service.drillIntoProperty(13);
 
-      service.setMode('overview');
-
+      expect(service.filters.propertyId).toBe(13);
       expect(service.filters.status).toBe('open');
-      expect(service.filters.propertyId).toBeNull();
-    });
-
-    it('clears the drill-down bookkeeping after unwinding', () => {
-      service.drillIntoProperty(12);
-      service.setMode('overview');
-
-      expect(service.drilledProperty).toBeNull();
+      expect(service.mode).toBe('details');
     });
   });
 
@@ -379,13 +733,10 @@ describe('ComplianceReportStateService', () => {
     const jan2 = new Date(2026, 0, 2);
 
     function withToday(today: Date, fn: () => void): void {
-      jest.useFakeTimers();
+      // The suite already runs under fake timers (see beforeEach); only the
+      // clock needs pinning here.
       jest.setSystemTime(today);
-      try {
-        fn();
-      } finally {
-        jest.useRealTimers();
-      }
+      fn();
     }
 
     it('ytd runs from 1 January to today', () => {
@@ -445,6 +796,7 @@ describe('ComplianceReportStateService', () => {
       });
 
       expect(service.isPeriodValid).toBe(false);
+      expect(service.isCommittedPeriodValid).toBe(false);
     });
   });
 
@@ -511,7 +863,7 @@ describe('ComplianceReportStateService', () => {
 
       // NOT today: a fabricated one-day window is indistinguishable from a
       // real result, and #1169's export path reads requestModel outside the
-      // isPeriodValid gate that requestFetch applies.
+      // isCommittedPeriodValid gate that requestFetch applies.
       expect('dateFrom' in model).toBe(false);
       expect('dateTo' in model).toBe(false);
     });
@@ -602,10 +954,30 @@ describe('ComplianceReportStateService', () => {
       expect(service.showAll).toBe(false);
       expect(fetches.length).toBe(0);
     });
+
+    it('a filter change followed by paging within the debounce is one fetch, not two', () => {
+      // setPage fetches immediately, and that fetch already reads the new
+      // filters — the filter fetch still waiting on its debounce would only
+      // issue the same query a second time.
+      const fetches: number[] = [];
+      service.fetchRequested$.subscribe(() => fetches.push(1));
+      service.requestFetch();
+      expect(fetches.length).toBe(1);
+
+      service.setFilter({status: 'done'});
+      service.setPage(2);
+      expect(fetches.length).toBe(2);
+
+      settle();
+
+      expect(fetches.length).toBe(2);
+      expect(service.page).toBe(2);
+      expect(service.filters.status).toBe('done');
+    });
   });
 
   describe('sorting', () => {
-    it('re-queries without invalidating', () => {
+    it('re-queries immediately without resetting the filters', () => {
       const fetches: number[] = [];
       // Subscribe BEFORE the fetch: `fetchRequested$` replays its last trigger
       // to a late subscriber (see the "replays the pending trigger" tests), so

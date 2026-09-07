@@ -658,8 +658,6 @@ export const deDE = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivieren / deaktivieren',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Beim Deaktivieren werden die offenen Vorkommen aus der App zurückgezogen. Abgeschlossene Vorkommen und die bereits erfassten Daten bleiben erhalten.',
-  'Update table': 'Tabelle aktualisieren',
-  'Select filters and click Update table': 'Wählen Sie Filter aus und klicken Sie auf „Tabelle aktualisieren“.',
   'Compliance overview': 'Überblick',
   'Compliance details': 'Details',
   'Compliance report': 'Bericht',
@@ -798,4 +796,7 @@ export const deDE = {
   'Image {{index}}': 'Bild {{index}}',
   'PDF preview': 'PDF-Vorschau',
   'Export failed': 'Export fehlgeschlagen',
+  'Update period': 'Zeitraum aktualisieren',
+  'Select a period and click Update period': 'Wählen Sie einen Zeitraum aus und klicken Sie auf „Zeitraum aktualisieren“.',
+  'Change a filter or click Overview to load the table': 'Ändern Sie einen Filter oder klicken Sie auf „Überblick“, um die Tabelle zu laden.',
 };

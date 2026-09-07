@@ -610,8 +610,6 @@ export const huHU = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiválás / deaktiválás',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A deaktiválás visszavonja a nyitott előfordulásokat az alkalmazásból. A befejezett előfordulások és a már összegyűjtött adatok megmaradnak.',
-  'Update table': 'Táblázat frissítése',
-  'Select filters and click Update table': 'Válasszon szűrőket, majd kattintson a Táblázat frissítése gombra',
   'Compliance overview': 'Áttekintés',
   'Compliance details': 'Részletek',
   'Compliance report': 'Jelentés',
@@ -752,4 +750,7 @@ export const huHU = {
   'Image {{index}}': 'Kép {{index}}',
   'PDF preview': 'PDF előnézet',
   'Export failed': 'Az exportálás nem sikerült',
+  'Update period': 'Időszak frissítése',
+  'Select a period and click Update period': 'Válasszon időszakot, majd kattintson az Időszak frissítése gombra.',
+  'Change a filter or click Overview to load the table': 'Módosítson egy szűrőt, vagy kattintson az Áttekintés gombra a táblázat betöltéséhez.',
 };

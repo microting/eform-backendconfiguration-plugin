@@ -610,8 +610,6 @@ export const etET = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiveeri / deaktiveeri',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktiveerimine tühistab avatud esinemised rakendusest. Lõpetatud esinemised ja juba kogutud andmed säilivad.',
-  'Update table': 'Tabeli värskendamine',
-  'Select filters and click Update table': 'Valige filtrid ja klõpsake nuppu „Värskenda tabelit”',
   'Compliance overview': 'Ülevaade',
   'Compliance details': 'Detailid',
   'Compliance report': 'Aruanne',
@@ -752,4 +750,7 @@ export const etET = {
   'Image {{index}}': 'Pilt {{index}}',
   'PDF preview': 'PDF-i eelvaade',
   'Export failed': 'Eksport ebaõnnestus',
+  'Update period': 'Uuenda perioodi',
+  'Select a period and click Update period': 'Valige periood ja klõpsake nuppu „Uuenda perioodi”.',
+  'Change a filter or click Overview to load the table': 'Muutke filtrit või klõpsake nuppu „Ülevaade”, et tabel laadida.',
 };

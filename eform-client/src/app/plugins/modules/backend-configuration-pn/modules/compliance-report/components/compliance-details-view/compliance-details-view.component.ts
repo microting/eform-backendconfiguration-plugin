@@ -13,7 +13,7 @@ import {
 import {MatDialog} from '@angular/material/dialog';
 import {TranslateService} from '@ngx-translate/core';
 import {Subject, Subscription, merge, of} from 'rxjs';
-import {catchError, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {ComplianceReportPagedModel, ComplianceReportRowModel} from '../../../../models';
 import {
   BackendConfigurationPnComplianceReportService,
@@ -50,7 +50,7 @@ const HIGHLIGHT_MS = 2200;
  *    actually query;
  *  - read `requestModel` AT FETCH TIME, never cached;
  *  - report `setTotalCount()` so the shell can draw the page buttons, and
- *    `setLoading()` so it can disable `Opdater tabel`.
+ *    `setLoading()` so it can show the spinner and disable `Opdater periode`.
  *
  * Rows arrive already ordered `taskDate` DESC, `startHour` ASC (#1161 owns
  * that); nothing here re-sorts.
@@ -127,6 +127,11 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
 
     merge(this.state.fetchRequested$, this.refresh$)
       .pipe(
+        // Drop triggers meant for another view (#1185). `resetToOverview()`
+        // emits while THIS child is still subscribed — the ngSwitch only swaps
+        // it out on the next change-detection pass — so without this guard the
+        // outgoing child would issue a request that is cancelled on destroy.
+        rxFilter(() => this.state.mode === 'details'),
         tap(() => {
           // Every re-render closes the delete popover first: it is positioned
           // against a button that is about to be detached, and an orphaned
@@ -149,7 +154,7 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         ),
         // Runs on unsubscribe too — i.e. when takeUntil completes the stream on
         // destroy — so a request still in flight when the ngSwitch tears this
-        // component down cannot leave `loading` stuck true and `Opdater tabel`
+        // component down cannot leave `loading` stuck true and `Opdater periode`
         // permanently disabled.
         finalize(() => this.state.setLoading(false)),
         takeUntil(this.destroy$),
@@ -186,8 +191,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
     // `refreshEmbeddedViews`, which is AFTER every `ngDoCheck` in the host
     // view; this `ngOnDestroy` always precedes it, in either switch
     // direction). The reason is ownership: `loading` is the SHELL's flag. The
-    // shell resets it in `setMode()`, `setFilter()` and `enterPage()`, which
-    // covers every transition that unmounts this component, and for the
+    // shell resets it in `setMode()`, `enterPage()` and `blankUntilCommit()`
+    // (the one filter branch that unmounts — `setFilter()` itself never does),
+    // which covers every transition that unmounts this component, and for the
     // ordinary teardown the `finalize` above already clears it (it sits
     // UPSTREAM of `takeUntil`, so completing the stream here unsubscribes
     // through it and fires the callback). A second reset here would be

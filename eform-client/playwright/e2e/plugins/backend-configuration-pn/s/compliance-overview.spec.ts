@@ -175,16 +175,37 @@ async function selectPeriodCoveringSeed(page: Page): Promise<void> {
   await page.waitForTimeout(300);
 }
 
-/** `Opdater tabel` — the ONLY control that fetches. */
+/**
+ * `Opdater periode` — commits the staged custom range (#1185). Every other
+ * filter change auto-fetches; "Sæt periode" is the one exception, and the
+ * button exists ONLY while it is selected, which `selectPeriodCoveringSeed`
+ * guarantees. Asserting the label here pins the rename: "Opdater tabel" is
+ * gone from the page.
+ */
 async function showReport(page: Page): Promise<void> {
+  const button = page.locator('#complianceShowReportBtn');
+  await expect(button).toHaveText(/^\s*Opdater periode\s*$/);
   const response = page.waitForResponse(
     r => r.url().includes('/api/backend-configuration-pn/compliance-report/overview')
       && r.request().method() === 'POST',
     { timeout: 60000 },
   );
-  await page.locator('#complianceShowReportBtn').click();
+  await button.click();
   await response;
   await page.waitForTimeout(500);
+}
+
+/**
+ * A NON-period filter change while a custom range is committed re-fetches
+ * with that range (#1185, C-literal) — no button, no blank. Awaited by
+ * response: the request fires after a debounce, so a count would race it.
+ */
+function overviewRefetch(page: Page): Promise<import('@playwright/test').Response> {
+  return page.waitForResponse(
+    r => r.url().includes('/api/backend-configuration-pn/compliance-report/overview')
+      && r.request().method() === 'POST',
+    { timeout: 60000 },
+  );
 }
 
 /** Land on the page and fetch Oversigt over a window containing both seeds. */
@@ -503,7 +524,7 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
   // =========================================================================
   // Drill-down.
   // =========================================================================
-  test('clicking a row drills into Detaljer with that property filtered and status forced to all', async ({ page }) => {
+  test('clicking a row drills into Detaljer with that property filtered and the status kept at Ikke udførte opgaver', async ({ page }) => {
     test.setTimeout(180000);
     expect(complianceSeeded).toBe(true);
 
@@ -522,10 +543,15 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     // × clear-icon glyph.
     await expect(page.locator('#complianceFilterProperty .ng-value-label'))
       .toHaveText(propertyA.name!);
-    // Oversigt counts done and not-done together, so the drill forces `all`;
-    // anything else would not add up to the number just clicked.
+    // #1185: the status TRAVELS with the drill. Oversigt is shown under "Ikke
+    // udførte opgaver" because that is what the compliance % is built on —
+    // which tasks are still missing — and clicking a property must open
+    // exactly those, never "Alle opgaver" (the pre-#1185 behaviour, which
+    // made the numbers add up to the row at the cost of answering a
+    // different question). The count will not equal the row's total; that
+    // is the customer's decision, not a defect (issue decision G).
     await expect(page.locator('#complianceFilterStatus .ng-value-label'))
-      .toHaveText('Alle opgaver');
+      .toHaveText(/^\s*Ikke udførte opgaver\s*$/);
     // The drill is SILENT: it must not blank the result it just navigated to.
     await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
   });
@@ -584,16 +610,23 @@ test.describe.serial('Compliance Oversigt (#1164)', () => {
     await expect(page.locator('#complianceOverviewEmpty')).toHaveCount(0);
 
     // Narrow to the property that was created without a single task. Picked BY
-    // LABEL — never by nth() index.
+    // LABEL — never by nth() index. The custom range is COMMITTED at this
+    // point (`openSeededOverview` pressed `Opdater periode`), so under #1185
+    // the property change re-fetches with that range on its own: no button,
+    // and the result is replaced rather than blanked to the placeholder.
+    const refetch = overviewRefetch(page);
     await page.locator('#complianceFilterProperty').click();
     await page
       .locator('.ng-dropdown-panel .ng-option', { hasText: propertyEmpty.name! })
       .first()
       .click();
-    // A filter change blanks the result and issues no request; only
-    // `Opdater tabel` fetches.
-    await expect(page.locator('#complianceEmptyState')).toBeVisible();
-    await showReport(page);
+    expect((await refetch).ok()).toBeTruthy();
+    await expect(page.locator('#complianceEmptyState')).toHaveCount(0);
+    // The committed range survived the change — still "Sæt periode", and the
+    // commit button is still there for a re-edit.
+    await expect(page.locator('#complianceFilterPeriod .ng-value-label'))
+      .toHaveText(/^\s*Sæt periode\s*$/);
+    await expect(page.locator('#complianceShowReportBtn')).toBeVisible();
 
     await expect(page.locator('#complianceOverviewEmpty')).toBeVisible();
     await expect(page.locator('#complianceOverviewEmpty'))

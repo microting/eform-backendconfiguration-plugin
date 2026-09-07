@@ -610,8 +610,6 @@ export const plPL = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktywuj / dezaktywuj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Dezaktywacja wycofuje otwarte wystąpienia z aplikacji. Ukończone wystąpienia i już zebrane dane zostają zachowane.',
-  'Update table': 'Aktualizacja tabeli',
-  'Select filters and click Update table': 'Wybierz filtry i kliknij Aktualizuj tabelę',
   'Compliance overview': 'Przegląd',
   'Compliance details': 'Bliższe dane',
   'Compliance report': 'Raport',
@@ -752,4 +750,7 @@ export const plPL = {
   'Image {{index}}': 'Obraz {{index}}',
   'PDF preview': 'Podgląd PDF',
   'Export failed': 'Eksport nie powiódł się',
+  'Update period': 'Aktualizuj okres',
+  'Select a period and click Update period': 'Wybierz okres i kliknij Aktualizuj okres.',
+  'Change a filter or click Overview to load the table': 'Zmień filtr lub kliknij Przegląd, aby załadować tabelę.',
 };

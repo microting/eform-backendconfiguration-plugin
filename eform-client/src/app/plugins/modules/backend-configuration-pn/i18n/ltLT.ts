@@ -610,8 +610,6 @@ export const ltLT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktyvinti / deaktyvinti',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktyvinimas atšaukia atvirus įvykius iš programėlės. Užbaigti įvykiai ir jau surinkti duomenys išsaugomi.',
-  'Update table': 'Atnaujinti lentelę',
-  'Select filters and click Update table': 'Pasirinkite filtrus ir spustelėkite „Atnaujinti lentelę“',
   'Compliance overview': 'Apžvalga',
   'Compliance details': 'Išsami informacija',
   'Compliance report': 'Pranešti',
@@ -752,4 +750,7 @@ export const ltLT = {
   'Image {{index}}': 'Paveikslėlis {{index}}',
   'PDF preview': 'PDF peržiūra',
   'Export failed': 'Eksportuoti nepavyko',
+  'Update period': 'Atnaujinti laikotarpį',
+  'Select a period and click Update period': 'Pasirinkite laikotarpį ir spustelėkite „Atnaujinti laikotarpį“.',
+  'Change a filter or click Overview to load the table': 'Pakeiskite filtrą arba spustelėkite „Apžvalga“, kad įkeltumėte lentelę.',
 };

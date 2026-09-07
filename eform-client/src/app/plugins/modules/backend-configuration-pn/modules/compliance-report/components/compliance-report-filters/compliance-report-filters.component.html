@@ -1,9 +1,15 @@
 <!--
-  The ten filter controls of the standalone Compliance page, in the
-  prototype's order (Compliance.html:13-54). Every (ngModelChange) here goes
-  through ComplianceReportStateService.setFilter(), i.e. the INVALIDATING
-  path: the result container blanks, pagination clears and NOTHING is
-  fetched. Only "Opdater tabel" fetches.
+  The filter controls of the standalone Compliance page, in the prototype's
+  order (Compliance.html:13-54). Every (ngModelChange) here goes through
+  ComplianceReportStateService.setFilter(), which re-queries the active view
+  after a short debounce without blanking it (#1185). The custom-range pickers
+  are the exception: they STAGE a range, and "Opdater periode" — rendered only
+  while "Sæt periode" is selected — commits and fetches it.
+
+  The mtx-selects bind ONE-WAY ([ngModel] + (ngModelChange)) on purpose: the
+  Oversigt reset writes all six values programmatically, and mtx-select emits
+  on a programmatic write, so two-way binding would turn one reset into six
+  setFilter() calls.
 
   ACCESSIBILITY: every `mtx-select` below binds `[aria-label]`, NEVER
   `[attr.aria-label]`. MtxSelect declares `@Input('aria-label') ariaLabel` plus
@@ -169,7 +175,7 @@
   </mat-form-field>
 
   <!--
-    An invalid custom range disables "Opdater tabel"; a dead button with no
+    An invalid custom range disables "Opdater periode"; a dead button with no
     stated reason is exactly the prototype's silent `return`. Say why.
   -->
   <span
@@ -192,16 +198,22 @@
     >{{ periodDisplay }}</span
   >
 
-  <!-- 8. The only control that fetches. -->
+  <!--
+    8. The only manual fetch gesture, and it exists only while "Sæt periode"
+    is selected (#1185 decision F): every other filter change re-queries by
+    itself, so a permanently visible button would be a permanently dead one.
+    The id is kept for the e2e specs.
+  -->
   <button
+    *ngIf="periodPreset === 'custom'"
     mat-flat-button
     color="primary"
     id="complianceShowReportBtn"
     class="compliance-filters__action"
     [disabled]="!canFetch"
-    (click)="onUpdateTable()"
+    (click)="onUpdatePeriod()"
   >
-    {{ 'Update table' | translate }}
+    {{ 'Update period' | translate }}
   </button>
 
   <!--

@@ -610,8 +610,6 @@ export const lvLV = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivizēt / deaktivizēt',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivizēšana atsauc atvērtos gadījumus no lietotnes. Pabeigtie gadījumi un jau savāktie dati tiek saglabāti.',
-  'Update table': 'Atjaunināt tabulu',
-  'Select filters and click Update table': 'Atlasiet filtrus un noklikšķiniet uz Atjaunināt tabulu',
   'Compliance overview': 'Pārskats',
   'Compliance details': 'Sīkāka informācija',
   'Compliance report': 'Ziņojums',
@@ -752,4 +750,7 @@ export const lvLV = {
   'Image {{index}}': 'Attēls {{index}}',
   'PDF preview': 'PDF priekšskatījums',
   'Export failed': 'Eksports neizdevās',
+  'Update period': 'Atjaunināt periodu',
+  'Select a period and click Update period': 'Atlasiet periodu un noklikšķiniet uz Atjaunināt periodu.',
+  'Change a filter or click Overview to load the table': 'Mainiet filtru vai noklikšķiniet uz Pārskats, lai ielādētu tabulu.',
 };

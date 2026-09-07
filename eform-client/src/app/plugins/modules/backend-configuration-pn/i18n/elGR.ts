@@ -610,8 +610,6 @@ export const elGR = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Ενεργοποίηση / απενεργοποίηση',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Η απενεργοποίηση ανακαλεί τις ανοιχτές εμφανίσεις από την εφαρμογή. Οι ολοκληρωμένες εμφανίσεις και τα ήδη συλλεγμένα δεδομένα διατηρούνται.',
-  'Update table': 'Ενημέρωση πίνακα',
-  'Select filters and click Update table': 'Επιλέξτε φίλτρα και κάντε κλικ στην επιλογή Ενημέρωση πίνακα',
   'Compliance overview': 'Επισκόπηση',
   'Compliance details': 'Καθέκαστα',
   'Compliance report': 'Εκθεση',
@@ -752,4 +750,7 @@ export const elGR = {
   'Image {{index}}': 'Εικόνα {{index}}',
   'PDF preview': 'Προεπισκόπηση PDF',
   'Export failed': 'Η εξαγωγή απέτυχε',
+  'Update period': 'Ενημέρωση περιόδου',
+  'Select a period and click Update period': 'Επιλέξτε περίοδο και κάντε κλικ στην επιλογή Ενημέρωση περιόδου.',
+  'Change a filter or click Overview to load the table': 'Αλλάξτε ένα φίλτρο ή κάντε κλικ στην Επισκόπηση για να φορτώσετε τον πίνακα.',
 };

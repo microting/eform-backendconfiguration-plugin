@@ -610,8 +610,6 @@ export const csCZ = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktivovat / deaktivovat',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivace stáhne otevřené výskyty z aplikace. Dokončené výskyty a již shromážděná data zůstávají zachovány.',
-  'Update table': 'Aktualizovat tabulku',
-  'Select filters and click Update table': 'Vyberte filtry a klikněte na Aktualizovat tabulku',
   'Compliance overview': 'Přehled',
   'Compliance details': 'Podrobnosti',
   'Compliance report': 'Zpráva',
@@ -752,4 +750,7 @@ export const csCZ = {
   'Image {{index}}': 'Obrázek {{index}}',
   'PDF preview': 'Náhled PDF',
   'Export failed': 'Export se nezdařil',
+  'Update period': 'Aktualizovat období',
+  'Select a period and click Update period': 'Vyberte období a klikněte na Aktualizovat období.',
+  'Change a filter or click Overview to load the table': 'Změňte filtr nebo klikněte na Přehled pro načtení tabulky.',
 };

@@ -609,8 +609,6 @@ export const frFR = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Activer / désactiver',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'La désactivation retire de l’application les occurrences ouvertes. Les occurrences terminées et les données déjà collectées sont conservées.',
-  'Update table': 'Mise à jour du tableau',
-  'Select filters and click Update table': 'Sélectionnez les filtres et cliquez sur Mettre à jour le tableau',
   'Compliance overview': 'Aperçu',
   'Compliance details': 'Détails',
   'Compliance report': 'Rapport',
@@ -751,4 +749,7 @@ export const frFR = {
   'Image {{index}}': 'Image {{index}}',
   'PDF preview': 'Aperçu PDF',
   'Export failed': 'L\'exportation a échoué',
+  'Update period': 'Mettre à jour la période',
+  'Select a period and click Update period': 'Sélectionnez une période et cliquez sur Mettre à jour la période.',
+  'Change a filter or click Overview to load the table': 'Modifiez un filtre ou cliquez sur Aperçu pour charger le tableau.',
 };

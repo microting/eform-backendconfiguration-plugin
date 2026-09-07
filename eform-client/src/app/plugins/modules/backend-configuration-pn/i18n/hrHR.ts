@@ -610,8 +610,6 @@ export const hrHR = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Aktiviraj / deaktiviraj',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Deaktivacija povlači otvorena pojavljivanja iz aplikacije. Dovršena pojavljivanja i već prikupljeni podaci se čuvaju.',
-  'Update table': 'Ažuriraj tablicu',
-  'Select filters and click Update table': 'Odaberite filtere i kliknite Ažuriraj tablicu',
   'Compliance overview': 'Pregled',
   'Compliance details': 'Detalji',
   'Compliance report': 'Izvješće',
@@ -752,4 +750,7 @@ export const hrHR = {
   'Image {{index}}': 'Slika {{index}}',
   'PDF preview': 'Pregled PDF-a',
   'Export failed': 'Izvoz nije uspio',
+  'Update period': 'Ažuriraj razdoblje',
+  'Select a period and click Update period': 'Odaberite razdoblje i kliknite Ažuriraj razdoblje.',
+  'Change a filter or click Overview to load the table': 'Promijenite filtar ili kliknite Pregled za učitavanje tablice.',
 };

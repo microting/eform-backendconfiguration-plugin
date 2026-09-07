@@ -22,7 +22,8 @@ export type ComplianceExportFormat = 'pdf' | 'csv';
  * The shared ten-control filter bar of the standalone Compliance page
  * (#1163 §4). Left to right it mirrors the prototype's
  * `Compliance.html:13-54`: property, calendar, tags, status, employee, period,
- * period label, `Opdater tabel`, `Hent som`, `Download`.
+ * period label, `Opdater periode` (custom period only), `Hent som`,
+ * `Download`.
  *
  * It owns its own reference data. The calendar container loads these four sets
  * and passes them down as @Inputs; this page has no container above it, so the
@@ -32,8 +33,10 @@ export type ComplianceExportFormat = 'pdf' | 'csv';
  * every property change.
  *
  * Every user-driven change routes through `ComplianceReportStateService
- * .setFilter()`, i.e. the invalidating path: results blank, pagination clears,
- * nothing is fetched. Only `Opdater tabel` fetches.
+ * .setFilter()`, which re-queries the active view after a short debounce
+ * (#1185). The one exception is `Sæt periode`: its date pickers only STAGE a
+ * range through `stageCustomPeriod()`, and `Opdater periode` — rendered only
+ * while `Sæt periode` is selected — commits and fetches it.
  */
 @Component({
   standalone: false,
@@ -210,7 +213,7 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
   }
 
   // ---------------------------------------------------------------
-  // Control bindings — every one of these invalidates
+  // Control bindings — every one of these re-queries (the custom range stages)
   // ---------------------------------------------------------------
 
   get propertyId(): number | null {
@@ -297,27 +300,33 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
     this.state.setFilter({periodPreset: value});
   }
 
+  /**
+   * The two date pickers bind to the DRAFT, not the committed range: typing a
+   * date must not query (#1185 decision C). `periodDisplay` below keeps
+   * showing the committed bounds until `Opdater periode` commits the draft.
+   */
   get customFrom(): Date | null {
-    return this.state.filters.customFrom;
+    return this.state.customDraftFrom;
   }
 
   set customFrom(value: Date | null) {
-    this.state.setFilter({customFrom: value});
+    this.state.stageCustomPeriod({from: value});
   }
 
   get customTo(): Date | null {
-    return this.state.filters.customTo;
+    return this.state.customDraftTo;
   }
 
   set customTo(value: Date | null) {
-    this.state.setFilter({customTo: value});
+    this.state.stageCustomPeriod({to: value});
   }
 
   /**
-   * `3. september 2026 – 1. januar 2026`. Empty (and hidden) when a custom
-   * range is incomplete, matching updatePeriodDisplay (compliance.js:492-503).
-   * The bounds come from the state service's single derivation, so the label
-   * can never disagree with the range that was queried.
+   * `3. september 2026 – 1. januar 2026`. Empty (and hidden) while no custom
+   * range has been COMMITTED, matching updatePeriodDisplay
+   * (compliance.js:492-503). The bounds come from the state service's single
+   * derivation, so the label can never disagree with the range that was
+   * queried — a draft the user is still editing does not show here.
    */
   get periodDisplay(): string {
     const bounds = this.state.periodBounds;
@@ -334,12 +343,19 @@ export class ComplianceReportFiltersComponent implements OnInit, OnDestroy {
     return this.state.isPeriodValid;
   }
 
+  /**
+   * `Opdater periode` is enabled while the draft range is valid and no fetch
+   * is in flight. `loading` is set by the mounted child during every
+   * auto-fetch too, so the button also greys out briefly while a filter
+   * change re-queries — a second commit mid-flight would only be cancelled by
+   * the child's `switchMap` anyway.
+   */
   get canFetch(): boolean {
     return this.isPeriodValid && !this.state.loading;
   }
 
-  onUpdateTable(): void {
-    this.state.requestFetch();
+  onUpdatePeriod(): void {
+    this.state.commitCustomPeriod();
   }
 
   get canDownload(): boolean {

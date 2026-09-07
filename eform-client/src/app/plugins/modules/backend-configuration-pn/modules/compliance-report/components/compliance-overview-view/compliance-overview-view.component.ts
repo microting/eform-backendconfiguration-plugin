@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Subject, of} from 'rxjs';
-import {catchError, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, filter as rxFilter, finalize, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {
   ComplianceReportOverviewModel,
   ComplianceReportOverviewRequestModel,
@@ -79,6 +79,11 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.state.fetchRequested$
       .pipe(
+        // Drop triggers meant for another view (#1185). `resetToOverview()`
+        // emits while THIS child is still subscribed — the ngSwitch only swaps
+        // it out on the next change-detection pass — so without this guard the
+        // outgoing child would issue a request that is cancelled on destroy.
+        rxFilter(() => this.state.mode === 'overview'),
         tap(() => {
           // Cleared on every attempt: while the spinner is up the previous
           // failure is no longer the current state of the view.
@@ -96,7 +101,7 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
         ),
         // Runs on unsubscribe too — i.e. when takeUntil completes the stream on
         // destroy — so a request still in flight when the ngSwitch tears this
-        // component down cannot leave `loading` stuck true and `Opdater tabel`
+        // component down cannot leave `loading` stuck true and `Opdater periode`
         // permanently disabled.
         finalize(() => this.state.setLoading(false)),
         takeUntil(this.destroy$),
@@ -115,8 +120,9 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
     // No `setLoading(false)` here on purpose — and NOT because of any ordering
     // between the outgoing and the incoming `NgSwitchCase` child: there is none
     // to rely on. The reason is OWNERSHIP. `loading` is the SHELL's flag: the
-    // shell resets it in `setMode()`, `setFilter()` and `enterPage()`, which
-    // covers every transition that unmounts this component, and for the ordinary
+    // shell resets it in `setMode()`, `enterPage()` and `blankUntilCommit()`
+    // (the one filter branch that unmounts — `setFilter()` itself never does),
+    // which covers every transition that unmounts this component, and for the ordinary
     // teardown the `finalize` above already clears it (it sits UPSTREAM of
     // `takeUntil`, so completing the stream here unsubscribes through it and
     // fires the callback). A second reset here would be redundant with that
@@ -218,12 +224,13 @@ export class ComplianceOverviewViewComponent implements OnInit, OnDestroy {
    * Oversigt → Detaljer for one property.
    *
    * `drillIntoProperty` is the shell's own method and does all of it: it sets
-   * the property filter and forces status to `all` through the SILENT path (so
-   * the already-fetched result is not blanked by the blank-on-change state
-   * machine — `mtx-select` emitting on a programmatic write is exactly the trap
-   * this avoids), records the drilled id and the pre-drill status, and switches
-   * the mode. Returning to Oversigt unwinds both, and only while they still
-   * hold what the drill wrote. Nothing about it is reimplemented here.
+   * the property filter through the SILENT path (so the already-fetched result
+   * is not re-queried by the auto-fetch path — `mtx-select` emitting on a
+   * programmatic write is exactly the trap this avoids) and switches the mode.
+   * The status is left as it is — `Ikke udførte opgaver`, since the control is
+   * disabled in Oversigt — so Detaljer lists the not-completed tasks the
+   * percentage was built on (#1185). Returning to Oversigt is the full reset.
+   * Nothing about it is reimplemented here.
    *
    * The totals row does not call this: it carries `propertyId: 0` and is not
    * a property.

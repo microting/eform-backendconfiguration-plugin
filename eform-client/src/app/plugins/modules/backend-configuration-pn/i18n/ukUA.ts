@@ -610,8 +610,6 @@ export const ukUA = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Активувати / деактивувати',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'Деактивація відкликає відкриті екземпляри з застосунку. Завершені екземпляри та вже зібрані дані зберігаються.',
-  'Update table': 'Оновити таблицю',
-  'Select filters and click Update table': 'Виберіть фільтри та натисніть «Оновити таблицю»',
   'Compliance overview': 'Огляд',
   'Compliance details': 'Деталі',
   'Compliance report': 'Звіт',
@@ -752,4 +750,7 @@ export const ukUA = {
   'Image {{index}}': 'Зображення {{index}}',
   'PDF preview': 'Попередній перегляд PDF',
   'Export failed': 'Не вдалося експортувати',
+  'Update period': 'Оновити період',
+  'Select a period and click Update period': 'Виберіть період і натисніть «Оновити період».',
+  'Change a filter or click Overview to load the table': 'Змініть фільтр або натисніть «Огляд», щоб завантажити таблицю.',
 };

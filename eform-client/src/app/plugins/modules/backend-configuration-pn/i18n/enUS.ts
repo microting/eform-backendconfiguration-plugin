@@ -758,8 +758,11 @@ export const enUS= {
   // wording the prototype changed, and the shell's own chrome, are new.
   // 'Show report'/'Select filters and click Show report' are deliberately left
   // alone — the calendar view mode #1170 deletes still uses them.
-  'Update table': 'Update table',
-  'Select filters and click Update table': 'Select filters and click Update table',
+  // #1185: filter changes re-query by themselves; the only button left is the
+  // custom-period commit, and the placeholder is reachable only before it.
+  'Update period': 'Update period',
+  'Select a period and click Update period': 'Select a period and click Update period.',
+  'Change a filter or click Overview to load the table': 'Change a filter or click Overview to load the table.',
   // Mode-toggle labels. Deliberately NOT the existing 'Overview' key: its
   // Danish is 'Overblik' and it is used on unrelated screens, so retranslating
   // it to 'Oversigt' would silently change them.

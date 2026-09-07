@@ -610,8 +610,6 @@ export const ptPT = {
   // and the honest deactivate warning are new.
   'Activate / deactivate': 'Ativar / desativar',
   'Deactivating retracts the open occurrences from the app. Completed occurrences and the data already collected are preserved.': 'A desativação retira da aplicação as ocorrências em aberto. As ocorrências concluídas e os dados já recolhidos são preservados.',
-  'Update table': 'Atualizar tabela',
-  'Select filters and click Update table': 'Selecione os filtros e clique em Atualizar tabela.',
   'Compliance overview': 'Visão geral',
   'Compliance details': 'Detalhes',
   'Compliance report': 'Relatório',
@@ -752,4 +750,7 @@ export const ptPT = {
   'Image {{index}}': 'Imagem {{index}}',
   'PDF preview': 'Pré-visualização do PDF',
   'Export failed': 'Falha na exportação',
+  'Update period': 'Atualizar período',
+  'Select a period and click Update period': 'Selecione um período e clique em Atualizar período.',
+  'Change a filter or click Overview to load the table': 'Altere um filtro ou clique em Visão geral para carregar a tabela.',
 };
