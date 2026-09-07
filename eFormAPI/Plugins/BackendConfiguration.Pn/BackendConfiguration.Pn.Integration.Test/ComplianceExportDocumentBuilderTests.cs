@@ -667,11 +667,39 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// The Word/PDF table starts at <c>ID</c> (PDF page 9) while the CSV keeps
+    /// <c>Delrapport</c> (page 10): the column is marked <c>CsvOnly</c> — and it
+    /// is the ONLY one, so the writers' column sets differ by exactly it. Every
+    /// column also carries the key the CSV writer unions sections on: the fixed
+    /// ones their localisation key, the answer ones the service's
+    /// <c>f{fieldId}</c> (#1192).
+    /// </summary>
+    [Test]
+    public void Report_SubReportIsTheOnlyCsvOnlyColumnAndEveryColumnCarriesAKey()
+    {
+        var group = Group(1, "Overskrift", "T", 509);
+        group.Columns =
+        [
+            new ComplianceReportColumnModel { Key = "f10", Label = "Målerstand" },
+            new ComplianceReportColumnModel { Key = "f11", Label = "Bemærkning" }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _localization);
+
+        var columns = document.Tables[0].Columns;
+        Assert.That(columns.Where(c => c.CsvOnly).Select(c => c.Header), Is.EqualTo(new[] { "SubReport" }));
+        Assert.That(columns.Select(c => c.Key), Is.EqualTo(new[]
+        {
+            "SubReport", "CaseId", "Property", "DoneBy", "CompletedDate", "Area", "Images", "f10", "f11"
+        }));
+    }
+
+    /// <summary>
     /// <c>Delrapport</c> carries the ROW's own tags joined <c>" - "</c> (PDF page
     /// 10) — hyphen-minus with spaces, not the en dash — and an untagged row gets
     /// the EMPTY cell, never the headline. <c>Billeder</c> is the image COUNT, not
-    /// the images, and <c>Udført dato</c> is case metadata (a typed date), never an
-    /// answer field.
+    /// the images — a <c>Number</c> cell, so the CSV gets the bare figure — and
+    /// <c>Udført dato</c> is case metadata (a typed date), never an answer field.
     /// </summary>
     [Test]
     public void Report_SubReportCellIsTheRowsOwnTagsAndImagesIsACount()
@@ -714,6 +742,47 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
+    /// <c>Billeder</c> reads <c>3 billeder</c> on the page (#1192, PDF page 9 —
+    /// the localised <c>ImagesCount</c> with its <c>{0}</c> filled in, and no
+    /// emoji) while the cell stays a <c>Number</c> carrying <c>3</c> for the CSV
+    /// (page 10 shows the bare figure). Exactly one image reads the singular
+    /// <c>1 billede</c> (<c>ImagesCountOne</c>), not <c>1 billeder</c>, while the
+    /// number still carries <c>1</c>. A case with NO images gets the EMPTY
+    /// cell — the en dash in the PDF, a blank field in the CSV — never
+    /// <c>0 billeder</c>.
+    /// </summary>
+    [Test]
+    public void Report_ImagesCellIsTheLocalisedCountForWordAndTheNumberForCsvAndEmptyForZero()
+    {
+        var group = Group(1, "Overskrift", "T", 509);
+        group.Cases =
+        [
+            new ComplianceReportCaseModel { SdkCaseId = 42, Title = "Vand", ImagesCount = 3 },
+            new ComplianceReportCaseModel { SdkCaseId = 43, Title = "Vand", ImagesCount = 0 },
+            new ComplianceReportCaseModel { SdkCaseId = 44, Title = "Vand", ImagesCount = 1 }
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", false, _danish);
+
+        var three = document.Tables[0].Rows[0].Cells[6];
+        Assert.That(three.Text, Is.EqualTo("3 billeder"));
+        Assert.That(three.Number, Is.EqualTo(3));
+        Assert.That(three.IsEmpty, Is.False);
+        Assert.That(three.Text, Does.Not.Contain("\U0001F4F7"), "no camera emoji");
+        Assert.That(document.Tables[0].Columns[6].Type, Is.EqualTo(ComplianceExportCellType.Number));
+
+        var none = document.Tables[0].Rows[1].Cells[6];
+        Assert.That(none.IsEmpty, Is.True);
+        Assert.That(none.Text, Is.EqualTo(Dash));
+        Assert.That(none.Number, Is.Null);
+
+        var one = document.Tables[0].Rows[2].Cells[6];
+        Assert.That(one.Text, Is.EqualTo("1 billede"), "singular, not '1 billeder'");
+        Assert.That(one.Number, Is.EqualTo(1));
+        Assert.That(one.IsEmpty, Is.False);
+    }
+
+    /// <summary>
     /// The image appendix is OPT-IN and CAPPED per case (#1169 §6, decided). With
     /// the flag on, at most <c>MaxAppendixImagesPerCase</c> names are embedded and
     /// the block records the true total so the document can state its own
@@ -744,13 +813,16 @@ public class ComplianceExportDocumentBuilderTests
     }
 
     /// <summary>
-    /// The appendix block's caption leads with the section's TAGS CAPTION (PDF
-    /// page 9: <c>Bilag – Miljøtilsyn - Brand</c>), never the old composite label —
-    /// and with the headline label when the group has no tags, so the block is still
-    /// attributable to its section.
+    /// The appendix is grouped PER SECTION (#1192, PDF page 9): each table carries
+    /// the label its <c>Bilag – …</c> page is headed with — the section's TAGS
+    /// CAPTION, or the headline label when the group has no tags, so the page is
+    /// still attributable to its section — and its own blocks. The section is
+    /// therefore NOT repeated in the block captions any more: a block reads
+    /// <c>Sag {SdkCaseId} · {Område} · {dd.MM.yyyy}</c>, the mock-up's line, with
+    /// the localised <c>Case</c> key leading.
     /// </summary>
     [Test]
-    public void Report_AppendixCaptionLeadsWithTheTagsCaptionOrTheHeadlineWhenThereAreNone()
+    public void Report_AppendixIsGroupedPerSectionWithTheTagsCaptionOrTheHeadlineAsItsLabel()
     {
         ComplianceReportCaseModel CaseWithImage(int id) => new()
         {
@@ -761,14 +833,64 @@ public class ComplianceExportDocumentBuilderTests
         var tagged = Group(1, "Brandsikkerhed", "Miljøtilsyn - Brand", 509);
         tagged.Cases = [CaseWithImage(42)];
         var untagged = Group(2, "Egenkontrol", "", 509);
+        untagged.SchemaUnavailableCheckListIds = [509];
         untagged.Cases = [CaseWithImage(43)];
+        var withoutImages = Group(3, "Rundering", "Miljø", 509);
+        withoutImages.Cases = [new ComplianceReportCaseModel { SdkCaseId = 44, Title = "Gang" }];
 
-        var document = ComplianceExportDocumentBuilder.BuildReport([tagged, untagged], "p", true, _localization);
+        var document = ComplianceExportDocumentBuilder.BuildReport(
+            [tagged, untagged, withoutImages], "p", true, _danish);
 
-        Assert.That(document.Tables[0].ImageBlocks[0].Caption,
-            Is.EqualTo("Miljøtilsyn - Brand · 42 · Vand · 2026-03-09"));
-        Assert.That(document.Tables[1].ImageBlocks[0].Caption,
-            Is.EqualTo("Egenkontrol · 43 · Vand · 2026-03-09"));
+        Assert.That(document.Tables.Select(t => t.AppendixLabel),
+            Is.EqualTo(new[] { "Miljøtilsyn - Brand", "Egenkontrol", "Miljø" }));
+        // The headline label, NOT the title: the schema suffix stays off the
+        // appendix page.
+        Assert.That(document.Tables[1].Title, Does.Contain("("));
+        Assert.That(document.Tables[1].AppendixLabel, Does.Not.Contain("("));
+
+        Assert.That(document.Tables[0].ImageBlocks.Select(b => b.Caption),
+            Is.EqualTo(new[] { "Sag 42 · Vand · 09.03.2026" }));
+        Assert.That(document.Tables[1].ImageBlocks.Select(b => b.Caption),
+            Is.EqualTo(new[] { "Sag 43 · Vand · 09.03.2026" }));
+        Assert.That(document.Tables[2].ImageBlocks, Is.Empty, "a section without images has no blocks");
+        Assert.That(document.Tables.SelectMany(t => t.ImageBlocks).Select(b => b.Caption),
+            Has.None.Contains("Miljøtilsyn"), "the section is on the page heading, not in the block");
+    }
+
+    /// <summary>
+    /// The block's date is <c>DoneAt</c> — the mock-up's date is the one the
+    /// <c>Udført dato</c> column shows — as <c>dd.MM.yyyy</c>, falling back to the
+    /// ISO <c>TaskDate</c> (reformatted the same way) for a case that is not
+    /// completed. An unparseable <c>TaskDate</c> is passed through rather than
+    /// guessed at, and a case with neither ends its caption at the area.
+    /// </summary>
+    [Test]
+    public void Report_AppendixBlockDateIsDoneAtFallingBackToTaskDate()
+    {
+        ComplianceReportCaseModel Case(int id, DateTime? doneAt, string? taskDate) => new()
+        {
+            SdkCaseId = id, Title = "Vand", DoneAt = doneAt, TaskDate = taskDate, ImagesCount = 1,
+            Images = [new ComplianceReportImageModel { FileName = $"{id}_700_a.jpg" }]
+        };
+
+        var group = Group(1, "Overskrift", "Miljø", 509);
+        group.Cases =
+        [
+            Case(1, new DateTime(2026, 5, 13, 9, 15, 0), "2026-05-12"),
+            Case(2, null, "2026-05-12"),
+            Case(3, null, "12/05/2026"),
+            Case(4, null, null)
+        ];
+
+        var document = ComplianceExportDocumentBuilder.BuildReport([group], "p", true, _danish);
+
+        Assert.That(document.Tables[0].ImageBlocks.Select(b => b.Caption), Is.EqualTo(new[]
+        {
+            "Sag 1 · Vand · 13.05.2026",
+            "Sag 2 · Vand · 12.05.2026",
+            "Sag 3 · Vand · 12/05/2026",
+            "Sag 4 · Vand"
+        }));
     }
 
     /// <summary>
@@ -1008,13 +1130,34 @@ public class ComplianceExportDocumentBuilderTests
             ["TagsPlain"] = "Tags",
             ["Status"] = "Status",
             ["Done"] = "Udført",
-            ["NotDone"] = "Ikke udført"
+            ["NotDone"] = "Ikke udført",
+            // Rapport (#1192): the formatted image count, the appendix case label.
+            ["ImagesCount"] = "{0} billeder",
+            ["ImagesCountOne"] = "1 billede",
+            ["Case"] = "Sag",
+            ["Appendix"] = "Bilag"
         };
 
         public string GetString(string key) => Danish.TryGetValue(key, out var value) ? value : key;
 
-        public string GetString(string format, params object[] args) => GetString(format);
+        /// <summary>
+        /// The real service's <c>string.Format</c> over the localised value — what
+        /// turns <c>{0} billeder</c> into <c>3 billeder</c>.
+        /// </summary>
+        public string GetString(string format, params object[] args) => string.Format(GetString(format), args);
 
-        public string GetStringWithFormat(string format, params object[] args) => GetString(format);
+        /// <summary>
+        /// The real <c>BackendConfigurationLocalizationService.GetStringWithFormat</c>:
+        /// it formats ONLY when there are arguments and returns the localised
+        /// value untouched otherwise. Delegating to <c>GetString(format, args)</c>
+        /// instead would run <c>string.Format</c> over an empty argument list and
+        /// throw <c>FormatException</c> for any value containing a <c>{0}</c> —
+        /// a failure mode the real service does not have.
+        /// </summary>
+        public string GetStringWithFormat(string format, params object[] args)
+        {
+            var value = GetString(format);
+            return args?.Length > 0 ? string.Format(value, args) : value;
+        }
     }
 }

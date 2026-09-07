@@ -150,10 +150,12 @@ export class ComplianceReportPageComponent implements OnInit, OnDestroy {
       ...this.state.requestModel,
       viewMode: this.state.mode,
       format,
-      // Sent explicitly so the wire shape is complete. Whether the UI offers
-      // the image appendix — and what it sends — is the Rapport export
-      // issue's decision; until it lands this is `false`.
-      includeImageAppendix: false,
+      // The image appendix is on for a Rapport PDF (#1192, mock-up p9 shows the
+      // "Bilag" pages always present) and off otherwise: CSV cannot carry an
+      // image and Oversigt/Detaljer have none. The SERVER default stays
+      // `false` for API callers; this is the UI's choice, sent explicitly so
+      // the wire shape is complete.
+      includeImageAppendix: format === 'pdf' && this.state.mode === 'report',
     };
 
     this.exporting = true;

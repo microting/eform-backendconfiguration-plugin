@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -45,12 +46,43 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportS
 /// </para>
 ///
 /// <para>
-/// Rapport produces several tables and CSV is one flat stream, so tables after the
-/// first are separated by a blank line followed by that table's title line. The
-/// first table has no title line — that is what keeps the header on line 1 — and
-/// nothing is lost by it, because every Rapport row carries its section in the
-/// first <c>Delrapport</c> column. Oversigt and Detaljer are single-table and
-/// carry no table title at all, so their files are simply header + rows.
+/// <b>ONE FLAT TABLE, whatever the document's shape (#1192, Rapport CSV mock-up
+/// p10).</b> Rapport produces several tables and CSV is one flat stream, so the
+/// file is the UNION of every table's columns — in first-seen order, keyed on
+/// <see cref="ComplianceExportColumn.Key"/> (falling back to the header) — as the
+/// single header on line 1, then every table's rows in document order, each row
+/// blank under the columns its own table lacks. No blank separator lines, no
+/// per-table title lines, no repeated headers: a section is identified by its
+/// <c>Delrapport</c> cell alone. The flattening is unconditional rather than
+/// keyed on the view or on the table count because for a single-table document
+/// (Oversigt, Detaljer, a one-headline Rapport) the union IS that table's column
+/// list and the output is byte-identical to the per-table shape it replaces —
+/// one rule, no branch. The union assumes a Key is unique WITHIN a table as
+/// well as being the identity ACROSS tables: two columns of one table sharing a
+/// Key would map to the same union position and collapse into one field, the
+/// later cell overwriting the earlier — unreachable today, since the fixed keys
+/// are distinct localisation keys and the answer keys are the unique
+/// <c>f{fieldId}</c> per group, but a new column must keep it that way.
+/// </para>
+///
+/// <para>
+/// <b>What the flat Rapport CSV does NOT carry.</b> The section captions and
+/// headline titles (Word/PDF's two-line headings) are not in the file at all:
+/// #1188 decision 4 follows the mock-up, which has no <c>Rapportoverskrift</c>
+/// column, and #1192 keeps that. Columns marked
+/// <see cref="ComplianceExportColumn.CsvOnly"/> ARE here — that flag is the Word
+/// writer's to honour. Same-KEYED answer columns merge across sections (the same
+/// eForm field answered under two headlines is one spreadsheet column); two
+/// fields from different templates that merely share a label stay two columns,
+/// because the key is <c>f{fieldId}</c>, not the label. A cell beyond its own
+/// table's column count has no column to land in and is dropped.
+/// </para>
+///
+/// <para>
+/// <c>Udført dato</c> stays ISO like every other date here — the Rapport CSV
+/// mock-up's <c>13.05.2026</c> is read as a mock-up slip, inconsistent with the
+/// Detaljer CSV on the page before it (p8) and with #1169 §2's "the CSV date
+/// must be unambiguous".
 /// </para>
 /// </summary>
 public static class ComplianceExportCsvWriter
@@ -76,39 +108,58 @@ public static class ComplianceExportCsvWriter
 
         var sb = new StringBuilder();
 
-        // No preamble: the header row is line 1. See the type comment.
-        var isFirstTable = true;
-
+        // The union of every table's columns, first-seen order, keyed on Key
+        // (or Header). The first table to introduce a key supplies its header
+        // text; a later table's header for the same key is by construction the
+        // same localised string.
+        var columns = new List<ComplianceExportColumn>();
+        var positionByKey = new Dictionary<string, int>();
         foreach (var table in document.Tables)
         {
-            if (!isFirstTable)
+            foreach (var column in table.Columns)
             {
-                sb.Append(LineEnding);
-                if (!string.IsNullOrEmpty(table.Title))
-                {
-                    sb.Append(Escape(table.Title)).Append(LineEnding);
-                }
+                var key = ColumnKey(column);
+                if (positionByKey.ContainsKey(key)) continue;
+                positionByKey[key] = columns.Count;
+                columns.Add(column);
             }
+        }
 
-            isFirstTable = false;
-
-            for (var i = 0; i < table.Columns.Count; i++)
+        // No preamble: the header row is line 1, and the only header. See the
+        // type comment. A document with no table at all writes nothing but the
+        // BOM, as before.
+        if (document.Tables.Count > 0)
+        {
+            for (var i = 0; i < columns.Count; i++)
             {
                 if (i > 0) sb.Append(Separator);
-                sb.Append(Escape(table.Columns[i].Header));
+                sb.Append(Escape(columns[i].Header));
             }
 
             sb.Append(LineEnding);
+        }
+
+        foreach (var table in document.Tables)
+        {
+            // Where each of this table's columns lands in the union.
+            var positions = new int[table.Columns.Count];
+            for (var i = 0; i < table.Columns.Count; i++)
+            {
+                positions[i] = positionByKey[ColumnKey(table.Columns[i])];
+            }
 
             foreach (var row in table.Rows)
             {
-                for (var i = 0; i < row.Cells.Count; i++)
+                var fields = new string[columns.Count];
+                for (var i = 0; i < row.Cells.Count && i < positions.Length; i++)
+                {
+                    fields[positions[i]] = Render(row.Cells[i], table.Columns[i].Type);
+                }
+
+                for (var i = 0; i < fields.Length; i++)
                 {
                     if (i > 0) sb.Append(Separator);
-                    var type = i < table.Columns.Count
-                        ? table.Columns[i].Type
-                        : ComplianceExportCellType.Text;
-                    sb.Append(Escape(Render(row.Cells[i], type)));
+                    sb.Append(Escape(fields[i] ?? string.Empty));
                 }
 
                 sb.Append(LineEnding);
@@ -120,6 +171,13 @@ public static class ComplianceExportCsvWriter
         stream.Position = 0;
         return stream;
     }
+
+    /// <summary>
+    /// The identity a column is unioned on: its <see cref="ComplianceExportColumn.Key"/>,
+    /// or its header when the builder set none (the single-table views).
+    /// </summary>
+    private static string ColumnKey(ComplianceExportColumn column) =>
+        !string.IsNullOrEmpty(column.Key) ? column.Key : column.Header ?? string.Empty;
 
     /// <summary>
     /// A blank field for an empty cell (#1191), ISO for dates, invariant decimal
