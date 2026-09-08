@@ -73,6 +73,20 @@
     filterTagId is the regression this replaces. ng-select gives outside-click
     and Escape dismissal natively; the custom multi-label template reproduces
     the prototype's "{first} +{n-1}" in TAG-LIST order, not click order.
+
+    `[clearSearchOnAdd]="true"` is NOT redundant with the library default:
+    mtx-select resolves `clearSearchOnAdd` to whatever `closeOnSelect` is
+    (`mtxSelect.mjs`, `get clearSearchOnAdd() { return this._clearSearchOnAdd
+    ?? this.closeOnSelect; }`) and forwards that resolved value explicitly to
+    the inner ng-select, whose own fallback chain then short-circuits on it. So
+    a panel that deliberately stays open would ALSO keep the typed search term
+    — it would sit in the input after the picked chip — and keep the option
+    list filtered by it, since `select()` only calls `_clearSearch()` (which
+    also resets the filtered items) when the flag is true. Forcing it decouples
+    "keep the panel open" from "keep what was typed" (#1206). ANY future
+    control that adopts `closeOnSelect: false` must pair it with
+    `clearSearchOnAdd`. Do NOT add `editableSearchTerm` here: it gates that
+    same `_clearSearch()` call and would re-break this.
   -->
   <div class="text-field--rounded compliance-filters__field compliance-filters__field--tags">
     <mat-form-field>
@@ -84,6 +98,7 @@
         bindLabel="name"
         [multiple]="true"
         [closeOnSelect]="false"
+        [clearSearchOnAdd]="true"
         [ngModel]="tagIds"
         (ngModelChange)="onTagsChange($event)"
         [clearable]="true"

@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginPage } from '../../../Page objects/Login.page';
 import { generateRandmString, selectDateRangeOnNewDatePicker } from '../../../helper-functions';
-import { waitForApiResponse, API_TIMEOUT } from '../wait-helpers';
+import { waitForApiResponse, ignoreUnhandledRejections, API_TIMEOUT } from '../wait-helpers';
 
 /**
  * Standalone Compliance page — SHELL suite (#1160 / #1163).
@@ -710,6 +710,183 @@ test.describe('Compliance page shell (#1163)', () => {
 
     // .ng-value innerText would include the × clear-icon glyph.
     await expect(page.locator('#complianceTagFilter .ng-value-label')).toHaveText(`${first} +1`);
+  });
+
+  test('picking a tag after typing a prefix clears the search term but leaves the panel open (#1206)', async ({ page }) => {
+    // The customer bug: type `Milj`, pick `Miljøtilsyn`, and `Milj` stays in
+    // the input right after the chip — and the option list stays filtered by
+    // it, so the next tag cannot be picked without deleting the text by hand.
+    // mtx-select resolves `clearSearchOnAdd` to whatever `closeOnSelect` is,
+    // and this control is deliberately `closeOnSelect=false`, so nothing ever
+    // called `_clearSearch()`. The template now forces `clearSearchOnAdd`.
+    //
+    // Two tags, both created through the admin API (shard `s` seeds no SQL):
+    // one that MATCHES the typed prefix and one that does not. The second is
+    // what proves the list is unfiltered again rather than merely non-empty.
+    await page.goto(BASE_URL);
+    const token = await loginViaApi(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    expect(token).not.toBe('');
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const searchPrefix = `zzq${rand}`;
+    const tagMatch = `${searchPrefix}-match`;
+    const tagOther = `yyq${rand}-other`;
+    for (const name of [tagMatch, tagOther]) {
+      const res = await page.request.post(`${BASE_URL}/api/items-planning-pn/tags`, {
+        headers, data: { name },
+      });
+      expect(res.ok()).toBeTruthy();
+    }
+
+    // The entry auto-fetch is armed BEFORE navigation and awaited FIRST, so
+    // the `refetch` waiter registered further down cannot be satisfied by the
+    // page-load Oversigt fetch still in flight — that would make the #1185
+    // auto-fetch assertion vacuous rather than wrong. Same shape as the two
+    // tests above; inlined rather than using `goToCompliancePage`, which has
+    // no hook between the login and the navigation.
+    await page.goto(BASE_URL);
+    await new LoginPage(page).login();
+    await page.waitForTimeout(2000);
+    const entry = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(entry);
+    await page.goto(PAGE_URL);
+    await page.locator('#complianceFilterProperty').waitFor({ state: 'visible', timeout: 60000 });
+    expect((await entry).ok()).toBeTruthy();
+
+    const input = page.locator('#complianceTagFilter input[type=text]');
+    const options = page.locator('.ng-dropdown-panel .ng-option');
+
+    // Open, and wait for the tag list to have ARRIVED before typing: the
+    // search term is applied to `[items]` as they stand, so typing into an
+    // empty list would assert nothing.
+    await page.locator('#complianceTagFilter').click();
+    await expect(options.filter({ hasText: tagMatch })).toHaveCount(1);
+    await expect(options.filter({ hasText: tagOther })).toHaveCount(1);
+
+    // TYPE — the gesture the click-only `selectOptionByLabel` never
+    // exercised, and the only one that can leave a search term behind.
+    await page.keyboard.type(searchPrefix);
+
+    // Premise: the term really is filtering. `rand` makes the prefix unique to
+    // this run, so exactly the one tag survives.
+    await expect(options).toHaveCount(1);
+    await expect(options.filter({ hasText: tagOther })).toHaveCount(0);
+    await expect(input).toHaveValue(searchPrefix);
+
+    // Re-uses the by-label helper: with `searchable` true, a container click
+    // calls ng-select's `open()`, which early-returns while the panel is
+    // already open, so this does NOT close and re-open (which would have
+    // cleared the term through `close()` and made the test pass for the wrong
+    // reason).
+    //
+    // Guarded at REGISTRATION: this waiter is bounded (30 s) and is awaited
+    // only after the assertions below. If one of them fails first, the pending
+    // wait rejects with nobody attached and an unhandled rejection fails the
+    // whole RUN — landing in whichever test happens to be executing ~25 s
+    // later. That matters more here than anywhere else in this file: this test
+    // is designed to go red on unfixed code, so a mis-attributed failure is
+    // the likely case, not the exotic one. The later `await` still observes it.
+    const refetch = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(refetch);
+    await selectOptionByLabel(page, 'complianceTagFilter', tagMatch);
+
+    // 1. The search text is gone — the reported defect.
+    await expect(input).toHaveValue('');
+    // 2. The multi-select gesture is unchanged: the panel is still open.
+    await expect(page.locator('.ng-dropdown-panel')).toBeVisible();
+    // 3. The chip reads the tag. `.ng-value-label` is the suite-wide form for
+    //    reading an mtx-select's value (on controls WITHOUT a multi-label
+    //    template, `.ng-value` innerText would carry the × clear-icon glyph);
+    //    here it is the span the `ng-multi-label-tmp` itself renders. RAW-text
+    //    regex, hence the tolerated padding.
+    await expect(page.locator('#complianceTagFilter .ng-value-label'))
+      .toHaveText(new RegExp(`^\\s*${escapeRegExp(tagMatch)}\\s*$`));
+    // 4. The option list is no longer filtered by the discarded prefix: the
+    //    non-matching tag is offered again, so a second tag can be picked
+    //    without deleting anything first. `hideSelected` is left at its
+    //    default `false`, so the tag just picked is still listed too — marked
+    //    selected — which is why this asserts presence, not a count.
+    await expect(options.filter({ hasText: tagOther })).toHaveCount(1);
+    await expect(options.filter({ hasText: tagMatch })).toHaveCount(1);
+
+    // The filter still auto-fetches the active mode on the change (#1185).
+    expect((await refetch).ok()).toBeTruthy();
+
+    // --- AC3: the SECOND tag is picked from the STILL-OPEN panel ----------
+    // Everything above only established the PRECONDITION (the non-matching
+    // tag is offered again). This is the criterion itself: nothing is deleted
+    // by hand, the panel is never closed and re-opened, and the click lands
+    // on the already-open, no-longer-filtered list.
+    //
+    // "First" in "{first} +{n-1}" is TAG-LIST order, never click order
+    // (compliance.js:2079-2089, mirrored by `tagToggleLabel`), and ng-select
+    // renders `[items]` in array order — so DOM order IS list order. Read it
+    // rather than assuming the API returns the two alphabetically. Captured
+    // HERE, with the search term already cleared, because both tags have to
+    // be in the list: while the prefix was still filtering, only one was.
+    const labels = (await options.allInnerTexts()).map(t => t.trim());
+    const idxMatch = labels.indexOf(tagMatch);
+    const idxOther = labels.indexOf(tagOther);
+    expect(idxMatch).toBeGreaterThanOrEqual(0);
+    expect(idxOther).toBeGreaterThanOrEqual(0);
+    const first = idxMatch < idxOther ? tagMatch : tagOther;
+
+    const secondPick = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(secondPick);
+    await options.filter({ hasText: tagOther }).first().click();
+    // No `Escape` here, unlike the sibling multi-select test: leaving the
+    // panel open is the state AC3 is about, and the multi-label renders off
+    // `selectedValues`, not off the panel's open state — so the assertion
+    // below holds either way and closing would only weaken it. The clear-all
+    // asserted in AC4 sits on the container, outside the panel, so an open
+    // panel does not get in its way. Plain STRING matcher, the established
+    // form for this label —
+    // Playwright normalises whitespace for string `toHaveText`.
+    await expect(page.locator('#complianceTagFilter .ng-value-label')).toHaveText(`${first} +1`);
+    expect((await secondPick).ok()).toBeTruthy();
+
+    // --- AC4: the × clear-all behaves as before ---------------------------
+    // There is deliberately NO per-tag deselect assertion here, because this
+    // control offers no per-tag deselect GESTURE to regress. Both of
+    // ng-select's removal affordances are unreachable on it:
+    //
+    //  - Re-clicking a selected option does nothing. mtx-select resolves the
+    //    flag itself (`this.deselectOnClick = this._defaultOptions
+    //    ?.deselectOnClick ?? false`, mtxSelect.mjs:360) and no
+    //    `MTX_SELECT_DEFAULT_OPTIONS` provider exists in this app, so a
+    //    LITERAL `false` is forwarded to the inner ng-select. Its own fallback
+    //    chain then short-circuits on it — `deselectOnClickValue` returns the
+    //    first `isDefined()` candidate and `isDefined(false)` is true, so it
+    //    never falls through to `multiple()`. `toggleItem()` therefore takes
+    //    the `select()` branch on an already-selected item: no model change,
+    //    no `ngModelChange`, no refetch. An earlier draft of this test clicked
+    //    the selected option expecting a toggle-off; shard `y`'s
+    //    `task-list-dropdown-gating.spec.ts` (lines 38-42) records the same
+    //    trap costing two CI rounds, and switched to clear-all for it.
+    //  - The per-chip `×` is not rendered either. ng-select emits
+    //    `.ng-value`/`.ng-value-icon` only under
+    //    `@if ((!multiLabelTemplate() || !multiple()) && ...)`, and this
+    //    control is `[multiple]="true"` WITH an `ng-multi-label-tmp` (the
+    //    `{first} +{n-1}` label), so that branch never runs — the multi-label
+    //    template renders instead, and it emits a bare `.ng-value-label`.
+    //
+    // Clear-all is thus the only removal gesture the control has, and it is
+    // what is asserted below.
+    //
+    // ng-select's clear-all is `<span class="ng-clear-wrapper" role="button">`
+    // wrapping the × glyph; the glyph itself is `pointer-events: none`, so the
+    // click must land on the WRAPPER. It renders because this control sets
+    // `[clearable]="true"` and something is selected. Emptying the model is
+    // another filter change, so its refetch is awaited too rather than left
+    // dangling. With no selection the multi-label template is not rendered at
+    // all — the placeholder takes over — hence count 0, the same shape
+    // `expectDefaultFilters` asserts for this control.
+    const clearAll = complianceResponse(page, 'overview');
+    ignoreUnhandledRejections(clearAll);
+    const clearAllBtn = page.locator('#complianceTagFilter .ng-clear-wrapper');
+    await expect(clearAllBtn).toBeVisible();
+    await clearAllBtn.click();
+    await expect(page.locator('#complianceTagFilter .ng-value-label')).toHaveCount(0);
+    expect((await clearAll).ok()).toBeTruthy();
   });
 
   test('the Download button stays inert until a format is chosen and rows exist', async ({ page }) => {
