@@ -8,6 +8,7 @@ using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -179,6 +180,57 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         await MicrotingDbContext.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Creates an SDK Site together with the Worker + SiteWorker triple that real
+    /// device-user creation leaves behind, with the worker's <c>Resigned</c> flag set
+    /// as requested.
+    /// <para>
+    /// Seeds through the caller-supplied SDK context rather than the fixture's
+    /// <c>MicrotingDbContext</c>: the bootstrap SQL (<c>SQL/420_SDK.sql</c>) creates
+    /// <c>Workers</c> WITHOUT <c>Resigned</c>/<c>ResignedAtDate</c>, so the column only
+    /// exists after the SDK Core has run its EF migrations. Callers must therefore
+    /// <c>await GetCore()</c> first and pass <c>core.DbContextHelper.GetDbContext()</c>
+    /// (a context handed out after the migration). Same shape as
+    /// <c>AdhocServiceReferenceDataTests.SeedSdkSiteWithWorkerAsync</c>.
+    /// </para>
+    /// </summary>
+    private static async Task<(int siteId, int workerId)> SeedSdkSiteWithWorker(
+        MicrotingDbContext sdkDbContext, bool resigned)
+    {
+        var language = await sdkDbContext.Languages.FirstAsync();
+        var site = new Site
+        {
+            Name = $"site-{Guid.NewGuid()}",
+            MicrotingUid = null,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await sdkDbContext.Sites.AddAsync(site);
+        await sdkDbContext.SaveChangesAsync();
+
+        var worker = new Worker
+        {
+            FirstName = $"tag-member-{Guid.NewGuid():N}",
+            LastName = "Worker",
+            Email = $"{Guid.NewGuid():N}@example.test",
+            Resigned = resigned,
+            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await sdkDbContext.Workers.AddAsync(worker);
+        await sdkDbContext.SaveChangesAsync();
+
+        await sdkDbContext.SiteWorkers.AddAsync(new SiteWorker
+        {
+            SiteId = site.Id,
+            WorkerId = worker.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        });
+        await sdkDbContext.SaveChangesAsync();
+
+        return (site.Id, worker.Id);
+    }
+
     private async Task<CalendarAssignmentResolver> BuildResolver()
     {
         var core = await GetCore();
@@ -298,6 +350,74 @@ public class WorkerTagAssignmentTest : TestBaseSetup
 
         Assert.That(result, Is.EquivalentTo(new[] { explicitSite }),
             "removed worker-tag link must contribute no tag members");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Test 2b — Resolver excludes tag members whose SDK Worker has resigned (#1184)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #1184, the highest-stakes half of the fix. This resolver decides who actually
+    /// RECEIVES deployed eForm cases for a worker-tag-assigned calendar event — not
+    /// who is merely offered in a picker. Resigning a worker never removes their
+    /// SiteTags rows, so without the <c>Resigned</c> filter in
+    /// <see cref="CalendarAssignmentResolver.ResolveEffectiveSiteIdsAsync"/> a resigned
+    /// employee keeps getting real work pushed to their device.
+    /// <para>
+    /// Both sites are members of the SAME tag and both carry a SiteWorker row, so the
+    /// only difference between them is the worker's Resigned flag. The un-resign step
+    /// at the end is the positive control: it proves the site is withheld BECAUSE of
+    /// the flag and not because the seed shape (site linked to a worker at all) was
+    /// silently unresolvable — a test asserting only the absence of B would also pass
+    /// against a resolver that returned nothing.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task ResolveEffectiveSiteIds_ExcludesResignedTagMember()
+    {
+        var (arp, _, _) = await SeedEvent();
+
+        var tagId = await SeedSdkTag();
+
+        // The SDK Core applies its EF migrations on first construction; the Workers
+        // table in the bootstrap SQL has no Resigned column until it has. Seed the
+        // workers through a context handed out AFTER that, not the fixture's.
+        var core = await GetCore();
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        // Site A — tag member whose SDK Worker is still employed.
+        var (activeSite, _) = await SeedSdkSiteWithWorker(sdkDbContext, resigned: false);
+        await LinkSiteToTag(tagId, activeSite);
+
+        // Site B — same tag, same shape, but the SDK Worker has resigned. The
+        // SiteTag row survives the resignation, exactly as in production.
+        var (resignedSite, resignedWorkerId) = await SeedSdkSiteWithWorker(sdkDbContext, resigned: true);
+        await LinkSiteToTag(tagId, resignedSite);
+
+        await AddWorkerTagLink(arp.Id, tagId);
+
+        var resolver = await BuildResolver();
+        var result = await resolver.ResolveEffectiveSiteIdsAsync(arp.Id);
+
+        Assert.That(result, Does.Contain(activeSite),
+            "an employed tag member must still receive the event's occurrences");
+        Assert.That(result, Does.Not.Contain(resignedSite),
+            "a tag member whose SDK Worker.Resigned is true must not receive deployed "
+            + "occurrences of a tag-assigned event (#1184)");
+
+        // Positive control: nothing about the seed prevents B from resolving — only
+        // the Resigned flag does. Clearing it must bring the site straight back,
+        // per request and with no restart (the resolver opens a fresh SDK context).
+        var worker = await sdkDbContext.Workers.SingleAsync(w => w.Id == resignedWorkerId);
+        worker.Resigned = false;
+        await sdkDbContext.SaveChangesAsync();
+
+        var afterUnresign = await resolver.ResolveEffectiveSiteIdsAsync(arp.Id);
+
+        Assert.That(afterUnresign, Does.Contain(resignedSite),
+            "un-resigning the worker must make the tag member eligible again — "
+            + "if this fails the exclusion above proved nothing");
+        Assert.That(afterUnresign, Does.Contain(activeSite));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
