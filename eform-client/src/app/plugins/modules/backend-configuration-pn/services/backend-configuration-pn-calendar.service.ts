@@ -14,7 +14,6 @@ import {
   CalendarTaskIndexRequestModel,
   CalendarTaskModel,
   CalendarTaskUpdateModel,
-  CalendarToggleCompleteResult,
   RepeatDeleteScope,
   RepeatEditScope,
 } from '../models';
@@ -121,19 +120,6 @@ export class BackendConfigurationPnCalendarService {
   ): Observable<OperationResult> {
     return this.apiBaseService.putNoToast(BackendConfigurationPnCalendarMethods.ResizeTask, {id, newStartHour, newDuration, scope, originalDate})
       .pipe(tap((res) => this.notify(res)));
-  }
-
-  toggleComplete(
-    taskId: number,
-    completed: boolean,
-    complianceId: number | null | undefined,
-    occurrenceDate: string | null | undefined,
-    workerId?: number,
-  ): Observable<OperationDataResult<CalendarToggleCompleteResult>> {
-    return this.apiBaseService.putNoToast(
-      `${BackendConfigurationPnCalendarMethods.Tasks}/${taskId}/complete`,
-      {completed, complianceId: complianceId ?? null, occurrenceDate: occurrenceDate ?? null, workerId}
-    ).pipe(tap((res) => this.notify(res)));
   }
 
   prepareComplete(

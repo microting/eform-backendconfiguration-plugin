@@ -306,6 +306,10 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
   //     (the seeded task has an associated eForm template), which is out of
   //     scope for the layout suite — what matters here is that the shrunken
   //     hit target still receives the click.
+  //
+  //     It also covers the CALENDAR call site of #1205: the dialog must be
+  //     headed with the task's name, not with the name of the eForm template
+  //     the modal embeds.
   // =======================================================================
   test('L6: completion button is clickable on compact card', async ({ page }) => {
     const calendarPage = new CalendarUiEnhancementsPage(page);
@@ -332,8 +336,14 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     // task carries an eForm template). The modal's mere appearance proves
     // the click landed and the completion workflow kicked off; we don't
     // need to save it here.
-    await expect(page.locator('app-calendar-complete-event-modal').first())
-      .toBeVisible({ timeout: 10000 });
+    const completeModal = page.locator('app-calendar-complete-event-modal').first();
+    await expect(completeModal).toBeVisible({ timeout: 10000 });
+
+    // #1205 — the header is the TASK name, not the eForm template's name.
+    // Anchored with \s* because toHaveText matches the raw text including
+    // Material's padding.
+    await expect(completeModal.locator('h2[mat-dialog-title]'))
+      .toHaveText(new RegExp(`^\\s*${escapeRegExp(title)}\\s*$`));
 
     // Cancel so the modal doesn't leak into the next test.
     const cancelBtn = page.locator('#completeCancelBtn');
@@ -392,3 +402,7 @@ test.describe.serial('Calendar event card — adaptive layout', () => {
     expect(narrower).toBeLessThan(dayBox!.width);
   });
 });
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

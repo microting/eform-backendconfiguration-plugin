@@ -6,7 +6,6 @@ export * from './eform-change-scope-modal/eform-change-scope-modal.component';
 export * from './custom-repeat-modal/custom-repeat-modal.component';
 export * from './board-create-modal/board-create-modal.component';
 export * from './board-delete-modal/board-delete-modal.component';
-export * from './compliance-case-modal/compliance-case-modal.component';
 export {CalendarSelectWorkerModalComponent} from './calendar-select-worker-modal/calendar-select-worker-modal.component';
 export * from './calendar-complete-event-modal/calendar-complete-event-modal.component';
 export * from './calendar-image-lightbox/calendar-image-lightbox.component';

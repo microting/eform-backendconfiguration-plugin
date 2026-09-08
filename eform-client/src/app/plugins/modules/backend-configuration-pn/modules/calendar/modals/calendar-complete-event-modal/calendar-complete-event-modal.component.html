@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>{{ replyElement?.label || ('Complete task' | translate) }}</h2>
+<h2 mat-dialog-title>{{ (data.taskTitle || '').trim() || ('Complete task' | translate) }}</h2>
 
 <mat-dialog-content class="calendar-complete-event-modal__content">
   <div class="calendar-complete-event-modal__layout">

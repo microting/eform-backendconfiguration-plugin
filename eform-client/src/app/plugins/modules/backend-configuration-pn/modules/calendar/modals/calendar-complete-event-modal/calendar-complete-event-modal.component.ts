@@ -25,6 +25,12 @@ export interface CalendarCompleteEventModalData {
   occurrenceDate: string;
   propertyId: number;
   assigneeIds: number[];
+  /**
+   * The TASK's name, used as the dialog title (#1205). Optional so a caller
+   * that omits it degrades to the generic 'Complete task' fallback — never to
+   * the embedded eForm template's name, which is what the header used to show.
+   */
+  taskTitle?: string;
 }
 
 @Component({
@@ -154,8 +160,12 @@ export class CalendarCompleteEventModalComponent implements OnInit {
   }
 
   /**
-   * A single-section eForm names its one section the same thing the dialog is
-   * already titled, so printing both repeats the name two rows apart.
+   * Section headings only earn their vertical space when there is more than one
+   * section to tell apart. A single-section eForm gets one heading above one
+   * undivided list of fields, which adds a row of chrome and no information, so
+   * it is suppressed. (Until #1205 this was justified by the heading repeating
+   * the dialog title; the dialog is now titled with the TASK name, so the two
+   * strings differ — the suppression stands on density alone.)
    */
   get showSectionTitles(): boolean {
     return this.hasMultipleSections;
