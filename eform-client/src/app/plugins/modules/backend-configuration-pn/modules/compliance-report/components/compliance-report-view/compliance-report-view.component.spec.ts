@@ -3,6 +3,7 @@ import {NO_ERRORS_SCHEMA} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Router} from '@angular/router';
 import {TranslateModule} from '@ngx-translate/core';
+import {Subject, of} from 'rxjs';
 import {
   ComplianceReportCaseModel,
   ComplianceReportColumnModel,
@@ -724,5 +725,110 @@ describe('ComplianceReportViewComponent — the row\'s own checkListId', () => {
 
     expect(state.total).toBe(5);
     expect(component.sections.map((s) => s.headlineLabel)[1]).toBe('Without report headline');
+  });
+});
+
+/**
+ * The view-mode guard at the head of the fetch pipeline (#1185, PR #1202):
+ * `rxFilter(() => this.state.mode === 'report')`, the Rapport half of the same
+ * guard the Oversigt spec pins next door.
+ *
+ * `fetchRequested$` is ONE stream shared by all three children, and the shell
+ * swaps them with an `ngSwitch` — on the change-detection pass AFTER the click
+ * handler that called `setMode()`. `resetToOverview()` (pressing `Oversigt`
+ * from Rapport) therefore emits its trigger while THIS child is still
+ * subscribed, and without the guard this child issues an `eform-columns` query
+ * for a screen the user has just left.
+ *
+ * Deleting the guard is SILENT: `takeUntil` cancels the stray request on
+ * destroy and the only trace is a briefly-set `loading` flag. Mis-writing it is
+ * loud — Rapport then never fetches at all. The silent direction is what the
+ * first and last tests below pin; the second only proves the guard is not stuck
+ * closed.
+ *
+ * `fixture.detectChanges()` is what runs `ngOnInit` — hence the mode is set
+ * BEFORE it — and the same `NO_ERRORS_SCHEMA` TestBed as the suites above keeps
+ * mtx-grid and Material out of it.
+ */
+describe('ComplianceReportViewComponent — the view-mode guard', () => {
+  let fixture: ComponentFixture<ComplianceReportViewComponent>;
+  let state: ComplianceReportStateService;
+  let eformColumns: jest.Mock;
+
+  beforeEach(async () => {
+    eformColumns = jest.fn().mockReturnValue(of({success: true, model: []}));
+
+    await TestBed.configureTestingModule({
+      declarations: [ComplianceReportViewComponent],
+      imports: [TranslateModule.forRoot()],
+      providers: [
+        ComplianceReportStateService,
+        {provide: BackendConfigurationPnComplianceReportService, useValue: {eformColumns}},
+        {provide: BackendConfigurationPnCompliancesService, useValue: {deleteCompliance: jest.fn()}},
+        {provide: BackendConfigurationPnPropertiesService, useValue: {getAllPropertiesDictionary: jest.fn()}},
+        {provide: BackendConfigurationPnCalendarService, useValue: {getBoards: jest.fn()}},
+        {provide: MatDialog, useValue: {open: jest.fn()}},
+        {provide: Router, useValue: {navigate: jest.fn(), url: '/x'}},
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ComplianceReportViewComponent);
+    // The SAME instance the component injects — it is provided on the TestBed,
+    // not `providedIn: 'root'`.
+    state = TestBed.inject(ComplianceReportStateService);
+  });
+
+  it('drops a trigger emitted while another view owns the mode', () => {
+    state.setMode('details');
+    fixture.detectChanges();
+
+    // `requestFetch()` un-hides the report and emits, so the trigger really
+    // does reach the subscription — it is the guard, not the `reportVisible`
+    // gate on `fetchRequested$`, that stops it here.
+    state.requestFetch();
+
+    expect(eformColumns).not.toHaveBeenCalled();
+  });
+
+  it('is not stuck closed: it queries as soon as Rapport owns the mode', () => {
+    state.setMode('details');
+    fixture.detectChanges();
+    state.requestFetch();
+
+    state.setMode('report');
+    state.requestFetch();
+
+    // Once, not twice: the trigger dropped above must not be replayed.
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops the reset trigger `Oversigt` fires while it is still mounted', () => {
+    // The scenario the guard was written for, end to end.
+    state.setMode('report');
+    fixture.detectChanges();
+    state.requestFetch();
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+
+    // `resetToOverview()` switches the mode and fetches in ONE synchronous
+    // gesture; this child is not torn down until the next change-detection
+    // pass, so it sees the emission with `mode` already 'overview'.
+    state.resetToOverview();
+
+    expect(eformColumns).toHaveBeenCalledTimes(1);
+  });
+
+  it('never touches the shell loading flag for a trigger it drops', () => {
+    // A request that never settles, so the `tap` that sets `loading` true is
+    // observable. With a synchronously completing stub the subscribe callback
+    // would clear it again in the same tick and this could not fail.
+    eformColumns.mockReturnValue(new Subject<any>());
+    state.setMode('details');
+    fixture.detectChanges();
+
+    state.requestFetch();
+
+    // `loading` is the SHELL's flag and it gates `Opdater periode`.
+    expect(state.loading).toBe(false);
   });
 });
