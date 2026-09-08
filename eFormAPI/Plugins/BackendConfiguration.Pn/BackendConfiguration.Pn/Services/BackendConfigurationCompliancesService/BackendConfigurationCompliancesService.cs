@@ -322,6 +322,23 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
                     .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
+                // #1218: cross-check that the occurrence reached via the SDK case id really
+                // belongs to the planning the quoted Compliance is on. `foundCase` comes from
+                // model.Id and `compliance` from model.ExtraId — both client-supplied, and
+                // nothing else pairs them, so without this a request quoting one property's
+                // compliance id together with another property's case id promotes the
+                // unrelated property's occurrence.
+                // Deliberately AFTER the lookup, not folded back into its predicate:
+                // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
+                // PlanningId back into the Where would re-introduce a second selector and
+                // report a genuine mismatch as the indistinguishable "no occurrence found"
+                // instead of as a mismatch).
+                if (planningCaseSite != null && planningCaseSite.PlanningId != compliance.PlanningId)
+                {
+                    Log.LogException(
+                        $"[ERROR] BackendConfigurationCompliancesService.Update: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {foundCase.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair");
+                    return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
+                }
                 if (planningCaseSite != null)
                 {
                     planningCaseSite.Status = 100;
@@ -520,6 +537,23 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                 var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
                     .FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == foundCase.Id).ConfigureAwait(false);
+                // #1218: cross-check that the occurrence reached via the SDK case id really
+                // belongs to the planning the quoted Compliance is on. `foundCase` comes from
+                // model.Id and `compliance` from model.ExtraId — both client-supplied, and
+                // nothing else pairs them, so without this a request quoting one property's
+                // compliance id together with another property's case id promotes the
+                // unrelated property's occurrence.
+                // Deliberately AFTER the lookup, not folded back into its predicate:
+                // MicrotingSdkCaseId must stay the SOLE selector (#1158 — adding
+                // PlanningId back into the Where would re-introduce a second selector and
+                // report a genuine mismatch as the indistinguishable "no occurrence found"
+                // instead of as a mismatch).
+                if (planningCaseSite != null && planningCaseSite.PlanningId != compliance.PlanningId)
+                {
+                    Log.LogException(
+                        $"[ERROR] BackendConfigurationCompliancesService.UpdateFromCalendar: PlanningCaseSite {planningCaseSite.Id} (planningId: {planningCaseSite.PlanningId}) resolved from MicrotingSdkCaseId {foundCase.Id} does not belong to compliance {compliance.Id} (planningId: {compliance.PlanningId}) - rejecting mismatched case/compliance pair");
+                    return new OperationResult(false, _localizationService.GetString("CaseDoesNotBelongToCompliance"));
+                }
                 if (planningCaseSite != null)
                 {
                     planningCaseSite.Status = 100;

@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Text;
+using System.Text.Json;
 using BackendConfiguration.Pn.Grpc;
 using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 using BackendConfiguration.Pn.Services.GrpcServices;
@@ -42,11 +44,13 @@ using NSubstitute;
 namespace BackendConfiguration.Pn.Integration.Test;
 
 /// <summary>
-/// CHARACTERIZATION tests — they pin what the three legacy compliance-completion
+/// Mostly CHARACTERIZATION tests — they pin what the three legacy compliance-completion
 /// entry points do <b>today</b>, so the upcoming change to completion semantics
-/// cannot alter them silently. Nothing here is a statement about what the code
-/// <i>should</i> do; several assertions deliberately pin behaviour that is
-/// arguably wrong, and each of those says so on the individual test.
+/// cannot alter them silently. Nothing in sections 1-3 is a statement about what the
+/// code <i>should</i> do; several assertions deliberately pin behaviour that is
+/// arguably wrong, and each of those says so on the individual test. Section 4 is the
+/// exception: those five ARE regression tests, for the occurrence lookup (#1156 /
+/// PR #1158) and for the ownership guard beneath it (#1218).
 ///
 /// <para>The three paths, all previously untested:</para>
 /// <list type="number">
@@ -702,12 +706,13 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     }
 
     // ==================================================================
-    // 4. Regression cover for #1156 / PR #1158 — the occurrence lookup.
+    // 4. Regression cover for the occurrence lookup: #1156 / PR #1158, and the
+    //    ownership guard added underneath it for #1218.
     //
     // PR #1158 shipped with no test that changes outcome on revert; the rest of this
     // fixture passes either way, because no other fixture seeds two PlanningCaseSites
-    // for one planning sharing a CreatedAt day. These four close that gap, and they
-    // pin two DIFFERENT halves of that commit:
+    // for one planning sharing a CreatedAt day. These five close that gap, and they
+    // pin three DIFFERENT things:
     //
     //   * the two *_TwoBackfilledOccurrencesOnOneDay_* tests pin the PREDICATE — revert
     //     it from  x.MicrotingSdkCaseId == foundCase.Id  back to
@@ -716,6 +721,9 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     //   * Update_NoPlanningCaseSiteForSdkCase_* pins the new `else` branch (the old code
     //     had none and returned success). It does NOT discriminate on the predicate:
     //     with no PlanningCaseSite at all, both predicates find nothing.
+    //   * the two *_MismatchedCaseAndCompliance_* tests pin the #1218 guard that sits
+    //     AFTER the lookup — the PlanningId cross-check that #1158 dropped along with
+    //     the old predicate, re-added without touching the selector.
     //
     // The bug is not hypothetical: it is the "all occurrences green in the calendar,
     // only one row in Logbøger" report. The calendar reads sdkCase.Status, which every
@@ -929,41 +937,18 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     }
 
     /// <summary>
-    /// CHARACTERISATION ONLY — this documents a defect, it does NOT state desired
-    /// behaviour. Do not treat a failure here as a regression: if the missing guard is
-    /// ever added, this test is expected to fail and should be rewritten to assert the
-    /// rejection instead.
-    ///
-    /// <para>The new lookup dropped the old predicate's
-    /// <c>PlanningId == compliance.PlanningId</c> cross-check. <c>foundCase</c> comes from
-    /// <c>model.Id</c> and <c>compliance</c> from <c>model.ExtraId</c>; both are
-    /// client-supplied and nothing validates them against each other. So a caller who
-    /// pairs one property's Compliance id with another property's SDK case id gets the
-    /// unrelated property's <c>PlanningCaseSite</c> promoted to 100, and the request still
-    /// reports success. The old date heuristic happened to block this — not by design,
-    /// but because <c>PlanningId</c> was part of its predicate.</para>
-    ///
-    /// <para>Awaiting a product decision (does the pairing need validating, and against
-    /// what — the compliance's planning, the caller's property access, or both?), so no
-    /// guard is added here.</para>
+    /// A SECOND property + planning, sharing the owner scenario's core, SDK site,
+    /// checklist and language. Built inline rather than through
+    /// <see cref="SeedScenarioAsync"/> on purpose: that helper calls <c>GetCore()</c>,
+    /// and this fixture must start exactly one eFormCore. Everything the seed helpers
+    /// read off a <see cref="Scenario"/> is PlanningId/PropertyId, and the mismatch
+    /// under test is compliance-vs-case, not site-vs-site.
     /// </summary>
-    [Test]
-    public async Task Characterisation_Update_MismatchedCaseAndCompliance_PromotesUnrelatedPlanningsOccurrence()
+    private async Task<Scenario> SeedStrangerScenarioAsync(Scenario owner, string tag)
     {
-        // Property/planning 1 owns the SDK case and its occurrence...
-        var owner = await SeedScenarioAsync("mismatch-owner");
-        var sdkCase = await SeedSdkCaseAsync(owner, 970_011);
-        var ownerPlanningCase = await SeedPlanningCaseAsync(owner);
-        var ownerPlanningCaseSite = await SeedPlanningCaseSiteAsync(owner, ownerPlanningCase, sdkCase);
-
-        // ...a SECOND property/planning owns the Compliance the caller quotes. Built by
-        // hand rather than through SeedScenarioAsync so the fixture starts only one
-        // eFormCore; everything the helpers below read is PlanningId/PropertyId, and the
-        // site/checklist/core are deliberately shared (the mismatch under test is
-        // compliance-vs-case, not site-vs-site).
         var strangerProperty = new Property
         {
-            Name = $"ComplianceLegacy-mismatch-stranger-{Guid.NewGuid()}",
+            Name = $"ComplianceLegacy-{tag}-stranger-{Guid.NewGuid()}",
             ItemPlanningTagId = 0,
             ComplianceStatus = OverdueComplianceStatus,
             ComplianceStatusThirty = OverdueComplianceStatus,
@@ -990,7 +975,7 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
         await ItemsPlanningPnDbContext!.Plannings.AddAsync(strangerPlanning);
         await ItemsPlanningPnDbContext.SaveChangesAsync();
 
-        var stranger = new Scenario
+        return new Scenario
         {
             CoreHelper = owner.CoreHelper,
             Property = strangerProperty,
@@ -999,7 +984,43 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
             Site = owner.Site,
             CheckListId = owner.CheckListId
         };
+    }
 
+    /// <summary>
+    /// Regression test for issue #1218 — was CHARACTERISATION until the guard landed,
+    /// and is now inverted, exactly as its previous doc comment said it should be.
+    ///
+    /// <para>PR #1158 rewrote the occurrence lookup and dropped the
+    /// <c>PlanningId == compliance.PlanningId</c> term that used to travel with it.
+    /// <c>foundCase</c> comes from <c>model.Id</c>, <c>compliance</c> from
+    /// <c>model.ExtraId</c>; both are client-supplied and nothing else pairs them, so a
+    /// caller quoting one property's Compliance id together with ANOTHER property's SDK
+    /// case id got the unrelated property's <c>PlanningCaseSite</c>/<c>PlanningCase</c>
+    /// promoted to 100 — and a success result. The #1218 guard sits AFTER the lookup, so
+    /// <c>MicrotingSdkCaseId</c> remains its sole selector (the #1158 fix is untouched),
+    /// and rejects the pair with <c>CaseDoesNotBelongToCompliance</c>.</para>
+    ///
+    /// <para><b>The rejection is not clean, and this test pins that too.</b>
+    /// <c>compliance.Delete()</c> and the SDK-case completion both run BEFORE the lookup,
+    /// with no transaction and no compensation (#1157), so a rejected request still
+    /// leaves the quoted Compliance soft-deleted and its SDK case at Status 100 — the
+    /// same partial write every other failure exit on this method already leaves (see
+    /// <see cref="Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndStillSoftDeletesCompliance"/>).
+    /// What the guard prevents is the CROSS-PROPERTY damage: no items-planning row of an
+    /// unrelated planning is promoted, and no property's compliance counters are
+    /// recomputed. Repairing the partial write is #1157, not this test.</para>
+    /// </summary>
+    [Test]
+    public async Task Update_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing()
+    {
+        // Property/planning 1 owns the SDK case and its occurrence...
+        var owner = await SeedScenarioAsync("mismatch-owner");
+        var sdkCase = await SeedSdkCaseAsync(owner, 970_011);
+        var ownerPlanningCase = await SeedPlanningCaseAsync(owner);
+        var ownerPlanningCaseSite = await SeedPlanningCaseSiteAsync(owner, ownerPlanningCase, sdkCase);
+
+        // ...a SECOND property/planning owns the Compliance the caller quotes.
+        var stranger = await SeedStrangerScenarioAsync(owner, "mismatch");
         var strangerPlanningCase = await SeedPlanningCaseAsync(stranger);
         var strangerCompliance = await SeedComplianceAsync(stranger, strangerPlanningCase, sdkCase);
 
@@ -1013,23 +1034,260 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
         var reloadedOwnerCase = await ReadPlanningCaseAsync(ownerPlanningCase.Id);
         var reloadedStrangerCase = await ReadPlanningCaseAsync(strangerPlanningCase.Id);
         var reloadedStrangerCompliance = await ReadComplianceAsync(strangerCompliance.Id);
+        var reloadedStrangerProperty = await ReadPropertyAsync(stranger.Property.Id);
+        var reloadedSdkCase = await ReadCaseAsync(sdkCase.Id);
 
         Assert.Multiple(() =>
         {
-            // Documented, not endorsed: the mismatched pair is accepted.
-            Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(result.Success, Is.False,
+                "a case id paired with a compliance id from a different planning must be rejected");
+            Assert.That(result.Message, Is.EqualTo("CaseDoesNotBelongToCompliance"));
 
-            Assert.That(reloadedOwnerSite.Status, Is.EqualTo(CompletedStatus),
-                "CHARACTERISATION: an occurrence of an UNRELATED planning/property is promoted, "
-                + "because the lookup no longer cross-checks PlanningId against the compliance");
-            Assert.That(reloadedOwnerCase.Status, Is.EqualTo(CompletedStatus));
+            // The point of the guard: the unrelated planning's occurrence is untouched.
+            Assert.That(reloadedOwnerSite.Status, Is.EqualTo(OpenPlanningStatus),
+                "the owner planning's PlanningCaseSite must NOT be promoted by a completion "
+                + "that quoted another planning's compliance");
+            Assert.That(reloadedOwnerSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedOwnerSite.DoneByUserId, Is.EqualTo(0));
+            Assert.That(reloadedOwnerCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedOwnerCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 
-            // ...while the compliance the caller actually named is deleted and its own
-            // planning is left untouched.
+            // The quoted compliance's own occurrence is not completed either — the
+            // request is rejected outright, it is not re-routed.
+            Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus));
+
+            // Pre-existing partial write (#1157), pinned as it is rather than as it
+            // ought to be: both of these run before the lookup the guard follows.
+            Assert.That(reloadedStrangerCompliance.WorkflowState,
+                Is.EqualTo(Constants.WorkflowStates.Removed),
+                "#1157: compliance.Delete() runs before the lookup and is never rolled back");
+            Assert.That(reloadedSdkCase.Status, Is.EqualTo(CompletedStatus),
+                "#1157: the SDK case is completed before the lookup, so the rejection leaves it at 100");
+
+            // Everything after the early return did not run.
+            Assert.That(reloadedStrangerProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
+                "the Property recompute sits after the early return");
+            Assert.That(reloadedStrangerProperty.ComplianceStatusThirty, Is.EqualTo(OverdueComplianceStatus));
+        });
+    }
+
+    /// <summary>
+    /// Twin of <see cref="Update_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing"/>
+    /// against <c>UpdateFromCalendar</c>. The two production methods are verbatim
+    /// copy-paste of each other — including this lookup and the #1218 guard beneath it —
+    /// so a guard added to only one of them is a live hole that a single test cannot
+    /// see. Pinned separately on purpose, same as the two
+    /// <c>*_TwoBackfilledOccurrencesOnOneDay_*</c> tests above.
+    ///
+    /// <para>The calendar variant is also the reachable one: the calendar completes
+    /// occurrences through <c>UpdateFromCalendar</c>.</para>
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_MismatchedCaseAndCompliance_IsRejectedAndPromotesNothing()
+    {
+        var owner = await SeedScenarioAsync("calendar-mismatch-owner");
+        var sdkCase = await SeedSdkCaseAsync(owner, 970_012);
+        var ownerPlanningCase = await SeedPlanningCaseAsync(owner);
+        var ownerPlanningCaseSite = await SeedPlanningCaseSiteAsync(owner, ownerPlanningCase, sdkCase);
+
+        var stranger = await SeedStrangerScenarioAsync(owner, "calendar-mismatch");
+        var strangerPlanningCase = await SeedPlanningCaseAsync(stranger);
+        var strangerCompliance = await SeedComplianceAsync(stranger, strangerPlanningCase, sdkCase);
+
+        var doneAt = new DateTime(2026, 3, 19, 13, 0, 0, DateTimeKind.Unspecified);
+
+        var result = await MakeCompliancesService(owner)
+            .UpdateFromCalendar(MakeReply(stranger, strangerCompliance.Id, sdkCase.Id, doneAt));
+
+        var reloadedOwnerSite = await ReadPlanningCaseSiteAsync(ownerPlanningCaseSite.Id);
+        var reloadedOwnerCase = await ReadPlanningCaseAsync(ownerPlanningCase.Id);
+        var reloadedStrangerCase = await ReadPlanningCaseAsync(strangerPlanningCase.Id);
+        var reloadedStrangerCompliance = await ReadComplianceAsync(strangerCompliance.Id);
+        var reloadedStrangerProperty = await ReadPropertyAsync(stranger.Property.Id);
+        var reloadedSdkCase = await ReadCaseAsync(sdkCase.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "UpdateFromCalendar carries its own copy of the guard and must reject the pair too");
+            Assert.That(result.Message, Is.EqualTo("CaseDoesNotBelongToCompliance"));
+
+            Assert.That(reloadedOwnerSite.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedOwnerSite.MicrotingSdkCaseDoneAt, Is.Null);
+            Assert.That(reloadedOwnerSite.DoneByUserId, Is.EqualTo(0));
+            Assert.That(reloadedOwnerCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedOwnerCase.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+
+            Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus));
+
+            // Same pre-existing partial write (#1157) as the Update twin.
             Assert.That(reloadedStrangerCompliance.WorkflowState,
                 Is.EqualTo(Constants.WorkflowStates.Removed));
-            Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus),
-                "CHARACTERISATION: the quoted compliance's own occurrence is never completed");
+            Assert.That(reloadedSdkCase.Status, Is.EqualTo(CompletedStatus));
+
+            Assert.That(reloadedStrangerProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus));
+            Assert.That(reloadedStrangerProperty.ComplianceStatusThirty, Is.EqualTo(OverdueComplianceStatus));
         });
+    }
+}
+
+/// <summary>
+/// The DB-free half of the #1218 cover: it checks that
+/// <c>CaseDoesNotBelongToCompliance</c> — the failure message the ownership guard in
+/// <c>BackendConfigurationCompliancesService.Update</c> /
+/// <c>UpdateFromCalendar</c> returns — actually EXISTS in the plugin's embedded
+/// <c>Resources/localization.json</c>, in every locale the file ships.
+///
+/// <para>
+/// <b>Why this exists.</b> The two sibling tests above assert
+/// <c>result.Message == "CaseDoesNotBelongToCompliance"</c>, and that assertion cannot
+/// fail for a missing translation: the integration project's
+/// <c>BackendConfigurationLocalizationService</c> stub (in
+/// <c>BackendConfigurationAssignmentWorkerServiceHelperTest.cs</c>) simply ECHOES the
+/// key it is given. Production uses <c>JsonStringLocalizer</c>, which also echoes the
+/// key when the entry is absent or its value for the current culture is blank — it does
+/// not fall back to English and it does not throw. So the sibling assertions would pass
+/// unchanged if the JSON entry had never been added, and every customer would be shown
+/// the bare identifier <c>CaseDoesNotBelongToCompliance</c> in the failure toast. This
+/// fixture reads the real file and is the only thing in CI that notices.
+/// </para>
+///
+/// <para>
+/// <b>No database and no container, hence a separate fixture.</b>
+/// <see cref="ComplianceCompletionLegacyPathsTests"/> derives from <c>TestBaseSetup</c>,
+/// which starts a MariaDB testcontainer and replays six SQL dumps per fixture; there is
+/// nothing here to seed, and the check must stay runnable (and fast) independently of
+/// all that. Same shape as <c>ExportLocalizationCompletenessTests</c>, the project's
+/// other resource-file fixture: no base class, <c>ParallelScope.All</c>.
+/// </para>
+///
+/// <para>
+/// <b>Stated gap.</b> Presence is not correctness — a locale whose value is a copy of
+/// the English one passes here, and nothing automated can tell those apart. The exact
+/// translated strings are editorial and are deliberately NOT asserted.
+/// </para>
+/// </summary>
+[Parallelizable(ParallelScope.All)]
+[TestFixture]
+public class ComplianceOwnershipGuardLocalizationTests
+{
+    /// <summary>
+    /// The key both <c>GetString</c> call sites of the #1218 guard pass
+    /// (BackendConfigurationCompliancesService.cs:340 and :555).
+    /// </summary>
+    private const string GuardKey = "CaseDoesNotBelongToCompliance";
+
+    /// <summary>
+    /// The entry whose locale set defines "every locale the plugin ships". Derived from
+    /// a reference key rather than hard-coded as 26, so adding a language platform-wide
+    /// stays a JSON-only change. The plugin's own display name is the safest reference
+    /// available — <c>EformBackendConfigurationPlugin.GetNavigationMenu</c> reads it to
+    /// label the plugin in the sidebar, so it is the one key that must exist in every
+    /// locale for the plugin to be usable at all. Same reference
+    /// <c>ExportLocalizationCompletenessTests</c> uses, on purpose: one definition of
+    /// "the shipped locale set" across both resource fixtures.
+    /// </summary>
+    private const string ReferenceKey = "BackendConfiguration";
+
+    /// <summary>
+    /// <b>The assertion this fixture exists for.</b> <see cref="GuardKey"/> is present in
+    /// <c>Resources/localization.json</c>, carries exactly the locale set
+    /// <see cref="ReferenceKey"/> carries, and has a non-blank value in each of them —
+    /// resolved the way <c>JsonStringLocalizer.GetString</c> resolves it (first entry
+    /// carrying the culture, then the key match, then the empty check; the file contains
+    /// duplicate keys, so those two rules are not the same rule).
+    ///
+    /// <para>The reference entry is sanity-checked first, so the test cannot pass
+    /// vacuously if that entry is ever reduced to a single locale.</para>
+    ///
+    /// <para>Every failure message names the offending locale(s), so a regression is a
+    /// one-line fix in the JSON rather than a debugging session.</para>
+    /// </summary>
+    [Test]
+    public void GuardKeyResolvesInEveryShippedLocale()
+    {
+        var entries = Entries();
+
+        var reference = entries.FirstOrDefault(e => e.Key == ReferenceKey);
+        Assert.That(reference.Key, Is.EqualTo(ReferenceKey),
+            $"the reference key '{ReferenceKey}' is not in Resources/localization.json, so the "
+            + "shipped locale set cannot be derived and this test would check nothing");
+
+        var shippedLocales = reference.Values.Keys.ToList();
+        Assert.That(shippedLocales, Has.Count.GreaterThanOrEqualTo(20),
+            $"'{ReferenceKey}' resolved only {shippedLocales.Count} locales — the reference entry "
+            + "is broken, so every assertion below would be vacuous");
+
+        Assert.That(entries.Any(e => e.Key == GuardKey), Is.True,
+            $"'{GuardKey}' is missing from Resources/localization.json. The #1218 guard returns "
+            + "_localizationService.GetString(\"" + GuardKey + "\"), and JsonStringLocalizer hands "
+            + "back the raw key when there is no entry — so the user sees the identifier itself in "
+            + "the failure toast. The sibling *_MismatchedCaseAndCompliance_* tests cannot catch "
+            + "this: the test project's localisation stub echoes keys, so they pass either way.");
+
+        var unresolved = shippedLocales
+            .Where(locale => string.IsNullOrWhiteSpace(Resolve(entries, GuardKey, locale)))
+            .ToList();
+
+        var extra = entries.First(e => e.Key == GuardKey).Values.Keys
+            .Where(locale => !shippedLocales.Contains(locale))
+            .ToList();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(unresolved, Is.Empty,
+                $"'{GuardKey}' has no usable value in {unresolved.Count} locale(s) — JsonStringLocalizer "
+                + "returns the raw key for each of them. Offenders: " + string.Join(", ", unresolved));
+
+            Assert.That(extra, Is.Empty,
+                $"'{GuardKey}' carries locale(s) that '{ReferenceKey}' does not, which means the entry "
+                + "was hand-edited against a different locale set than the rest of the file. "
+                + "Offenders: " + string.Join(", ", extra));
+        });
+    }
+
+    /// <summary>
+    /// <c>JsonStringLocalizer.GetString</c>, reproduced: the entries carrying this
+    /// culture, then the first of those whose key matches, then the empty check.
+    /// Returns null where the localizer would hand the caller the key back.
+    /// </summary>
+    private static string? Resolve(
+        List<(string Key, Dictionary<string, string> Values)> entries, string key, string locale)
+    {
+        var entry = entries
+            .Where(e => e.Values.ContainsKey(locale))
+            .FirstOrDefault(e => e.Key == key);
+
+        if (entry.Key == null) return null;
+
+        var value = entry.Values[locale];
+        return string.IsNullOrEmpty(value) ? null : value;
+    }
+
+    /// <summary>
+    /// The embedded <c>Resources/localization.json</c>, addressed by the SAME name
+    /// <c>JsonStringLocalizer</c> builds (<c>{assemblyName}.Resources.localization.json</c>)
+    /// — so this fixture also fails if the resource is renamed or its
+    /// <c>&lt;EmbeddedResource&gt;</c> entry is dropped from the csproj, which would
+    /// otherwise only surface at runtime as a <c>NullReferenceException</c> on the first
+    /// localised string.
+    /// </summary>
+    private static List<(string Key, Dictionary<string, string> Values)> Entries()
+    {
+        var assembly = typeof(EformBackendConfigurationPlugin).Assembly;
+        var resourceName = $"{assembly.GetName().Name}.Resources.localization.json";
+
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        Assert.That(stream, Is.Not.Null, $"embedded resource '{resourceName}' was not found");
+
+        using var reader = new StreamReader(stream!, Encoding.UTF8);
+        using var json = JsonDocument.Parse(reader.ReadToEnd());
+
+        return json.RootElement.EnumerateArray()
+            .Select(element => (
+                Key: element.GetProperty("Key").GetString()!,
+                Values: element.GetProperty("LocalizedValue").EnumerateObject()
+                    .ToDictionary(p => p.Name, p => p.Value.GetString() ?? string.Empty)))
+            .ToList();
     }
 }
