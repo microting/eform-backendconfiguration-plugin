@@ -738,7 +738,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
 
     private static DateTime Utc(int y, int m, int d) => new(y, m, d, 0, 0, 0, DateTimeKind.Utc);
 
-    private sealed record Seeded(int PropertyId, int ArpId);
+    private sealed record Seeded(int PropertyId, int ArpId, int PlanningId, int AreaId);
 
     /// <summary>
     /// Seeds a monthly calendar series directly (no wizard, no conversion) so
@@ -747,7 +747,8 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
     /// DayOfMonth = 0.
     /// </summary>
     private async Task<Seeded> SeedMonthlySeries(
-        DateTime startDate, int repeatEvery, int? repeatOrdinalWeek, int dayOfWeek, int dayOfMonth)
+        DateTime startDate, int repeatEvery, int? repeatOrdinalWeek, int dayOfWeek, int dayOfMonth,
+        int? repeatEndMode = null, int? repeatOccurrences = null)
     {
         var area = new Area
         {
@@ -789,6 +790,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
             ItemPlanningId = planning.Id, StartDate = startDate, Status = true,
             RepeatType = 3, RepeatEvery = repeatEvery,
             RepeatOrdinalWeek = repeatOrdinalWeek, DayOfWeek = dayOfWeek, DayOfMonth = dayOfMonth,
+            RepeatEndMode = repeatEndMode, RepeatOccurrences = repeatOccurrences,
             WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
         };
         await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(arp);
@@ -801,7 +803,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
         });
         await BackendConfigurationPnDbContext.SaveChangesAsync();
 
-        return new Seeded(property.Id, arp.Id);
+        return new Seeded(property.Id, arp.Id, planning.Id, area.Id);
     }
 
     private BackendConfigurationCalendarService BuildCalendarService(eFormCore.Core core)
@@ -825,6 +827,10 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
     }
 
     private async Task<List<string>> QueryWeekDates(int propertyId, int arpId, DateTime weekStartMonday)
+        => (await QueryWeekRows(propertyId, arpId, weekStartMonday)).Select(t => t.TaskDate).ToList();
+
+    private async Task<List<CalendarTaskResponseModel>> QueryWeekRows(
+        int propertyId, int arpId, DateTime weekStartMonday)
     {
         var core = await GetCore();
         var svc = BuildCalendarService(core);
@@ -836,7 +842,7 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
             ActionableOnly = false, BoardIds = [], TagNames = [], SiteIds = []
         });
         Assert.That(res.Success, Is.True, res.Message);
-        return res.Model!.Where(t => t.Id == arpId).Select(t => t.TaskDate).ToList();
+        return res.Model!.Where(t => t.Id == arpId).ToList();
     }
 
     [Test]
@@ -883,5 +889,215 @@ public class CalendarMonthlyAnchorRenderTests : TestBaseSetup
         Assert.That(week, Does.Not.Contain("2026-09-01"),
             "a pattern date before the series start must never render");
         Assert.That(week, Is.EqualTo(new[] { "2026-09-04" }));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // After-N ends one period earlier — through the real render path
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// #1207 item 3, reproduced end to end rather than by calling
+    /// <c>ApplyRepeatEndBound</c> directly. The anchor now counts as occurrence
+    /// 1, so an "Efter N forekomster" series stops one period earlier than it
+    /// used to. Start Tue 2026-09-08, every 1 month, "1st Tuesday", N = 3:
+    ///
+    ///   pre-#1207  occurrences = 2026-10-06, 2026-11-03, 2026-12-01
+    ///   #1207      occurrences = 2026-09-08, 2026-10-06, 2026-11-03
+    ///
+    /// Both ends of that shift are asserted through <c>GetTasksForWeek</c>,
+    /// which is the path <c>EventDeployService.EnsureDeployedAsync</c> and
+    /// every gRPC/mobile read consume — so this pins what actually deploys, not
+    /// just what the bound helper computes. Every week here is queried in
+    /// isolation, and <c>ApplyRepeatEndBound</c> re-derives the cumulative count
+    /// from the series anchor each time, so the four queries are independent.
+    ///
+    /// Fixed 2026 dates on purpose: this is a pure render/bound assertion and
+    /// no move-into-past guard is on the read path.
+    /// </summary>
+    [Test]
+    public async Task GetTasksForWeek_AfterThreeOccurrences_LastOccurrenceIsNovemberNotDecember()
+    {
+        var seeded = await SeedMonthlySeries(
+            Utc(2026, 9, 8), repeatEvery: 1, repeatOrdinalWeek: 1, dayOfWeek: 2, dayOfMonth: 0,
+            repeatEndMode: 1, repeatOccurrences: 3);
+
+        // #1 — the anchor. Pre-#1207 this week was empty and the count started
+        // at October, which is exactly why the series ran one month too long.
+        var anchorWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 9, 7));
+        Assert.That(anchorWeek, Is.EqualTo(new[] { "2026-09-08" }),
+            "the anchor is occurrence #1 and must render inside the after-N bound");
+
+        // #2 and #3.
+        var octoberWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 10, 5));
+        Assert.That(octoberWeek, Is.EqualTo(new[] { "2026-10-06" }));
+
+        var novemberWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 11, 2));
+        Assert.That(novemberWeek, Is.EqualTo(new[] { "2026-11-03" }),
+            "the 3rd occurrence still renders");
+
+        // The pre-#1207 last occurrence. 2026-12-01 is the 1st Tuesday of
+        // December and its week is Mon 2026-11-30..Sun 2026-12-06.
+        var decemberWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 11, 30));
+        Assert.That(decemberWeek, Is.Empty,
+            "with the anchor counted as #1 the series ends at the 3rd — December is past the bound");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // The 28-cap cohort — through the real render path
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// <c>BackendConfigurationTaskWizardService.DeriveDayOfMonth</c> caps a
+    /// monthly <c>Planning.DayOfMonth</c> at 28, so EVERY ordinary wizard
+    /// monthly series started on the 29th, 30th or 31st is a mismatched anchor
+    /// — no custom dialog and no legacy conversion involved. It is the largest
+    /// cohort #1207 touches, and the pure sibling covers it only at the
+    /// enumerator level.
+    ///
+    /// Start Sat 2026-01-31, DayOfMonth 28, every 1 month. The week
+    /// Mon 2026-01-26..Sun 2026-02-01 holds BOTH the capped pattern date
+    /// (Wed 2026-01-28) and the anchor (Sat 2026-01-31).
+    ///
+    /// Pre-#1207 that week rendered <c>2026-01-28</c> — a date BEFORE the
+    /// series start, the render-path drift of EXTRA A — and never rendered the
+    /// anchor at all. Both halves of the assertion below are therefore red on
+    /// old code.
+    /// </summary>
+    [Test]
+    public async Task GetTasksForWeek_WizardTwentyEightCap_StartOnThe31st_RendersTheAnchorNotTheCappedDay()
+    {
+        var seeded = await SeedMonthlySeries(
+            Utc(2026, 1, 31), repeatEvery: 1, repeatOrdinalWeek: null, dayOfWeek: 6, dayOfMonth: 28);
+
+        var anchorWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 1, 26));
+        Assert.That(anchorWeek, Does.Not.Contain("2026-01-28"),
+            "the capped 28th precedes the series start and must not render");
+        Assert.That(anchorWeek, Is.EqualTo(new[] { "2026-01-31" }),
+            "the anchor is occurrence #1 for the 28-cap cohort too");
+
+        // The first patterned occurrence: Sat 2026-02-28, week Mon 2026-02-23.
+        var febWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 2, 23));
+        Assert.That(febWeek, Is.EqualTo(new[] { "2026-02-28" }),
+            "the tail is a plain 28th-of-every-month");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // The CompletedPeriodKey hazard is not reachable
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// <c>CompletedPeriodKey</c> buckets a Month rule as <c>"M:yyyy-MM"</c> —
+    /// one occurrence per calendar month. Option (b) exists to protect that:
+    /// the anchor is emitted only when the start month's pattern date sorts
+    /// STRICTLY EARLIER than it, so the start month can never carry two.
+    ///
+    /// This drives the hazard through the real week query. Series anchored Tue
+    /// 2026-03-10 (the 2nd Tuesday) under a "1st Tuesday" rule — March's
+    /// pattern date is 2026-03-03, which precedes the anchor, so #1207 emits
+    /// 2026-03-10 as March's single occurrence. That occurrence is then
+    /// COMPLETED (backing SDK case Status = 100, Compliance soft-deleted — the
+    /// canonical completed shape). March must render exactly one tile, marked
+    /// completed, and no sibling anywhere else in the month; April must be
+    /// unaffected, because the freeze is period-scoped.
+    ///
+    /// HONEST SCOPE: this test is a TRIPWIRE, not a #1207 regression test — on
+    /// pre-#1207 code every assertion below still passes. Each week passes for
+    /// its own reason, and neither reason is the "M:2026-03" period
+    /// suppression the scenario is built around:
+    /// <list type="bullet">
+    /// <item><b>Anchor week</b> (Mon 2026-03-09) — pre-#1207 the recurrence
+    /// loop emits nothing here at all: March's pattern date 2026-03-03 sorts
+    /// before weekStart and is dropped by the <c>&gt;= weekStart</c> guard, so
+    /// the one tile is the compliance row on its own. Post-#1207 the anchor IS
+    /// emitted and is then swallowed by the per-(planning, date) dedup gate,
+    /// because the completed compliance occupies 2026-03-10 — the period gate
+    /// sits behind it as a second line. So the count assertion is vacuous on
+    /// old code but load-bearing on new code: it pins that #1207's new anchor
+    /// row is absorbed by the completed compliance rather than stacked on it.
+    /// </item>
+    /// <item><b>Pattern week</b> (Mon 2026-03-02) — empty on old and new code
+    /// alike, and NOT because anything suppressed the pattern date.
+    /// <c>GetOccurrencesInWeek</c> leaves its Month arm immediately on the
+    /// pre-existing <c>if (startDate &gt; weekEnd) break;</c> guard (the series
+    /// starts 2026-03-10, this week ends 2026-03-08), and the compliance query
+    /// is itself scoped to the requested week. The completed-period
+    /// suppression is never reached, so 2026-03-03 is unreachable through the
+    /// week query for this series in the first place — which is what the
+    /// section heading above means by "not reachable".</item>
+    /// </list>
+    /// Note also that the option (a) / option (b) decision is NOT what this
+    /// test discriminates: this series' pattern date sorts strictly before its
+    /// anchor, so option (a) ("always emit the anchor") and option (b) emit
+    /// exactly the same thing here. A test that trips on that decision would
+    /// have to seed a series whose pattern date sorts AFTER its anchor.
+    /// </summary>
+    [Test]
+    public async Task Tripwire_GetTasksForWeek_CompletedAnchorInStartMonth_MonthCarriesExactlyOneTile()
+    {
+        // 2026-03-01 is a Sunday, so the 1st Tuesday of March 2026 is the 3rd
+        // and the 2nd Tuesday — the anchor — is the 10th.
+        var seeded = await SeedMonthlySeries(
+            Utc(2026, 3, 10), repeatEvery: 1, repeatOrdinalWeek: 1, dayOfWeek: 2, dayOfMonth: 0);
+
+        // Boot a real SDK core first (same order as
+        // CalendarCompletedPeriodSuppressionTests) so the completed case is
+        // readable through the calendar service's own SDK context.
+        await GetCore();
+        var language = MicrotingDbContext!.Languages.OrderBy(x => x.Id).First();
+        var sdkSite = new Microting.eForm.Infrastructure.Data.Entities.Site
+        {
+            Name = $"monthly-anchor-completed-{Guid.NewGuid()}",
+            MicrotingUid = 7373,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Sites.AddAsync(sdkSite);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        var completedCase = new Microting.eForm.Infrastructure.Data.Entities.Case
+        {
+            SiteId = sdkSite.Id, Status = 100, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await MicrotingDbContext.Cases.AddAsync(completedCase);
+        await MicrotingDbContext.SaveChangesAsync();
+
+        // The completed occurrence sits on the ANCHOR — the date #1207 made
+        // renderable. The canonical complete path sets Status = 100 and then
+        // soft-deletes the Compliance row, so that is the shape seeded here.
+        var anchor = Utc(2026, 3, 10);
+        await BackendConfigurationPnDbContext!.Compliances.AddAsync(new Compliance
+        {
+            PlanningId = seeded.PlanningId, PropertyId = seeded.PropertyId, AreaId = seeded.AreaId,
+            Deadline = anchor, StartDate = anchor.AddDays(-30),
+            MicrotingSdkCaseId = completedCase.Id, MicrotingSdkeFormId = 0,
+            WorkflowState = Constants.WorkflowStates.Removed
+        });
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        // Anchor week Mon 2026-03-09..Sun 2026-03-15: exactly one tile, the
+        // completed one. The recurrence loop also generates 2026-03-10 now, and
+        // it must be suppressed rather than stacked on top.
+        var anchorWeek = await QueryWeekRows(seeded.PropertyId, seeded.ArpId, Utc(2026, 3, 9));
+        Assert.That(anchorWeek, Has.Count.EqualTo(1),
+            "the completed anchor must render exactly once — no not-completed sibling on the same date");
+        Assert.That(anchorWeek[0].TaskDate, Is.EqualTo("2026-03-10"));
+        Assert.That(anchorWeek[0].Completed, Is.True);
+        Assert.That(anchorWeek[0].IsFromCompliance, Is.True);
+
+        // The rule's own March date (Tue 2026-03-03) is in the PREVIOUS week and
+        // precedes the series start, so nothing may render there. See HONEST
+        // SCOPE above: this week is empty on old and new code alike, and the
+        // reason is the Month arm's `startDate > weekEnd` early return, not the
+        // "M:2026-03" completed-period suppression — that gate is never
+        // reached here.
+        var patternWeek = await QueryWeekDates(seeded.PropertyId, seeded.ArpId, Utc(2026, 3, 2));
+        Assert.That(patternWeek, Is.Empty,
+            "March carries ONE occurrence; a second tile would share the 'M:2026-03' bucket");
+
+        // April is a different period: the rule renders normally, not completed.
+        var aprilWeek = await QueryWeekRows(seeded.PropertyId, seeded.ArpId, Utc(2026, 4, 6));
+        Assert.That(aprilWeek.Select(t => t.TaskDate), Is.EqualTo(new[] { "2026-04-07" }),
+            "the completed-period freeze is scoped to the start month");
+        Assert.That(aprilWeek[0].Completed, Is.False);
     }
 }

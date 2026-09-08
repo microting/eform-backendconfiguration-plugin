@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationAdhocService;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -252,6 +253,122 @@ public class AdhocServiceReferenceDataTests : TestBaseSetup
         var worker = result.Single(w => w.WorkerId == site.Id);
         Assert.That(worker.DisplayName, Is.EqualTo("Worker Seven"));
         Assert.That(worker.PropertyIds, Is.EquivalentTo(new[] { property.Id, otherProperty.Id }));
+    }
+
+    /// <summary>
+    /// Seeds the SDK Site + Worker + SiteWorker triple real device-user creation
+    /// leaves behind, through the CORE's own post-migration DbContext (the fixture's
+    /// bootstrap SQL creates <c>Workers</c> without <c>Resigned</c>/<c>ResignedAtDate</c>,
+    /// so this must run on a context obtained after <see cref="TestBaseSetup.GetCore"/>
+    /// — the same kind of context, against the migrated schema, that
+    /// <c>ListWorkers</c> opens for itself).
+    /// Returns the SITE id, which is what <c>PropertyWorker.WorkerId</c> holds.
+    /// </summary>
+    private static async Task<int> SeedSdkSiteWithWorkerAsync(
+        MicrotingDbContext sdkDbContext, string name, bool resigned)
+    {
+        var language = await sdkDbContext.Languages.FirstAsync();
+        var site = new Microting.eForm.Infrastructure.Data.Entities.Site
+        {
+            Name = name,
+            LanguageId = language.Id,
+            WorkflowState = Constants.WorkflowStates.Created,
+        };
+        await sdkDbContext.Sites.AddAsync(site);
+        await sdkDbContext.SaveChangesAsync();
+
+        var worker = new Microting.eForm.Infrastructure.Data.Entities.Worker
+        {
+            FirstName = name,
+            LastName = "Worker",
+            Email = $"{Guid.NewGuid():N}@example.test",
+            Resigned = resigned,
+            ResignedAtDate = resigned ? DateTime.UtcNow.AddDays(-1) : default,
+            WorkflowState = Constants.WorkflowStates.Created,
+        };
+        await sdkDbContext.Workers.AddAsync(worker);
+        await sdkDbContext.SaveChangesAsync();
+
+        await sdkDbContext.SiteWorkers.AddAsync(
+            new Microting.eForm.Infrastructure.Data.Entities.SiteWorker
+            {
+                SiteId = site.Id,
+                WorkerId = worker.Id,
+                WorkflowState = Constants.WorkflowStates.Created,
+            });
+        await sdkDbContext.SaveChangesAsync();
+
+        return site.Id;
+    }
+
+    /// <summary>
+    /// #1184 — "resigned" lives on the SDK Worker and resigning never removes the
+    /// PropertyWorker row, so ListWorkers has to drop those sites itself. Both
+    /// workers are assigned to the same property in exactly the same way; only the
+    /// SDK Worker's Resigned flag differs. The active worker is asserted present so
+    /// the exclusion cannot pass vacuously.
+    /// </summary>
+    [Test]
+    public async Task ListWorkers_ExcludesResignedWorker()
+    {
+        var property = await CreatePropertyAsync();
+        await GrantPropertyAccessAsync(property.Id, 1);
+
+        var core = await GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var activeSiteId = await SeedSdkSiteWithWorkerAsync(
+            sdkDbContext, $"Bente {Guid.NewGuid():N}", resigned: false);
+        var resignedSiteId = await SeedSdkSiteWithWorkerAsync(
+            sdkDbContext, $"Carl {Guid.NewGuid():N}", resigned: true);
+
+        await GrantPropertyAccessAsync(property.Id, activeSiteId);
+        await GrantPropertyAccessAsync(property.Id, resignedSiteId);
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+        var sut = CreateSut(coreHelper);
+
+        var result = await sut.ListWorkers(1, property.Id);
+
+        var workerIds = result.Select(w => w.WorkerId).ToList();
+        Assert.That(workerIds, Does.Contain(activeSiteId),
+            "an employed PropertyWorker must still be listed by the adhoc worker picker");
+        Assert.That(workerIds, Does.Not.Contain(resignedSiteId),
+            "a PropertyWorker whose SDK Worker.Resigned is true must be excluded (#1184)");
+    }
+
+    /// <summary>
+    /// The all-resigned shape: the property's ONLY PropertyWorker is the
+    /// resigned one, and isAdmin bypasses the access check so nothing else can
+    /// keep the list non-empty. What this pins is the #1184 resigned filter —
+    /// that it empties the result outright, not merely that it drops one row
+    /// out of a larger list (<c>ListWorkers_ExcludesResignedWorker</c> covers
+    /// that). It does NOT discriminate the early return that follows the
+    /// filter: with an empty site list the Sites lookup yields an empty
+    /// dictionary and the projection an empty result, so deleting that early
+    /// return leaves this test green.
+    /// </summary>
+    [Test]
+    public async Task ListWorkers_ReturnsEmpty_WhenEveryAssignedWorkerResigned()
+    {
+        var property = await CreatePropertyAsync();
+
+        var core = await GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        var resignedSiteId = await SeedSdkSiteWithWorkerAsync(
+            sdkDbContext, $"Dorte {Guid.NewGuid():N}", resigned: true);
+        await GrantPropertyAccessAsync(property.Id, resignedSiteId);
+
+        var coreHelper = Substitute.For<IEFormCoreService>();
+        coreHelper.GetCore().Returns(Task.FromResult(core));
+        var sut = CreateSut(coreHelper);
+
+        var result = await sut.ListWorkers(1, property.Id, isAdmin: true);
+
+        Assert.That(result, Is.Empty,
+            "a property whose only assigned worker has resigned lists nobody (#1184)");
     }
 
     [Test]

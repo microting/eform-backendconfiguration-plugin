@@ -271,15 +271,24 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
     /// <summary>
     /// Compliance row for one occurrence. Deadline is in the past so the
     /// <c>Property.ComplianceStatus</c> recompute has something to flip.
+    ///
+    /// <para><paramref name="deadline"/> must be supplied whenever a test seeds more
+    /// than one Compliance on the SAME planning: <c>Compliances</c> is UNIQUE on
+    /// <c>(PlanningId, Deadline)</c>, so two same-Deadline siblings blow up at seed
+    /// time with a <c>DbUpdateException</c> rather than at assert time.
+    /// <c>StartDate</c> is deliberately NOT parameterised — every back-filled
+    /// sibling really does share <c>UtcNow.Date</c>, and that collapse is the shape
+    /// the occurrence-lookup regression tests depend on.</para>
     /// </summary>
-    private async Task<Compliance> SeedComplianceAsync(Scenario s, PlanningCase planningCase, Case sdkCase)
+    private async Task<Compliance> SeedComplianceAsync(Scenario s, PlanningCase planningCase, Case sdkCase,
+        DateTime? deadline = null)
     {
         var compliance = new Compliance
         {
             PlanningId = s.Planning.Id,
             PropertyId = s.Property.Id,
             AreaId = 0,
-            Deadline = DateTime.UtcNow.Date.AddDays(-1),
+            Deadline = deadline ?? DateTime.UtcNow.Date.AddDays(-1),
             StartDate = DateTime.UtcNow.Date,
             MicrotingSdkCaseId = sdkCase.Id,
             MicrotingSdkeFormId = s.CheckListId,
@@ -689,6 +698,338 @@ public class ComplianceCompletionLegacyPathsTests : TestBaseSetup
                 "the access check must run before compliance.Delete()");
             Assert.That(reloadedCase.Status, Is.EqualTo(OpenCaseStatus));
             Assert.That(reloadedCase.DoneAt, Is.Null);
+        });
+    }
+
+    // ==================================================================
+    // 4. Regression cover for #1156 / PR #1158 — the occurrence lookup.
+    //
+    // PR #1158 shipped with no test that changes outcome on revert; the rest of this
+    // fixture passes either way, because no other fixture seeds two PlanningCaseSites
+    // for one planning sharing a CreatedAt day. These four close that gap, and they
+    // pin two DIFFERENT halves of that commit:
+    //
+    //   * the two *_TwoBackfilledOccurrencesOnOneDay_* tests pin the PREDICATE — revert
+    //     it from  x.MicrotingSdkCaseId == foundCase.Id  back to
+    //     x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId
+    //     and they fail on the second occurrence;
+    //   * Update_NoPlanningCaseSiteForSdkCase_* pins the new `else` branch (the old code
+    //     had none and returned success). It does NOT discriminate on the predicate:
+    //     with no PlanningCaseSite at all, both predicates find nothing.
+    //
+    // The bug is not hypothetical: it is the "all occurrences green in the calendar,
+    // only one row in Logbøger" report. The calendar reads sdkCase.Status, which every
+    // completion writes, while Logbøger filters PlanningCases.Status == 100, which only
+    // the first completion ever reached.
+    // ==================================================================
+
+    /// <summary>
+    /// THE regression test for issue #1156. Two occurrences of ONE planning whose
+    /// <c>PlanningCaseSite.CreatedAt</c> and <c>Compliance.StartDate</c> all collapse
+    /// onto today — exactly what a back-filled past series looks like, because every
+    /// row of it is inserted on the day the backfill runs. The old date heuristic has
+    /// no per-occurrence key in that shape: it matched BOTH siblings for BOTH
+    /// completions and <c>FirstOrDefaultAsync</c> handed back the same row twice, after
+    /// which <c>if (planningCase.Status != 100)</c> silently no-op'd everything from the
+    /// second completion onward.
+    ///
+    /// <para>What discriminates: the assertions on the SECOND occurrence. Revert the
+    /// predicate and <c>planningCaseSiteB.Status</c> / <c>planningCaseB.Status</c> stay at
+    /// 66 and <c>planningCaseSiteB.MicrotingSdkCaseDoneAt</c> stays null, because the
+    /// second call re-resolved to sibling A. The first occurrence is asserted too, and
+    /// with its OWN DoneAt, so that neither "always take the last row" nor an
+    /// implementation that lets completion #2 overwrite sibling A can pass.</para>
+    ///
+    /// <para>The two SDK cases carry distinct MicrotingUids purely so each keeps its
+    /// own decoy pair (see the class remarks) and both retractions still fail offline.</para>
+    /// </summary>
+    [Test]
+    public async Task Update_TwoBackfilledOccurrencesOnOneDay_PromotesBothPlanningCases()
+    {
+        var s = await SeedScenarioAsync("update-backfill-pair");
+
+        // Two occurrences of the SAME planning, each with its own SDK case.
+        var sdkCaseA = await SeedSdkCaseAsync(s, 970_006);
+        var sdkCaseB = await SeedSdkCaseAsync(s, 970_007);
+        var planningCaseA = await SeedPlanningCaseAsync(s);
+        var planningCaseB = await SeedPlanningCaseAsync(s);
+
+        // Both PlanningCaseSites keep the helper's default CreatedAt = UtcNow — the
+        // backfill collapse. Each points at its OWN SDK case, which is the only field
+        // that tells the two occurrences apart.
+        var planningCaseSiteA = await SeedPlanningCaseSiteAsync(s, planningCaseA, sdkCaseA);
+        var planningCaseSiteB = await SeedPlanningCaseSiteAsync(s, planningCaseB, sdkCaseB);
+
+        // Same StartDate (what the backfill writes), different Deadline (forced by the
+        // UNIQUE index on (PlanningId, Deadline)).
+        var complianceA = await SeedComplianceAsync(s, planningCaseA, sdkCaseA,
+            DateTime.UtcNow.Date.AddDays(-2));
+        var complianceB = await SeedComplianceAsync(s, planningCaseB, sdkCaseB,
+            DateTime.UtcNow.Date.AddDays(-1));
+
+        // Distinct times of day, so an overwrite of sibling A by completion B is visible.
+        var doneAtA = new DateTime(2026, 3, 17, 8, 5, 0, DateTimeKind.Unspecified);
+        var doneAtB = new DateTime(2026, 3, 18, 16, 45, 0, DateTimeKind.Unspecified);
+
+        var service = MakeCompliancesService(s);
+
+        var resultA = await service.Update(MakeReply(s, complianceA.Id, sdkCaseA.Id, doneAtA));
+        var resultB = await service.Update(MakeReply(s, complianceB.Id, sdkCaseB.Id, doneAtB));
+
+        var reloadedSiteA = await ReadPlanningCaseSiteAsync(planningCaseSiteA.Id);
+        var reloadedSiteB = await ReadPlanningCaseSiteAsync(planningCaseSiteB.Id);
+        var reloadedCaseA = await ReadPlanningCaseAsync(planningCaseA.Id);
+        var reloadedCaseB = await ReadPlanningCaseAsync(planningCaseB.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resultA.Success, Is.True, resultA.Message);
+            Assert.That(resultB.Success, Is.True, resultB.Message);
+
+            // The second completion — this is what regressed.
+            Assert.That(reloadedCaseB.Status, Is.EqualTo(CompletedStatus),
+                "occurrence B's PlanningCase must reach 100; the date heuristic resolved to sibling A, "
+                + "whose PlanningCase was already 100, so the `planningCase.Status != 100` guard skipped it "
+                + "and Logbøger never saw the second completion");
+            Assert.That(reloadedSiteB.Status, Is.EqualTo(CompletedStatus));
+            Assert.That(reloadedSiteB.MicrotingSdkCaseDoneAt, Is.EqualTo(doneAtB));
+            Assert.That(reloadedSiteB.MicrotingSdkCaseDoneAt, Is.Not.Null,
+                "a completed occurrence must carry a DoneAt");
+            Assert.That(reloadedSiteB.MicrotingSdkCaseId, Is.EqualTo(sdkCaseB.Id));
+            Assert.That(reloadedCaseB.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Processed));
+
+            // The first completion is still intact and was NOT overwritten by the
+            // second — this half is what stops "always take the last row" passing.
+            Assert.That(reloadedSiteA.Status, Is.EqualTo(CompletedStatus));
+            Assert.That(reloadedSiteA.MicrotingSdkCaseId, Is.EqualTo(sdkCaseA.Id),
+                "completion B must not repoint occurrence A at case B");
+            Assert.That(reloadedSiteA.MicrotingSdkCaseDoneAt, Is.EqualTo(doneAtA),
+                "occurrence A keeps its own DoneAt");
+            Assert.That(reloadedCaseA.Status, Is.EqualTo(CompletedStatus));
+        });
+    }
+
+    /// <summary>
+    /// Byte-identical twin of <see cref="Update_TwoBackfilledOccurrencesOnOneDay_PromotesBothPlanningCases"/>
+    /// against <c>UpdateFromCalendar</c>. The two production methods are copy-paste of
+    /// each other — the occurrence lookup is duplicated verbatim — so a fix (or a
+    /// revert) applied to only one of them is a live regression that a single test
+    /// cannot catch. Pinned separately on purpose.
+    ///
+    /// <para>The calendar variant is also the path the customer actually hit: the
+    /// calendar completes occurrences through <c>UpdateFromCalendar</c>, then renders
+    /// them from <c>sdkCase.Status</c> (all green) while Logbøger reads
+    /// <c>PlanningCases.Status</c> (one row).</para>
+    /// </summary>
+    [Test]
+    public async Task UpdateFromCalendar_TwoBackfilledOccurrencesOnOneDay_PromotesBothPlanningCases()
+    {
+        var s = await SeedScenarioAsync("calendar-backfill-pair");
+
+        var sdkCaseA = await SeedSdkCaseAsync(s, 970_008);
+        var sdkCaseB = await SeedSdkCaseAsync(s, 970_009);
+        var planningCaseA = await SeedPlanningCaseAsync(s);
+        var planningCaseB = await SeedPlanningCaseAsync(s);
+
+        var planningCaseSiteA = await SeedPlanningCaseSiteAsync(s, planningCaseA, sdkCaseA);
+        var planningCaseSiteB = await SeedPlanningCaseSiteAsync(s, planningCaseB, sdkCaseB);
+
+        var complianceA = await SeedComplianceAsync(s, planningCaseA, sdkCaseA,
+            DateTime.UtcNow.Date.AddDays(-2));
+        var complianceB = await SeedComplianceAsync(s, planningCaseB, sdkCaseB,
+            DateTime.UtcNow.Date.AddDays(-1));
+
+        var doneAtA = new DateTime(2026, 3, 17, 8, 5, 0, DateTimeKind.Unspecified);
+        var doneAtB = new DateTime(2026, 3, 18, 16, 45, 0, DateTimeKind.Unspecified);
+
+        var service = MakeCompliancesService(s);
+
+        var resultA = await service.UpdateFromCalendar(MakeReply(s, complianceA.Id, sdkCaseA.Id, doneAtA));
+        var resultB = await service.UpdateFromCalendar(MakeReply(s, complianceB.Id, sdkCaseB.Id, doneAtB));
+
+        var reloadedSiteA = await ReadPlanningCaseSiteAsync(planningCaseSiteA.Id);
+        var reloadedSiteB = await ReadPlanningCaseSiteAsync(planningCaseSiteB.Id);
+        var reloadedCaseA = await ReadPlanningCaseAsync(planningCaseA.Id);
+        var reloadedCaseB = await ReadPlanningCaseAsync(planningCaseB.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resultA.Success, Is.True, resultA.Message);
+            Assert.That(resultB.Success, Is.True, resultB.Message);
+
+            Assert.That(reloadedCaseB.Status, Is.EqualTo(CompletedStatus),
+                "UpdateFromCalendar carries its own copy of the occurrence lookup and must be "
+                + "pinned independently of Update");
+            Assert.That(reloadedSiteB.Status, Is.EqualTo(CompletedStatus));
+            Assert.That(reloadedSiteB.MicrotingSdkCaseDoneAt, Is.EqualTo(doneAtB));
+            Assert.That(reloadedSiteB.MicrotingSdkCaseDoneAt, Is.Not.Null);
+            Assert.That(reloadedSiteB.MicrotingSdkCaseId, Is.EqualTo(sdkCaseB.Id));
+            Assert.That(reloadedCaseB.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Processed));
+
+            Assert.That(reloadedSiteA.Status, Is.EqualTo(CompletedStatus));
+            Assert.That(reloadedSiteA.MicrotingSdkCaseId, Is.EqualTo(sdkCaseA.Id));
+            Assert.That(reloadedSiteA.MicrotingSdkCaseDoneAt, Is.EqualTo(doneAtA));
+            Assert.That(reloadedCaseA.Status, Is.EqualTo(CompletedStatus));
+        });
+    }
+
+    /// <summary>
+    /// Covers the <c>else</c> branch PR #1158 added underneath the new lookup: when the
+    /// SDK case EXISTS but no <c>PlanningCaseSite</c> references it, the caller now gets
+    /// <c>OperationResult(false, "CaseNotFound")</c>. The old code had no else — it fell
+    /// through silently, recomputed the property and returned
+    /// <c>CaseHasBeenUpdated</c> over an occurrence it had never completed.
+    ///
+    /// <para>Distinct from <see cref="Update_CaseNotFound_StillSoftDeletesCompliance"/>,
+    /// which trips the OTHER <c>CaseNotFound</c> — the one where <c>foundCase</c> itself
+    /// is null. Here the case is real and IS completed (Status 100 is written before the
+    /// items-planning lookup runs); only the items-planning half is missing.</para>
+    ///
+    /// <para>Arguably wrong, pinned as-is rather than as it ought to be: the same
+    /// ordering hazard as the sibling test. <c>compliance.Delete()</c> runs long before
+    /// this lookup and there is no transaction and no compensation, so the user gets a
+    /// failure toast over an occurrence that is already gone from the calendar AND an
+    /// SDK case that is already at 100 — a genuine partial write, not a clean
+    /// rejection.</para>
+    /// </summary>
+    [Test]
+    public async Task Update_NoPlanningCaseSiteForSdkCase_ReturnsCaseNotFoundAndStillSoftDeletesCompliance()
+    {
+        var s = await SeedScenarioAsync("update-no-pcs");
+        var sdkCase = await SeedSdkCaseAsync(s, 970_010);
+        var planningCase = await SeedPlanningCaseAsync(s);
+        // Deliberately NO SeedPlanningCaseSiteAsync — nothing references this SDK case.
+        var compliance = await SeedComplianceAsync(s, planningCase, sdkCase);
+
+        var result = await MakeCompliancesService(s)
+            .Update(MakeReply(s, compliance.Id, sdkCase.Id, new DateTime(2026, 3, 17, 11, 20, 0)));
+
+        var reloadedCompliance = await ReadComplianceAsync(compliance.Id);
+        var reloadedCase = await ReadCaseAsync(sdkCase.Id);
+        var reloadedPlanningCase = await ReadPlanningCaseAsync(planningCase.Id);
+        var reloadedProperty = await ReadPropertyAsync(s.Property.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False,
+                "an unresolvable occurrence must not be reported as completed");
+            Assert.That(result.Message, Is.EqualTo("CaseNotFound"));
+
+            // The partial write, pinned as it actually is.
+            Assert.That(reloadedCompliance.WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "compliance.Delete() runs before the PlanningCaseSite lookup and is never rolled back");
+            Assert.That(reloadedCase.Status, Is.EqualTo(CompletedStatus),
+                "the SDK case is completed before the lookup, so the failure leaves it at 100");
+
+            // Everything after the early return did not run.
+            Assert.That(reloadedPlanningCase.Status, Is.EqualTo(OpenPlanningStatus));
+            Assert.That(reloadedProperty.ComplianceStatus, Is.EqualTo(OverdueComplianceStatus),
+                "the Property recompute sits after the early return");
+        });
+    }
+
+    /// <summary>
+    /// CHARACTERISATION ONLY — this documents a defect, it does NOT state desired
+    /// behaviour. Do not treat a failure here as a regression: if the missing guard is
+    /// ever added, this test is expected to fail and should be rewritten to assert the
+    /// rejection instead.
+    ///
+    /// <para>The new lookup dropped the old predicate's
+    /// <c>PlanningId == compliance.PlanningId</c> cross-check. <c>foundCase</c> comes from
+    /// <c>model.Id</c> and <c>compliance</c> from <c>model.ExtraId</c>; both are
+    /// client-supplied and nothing validates them against each other. So a caller who
+    /// pairs one property's Compliance id with another property's SDK case id gets the
+    /// unrelated property's <c>PlanningCaseSite</c> promoted to 100, and the request still
+    /// reports success. The old date heuristic happened to block this — not by design,
+    /// but because <c>PlanningId</c> was part of its predicate.</para>
+    ///
+    /// <para>Awaiting a product decision (does the pairing need validating, and against
+    /// what — the compliance's planning, the caller's property access, or both?), so no
+    /// guard is added here.</para>
+    /// </summary>
+    [Test]
+    public async Task Characterisation_Update_MismatchedCaseAndCompliance_PromotesUnrelatedPlanningsOccurrence()
+    {
+        // Property/planning 1 owns the SDK case and its occurrence...
+        var owner = await SeedScenarioAsync("mismatch-owner");
+        var sdkCase = await SeedSdkCaseAsync(owner, 970_011);
+        var ownerPlanningCase = await SeedPlanningCaseAsync(owner);
+        var ownerPlanningCaseSite = await SeedPlanningCaseSiteAsync(owner, ownerPlanningCase, sdkCase);
+
+        // ...a SECOND property/planning owns the Compliance the caller quotes. Built by
+        // hand rather than through SeedScenarioAsync so the fixture starts only one
+        // eFormCore; everything the helpers below read is PlanningId/PropertyId, and the
+        // site/checklist/core are deliberately shared (the mismatch under test is
+        // compliance-vs-case, not site-vs-site).
+        var strangerProperty = new Property
+        {
+            Name = $"ComplianceLegacy-mismatch-stranger-{Guid.NewGuid()}",
+            ItemPlanningTagId = 0,
+            ComplianceStatus = OverdueComplianceStatus,
+            ComplianceStatusThirty = OverdueComplianceStatus,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await BackendConfigurationPnDbContext!.Properties.AddAsync(strangerProperty);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+        var strangerPlanning = new Planning
+        {
+            Enabled = true,
+            RepeatEvery = 1,
+            RepeatType = RepeatType.Week,
+            StartDate = DateTime.UtcNow.Date.AddDays(-14),
+            RelatedEFormId = owner.CheckListId,
+            WorkflowState = Constants.WorkflowStates.Created,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByUserId = 1,
+            UpdatedByUserId = 1
+        };
+        await ItemsPlanningPnDbContext!.Plannings.AddAsync(strangerPlanning);
+        await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+        var stranger = new Scenario
+        {
+            CoreHelper = owner.CoreHelper,
+            Property = strangerProperty,
+            Planning = strangerPlanning,
+            Language = owner.Language,
+            Site = owner.Site,
+            CheckListId = owner.CheckListId
+        };
+
+        var strangerPlanningCase = await SeedPlanningCaseAsync(stranger);
+        var strangerCompliance = await SeedComplianceAsync(stranger, strangerPlanningCase, sdkCase);
+
+        var doneAt = new DateTime(2026, 3, 19, 13, 0, 0, DateTimeKind.Unspecified);
+
+        // ExtraId (compliance) and Id (SDK case) belong to different properties.
+        var result = await MakeCompliancesService(owner)
+            .Update(MakeReply(stranger, strangerCompliance.Id, sdkCase.Id, doneAt));
+
+        var reloadedOwnerSite = await ReadPlanningCaseSiteAsync(ownerPlanningCaseSite.Id);
+        var reloadedOwnerCase = await ReadPlanningCaseAsync(ownerPlanningCase.Id);
+        var reloadedStrangerCase = await ReadPlanningCaseAsync(strangerPlanningCase.Id);
+        var reloadedStrangerCompliance = await ReadComplianceAsync(strangerCompliance.Id);
+
+        Assert.Multiple(() =>
+        {
+            // Documented, not endorsed: the mismatched pair is accepted.
+            Assert.That(result.Success, Is.True, result.Message);
+
+            Assert.That(reloadedOwnerSite.Status, Is.EqualTo(CompletedStatus),
+                "CHARACTERISATION: an occurrence of an UNRELATED planning/property is promoted, "
+                + "because the lookup no longer cross-checks PlanningId against the compliance");
+            Assert.That(reloadedOwnerCase.Status, Is.EqualTo(CompletedStatus));
+
+            // ...while the compliance the caller actually named is deleted and its own
+            // planning is left untouched.
+            Assert.That(reloadedStrangerCompliance.WorkflowState,
+                Is.EqualTo(Constants.WorkflowStates.Removed));
+            Assert.That(reloadedStrangerCase.Status, Is.EqualTo(OpenPlanningStatus),
+                "CHARACTERISATION: the quoted compliance's own occurrence is never completed");
         });
     }
 }
