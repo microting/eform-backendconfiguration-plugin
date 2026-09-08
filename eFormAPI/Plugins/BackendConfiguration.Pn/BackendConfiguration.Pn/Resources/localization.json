@@ -5326,6 +5326,37 @@
     }
   },
   {
+    "Key": "CaseDoesNotBelongToCompliance",
+    "LocalizedValue": {
+      "en-US": "The selected case does not belong to this compliance record",
+      "da": "Den valgte sag hører ikke til denne compliance-post",
+      "de": "Der ausgewählte Fall gehört nicht zu diesem Compliance-Eintrag",
+      "uk-UA": "Вибрана справа не належить до цього запису відповідності",
+      "pl-PL": "Wybrana sprawa nie należy do tego wpisu zgodności",
+      "no-NO": "Den valgte saken hører ikke til denne samsvarsposten",
+      "sv-SE": "Det valda ärendet hör inte till denna efterlevnadspost",
+      "es-ES": "El caso seleccionado no pertenece a este registro de cumplimiento",
+      "fr-FR": "Le dossier sélectionné n'appartient pas à cet enregistrement de conformité",
+      "it-IT": "Il caso selezionato non appartiene a questo record di conformità",
+      "nl-NL": "De geselecteerde zaak hoort niet bij dit nalevingsdossier",
+      "pt-BR": "O caso selecionado não pertence a este registro de conformidade",
+      "pt-PT": "O caso selecionado não pertence a este registo de conformidade",
+      "fi-FI": "Valittu tapaus ei kuulu tähän vaatimustenmukaisuustietueeseen",
+      "et-ET": "Valitud juhtum ei kuulu selle vastavuskirje juurde",
+      "lv-LV": "Atlasītā lieta nepieder šim atbilstības ierakstam",
+      "lt-LT": "Pasirinktas atvejis nepriklauso šiam atitikties įrašui",
+      "ro-RO": "Cazul selectat nu aparține acestei înregistrări de conformitate",
+      "hr-HR": "Odabrani slučaj ne pripada ovom zapisu usklađenosti",
+      "sl-SL": "Izbrani primer ne pripada temu zapisu skladnosti",
+      "cs-CZ": "Vybraný případ nepatří k tomuto záznamu shody",
+      "sk-SK": "Vybraný prípad nepatrí k tomuto záznamu súladu",
+      "hu-HU": "A kiválasztott eset nem tartozik ehhez a megfelelőségi bejegyzéshez",
+      "bg-BG": "Избраният случай не принадлежи към този запис за съответствие",
+      "el-GR": "Η επιλεγμένη υπόθεση δεν ανήκει σε αυτήν την εγγραφή συμμόρφωσης",
+      "is-IS": "Valið mál tilheyrir ekki þessari samræmisskrá"
+    }
+  },
+  {
     "Key": "AreaRulePlanningNotFound",
     "LocalizedValue": {
       "da": "Planlægningen blev ikke fundet",
