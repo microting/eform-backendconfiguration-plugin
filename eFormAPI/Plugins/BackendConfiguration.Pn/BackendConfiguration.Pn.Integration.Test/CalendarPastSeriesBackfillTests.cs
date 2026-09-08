@@ -956,6 +956,60 @@ public class CalendarPastSeriesBackfillTests : TestBaseSetup
     }
 
     /// <summary>
+    /// #1207 — the same branch, but with an anchor that does NOT sit on the
+    /// Nth weekday: the series starts on the SECOND Tuesday while the rule says
+    /// "first Tuesday". Since #1207 the anchor is occurrence #1, so the backfill
+    /// must materialise it as well as the patterned ones.
+    ///
+    /// The sharp edge: it must materialise it EXACTLY ONCE. Compliances is
+    /// UNIQUE on (PlanningId, Deadline), so a double emit is a
+    /// DbUpdateException at deploy time rather than a failed assertion.
+    /// </summary>
+    [Test]
+    public async Task Backfill_MonthlyNthWeekday_AnchorOffThePattern_EmitsTheAnchorExactlyOnce()
+    {
+        const int ordinal = 1;             // 1st
+        const int targetDow = 2;           // Tuesday
+
+        var firstOfThisMonth = new DateTime(Today.Year, Today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var anchorMonth = firstOfThisMonth.AddMonths(-3);
+        // The SECOND Tuesday of the anchor month — one week past the rule's own
+        // date for that month, so the start month's pattern date precedes it.
+        var anchor = NthWeekday(anchorMonth.Year, anchorMonth.Month, ordinal, targetDow).AddDays(7);
+
+        var seeded = await SeedEvent(
+            anchor, repeatType: (int)RepeatType.Month, repeatOrdinalWeek: ordinal);
+        await AddSite(seeded.Arp.Id, 92002);
+
+        var (service, deploy) = await BuildService();
+        await service.BackfillPastSeriesAsync(seeded.Arp);
+
+        // The anchor first, then the rule's date for every LATER past month.
+        // The anchor month's own 1st Tuesday precedes the anchor and is
+        // correctly not backfilled.
+        var expected = new List<DateTime> { anchor };
+        for (var m = -2; m <= 0; m++)
+        {
+            var month = firstOfThisMonth.AddMonths(m);
+            var candidate = NthWeekday(month.Year, month.Month, ordinal, targetDow);
+            if (candidate >= anchor && candidate < Today)
+            {
+                expected.Add(candidate);
+            }
+        }
+
+        Assert.That(DeployedDeadlines(deploy), Is.EqualTo(expected),
+            "the anchor is occurrence #1 even though it violates the rule (#1207)");
+
+        // DeployedDeadlines de-duplicates; count the RAW calls for the anchor.
+        var anchorCalls = deploy.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IEventDeployService.EnsureComplianceForOccurrenceAsync))
+            .Count(c => ((DateTime)c.GetArguments()[1]!).Date == anchor.Date);
+        Assert.That(anchorCalls, Is.EqualTo(1),
+            "one site, one anchor occurrence — a second emit would violate the (PlanningId, Deadline) unique index");
+    }
+
+    /// <summary>
     /// The Nth <paramref name="dayOfWeek"/> of a month, computed independently
     /// of the enumerator under test.
     /// </summary>
