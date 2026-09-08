@@ -361,6 +361,20 @@ public class CalendarConversionRenderTests : TestBaseSetup
         Assert.That(febMine[0].TaskDate, Is.EqualTo("2026-02-07"), "on February's 1st Saturday");
         AssertNineToTen(febMine[0]);
 
+        // #1207 — the upgrade-path guarantee. The conversion rewrites this
+        // series to "1st Saturday" unconditionally, so its own anchor
+        // (Sat 2026-01-31, the 5th Saturday) violates the rule it was given:
+        // January's pattern date is 2026-01-03, which precedes the start date
+        // and used to be discarded, taking January's occurrence with it. Since
+        // #1207 the anchor is occurrence #1, so the start week renders it.
+        // Every legacy task-wizard monthly series whose start date is not in
+        // the first seven days of its month is in this cohort.
+        var startWeek = await QueryWeek(property.Id, new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc));
+        var startWeekMine = startWeek.Where(t => t.Id == arp.Id).ToList();
+        Assert.That(startWeekMine.Select(t => t.TaskDate), Is.EquivalentTo(new[] { "2026-01-31" }),
+            "the converted series renders on its own start date (#1207) — and only there in that week");
+        AssertNineToTen(startWeekMine[0]);
+
         // Day-of-month semantics are gone: the week containing the next
         // 31st (Tue 2026-03-31; week Mon 2026-03-30 .. Sun 2026-04-05) has NO
         // occurrence on the 31st — only April's 1st Saturday (2026-04-04).

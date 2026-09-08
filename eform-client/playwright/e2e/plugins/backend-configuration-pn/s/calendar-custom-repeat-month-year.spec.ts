@@ -23,25 +23,43 @@ import {
  * MONTH and YEAR units and instead asserts the CREATE POST REQUEST BODY (the
  * wire payload), because:
  *
- *  - MONTH/YEAR occurrences land on the 1st-of-month / 1-January and require
- *    multi-month / multi-year navigation that is brittle in a week-grid e2e;
- *    the per-occurrence expansion math is exhaustively covered by
- *    calendar-repeat.service.spec unit tests. So here we black-box only what
- *    the frontend actually puts on the wire + the collapsed dropdown label.
+ *  - SUBSEQUENT MONTH/YEAR occurrences require multi-month / multi-year
+ *    navigation that is brittle in a week-grid e2e; the per-occurrence
+ *    expansion math is exhaustively covered by calendar-repeat.service.spec
+ *    unit tests and by the C# enumerator fixtures. So here we black-box what
+ *    the frontend puts on the wire + the collapsed dropdown label, plus (for
+ *    CR12b/CR13b/CR32) the FIRST occurrence's render in the anchored week.
  *
- *  - The custom dialog's MONTH option ALWAYS ships dayOfMonth=1 — it has no
- *    day-of-month control, so buildMetaFromCustomConfig hard-codes dom=1
- *    (calendar-repeat.service.ts:800). The create event is anchored on a
- *    Monday whose calendar day-of-month is NOT 1, yet the payload's
- *    dayOfMonth is still 1. CR10/CR11 assert exactly that quirk.
+ *    NOTE (#1207): the old premise that "MONTH occurrences land on the
+ *    1st-of-month" no longer holds. The start date is now occurrence #1 for
+ *    every Month rule; the pattern governs #2 onward. A monthly-Nth-weekday
+ *    series whose start date does not itself satisfy the rule renders on its
+ *    start date and only THEN follows the pattern — which is exactly what
+ *    CR32 pins.
  *
- *  - The custom dialog's YEAR option ALWAYS ships dayOfMonth=1 and month=0
- *    (1 January) in the LOCAL meta (calendar-repeat.service.ts:802). Note the
- *    month index is NOT a separate wire field — the create payload carries
- *    repeatType/repeatEvery/dayOfMonth but no month index (verified in
- *    task-create-edit-modal.component.ts buildPayload). The yearly start month
- *    is implied by startDate (the anchored Monday's month), and the local
- *    January default only drives the collapsed label.
+ *  - The dialog's MONTH unit has TWO sub-types ("Gentagelsestype"):
+ *      * "Månedligt dag" (everyNMonthDom) — a 1..28 day-of-month picker
+ *        (custom-repeat-modal.component.ts:38-39). It DEFAULTS to 1 and
+ *        CR10/CR11 leave that default alone, so their payloads carry
+ *        dayOfMonth=1 even though the event is anchored on a Monday whose
+ *        calendar day-of-month is not 1. That is the default, NOT a
+ *        hard-coded constant: the earlier claim in this header that the MONTH
+ *        option "ALWAYS ships dayOfMonth=1 — it has no day-of-month control"
+ *        was already false when it was written.
+ *      * "Månedligt på den første" (monthlyFirstWeekday) — an Nth-weekday
+ *        rule; ships dayOfMonth=0 and repeatOrdinalWeek=1 instead. CR32.
+ *
+ *  - The custom dialog's YEAR option anchors the rule on the SELECTED start
+ *    date: buildMetaFromCustomConfig's year branch sets dom = date.getDate()
+ *    and month = date.getMonth() (#933). It does NOT hard-code 1 January any
+ *    more — the "ALWAYS ships dayOfMonth=1 and month=0" claim that stood here
+ *    predates #933 and contradicts CR12/CR13's own assertions below. The
+ *    January fallback survives only for a missing date argument, which the
+ *    modal never passes. Note the month index is NOT a separate wire field —
+ *    the create payload carries repeatType/repeatEvery/dayOfMonth but no month
+ *    index (verified in task-create-edit-modal.component.ts buildPayload). The
+ *    yearly start month is implied by startDate (the anchored Monday's month),
+ *    and the local month index only drives the collapsed label.
  *
  * YEAR RENDERING (#922 FIXED)
  * ---------------------------
@@ -53,30 +71,54 @@ import {
  * + label; CR12b/CR13b assert the initial render + absence of weekly recurrence
  * (the multi-year cadence is covered server-side, not via week-grid navigation).
  *
- * MATRIX (CR10–CR13)
- * ------------------
+ * MATRIX (CR10–CR13, CR32)
+ * ------------------------
  *   CR10  month, step=1 (monthlyDom)    → repeatType=3, repeatEvery=1, dayOfMonth=1
  *   CR11  month, step=3 (everyNMonthDom)→ repeatType=3, repeatEvery=3, dayOfMonth=1
- *   CR12  year,  step=1 (yearlyOne)     → repeatType=4, repeatEvery=1, dayOfMonth=1 (render fixme)
- *   CR13  year,  step=2 (everyNYear)    → repeatType=4, repeatEvery=2, dayOfMonth=1 (render fixme)
+ *   CR12  year,  step=1 (yearlyOne)     → repeatType=4, repeatEvery=1, dayOfMonth from start date
+ *   CR13  year,  step=2 (everyNYear)    → repeatType=4, repeatEvery=2, dayOfMonth from start date
+ *   CR32  month, step=12, sub-type "Månedligt på den første" + a weekday that
+ *         is not the anchor's own (everyNMonthFirstWeekday)
+ *                                       → repeatType=3, repeatEvery=12,
+ *                                         repeatOrdinalWeek=1, dayOfMonth=0,
+ *                                         and the start week paints (#1207)
  *
  * The (step, unit) → meta.kind mapping is fixed in
  * calendar-repeat.service.buildMetaFromCustomConfig:
- *   unit=month → step===1 ? 'monthlyDom' : 'everyNMonthDom'  (dom hard-coded 1)
- *   unit=year  → step===1 ? 'yearlyOne'  : 'everyNYear'      (dom=1, month=0)
- * and the meta.kind → wire mapping in task-create-edit-modal.buildPayload:
- *   monthlyDom / everyNMonthDom → repeatType 3
- *   yearlyOne  / everyNYear     → repeatType 4
- *   dayOfMonth        = metaToDayOfMonth(meta)        → 1 for all four kinds
- *   repeatWeekdaysCsv = metaToWeekdaysCsv(meta)       → null (no weekday info)
- *   repeatOrdinalWeek = metaToRepeatOrdinalWeek(meta) → null (not a by-day rule)
+ *   unit=month → monthlyKind 'everyNMonthDom'       : step===1 ? 'monthlyDom' : 'everyNMonthDom'      (dom from the picker, default 1)
+ *              → monthlyKind 'monthlyFirstWeekday'  : step===1 ? 'monthlyFirstWeekday' : 'everyNMonthFirstWeekday' (ordinalWeek 1, weekday from the picker)
+ *   unit=year  → step===1 ? 'yearlyOne'  : 'everyNYear'      (dom/month from the start date, #933)
+ * and the meta.kind → wire mapping in task-create-edit-modal.buildPayload
+ * (kindMap + the metaTo* helpers in calendar-repeat.service):
+ *   monthlyDom / everyNMonthDom / monthlyFirstWeekday /
+ *     everyNMonthFirstWeekday                    → repeatType 3
+ *   yearlyOne  / everyNYear                      → repeatType 4
+ *   dayOfMonth        = metaToDayOfMonth(meta)
+ *     · monthlyDom / everyNMonthDom  → meta.dom, i.e. the 1–28 picker value
+ *       (default 1 — CR10/CR11 leave it alone, hence dayOfMonth=1)
+ *     · yearlyOne / everyNYear       → meta.dom = the start date's day (#933)
+ *     · monthlyFirstWeekday / everyNMonthFirstWeekday → 0, the backend's
+ *       "no day-of-month" sentinel (CR32)
+ *     · anything outside 1–31 (and every other kind) → null
+ *   repeatWeekdaysCsv = metaToWeekdaysCsv(meta)
+ *     · monthlyDom / everyNMonthDom / yearlyOne / everyNYear → null
+ *       (a by-DOM or yearly rule carries no weekday info)
+ *     · monthlyFirstWeekday / everyNMonthFirstWeekday → the single picked
+ *       weekday as a JS getDay() index string (CR32: Wednesday → '3')
+ *   repeatOrdinalWeek = metaToRepeatOrdinalWeek(meta)
+ *     · monthlyDom / everyNMonthDom / yearlyOne / everyNYear → null
+ *       (not a by-day rule)
+ *     · monthlyFirstWeekday / everyNMonthFirstWeekday → meta.ordinalWeek,
+ *       which buildMetaFromCustomConfig always sets to 1 (CR32)
+ *   There is no month-index field on the wire for any kind.
  *
  * MODEL
  * -----
  * `openCreateModalAtSlot(0, hour)` advances the calendar one week and clicks
  * Monday@hour, so every event anchors on the Monday of the displayed (next)
  * week — a date whose day-of-month is deliberately NOT necessarily 1, which is
- * the whole point of the dayOfMonth=1 quirk assertion.
+ * the whole point of the CR10/CR11 dayOfMonth=1 assertion: the 1 comes from the
+ * day-of-month picker's own default, never from the anchor's calendar day.
  *
  * WIRE CAPTURE
  * ------------
@@ -90,7 +132,7 @@ import {
  * Each test clicks a DIFFERENT Monday hour so the create modal always opens on
  * an empty slot (it only opens on an empty slot, and earlier rows leave a
  * Monday block behind):
- *   CR10=9, CR11=10, CR12=11, CR13=12.
+ *   CR10=9, CR11=10, CR12=11, CR13=12, CR12b=13, CR13b=14, CR32=15.
  */
 
 const property: PropertyCreateUpdate = {
@@ -302,14 +344,16 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
   // =======================================================================
   // CR10 — custom month, step=1 (monthlyDom).
   //   Anchored on a Monday whose calendar day-of-month is (almost certainly)
-  //   NOT 1, but the MONTH unit has no day-of-month control, so the dialog
-  //   hard-codes dom=1 → dayOfMonth=1 on the wire. Assert that quirk, plus
-  //   repeatType=3, repeatEvery=1, and that it is NOT a weekly/ordinal rule
+  //   NOT 1. The MONTH unit's "Månedligt dag" sub-type DOES have a day-of-month
+  //   control — a 1–28 picker (custom-repeat-modal.component.ts:38-39) — but it
+  //   defaults to 1 and this test never touches it, so meta.dom stays 1 and
+  //   dayOfMonth=1 travels on the wire. Assert that default, plus repeatType=3,
+  //   repeatEvery=1, and that it is NOT a weekly/ordinal rule
   //   (repeatWeekdaysCsv null/empty, repeatOrdinalWeek null/0).
   //
-  //   Monthly occurrence rendering (on the 1st of each month) needs multi-month
-  //   navigation and is covered by calendar-repeat.service.spec — so we assert
-  //   the wire payload + successful creation only, not day-cell rendering.
+  //   Subsequent monthly occurrences need multi-month navigation and are covered
+  //   by calendar-repeat.service.spec — so we assert the wire payload +
+  //   successful creation only, not day-cell rendering.
   // =======================================================================
   test('CR10 — custom month step=1 (monthlyDom) wires repeatType=3, repeatEvery=1, dayOfMonth=1', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
@@ -331,11 +375,12 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
 
     expect(body.repeatType, 'monthly custom rule → repeatType 3').toBe(3);
     expect(body.repeatEvery, 'step=1 → repeatEvery 1').toBe(1);
-    // The dom=1 quirk: even though the event was created on a Monday whose
-    // calendar day-of-month is not 1, the MONTH unit always ships dayOfMonth=1.
+    // dom stays at the picker's default: the event was created on a Monday
+    // whose calendar day-of-month is not 1, but the "Månedligt dag" 1–28
+    // picker was left untouched at 1, so dayOfMonth=1 is what ships.
     expect(
       body.dayOfMonth,
-      'MONTH unit has no day-of-month control → dayOfMonth hard-coded to 1'
+      'MONTH "Månedligt dag" picker left at its default → dayOfMonth 1'
     ).toBe(1);
     // Not a weekly rule and not an ordinal (Nth-weekday) rule.
     expect(body.repeatWeekdaysCsv ?? '', 'monthly-by-DOM rule ships no weekday CSV').toBe('');
@@ -344,8 +389,8 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
 
   // =======================================================================
   // CR11 — custom month, step=3 (everyNMonthDom).
-  //   Every 3rd month on day 1. Same dayOfMonth=1 quirk, repeatType still 3,
-  //   repeatEvery now 3.
+  //   Every 3rd month on day 1 — the day-of-month picker's default, untouched
+  //   here exactly as in CR10. repeatType still 3, repeatEvery now 3.
   // =======================================================================
   test('CR11 — custom month step=3 (everyNMonthDom) wires repeatType=3, repeatEvery=3, dayOfMonth=1', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
@@ -369,7 +414,7 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
     expect(body.repeatEvery, 'step=3 → repeatEvery 3').toBe(3);
     expect(
       body.dayOfMonth,
-      'MONTH unit has no day-of-month control → dayOfMonth hard-coded to 1'
+      'MONTH "Månedligt dag" picker left at its default → dayOfMonth 1'
     ).toBe(1);
     expect(body.repeatWeekdaysCsv ?? '', 'monthly-by-DOM rule ships no weekday CSV').toBe('');
     expect(body.repeatOrdinalWeek ?? 0, 'monthly-by-DOM rule is not an ordinal rule').toBe(0);
@@ -377,15 +422,16 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
 
   // =======================================================================
   // CR12 — custom year, step=1 (yearlyOne).
-  //   The YEAR unit always ships dayOfMonth=1 and a local month=0 (January)
-  //   that drives the label. There is NO separate month index wire field —
-  //   the create payload carries repeatType/repeatEvery/dayOfMonth only, and
-  //   the yearly start month is implied by startDate. Assert the wire payload
-  //   + collapsed label + successful CREATION (POST 200) here.
+  //   The YEAR unit anchors dayOfMonth AND the local month index on the
+  //   selected start date (#933) — not on 1 January. There is NO separate month
+  //   index wire field — the create payload carries
+  //   repeatType/repeatEvery/dayOfMonth only, and the yearly start month is
+  //   implied by startDate. Assert the wire payload + collapsed label +
+  //   successful CREATION (POST 200) here.
   //
-  //   The companion CR12b test (test.fixme) documents the known Year RENDERING
-  //   gap: repeatType=4 is not expanded by GetOccurrencesInWeek, so the event
-  //   is created but never paints a block — same as #888 RP05.
+  //   The companion CR12b test asserts the RENDER: yearly events paint on their
+  //   anchored day since #922 was fixed (the wizard now captures DayOfMonth from
+  //   the start date for Year, so the Year branch no longer lands on the 1st).
   // =======================================================================
   test('CR12 — custom year step=1 (yearlyOne) wires repeatType=4, repeatEvery=1, dayOfMonth from the start date and is created', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
@@ -418,7 +464,7 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
       body.dayOfMonth,
       'YEAR custom rule anchors dayOfMonth to the selected start date (#933)'
     ).toBe(expectedDom);
-    // No separate month index is sent on the wire (the local month=0 only
+    // No separate month index is sent on the wire (the local month index only
     // drives the label); assert the rule is neither weekly nor ordinal.
     expect(body.repeatWeekdaysCsv ?? '', 'yearly rule ships no weekday CSV').toBe('');
     expect(body.repeatOrdinalWeek ?? 0, 'yearly rule is not an ordinal rule').toBe(0);
@@ -473,9 +519,9 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
 
   // =======================================================================
   // CR13 — custom year, step=2 (everyNYear).
-  //   Every 2 years on day 1. repeatType still 4, repeatEvery now 2, same
-  //   dayOfMonth=1 quirk. Wire payload + creation asserted here; rendering is
-  //   the same Year gap, documented via CR13b test.fixme.
+  //   Every 2 years on the start date's day-of-month (#933, exactly as CR12).
+  //   repeatType still 4, repeatEvery now 2. Wire payload + creation asserted
+  //   here; the render is asserted by CR13b (#922 FIXED).
   // =======================================================================
   test('CR13 — custom year step=2 (everyNYear) wires repeatType=4, repeatEvery=2, dayOfMonth from the start date and is created', async ({ page }) => {
     expect(seeded, 'seed property + worker must have completed').toBe(true);
@@ -551,6 +597,140 @@ test.describe.serial('Calendar custom repeat — month & year scheduling (#899)'
         count,
         `every-2-years must not recur weekly — day ${day} of the week after the ` +
         `seed week must be empty for "${title}", found ${count}.`
+      ).toBe(0);
+    }
+  });
+
+  // =======================================================================
+  // CR32 — custom month, step=12, sub-type "Månedligt på den første"
+  //        + a weekday that is NOT the anchor's own (#1207).
+  //
+  //   The customer's report: "I create a task on Tuesday 8 September 2026 and
+  //   set the repetition to every 12 months, monthly on the first Tuesday. The
+  //   task is created the first time on Tuesday 7 September 2027, which is
+  //   wrong." 1 September 2026 is itself a Tuesday, so the start date is the
+  //   SECOND Tuesday and violates the rule it was given. Both recurrence
+  //   enumerators treated the start date purely as a lower bound on a pure
+  //   pattern, so the start month's pattern date (which precedes the anchor)
+  //   was discarded and the cursor jumped a whole repeat period — the first
+  //   occurrence vanished. Since #1207 the anchor is occurrence #1 and the
+  //   pattern governs #2 onward.
+  //
+  //   This is the FIRST e2e to drive the dialog's "Månedligt på den første"
+  //   option at all.
+  //
+  //   The event anchors on the Monday of the displayed (next) week, whose
+  //   position within its month varies with the run date. Both positions are
+  //   covered by the same assertion:
+  //     * anchor is NOT the month's 1st Monday (the common case) — the start
+  //       week painted NOTHING before #1207 and paints the anchor now;
+  //     * anchor IS the month's 1st Monday — it painted before and still does,
+  //       exactly once (no duplicate).
+  //
+  //   A 12-month cadence cannot be walked in a week grid, so the SUBSEQUENT
+  //   occurrences are asserted server-side in
+  //   BackendConfiguration.Pn.Integration.Test/CalendarMonthlyAnchorOccurrenceTests.
+  //
+  //   NOTE on the picked weekday: CreateTask currently overwrites
+  //   arp.DayOfWeek with the start date's own weekday whenever
+  //   RepeatOrdinalWeek is set, so the rule the backend stores is "1st
+  //   <anchor weekday>" regardless of the dialog pick. That is a separate,
+  //   deliberately out-of-scope defect; this test therefore asserts the WIRE
+  //   payload for the picked weekday and the RENDER for the anchored week,
+  //   and does not assert which weekday the backend ends up storing.
+  // =======================================================================
+
+  /** Pick the monthly sub-type ("Gentagelsestype") by its visible label. The
+   *  ng-dropdown panel is appended to <body>, so locate it from `page`. */
+  async function setMonthlyKind(page: Page, label: RegExp): Promise<void> {
+    await page
+      .locator('.custom-repeat-dialog .monthly-kind-select .ng-select-container')
+      .first()
+      .click();
+    await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.ng-dropdown-panel .ng-option').filter({ hasText: label }).first().click();
+    await page.waitForTimeout(300);
+  }
+
+  /** Pick the Nth-weekday rule's weekday by its visible (locale) label. */
+  async function setMonthlyWeekday(page: Page, label: RegExp): Promise<void> {
+    await page
+      .locator('.custom-repeat-dialog .monthly-weekday-select .ng-select-container')
+      .first()
+      .click();
+    await page.locator('.ng-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.ng-dropdown-panel .ng-option').filter({ hasText: label }).first().click();
+    await page.waitForTimeout(300);
+  }
+
+  test('CR32 — custom month step=12 "Månedligt på den første <ugedag>" wires an ordinal rule and still paints in the anchored start week (#1207)', async ({ page }) => {
+    expect(seeded, 'seed property + worker must have completed').toBe(true);
+    const calendarPage = new CalendarUiEnhancementsPage(page);
+    const title = `CR32-${generateRandmString(8)}`;
+
+    await calendarPage.openCreateModalAtSlot(0, 15);
+    await fillRequiredFields(page, title);
+
+    await openCustomRepeatDialog(page);
+    await setCustomUnit(page, 'month');
+    await setCustomStep(page, 12);
+    // "Månedligt på den første" / "Monthly on the first".
+    await setMonthlyKind(page, /månedligt på den første|monthly on the first/i);
+    // Wednesday — the create slot anchors on a MONDAY, so this is deliberately
+    // not the start date's own weekday.
+    await setMonthlyWeekday(page, /^\s*(onsdag|wednesday)\s*$/i);
+
+    // The sub-type select must actually hold the ordinal rule before saving.
+    // .ng-value-label is text-only; .ng-value would include the clear glyph.
+    await expect(
+      page.locator('.custom-repeat-dialog .monthly-kind-select .ng-value-label').first()
+    ).toHaveText(/månedligt på den første|monthly on the first/i);
+    await expect(
+      page.locator('.custom-repeat-dialog .monthly-weekday-select .ng-value-label').first()
+    ).toHaveText(/^\s*(onsdag|wednesday)\s*$/i);
+
+    await clickDone(page);
+
+    // Collapsed label: "Hver 12. måned på den 1. onsdag".
+    await expect(repeatRowLabel(page)).toHaveText(/12/);
+    await expect(repeatRowLabel(page)).toHaveText(/onsdag|wednesday/i);
+
+    const body = await saveAndCaptureCreateBody(page);
+
+    expect(body.repeatType, 'monthly custom rule → repeatType 3').toBe(3);
+    expect(body.repeatEvery, 'step=12 → repeatEvery 12').toBe(12);
+    expect(
+      body.repeatOrdinalWeek,
+      '"Månedligt på den første" is an Nth-weekday rule → repeatOrdinalWeek 1'
+    ).toBe(1);
+    expect(
+      body.dayOfMonth,
+      'an Nth-weekday rule carries the "no day-of-month" sentinel 0'
+    ).toBe(0);
+    expect(
+      body.repeatWeekdaysCsv,
+      'the picked weekday travels on the wire (Wednesday = 3)'
+    ).toBe('3');
+
+    // #1207: the anchored start week must paint the occurrence. Before the fix
+    // this was empty whenever the anchor was not the month's 1st Monday.
+    // (>= 1, matching CR12b/CR13b: a deployed occurrence can surface through
+    // both the recurrence and the compliance projection.)
+    const mondayCount = await calendarPage.getDayColumnTaskBlocks(0, title).count();
+    expect(
+      mondayCount,
+      `Expected "${title}" to render on Monday (day 0) of the seed week — the ` +
+      `series' own start date is occurrence #1 (#1207) — but found ${mondayCount}.`
+    ).toBeGreaterThanOrEqual(1);
+
+    // The rest of the anchored week must stay empty: a 12-month rule has no
+    // second occurrence anywhere near it.
+    for (let day = 1; day <= 6; day++) {
+      const count = await calendarPage.getDayColumnTaskBlocks(day, title).count();
+      expect(
+        count,
+        `An every-12-months rule must paint only on its anchor — day ${day} of ` +
+        `the seed week must be empty for "${title}", found ${count}.`
       ).toBe(0);
     }
   });
