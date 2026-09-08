@@ -1,3 +1,4 @@
+import {Subject, of} from 'rxjs';
 import {ComplianceReportStateService} from '../../store';
 import {ComplianceOverviewViewComponent} from './compliance-overview-view.component';
 
@@ -157,5 +158,114 @@ describe('ComplianceOverviewViewComponent — the count it reports back', () => 
     });
 
     expect(state.total).toBe(3);
+  });
+});
+
+/**
+ * The view-mode guard at the head of the fetch pipeline (#1185, PR #1202):
+ * `rxFilter(() => this.state.mode === 'overview')`.
+ *
+ * `fetchRequested$` is ONE stream shared by all three children, and the shell
+ * swaps them with an `ngSwitch` — i.e. on the change-detection pass AFTER the
+ * click handler that called `setMode()`. So a trigger emitted inside that
+ * handler reaches the child that is on its way OUT as well as the one on its
+ * way in, and the guard is what makes the outgoing child ignore it. That is the
+ * Detaljer and Rapport story; it is NOT this one.
+ *
+ * The Oversigt child is never the outgoing child under any emitted trigger:
+ *   - `resetToOverview()` calls `setMode('overview')` (state service :517)
+ *     BEFORE `requestFetch()` (:518), so by the time the emission lands the
+ *     mode is already `'overview'` and THIS guard passes. The child it is
+ *     dropped by is whichever of Detaljer/Rapport is on its way out.
+ *   - `drillIntoProperty()` (Oversigt → Detaljer, :493-496) uses
+ *     `setFilterSilently` + `setMode` and emits nothing at all.
+ *   - The only other `fetchRequestedSubject.next()` sites — `setPage`,
+ *     `setShowAll`, `setSort` (:596, :607, :620) — are not mode switches.
+ * So no reachable gesture makes the Oversigt guard drop a trigger. These are
+ * CONTRACT tests, not a reproduction: they pin that all three children guard
+ * the shared stream the same way, and this one's guard is defensive symmetry
+ * with the two that do fire in anger. (The report-side spec's
+ * `drops the reset trigger Oversigt fires while it is still mounted` is the
+ * genuine end-to-end case.)
+ *
+ * The guard is uncovered by everything above, and its failure mode is
+ * ASYMMETRIC: deleting it is SILENT — one extra request that `takeUntil` cancels on
+ * destroy, plus a `loading` flag set for a moment — while mis-writing it (a
+ * wrong mode string, an inverted comparison) is loud, because the view then
+ * never fetches at all. The silent direction is the one that needs pinning, so
+ * the drop tests below are the load-bearing ones and `is not stuck closed` only
+ * proves the guard is not inverted.
+ *
+ * Same construction as the `buildRequest` suite: `new` rather than a TestBed,
+ * with the REAL state service, so the guard is exercised against the actual
+ * mode machine. Unlike that suite these tests DO call `ngOnInit`, which is the
+ * whole point — `fetchRequested$` is only subscribed there.
+ */
+describe('ComplianceOverviewViewComponent — the view-mode guard', () => {
+  let state: ComplianceReportStateService;
+  let service: {overview: jest.Mock};
+  let component: ComplianceOverviewViewComponent;
+
+  beforeEach(() => {
+    state = new ComplianceReportStateService();
+    service = {
+      overview: jest.fn().mockReturnValue(of({success: true, model: {rows: [], totals: null}})),
+    };
+    component = new ComplianceOverviewViewComponent(state, service as any);
+  });
+
+  afterEach(() => {
+    component.ngOnDestroy();
+  });
+
+  it('drops a trigger emitted while another view owns the mode', () => {
+    state.setMode('details');
+    component.ngOnInit();
+
+    // `requestFetch()` un-hides the report and emits, so the trigger really
+    // does reach the subscription — it is the guard, not the
+    // `reportVisible` gate on `fetchRequested$`, that stops it here.
+    state.requestFetch();
+
+    expect(service.overview).not.toHaveBeenCalled();
+  });
+
+  it('drops a trigger emitted while Rapport owns the mode, not just Detaljer', () => {
+    // Exercises a SECOND foreign mode, so a guard written as
+    // `mode !== 'details'` cannot pass this suite.
+    state.setMode('report');
+    component.ngOnInit();
+
+    state.requestFetch();
+
+    expect(service.overview).not.toHaveBeenCalled();
+  });
+
+  it('is not stuck closed: it queries as soon as Oversigt owns the mode', () => {
+    state.setMode('details');
+    component.ngOnInit();
+    state.requestFetch();
+
+    state.setMode('overview');
+    state.requestFetch();
+
+    // Once, not twice: the trigger dropped above must not be replayed.
+    expect(service.overview).toHaveBeenCalledTimes(1);
+  });
+
+  it('never touches the shell loading flag for a trigger it drops', () => {
+    // A request that never settles, so the `tap` that sets `loading` true is
+    // observable. With a synchronously completing stub the subscribe callback
+    // would clear it again in the same tick and this could not fail.
+    service.overview.mockReturnValue(new Subject<any>());
+    state.setMode('details');
+    component.ngOnInit();
+
+    state.requestFetch();
+
+    // `loading` is the SHELL's flag and it gates `Opdater periode`. Without the
+    // guard the `tap` above the switchMap sets it true for a view that is not
+    // even on screen.
+    expect(state.loading).toBe(false);
   });
 });
