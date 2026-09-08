@@ -322,7 +322,8 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
    * Repackages the compliance row into the calendar's task shape and opens the
    * existing completion pipeline (`CalendarCompleteEventModalComponent` →
    * `prepare-complete` → the case editor), byte for byte as
-   * `calendar-container.component.ts:778-787` and `:796+` do it.
+   * `calendar-container.component.ts`'s `onComplianceRowCompleteRequested`
+   * (~:734) and `onToggleCompleteRequested` (~:756) do it.
    *
    * `assigneeIds` comes from the row's `workerSiteIds` (#1187): "assigned" is
    * the ARP's non-removed PlanningSites, the same set the calendar grid passes,
@@ -354,6 +355,9 @@ export class ComplianceDetailsViewComponent implements OnInit, OnDestroy {
         occurrenceDate: row.taskDate,
         propertyId: row.propertyId,
         assigneeIds: row.workerSiteIds ?? [],
+        // The dialog is titled with the TASK name — the same string this row
+        // prints in its "Opgave" column — not the embedded eForm's name (#1205).
+        taskTitle: row.title,
       } as CalendarCompleteEventModalData,
       // Sized for a single-section eForm; the modal widens itself when the form
       // turns out to have more than one section.

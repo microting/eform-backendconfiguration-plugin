@@ -357,6 +357,13 @@ test.describe.serial('Compliance Detaljer — complete modal groups workers by a
     await expect(page.locator('#completeSaveBtn')).toHaveCount(1);
     await expect(page.locator('#completeCancelBtn')).toHaveCount(1);
 
+    // #1205 — the dialog is headed with the TASK name (the same string this
+    // row prints in its "Opgave" column), NOT the embedded eForm template's
+    // name, which is what the header used to bind. Anchored with \s* because
+    // toHaveText matches the raw text including Material's padding.
+    await expect(modal.locator('h2[mat-dialog-title]'))
+      .toHaveText(new RegExp(`^\\s*${escapeRegExp(TASK_TITLE)}\\s*$`));
+
     // Exactly one assignee → pre-selected, the same as from the calendar grid.
     // `.ng-value-label`, never `.ng-value`.
     await expect(workerSelect.locator('.ng-value-label'))

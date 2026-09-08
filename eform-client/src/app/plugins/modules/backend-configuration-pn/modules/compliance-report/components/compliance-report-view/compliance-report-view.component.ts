@@ -695,7 +695,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * (`report-container.component.ts:205-207`).
    *
    * DELIBERATELY NOT `ComplianceCaseModalComponent`, which #1167 §7 recommends.
-   * That modal writes `replyRequest.siteId = data.workerId` on save and PUTs it
+   * (That component no longer exists — #1205 deleted it as dead code; the
+   * reasoning below is why it was never wired up here in the first place.)
+   * That modal wrote `replyRequest.siteId = data.workerId` on save and PUT it
    * through the client's `updateCase()` to `compliances/cases`, whose C# handler
    * `BackendConfigurationCompliancesService.Update(ReplyRequest)` assigns it
    * straight to `foundCase.SiteId` — so opening it without a real worker id
@@ -713,8 +715,9 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
    * filters survive (the state service lives on the cached lazy module ref),
    * but `enterPage()` forces Rapport back to its un-fetched state, so the
    * return lands on the placeholder until a filter change re-queries it (or
-   * `Oversigt` resets). Restoring the modal is a one-line change once the row
-   * DTO carries a site id.
+   * `Oversigt` resets). Going back to a modal is no longer a flag flip: #1205
+   * deleted the component, so it would have to be re-created — and only once
+   * the row DTO carries a real site id.
    */
   onEdit(row: ComplianceReportRowVm): void {
     if (!this.canEdit(row)) {

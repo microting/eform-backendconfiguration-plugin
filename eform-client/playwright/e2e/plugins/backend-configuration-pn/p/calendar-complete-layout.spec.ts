@@ -23,7 +23,8 @@ import {
  *   - no control renders a duplicate floating mat-label
  *   - dataItem.color becomes a left accent bar
  *   - a single-section eForm shows neither a nav column nor a section heading
- *     that merely repeats the dialog title
+ *     (the heading is suppressed on density grounds, not because it repeats
+ *     the dialog title — since #1205 the dialog carries the TASK name)
  *   - the worker dropdown groups assigned workers above the rest
  *
  * Same seed shape as calendar-complete.spec.ts (property + one worker), and the
@@ -220,8 +221,12 @@ test.describe.serial('Calendar complete modal — redesigned layout', () => {
     // The switch no longer wraps each question in a card.
     await expect(modal.locator('app-case-edit-switch > .eform-field > mat-card')).toHaveCount(0);
 
-    // L5 — a single-section eForm must not print a heading that only repeats
-    // the dialog title.
+    // L5 — no section heading may duplicate the dialog title. Since #1205 the
+    // dialog is titled with the TASK name rather than the eForm's, so the two
+    // strings no longer coincide by construction; a single-section eForm still
+    // prints no section heading at all (showSectionTitles suppresses it on
+    // density grounds), which makes this loop vacuous for exactly that case.
+    // Kept as a cheap regression guard for the multi-section forms.
     const dialogTitle = (await modal.locator('[mat-dialog-title]').first().innerText()).trim();
     const sectionTitles = modal.locator('.eform-section__title');
     for (let i = 0; i < (await sectionTitles.count()); i++) {

@@ -14,7 +14,6 @@ import {
   CalendarBoardModel,
   CalendarTaskLayoutModel,
   CalendarTaskModel,
-  CalendarToggleCompleteResult,
 } from '../../../../models/calendar';
 import {CalendarComplianceReportRowModel} from '../../../../models';
 import {CommonDictionaryModel, SharedTagModel, TemplateRequestModel} from 'src/app/common/models';
@@ -31,7 +30,6 @@ import {EformTagService} from 'src/app/common/services';
 import {BoardCreateModalComponent, BoardCreateModalData} from '../../modals/board-create-modal/board-create-modal.component';
 import {BoardDeleteModalComponent, BoardDeleteModalData} from '../../modals/board-delete-modal/board-delete-modal.component';
 import {RepeatScopeModalComponent} from '../../modals/repeat-scope-modal/repeat-scope-modal.component';
-import {ComplianceCaseModalComponent} from '../../modals/compliance-case-modal/compliance-case-modal.component';
 import {CalendarSelectWorkerModalComponent} from '../../modals';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {RepeatEditScope} from '../../../../models/calendar';
@@ -733,51 +731,12 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Compliance-backed events can't be completed via the calendar indicator
-  // alone — the underlying SDK case still needs the form submitted. The
-  // backend signals this with `requiresForm: true` on the toggle response
-  // and includes the routing payload; we navigate to the same compliance/
-  // case route used by the task-tracker (see
-  // task-tracker-table.component.ts:179 for the canonical shape).
-  onCompleteRequiresForm(p: CalendarToggleCompleteResult) {
-    // Guard against the backend returning requiresForm=true without all
-    // route params populated. Angular's Router serialises undefined segments
-    // literally ("…/undefined/…") and the form would 404; better to bail
-    // and let the user retry than to ship a broken URL.
-    if (p.sdkCaseId == null || p.templateId == null || p.propertyId == null
-        || p.complianceId == null || p.workerId == null || !p.deadline) {
-      return;
-    }
-    const ref = this.dialog.open(ComplianceCaseModalComponent, {
-      data: {
-        sdkCaseId: p.sdkCaseId,
-        templateId: p.templateId,
-        propertyId: p.propertyId,
-        deadline: p.deadline,
-        complianceId: p.complianceId,
-        workerId: p.workerId,
-        // Optional — backend supplies Compliance.Deadline day + the calendar's
-        // configured StartHour so the modal can default the doneAt picker to
-        // the scheduled event-start moment rather than the deadline's
-        // midnight or "now".
-        eventStart: p.eventStart,
-      },
-      width: 'min(90vw, 1080px)',
-      maxWidth: '95vw',
-      autoFocus: false,
-      restoreFocus: false,
-    });
-    ref.afterClosed().subscribe((result) => {
-      // Always reload — even on cancel — so any partial state (the
-      // freshly-materialised Compliance row, route timing, etc.) re-renders
-      // from the canonical server view.
-      this.reloadAfterCompletion();
-    });
-  }
-
   onComplianceRowCompleteRequested(row: CalendarComplianceReportRowModel) {
     this.onToggleCompleteRequested({
       id: row.areaRulePlanningId ?? 0,
+      // Carried through so the complete modal this synthesises a task for is
+      // titled with the task name like every other entry point (#1205).
+      title: row.title,
       completed: false,
       complianceId: row.complianceId,
       taskDate: row.taskDate,
@@ -803,6 +762,9 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         occurrenceDate: task.taskDate,
         propertyId: task.propertyId,
         assigneeIds: task.assigneeIds ?? [],
+        // Title the dialog with the task, not with the eForm template it
+        // embeds (#1205).
+        taskTitle: task.title,
       } as CalendarCompleteEventModalData,
       // Sized for a single-section eForm, which is the common case: one column
       // of fields with a uniform gutter, matching the design reference. The
