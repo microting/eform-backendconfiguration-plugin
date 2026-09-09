@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using eFormCore;
 using BackendConfiguration.Pn.Services.BackendConfigurationWorkerTagsService;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure;
@@ -67,7 +68,8 @@ public class WorkerTagsListTests : TestBaseSetup
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
         var service = new BackendConfigurationWorkerTagsService(
-            coreHelper, NullLogger<BackendConfigurationWorkerTagsService>.Instance);
+            coreHelper, new WorkerTagMembershipService(coreHelper),
+            NullLogger<BackendConfigurationWorkerTagsService>.Instance);
         return (service, core.DbContextHelper.GetDbContext(), core);
     }
 
@@ -247,10 +249,10 @@ public class WorkerTagsListTests : TestBaseSetup
     /// the Site and its Worker but leaves the <c>SiteTags</c> rows behind, so deleting
     /// the last device user in a team would otherwise keep that team in the list forever.
     /// <para>
-    /// Does not prove: that the same site is also excluded by
-    /// <c>CalendarAssignmentResolver</c>. It is NOT — the resolver has no
-    /// <c>Site.WorkflowState</c> clause, so this list is deliberately slightly stricter
-    /// than the resolver on that one case.
+    /// The resolver now excludes the same site: both go through
+    /// <c>IWorkerTagMembershipService</c>, which took this clause verbatim from here.
+    /// The resolver used to lack it and is the one thing the extraction changed —
+    /// <c>WorkerTagMembershipParityTests</c> asserts the two agree on one dataset.
     /// </para>
     /// </summary>
     [Test]

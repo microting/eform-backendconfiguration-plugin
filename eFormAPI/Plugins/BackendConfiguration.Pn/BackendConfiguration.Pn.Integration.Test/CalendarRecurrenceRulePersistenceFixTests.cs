@@ -6,6 +6,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 using BackendConfiguration.Pn.Services.EventDeployService;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Infrastructure.Constants;
@@ -160,7 +161,11 @@ public class CalendarRecurrenceRulePersistenceFixTests : TestBaseSetup
             NullLogger<BackendConfigurationCalendarService>.Instance,
             Substitute.For<ICalendarOccurrenceRetractionService>(),
             Substitute.For<ICalendarPastSeriesBackfillService>(),
-            Substitute.For<IBackendConfigurationComplianceReportService>()
+            Substitute.For<IBackendConfigurationComplianceReportService>(),
+            // This fixture builds the calendar service without a core, so the shared
+            // membership rule gets the same null: it is only reached when a request
+            // carries SiteIds, and nothing here filters by site.
+            new WorkerTagMembershipService(null)
         );
     }
 

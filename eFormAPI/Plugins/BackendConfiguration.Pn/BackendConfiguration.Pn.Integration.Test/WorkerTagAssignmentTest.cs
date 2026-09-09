@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using BackendConfiguration.Pn.Services.CalendarAssignmentReconciliation;
 using BackendConfiguration.Pn.Services.CalendarChangeNotification;
 using BackendConfiguration.Pn.Services.EventDeployService;
@@ -236,7 +237,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
-        return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
+        return new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper));
     }
 
     /// <summary>
@@ -250,7 +251,7 @@ public class WorkerTagAssignmentTest : TestBaseSetup
         var core = await GetCore();
         var coreHelper = Substitute.For<IEFormCoreService>();
         coreHelper.GetCore().Returns(Task.FromResult(core));
-        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, coreHelper);
+        var resolver = new CalendarAssignmentResolver(BackendConfigurationPnDbContext!, new WorkerTagMembershipService(coreHelper));
         var deploy = Substitute.For<IEventDeployService>();
         var batches = new List<CalendarChangeBatch>();
         var notifier = Substitute.For<ICalendarChangeNotifier>();
