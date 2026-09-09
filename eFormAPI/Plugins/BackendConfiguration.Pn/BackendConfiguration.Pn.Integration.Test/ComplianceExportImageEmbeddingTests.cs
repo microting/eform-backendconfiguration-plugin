@@ -19,7 +19,9 @@ namespace BackendConfiguration.Pn.Integration.Test;
 using BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport;
 using BackendConfiguration.Pn.Services.BackendConfigurationComplianceExportService;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.WordService;
 using DocumentFormat.OpenXml.Packaging;
+using System.Text;
 using ImageMagick;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microting.eForm.Dto;
@@ -119,15 +121,30 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
     }
 
     /// <summary>
-    /// The picture store the writer will read from: a fresh temp directory, wired
-    /// into the SDK as <c>fileLocationPicture</c>, with S3 explicitly off.
+    /// A fresh, per-test picture directory, registered for
+    /// <see cref="CleanUpPictureDirectory"/>. Split out from
+    /// <see cref="ConfigureLocalPictureStore"/> because
+    /// <c>ComplianceExportWordWriter.InsertImage</c> takes the base picture path as
+    /// an ARGUMENT — only <c>WriteAsync</c> reads it back out of the SDK — so a test
+    /// that calls <c>InsertImage</c> directly needs the directory without the SDK
+    /// settings, and therefore without a <c>Core</c>.
     /// </summary>
-    private async Task<string> ConfigureLocalPictureStore(eFormCore.Core core)
+    private string CreatePictureDirectory()
     {
         var directory = Path.Combine(
             Path.GetTempPath(), $"compliance-export-images-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         _pictureDirectory = directory;
+        return directory;
+    }
+
+    /// <summary>
+    /// The picture store the writer will read from: a fresh temp directory, wired
+    /// into the SDK as <c>fileLocationPicture</c>, with S3 explicitly off.
+    /// </summary>
+    private async Task<string> ConfigureLocalPictureStore(eFormCore.Core core)
+    {
+        var directory = CreatePictureDirectory();
 
         await core.SetSdkSetting(Settings.s3Enabled, "false");
         await core.SetSdkSetting(Settings.fileLocationPicture, directory);
@@ -149,10 +166,54 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
     /// writer resizes to <see cref="ComplianceExportWordWriter.AppendixImageWidthPx"/>,
     /// and a source that already had that width would let a broken resize pass.
     /// </summary>
-    private static void WriteSampleJpeg(string path)
+    private static void WriteSampleJpeg(string path) => WriteSampleImage(path);
+
+    /// <summary>
+    /// The same 40x30 solid red, in whatever format <paramref name="path"/>'s
+    /// extension names — ImageMagick picks the coder from it, which is exactly how
+    /// the picture store comes by its own <c>.jpg</c>/<c>.png</c> mix. Used by the
+    /// content-type test, which needs a source that is genuinely NOT a PNG.
+    /// </summary>
+    private static void WriteSampleImage(string path)
     {
         using var image = new MagickImage(MagickColors.Red, 40, 30);
         image.Write(path);
+    }
+
+    /// <summary>
+    /// An HTML body fragment through the writer's OWN conversion path — the
+    /// embedded <c>file.docx</c> shell and <see cref="WordProcessor"/>, i.e.
+    /// HtmlToOpenXml at the version the plugin ships — into a readable package.
+    ///
+    /// <para>
+    /// Only the width test needs this. Every other assertion here goes through
+    /// <see cref="ComplianceExportWordWriter.WriteAsync"/>, but <c>WriteAsync</c>
+    /// cannot express "resize the bytes to one width and declare another": it
+    /// passes <see cref="ComplianceExportWordWriter.AppendixImageWidthPx"/> for
+    /// both. The page shell (#1189) is deliberately not applied — the drawing's
+    /// <c>wp:extent</c> is computed from the image alone, with no reference to the
+    /// page or its margins, so landscape would change nothing here.
+    /// </para>
+    /// </summary>
+    private static MemoryStream ConvertBodyFragment(string bodyFragment)
+    {
+        using var template = typeof(ComplianceExportWordWriter).Assembly
+                                 .GetManifestResourceStream(ComplianceExportWordWriter.DocxResource)
+                             ?? throw new InvalidOperationException(
+                                 $"Embedded resource {ComplianceExportWordWriter.DocxResource} is missing");
+
+        // Not disposed: it is the return value, and WordProcessor.Dispose saves the
+        // package into it without closing it — the same contract WriteAsync relies on.
+        var docxStream = new MemoryStream();
+        template.CopyTo(docxStream);
+        docxStream.Position = 0;
+
+        var word = new WordProcessor(docxStream);
+        word.AddHtml($"<body>{bodyFragment}</body>");
+        word.Dispose();
+
+        docxStream.Position = 0;
+        return docxStream;
     }
 
     /// <summary>
@@ -286,13 +347,16 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
             "the grid cell's picture does not resolve to the embedded image part");
 
         // (3) ...laid out at the appendix width.
-        // NB this does NOT discriminate whether the declared layout width was
-        // honoured: the layout width is derived from the embedded bytes, which
-        // InsertImage has already resized to AppendixImageWidthPx, so the cx
-        // would match either way. What it establishes is that the picture is
-        // laid out at the appendix width rather than at some other size — the
-        // load-bearing "the resize actually ran" assertion is the decoded-width
-        // one below.
+        // This assertion still cannot discriminate WHERE that width came from:
+        // the production call site passes AppendixImageWidthPx as both the resize
+        // width and the layout width, so the bytes and the declaration agree and
+        // the cx would match whichever one the converter used. Since #1219 the
+        // declaration is the one that applies, and
+        // Word_ImageIsLaidOutAtTheDeclaredWidthNotTheDecodedOne below is the test
+        // that proves it, by making the two widths differ. What this one
+        // establishes is that the picture is laid out at the appendix width
+        // rather than at some other size — the load-bearing "the resize actually
+        // ran" assertion is the decoded-width one below.
         var expectedCx = ComplianceExportWordWriter.AppendixImageWidthPx * EmusPerInch / CssPixelsPerInch;
         var extent = drawings[0].Descendants<DW.Extent>().Single();
         Assert.That(extent.Cx?.Value, Is.EqualTo(expectedCx),
@@ -380,6 +444,172 @@ public class ComplianceExportImageEmbeddingTests : TestBaseSetup
         Assert.That(sectionRows.Count, Is.GreaterThanOrEqualTo(2), "a header row and the case row");
         Assert.That(sectionRows.Any(r => r.InnerText.Contains("El-tavle")), Is.True,
             "the case row is missing from the report table");
+    }
+
+    // ==================================================================
+    // Test 3 — the image part declares the content type of its own bytes (#1219)
+    // ==================================================================
+
+    /// <summary>
+    /// The embedded <see cref="ImagePart"/>'s content type must describe the bytes
+    /// it actually holds.
+    ///
+    /// <para>
+    /// <b>What this catches.</b> <c>InsertImage</c> hardcoded
+    /// <c>data:image/png;base64,…</c> while encoding with the parameterless
+    /// <c>MagickImage.ToBase64()</c>, which writes in the image's CURRENT format —
+    /// JPEG, for the <c>.jpg</c> files the SDK's picture store is full of. And
+    /// HtmlToOpenXml picks the OOXML part type from the DECLARED mime
+    /// (<c>ImagePrefetcher.ReadDataUri</c> → <c>TryInspectMimeType</c>), never from
+    /// the bytes, so the package got a <c>/word/media/imageN.png</c> part, content
+    /// type <c>image/png</c>, holding JPEG. Word and LibreOffice sniff and render
+    /// it, which is why nothing ever looked wrong; a strict OOXML validator, or a
+    /// converter that trusts the declaration, is entitled not to.
+    /// </para>
+    ///
+    /// <para>
+    /// The JPEG case is the discriminating one — on pre-#1219 code the content-type
+    /// assertion below fails with <c>image/png</c> against JPEG bytes. The PNG case
+    /// passed before the fix too and is here as the other half of the pair: the fix
+    /// must not have made everything JPEG.
+    /// </para>
+    /// </summary>
+    [TestCase("4_700_a.jpg", MagickFormat.Jpeg, "image/jpeg", ".jpg")]
+    [TestCase("4_700_a.png", MagickFormat.Png, "image/png", ".png")]
+    public async Task Word_EmbeddedImagePartDeclaresTheContentTypeOfItsBytes(
+        string imageFileName, MagickFormat expectedFormat, string expectedContentType, string expectedExtension)
+    {
+        var core = await GetCore();
+        var pictureDirectory = await ConfigureLocalPictureStore(core);
+
+        WriteSampleImage(Path.Combine(pictureDirectory, imageFileName));
+
+        var document = BuildReportWithOneImage(imageFileName);
+
+        await using var stream = await NewWordWriter().WriteAsync(document, core);
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var mainPart = word.MainDocumentPart!;
+        var imagePart = mainPart.ImageParts.Single();
+
+        // What the bytes REALLY are. Read first, so a failure below reports the
+        // mismatch rather than an assumption about it.
+        MagickFormat actualFormat;
+        using (var embeddedBytes = imagePart.GetStream())
+        {
+            using var embedded = new MagickImage(embeddedBytes);
+            actualFormat = embedded.Format;
+        }
+
+        Assert.That(actualFormat, Is.EqualTo(expectedFormat),
+            $"premise: a {expectedExtension} source should still be {expectedFormat} once embedded");
+
+        // The part's declaration. THIS is the assertion that fails on pre-#1219
+        // code for the .jpg case: image/png declared over JPEG bytes.
+        Assert.That(imagePart.ContentType, Is.EqualTo(expectedContentType),
+            $"the image part declares {imagePart.ContentType} but holds {actualFormat} bytes");
+
+        // ...and the part name follows the content type, so the package is
+        // internally consistent rather than merely correctly labelled.
+        Assert.That(Path.GetExtension(imagePart.Uri.OriginalString), Is.EqualTo(expectedExtension),
+            "the media part's extension does not match its content type");
+    }
+
+    // ==================================================================
+    // Test 4 — the DECLARED layout width is the one that applies (#1219)
+    // ==================================================================
+
+    /// <summary>
+    /// The layout width <c>InsertImage</c> is given must be the width the drawing
+    /// is laid out at, independently of how wide the embedded bytes happen to be.
+    ///
+    /// <para>
+    /// <b>Why the two widths have to differ.</b> The HTML <c>width</c> ATTRIBUTE
+    /// only accepts a bare integer: AngleSharp's
+    /// <c>IHtmlImageElement.DisplayWidth</c> — which is what HtmlToOpenXml's
+    /// <c>ImageExpression</c> reads — parses it with <c>Int32.TryParse</c>, so the
+    /// old <c>width="300px"</c> failed to parse and fell back to
+    /// <c>OriginalWidth</c>, which is 0 because the converter's AngleSharp context
+    /// has no resource loader. The width then came from the decoded bytes instead.
+    /// Production never noticed because it passes the same number as both the
+    /// resize width and the layout width, so the two answers coincided. They are
+    /// separate parameters, so this test drives them apart: bytes resized to
+    /// <c>resizeWidthPx</c>, layout declared at <c>layoutWidthPx</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>The assertion that fails on pre-#1219 code</b> is the <c>cx</c> one: it
+    /// reported <c>resizeWidthPx</c> in EMU (the decoded width) instead of
+    /// <c>layoutWidthPx</c>. Everything above it passed before the fix as well.
+    /// </para>
+    ///
+    /// <para>
+    /// This is the only test here that calls <c>InsertImage</c> directly rather
+    /// than going through <c>WriteAsync</c>; see <see cref="ConvertBodyFragment"/>
+    /// for why. It still exercises the real parameter plumbing — that
+    /// <c>imageWidth</c>, and not <c>imageSize</c>, is what reaches the attribute.
+    /// </para>
+    /// </summary>
+    [Test]
+    public async Task Word_ImageIsLaidOutAtTheDeclaredWidthNotTheDecodedOne()
+    {
+        // Deliberately unequal, and neither is AppendixImageWidthPx: a fix that
+        // accidentally hardcoded the appendix constant would still fail here.
+        const int resizeWidthPx = 100;
+        const int layoutWidthPx = 250;
+
+        var pictureDirectory = CreatePictureDirectory();
+
+        const string imageFileName = "4_700_widths.jpg";
+        WriteSampleImage(Path.Combine(pictureDirectory, imageFileName));
+
+        // No Core: with s3Enabled false, InsertImage reads the local file at
+        // basePicturePath and never touches the SDK. (WriteAsync is what needs a
+        // Core, to READ that path out of the SDK settings in the first place.)
+        var html = new StringBuilder();
+        await NewWordWriter().InsertImage(
+            imageFileName, html, resizeWidthPx, layoutWidthPx, core: null,
+            basePicturePath: pictureDirectory, s3Enabled: false);
+        Assert.That(html.ToString(), Does.Contain("<img "),
+            "premise: InsertImage resolved the picture and emitted an image");
+
+        await using var stream = ConvertBodyFragment(html.ToString());
+        using var word = WordprocessingDocument.Open(stream, false);
+
+        var mainPart = word.MainDocumentPart!;
+        var imagePart = mainPart.ImageParts.Single();
+
+        uint decodedWidth;
+        uint decodedHeight;
+        using (var embeddedBytes = imagePart.GetStream())
+        {
+            using var embedded = new MagickImage(embeddedBytes);
+            decodedWidth = embedded.Width;
+            decodedHeight = embedded.Height;
+        }
+
+        // premise: the BYTES are the resize width, not the layout width — without
+        // this the cx assertion below would prove nothing.
+        Assert.That(decodedWidth, Is.EqualTo((uint)resizeWidthPx),
+            "premise: the embedded bytes carry the resize width");
+        Assert.That(decodedWidth, Is.Not.EqualTo((uint)layoutWidthPx),
+            "premise: the two widths must differ for this test to discriminate");
+
+        var extent = mainPart.Document!.Body!.Descendants<DW.Extent>().Single();
+
+        // The load-bearing assertion. Pre-#1219 this was resizeWidthPx * 9525.
+        Assert.That(extent.Cx?.Value,
+            Is.EqualTo((long)layoutWidthPx * EmusPerInch / CssPixelsPerInch),
+            $"the declared layout width ({layoutWidthPx}px) was ignored; the image is laid out at "
+            + $"the width of its decoded bytes ({decodedWidth}px) instead");
+
+        // ...and the height follows from the aspect ratio of the bytes, scaled to
+        // the declared width — HtmlToOpenXml's ImageHeader.KeepAspectRatio, which
+        // does this in integer arithmetic, so the truncation is reproduced here
+        // rather than rounded.
+        var expectedHeightPx = (long)decodedHeight * layoutWidthPx / decodedWidth;
+        Assert.That(extent.Cy?.Value, Is.EqualTo(expectedHeightPx * EmusPerInch / CssPixelsPerInch),
+            "the image was scaled to the declared width without keeping its aspect ratio");
     }
 
     /// <summary>

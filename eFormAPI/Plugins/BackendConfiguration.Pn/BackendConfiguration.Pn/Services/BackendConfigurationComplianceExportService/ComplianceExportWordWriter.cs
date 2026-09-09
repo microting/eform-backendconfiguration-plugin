@@ -73,7 +73,12 @@ public class ComplianceExportWordWriter(
     ILogger logger)
 {
     private const string PageResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
-    private const string DocxResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
+    /// <summary>
+    /// The styled shell. <c>internal</c> so the image tests can convert an HTML
+    /// fragment through the SAME template the writer uses, rather than restating
+    /// the resource name (#1219).
+    /// </summary>
+    internal const string DocxResource = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
 
     /// <summary>A4 landscape, in twips — the template's own A4 portrait values swapped.</summary>
     public const uint PageWidthTwips = 16834;
@@ -644,7 +649,17 @@ public class ComplianceExportWordWriter(
     /// <c>File.Exists</c> against the process's working directory is not a
     /// picture store.
     /// </summary>
-    private async Task InsertImage(
+    ///
+    /// <remarks>
+    /// <c>internal</c> rather than <c>private</c> so
+    /// <c>ComplianceExportImageEmbeddingTests</c> can call it with a resize width
+    /// and a layout width that DIFFER. Every production caller passes the same
+    /// value for both (<see cref="AppendixImageWidthPx"/>), which is precisely
+    /// why the layout width could go unhonoured for so long without anything
+    /// looking wrong (#1219); a test that cannot separate the two parameters
+    /// cannot prove the layout width takes effect.
+    /// </remarks>
+    internal async Task InsertImage(
         string imageName, StringBuilder html, int imageSize, int imageWidth,
         Core core, string basePicturePath, bool s3Enabled)
     {
@@ -674,8 +689,26 @@ public class ComplianceExportWordWriter(
             image.Resize((uint)newWidth, (uint)newHeight);
             image.Crop((uint)newWidth, (uint)newHeight);
 
+            // #1219, two defects on the line this replaces.
+            //
+            // (1) The mime is DECLARED, not sniffed. HtmlToOpenXml's
+            // ImagePrefetcher.ReadDataUri maps the data URI's mime straight to an
+            // ImagePartType (its byte-sniffing path is only reached by the HTTP
+            // arm), so the old hardcoded "image/png" wrote JPEG bytes into a
+            // /word/media/imageN.png part with content type image/png. Word and
+            // LibreOffice sniff and render it; a strict OOXML validator need not.
+            // The format is now chosen first and passed to BOTH the declaration
+            // and the encoder, so the two cannot diverge.
+            //
+            // (2) The HTML width ATTRIBUTE must be a bare integer. AngleSharp's
+            // IHtmlImageElement.DisplayWidth — which is what HtmlToOpenXml's
+            // ImageExpression reads — parses it with Int32.TryParse, so "300px"
+            // failed and fell back to OriginalWidth (0, no resource loader),
+            // leaving the layout width to come from the decoded bytes instead.
+            var (embedFormat, embedMimeType) = WordImageEmbedding.ResolveEmbedFormat(image.Format);
+
             html.Append(
-                $@"<p><img src=""data:image/png;base64,{image.ToBase64()}"" width=""{imageWidth}px"" alt="""" /></p>");
+                $@"<p><img src=""data:{embedMimeType};base64,{image.ToBase64(embedFormat)}"" width=""{imageWidth}"" alt="""" /></p>");
         }
         catch (Exception e)
         {

@@ -669,7 +669,7 @@ public static class ComplianceExportDocumentBuilder
     /// <para>
     /// The per-case cap bounds a block, not the file. Nothing in the Word path
     /// streams: <c>ComplianceExportWordWriter.WriteAsync</c> accumulates every
-    /// <c>data:image/png;base64,…</c> payload into one <see cref="System.Text.StringBuilder"/>,
+    /// <c>data:&lt;mime&gt;;base64,…</c> payload into one <see cref="System.Text.StringBuilder"/>,
     /// then materialises it with <c>ToString()</c> and again with the
     /// <c>{%Content%}</c> replace — three live copies of the same string before
     /// HtmlToOpenXml sees it. The cap was sized at #1169's 600px-wide resized
@@ -681,6 +681,13 @@ public static class ComplianceExportDocumentBuilder
     /// quarter of the pixels (~60 KB base64 each), so the same 200 now bounds the
     /// peak at roughly 35 MB — about 4× less; the number was kept rather than
     /// re-derived because the ceiling exists to bound memory, not to fill it.
+    /// </para>
+    ///
+    /// <para>
+    /// Those figures assume the payload stays JPEG, which is why #1219 fixed the
+    /// mismatched <c>image/png</c> DECLARATION by declaring the truth rather than
+    /// by re-encoding every photograph to PNG: PNG is lossless, so the latter would
+    /// have multiplied both this peak and the size of the delivered file.
     /// </para>
     ///
     /// <para>
