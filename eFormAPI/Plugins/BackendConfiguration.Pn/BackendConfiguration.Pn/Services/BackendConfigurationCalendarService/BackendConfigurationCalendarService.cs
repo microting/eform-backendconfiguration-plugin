@@ -75,6 +75,82 @@ public class BackendConfigurationCalendarService(
             var dateTimeNow = DateTime.UtcNow;
             var result = new List<CalendarTaskResponseModel>();
 
+            // #1212 — worker-tag ("team") awareness for the assignee filter.
+            //
+            // The effective set of worker tags this request filters on, resolved
+            // ONCE per request. It must never be resolved inside
+            // ShouldIncludeTask: that predicate runs per task per week, so a
+            // membership lookup in there would be a query per event.
+            //
+            // It is the union of:
+            //   * the tags the caller asked for explicitly (requestModel.WorkerTagIds), and
+            //   * every tag the caller's requested SiteIds are members of.
+            //
+            // The second half is the actual bug fix. An event assigned to a team
+            // rather than to named individuals has no PlanningSites row for the
+            // team's members, so task.AssigneeIds never contains them and
+            // filtering by a member used to hide the event entirely.
+            //
+            // Membership is read from the SDK SiteTags join — the same live
+            // source CalendarAssignmentResolver.ResolveEffectiveSiteIdsAsync
+            // uses when deciding who an occurrence deploys to. Consequence,
+            // deliberately accepted: the filter follows membership changes over
+            // time (a worker added to a team today starts matching that team's
+            // historical events), exactly as deployment already does.
+            //
+            // This is the inverse direction of the resolver's lookup (site -> tags
+            // instead of tag -> sites) and is bounded by the filter's own site
+            // list, which is what makes it one query rather than one per event.
+            //
+            // Membership is the STRICT rule, by product decision: a SiteTag counts
+            // only when the SiteTag row is live, its Site is live, and that site has
+            // no resigned worker. This is deliberately the same three clauses
+            // BackendConfigurationWorkerTagsService.GetWorkerTags applies when it
+            // decides which teams to offer in this very filter's dropdown — the two
+            // MUST stay in step, or the dropdown offers a team the week query then
+            // resolves differently (or vice versa). Change one, change the other.
+            //
+            // Note this reverses the original #1212 reasoning, which left resigned
+            // workers in on the grounds that the explicit-assignee half of the same
+            // OR never dropped them. The product owner overrode that: team
+            // membership ends when the member resigns, so a resigned worker no
+            // longer resolves to their old team here.
+            //
+            // The coreHelper null-guard mirrors the siteNamesById block below: a few
+            // fixtures construct this service without a core, and a site filter must
+            // then simply degrade to the pre-#1212 explicit-assignee match rather
+            // than throw.
+            var effectiveWorkerTagIds = new HashSet<int>(requestModel.WorkerTagIds ?? new List<int>());
+            if (coreHelper != null && requestModel.SiteIds is { Count: > 0 })
+            {
+                var filterSiteIds = requestModel.SiteIds;
+                var sdkCoreForWorkerTags = await coreHelper.GetCore().ConfigureAwait(false);
+                await using var sdkDbContextForWorkerTags = sdkCoreForWorkerTags.DbContextHelper.GetDbContext();
+                var tagIdsOfFilterSites = await sdkDbContextForWorkerTags.SiteTags
+                    .Where(x => x.SiteId != null && filterSiteIds.Contains(x.SiteId.Value))
+                    .Where(x => x.TagId != null)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    // Core.SiteDelete soft-removes the Site (and its Worker) but leaves
+                    // the SiteTags rows behind, so without this a deleted device user
+                    // would still resolve to their old team forever. Note the deleted
+                    // worker is only WorkflowState-removed, NOT Resigned, so the clause
+                    // below does not cover this case.
+                    .Where(x => sdkDbContextForWorkerTags.Sites.Any(s => s.Id == x.SiteId
+                        && s.WorkflowState != Constants.WorkflowStates.Removed))
+                    // Resigned members no longer belong to the team (#1184 governs
+                    // deployment; the product owner extended the same rule to this
+                    // read filter).
+                    .Where(x => !sdkDbContextForWorkerTags.SiteWorkers.Any(sw =>
+                        sw.SiteId == x.SiteId && sw.Worker.Resigned))
+                    .Select(x => x.TagId.Value)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var tagId in tagIdsOfFilterSites)
+                {
+                    effectiveWorkerTagIds.Add(tagId);
+                }
+            }
+
             // Get the default board for this property (first created board)
             var defaultBoard = await backendConfigurationPnDbContext.CalendarBoards
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -641,7 +717,7 @@ public class BackendConfigurationCalendarService(
                         model.TaskIsExpired = effectiveDate < dateTimeNow.Date;
                     }
 
-                    if (ShouldIncludeTask(model, requestModel))
+                    if (ShouldIncludeTask(model, requestModel, effectiveWorkerTagIds))
                     {
                         result.Add(model);
                     }
@@ -735,7 +811,7 @@ public class BackendConfigurationCalendarService(
 
                         orphanModel.TaskIsExpired = orphan.OriginalDate.Date < dateTimeNow.Date;
 
-                        if (ShouldIncludeTask(orphanModel, requestModel))
+                        if (ShouldIncludeTask(orphanModel, requestModel, effectiveWorkerTagIds))
                         {
                             result.Add(orphanModel);
                         }
@@ -822,7 +898,7 @@ public class BackendConfigurationCalendarService(
 
                 movedModel.TaskIsExpired = movedIn.NewDate!.Value.Date < dateTimeNow.Date;
 
-                if (ShouldIncludeTask(movedModel, requestModel))
+                if (ShouldIncludeTask(movedModel, requestModel, effectiveWorkerTagIds))
                 {
                     result.Add(movedModel);
                 }
@@ -1052,7 +1128,7 @@ public class BackendConfigurationCalendarService(
 
                 ApplyOccurrenceFieldOverrides(model, complianceException);
 
-                if (ShouldIncludeTask(model, requestModel))
+                if (ShouldIncludeTask(model, requestModel, effectiveWorkerTagIds))
                 {
                     result.Add(model);
                 }
@@ -4962,7 +5038,17 @@ public class BackendConfigurationCalendarService(
         return retracted || (effectiveDate.Date < now.Date && sdkCase.Status != 100);
     }
 
-    private static bool ShouldIncludeTask(CalendarTaskResponseModel task, CalendarTaskRequestModel filter)
+    /// <param name="effectiveWorkerTagIds">
+    /// Pre-resolved once per request by <see cref="GetTasksForWeek"/>: the caller's
+    /// explicit <c>WorkerTagIds</c> plus every worker tag the caller's <c>SiteIds</c>
+    /// are members of. Passed in rather than derived here on purpose — this predicate
+    /// runs per task per week, and resolving tag membership inside it would issue a
+    /// query per event.
+    /// </param>
+    private static bool ShouldIncludeTask(
+        CalendarTaskResponseModel task,
+        CalendarTaskRequestModel filter,
+        HashSet<int> effectiveWorkerTagIds)
     {
         if (filter.BoardIds is { Count: > 0 } && task.BoardId.HasValue &&
             !filter.BoardIds.Contains(task.BoardId.Value))
@@ -4976,10 +5062,29 @@ public class BackendConfigurationCalendarService(
             return false;
         }
 
-        if (filter.SiteIds is { Count: > 0 } &&
-            !task.AssigneeIds.Any(id => filter.SiteIds.Contains(id)))
+        // Assignee filter (#1212). SiteIds and WorkerTagIds are two independent
+        // selections that combine with OR, never AND: a task survives when its
+        // explicit assignees intersect the requested sites, OR its assigned
+        // worker tags intersect the effective tag set (the requested tags plus
+        // every tag the requested sites belong to — see GetTasksForWeek).
+        // Neither list given => no assignee filtering at all, i.e. bit-identical
+        // to the pre-#1212 behaviour.
+        var hasSiteFilter = filter.SiteIds is { Count: > 0 };
+        var hasWorkerTagFilter = filter.WorkerTagIds is { Count: > 0 };
+        if (hasSiteFilter || hasWorkerTagFilter)
         {
-            return false;
+            var siteMatch = hasSiteFilter
+                            && task.AssigneeIds != null
+                            && task.AssigneeIds.Any(id => filter.SiteIds.Contains(id));
+
+            var workerTagMatch = effectiveWorkerTagIds is { Count: > 0 }
+                                 && task.WorkerTagIds != null
+                                 && task.WorkerTagIds.Any(effectiveWorkerTagIds.Contains);
+
+            if (!siteMatch && !workerTagMatch)
+            {
+                return false;
+            }
         }
 
         return true;
